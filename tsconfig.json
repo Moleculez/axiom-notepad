@@ -1,0 +1,37 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable", "WebWorker"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "plugins": [{ "name": "next" }],
+    "paths": {
+      "@axiom/editor": ["./packages/editor/src/index.ts"],
+      "@axiom/editor/*": ["./packages/editor/src/*"],
+      "@axiom/markdown": ["./packages/markdown/src/index.ts"],
+      "@axiom/shared/*": ["./packages/shared/src/*"]
+    }
+  },
+  "include": [
+    "apps/**/*.ts",
+    "apps/**/*.tsx",
+    "packages/**/*.ts",
+    "scripts/**/*.ts",
+    "tests/**/*.ts",
+    "*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "apps/web/.next",
+    "test-results",
+    "playwright-report"
+  ]
+}

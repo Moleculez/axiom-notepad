@@ -1,0 +1,149 @@
+/* Task rows use one typographic contract in Write, Read and the fallback
+   editor. Baseline alignment tracks the first line, even beside inline math.
+   The small visual control stays in flow; its transparent pseudo-element
+   enlarges native hit testing without adding editor chrome or moving text. */
+:is(.axiom-prose, .prose) li.document-task {
+  --task-size: 0.85em;
+  --task-gap: 0.65em;
+  --task-cap: 0.7em;
+  display: grid;
+  grid-template-columns: var(--task-size) minmax(0, 1fr);
+  column-gap: var(--task-gap);
+  align-items: first baseline;
+  list-style: none;
+  margin-inline-start: calc(0.15em - var(--task-size) - var(--task-gap));
+  padding: 0;
+}
+@supports (height: 1cap) {
+  :is(.axiom-prose, .prose) li.document-task {
+    --task-cap: 1cap;
+  }
+}
+:is(.axiom-prose, .prose) .document-task-content {
+  min-width: 0;
+}
+:is(.axiom-prose, .prose) .document-task-content > :first-child {
+  margin-block-start: 0;
+}
+:is(.axiom-prose, .prose) .document-task-content > :last-child {
+  margin-block-end: 0;
+}
+:is(.axiom-prose, .prose) .document-task-content > :is(ul, ol) {
+  margin-block: 0.2em 0;
+}
+:is(.axiom-prose, .prose) .document-task > input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  display: block;
+  position: relative;
+  inset: auto;
+  align-self: first baseline;
+  box-sizing: border-box;
+  width: var(--task-size);
+  height: var(--task-size);
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  font: inherit;
+  color: var(--text, #27382f);
+  background: var(--paper, #fff);
+  border: 1.25px solid var(--muted, #657368);
+  border-radius: 0.18em;
+  box-shadow: none;
+  opacity: 1;
+  cursor: pointer;
+  transform: translateY(calc((var(--task-size) - var(--task-cap)) / 2));
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease;
+}
+:is(.axiom-prose, .prose) .document-task > input[type="checkbox"]::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(24px, 1.25em);
+  height: max(24px, 1.25em);
+  transform: translate(-50%, -50%);
+}
+:is(.axiom-prose, .prose) .document-task > input[type="checkbox"]::after {
+  content: "";
+  display: none;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0.22em;
+  height: 0.42em;
+  border: solid var(--on-accent, #fff);
+  border-width: 0 1.7px 1.7px 0;
+  transform: translate(-50%, -60%) rotate(45deg);
+}
+:is(.axiom-prose, .prose)
+  .document-task
+  > input[type="checkbox"]:hover:not(:disabled):not(:checked) {
+  border-color: var(--accent, #386850);
+  background: color-mix(in srgb, var(--accent, #386850) 6%, var(--paper, #fff));
+}
+:is(.axiom-prose, .prose) .document-task > input[type="checkbox"]:checked {
+  border-color: var(--accent, #386850);
+  background: var(--accent, #386850);
+}
+:is(.axiom-prose, .prose)
+  .document-task
+  > input[type="checkbox"]:focus-visible {
+  outline: 2px solid var(--focus, var(--accent, #386850));
+  outline-offset: 3px;
+}
+:is(.axiom-prose, .prose)
+  .document-task
+  > input[type="checkbox"]:checked::after {
+  display: block;
+}
+:is(.axiom-prose, .prose) .document-task > input[type="checkbox"]:disabled {
+  cursor: default;
+}
+/* Editing the task's Markdown keeps the established source gutter; do not
+   leave an empty control column when the checkbox is intentionally hidden. */
+.axiom-prose li.document-task:has(> div > .axiom-source-prose) {
+  display: list-item;
+  margin-inline-start: 0;
+  padding-inline-start: 0.15em;
+}
+.axiom-prose
+  li.document-task:has(> div > .axiom-source-prose)
+  > input[type="checkbox"] {
+  display: none;
+}
+@media (forced-colors: active) {
+  :is(.axiom-prose, .prose) .document-task > input[type="checkbox"] {
+    forced-color-adjust: none;
+    border-color: CanvasText;
+    background: Canvas;
+  }
+  :is(.axiom-prose, .prose)
+    .document-task
+    > input[type="checkbox"]:hover:not(:disabled):not(:checked) {
+    border-color: Highlight;
+    background: Canvas;
+  }
+  :is(.axiom-prose, .prose) .document-task > input[type="checkbox"]:checked {
+    border-color: Highlight;
+    background: Highlight;
+  }
+  :is(.axiom-prose, .prose)
+    .document-task
+    > input[type="checkbox"]:checked::after {
+    border-color: HighlightText;
+  }
+  :is(.axiom-prose, .prose)
+    .document-task
+    > input[type="checkbox"]:focus-visible {
+    outline-color: Highlight;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  :is(.axiom-prose, .prose) .document-task > input[type="checkbox"] {
+    transition: none;
+  }
+}

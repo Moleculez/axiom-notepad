@@ -1,0 +1,736 @@
+/* Native editor contract: opaque paper, semantic type, quiet contextual chrome.
+   All colors and dimensions inherit the user's existing appearance tokens. */
+.native-editor {
+  position: relative;
+  min-width: 0;
+  color: var(--text);
+  background: var(--paper);
+}
+.native-content {
+  min-height: 300px;
+  padding-block: 0 64px;
+  outline: none;
+  overflow-wrap: anywhere;
+  caret-color: var(--accent);
+}
+.native-content:focus {
+  outline: none;
+}
+.native-content ::selection {
+  background: var(--selection);
+}
+.native-content .native-text {
+  white-space: pre-wrap;
+}
+.native-content .native-editing-paragraph,
+.native-content .native-editing-cell {
+  /* Editing uses the same comfortable reading face, with literal whitespace. */
+  white-space: pre-wrap;
+  tab-size: 4;
+  text-decoration: none;
+}
+.native-content .native-fence-header {
+  margin: 0 0 0.6em;
+  padding: 0 0 0.45em;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font: var(--weight-code) var(--size-code)/1.7 var(--font-code);
+}
+.native-content > :first-child {
+  margin-top: 0;
+}
+.native-content p {
+  min-height: 1.5em;
+}
+.native-content .native-gap {
+  min-height: 1em;
+  margin: 0;
+  line-height: 1;
+}
+.native-content .native-gap:not(:last-child) {
+  min-height: 0;
+  height: 0;
+  line-height: 0;
+}
+.native-content .native-gap.is-active {
+  height: auto;
+  min-height: 1em;
+  line-height: 1;
+}
+.native-editor[data-mode="source"][data-source-numbers="true"] .native-content {
+  padding-inline-start: 3.5em;
+}
+.native-source-gutter {
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 2.5em;
+  text-align: right;
+  pointer-events: none;
+  white-space: pre;
+  color: var(--muted);
+  font: var(--weight-code) var(--size-code)/1.7 var(--font-code);
+}
+.native-source-gutter > span,
+.native-source-line {
+  display: block;
+  min-height: 1.7em;
+}
+.native-editor[data-large="true"][data-mode="write"]
+  .native-content
+  > :not(.native-gap) {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 1.7em;
+}
+.native-active-block {
+  border-inline-start-color: var(--focus);
+}
+.native-content > :is(p, h1, h2, h3, h4, h5, h6).native-active-block {
+  background: color-mix(in srgb, var(--accent) 3%, transparent);
+  border-radius: 4px;
+}
+.native-content .native-list {
+  list-style-position: outside;
+  padding-inline-start: 1.65em;
+  margin-block: 0.6em;
+}
+.native-content ul.native-list {
+  list-style-type: disc;
+}
+.native-content ul.native-list ul {
+  list-style-type: circle;
+}
+.native-content ul.native-list ul ul {
+  list-style-type: square;
+}
+.native-content ol.native-list {
+  list-style-type: decimal;
+}
+.native-content .native-list li {
+  display: list-item;
+  padding-inline-start: 0.2em;
+  margin-block: 0.3em;
+}
+.native-content .native-list li::marker {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.native-content .native-list.tight > li > p,
+.native-content .native-list.tight > li > .document-task-content > p {
+  margin-block: 0;
+}
+.native-content .native-list .native-list {
+  margin-block: 0.2em;
+}
+.native-content :is(blockquote, .callout) {
+  margin-inline: 0;
+  padding: 0.35em 1.1em;
+  border-inline-start: 3px solid var(--line);
+}
+.native-content blockquote > :first-child,
+.native-content .callout > :first-child {
+  margin-top: 0;
+}
+.native-content blockquote > :last-child,
+.native-content .callout > :last-child {
+  margin-bottom: 0;
+}
+.native-callout-header {
+  position: relative;
+}
+.native-callout-header .native-callout-title {
+  position: absolute;
+  inset: 0 7.5em 0 0;
+  width: calc(100% - 7.5em);
+  height: 100%;
+  min-height: 0;
+  font: inherit;
+  padding: 0;
+  color: inherit;
+  border: 0;
+  border-radius: 0;
+  background: var(--callout);
+  opacity: 0;
+  box-shadow: none;
+}
+.native-callout-kind {
+  position: absolute;
+  inset-inline-end: 0;
+  top: 0;
+  max-width: 7em;
+  min-height: 0;
+  padding: 0 4px;
+  color: inherit;
+  font: inherit;
+  font-size: 0.85em;
+  background: var(--callout);
+  border: 0;
+  box-shadow: none;
+  opacity: 0;
+}
+.native-callout-header:is(:hover, :focus-within) .native-callout-kind {
+  opacity: 1;
+}
+.native-callout-header:is(:hover, :focus-within) .native-callout-title {
+  opacity: 1;
+}
+.native-callout-title:focus-visible {
+  outline: none;
+  border-bottom: 1px solid var(--focus);
+}
+.native-hard-break {
+  white-space: pre;
+}
+.native-revealed {
+  color: var(--text);
+  text-decoration: none;
+}
+.native-syntax {
+  color: var(--muted);
+  font-weight: 400;
+  font-style: normal;
+  text-decoration: none;
+}
+.native-atom {
+  display: inline-block;
+  vertical-align: baseline;
+  cursor: text;
+  max-width: 100%;
+}
+.native-atom img {
+  max-width: 100%;
+  border-radius: calc(var(--radius) * 0.6);
+}
+.native-atom:focus-visible,
+.native-math-preview:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 4px;
+  border-radius: 5px;
+}
+.native-content .native-table-block {
+  width: 100%;
+  max-width: 100%;
+  overflow: auto;
+  margin-block: 1.3em;
+}
+.native-table-block table {
+  display: table;
+  width: 100%;
+  border: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: 0;
+  font-size: 1em;
+  table-layout: auto;
+}
+.native-table-block :is(th, td) {
+  min-width: 5em;
+  padding: 0.55em 0.8em;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-inline-end: 1px solid var(--line);
+  vertical-align: top;
+  white-space: normal;
+  position: relative;
+}
+.native-table-block :is(th, td):first-child {
+  border-inline-start: 1px solid var(--line);
+}
+.native-table-block th {
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+  font-weight: 600;
+}
+.native-table-block th:first-child {
+  border-top-left-radius: 8px;
+}
+.native-table-block th:last-child {
+  border-top-right-radius: 8px;
+}
+.native-table-block :is(th, td):focus-within {
+  box-shadow: inset 0 -2px var(--focus);
+}
+.native-table-block .native-cell-selected {
+  background: var(--accent-bg);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.native-column-resizer {
+  position: absolute;
+  inset: 0 -3px 0 auto;
+  width: 7px;
+  cursor: col-resize;
+  z-index: 2;
+}
+.native-column-resizer:is(:hover, :focus-visible) {
+  background: var(--accent-bg);
+  outline: 1px solid var(--focus);
+}
+.native-table-grip {
+  position: absolute;
+  inset-inline-start: 1px;
+  top: 0;
+  font: 12px/1.2 var(--font-ui);
+  color: var(--muted);
+  cursor: grab;
+  opacity: 0;
+  width: 12px;
+  height: 16px;
+}
+.native-table-grip::after {
+  content: "⋮";
+}
+.native-table-grip[data-move-axis="column"] {
+  inset-inline-start: 50%;
+  top: -1px;
+}
+.native-table-grip[data-move-axis="column"]::after {
+  content: "⋯";
+}
+.native-table-block :is(th, td):hover .native-table-grip {
+  opacity: 0.8;
+}
+.native-content :is(.native-code-block, .native-math-block) {
+  position: relative;
+  margin-block: 1.3em;
+  border: 1px solid transparent;
+  border-radius: calc(var(--radius) * 0.8);
+}
+.native-content .native-code-block {
+  background: var(--code);
+  color: var(--code-text);
+}
+.native-content .native-code-body {
+  margin: 0;
+  padding: 20px 20px 38px;
+  background: transparent;
+  border: 0;
+  border-radius: inherit;
+  max-width: 100%;
+  overflow: auto;
+  font: var(--weight-code) var(--size-code)/1.65 var(--font-code);
+  letter-spacing: normal;
+  word-spacing: normal;
+  tab-size: 4;
+}
+.native-code-body code {
+  padding: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  border: 0;
+}
+.native-code-body .native-text {
+  white-space: pre;
+}
+.native-code-line {
+  display: block;
+  position: relative;
+  min-height: 1.65em;
+}
+.code-numbered .native-code-line::before {
+  content: attr(data-code-line);
+  position: absolute;
+  inset-inline-end: calc(100% + 1.25em);
+  top: 0;
+  color: var(--muted);
+  font: inherit;
+  pointer-events: none;
+  user-select: none;
+}
+.native-code-block.code-soft-wrap .native-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.native-code-block.code-numbered .native-code-body {
+  padding-inline-start: 4em;
+}
+.native-code-gutter {
+  position: absolute;
+  inset: 20px auto 38px 12px;
+  width: 2.2em;
+  pointer-events: none;
+  text-align: right;
+  color: var(--muted);
+  white-space: pre;
+  font: var(--weight-code) var(--size-code)/1.65 var(--font-code);
+}
+.native-block-tools {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  position: absolute;
+  top: 5px;
+  inset-inline-end: 8px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--motion-duration, 120ms);
+  max-width: calc(100% - 16px);
+  font: var(--weight-ui) calc(var(--size-ui) * 0.85)/1.4 var(--font-ui);
+  letter-spacing: normal;
+  word-spacing: normal;
+}
+.native-code-block > .native-block-tools {
+  top: auto;
+  bottom: 5px;
+}
+.native-code-line::before {
+  opacity: 0.65;
+}
+.native-content .native-code-block:focus-within {
+  border-color: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+:is(.native-code-block, .native-math-block):is(:hover, :focus-within)
+  > .native-block-tools {
+  opacity: 1;
+  pointer-events: auto;
+}
+.native-block-tools :is(button, input) {
+  font: inherit;
+  min-height: 26px;
+  min-width: 0;
+  width: auto;
+  padding: 3px 7px;
+  margin: 0;
+  border: 0;
+  border-radius: 5px;
+  color: var(--muted);
+  background: transparent;
+  box-shadow: none;
+  outline: none;
+}
+.native-block-tools button:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+.native-block-tools input.native-code-language {
+  width: 11ch;
+  text-align: right;
+}
+.native-block-tools :is(button, input):focus-visible {
+  box-shadow: 0 0 0 2px var(--focus);
+}
+.native-content .native-math-block {
+  padding: 32px 12px 18px;
+}
+.native-math-block.is-editing {
+  border-color: var(--line);
+}
+.native-content .native-math-source {
+  background: var(--surface);
+  font: var(--weight-code) var(--size-code)/1.7 var(--font-code);
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 0;
+  margin: 0 0 16px;
+  min-height: 3em;
+  white-space: pre-wrap;
+}
+.native-math-preview {
+  cursor: text;
+  overflow-x: auto;
+  text-align: center;
+  min-height: 2em;
+}
+.native-math-preview .math-block {
+  margin: 0;
+}
+.native-math-diagnostic {
+  margin-top: 12px;
+  color: var(--warning);
+  font: calc(var(--size-ui) * 0.92)/1.5 var(--font-ui);
+}
+.native-math-block [data-math-state="stale"] {
+  opacity: 0.7;
+}
+.native-diagram-preview {
+  border-top: 1px solid var(--line);
+  padding: 18px;
+}
+.native-diagram-preview svg {
+  display: block;
+  max-width: 100%;
+  margin: auto;
+}
+.native-content .native-source-block {
+  padding: 0;
+  background: transparent;
+  border: 0;
+  margin: 0;
+  border-radius: 0;
+  overflow: visible;
+  font: var(--weight-code) var(--size-code)/1.7 var(--font-code);
+  tab-size: 4;
+}
+.native-editor[data-mode="source"] .native-content {
+  font: var(--weight-code) var(--size-code)/1.7 var(--font-code);
+  overflow-x: auto;
+}
+.native-editor[data-mode="source"][data-wrap="false"] .native-text {
+  white-space: pre;
+}
+.native-frontmatter {
+  color: var(--muted);
+  font: calc(var(--size-ui) * 0.92)/1.6 var(--font-ui);
+  margin-bottom: 24px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: var(--surface);
+}
+.native-frontmatter summary {
+  cursor: pointer;
+}
+.native-frontmatter pre {
+  font: var(--size-code)/1.7 var(--font-code);
+}
+.native-presence-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+.native-peer-range,
+.native-peer-caret {
+  position: absolute;
+}
+.native-peer-caret {
+  border-inline-start: 2px solid var(--peer-color);
+  min-height: 1.2em;
+}
+.native-peer-caret > span {
+  position: absolute;
+  bottom: 100%;
+  left: -2px;
+  font: 11px/1.4 var(--font-ui);
+  padding: 2px 5px;
+  border-radius: 4px 4px 4px 0;
+  background: var(--peer-color);
+  color: #fff;
+  white-space: nowrap;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.native-peer-block {
+  border-inline-start-width: 3px;
+}
+.native-popup {
+  position: fixed;
+  z-index: 110;
+  width: max-content;
+  min-width: 220px;
+  max-width: min(340px, calc(100vw - 16px));
+  max-height: min(420px, calc(100dvh - 16px));
+  overflow-y: auto;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  background: var(--paper);
+  color: var(--text);
+  font: var(--weight-ui) var(--size-ui)/1.4 var(--font-ui);
+}
+.native-popup button {
+  display: block;
+  width: 100%;
+  text-align: start;
+  border: 0;
+  border-radius: 6px;
+  padding: 7px 10px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.native-popup button:is(:hover, .is-selected) {
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+.native-find {
+  position: sticky;
+  top: 0;
+  z-index: 12;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  background: var(--paper);
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  font: var(--size-ui)/1.4 var(--font-ui);
+}
+.native-find input {
+  min-width: 100px;
+  flex: 1;
+  width: 140px;
+}
+.native-find :is(input, button) {
+  font: inherit;
+  padding: 6px 8px;
+  color: var(--text);
+  background: var(--surface);
+  border: 0;
+  border-radius: 6px;
+}
+.ws-document-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+}
+.document-statistics {
+  position: relative;
+  font: inherit;
+}
+.document-statistics > button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  cursor: pointer;
+}
+.document-statistics > button:hover {
+  color: var(--text);
+}
+.document-statistics-popover {
+  position: fixed;
+  z-index: 90;
+  margin: 0;
+  bottom: calc(100% + 18px);
+  inset-inline-start: -8px;
+  width: min(310px, calc(100vw - 40px));
+  max-height: min(600px, 70dvh);
+  overflow: auto;
+  padding: 18px;
+  color: var(--text);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  font: calc(var(--size-ui) * 0.92)/1.5 var(--font-ui);
+}
+.document-statistics-popover h3 {
+  font: 600 var(--size-ui)/1.4 var(--font-ui);
+  margin: 0 0 14px;
+}
+.document-statistics-popover dl {
+  margin: 0;
+}
+.document-statistics-popover dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  padding-block: 4px;
+}
+.document-statistics-popover dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+.document-statistics-popover p {
+  margin: 14px 0 0;
+}
+.ws-presence > button {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  padding: 0;
+  margin-left: -4px;
+  background: var(--accent-bg);
+  color: var(--accent);
+  border: 2px solid var(--paper);
+  font: 600 11px/1 var(--font-ui);
+  cursor: pointer;
+}
+.ws-share-button {
+  min-height: 30px;
+  padding: 5px 9px;
+  font-size: 0.75em;
+}
+.ws-sharing-summary {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 18px;
+  background: var(--surface);
+  border-radius: 12px;
+}
+.ws-sharing-summary > svg {
+  flex: 0 0 auto;
+  color: var(--muted);
+}
+.ws-sharing-summary p {
+  margin-bottom: 0;
+  color: var(--muted);
+}
+.ws-sharing-members {
+  list-style: none;
+  padding: 0;
+  margin-block: 20px;
+  max-height: 280px;
+  overflow: auto;
+}
+.ws-sharing-members li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-block: 10px;
+  border-bottom: 1px solid var(--line);
+}
+.document-toc {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-block: 1.5em;
+  font: var(--size-ui)/1.5 var(--font-ui);
+}
+.document-metadata {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 16px;
+  color: var(--muted);
+}
+.ws-document-main > .ws-document-scroll {
+  flex: 1 1 0;
+}
+.ws-note-footer {
+  flex: 0 0 auto;
+  position: relative;
+  background: var(--paper);
+  padding-block: 9px max(9px, env(safe-area-inset-bottom));
+  z-index: 3;
+}
+@media (hover: none) {
+  .native-block-tools {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+@media (max-width: 600px) {
+  .native-block-tools {
+    font-size: 11px;
+  }
+  .native-content .native-code-body {
+    padding-inline: 12px;
+  }
+  .ws-note-footer {
+    padding-inline: 14px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .native-block-tools {
+    transition: none;
+  }
+}
+@media print {
+  .native-block-tools,
+  .native-presence-layer,
+  .native-popup,
+  .native-find,
+  .ws-note-footer {
+    display: none !important;
+  }
+}

@@ -1,0 +1,75 @@
+/* Personal document ornaments; never application chrome or stored Markdown. */
+[data-document-decorations="latex"]
+  :is(.axiom-prose, .prose)
+  :is(h1, h2, h3, h4, h5, h6)[data-section-number] {
+  position: relative;
+  padding-inline-start: calc(1.2em + var(--section-number-chars, 0) * 0.42em);
+}
+[data-document-decorations="latex"] :is(.axiom-prose, .prose) :is(h1, h2, h3) {
+  border-block-end: 1px solid var(--line, #cdcdc5);
+  padding-block-end: 0.3em;
+}
+[data-document-decorations="latex"] :is(.axiom-prose, .prose) h1 {
+  border-block-end-width: 1.5px;
+  border-block-end-color: var(--muted, #5c5c57);
+}
+[data-document-decorations="latex"]
+  :is(.axiom-prose, .prose)
+  :is(h1, h2, h3, h4, h5, h6)[data-section-number]:not(
+    .axiom-source-prose,
+    .native-editing-paragraph
+  )::before {
+  /* Empty spoken alternative, no real DOM text, no source/copy/TOC positions. */
+  content: "§ " attr(data-section-number) / "";
+  position: absolute;
+  inset-inline-start: 0;
+  inset-block-start: 0.15em;
+  font: inherit;
+  font-size: 0.72em;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--muted, #5c5c57);
+  user-select: none;
+  pointer-events: none;
+}
+[data-document-decorations="latex"]
+  :is(.axiom-prose, .prose)
+  hr:not(.footnotes hr) {
+  display: block;
+  box-sizing: content-box;
+  width: 100%;
+  height: 4px;
+  margin: 2em 0;
+  padding: 0;
+  border: 0;
+  border-block-start: 1.5px solid var(--muted, #5c5c57);
+  border-block-end: 1px solid var(--line, #cdcdc5);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+[data-document-decorations="latex"] .axiom-embedded[data-kind="hr"] {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+[data-document-decorations="latex"]
+  .axiom-embedded[data-kind="hr"]
+  > .axiom-block-preview {
+  padding: 0;
+}
+@media (forced-colors: active) {
+  [data-document-decorations="latex"]
+    :is(.axiom-prose, .prose)
+    :is(h1, h2, h3, hr) {
+    border-color: CanvasText;
+  }
+}
+@media print {
+  [data-document-decorations="latex"]
+    :is(.axiom-prose, .prose)
+    :is(h1, h2, h3, hr) {
+    border-color: currentColor;
+  }
+}

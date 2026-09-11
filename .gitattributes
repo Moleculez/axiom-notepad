@@ -1,0 +1,6 @@
+# Keep upstream legal notices byte-for-byte, including their original whitespace.
+**/LICENSE.txt -whitespace
+apps/web/public/licenses/*.txt -whitespace
+apps/web/public/tool-assets/THIRD_PARTY_NOTICES.txt -whitespace
+
+*.woff2 binary

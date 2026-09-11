@@ -1,0 +1,26 @@
+[Unit]
+Description=Axiom file transfers, exports and research reminders
+After=network-online.target postgresql.service axiom-sync.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=axiom
+Group=axiom
+WorkingDirectory=/opt/axiom
+EnvironmentFile=/etc/axiom/axiom.env
+Environment=NODE_ENV=production
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+ExecStart=/usr/bin/env node --import tsx scripts/ops/workspace-worker.ts
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=300
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/axiom
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,73 @@
+body {
+  margin: 0;
+  padding: 20px;
+  background: var(--surface);
+}
+body > header {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 0 4px 18px;
+  color: var(--text);
+}
+body > header span {
+  color: var(--muted);
+  font-size: 12px;
+}
+#editors {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  height: calc(100vh - 110px);
+}
+#editors > section {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+#editors nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  border-bottom: 1px solid var(--line);
+  padding: 10px 16px;
+  color: var(--muted);
+  font-size: 12px;
+}
+#editors nav button {
+  border: 0;
+  background: var(--surface);
+  color: var(--text);
+  padding: 6px 8px;
+  border-radius: 5px;
+  font: inherit;
+}
+.lab-host {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+#editors footer {
+  padding: 8px 16px;
+  font-size: 12px;
+  color: var(--muted);
+  border-top: 1px solid var(--line);
+  flex-shrink: 0;
+}
+#message {
+  display: block;
+  font-size: 12px;
+  padding: 6px;
+  color: var(--warning);
+}
+.lab-host > .native-editor {
+  height: 100%;
+  overflow: auto;
+  padding: 20px;
+}

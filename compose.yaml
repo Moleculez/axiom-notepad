@@ -1,0 +1,156 @@
+name: axiom
+
+x-app-environment: &app-environment
+  NODE_ENV: production
+  APP_URL: ${APP_URL:?Set the public HTTPS origin}
+  BETTER_AUTH_URL: ${APP_URL:?Set the public HTTPS origin}
+  BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?Set a unique authentication secret}
+  SYNC_SECRET: ${SYNC_SECRET:?Set a different synchronization secret}
+  DATABASE_URL: postgresql://axiom:${AXIOM_DATABASE_PASSWORD:?Set a hexadecimal application database password}@db:5432/axiom
+  SYNC_INTERNAL_URL: http://sync:1234
+  STORAGE_DRIVER: local
+  STORAGE_PATH: /app/data/attachments
+  SMTP_URL: ${SMTP_URL:-}
+  MAIL_FROM: ${MAIL_FROM:-}
+  OIDC_DISCOVERY_URL: ${OIDC_DISCOVERY_URL:-}
+  OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:-}
+  OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:-}
+  OIDC_DISPLAY_NAME: ${OIDC_DISPLAY_NAME:-Institutional account}
+  TOOL_PROVIDER_KEY: ${TOOL_PROVIDER_KEY:-}
+  TOOL_PROVIDER_ALLOWED_ORIGINS: ${TOOL_PROVIDER_ALLOWED_ORIGINS:-}
+  OFFICE_CONVERTER_URL: ${OFFICE_CONVERTER_URL:-}
+  OFFICE_CONVERTER_TOKEN: ${OFFICE_CONVERTER_TOKEN:-}
+
+x-app: &app
+  image: ${AXIOM_IMAGE:-axiom:local}
+  init: true
+  environment: *app-environment
+  security_opt: [no-new-privileges:true]
+  cap_drop: [ALL]
+  stop_grace_period: 60s
+  logging:
+    driver: json-file
+    options: { max-size: 10m, max-file: "3" }
+
+services:
+  db:
+    image: ${AXIOM_DATABASE_IMAGE:-axiom-postgres:local}
+    build: { context: ., dockerfile: deploy/docker/Postgres.Dockerfile }
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_DB: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set a separate database administrator password}
+      AXIOM_DATABASE_PASSWORD: ${AXIOM_DATABASE_PASSWORD:?Set the application database password}
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, "psql -U postgres -d axiom -tAc 'SELECT 1' > /dev/null"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+  migrate:
+    <<: *app
+    command: [node, --import, tsx, scripts/ops/migrate.ts]
+    depends_on:
+      db: { condition: service_healthy }
+    restart: "no"
+  web:
+    <<: *app
+    build: { context: ., target: runtime }
+    volumes: [attachments:/app/data/attachments]
+    healthcheck:
+      test:
+        [
+          CMD,
+          node,
+          -e,
+          "fetch('http://127.0.0.1:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 8s
+      start_period: 30s
+      retries: 5
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      sync: { condition: service_healthy }
+    restart: unless-stopped
+  sync:
+    <<: *app
+    environment:
+      <<: *app-environment
+      SYNC_HOST: 0.0.0.0
+      SYNC_PORT: 1234
+    command: [node, --import, tsx, apps/sync/src/server.ts]
+    healthcheck:
+      test:
+        [
+          CMD,
+          node,
+          -e,
+          "fetch('http://127.0.0.1:1234/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 8s
+      retries: 5
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+    restart: unless-stopped
+  worker:
+    <<: *app
+    volumes: [attachments:/app/data/attachments]
+    command: [node, --import, tsx, scripts/ops/workspace-worker.ts]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      sync: { condition: service_healthy }
+    stop_grace_period: 5m
+    restart: unless-stopped
+    networks: [default, office-private]
+  proxy:
+    image: caddy:2-alpine
+    environment:
+      APP_URL: ${APP_URL:?Set the public HTTPS origin}
+    ports:
+      - ${AXIOM_HTTP_PORT:-80}:80
+      - ${AXIOM_HTTPS_PORT:-443}:443
+    volumes:
+      - ./deploy/docker/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      web: { condition: service_healthy }
+    restart: unless-stopped
+  operations:
+    <<: *app
+    profiles: [operations]
+    image: ${AXIOM_OPERATIONS_IMAGE:-axiom-operations:local}
+    build: { context: ., target: operations }
+    volumes:
+      - attachments:/app/data/attachments
+      - ${AXIOM_BACKUP_PATH:-./backups}:/backups
+      - restore:/restore
+    depends_on:
+      db: { condition: service_healthy }
+  office-converter:
+    profiles: [research-tools]
+    build: ./deploy/office-converter
+    environment:
+      OFFICE_CONVERTER_TOKEN: ${OFFICE_CONVERTER_TOKEN:-}
+    networks: [office-private]
+    read_only: true
+    tmpfs: [/tmp:rw, noexec, nosuid, size=512m, uid=10001, gid=10001, mode=700]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 128
+    mem_limit: 1536m
+    cpus: 1
+    restart: unless-stopped
+networks:
+  office-private:
+    internal: true
+volumes:
+  postgres:
+  attachments:
+  caddy-data:
+  caddy-config:
+  restore:

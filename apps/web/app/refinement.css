@@ -1,0 +1,963 @@
+/* Refinement layer: solid reading surfaces, quiet contextual chrome. */
+.ws-app label.settings-search,
+.ws-app label.equation-search {
+  flex-direction: row;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 0;
+}
+.ws-app
+  .settings-search
+  input:not([type="checkbox"], [type="radio"], [type="range"]),
+.ws-app
+  .equation-search
+  input:not([type="checkbox"], [type="radio"], [type="range"]) {
+  border: 0;
+  background: transparent;
+  padding: 10px 4px;
+  font-size: 0.85em;
+  box-shadow: none;
+}
+.ws-app .settings-search:focus-within,
+.ws-app .equation-search:focus-within {
+  box-shadow: inset 0 0 0 2px var(--focus);
+}
+.ws-app .settings-routed label.setting-toggle {
+  flex-direction: row;
+  justify-content: space-between;
+  text-align: left;
+  gap: 24px;
+}
+.settings-routed .setting-toggle > input[type="checkbox"] {
+  appearance: none;
+  width: 2.55em;
+  height: 1.5em;
+  border: 1px solid var(--line);
+  border-radius: 2em;
+  padding: 2px;
+  background: color-mix(in srgb, var(--muted) 24%, var(--paper));
+  position: relative;
+  cursor: pointer;
+}
+.settings-routed .setting-toggle > input[type="checkbox"]::before {
+  content: "";
+  position: absolute;
+  height: calc(1.5em - 6px);
+  width: calc(1.5em - 6px);
+  top: 2px;
+  left: 2px;
+  border-radius: 50%;
+  background: var(--paper);
+  box-shadow: 0 1px 3px #0003;
+}
+.settings-routed .setting-toggle > input[type="checkbox"]:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.settings-routed .setting-toggle > input[type="checkbox"]:checked::before {
+  left: auto;
+  right: 2px;
+  background: #fff;
+}
+.editor-selection-bar {
+  position: fixed;
+  z-index: 90;
+  display: flex;
+  gap: 2px;
+  padding: 5px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+  box-shadow: 0 6px 25px #0002;
+  font-family: var(--font-ui);
+}
+.editor-selection-bar button {
+  width: 32px;
+  height: 31px;
+  padding: 0;
+  border-radius: 6px;
+  text-align: center;
+  font-size: 15px;
+}
+.editor-selection-bar button:hover,
+.editor-selection-bar button:focus-visible {
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+.live-code-container {
+  position: relative;
+}
+.live-code-container .code-toolbar {
+  position: relative;
+  height: 0;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  overflow: visible;
+}
+.code-toolbar-tools {
+  position: absolute;
+  top: 3px;
+  right: 7px;
+  z-index: 5;
+  display: flex;
+  gap: 3px;
+  align-items: center;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--paper);
+  box-shadow: 0 2px 8px #0001;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s;
+}
+.live-code-container:hover .code-toolbar-tools,
+.live-code-container:focus-within .code-toolbar-tools {
+  opacity: 1;
+  pointer-events: auto;
+}
+.code-toolbar-tools input {
+  width: 11ch;
+  min-width: 6ch;
+  padding: 4px 7px;
+  border: 0;
+  background: transparent;
+  font-size: 0.77em;
+}
+.code-toolbar-tools button {
+  min-width: 27px;
+  min-height: 27px;
+  padding: 1px 5px;
+  font-size: 17px;
+}
+.code-horizontal-scroll .md-code-line {
+  white-space: pre !important;
+  overflow-wrap: normal !important;
+}
+.code-soft-wrap .md-code-line {
+  white-space: pre-wrap !important;
+  overflow-wrap: anywhere !important;
+}
+.math-live-preview {
+  position: relative;
+}
+.live-widget .widget-edit {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 8px;
+  font-size: 17px;
+  line-height: 1;
+}
+@media (pointer: coarse) {
+  .live-widget .widget-edit {
+    opacity: 1;
+  }
+}
+.math-block-more {
+  position: absolute;
+  inset: 5px 8px auto auto;
+  opacity: 0;
+  pointer-events: none;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  font-size: 20px;
+  line-height: 1;
+}
+.math-live-preview:hover .math-block-more,
+.math-live-preview:focus-within .math-block-more {
+  opacity: 1;
+  pointer-events: auto;
+}
+.math-render[data-math-state="stale"] {
+  opacity: 0.56;
+}
+.math-diagnostic {
+  display: block;
+  color: var(--muted);
+  font: 0.78em/1.5 var(--font-ui);
+  padding-top: 9px;
+}
+@media (pointer: coarse) {
+  .code-toolbar-tools,
+  .math-block-more {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+.editor-context-menu {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  z-index: 10000;
+  width: 280px;
+  max-width: calc(100vw - 24px);
+  padding: 7px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: var(--paper);
+  color: var(--text);
+  box-shadow:
+    0 12px 42px #0002,
+    0 2px 6px #0001;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  font-family: var(--font-ui);
+  font-size: var(--size-ui);
+}
+.editor-context-menu::backdrop {
+  background: transparent;
+}
+.editor-context-menu button {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  min-height: 33px;
+  padding: 6px 9px;
+  text-align: left;
+  border-radius: 7px;
+  font-size: 0.87em;
+  line-height: 1.4;
+}
+.editor-context-menu button:hover,
+.editor-context-menu button:focus-visible {
+  background: var(--accent-bg);
+  color: var(--accent);
+  outline: none;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+.editor-context-menu kbd {
+  flex-shrink: 0;
+  font: inherit;
+  font-size: 0.82em;
+  color: var(--muted);
+}
+.editor-menu-group {
+  color: var(--muted);
+  font-size: 0.69em;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 9px 9px 4px;
+}
+.editor-context-menu button[data-tone="danger"] {
+  color: var(--danger);
+}
+.editor-context-menu button[data-tone="danger"]:is(:hover, :focus-visible) {
+  background: color-mix(in srgb, var(--danger) 9%, var(--paper));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger) 16%, transparent);
+}
+.editor-context-menu button:disabled {
+  color: var(--muted);
+  opacity: 0.5;
+  background: transparent;
+  box-shadow: none;
+}
+.ws-tree-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-inline-end: 5px;
+  margin-bottom: 6px;
+}
+.ws-tree-section-heading .ws-section-label {
+  margin: 0;
+}
+.ws-tree-section-heading .icon-button {
+  width: 26px;
+  height: 26px;
+  color: var(--muted);
+}
+.ws-tree-row:focus-visible,
+.ws-workspace-card:focus-visible,
+[data-resource-id]:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent) 55%, transparent);
+  border-radius: var(--radius);
+}
+.ws-management-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.dialog:has(.ws-workspace-list) {
+  --dialog-width: 740px;
+}
+.ws-workspace-list {
+  display: grid;
+  gap: 8px;
+}
+.ws-workspace-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 15px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.ws-workspace-card > svg {
+  flex: 0 0 auto;
+  color: var(--muted);
+}
+.ws-workspace-card > div {
+  flex: 1;
+  min-width: 0;
+}
+.ws-workspace-card strong {
+  display: block;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.ws-workspace-card small {
+  display: block;
+  color: var(--muted);
+  margin-top: 3px;
+  font-size: 0.82em;
+}
+.ws-workspace-card .text-button {
+  font-size: 0.86em;
+}
+.ws-operation-items {
+  max-height: 230px;
+  overflow: auto;
+  margin-block: 20px;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.ws-operation-items li {
+  padding: 10px 14px;
+  overflow-wrap: anywhere;
+  font-size: 0.9em;
+}
+.ws-operation-items li + li {
+  border-top: 1px solid var(--line);
+}
+.ws-impact-summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-block: 22px;
+}
+.ws-impact-summary > span {
+  padding: 12px 8px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  text-align: center;
+  font-size: 0.82em;
+  color: var(--muted);
+}
+.ws-properties-dialog .ws-inspector {
+  width: 100%;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  overflow: visible;
+}
+.ws-properties-dialog .ws-inspector > header {
+  display: none;
+}
+.ws-recovered select {
+  width: auto;
+  max-width: 270px;
+  min-height: 30px;
+  padding-block: 3px;
+  font-size: inherit;
+}
+.live-table {
+  position: relative;
+  margin-block: 20px;
+}
+.live-table .table-hint:not(:has(textarea)) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.table-overflow {
+  position: absolute;
+  z-index: 3;
+  inset: -12px -9px auto auto;
+  width: 27px;
+  height: 27px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--muted);
+  font-size: 21px;
+  line-height: 1;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s;
+}
+.live-table:hover .table-overflow,
+.live-table:focus-within .table-overflow {
+  opacity: 1;
+  pointer-events: auto;
+}
+.live-table .table-cell-input {
+  margin: -4px -6px;
+  padding: 0;
+  width: auto;
+  min-width: 5ch;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  font: inherit;
+}
+.table-cell-input .cm-editor {
+  font: inherit;
+  background: transparent;
+  outline: none;
+}
+.table-cell-input .cm-content {
+  padding: 4px 6px;
+  min-height: 1.7em;
+  font: inherit;
+}
+.table-cell-input .cm-line {
+  padding: 0;
+}
+.table-cell-input .cm-scroller {
+  font: inherit;
+  overflow: visible;
+  line-height: inherit;
+}
+.live-table td:focus-within,
+.live-table th:focus-within {
+  box-shadow: inset 0 0 0 1.5px var(--accent);
+}
+.cell-strong {
+  font-weight: 700;
+}
+.cell-em {
+  font-style: italic;
+}
+.cell-strike {
+  text-decoration: line-through;
+}
+.cell-code,
+.cell-math {
+  font-family: var(--font-code);
+  color: var(--syntax);
+}
+.cell-link {
+  color: var(--accent);
+}
+.cell-highlight {
+  background: var(--accent-bg);
+}
+@media (pointer: coarse) {
+  .table-overflow {
+    opacity: 1;
+    pointer-events: auto;
+    width: 34px;
+    height: 34px;
+  }
+  .editor-context-menu button {
+    min-height: 42px;
+  }
+}
+.math-render {
+  display: inline;
+}
+.math-render[aria-busy="true"] {
+  color: var(--muted);
+}
+.math-pending {
+  font-family: var(--font-code);
+  font-size: 0.82em;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.math-block .math-render {
+  display: block;
+  min-height: 1.8em;
+}
+.math-block mjx-container {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-block: 8px;
+}
+:is(.prose, .research-editor) .math-block mjx-container[display="true"] {
+  margin-block: 0.35em;
+  padding-block: 4px;
+}
+.math-inline mjx-container {
+  max-width: 100%;
+}
+.math-block:has(.equation-number) mjx-container {
+  padding-inline: 36px;
+}
+.math-error {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  font-family: var(--font-code);
+  font-size: 0.85em;
+  color: var(--danger);
+}
+.settings-center-nav {
+  display: grid;
+  gap: 20px;
+  padding: 4px 0 24px;
+}
+.settings-center-nav section {
+  display: grid;
+  gap: 3px;
+}
+.settings-center-nav h3 {
+  margin: 0 12px 5px;
+  color: var(--muted);
+  font-size: 0.75em;
+  font-weight: 600;
+  letter-spacing: 0.065em;
+  text-transform: uppercase;
+}
+.settings-center-nav .ws-side-link {
+  padding-inline: 13px;
+  border-radius: var(--radius);
+}
+.settings-center-nav .settings-search {
+  margin: 0 2px;
+}
+.settings-center-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+  color: var(--muted);
+  font-size: 0.86em;
+}
+.settings-center-heading button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.ws-settings-page.ws-appearance-page {
+  max-width: 1020px;
+}
+.settings-routed.appearance-settings {
+  display: block;
+  overflow: visible;
+  min-height: 0;
+}
+.settings-routed .settings-content {
+  padding: 0;
+  overflow: visible;
+  max-height: none;
+}
+.settings-routed .settings-intro {
+  margin-bottom: 24px;
+}
+.settings-routed .settings-intro h1 {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: clamp(1.6rem, 2.3vw, 2rem);
+  letter-spacing: -0.035em;
+  line-height: 1.18;
+  margin: 12px 0;
+}
+.settings-routed .settings-intro .eyebrow {
+  display: none;
+}
+.settings-routed .settings-card {
+  margin-bottom: 20px;
+  border-radius: max(12px, var(--radius));
+  background: var(--paper);
+  padding: clamp(16px, 2.4vw, 28px);
+}
+.settings-routed .settings-card:empty {
+  display: none;
+}
+.settings-routed .settings-content-search {
+  max-width: 480px;
+  margin: 20px 0 0;
+}
+.settings-routed .settings-footer,
+.ws-settings-page > .settings-footer {
+  position: sticky;
+  bottom: max(12px, env(safe-area-inset-bottom));
+  z-index: 10;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 24px -8px 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--paper);
+  box-shadow: 0 -8px 28px color-mix(in srgb, var(--text) 4%, transparent);
+}
+.settings-routed .settings-draft-status {
+  flex-basis: 100%;
+  font-size: 0.8em;
+  color: var(--muted);
+}
+.settings-routed .settings-reset-actions {
+  flex: 1;
+}
+.setting-number-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  font-weight: 400;
+  color: var(--muted);
+}
+.setting-number-value input[type="number"] {
+  width: 76px;
+  min-width: 0;
+  padding: 5px 7px;
+  font-size: inherit;
+  text-align: right;
+}
+.settings-routed .typography-sample {
+  margin: 28px 0;
+  padding: clamp(20px, 4vw, 40px);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+}
+.settings-routed .setting-toggle {
+  align-items: center;
+  padding: 16px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 60%, transparent);
+}
+.settings-routed .setting-toggle:last-of-type {
+  border-bottom: 0;
+}
+.settings-routed .setting-toggle > span {
+  min-width: 0;
+  flex: 1;
+}
+.settings-routed .setting-toggle small {
+  max-width: 58ch;
+  line-height: 1.6;
+  font-weight: 400;
+}
+.settings-routed .settings-sync {
+  margin-bottom: 4px;
+}
+.settings-routed .editor-settings-sync {
+  display: none;
+}
+@media (max-width: 640px) {
+  .settings-center-heading {
+    margin-bottom: 18px;
+  }
+  .settings-routed .settings-controls {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .settings-routed .settings-footer {
+    padding: 12px;
+  }
+  .settings-routed .settings-reset-actions,
+  .settings-routed .settings-confirm-actions {
+    flex: 1 1 100%;
+    display: flex;
+  }
+  .settings-routed .settings-confirm-actions > button {
+    flex: 1;
+    justify-content: center;
+  }
+  .settings-routed .settings-card {
+    padding: 16px;
+  }
+  .settings-routed .palette-gallery {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .settings-routed .setting-control > span {
+    flex-wrap: wrap;
+  }
+}
+@media (forced-colors: active) {
+  .settings-routed .settings-footer {
+    border: 1px solid CanvasText;
+  }
+  .settings-center-nav [aria-current="page"] {
+    outline: 1px solid Highlight;
+  }
+}
+.live-table th,
+.live-table td {
+  position: relative;
+}
+.live-table [aria-selected="true"] {
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 28%, transparent);
+}
+.table-column-resize {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 7px;
+  cursor: col-resize;
+  z-index: 2;
+  border-radius: 3px;
+  touch-action: none;
+}
+.table-column-resize:hover,
+.table-column-resize:focus-visible {
+  background: color-mix(in srgb, var(--accent) 35%, transparent);
+}
+.table-column-resize:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.equation-inspector {
+  padding: 18px 16px;
+}
+.equation-inspector header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.equation-inspector h2 {
+  margin: 0 0 4px;
+  font-size: 17px;
+  letter-spacing: -0.025em;
+}
+.equation-inspector header p,
+.equation-help {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--muted);
+  margin: 0;
+}
+.equation-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 10px;
+  background: var(--surface);
+  padding: 0 10px;
+  margin-bottom: 14px;
+}
+.equation-search input {
+  min-width: 0;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 10px 0;
+  font: inherit;
+  font-size: 12px;
+  color: var(--text);
+}
+.equation-list {
+  display: grid;
+  gap: 7px;
+}
+.equation-list > button,
+.equation-list-item > button:first-child {
+  display: flex;
+  align-items: flex-start;
+  text-align: left;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 9px;
+  border: 0;
+  border-radius: 10px;
+  color: var(--text);
+  background: transparent;
+}
+.equation-list > button:hover,
+.equation-list-item > button:first-child:hover {
+  background: var(--surface);
+}
+.equation-list > button > span:last-child,
+.equation-list-item > button:first-child > span:last-child {
+  min-width: 0;
+}
+.equation-list strong {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.equation-list code {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin: 7px 0;
+  font: 11px/1.65 var(--font-code);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.equation-list small {
+  color: var(--muted);
+  font-size: 10px;
+}
+.equation-number {
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  color: var(--muted);
+  padding-top: 2px;
+}
+.equation-diagnostics {
+  display: grid;
+  gap: 5px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 8px;
+}
+.equation-diagnostics button {
+  border: 0;
+  background: transparent;
+  display: flex;
+  align-items: flex-start;
+  text-align: left;
+  gap: 7px;
+  color: var(--warning);
+  font-size: 11px;
+  line-height: 1.5;
+  padding: 6px;
+}
+.equation-diagnostics svg {
+  flex-shrink: 0;
+}
+.equation-help {
+  margin-top: 20px;
+}
+.table-move-handle {
+  position: absolute;
+  border: 0;
+  padding: 0;
+  background: var(--surface);
+  border-radius: 4px;
+  color: var(--muted);
+  opacity: 0;
+  cursor: grab;
+  z-index: 3;
+  transition: opacity 0.14s ease;
+}
+.table-move-handle::before {
+  content: "";
+  display: block;
+  width: 10px;
+  height: 10px;
+  margin: auto;
+  background: radial-gradient(currentColor 1px, transparent 1.5px) 0 0 / 4px 4px;
+}
+.table-row-handle {
+  left: 1px;
+  top: 4px;
+  bottom: 4px;
+  width: 13px;
+}
+.table-column-handle {
+  left: 36%;
+  right: 36%;
+  top: 1px;
+  height: 11px;
+}
+.live-table td:first-child {
+  padding-left: 24px;
+}
+.live-table th {
+  padding-top: 20px;
+}
+.live-table tr:hover .table-row-handle,
+.live-table th:hover .table-column-handle,
+.table-move-handle:focus-visible {
+  opacity: 1;
+}
+.table-move-handle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.live-table .table-scroll {
+  padding: 0;
+  margin-inline: 0;
+}
+.writing-settings-preview {
+  margin-top: 28px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  overflow: hidden;
+}
+.writing-settings-preview .eyebrow {
+  display: block;
+  margin-bottom: 15px;
+  font-size: 10px;
+}
+.settings-code-preview {
+  overflow: auto;
+  font-size: var(--size-code);
+  font-weight: var(--weight-code);
+  line-height: 1.75;
+}
+.settings-code-preview > div {
+  display: flex;
+  gap: 18px;
+}
+.settings-code-preview > div > span {
+  color: var(--muted);
+  user-select: none;
+  font-variant-numeric: tabular-nums;
+}
+.settings-code-preview code {
+  white-space: pre;
+}
+.settings-code-preview.wrap code {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.settings-math-source {
+  font: 12px/1.65 var(--font-code);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 0;
+  color: var(--muted);
+}
+@media (prefers-reduced-motion: reduce) {
+  .table-move-handle,
+  .table-overflow,
+  .code-toolbar-tools {
+    transition: none;
+  }
+}
+@media (forced-colors: active) {
+  .editor-context-menu,
+  .editor-selection-bar {
+    border: 1px solid ButtonText;
+  }
+  .editor-context-menu button:focus-visible,
+  .live-table [aria-selected="true"] {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
+}
+@media (forced-colors: active) {
+  .settings-routed .setting-toggle > input[type="checkbox"] {
+    appearance: auto;
+  }
+  .settings-routed .setting-toggle > input[type="checkbox"]::before {
+    display: none;
+  }
+}

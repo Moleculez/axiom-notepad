@@ -1,0 +1,154 @@
+/* Shared action geometry: native-DOM menus and React dropdowns use the same grid. */
+.action-icon {
+  display: inline-block;
+  inline-size: 1.15em;
+  block-size: 1.15em;
+  flex: 0 0 auto;
+  vertical-align: middle;
+  pointer-events: none;
+}
+.math-symbol-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 2em;
+  block-size: 1.75em;
+  flex: 0 0 2em;
+  color: inherit;
+  pointer-events: none;
+}
+.math-symbol-icon svg {
+  display: block;
+  max-inline-size: 100%;
+  max-block-size: 100%;
+  inline-size: auto;
+  block-size: 1.5em;
+  vertical-align: middle !important;
+}
+.action-label {
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
+.editor-context-menu {
+  width: 22em;
+  max-width: calc(100vw - 24px);
+}
+.editor-context-menu button {
+  display: grid;
+  grid-template-columns: 1.15em minmax(0, 1fr) auto;
+  gap: 0.75em;
+  min-height: 2.5em;
+  align-items: center;
+}
+.editor-menu-group {
+  padding-inline-start: calc(9px + var(--size-ui) * 1.65);
+}
+.action-menu-separator {
+  height: 0;
+  min-height: 0;
+  margin: 0.4em 0.35em;
+  padding: 0;
+  border: 0;
+  border-block-start: 1px solid var(--line);
+}
+.action-menu-separator + .editor-menu-group {
+  padding-block-start: 0.2em;
+}
+.action-trailing {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.65em;
+  white-space: nowrap;
+}
+.action-trailing .action-icon {
+  inline-size: 1em;
+  block-size: 1em;
+}
+.ws-menu > div > :is(a, button) {
+  gap: 0.75em;
+  min-height: 2.5em;
+  overflow-wrap: anywhere;
+}
+.ws-menu > div > :is(a, button) > svg {
+  inline-size: 1.15em;
+  block-size: 1.15em;
+  stroke-width: 1.75;
+  flex: 0 0 auto;
+}
+.axiom-completions .action-option,
+.native-popup .action-option,
+.editor-panel-footer button {
+  display: flex;
+  align-items: center;
+  gap: 0.75em;
+}
+.axiom-completions .action-option .action-label,
+.native-popup .action-option .action-label {
+  flex: 1;
+}
+.command-results .action-icon {
+  inline-size: 1.2em;
+  block-size: 1.2em;
+}
+.axiom-language-completions {
+  width: 23em;
+  max-width: calc(100vw - 24px);
+}
+.axiom-completions .axiom-language-option {
+  display: grid;
+  grid-template-columns: 1.4em minmax(0, 1fr) auto;
+  gap: 0.7em;
+}
+.axiom-language-option > .action-label {
+  min-inline-size: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.axiom-language-option > code {
+  font-size: 0.78em;
+}
+.axiom-language-option > .language-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 1.4em;
+  block-size: 1.4em;
+  border-radius: 0.2em;
+  overflow: hidden;
+  flex: 0 0 auto;
+}
+.language-logo[data-brand] {
+  /* Keep original brand colors legible on arbitrary dark/custom palettes. */
+  background: #f8fafc;
+  box-shadow: inset 0 0 0 1px #0f172a12;
+}
+.language-logo img {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: contain;
+  padding: 1px;
+  border-radius: 0;
+}
+.language-logo[data-brand] > .action-icon {
+  display: none;
+}
+@media (forced-colors: active) {
+  .language-logo[data-brand] {
+    background: Canvas;
+    box-shadow: none;
+  }
+  .language-logo img {
+    display: none;
+  }
+  .language-logo[data-brand] > .action-icon {
+    display: inline-block;
+  }
+  .editor-context-menu button:focus-visible,
+  .axiom-completions button[aria-selected="true"],
+  .native-popup button[aria-selected="true"] {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
+}

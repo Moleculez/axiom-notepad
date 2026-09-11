@@ -1,0 +1,23 @@
+[data-theme-pack="paper-research"] .canvas-card {
+  border-radius: var(--radius);
+}
+[data-theme-pack="paper-research"]
+  .canvas-card:where(:not(.is-selected, .is-editing, .is-connection-target)) {
+  box-shadow: var(--shadow);
+}
+[data-theme-pack="paper-research"] .canvas-card-toolbar {
+  color: var(--muted);
+  background-color: var(--paper);
+}
+[data-theme-pack="paper-research"] .settings-card {
+  border-color: var(--line);
+  background-color: var(--paper);
+}
+[data-theme-pack="paper-research"] .editor-context-menu {
+  border-color: var(--line);
+  box-shadow: var(--shadow);
+}
+[data-theme-pack="paper-research"] .reading-view a {
+  text-decoration-color: var(--accent);
+  text-underline-offset: 0.2em;
+}

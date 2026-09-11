@@ -1,0 +1,821 @@
+/* Axiom editor design contract: the same semantic palette and personal type
+   scale as the workspace; no upstream theme, global reset or mobile layout. */
+.axiom-editor {
+  position: relative;
+  min-height: 0;
+  height: 100%;
+  min-width: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  background: var(--paper);
+  color: var(--text);
+  caret-color: var(--accent);
+}
+.axiom-editor-content {
+  min-height: 100%;
+}
+/* Workbench owns document scrolling (title, metadata and body together). The
+   same adapter uses a bounded local scroller in standalone/settings panes. */
+.document-scroll .axiom-editor {
+  height: auto;
+  overflow: visible;
+}
+.document-scroll .axiom-editor .axiom-editor-content,
+.document-scroll .axiom-editor .cm-editor {
+  height: auto;
+}
+.document-scroll .axiom-editor .cm-scroller {
+  overflow: visible;
+}
+.document-scroll .axiom-editor .axiom-block-source .cm-scroller {
+  overflow: auto;
+}
+.ws-paper .axiom-editor .axiom-prose {
+  padding-inline: 0;
+  max-width: none;
+}
+.ws-paper .axiom-editor .axiom-embedded .cm-content {
+  min-height: 0;
+  padding: 6px 0 16px;
+}
+.settings-scratchpad-scroll .axiom-editor {
+  height: auto;
+  overflow: visible;
+}
+.settings-scratchpad-scroll .axiom-editor .cm-editor {
+  height: auto;
+}
+.settings-scratchpad-scroll .axiom-editor .cm-scroller {
+  overflow: visible;
+}
+.settings-scratchpad-scroll .axiom-prose {
+  padding: 0 0 40px;
+}
+.axiom-find {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--text) 6%, transparent);
+  font: 12px/1.4 var(--font-ui);
+  margin-bottom: 16px;
+}
+.axiom-find-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.axiom-find input:is([type="search"], :not([type])) {
+  flex: 1;
+  min-width: 100px;
+  width: 0;
+  padding: 7px 9px;
+  border: 0;
+  border-radius: 5px;
+  outline: none;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+.axiom-find input:focus {
+  box-shadow: inset 0 -2px var(--accent);
+}
+.axiom-find button {
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--muted);
+  padding: 5px 8px;
+  font: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.axiom-find button:hover {
+  background: var(--surface);
+  color: var(--text);
+}
+.axiom-find label {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font: inherit;
+  color: var(--muted);
+  cursor: pointer;
+}
+.axiom-find input[type="checkbox"] {
+  width: 12px;
+  height: 12px;
+  accent-color: var(--accent);
+}
+.axiom-find [role="status"] {
+  margin-inline: 5px;
+  color: var(--muted);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.axiom-search-range {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  border-radius: 2px;
+}
+.axiom-prose {
+  min-height: 100%;
+  padding: 12px 20px 120px;
+  max-width: var(--reading-width);
+  margin-inline: auto;
+  outline: none;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: var(--weight-prose) var(--size-prose)/var(--reading-line)
+    var(--font-prose);
+  letter-spacing: var(--letter-space);
+  word-spacing: var(--word-space);
+  font-variant-ligatures: var(--ligatures);
+}
+.axiom-prose:focus,
+.axiom-editor .cm-editor.cm-focused {
+  outline: none;
+}
+.axiom-prose > :first-child {
+  margin-top: 0;
+}
+.axiom-prose p {
+  min-height: 1.6em;
+  margin-block: 0 var(--paragraph-space);
+}
+.axiom-prose .axiom-source-prose {
+  color: var(--text);
+  white-space: pre-wrap;
+  text-wrap: wrap;
+  background: var(--paper);
+}
+.axiom-prose p.axiom-source-prose {
+  font: inherit;
+  min-height: calc(1em * var(--reading-line));
+}
+.axiom-prose .axiom-blank-paragraph {
+  min-height: calc(1em * var(--reading-line));
+}
+/* Keep list numbering for siblings but never draw a second marker beside the
+   real editable Markdown. The wrapper is structural only while a unit is raw. */
+.axiom-prose li:has(> div > .axiom-source-prose) {
+  list-style: none;
+}
+.axiom-prose li:has(> div > .axiom-source-prose) > input {
+  display: none;
+}
+.axiom-prose li > div > .axiom-source-prose {
+  margin-inline-start: -1.75em;
+  position: relative;
+}
+.axiom-prose blockquote > .axiom-source-prose {
+  position: relative;
+  margin-inline-start: 0;
+  padding-inline-start: 0;
+}
+.axiom-prose :is(h1, h2, h3, h4, h5, h6) {
+  font-family: var(--font-heading);
+  font-weight: var(--weight-heading);
+  letter-spacing: -0.02em;
+  line-height: 1.35;
+  margin-block: 1.6em 0.65em;
+  text-wrap: balance;
+}
+.axiom-prose h1 {
+  font-size: calc(2em * var(--heading-scale));
+}
+.axiom-prose h2 {
+  font-size: calc(1.6em * var(--heading-scale));
+}
+.axiom-prose h3 {
+  font-size: calc(1.3em * var(--heading-scale));
+}
+.axiom-prose :is(h4, h5, h6) {
+  font-size: calc(1.1em * var(--heading-scale));
+}
+.axiom-prose :is(ul, ol) {
+  padding-inline-start: 1.6em;
+  margin-block: 0.6em 1em;
+}
+.axiom-prose li {
+  display: list-item;
+  margin-block: 0.2em;
+  padding-inline-start: 0.15em;
+}
+.axiom-prose li p {
+  margin-block: 0.2em;
+}
+.axiom-prose li::marker {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.axiom-prose blockquote {
+  margin-inline: 0;
+  padding-inline: 1.1em 0.6em;
+  border-inline-start: 3px solid var(--line);
+  color: var(--text);
+}
+.axiom-callout {
+  padding: 16px 20px;
+  background: var(--callout);
+  border-radius: var(--radius);
+  margin-block: 1em;
+}
+.axiom-callout::before {
+  content: attr(aria-label);
+  display: block;
+  text-transform: capitalize;
+  color: var(--accent);
+  font: 600 var(--size-ui)/1.5 var(--font-ui);
+  margin-bottom: 8px;
+}
+.axiom-syntax {
+  color: var(--muted);
+  font-family: var(--font-code);
+  font-size: 0.86em;
+  font-weight: 400;
+  font-style: normal;
+  text-decoration: none;
+}
+.axiom-source-prose .axiom-syntax {
+  font: inherit;
+  color: var(--muted);
+}
+.axiom-inline-link {
+  color: var(--accent);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--accent) 30%, transparent);
+  text-underline-offset: 3px;
+  cursor: text;
+}
+.axiom-prose :not(pre) > code {
+  font-family: var(--font-code);
+  font-size: 0.86em;
+  padding: 0.12em 0.25em;
+  border-radius: 4px;
+  background: var(--code);
+  color: var(--code-text);
+}
+.axiom-inline-tex {
+  font-family: var(--font-code);
+  font-size: 0.9em;
+  color: var(--syntax);
+}
+.axiom-inline-preview {
+  cursor: text;
+  white-space: normal;
+}
+.axiom-inline-preview img {
+  max-width: 100%;
+  max-height: 65vh;
+  border-radius: 6px;
+  vertical-align: middle;
+}
+.axiom-image {
+  display: inline-block;
+  max-width: 100%;
+  vertical-align: middle;
+  cursor: default;
+  line-height: 1.5;
+  border-radius: 2px;
+}
+.axiom-image:is(.is-selected, :focus-visible) {
+  outline: 2px solid color-mix(in srgb, var(--accent) 65%, transparent);
+  outline-offset: 3px;
+}
+.axiom-image img {
+  display: block;
+  width: auto;
+  height: auto;
+  border-radius: 2px;
+}
+.axiom-image [hidden] {
+  display: none;
+}
+.axiom-image:not([data-image-state="ready"]):not(
+    [data-image-previous="true"]
+  ):not(.axiom-image-edit-preview) {
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  background: var(--code);
+  color: var(--muted);
+  font: 13px/1.5 var(--font-ui);
+}
+.axiom-image-status {
+  color: var(--muted);
+  font: 12px/1.5 var(--font-ui);
+}
+.axiom-image-retry {
+  margin-left: 12px;
+  border: 0;
+  padding: 2px 4px;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  cursor: pointer;
+}
+.axiom-image-retry:hover {
+  text-decoration: underline;
+}
+.axiom-image-edit-preview {
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  margin-block: 0.65em 0.15em;
+  white-space: normal;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.axiom-image-edit-preview img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+.axiom-image-edit-preview .axiom-image-status:not([hidden]) {
+  display: block;
+  margin-block-start: 0.35em;
+}
+.axiom-image-source-text {
+  font: inherit;
+  color: inherit;
+  overflow-wrap: anywhere;
+}
+.axiom-inline-preview .math {
+  display: inline-block;
+  vertical-align: middle;
+}
+.axiom-prose table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin-block: 1.25em;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  table-layout: fixed;
+}
+.axiom-table-shell {
+  overflow-x: auto;
+  margin-block: 1.25em;
+}
+.axiom-table-shell > table {
+  margin-block: 0;
+}
+.axiom-table-shell.can-resize,
+.axiom-table-shell.can-resize * {
+  cursor: col-resize;
+}
+.axiom-prose :is(td, th) {
+  min-width: 70px;
+  padding: 10px 14px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-inline-end: 1px solid var(--line);
+  text-align: start;
+  font-weight: inherit;
+  vertical-align: top;
+}
+.axiom-prose th {
+  background: var(--surface);
+  font-weight: 600;
+}
+.axiom-prose tr:last-child td {
+  border-bottom: 0;
+}
+.axiom-prose tr > :last-child {
+  border-inline-end: 0;
+}
+.axiom-prose .axiom-cell-selected {
+  background: var(--selection);
+}
+.axiom-embedded {
+  position: relative;
+  margin-block: 1.3em;
+  border-radius: var(--radius);
+  background: var(--code);
+  color: var(--code-text);
+  border: 1px solid transparent;
+  white-space: normal;
+  overflow: hidden;
+}
+.axiom-embedded:focus-within {
+  border-color: color-mix(in srgb, var(--accent) 25%, transparent);
+}
+.axiom-block-controls {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  min-height: 34px;
+  padding: 4px 8px 0 14px;
+  font: var(--weight-ui) 12px/1.4 var(--font-ui);
+  color: var(--muted);
+}
+.axiom-block-controls > span {
+  margin-inline-end: auto;
+}
+.axiom-block-controls .axiom-language-label {
+  margin-inline-end: auto;
+  opacity: 1;
+  pointer-events: auto;
+  padding-inline: 0;
+}
+.axiom-block-controls .axiom-language-label:disabled {
+  cursor: default;
+  color: var(--muted);
+  opacity: 1;
+}
+.axiom-block-controls .axiom-language-input {
+  width: 160px;
+  padding: 3px 6px;
+  border: 0;
+  border-radius: 4px;
+  background: var(--paper);
+  color: var(--text);
+  font: inherit;
+  outline: none;
+}
+.axiom-block-controls button {
+  opacity: 0;
+  pointer-events: none;
+  border: 0;
+  border-radius: 5px;
+  padding: 4px 7px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  transition:
+    opacity 100ms ease,
+    background 100ms ease;
+}
+.axiom-embedded:is(:hover, :focus-within) .axiom-block-controls button {
+  opacity: 1;
+  pointer-events: auto;
+}
+.axiom-block-controls button:hover {
+  background: var(--paper);
+  color: var(--text);
+}
+.axiom-block-controls button:focus-visible {
+  opacity: 1;
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+.axiom-editor .cm-editor {
+  background: transparent;
+  color: inherit;
+  font: var(--weight-code, 400) var(--size-code)/1.75 var(--font-code);
+  font-variant-ligatures: var(--ligatures);
+  letter-spacing: normal;
+  word-spacing: normal;
+}
+.axiom-editor .cm-content {
+  padding: 6px 0 16px;
+  caret-color: var(--accent);
+}
+.axiom-editor .cm-line {
+  padding-inline: 16px;
+}
+.axiom-editor .cm-scroller {
+  font-family: inherit;
+  overscroll-behavior: contain;
+}
+.axiom-editor .cm-gutters {
+  background: transparent;
+  color: var(--muted);
+  border: 0;
+}
+.axiom-editor .cm-activeLine {
+  background: color-mix(in srgb, var(--accent) 5%, transparent);
+}
+.axiom-editor .cm-selectionBackground,
+.axiom-editor .cm-focused .cm-selectionBackground {
+  background: var(--selection);
+}
+.axiom-editor .cm-cursor {
+  border-inline-start-color: var(--accent);
+}
+.axiom-editor .cm-panels {
+  background: var(--surface);
+  border-color: var(--line);
+  color: var(--text);
+  font-family: var(--font-ui);
+}
+.axiom-editor .cm-textfield {
+  background: var(--paper);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.axiom-editor[data-mode="source"] {
+  overflow: hidden;
+}
+.axiom-editor[data-mode="source"] .axiom-editor-content,
+.axiom-editor[data-mode="source"] .cm-editor {
+  height: 100%;
+}
+.axiom-editor[data-mode="source"] .cm-content {
+  padding-block: 24px 120px;
+}
+/* A non-scrolling overflow:hidden ancestor still traps wheel chaining. The
+   document/settings scroller must own both Source and Write mode scrolling. */
+:is(.document-scroll, .settings-scratchpad-scroll) .axiom-editor[data-mode] {
+  overflow: visible;
+  overscroll-behavior: auto;
+}
+:is(.document-scroll, .settings-scratchpad-scroll) .axiom-editor .cm-scroller {
+  overscroll-behavior: auto;
+}
+.axiom-block-preview {
+  padding: 12px 20px 20px;
+  text-align: center;
+  cursor: text;
+  background: var(--paper);
+}
+.axiom-embedded[data-kind="mathBlock"] {
+  background: var(--paper);
+  border-color: var(--line);
+}
+.axiom-embedded[data-kind="mathBlock"]:not(.is-editing):has(
+    .axiom-block-preview:not([hidden])
+  )
+  .axiom-block-source {
+  display: none;
+}
+.axiom-embedded[data-kind="mathBlock"] .axiom-block-source {
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+}
+.axiom-peer-range {
+  background: color-mix(in srgb, var(--peer-color) 18%, transparent);
+}
+.axiom-discussion-range {
+  background: color-mix(in srgb, var(--warning) 9%, transparent);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--warning) 50%, transparent);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+.ws-note-comment.active-discussion {
+  background: var(--accent-bg);
+  border-radius: 8px;
+}
+.ws-comment-anchor small {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font: 11px/1.4 var(--font-ui);
+}
+.axiom-peer-caret {
+  position: relative;
+  border-inline-start: 2px solid var(--peer-color);
+  margin-inline-start: -1px;
+  pointer-events: none;
+}
+.axiom-peer-caret > span {
+  position: absolute;
+  bottom: 100%;
+  left: -2px;
+  background: var(--peer-color);
+  color: white;
+  border-radius: 4px 4px 4px 0;
+  padding: 2px 5px;
+  white-space: nowrap;
+  font: 11px/1.5 var(--font-ui);
+}
+.axiom-completions {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  z-index: 100;
+  width: 290px;
+  max-height: 340px;
+  overflow: auto;
+  padding: 5px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+  box-shadow: var(--shadow);
+}
+.axiom-completions button {
+  display: block;
+  width: 100%;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  text-align: start;
+  font: var(--weight-ui) var(--size-ui)/1.4 var(--font-ui);
+}
+.axiom-completions button:is(:hover, [aria-selected="true"]) {
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+.axiom-language-completions {
+  width: 310px;
+  max-height: min(340px, calc(100vh - 24px));
+  overscroll-behavior: contain;
+  scroll-padding-bottom: 34px;
+  color: var(--text);
+  font-family: var(--font-ui);
+}
+.axiom-completions .axiom-language-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 7px 10px;
+  font-size: var(--size-ui);
+}
+.axiom-language-option > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.axiom-language-option > code {
+  flex-shrink: 0;
+  border: 0;
+  padding: 0;
+  background: none;
+  color: var(--muted);
+  font: 11px/1.4 var(--font-code);
+}
+.axiom-code-completions {
+  width: 350px;
+}
+.axiom-code-completions .axiom-language-option > span {
+  font-family: var(--font-code);
+}
+.axiom-code-completions .axiom-language-option > code {
+  font-family: var(--font-ui);
+}
+.axiom-completion-hint {
+  position: sticky;
+  bottom: -5px;
+  border-top: 1px solid var(--line);
+  margin-top: 4px;
+  padding: 8px 10px 4px;
+  background: var(--paper);
+  color: var(--muted);
+  font: 11px/1.5 var(--font-ui);
+}
+.axiom-editor[data-typewriter="true"] .axiom-prose {
+  padding-bottom: 45vh;
+}
+.axiom-reference-footer {
+  max-width: var(--reading-width);
+  margin: 0 auto;
+  padding: 0 20px 100px;
+  color: var(--muted);
+  font: var(--size-prose)/var(--reading-line) var(--font-prose);
+}
+.axiom-reference-footer h2 {
+  font: 600 1.15em/1.4 var(--font-heading);
+  color: var(--text);
+  border: 0;
+  padding: 0;
+}
+.axiom-editor-content:has(> .axiom-reference-footer:not([hidden]))
+  .axiom-prose {
+  padding-bottom: 32px;
+}
+.axiom-reference-footer .bibliography {
+  margin-top: 0;
+  padding-top: 24px;
+}
+.ws-paper .axiom-reference-footer {
+  max-width: none;
+  padding-inline: 0;
+}
+.axiom-reference-footer li {
+  margin-block: 0.8em;
+  scroll-margin-top: 40px;
+}
+.axiom-reference-footer a {
+  color: var(--accent);
+}
+.axiom-reference-footer li:focus {
+  outline: none;
+  background: var(--accent-bg);
+  border-radius: 5px;
+}
+.axiom-field-dialog {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  width: min(480px, calc(100vw - 48px));
+  max-height: calc(100vh - 48px);
+  padding: 24px;
+  color: var(--text);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  font: var(--size-ui)/1.6 var(--font-ui);
+}
+.axiom-field-dialog::backdrop {
+  background: #11182755;
+}
+.axiom-field-dialog form,
+.axiom-field-dialog label {
+  display: grid;
+  gap: 8px;
+}
+.axiom-field-dialog form {
+  gap: 16px;
+}
+.axiom-field-dialog h3 {
+  margin: 0;
+  font: 600 19px/1.4 var(--font-ui);
+}
+.axiom-field-dialog input {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--surface);
+  color: var(--text);
+  border: 0;
+  border-radius: 7px;
+  outline: none;
+  font: inherit;
+}
+.axiom-field-dialog input:focus-visible {
+  box-shadow: inset 0 -2px var(--focus);
+}
+.axiom-field-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.axiom-embedded[data-preview="true"] {
+  background: var(--paper);
+  border: 1px solid var(--line);
+}
+.axiom-embedded[data-preview="true"]:not(.is-editing) .axiom-block-source {
+  display: none;
+}
+.axiom-embedded[data-preview="true"] .axiom-block-source {
+  background: var(--code);
+  border-top: 1px solid var(--line);
+}
+.axiom-block-preview svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin-inline: auto;
+}
+.axiom-embedded[data-kind="hr"] {
+  border: 0;
+  background: transparent;
+}
+.axiom-embedded[data-kind="hr"] .axiom-block-preview {
+  padding: 8px 0;
+}
+.axiom-embedded[data-kind="hr"] hr {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 12px 0;
+}
+.axiom-embedded:is(
+    [data-kind="frontmatter"],
+    [data-kind="referenceDefinition"],
+    [data-kind="footnoteDefinition"]
+  )
+  .axiom-block-preview {
+  padding: 10px 16px;
+  text-align: start;
+  font: var(--size-ui)/1.6 var(--font-ui);
+  color: var(--muted);
+}
+.axiom-definition-key {
+  color: var(--accent);
+  font-family: var(--font-code);
+}
+.axiom-block-preview .document-toc {
+  display: grid;
+  gap: 6px;
+  text-align: start;
+}
+.axiom-block-preview .document-toc a {
+  color: var(--accent);
+  font: var(--size-ui)/1.6 var(--font-ui);
+}
+.axiom-preview-message {
+  color: var(--muted);
+  font: 12px/1.6 var(--font-ui);
+  margin: 10px 0 0;
+}
+.axiom-block-preview:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+  border-radius: var(--radius);
+}
+@media (prefers-reduced-motion: reduce) {
+  .axiom-block-controls button {
+    transition: none;
+  }
+}

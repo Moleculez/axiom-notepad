@@ -1,0 +1,19 @@
+{$APP_URL} {
+    encode zstd gzip
+    request_body {
+        max_size 55MB
+    }
+    header {
+        Strict-Transport-Security "max-age=31536000"
+        -Server
+    }
+    # Never expose the synchronization server's internal API.
+    handle /sync {
+        reverse_proxy sync:1234
+    }
+    handle {
+        reverse_proxy web:3000 {
+            flush_interval -1
+        }
+    }
+}

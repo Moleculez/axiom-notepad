@@ -1,0 +1,29 @@
+/* Latin Modern / GUST Font License. See LICENSE.txt and README.md. */
+@font-face {
+  font-family: "Axiom Latin Modern";
+  font-style: normal;
+  font-weight: 400 500;
+  font-display: swap;
+  src: url("./axiom-lm-regular.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Axiom Latin Modern";
+  font-style: italic;
+  font-weight: 400 500;
+  font-display: swap;
+  src: url("./axiom-lm-italic.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Axiom Latin Modern";
+  font-style: normal;
+  font-weight: 600 900;
+  font-display: swap;
+  src: url("./axiom-lm-bold.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Axiom Latin Modern";
+  font-style: italic;
+  font-weight: 600 900;
+  font-display: swap;
+  src: url("./axiom-lm-bolditalic.woff2") format("woff2");
+}

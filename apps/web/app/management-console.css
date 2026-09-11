@@ -1,0 +1,418 @@
+/* Management uses the same semantic palette, type scale and focus treatment as
+   Explorer. Layouts grow with the user's UI font size; no fixed-height controls. */
+.console-page {
+  max-width: 1480px;
+  width: 100%;
+  min-width: 0;
+}
+.console-page > .text-button:first-child {
+  margin-bottom: 1.25rem;
+}
+.console-page .productivity-tabs {
+  align-items: center;
+  flex-wrap: wrap;
+}
+.console-page .productivity-tabs a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55em;
+}
+.console-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 1rem;
+  margin-block: 1.25rem;
+  min-width: 0;
+}
+.ws-app .console-toolbar > label {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  min-width: 9rem;
+  flex: 0 1 auto;
+  color: var(--muted);
+  font-size: 0.85em;
+}
+.ws-app .console-toolbar > .console-search {
+  flex: 1 1 14rem;
+}
+.ws-app .console-toolbar > .ws-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.65em;
+  align-self: center;
+}
+.console-toolbar :is(input:not([type="checkbox"]), select) {
+  width: 100%;
+  min-height: 2.65em;
+  margin: 0;
+  color: var(--text);
+}
+/* Native macOS/WebKit menu buttons ignore the input height. Keep the native
+   accessible selection behavior, but draw chrome with our semantic tokens. */
+.ws-app .console-page select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-inline-end: 2.3em;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+    linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 1em) 50%,
+    calc(100% - 0.7em) 50%;
+  background-size: 0.3em 0.3em;
+  background-repeat: no-repeat;
+}
+.console-toolbar > :is(.button, .icon-button) {
+  margin: 0;
+  flex-shrink: 0;
+}
+.console-toolbar > .ws-note {
+  margin: 0;
+  align-self: center;
+}
+.console-toolbar > .ws-badge {
+  align-self: center;
+}
+.console-section-title {
+  font-size: 1.2em;
+  margin: 2rem 0 1.25rem;
+  letter-spacing: -0.025em;
+}
+.console-nav-divider {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 1rem 0.75rem;
+}
+.console-directory {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr));
+  gap: 1.25rem;
+  margin-top: 1.5rem;
+}
+.console-workspace-card {
+  padding: 1.5rem;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  border-radius: var(--panel-radius);
+  min-width: 0;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+.console-directory:has(> .console-workspace-card) {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
+}
+.console-workspace-card:hover {
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--line));
+  background: color-mix(in srgb, var(--accent) 2%, var(--paper));
+}
+.console-workspace-card .ws-section-heading {
+  gap: 0.6rem;
+  margin: 0 0 1.5rem;
+}
+.console-space-icon {
+  display: grid;
+  place-items: center;
+  width: 2.8em;
+  height: 2.8em;
+  border-radius: var(--control-radius);
+  background: var(--accent-bg);
+  color: var(--accent);
+  margin-right: auto;
+}
+.console-workspace-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  color: var(--text);
+  font-weight: 620;
+  font-size: 1.12em;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+.console-workspace-title svg {
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.console-workspace-card p {
+  color: var(--muted);
+  font-size: 0.9em;
+  line-height: 1.7;
+  min-height: 3.4em;
+  overflow-wrap: anywhere;
+}
+.console-card-meta {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.78em;
+  color: var(--muted);
+  border-top: 1px solid var(--line);
+  padding-top: 1rem;
+}
+.console-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+  gap: 1rem;
+  margin-block: 1.5rem;
+}
+.console-metrics > div {
+  padding: 1.25rem;
+  background: var(--surface);
+  border-radius: var(--control-radius);
+  display: grid;
+  gap: 0.8rem;
+}
+.console-metrics span {
+  color: var(--muted);
+  font-size: 0.8em;
+  text-transform: capitalize;
+}
+.console-metrics strong {
+  font-size: 1.65em;
+  line-height: 1.2;
+  font-weight: 550;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+}
+.console-master-detail {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 1.75rem;
+}
+.console-master-detail.has-inspector {
+  grid-template-columns: minmax(20rem, 1fr) minmax(20rem, 0.7fr);
+}
+.console-master-detail > * {
+  min-width: 0;
+}
+.console-records {
+  border-block: 1px solid var(--line);
+}
+.console-record {
+  appearance: none;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--text);
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  text-align: left;
+  gap: 1rem;
+  padding: 1.15rem 0.85rem;
+  cursor: pointer;
+  font: inherit;
+}
+.console-record:last-child {
+  border-bottom: 0;
+}
+.console-record:hover {
+  background: var(--hover);
+}
+.console-record.selected {
+  background: var(--accent-bg);
+  box-shadow: inset 2px 0 var(--accent);
+}
+.console-record > svg {
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.console-record > span:first-of-type {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 0.4em;
+}
+.console-record strong {
+  font-size: 0.94em;
+  font-weight: 550;
+  overflow-wrap: anywhere;
+}
+.console-record :is(small, time) {
+  color: var(--muted);
+  font-size: 0.78em;
+  line-height: 1.5;
+}
+.console-record time {
+  flex: 0 1 9rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.console-inspector {
+  position: sticky;
+  top: 1rem;
+  background: var(--surface);
+  padding: 1.5rem;
+  border-radius: var(--panel-radius);
+  max-height: calc(100dvh - 13rem);
+  overflow: auto;
+}
+.console-inspector h2 {
+  font-size: 0.95em;
+  margin: 0;
+}
+.console-inspector h3 {
+  margin-top: 1.5rem;
+  font-size: 1.15em;
+  overflow-wrap: anywhere;
+}
+.console-inspector > p {
+  font-size: 0.85em;
+  color: var(--muted);
+}
+.console-inspector > .button {
+  margin: 0.5rem 0.5rem 0.5rem 0;
+}
+.audit-changes {
+  display: grid;
+  gap: 1rem;
+  margin-block: 1.5rem;
+}
+.audit-changes > div {
+  display: grid;
+  gap: 0.5em;
+  font-size: 0.85em;
+}
+.audit-changes strong {
+  font-weight: 550;
+  text-transform: capitalize;
+}
+.audit-changes :is(del, ins) {
+  border-radius: 0.35rem;
+  padding: 0.6em 0.75em;
+  text-decoration: none;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.audit-changes del {
+  background: color-mix(in srgb, var(--danger) 7%, var(--paper));
+  color: var(--muted);
+  border-inline-start: 2px solid var(--danger);
+}
+.audit-changes ins {
+  background: var(--accent-bg);
+  border-inline-start: 2px solid var(--accent);
+}
+.audit-version-comparison pre {
+  font-family: var(--font-code);
+  font-size: 0.8em;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 25rem;
+  overflow: auto;
+  padding: 1rem;
+  background: var(--paper);
+}
+.audit-diff-line.added {
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+.audit-diff-line.removed {
+  background: color-mix(in srgb, var(--danger) 9%, transparent);
+  color: var(--danger);
+}
+.console-pagination {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding-block: 1.25rem;
+}
+.console-filter-details {
+  margin: 0 0 1.5rem;
+  font-size: 0.9em;
+  color: var(--muted);
+}
+.console-filter-details summary {
+  cursor: pointer;
+  width: fit-content;
+}
+.console-operation {
+  border: 1px solid var(--line);
+  border-radius: var(--panel-radius);
+  padding: 1.5rem;
+  background: var(--paper);
+  margin-block: 1rem;
+}
+.console-operation > h2 {
+  font-size: 1.15em;
+}
+.console-options {
+  background: var(--surface);
+  padding: 1rem 1.25rem;
+  border-radius: var(--panel-radius);
+  margin-block: 1rem;
+}
+.console-options .console-toolbar:first-child {
+  margin-top: 0;
+}
+.console-options .file-destination {
+  max-width: 44rem;
+  margin-block: 1rem;
+}
+.console-scope-actions {
+  align-items: center;
+}
+.console-trash-table .resource-cell {
+  min-width: 12rem;
+}
+.console-trash-table .resource-cell strong {
+  overflow-wrap: anywhere;
+}
+.console-tree-spacer {
+  width: 1.8em;
+  flex-shrink: 0;
+}
+.console-trash-table
+  :is(th:first-child, td:first-child, th:last-child, td:last-child) {
+  width: 3rem;
+}
+.console-trash-table tbody tr {
+  cursor: default;
+}
+.console-lifecycle-actions {
+  display: grid;
+  gap: 0;
+}
+.console-lifecycle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  padding: 1.5rem 0;
+  border-bottom: 1px solid var(--line);
+}
+.console-lifecycle-row > div {
+  flex: 1 1 25rem;
+}
+.console-lifecycle-row h3 {
+  margin: 0 0 0.5em;
+  font-size: 1em;
+}
+.console-lifecycle-row p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9em;
+}
+.console-page .ws-member-row {
+  flex-wrap: wrap;
+  row-gap: 0.8rem;
+}
+.console-page .productivity-action-bar {
+  align-items: center;
+}
+.console-page :is(.settings-card, .ws-settings-form) > h2 {
+  margin-top: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .console-workspace-card {
+    transition: none;
+  }
+}

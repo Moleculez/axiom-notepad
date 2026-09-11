@@ -1,0 +1,26 @@
+"use client";
+import { useEffect, useState } from "react";
+import { Download, Plus, Users } from "lucide-react";
+import Dialog from "../Dialog";
+import { post, timeAgo } from "../../lib/client";
+import { NameDialog } from "./Explorer";
+import { Badge, bytes, Empty, ErrorNotice, Loading, useAction, useData, useWorkspace, WorkspaceLink, type Session } from "./ui";
+
+export function ExportsPage() {
+  const { revision, spaces } = useWorkspace(), result = useData<any[]>("exports", revision), action = useAction();
+  const [remove, setRemove] = useState<string | null>(null), running = result.data?.some(item => ["queued", "running"].includes(item.status));
+  useEffect(() => { if (!running) return; const timer = setInterval(result.reload, 3000); return () => clearInterval(timer); }, [running, result.reload]);
+  return <section><p className="ws-note">Select items in Explorer to prepare a portable ZIP. Exports contain current Markdown, matching BibTeX, and exact linked file versions. They do not contain comments, account data, or full edit history; use an administrator backup for full recovery. Up to 1,000 items, 25 MB of Markdown, and 100 GB of files per export. Finished archives stay until you remove them.</p><ErrorNotice message={result.error || action.error} retry={result.error ? result.reload : undefined} />{result.loading && !result.data && <Loading />}
+    {result.data?.length ? <div className="ws-card">{result.data.map(item => <div className="ws-version" key={item.id}><strong>{spaces.find(space => space.id === item.space_id)?.name ?? "Workspace export"} <Badge>{item.status}</Badge></strong><small>{item.items} source items · {timeAgo(item.created_at)}{item.bytes ? ` · ${bytes(item.bytes)}` : ""}</small><ErrorNotice message={item.error} /><div className="ws-actions">{item.status === "ready" && <a className="button secondary" href={`/api/v1/exports/${item.id}/download`}><Download size={15} />Download ZIP</a>}{!["queued", "running"].includes(item.status) && <button className="button secondary" onClick={() => setRemove(item.id)}>Remove archive…</button>}</div></div>)}</div> : !result.loading && <Empty title="No exports yet">Choose a folder or select files in Explorer, then choose Export selection.</Empty>}
+    {remove && <Dialog title="Remove this prepared archive?" onClose={() => !action.busy && setRemove(null)}><p>The ZIP on the server will be permanently removed. Your original notes and files are unchanged; you can export them again.</p><ErrorNotice message={action.error} /><div className="dialog-footer"><button className="button secondary" disabled={action.busy} onClick={() => setRemove(null)}>Cancel</button><button className="button danger" disabled={action.busy} onClick={() => void action.run(async () => { await post(`exports/${remove}/remove`); setRemove(null); result.reload(); })}>Remove archive</button></div></Dialog>}
+  </section>;
+}
+export function GroupsPage() {
+  const { session, refresh, navigate } = useWorkspace(), [create, setCreate] = useState(false), [leave, setLeave] = useState<Session["groups"][number] | null>(null), [confirmation, setConfirmation] = useState(""), action = useAction();
+  const changed = () => { window.dispatchEvent(new Event("axiom:session")); refresh(); };
+  return <section><div className="ws-section-heading"><p className="muted">Group membership controls shared work. Your personal space remains yours when you leave.</p><button className="button primary" onClick={() => setCreate(true)}><Plus size={16} />Create group</button></div>
+    <div className="ws-card">{session.groups.map(group => <div className="ws-version" key={group.id}><strong><Users size={16} /> {group.name} <Badge>{group.role}</Badge></strong><p>{group.description || "A shared research workspace"}</p><div className="ws-actions">{group.role !== "member" && <WorkspaceLink className="button secondary" to={`/admin/${group.id}`}>Manage group</WorkspaceLink>}<button className="button secondary" onClick={() => { setLeave(group); setConfirmation(""); }}>Leave group…</button></div></div>)}</div>
+    {create && <NameDialog title="Create a research group" label="Group name" onClose={() => setCreate(false)} onSave={async name => { const group = await post("groups", { name }); changed(); setCreate(false); navigate(`/admin/${group.id}`); }} />}
+    {leave && <Dialog title={`Leave ${leave.name}?`} onClose={() => !action.busy && setLeave(null)}><p>You will lose access to this group’s projects, notes, files and reviews. Your private notes, personal files, and account will stay. Rejoining requires a new invitation.</p>{leave.role === "owner" ? <p className="ws-note">Transfer ownership in group administration before leaving. A project’s last lead must also assign another lead first.</p> : <label>Type the group name to confirm<input value={confirmation} onChange={event => setConfirmation(event.target.value)} /></label>}<ErrorNotice message={action.error} /><div className="dialog-footer"><button className="button secondary" disabled={action.busy} onClick={() => setLeave(null)}>Cancel</button><button className="button danger" disabled={action.busy || leave.role === "owner" || confirmation !== leave.name} onClick={() => void action.run(async () => { await post(`group-admin/${leave.id}/leave`); changed(); setLeave(null); })}>Leave group</button></div></Dialog>}
+  </section>;
+}

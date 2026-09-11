@@ -1,0 +1,252 @@
+/* Desktop workspace chrome. Document typography is deliberately out of scope. */
+.ws-app {
+  --workspace-control-height: 2.4em;
+  --workspace-control-gap: 0.5em;
+}
+.workspace-action-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-block: 0 24px;
+}
+.workspace-action-row > input {
+  flex: 1 1 220px;
+  width: auto;
+}
+.workspace-action-row > .button {
+  flex: 0 0 auto;
+}
+.ws-app .workspace-action-row > :is(input, .button) {
+  min-height: calc(var(--size-ui) * 2.8);
+  height: calc(var(--size-ui) * 2.8);
+  margin: 0;
+  padding-block: 0;
+}
+.group-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: 20px;
+}
+.group-membership-card,
+.group-invitations {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+  padding: 24px;
+  min-width: 0;
+}
+.group-membership-card {
+  display: flex;
+  flex-direction: column;
+}
+.group-card-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  color: var(--muted);
+}
+.group-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-top: auto;
+  padding-top: 16px;
+}
+.group-card-actions .text-button {
+  margin-left: auto;
+}
+.group-invitations {
+  margin-bottom: 24px;
+}
+.group-invitations h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.group-invitation-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-block: 16px;
+  border-top: 1px solid var(--line);
+}
+.group-invitation-row > div:first-child {
+  flex: 1 1 260px;
+  min-width: 0;
+}
+.ws-app .group-invitation-row p {
+  margin: 4px 0;
+}
+.group-invitation-row small {
+  color: var(--muted);
+}
+.group-invitation-preview {
+  padding: 16px;
+  margin-block: 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--control-radius);
+}
+
+.ws-app
+  :is(.settings-stage, .settings-form-section, .groups-hub, .productivity-page)
+  .button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--workspace-control-gap);
+  min-block-size: var(--workspace-control-height);
+  line-height: 1.25;
+}
+.ws-app
+  :is(.settings-stage, .settings-form-section, .groups-hub, .productivity-page)
+  .button
+  > svg {
+  flex-shrink: 0;
+}
+.ws-app
+  .settings-stage
+  :is(.setting-pair, .color-controls, .settings-controls) {
+  align-items: start;
+}
+.ws-app .settings-stage .preference-number-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  min-block-size: var(--workspace-control-height);
+  margin-bottom: 10px;
+}
+.ws-app .preference-number-heading > label {
+  flex: 1 1 120px;
+  margin: 0;
+  line-height: 1.4;
+}
+.ws-app .setting-number-value {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+}
+.ws-app .setting-number-value input {
+  width: 5em;
+  padding: 0.5em;
+  text-align: center;
+}
+.ws-app .setting-number-value .icon-button {
+  margin: 0;
+  display: inline-grid;
+  place-items: center;
+}
+.ws-app .settings-stage label.setting-toggle {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin: 0;
+  padding-block: 10px;
+}
+.ws-app .settings-stage .setting-toggle > span {
+  min-width: 0;
+  flex: 1;
+}
+.ws-app .settings-stage .setting-toggle > input {
+  flex: 0 0 auto;
+  margin: 0;
+}
+.ws-app .settings-stage .setting-toggle small {
+  display: block;
+  margin-top: 5px;
+}
+.ws-app .preference-color-fields {
+  display: grid;
+  grid-template-columns: 2.5em minmax(5em, 1fr) auto auto;
+  align-items: center;
+  gap: 6px;
+}
+.ws-app .appearance-settings .preference-color input[type="color"] {
+  width: 2.5em;
+  min-width: 0;
+  height: 2.5em;
+  border-radius: var(--control-radius);
+}
+.ws-app .preference-color-fields input[type="text"] {
+  width: 100%;
+  min-height: 2.5em;
+}
+.ws-app .preference-color-fields .icon-button {
+  margin: 0;
+}
+.theme-family-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr));
+  gap: 12px;
+  margin-block: 16px;
+}
+.theme-family-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+  padding: 12px;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--control-radius);
+  background: var(--paper);
+  color: var(--text);
+}
+.theme-family-card[aria-pressed="true"] {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.theme-family-card small {
+  color: var(--muted);
+  font-size: 0.8em;
+  line-height: 1.45;
+}
+.theme-family-samples {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 6px;
+}
+.theme-family-samples > span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  border: 1px solid;
+  font-weight: 600;
+}
+.theme-family-samples i {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+.advanced-appearance {
+  padding-block: 16px;
+  margin-block: 12px;
+  border-block: 1px solid var(--line);
+}
+.advanced-appearance > summary {
+  cursor: pointer;
+  font-weight: 600;
+  padding: 4px 0;
+}
+.advanced-appearance[open] > summary {
+  margin-bottom: 18px;
+}
+@media (forced-colors: active) {
+  .theme-family-card[aria-pressed="true"] {
+    outline: 2px solid Highlight;
+  }
+}

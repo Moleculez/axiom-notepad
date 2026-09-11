@@ -1,0 +1,10 @@
+# Merge only for an isolated localhost rehearsal. Never deploy this override.
+services:
+  proxy:
+    environment:
+      APP_URL: https://localhost
+  operations:
+    volumes:
+      - rehearsal-backups:/backups
+volumes:
+  rehearsal-backups:
