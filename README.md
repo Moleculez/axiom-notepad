@@ -89,7 +89,9 @@ docker compose --env-file .env.production exec web node --import tsx scripts/ops
 
 Read [deployment, backups and upgrades](docs/DEPLOYMENT.md) before using real data.
 Production configuration never loads the development `.env` into containers.
-Only HTTPS/HTTP are published; database/sync internal APIs remain private.
+Only HTTPS/HTTP are public. Sync also binds to host loopback for an
+[existing host Nginx proxy](docs/DEPLOYMENT.md#existing-host-nginx); database and sync
+internal APIs must not be exposed to the internet.
 Native Linux/systemd installation is a [secondary option](docs/NATIVE_DEPLOYMENT.md).
 No cloud deployment, image publication or external service configuration is implied.
 

@@ -77,6 +77,9 @@ services:
     restart: unless-stopped
   sync:
     <<: *app
+    # Host Nginx needs a published port; never expose internal sync APIs publicly.
+    ports:
+      - "127.0.0.1:${AXIOM_SYNC_HOST_PORT:-1234}:1234"
     environment:
       <<: *app-environment
       SYNC_HOST: 0.0.0.0

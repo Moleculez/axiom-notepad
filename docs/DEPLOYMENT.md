@@ -42,10 +42,55 @@ initialization creates a restricted `axiom` application role; PostgreSQL adminis
 credentials are never passed to the application. Existing volumes are not rewritten.
 Changing a password in the env file does not rotate an already-created database role.
 
-Only Caddy exposes ports. `/sync` forwards WebSocket upgrades; other internal sync
-endpoints cannot be reached through it. The browser derives a same-origin secure
-WebSocket URL; no localhost development URL is baked into production. SSE is flushed
+Only Caddy publishes public ports. Sync additionally publishes
+`127.0.0.1:1234:1234` for an existing host reverse proxy; set `AXIOM_SYNC_HOST_PORT`
+if another local service occupies that port. `/sync` forwards WebSocket upgrades;
+other internal sync endpoints cannot be reached through Caddy. The browser derives
+a same-origin secure WebSocket URL; no localhost development URL is baked into production. SSE is flushed
 without proxy buffering. Do not horizontally scale sync without shared room coordination.
+
+## Existing host Nginx
+
+If Nginx runs on the EC2/Linux host, Docker's internal `1234/tcp` exposure is not a
+host listener. The loopback publication above makes `http://127.0.0.1:1234/health`
+and the WebSocket upstream reachable from host Nginx. The sync process must still
+listen on `0.0.0.0` **inside** its container; Compose already sets `SYNC_HOST` this way.
+Do not change the published address to `0.0.0.0` or open port 1234 in the EC2 security
+group. Use a current Docker Engine (28 or newer); older engines have a documented
+[localhost publishing limitation](https://docs.docker.com/engine/network/port-publishing/).
+
+Keep the existing Nginx TLS configuration and working web upstream. Use the
+[sync location snippet](../deploy/nginx/sync.conf) inside the HTTPS `server` block,
+replacing any existing `/sync` location rather than defining it twice. It proxies
+only the exact `/sync` endpoint, forwards the HTTP/1.1 upgrade headers, and extends
+idle timeouts for long-lived editing sessions. Do not forward `/internal/*` or the
+whole public site to the sync service. If `AXIOM_SYNC_HOST_PORT` changes, update the
+snippet's upstream port to match. See [Nginx WebSocket proxying](https://nginx.org/en/docs/http/websocket.html).
+
+For an already-running deployment, apply only the networking change:
+
+```sh
+docker compose --env-file .env.production config --quiet
+docker compose --env-file .env.production up -d --no-deps --force-recreate sync
+docker compose --env-file .env.production ps sync
+docker compose --env-file .env.production port sync 1234
+curl --fail http://127.0.0.1:1234/health
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+With the default port, `ps` should show `127.0.0.1:1234->1234/tcp`, `port` should
+report `127.0.0.1:1234`, and the health response should identify service `sync` with
+status `ok`. Recreating sync briefly disconnects editors; let pending edits reach
+the server first and verify they reconnect afterward. A container **restart** alone
+does not apply a changed port binding, and no application rebuild is needed here.
+
+Keep using the same Compose project, env file and any deployment overrides so the
+existing volumes and credentials are reused. Do not run the bundled `proxy` on
+80/443 while host Nginx owns those ports; start only the intended services for that
+deployment. Container-based proxies can continue using the internal `sync:1234`
+address. In the browser, confirm `/sync` receives `101 Switching Protocols`, then
+verify two-browser edits and “Saved on server”; a health response/upgrade alone
+does not verify document authorization or durable collaboration.
 
 ## Configuration, health and logs
 
@@ -133,7 +178,9 @@ the development `.env`. Caddy uses its local certificate authority; only the iso
 browser test accepts that certificate. Your operating system trust store is unchanged.
 
 The checks cover initial setup, invitation/join, collaborative editing, files, Canvas,
-Trash, background export, service restart and backup/restore. Recovery uses a second
+Trash, background export, service restart and backup/restore. The runner uses an
+automatically allocated host-loopback sync port and verifies its health, so it does
+not compete with a development service on 1234. Recovery uses a second
 empty database and storage volume, then checks canonical content and every blob hash.
 Receipts record the project name and result; screenshots/traces are retained under
 `test-results/deployment-current/{workflow,restart}`. A failed run retains its resources

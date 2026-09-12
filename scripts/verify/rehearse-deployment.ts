@@ -1,7 +1,8 @@
 import { randomBytes } from "node:crypto";
 import { mkdtemp, mkdir, writeFile, readFile } from "node:fs/promises";
 import { resolve, join } from "node:path";
-import { spawn } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
+import { promisify } from "node:util";
 
 // Own fresh Compose project and named volumes; never imports the local .env.
 const root = process.cwd();
@@ -17,6 +18,8 @@ const values = {
   AXIOM_DATABASE_PASSWORD: password,
   AXIOM_HTTP_PORT: "127.0.0.1:8181",
   AXIOM_HTTPS_PORT: "127.0.0.1:8443",
+  // Let Docker allocate a loopback port instead of competing with local dev sync.
+  AXIOM_SYNC_HOST_PORT: "0",
   AXIOM_IMAGE: process.env.AXIOM_REHEARSAL_IMAGE ?? "axiom:rehearsal",
   AXIOM_OPERATIONS_IMAGE:
     process.env.AXIOM_REHEARSAL_OPERATIONS_IMAGE ??
@@ -108,6 +111,20 @@ try {
   await docker(["config", "--quiet"]);
   await docker(["build", "db", "web", "operations"]);
   await docker(["up", "-d", "--wait", "--wait-timeout", "180"]);
+  const { stdout } = await promisify(execFile)(
+    "docker",
+    [...compose, "port", "sync", "1234"],
+    { cwd: root, env: testEnv },
+  );
+  const syncAddress = stdout.trim();
+  if (!/^127\.0\.0\.1:[1-9]\d{0,4}$/.test(syncAddress))
+    throw new Error("Sync must publish exactly one host-loopback port.");
+  const syncHealth = await fetch(`http://${syncAddress}/health`, {
+    signal: AbortSignal.timeout(10000),
+  });
+  if (!syncHealth.ok || (await syncHealth.json()).service !== "sync")
+    throw new Error("Published synchronization health check failed.");
+  checks.push("loopback-only host synchronization health");
   await docker([
     "exec",
     "-T",
