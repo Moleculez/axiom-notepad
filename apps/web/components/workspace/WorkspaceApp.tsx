@@ -2,14 +2,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ChevronDown,
-  FlaskConical,
-  FolderOpen,
-  HardDrive,
   LogOut,
   Menu,
   Palette,
   Search,
-  Settings,
   Upload,
   UserRound,
   Users,
@@ -25,6 +21,7 @@ import {
 import { useAppearance } from "../../lib/appearance";
 import { useEditorPreferences } from "../../lib/editor-preferences";
 import { tabRoute } from "@axiom/shared/application-tabs";
+import { fileRoute, isFileView } from "@axiom/shared/file-routes";
 import Auth from "../Auth";
 import {
   setOfflineAccount,
@@ -32,18 +29,8 @@ import {
   offlineFilesEvent,
 } from "../../lib/offline-files";
 import Dialog, { DialogFocusBoundary } from "../Dialog";
-import Explorer, { ExplorerTree } from "./Explorer";
-import ResearchCollection from "./Research";
-import { Avatar, HomePage, InboxPage, PeoplePage, ResearchPage } from "./Pages";
-import ProjectsPage from "./Projects";
-import SettingsPage, { SettingsNavigation } from "./Settings";
-import WorkspacesPage, {
-  LegacyAdministrationRedirect,
-  ManagementNavigation,
-} from "./WorkspacesPage";
-import AuditPage from "./AuditPage";
-import TrashPage from "./TrashPage";
-import GroupsHub from "./GroupsHub";
+import WorkspaceSidebar from "./WorkspaceSidebar";
+import Avatar from "./Avatar";
 import { pendingInvitation } from "../../lib/pending-invitation";
 import {
   ApplicationTabsContext,
@@ -54,10 +41,38 @@ import ApplicationTabs, {
   NewApplicationTab,
 } from "./ApplicationTabs";
 import { ManagementProvider } from "./ManagementActions";
+import { FileCreationHost } from "./NewFileDialog";
+import VisualViewerHost from "../VisualViewerHost";
 import Uploads, { useUploads } from "./Uploads";
-import Workbench from "./Workbench";
 import dynamic from "next/dynamic";
-const ToolsPage = dynamic(() => import("../tools/ToolsPage"));
+const Workbench = dynamic(() => import("./Workbench"), {
+  loading: () => <Loading label="Opening file…" />,
+});
+const Explorer = dynamic(() => import("./Explorer"));
+const ResearchCollection = dynamic(() => import("./Research"));
+const HomePage = dynamic(() =>
+  import("./Pages").then((module) => module.HomePage),
+);
+const InboxPage = dynamic(() =>
+  import("./Pages").then((module) => module.InboxPage),
+);
+const PeoplePage = dynamic(() =>
+  import("./Pages").then((module) => module.PeoplePage),
+);
+const ResearchPage = dynamic(() =>
+  import("./Pages").then((module) => module.ResearchPage),
+);
+const ProjectsPage = dynamic(() => import("./Projects"));
+const SettingsPage = dynamic(() => import("./Settings"));
+const WorkspacesPage = dynamic(() => import("./WorkspacesPage"));
+const LegacyAdministrationRedirect = dynamic(() =>
+  import("./WorkspacesPage").then(
+    (module) => module.LegacyAdministrationRedirect,
+  ),
+);
+const AuditPage = dynamic(() => import("./AuditPage"));
+const TrashPage = dynamic(() => import("./TrashPage"));
+const GroupsHub = dynamic(() => import("./GroupsHub"));
 import {
   BASE,
   ErrorNotice,
@@ -92,6 +107,16 @@ export default function WorkspaceApp() {
     sessionRef = useRef(session);
   sessionRef.current = session;
   const applicationTabs = useApplicationTabs(session?.user.id, setNotice);
+  const [settingsVisit, setSettingsVisit] = useState<string | null>(null);
+  useEffect(() => {
+    if (page === "settings" && session) setSettingsVisit(session.user.id);
+    else if (
+      !applicationTabs.state.tabs.some((tab) =>
+        tab.path.startsWith("/settings"),
+      )
+    )
+      setSettingsVisit(null);
+  }, [page, session, applicationTabs.state.tabs]);
   const refresh = useCallback(() => setRevision((value) => value + 1), []),
     data = useData<Space[]>(session ? "spaces" : null, revision),
     [cachedSpaces, setCachedSpaces] = useState<Space[]>([]),
@@ -258,7 +283,6 @@ export default function WorkspaceApp() {
     go("/groups", true);
   }, [session?.user.id, invitation]);
   useEffect(() => {
-    if (page === "settings" && parts[1] === "groups") go("/groups", true);
     // Keep old bookmarks and restored tabs out of /notes/undefined and /files/undefined.
     if (["notes", "files"].includes(page) && !parts[1])
       go(tabRoute(`/${page}`), true);
@@ -368,50 +392,49 @@ export default function WorkspaceApp() {
     };
   }, []);
   useEffect(() => {
-    if (window.innerWidth <= 1050) setSidebar(false);
     closeAccountMenu();
   }, [parts.join("/"), params.toString(), closeAccountMenu]);
   const navigate = useCallback((path: string) => {
     go(path);
   }, []);
+  const opening = useRef(0);
   const open = useCallback((resource: OpenResource, split = false) => {
-    if (resource.document_type && resource.document_type !== "markdown") {
-      go(`/tools/${resource.document_type}/${resource.id}`);
-      return;
-    }
-    if (resource.kind === "shortcut") {
-      void api<Resource>(`resources/${resource.id}/resolve`)
-        .then((target) => {
-          if (target.kind === "folder")
-            go(`/explorer?space=${target.space_id}&folder=${target.id}`);
-          else if (target.document_type && target.document_type !== "markdown")
-            go(`/tools/${target.document_type}/${target.id}`);
-          else
-            go(`/${target.kind === "note" ? "notes" : "files"}/${target.id}`);
-        })
-        .catch((error) => setError(error.message));
-      return;
-    }
-    if (resource.kind === "folder") {
-      void api<Resource>(`resources/${resource.id}`)
-        .then((item) =>
-          go(`/explorer?space=${item.space_id}&folder=${item.id}`),
-        )
-        .catch((error) => setError(error.message));
-      return;
-    }
-    if (
-      split &&
-      ["notes", "files"].includes(
-        location.pathname.slice(BASE.length).split("/")[1],
+    const sequence = ++opening.current;
+    const origin = location.href;
+    const account = sessionRef.current?.user.id;
+    const show = (item: OpenResource) => {
+      if (
+        sequence !== opening.current ||
+        location.href !== origin ||
+        sessionRef.current?.user.id !== account
       )
-    )
-      setSplitTarget(resource);
-    else
-      go(
-        `/${resource.kind === "note" ? "notes" : "files"}/${resource.id}${resource.versionId ? "?version=" + resource.versionId : ""}`,
-      );
+        return;
+      if (
+        split &&
+        item.kind !== "folder" &&
+        isFileView(location.pathname.slice(BASE.length).split("/")[1])
+      )
+        setSplitTarget(item);
+      else go(fileRoute(item, resource.versionId));
+    };
+    if (
+      resource.kind === "shortcut" ||
+      (resource.kind === "folder" && !resource.space_id)
+    ) {
+      void api<Resource>(
+        `resources/${resource.id}${resource.kind === "shortcut" ? "/resolve" : ""}`,
+      )
+        .then(show)
+        .catch((error) => {
+          if (sequence === opening.current && location.href === origin)
+            setError(error.message);
+        });
+    } else show(resource);
   }, []);
+  useEffect(() => {
+    if (page === "tools")
+      go(tabRoute(location.pathname + location.search), true);
+  }, [page]);
   const finishSignout = async () => {
     if (!session) return;
     const userId = session.user.id;
@@ -469,7 +492,7 @@ export default function WorkspaceApp() {
         />
       </>
     );
-  const workbench = ["notes", "files"].includes(page) && !!parts[1];
+  const workbench = isFileView(page) && !!parts[1];
   return (
     <WorkspaceContext.Provider
       value={{
@@ -491,6 +514,8 @@ export default function WorkspaceApp() {
           className={`ws-app ${sidebar ? "sidebar-open" : ""}`}
         >
           <ManagementProvider>
+            <VisualViewerHost />
+            <FileCreationHost />
             <a className="ws-skip-link" href="#workspace-content">
               Skip to workspace content
             </a>
@@ -599,19 +624,12 @@ export default function WorkspaceApp() {
                     aria-label="Close navigation"
                     onClick={() => setSidebar(false)}
                   />
-                  <aside className="ws-sidebar" aria-label="Context navigation">
+                  <aside
+                    className="ws-sidebar"
+                    aria-label="Workspace navigation"
+                  >
                     <div className="ws-sidebar-heading">
-                      <span>
-                        {page === "settings"
-                          ? "Your preferences"
-                          : ["admin", "workspaces", "audit", "trash"].includes(
-                                page,
-                              )
-                            ? "Administration"
-                            : page === "projects"
-                              ? "Research projects"
-                              : "Workspace"}
-                      </span>
+                      <span>Workspace</span>
                       <button
                         className="icon-button"
                         aria-label="Collapse sidebar"
@@ -621,35 +639,7 @@ export default function WorkspaceApp() {
                       </button>
                     </div>
                     <div className="ws-sidebar-scroll">
-                      {page === "settings" ? (
-                        <SettingsNavigation />
-                      ) : ["admin", "workspaces", "audit", "trash"].includes(
-                          page,
-                        ) ? (
-                        <ManagementNavigation />
-                      ) : page === "projects" ? (
-                        <ProjectNavigation
-                          revision={revision}
-                          selected={parts[1]}
-                        />
-                      ) : (
-                        <ExplorerTree />
-                      )}
-                    </div>
-                    <div className="ws-sidebar-footer">
-                      <WorkspaceLink to="/settings/storage">
-                        <HardDrive size={16} />
-                        Manage storage
-                      </WorkspaceLink>
-                      <WorkspaceLink to="/groups">
-                        <Users size={16} />
-                        Groups & invitations
-                      </WorkspaceLink>
-                      <WorkspaceLink to="/settings/appearance">
-                        <Settings size={16} />
-                        Personalize workspace
-                      </WorkspaceLink>
-                      <span>Private by intention. Shared by choice.</span>
+                      <WorkspaceSidebar />
                     </div>
                   </aside>
                 </>
@@ -666,9 +656,10 @@ export default function WorkspaceApp() {
                   }
                 />
                 {(page === "settings" ||
-                  applicationTabs.state.tabs.some((tab) =>
-                    tab.path.startsWith("/settings"),
-                  )) && (
+                  (settingsVisit === session.user.id &&
+                    applicationTabs.state.tabs.some((tab) =>
+                      tab.path.startsWith("/settings"),
+                    ))) && (
                   <SettingsPage
                     active={page === "settings"}
                     section={
@@ -690,12 +681,16 @@ export default function WorkspaceApp() {
                       id: parts[1],
                       viewId: applicationTabs.state.active,
                       versionId: params.get("version") ?? undefined,
+                      route:
+                        location.pathname.slice(BASE.length) +
+                        location.search +
+                        location.hash,
                     }}
                     splitTarget={splitTarget}
                     onSplitHandled={() => setSplitTarget(null)}
                   />
                 ) : page === "tools" ? (
-                  <ToolsPage kind={parts[1]} id={parts[2]} />
+                  <Loading label="Opening Explorer…" />
                 ) : page === "home" ? (
                   <HomePage />
                 ) : page === "explorer" ? (
@@ -781,35 +776,6 @@ export default function WorkspaceApp() {
         </DialogFocusBoundary>
       </ApplicationTabsContext.Provider>
     </WorkspaceContext.Provider>
-  );
-}
-function ProjectNavigation({
-  revision,
-  selected,
-}: {
-  revision: number;
-  selected?: string;
-}) {
-  const data = useData<any[]>("projects", revision);
-  return (
-    <>
-      <WorkspaceLink to="/projects" className="ws-side-link">
-        <FlaskConical size={17} />
-        All projects
-      </WorkspaceLink>
-      <span className="ws-section-label">Active research</span>
-      {data.data?.map((project) => (
-        <WorkspaceLink
-          className={`ws-side-link ${selected === project.id ? "active" : ""}`}
-          key={project.id}
-          to={`/projects/${project.id}/tasks`}
-        >
-          <FolderOpen size={16} />
-          <span>{project.name}</span>
-        </WorkspaceLink>
-      ))}
-      <ErrorNotice message={data.error} retry={data.reload} />
-    </>
   );
 }
 function WorkspaceSearch({ onClose }: { onClose: () => void }) {

@@ -16,12 +16,15 @@ import { literalBody } from "./literal";
 import type { SourceSelection } from "./transactions";
 import { proseProjection } from "./prose-projection";
 import type { EditingProseNode, QuoteProse } from "./quote-prose";
+import type { ListProse } from "./list-prose";
 import { projectFootnote } from "./footnote-projection";
+import { foldDescription, type FoldRange } from "./folding";
 
 export type ProjectedBlock = {
   from: number;
   to: number;
   node: MarkdownNode;
+  folded?: boolean;
   cell?: { tableFrom: number; row: number; column: number; missing: boolean };
 };
 export type Projection = {
@@ -36,10 +39,13 @@ export type Projection = {
     to: number;
     kind: string;
     quote?: QuoteProse;
+    list?: ListProse;
     footnote?: number;
   }[];
 };
 export type ProjectionOptions = {
+  /** Local visual scopes only. Full source spans remain mapped on the atom. */
+  folded?: readonly FoldRange[];
   schema?: Schema;
   parsed?: ParsedDocument;
   nodes?: MarkdownNode[];
@@ -224,7 +230,9 @@ export function projectMarkdown(
     attrs?: Record<string, unknown>,
   ) => {
     const start = position++;
-    const quote = (node as EditingProseNode).quoteBody;
+    const quote =
+      (node as EditingProseNode).listBody ??
+      (node as EditingProseNode).quoteBody;
     const authored = (from: number, to: number) => {
       const result: ProseNode[] = [];
       let at = from;
@@ -295,6 +303,25 @@ export function projectMarkdown(
     return result;
   };
   const block = (node: MarkdownNode): ProseNode => {
+    if (
+      options.folded?.some(
+        (range) =>
+          range.type === node.type &&
+          range.from === node.from &&
+          range.to === node.to,
+      )
+    ) {
+      const start = position++;
+      spans.push({
+        from: start,
+        to: position,
+        sourceFrom: node.from,
+        sourceTo: node.to,
+        boundaries: [node.from, node.to],
+      });
+      blocks.push({ from: start, to: position, node, folded: true });
+      return schema.nodes.folded_block.create(foldDescription(source, node));
+    }
     if (node.type === "footnoteDefinition" && options.proseSource) {
       const header = sourceLine(source, node.from);
       if (options.footnoteDraft === node.from) {
@@ -324,11 +351,22 @@ export function projectMarkdown(
         { ...options, schema },
         projectMarkdown,
       );
+      const foldedNodes = new Map(
+        sub.blocks.filter((b) => b.folded).map((b) => [b.from, b.node]),
+      );
       for (const span of sub.map.spans) {
         const boundaries = Array.from(
           { length: span.to - span.from + 1 },
           (_, i) => body.sourceAt(span.boundaries?.[i] ?? span.sourceFrom + i),
         );
+        // A definition's local text can omit its terminal newline. Collapsed
+        // atoms still own the full canonical block, including that boundary.
+        const folded = foldedNodes.get(span.from);
+        if (folded) {
+          const original = out(folded);
+          boundaries[0] = original.from;
+          boundaries[boundaries.length - 1] = original.to;
+        }
         spans.push({
           from: position + span.from,
           to: position + span.to,
@@ -359,6 +397,18 @@ export function projectMarkdown(
           from: body.sourceAt(range.from),
           to: body.sourceAt(range.to),
           footnote: node.from,
+          ...(range.list
+            ? {
+                list: {
+                  itemFrom: body.sourceAt(range.list.itemFrom),
+                  lines: range.list.lines.map((line) => ({
+                    from: body.sourceAt(line.from),
+                    bodyFrom: body.sourceAt(line.bodyFrom),
+                    to: body.sourceAt(line.to),
+                  })),
+                },
+              }
+            : {}),
           ...(range.quote
             ? {
                 quote: {
@@ -383,11 +433,14 @@ export function projectMarkdown(
     }
     if (node.type === "sourceProse") {
       const quote = (node as EditingProseNode).quoteBody;
+      const list = (node as EditingProseNode).listBody;
       activeProse.push({
-        from: quote?.lines[0]?.bodyFrom ?? node.contentFrom ?? node.from,
+        from:
+          (list ?? quote)?.lines[0]?.bodyFrom ?? node.contentFrom ?? node.from,
         to: node.contentTo ?? node.to,
         kind: node.kind ?? "paragraph",
         ...(quote ? { quote } : {}),
+        ...(list ? { list } : {}),
       });
       return prose(node, "source_prose", {
         kind: node.kind,

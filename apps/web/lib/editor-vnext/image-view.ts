@@ -36,6 +36,7 @@ export class ImageView implements NodeView {
   ) {
     this.dom.className = "axiom-inline-preview axiom-image";
     this.dom.dataset.kind = "image";
+    this.dom.dataset.visualKind = "image";
     this.dom.contentEditable = "false";
     this.dom.tabIndex = 0;
     this.status.className = "axiom-image-status";
@@ -52,6 +53,7 @@ export class ImageView implements NodeView {
     this.dom.append(this.status, this.retry);
     this.dom.addEventListener("mousedown", (event) => {
       if (event.button !== 0 || event.ctrlKey || event.metaKey) return;
+      if ((event.target as Element).closest("[data-visual-open]")) return;
       event.preventDefault();
       event.stopPropagation();
       if (event.target === this.retry) return;
@@ -131,6 +133,8 @@ export class ImageView implements NodeView {
     const node = this.options.source();
     if (!node || this.destroyed) return;
     const alt = plainText(node) || "Image";
+    this.dom.dataset.visualFrom = String(node.from);
+    this.dom.dataset.visualTo = String(node.to);
     const disabled = this.options.disabled();
     const url = disabled ? "" : safeUrl(node.href ?? "", true);
     if (url !== this.url) {

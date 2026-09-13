@@ -35,6 +35,8 @@ async function exact(page: Page, source: string, at: number) {
     .toEqual({ anchor: at, head: at });
 }
 const prose = (page: Page) => page.locator('[data-pane="0"] .axiom-prose');
+const visibleProse = (text: string) =>
+  text.replace(/^(?:[-+*]|\d+[.)])[ \t]+(?:\[[ xX]\][ \t]+)?/, "");
 
 for (const [text, preview] of [
   ["# A heading", "h1"],
@@ -53,7 +55,7 @@ for (const [text, preview] of [
       await exact(page, typed + "\n\nOutside", typed.length);
       await expect(
         prose(page).locator(".axiom-source-prose").first(),
-      ).toHaveText(typed, { useInnerText: false });
+      ).toHaveText(visibleProse(typed), { useInnerText: false });
     }
     const updates = await page.evaluate(
       () => window.editorLab.snapshot()[0].updates,
@@ -75,7 +77,7 @@ for (const [text, preview] of [
         : rendered;
     await content.click({ position: { x: 10, y: 10 } });
     await expect(prose(page).locator(".axiom-source-prose").first()).toHaveText(
-      text,
+      visibleProse(text),
       { useInnerText: false },
     );
     expect(
@@ -151,7 +153,7 @@ for (const [initial, next] of [
     await page.keyboard.press("Enter");
     const continued = initial + "\n" + next;
     await exact(page, continued, continued.length);
-    await expect(prose(page).locator(".axiom-source-prose")).toHaveText(next, {
+    await expect(prose(page).locator(".axiom-source-prose")).toHaveText("", {
       useInnerText: false,
     });
     await page.keyboard.type("second");
@@ -184,7 +186,7 @@ test("quote continuation keeps the body literal with hidden prefixes, then exits
   await expect(prose(page).locator("blockquote")).toBeVisible();
 });
 
-for (const text of ["# Title", "- item", "- [ ] task"])
+for (const text of ["# Title"])
   test(`Backspace in visible source deletes only the character: ${text}`, async ({
     page,
   }) => {
@@ -297,15 +299,14 @@ test("IME inside active heading source keeps literal markers and rebases a peer 
   await cdp.detach();
 });
 
-test("only the active nested item reveals its full prefixes", async ({
+test("active nested items keep structural prefixes hidden", async ({
   page,
 }) => {
   const text = "- Parent\n  - Child\n  - Sibling\n- Next\n\nAfter";
   await reset(page, text, text.indexOf("Child") + 5);
-  await expect(prose(page).locator(".axiom-source-prose")).toHaveText(
-    "  - Child",
-    { useInnerText: false },
-  );
+  await expect(prose(page).locator(".axiom-source-prose")).toHaveText("Child", {
+    useInnerText: false,
+  });
   await page.keyboard.type("!");
   await exact(page, text.replace("Child", "Child!"), text.indexOf("Child") + 6);
   await expect(

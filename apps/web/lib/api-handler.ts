@@ -70,6 +70,8 @@ import { offlineApi } from "@axiom/shared/offline-api";
 import { assertDataset, instanceApi } from "@axiom/shared/instance";
 import { toolServicesApi } from "@axiom/shared/tool-services-api";
 import { resourceCommentsApi } from "@axiom/shared/resource-comments-api";
+import { noteCommentsApi } from "@axiom/shared/note-comments-api";
+import { visualAnnotationsApi } from "@axiom/shared/visual-annotations-api";
 import { projectsApi } from "@axiom/shared/projects-api";
 import { accountsApi } from "@axiom/shared/accounts-api";
 import { groupAdministrationApi } from "@axiom/shared/group-administration";
@@ -222,6 +224,10 @@ async function handleRequest(
     if (transferResponse) return transferResponse;
     const commentsResponse = await resourceCommentsApi(request, path, user.id);
     if (commentsResponse) return commentsResponse;
+    const noteCommentsResponse = await noteCommentsApi(request, path, user);
+    if (noteCommentsResponse) return noteCommentsResponse;
+    const visualResponse = await visualAnnotationsApi(request, path, user);
+    if (visualResponse) return visualResponse;
     const serviceResponse = await toolServicesApi(request, path, user.id);
     if (serviceResponse) return serviceResponse;
     const createdFile = await fileCreateApi(request, path, user.id);
@@ -729,58 +735,6 @@ async function handleRequest(
           ]);
         return json({ favorite });
       }
-      if (action === "comments" && method === "GET")
-        return json(
-          await query(
-            'SELECT c.*,u.name AS author_name FROM comments c JOIN "user" u ON u.id=c.author_id WHERE c.note_id=$1 ORDER BY c.created_at',
-            [id],
-          ),
-        );
-      if (action === "comments" && method === "POST") {
-        const input = z
-          .object({
-            body: z.string().trim().min(1).max(10000),
-            parentId: uuid.nullable().default(null),
-            anchor: z
-              .object({
-                start: z.array(z.number().int().min(0).max(255)).max(1000),
-                end: z.array(z.number().int().min(0).max(255)).max(1000),
-                quote: z.string().max(2000),
-                generation: z.number().int(),
-              })
-              .nullable()
-              .default(null),
-          })
-          .parse(await request.json());
-        if (
-          input.parentId &&
-          !(
-            await query(
-              "SELECT id FROM comments WHERE id=$1 AND note_id=$2 AND parent_id IS NULL",
-              [input.parentId, id],
-            )
-          ).length
-        )
-          throw new HttpError(400, "Comment thread not found.");
-        const [comment] = await noteWriteQuery(
-          user.id,
-          id,
-          "INSERT INTO comments(note_id,author_id,parent_id,body,anchor) VALUES($1,$2,$3,$4,$5) RETURNING *",
-          [id, user.id, input.parentId, input.body, input.anchor],
-          "comment",
-        );
-        const recipients = await query(
-          "SELECT DISTINCT c.author_id AS id FROM comments c WHERE c.note_id=$1 AND c.author_id<>$2 UNION SELECT author_id AS id FROM notes WHERE id=$1 AND author_id<>$2",
-          [id, user.id],
-        );
-        for (const recipient of recipients)
-          await query(
-            "INSERT INTO notifications(user_id,note_id,message) VALUES($1,$2,$3)",
-            [recipient.id, id, `${user.name} commented on ${note.title}`],
-          );
-        await notifyWorkspace();
-        return json(comment, 201);
-      }
       if (action === "history" && method === "GET")
         return json(
           await query(
@@ -1005,28 +959,6 @@ async function handleRequest(
           },
         });
       }
-    }
-    if (resource === "comments" && id && method === "PATCH") {
-      const [comment] = await query("SELECT * FROM comments WHERE id=$1", [
-        uuid.parse(id),
-      ]);
-      if (!comment) throw new HttpError(404, "Comment not found.");
-      requireNoteCapability(
-        await noteAccess(user.id, comment.note_id),
-        "comment",
-      );
-      const { resolved } = z
-        .object({ resolved: z.boolean() })
-        .parse(await request.json());
-      await noteWriteQuery(
-        user.id,
-        comment.note_id,
-        "UPDATE comments SET resolved=$1 WHERE id=$2",
-        [resolved, id],
-        "comment",
-      );
-      await notifyWorkspace();
-      return json({ ok: true });
     }
     if (resource === "notifications" && method === "POST") {
       await query("UPDATE notifications SET read_at=now() WHERE user_id=$1", [

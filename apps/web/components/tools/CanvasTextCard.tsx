@@ -13,6 +13,10 @@ import { GripHorizontal } from "lucide-react";
 import { parseMarkdown } from "@axiom/markdown";
 import { NativeBinding } from "@axiom/editor/binding";
 import { EditorView } from "../../lib/editor-view";
+import {
+  installMarkdownVisuals,
+  visualTextAnchor,
+} from "../../lib/visual-surface";
 import ReadingView from "../ReadingView";
 import { useWorkspace } from "../workspace/ui";
 
@@ -86,7 +90,7 @@ export default function CanvasTextCard(props: Props) {
       ) : (
         <div className="canvas-card-body" title="Double-click to edit">
           {props.source ? (
-            <CardPreview source={props.source} />
+            <CardPreview source={props.source} text={props.text} />
           ) : (
             <p className="canvas-placeholder">
               Double-click to write a thought…
@@ -98,7 +102,13 @@ export default function CanvasTextCard(props: Props) {
   );
 }
 
-const CardPreview = memo(function CardPreview({ source }: { source: string }) {
+const CardPreview = memo(function CardPreview({
+  source,
+  text,
+}: {
+  source: string;
+  text?: Y.Text;
+}) {
   const { appearance, open } = useWorkspace();
   const parsed = useMemo(() => parseMarkdown(source), [source]);
   const context = useMemo(
@@ -107,6 +117,10 @@ const CardPreview = memo(function CardPreview({ source }: { source: string }) {
   );
   return (
     <ReadingView
+      source={source}
+      visualAnchor={
+        text ? (from, to) => visualTextAnchor(text, from, to) : undefined
+      }
       parsed={parsed}
       context={context}
       onLink={(target) => {
@@ -204,6 +218,21 @@ function CardEditor({
       editor.content.dataset.testid = "canvas-card-editor";
     }
     view.current = editor;
+    const closeVisuals = installMarkdownVisuals(editor.dom, {
+      selection: () => editor.selection,
+      parsed: () => editor.parsed,
+      source: () => editor.source,
+      binding,
+      captureRestore: () => {
+        const at = binding.relative(editor.selection);
+        return () => {
+          const s = binding.absolute(at);
+          if (alive && s) editor.focus(s.anchor, s.head);
+        };
+      },
+      editorMenu: (x, y, at) =>
+        editor.openBlockMenu(x, y, { anchor: at, head: at }),
+    });
     void Promise.resolve("ready" in editor ? editor.ready : undefined).then(
       () => {
         if (alive && !current.current.readOnly)
@@ -214,6 +243,7 @@ function CardEditor({
       alive = false;
       view.current = null;
       undo.stopCapturing();
+      closeVisuals();
       editor.destroy();
     };
   }, [text, undo, awareness]);

@@ -2,6 +2,9 @@ import {
   nodeAt,
   parseMarkdown,
   tableModel,
+  footnoteAt,
+  footnoteCommand,
+  exitEmptyBlockLine,
   type MarkdownNode,
   type SourceEdit,
   type TextChange,
@@ -15,6 +18,82 @@ import {
   selectionRange,
   type SourceSelection,
 } from "./transactions";
+import { listMarker } from "./list-prose";
+
+/** Only an already-empty editable unit is removable. Generated/atomic views
+ * (images, rules, TOCs) are meaningful even when their textContent is empty. */
+export function emptyBlockDelete(
+  source: string,
+  selection: SourceSelection,
+): SourceEdit | null {
+  if (selection.anchor !== selection.head) return null;
+  const at = selection.head;
+  const footnote = footnoteAt(source, at);
+  if (footnote) {
+    if (footnote.text.length === 0)
+      return exitEmptyBlockLine(
+        source,
+        footnote.header.from,
+        footnote.lines.at(-1)!.to,
+        "",
+      );
+    return footnoteCommand(source, selection, emptyBlockDelete) ?? null;
+  }
+  const node = nodeAt(source, at, [
+    "heading",
+    "item",
+    "blockquote",
+    "callout",
+    "theorem",
+    "proof",
+    "codeBlock",
+    "mathBlock",
+    "table",
+    "frontmatter",
+  ]);
+  if (!node) return null;
+  let empty = false;
+  if (["codeBlock", "mathBlock"].includes(node.type))
+    empty = literalBody(source, node).text.length === 0;
+  else if (node.type === "table")
+    empty = !!tableModel(source, node)?.rows.every((row) =>
+      row.cells.every((cell) => !cell.raw.trim()),
+    );
+  else if (node.type === "frontmatter")
+    empty = !source.slice(node.contentFrom, node.contentTo).trim();
+  else if (node.type === "heading") empty = !node.text;
+  else if (node.type === "item") {
+    const marker = listMarker(source, node);
+    empty = !!marker && !source.slice(marker.bodyFrom, node.to).trim();
+  } else if (node.type === "callout") {
+    const line = lineAt(source, node.from);
+    // The default kind label is structural, not authored title text.
+    empty =
+      !node.children?.length &&
+      /^>[ \t]*\[![\w-]+\][+-]?[ \t]*$/.test(
+        source.slice(node.from, line.to).replace(/\r$/, ""),
+      );
+  } else {
+    // Do not mistake an empty line inside a populated quote/callout for an
+    // empty container; titles and nested blocks count as authored contents.
+    empty = !source
+      .slice(node.from, node.to)
+      .replace(/^[ \t]*>[ \t]?/gm, "")
+      .trim();
+  }
+  if (!empty) return null;
+  const first = lineAt(source, node.from);
+  let to = node.to;
+  while (to > node.from && /[\r\n]/.test(source[to - 1])) to--;
+  const prefix = source.slice(first.from, node.from);
+  return exitEmptyBlockLine(
+    source,
+    first.from,
+    to,
+    prefix,
+    /(?:[-+*]|\d+[.)])[ \t]+(?:\[[ xX]\][ \t]+)?$/.test(prefix),
+  );
+}
 
 const proseTypes = ["paragraph", "heading"];
 const blockTypes = [

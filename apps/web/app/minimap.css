@@ -1,0 +1,270 @@
+/* Document navigation lives outside editable DOM and shares the paper palette. */
+.document-navigation-row {
+  position: relative;
+  display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+}
+.document-navigation-row[hidden] {
+  display: none;
+}
+.document-navigation-row > .ws-document-scroll {
+  flex: 1 1 0;
+}
+.minimap-slot {
+  display: none;
+  min-width: 0;
+  overflow: hidden;
+  background: var(--paper);
+}
+.document-navigation-row[data-minimap] > .minimap-slot {
+  display: block;
+  flex: 0 0 var(--minimap-width, 120px);
+}
+.document-navigation-row[data-minimap="left"] > .minimap-slot {
+  order: -1;
+}
+.document-minimap {
+  position: relative;
+  height: 100%;
+  min-height: 0;
+  color: var(--muted);
+  background: var(--paper);
+  contain: layout paint;
+  user-select: none;
+  touch-action: none;
+}
+.minimap-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.minimap-scroll-control {
+  position: absolute;
+  inset: 0 8px 0 0;
+  cursor: default;
+  outline: none;
+  touch-action: none;
+}
+.minimap-selection-range {
+  position: absolute;
+  inset-inline: 1px 8px;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  border-inline-start: 1px solid var(--accent);
+  pointer-events: none;
+}
+.minimap-viewport {
+  position: absolute;
+  inset-inline: 0;
+  border: 1px solid color-mix(in srgb, var(--accent) 36%, transparent);
+  border-radius: min(3px, var(--control-radius-small));
+  background: color-mix(in srgb, var(--accent) 9%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 100ms ease;
+}
+.document-minimap:is(:hover, :focus-within, [data-slider="always"])
+  .minimap-viewport {
+  opacity: 1;
+}
+.document-minimap .minimap-marker-lane {
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: 8px;
+  pointer-events: none;
+}
+.document-minimap .minimap-marker {
+  --minimap-marker: var(--accent);
+  position: absolute;
+  inset-inline: 1px;
+  width: 6px;
+  height: 6px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: min(2px, var(--control-radius-small));
+  background: var(--minimap-marker);
+  opacity: 0.72;
+  pointer-events: auto;
+  cursor: pointer;
+}
+.minimap-marker[data-kind="search"] {
+  --minimap-marker: var(--warning);
+}
+.minimap-marker[data-kind="annotation"] {
+  --minimap-marker: var(--syntax);
+}
+.minimap-marker[data-kind="cursor"] {
+  --minimap-marker: var(--text);
+}
+.minimap-marker[data-kind="selection"] {
+  --minimap-marker: var(--focus);
+}
+.minimap-marker[data-mark-color] {
+  background: var(--mark-color);
+}
+.document-minimap .minimap-heading {
+  position: absolute;
+  inset-inline: 4px 12px;
+  display: block;
+  width: auto;
+  min-height: 0;
+  max-height: 18px;
+  padding: 1px 3px;
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--control-radius-small);
+  text-align: start;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 500 9px/1.6 var(--font-ui);
+  color: var(--muted);
+  background: color-mix(in srgb, var(--paper) 94%, transparent);
+  cursor: pointer;
+}
+.document-minimap .minimap-menu {
+  position: absolute;
+  inset: 2px 9px auto auto;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 18px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--control-radius-small);
+  color: var(--muted);
+  background: var(--paper);
+  opacity: 0.2;
+}
+.document-minimap:is(:hover, :focus-within) .minimap-menu {
+  opacity: 1;
+}
+.document-minimap :is(button, .minimap-scroll-control):focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+.document-minimap button:hover {
+  color: var(--text);
+  opacity: 1;
+}
+.document-minimap .minimap-heading:hover {
+  background: var(--surface);
+}
+.document-minimap.is-compact .minimap-menu {
+  inset-inline: 0;
+  width: 14px;
+}
+.document-minimap.is-compact .minimap-viewport {
+  opacity: 0.8;
+  border-radius: 0;
+}
+.document-minimap.is-compact .minimap-canvas {
+  display: none;
+}
+.minimap-preview {
+  position: fixed;
+  z-index: 85;
+  width: 300px;
+  max-height: 190px;
+  overflow: hidden;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--panel-radius);
+  box-shadow: var(--shadow);
+  background: var(--paper);
+  color: var(--text);
+  font: 12px/1.6 var(--font-ui);
+  pointer-events: none;
+  overflow-wrap: anywhere;
+}
+.minimap-preview strong {
+  display: block;
+  font-weight: 600;
+}
+.minimap-preview p {
+  margin: 8px 0;
+  max-height: 100px;
+  overflow: hidden;
+  white-space: pre-wrap;
+  color: var(--muted);
+}
+.minimap-preview small {
+  font-size: 10px;
+  color: var(--muted);
+}
+.minimap-settings fieldset {
+  min-width: 0;
+  margin: 12px 0 0;
+  padding: 0;
+  border: 0;
+}
+.minimap-settings fieldset:disabled {
+  opacity: 0.55;
+}
+.minimap-settings legend {
+  font: 500 var(--size-ui-small)/1.5 var(--font-ui);
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.minimap-mode-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 20px;
+  margin-bottom: 12px;
+}
+.minimap-mode-options .setting-control {
+  flex: 1;
+  min-width: 64px;
+  gap: 8px;
+  margin: 0;
+}
+.minimap-advanced {
+  border-top: 1px solid var(--line);
+  margin-top: 12px;
+  padding-top: 12px;
+}
+.minimap-advanced > summary {
+  color: var(--muted);
+  cursor: pointer;
+  font-weight: 500;
+  margin-bottom: 10px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .minimap-viewport {
+    transition: none;
+  }
+}
+[data-motion="none"] .minimap-viewport,
+[data-motion="reduced"] .minimap-viewport {
+  transition: none;
+}
+@media (forced-colors: active) {
+  .minimap-selection-range {
+    border-inline-start-color: Highlight;
+  }
+  .minimap-viewport {
+    border: 1px solid Highlight;
+    opacity: 1;
+  }
+  .document-minimap .minimap-marker {
+    background: Highlight;
+  }
+  .document-minimap .minimap-heading {
+    background: Canvas;
+    color: CanvasText;
+  }
+}
+@media print {
+  .document-navigation-row {
+    display: block;
+  }
+  .minimap-slot,
+  .document-minimap,
+  .minimap-preview {
+    display: none !important;
+  }
+}

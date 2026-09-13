@@ -96,13 +96,22 @@ Completed quote prefixes are hidden in a per-line, view-only source map. Ordinar
 quote bodies remain literal; empty bodies have a mapped insertion point. The
 same source-edit adapter expands multiline paste/IME replacements once, preserving
 CRLF and explicit nested quote depth. Backspace unwraps one paragraph level, never
-the whole adjacent equation/table container. No parser dialect or Yjs schema changes.
+the whole adjacent equation/table container. The same lossless mapping now hides
+completed list/task markers while preserving editable item bodies. In `stem-v1`,
+an empty marker inside a container is recognized as a list item rather than a
+Setext underline. CommonMark/GFM behavior and the Yjs schema are unchanged.
 
 The table of contents derives a real ancestor stack from the parser's outline, retaining source offsets and unique IDs. The native DOM/source map exposes caret and visible-source positions without replacing the Yjs provider. Read mode measures headings inside the visible reading mount only. Collapse state lives in the current document session, outside both canonical Markdown and account preferences.
 
 The editor registry in `packages/shared/src/editor.ts` is serializable and shared by command dispatch, slash/palette UI, hints and preference validation. Migration 3 adds `user_editor_preferences`; authenticated GET/PATCH use private/no-store responses, per-account scope, mutation idempotence and compare-and-swap revisions. The local controller holds an account-scoped outbox and merges independent fields/platform-command bindings. Editor preferences are independent of appearance restore points.
 
-`packages/markdown/src/editing.ts` and `apps/web/lib/native-editor/transactions.ts` produce canonical source-range changes. Semantic lists, quotes, code, TeX and table cells share one first-party contenteditable surface and source map. `beforeinput` routes cancellable edits into Yjs; composition and noncancellable input reconcile browser-owned DOM text against relative-position bookmarks. A deleted/conflicting composition container retains a full recoverable Markdown draft. Uncommitted language/callout-title fields use guarded commits and the same recovery path. Structural edits form explicit author-local undo boundaries in the retained Yjs undo manager. Async table/attachment insertion captures relative positions and checks selected source before applying. Changing mode/preferences reconfigures the view without reconnecting the provider.
+`packages/markdown/src/editing.ts` and `packages/editor/src/transactions.ts` produce canonical source-range changes. The production vNext adapter uses a customized Milkdown/ProseMirror rich surface and CodeMirror source/literal surfaces; Axiom owns the Markdown mapping, transactions, node views and shared-history integration. `beforeinput` routes cancellable edits into Yjs; composition and noncancellable input reconcile browser-owned DOM text against relative-position bookmarks. A deleted/conflicting composition container retains a full recoverable Markdown draft. Uncommitted language/callout-title/metadata fields use guarded commits and the same recovery path. Structural edits form explicit author-local undo boundaries in the retained Yjs undo manager. Async table/attachment insertion captures relative positions and checks selected source before applying. Changing mode/preferences reconfigures the view without reconnecting the provider.
+
+Display equations retain their last typeset DOM while a new worker result is
+pending; source-offset and outline changes do not replace it. TOC blocks are
+display-only navigators. Metadata uses passive, lossless YAML property ranges
+and guarded table-field commits, never an evaluator or a whole-document rewrite.
+Nested YAML remains preserved and editable in Source mode.
 
 Awareness publishes relative source positions directly, including table/code/math selections and other sessions of the same account. Remote equation editing displays a block indicator when local TeX is closed; it never forces that local surface open. Each workbench pane keeps its footer outside the document scroller. Language-aware counts run in a versioned worker, and hidden reading/print HTML is prepared only when needed.
 

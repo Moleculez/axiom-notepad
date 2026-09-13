@@ -842,6 +842,16 @@ function blocks(lines: Line[], ctx: Context): N[] {
     let j = i + 1,
       heading = 0;
     while (j < lines.length && !blank(lines[j].text)) {
+      // Authoring dialect: an explicitly completed empty marker in a nested
+      // container starts an item. In particular "- " must not transiently turn
+      // its parent into a setext heading while a new child is being typed.
+      // CommonMark/GFM parsing and imported setext underlines remain unchanged.
+      if (
+        ctx.dialect === "stem-v1" &&
+        ctx.depth > 0 &&
+        /^ {0,3}(?:[-+*]|\d+[.)])[ \t]+$/.test(lines[j].text)
+      )
+        break;
       if (!lines[j].lazy && /^ {0,3}(?:=+|-+)[ \t]*$/.test(lines[j].text)) {
         heading = lines[j].text.trim()[0] === "=" ? 1 : 2;
         j++;

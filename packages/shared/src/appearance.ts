@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { legacyDocumentDecorations } from "./document-style";
 import { themePack, themePackIds } from "./theme-packs";
+import { minimapPreferencesSchema } from "./minimap";
 
 export const fonts = {
   latinModern: {
@@ -267,7 +268,7 @@ export const presets: Record<
     },
   },
 };
-export const APPEARANCE_SCHEMA = 5;
+export const APPEARANCE_SCHEMA = 8;
 export const APPEARANCE_SCHEMA_HEADER = "X-Axiom-Appearance-Schema";
 const currentPreferencesSchema = z
   .object({
@@ -286,6 +287,10 @@ const currentPreferencesSchema = z
     proseFont: font.default("sourceSans"),
     headingFont: font.default("systemSans"),
     documentDecorations: z.enum(["none", "latex"]).default("none"),
+    blockGuides: z.boolean().default(true),
+    readingMarkMargin: z.boolean().default(true),
+    readingMarkOverview: z.boolean().default(true),
+    minimap: minimapPreferencesSchema.prefault({}),
     material: z.enum(["glass", "solid"]).default("glass"),
     glassIntensity: z.number().int().min(0).max(100).default(65),
     codeFont: z
@@ -363,7 +368,10 @@ export const preferencesSchema = z.preprocess((value) => {
     "schemaVersion" in value &&
     (value.schemaVersion === 2 ||
       value.schemaVersion === 3 ||
-      value.schemaVersion === 4)
+      value.schemaVersion === 4 ||
+      value.schemaVersion === 5 ||
+      value.schemaVersion === 6 ||
+      value.schemaVersion === 7)
   )
     return {
       documentDecorations: legacyDocumentDecorations(value),
@@ -413,6 +421,30 @@ export function appearanceForClient(
 ) {
   const version = request.headers.get(APPEARANCE_SCHEMA_HEADER);
   if (version === String(APPEARANCE_SCHEMA)) return record;
+  if (version === "5" || version === "6" || version === "7") {
+    const legacy = (p: Preferences) => {
+      const {
+        minimap: _minimap,
+        readingMarkMargin,
+        readingMarkOverview,
+        blockGuides,
+        ...rest
+      } = p;
+      return {
+        ...rest,
+        ...(version !== "5" ? { blockGuides } : {}),
+        ...(version === "7" ? { readingMarkMargin, readingMarkOverview } : {}),
+        schemaVersion: Number(version),
+      };
+    };
+    return {
+      ...record,
+      preferences: legacy(record.preferences),
+      previousPreferences: record.previousPreferences
+        ? legacy(record.previousPreferences)
+        : record.previousPreferences,
+    };
+  }
   if (version && version !== "2" && version !== "3" && version !== "4")
     return null;
   const compatible = (p: Preferences) =>
@@ -437,7 +469,15 @@ export function appearanceForClient(
   };
 }
 function legacyAppearance(p: Preferences, version: string | null) {
-  const { themePack: _pack, documentDecorations: _decorations, ...rest } = p;
+  const {
+    themePack: _pack,
+    documentDecorations: _decorations,
+    blockGuides: _guides,
+    readingMarkMargin: _margin,
+    readingMarkOverview: _overview,
+    minimap: _minimap,
+    ...rest
+  } = p;
   return {
     ...rest,
     ...(version === "4" ? { documentDecorations: p.documentDecorations } : {}),

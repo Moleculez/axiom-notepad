@@ -34,7 +34,6 @@ import {
   Loading,
   PageHeading,
   useData,
-  useLocation,
   useWorkspace,
   WorkspaceLink,
 } from "./ui";
@@ -68,60 +67,6 @@ type Details = {
     lifecycle: SpaceLifecycleAction[];
   };
 };
-
-export function ManagementNavigation() {
-  const { parts } = useLocation();
-  const id = parts[0] === "workspaces" ? parts[1] : undefined;
-  return (
-    <nav aria-label="Management navigation">
-      <WorkspaceLink
-        className={`ws-side-link ${parts[0] === "workspaces" && !id ? "active" : ""}`}
-        to="/workspaces"
-      >
-        <Blocks size={17} />
-        <span>Workspaces</span>
-      </WorkspaceLink>
-      <WorkspaceLink
-        className={`ws-side-link ${parts[0] === "audit" ? "active" : ""}`}
-        to="/audit"
-      >
-        <History size={17} />
-        <span>Audit</span>
-      </WorkspaceLink>
-      <WorkspaceLink
-        className={`ws-side-link ${parts[0] === "trash" ? "active" : ""}`}
-        to="/trash"
-      >
-        <Trash2 size={17} />
-        <span>Trash</span>
-      </WorkspaceLink>
-      <hr className="console-nav-divider" />
-      {id ? (
-        workspaceSections.map(([key, label, Icon]) => (
-          <WorkspaceLink
-            key={key}
-            className={`ws-side-link ${(parts[2] ?? "overview") === key ? "active" : ""}`}
-            to={`/workspaces/${id}/${key}`}
-          >
-            <Icon size={17} />
-            <span>{label}</span>
-          </WorkspaceLink>
-        ))
-      ) : (
-        <>
-          <WorkspaceLink className="ws-side-link" to="/groups">
-            <Users size={17} />
-            <span>Create or join a group</span>
-          </WorkspaceLink>
-          <WorkspaceLink className="ws-side-link" to="/explorer">
-            <FolderOpen size={17} />
-            <span>Back to Explorer</span>
-          </WorkspaceLink>
-        </>
-      )}
-    </nav>
-  );
-}
 
 export function LegacyAdministrationRedirect({
   groupId,
@@ -396,6 +341,22 @@ export default function WorkspacesPage({
               <MoreHorizontal size={18} />
             </button>
           </div>
+          <nav
+            className="page-section-navigation"
+            aria-label="Workspace sections"
+          >
+            {workspaceSections.map(([key, label, Icon]) => (
+              <WorkspaceLink
+                key={key}
+                to={`/workspaces/${space.id}/${key}`}
+                className={`page-section-link ${section === key ? "active" : ""}`}
+                aria-current={section === key ? "page" : undefined}
+              >
+                <Icon size={15} />
+                {label}
+              </WorkspaceLink>
+            ))}
+          </nav>
           <h2 className="console-section-title">
             {workspaceSections.find((s) => s[0] === section)?.[1] ?? "Overview"}
           </h2>

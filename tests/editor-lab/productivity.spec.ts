@@ -67,7 +67,7 @@ test("dividers metadata and definitions have contextual editable views without n
   const pane = page.locator('[data-pane="0"]');
   await expect(pane.locator("hr")).toHaveCount(1);
   await expect(
-    pane.getByRole("button", { name: "Edit document metadata", exact: true }),
+    pane.getByRole("table", { name: "Document metadata", exact: true }),
   ).toBeVisible();
   await expect(
     pane.locator('.axiom-footnote[data-footnote-definition="a"]'),
@@ -82,16 +82,12 @@ test("dividers metadata and definitions have contextual editable views without n
     ),
   ).toEqual([0, 0]);
   await pane
-    .getByRole("button", { name: "Edit document metadata", exact: true })
-    .click();
+    .getByRole("textbox", { name: "Value for title", exact: true })
+    .fill("Research ");
+  await pane.getByText("Before.", { exact: true }).click();
   await expect(
     pane.locator('.axiom-source-prose[data-source-kind="frontmatter"]'),
-  ).toBeVisible();
-  await page.evaluate(
-    (at) => window.editorLab.focus(0, at),
-    original.indexOf("Research") + 8,
-  );
-  await page.keyboard.type(" ");
+  ).toHaveCount(0);
   await shared(page, original.replace("Research\r\n", "Research \r\n"));
 });
 test("Mermaid renders in Write and Read and keeps last valid output on invalid edits", async ({

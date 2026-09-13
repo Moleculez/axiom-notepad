@@ -18,11 +18,6 @@ describe("source while editing", () => {
     "# ",
     "# Title",
     "### A **result** ###",
-    "- item",
-    "1. item",
-    "12) item",
-    "- [ ] task",
-    "+ [x] done",
     "**all** and _inline_ [source](/paper)",
   ])("the active unit includes every authored character: %s", (source) => {
     for (let at = 0; at <= source.length; at++) {
@@ -65,14 +60,14 @@ describe("source while editing", () => {
     },
   );
   test.each(["- ### Nested"])(
-    "container headings retain their level without hiding prefixes: %s",
+    "container headings retain their level while list markers stay rendered: %s",
     (source) => {
       const projection = project(source, source.length);
-      expect(projection.doc.firstChild!.attrs).toEqual({
+      expect(projection.doc.firstChild!.firstChild!.firstChild!.attrs).toEqual({
         kind: "heading",
         level: 3,
       });
-      expect(projection.doc.textContent).toBe(source);
+      expect(projection.doc.textContent).toBe("### Nested");
     },
   );
   test.each(["#hashtag", "####### Plain", "\\# Escaped", "`# Code`"])(
@@ -90,7 +85,7 @@ describe("source while editing", () => {
     expect(heading.attrs).toEqual({ kind: "heading", level: 1 });
     expect(heading.textContent).toBe("Exact title\n===========");
   });
-  test.each(["-", "1.", "*", "- ", ">"])(
+  test.each(["-", "1.", "*", ">"])(
     "an unfinished prefix before existing text has no hidden caret: %s",
     (prefix) => {
       const source = prefix + "\n\nOutside";
@@ -104,11 +99,9 @@ describe("source while editing", () => {
   test("a list item reveals its own prose without revealing siblings or nested items", () => {
     const source = "1. first\n\n   continuation\n   - nested\n2. second\n";
     expect(sourceUnits(source, source.indexOf("first"))).toEqual([
-      "1. first\n\n   continuation",
+      "first\n\n   continuation",
     ]);
-    expect(sourceUnits(source, source.indexOf("nested"))).toEqual([
-      "   - nested",
-    ]);
+    expect(sourceUnits(source, source.indexOf("nested"))).toEqual(["nested"]);
     expect(project(source, source.indexOf("nested")).doc.textContent).toContain(
       "first",
     );
@@ -127,7 +120,7 @@ describe("source while editing", () => {
       "> first",
     );
   });
-  test.each(["[TOC]", "---\ntitle: Example\n---", "[ref]: /paper 'Title'"])(
+  test.each(["[ref]: /paper 'Title'"])(
     "other structural blocks remain source editable: %s",
     (source) => {
       expect(sourceUnits(source, Math.floor(source.length / 2))).toEqual([

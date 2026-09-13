@@ -86,7 +86,7 @@ export async function requireNoteScope(
   client: pg.PoolClient,
   userId: string,
   noteId: string,
-  capability: "edit" | "comment" = "edit",
+  capability: "edit" | "comment" | "read" = "edit",
 ) {
   const {
     rows: [resource],

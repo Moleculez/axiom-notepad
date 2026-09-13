@@ -1,4 +1,5 @@
 "use client";
+import { confirmAction } from "../lib/app-prompt";
 import { useEffect, useRef, useState } from "react";
 import {
   BookmarkPlus,
@@ -902,8 +903,14 @@ export default function PdfViewer({
                         (meta?.role !== "member" && a.shared)) && (
                         <button
                           className="text-button danger-text"
-                          onClick={() => {
-                            if (confirm("Remove this annotation?"))
+                          onClick={async () => {
+                            if (
+                              await confirmAction("Remove this annotation?", {
+                                title: "Remove annotation?",
+                                confirmLabel: "Remove",
+                                destructive: true,
+                              })
+                            )
                               void work(async () => {
                                 await research.remove(entry);
                               });

@@ -285,44 +285,6 @@
   width: 100%;
   margin-top: 10px;
 }
-.settings-scratchpad {
-  border: 1px solid var(--line);
-  border-radius: var(--panel-radius);
-  margin-top: 24px;
-  background: var(--paper);
-  overflow: clip;
-}
-.scratchpad-toolbar {
-  display: flex;
-  gap: 16px;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 18px;
-  border-bottom: 1px solid var(--line);
-  font-size: 0.9em;
-}
-.scratchpad-toolbar > span {
-  display: grid;
-  gap: 4px;
-}
-.scratchpad-toolbar small {
-  color: var(--muted);
-}
-.settings-scratchpad .settings-scratchpad-scroll {
-  max-height: 420px;
-  min-height: 220px;
-  padding: 22px;
-  overflow: auto;
-}
-.settings-scratchpad .native-content {
-  min-height: 180px;
-  padding-bottom: 20px;
-}
-.settings-scratchpad > p {
-  padding: 0 18px 12px;
-  font-size: 0.85em;
-  color: var(--muted);
-}
 @media (forced-colors: active) {
   .appearance-settings .preference-color input[type="color"] {
     forced-color-adjust: none;

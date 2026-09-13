@@ -22,6 +22,7 @@ import {
 import {
   defaults,
   appearanceVariables,
+  type Preferences,
 } from "../../packages/shared/src/appearance";
 import "../../apps/web/app/globals.css";
 import "../../apps/web/app/appearance.css";
@@ -46,6 +47,7 @@ const sessions: {
   mode: "write" | "source" | "read";
   readOnly: boolean;
   autoPair: boolean;
+  appearance: Preferences;
   updates: number;
 }[] = [];
 const recovery: string[] = [];
@@ -99,7 +101,7 @@ async function reset(source: string, legacy = false) {
         ...editorDefaults,
         autoPair: sessions[i]?.autoPair ?? false,
       }),
-      appearance: () => defaults,
+      appearance: () => sessions[i]?.appearance ?? defaults,
       context: () => ({ disableImages: !imagesEnabled }),
       readOnly: () => sessions[i]?.readOnly ?? false,
       workspace: (id) => {
@@ -134,6 +136,7 @@ async function reset(source: string, legacy = false) {
       mode,
       readOnly: false,
       autoPair: false,
+      appearance: { ...defaults },
       updates: 0,
     });
     awareness.setLocalStateField("user", {
@@ -269,6 +272,10 @@ const lab = {
     sessions[index].view.configure();
   },
   recovery: () => recovery,
+  appearance: (index: number, value: Partial<Preferences>) => {
+    sessions[index].appearance = { ...sessions[index].appearance, ...value };
+    sessions[index].view.configure();
+  },
   hostEvents: () => hostEvents,
   remote: (index: number, from: number, to: number, insert: string) => {
     const doc = sessions[index].doc;

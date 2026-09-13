@@ -150,7 +150,7 @@ test("language-name autocomplete remains available while code-body completion st
   await expect(menu(page)).toHaveCount(0);
 });
 
-test("empty-block deletion still restores only the opening fence", async ({
+test("empty-block Backspace removes fences without reopening completion", async ({
   page,
 }) => {
   for (const text of ["", "def"]) {
@@ -163,12 +163,12 @@ test("empty-block deletion still restores only the opening fence", async ({
     await page.keyboard.type(text);
     await page.keyboard.press("Control+Space");
     await expect(menu(page)).toHaveCount(0);
-    for (let i = 0; i < Math.max(1, text.length); i++)
+    for (let i = 0; i < text.length + 1; i++)
       await page.keyboard.press("Backspace");
-    await shared(page, "```");
+    await shared(page, "\n\n");
     await expect(page.getByRole("listbox")).toHaveCount(0);
-    await page.keyboard.press("Backspace");
-    await shared(page, "``");
+    await page.keyboard.type("Plain");
+    await shared(page, "Plain\n\n");
   }
 });
 

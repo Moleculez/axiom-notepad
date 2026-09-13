@@ -24,7 +24,7 @@ async function api(
 }
 test.beforeAll(async ({ browser }) => {
   test.setTimeout(90000);
-  if (origin !== "http://localhost:3002")
+  if (!["http://localhost:3002", "http://localhost:3004"].includes(origin))
     throw new Error("Location tests must use isolated 3002 storage/database.");
   f = await fixture(browser, "# Location test fixture\n");
   space = (await api(f.member.request, "spaces")).find(
@@ -103,7 +103,7 @@ test("direct nested notes show the full path; ancestor, Up and Back links open r
     exact: true,
   });
   await expect(nav.getByRole("link")).toHaveText([
-    "Research notes",
+    "Explorer",
     space.name,
     ...folders.map((folder) => folder.name),
   ]);
@@ -133,8 +133,8 @@ test("direct nested notes show the full path; ancestor, Up and Back links open r
   await expect(page).toHaveURL(new RegExp(`folder=${folders[1].id}`));
   await page.getByRole("tab", { name: note.name, exact: true }).click();
   await expect(page).toHaveURL(new RegExp(`/notes/${note.id}$`));
-  await nav.getByRole("link", { name: "Research notes", exact: true }).click();
-  await expect(page).toHaveURL(/\/explorer\?kind=note&view=all$/);
+  await nav.getByRole("link", { name: "Explorer", exact: true }).click();
+  await expect(page).toHaveURL(/\/explorer\?view=all$/);
   await expect(
     page.locator(`.ws-resource-row[data-resource-id="${note.id}"]`),
   ).toBeVisible();
@@ -158,7 +158,7 @@ test("nested versioned files use borderless previews and refresh the trail after
     exact: true,
   });
   await expect(nav.getByRole("link")).toHaveText([
-    "Files",
+    "Explorer",
     space.name,
     ...folders.map((folder) => folder.name),
   ]);
@@ -250,16 +250,16 @@ test("legacy collection bookmarks no longer fetch missing documents, and studio 
     exact: true,
   });
   await expect(nav.getByRole("link")).toHaveText([
-    "Research tools",
+    "Explorer",
     space.name,
     ...folders.map((r) => r.name),
   ]);
   await expect(nav.locator('[aria-current="page"]')).toHaveText(
     "Nested equation",
   );
-  await nav.getByRole("link", { name: "Research tools", exact: true }).click();
+  await nav.getByRole("link", { name: "Explorer", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "Tools", exact: true }),
+    page.getByRole("heading", { name: "Explorer", exact: true }),
   ).toBeVisible();
   expect(failed).toEqual([]);
 });

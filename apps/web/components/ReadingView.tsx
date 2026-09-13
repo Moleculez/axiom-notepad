@@ -2,6 +2,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { footnoteTooltips } from "../lib/footnote-tooltips";
+import { DiagramPreviews } from "../lib/editor-vnext/diagrams";
+import {
+  installMarkdownVisuals,
+  type VisualContext,
+} from "../lib/visual-surface";
 import {
   renderDocument,
   type ParsedDocument,
@@ -13,24 +18,37 @@ export default function ReadingView({
   onLink,
   personalPrint = false,
   active = true,
+  blockMarks = false,
+  source = "",
+  visual,
+  visualAnchor,
 }: {
   parsed: ParsedDocument;
   context: RenderContext;
   onLink: (target: string) => void;
   personalPrint?: boolean;
   active?: boolean;
+  blockMarks?: boolean;
+  source?: string;
+  visual?: VisualContext;
+  visualAnchor?: VisualContext["anchor"];
 }) {
   const [printing, setPrinting] = useState(false);
-  const latest = useRef({ parsed, context });
-  latest.current = { parsed, context };
+  const latest = useRef({ parsed, context, source, visual, visualAnchor });
+  latest.current = { parsed, context, source, visual, visualAnchor };
   const footnotes = useRef<ReturnType<typeof footnoteTooltips> | null>(null);
   const root = useRef<HTMLDivElement>(null),
     html = useMemo(
       () =>
         active || printing
-          ? renderDocument(parsed, { ...context, scrollTables: true })
+          ? renderDocument(parsed, {
+              ...context,
+              visuals: active && !printing,
+              scrollTables: true,
+              blockMarks: blockMarks && active && !printing,
+            })
           : "",
-      [parsed, context, active, printing],
+      [parsed, context, active, printing, blockMarks],
     );
   useEffect(() => {
     if (!active || !root.current) return;
@@ -61,34 +79,24 @@ export default function ReadingView({
     };
   }, []);
   useEffect(() => {
-    let active = true;
-    const nodes = root.current?.querySelectorAll<HTMLElement>("[data-mermaid]");
-    if (nodes?.length)
-      void import("mermaid").then(async ({ default: mermaid }) => {
-        mermaid.initialize({
-          startOnLoad: false,
-          securityLevel: "strict",
-          theme: context.theme === "dark" ? "dark" : "neutral",
-          flowchart: { htmlLabels: false },
-          maxTextSize: 30000,
-          suppressErrorRendering: true,
-        });
-        for (const node of nodes) {
-          try {
-            const { svg } = await mermaid.render(
-              "reading-" + crypto.randomUUID(),
-              node.dataset.mermaid!,
-            );
-            if (active && node.isConnected) node.innerHTML = svg;
-          } catch {
-            node.classList.add("diagram-error");
-          }
-        }
-      });
+    if ((!active && !printing) || !root.current) return;
+    const diagrams = new DiagramPreviews();
+    diagrams.render(root.current);
+    const visuals = !printing
+      ? installMarkdownVisuals(root.current, {
+          parsed: () => latest.current.parsed,
+          source: () => latest.current.source,
+          context: () => latest.current.visual,
+          anchor: (from, to) =>
+            latest.current.visualAnchor?.(from, to) ??
+            latest.current.visual?.anchor?.(from, to),
+        })
+      : undefined;
     return () => {
-      active = false;
+      visuals?.();
+      diagrams.destroy();
     };
-  }, [html, context.theme]);
+  }, [html, active, printing, context.theme]);
   return (
     <div
       className={`reading-view prose ${personalPrint ? "print-personal" : ""}`}

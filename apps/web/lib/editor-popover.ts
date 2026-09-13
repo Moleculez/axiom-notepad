@@ -1,6 +1,12 @@
 let dismissCurrent: (() => void) | undefined;
+let pinned = 0;
 const activity = new Set<(active: boolean) => void>();
-export const editorOverlayActive = () => !!dismissCurrent;
+export const editorOverlayActive = () => !!dismissCurrent || pinned > 0;
+/** Pinned research cards may own nested code/math menus, but suppress hover previews. */
+export function retainEditorCard() {
+  pinned++; changed();
+  return () => { pinned=Math.max(0,pinned-1); changed(); };
+}
 export function onEditorOverlayChange(listener: (active: boolean) => void) {
   activity.add(listener);
   return () => {
@@ -8,7 +14,7 @@ export function onEditorOverlayChange(listener: (active: boolean) => void) {
   };
 }
 const changed = () =>
-  activity.forEach((listener) => listener(!!dismissCurrent));
+  activity.forEach((listener) => listener(editorOverlayActive()));
 
 /** One owned overlay at a time across workspace menus and editor panels. */
 export function claimEditorOverlay(dismiss: () => void) {

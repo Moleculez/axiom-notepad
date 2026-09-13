@@ -2,6 +2,8 @@ import lucide from "./action-data.json";
 
 // First-party table glyphs retain the editor's established structural language.
 const structural = {
+  bookmark: "M6 3h12v18l-6-4-6 4z",
+  list: "M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01",
   lock: "M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4M12 15v2",
   unlock: "M5 11h14v10H5zM8 11V7a4 4 0 0 1 7.8-1.2M12 15v2",
   rowBefore: "M4 12h16v8H4zM8 6h8M12 2v8",

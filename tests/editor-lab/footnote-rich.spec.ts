@@ -102,7 +102,7 @@ for (const ending of ["\n", "\r\n"]) {
   });
 }
 
-test("an empty footnote collapses to the single opener and reopens without losing history", async ({
+test("an empty footnote is removed without losing history", async ({
   page,
 }) => {
   const before = "Result[^a].\n\n",
@@ -116,21 +116,17 @@ test("an empty footnote collapses to the single opener and reopens without losin
   await shared(page, opened);
   await expect(note(page)).toBeVisible();
   await page.keyboard.press("Backspace");
-  await shared(page, before + "[^a]:" + suffix);
+  await shared(page, before + suffix);
   await expect(note(page)).toHaveCount(0);
-  await caret(page, before.length + 5);
+  await caret(page, before.length);
   await page.keyboard.press("ControlOrMeta+z");
   await shared(page, opened);
   await expect(note(page)).toBeVisible();
   await page.keyboard.press("ControlOrMeta+Shift+z");
-  await shared(page, before + "[^a]:" + suffix);
+  await shared(page, before + suffix);
   await expect(note(page)).toHaveCount(0);
-  await page.keyboard.press("Enter");
-  await shared(page, opened);
-  await expect(note(page)).toBeVisible();
-  await page.keyboard.press("Backspace");
-  await page.keyboard.press("Backspace");
-  await shared(page, before + "[^a]" + suffix);
+  await page.keyboard.type("Plain text");
+  await shared(page, before + "Plain text" + suffix);
 });
 
 test("first body boundary is protected and a body selection never removes the ID", async ({
@@ -150,10 +146,8 @@ test("first body boundary is protected and a body selection never removes the ID
   await shared(page, "Before\n\n[^a]: \n\nAfter");
   await expect(note(page)).toBeVisible();
   await page.keyboard.press("Backspace");
-  await shared(page, "Before\n\n[^a]:\n\nAfter");
-  await expect(
-    pane(page).locator('[data-source-kind="footnoteHeader"]'),
-  ).toHaveText("[^a]:");
+  await shared(page, "Before\n\n\n\nAfter");
+  await expect(note(page)).toHaveCount(0);
 });
 
 test("imported bodies map exact Source-mode caret positions and hidden marker positions", async ({
@@ -188,7 +182,7 @@ test("imported bodies map exact Source-mode caret positions and hidden marker po
 });
 
 for (const opener of ["$$", "\\[", "```", "```julia", "> $$"]) {
-  test(`nested ${opener} completes, edits and collapses only generated fences`, async ({
+  test(`nested ${opener} completes, edits and removes empty structure within the definition`, async ({
     page,
   }) => {
     const before = "Before\n\n[^a]: First\n\n    ",
@@ -196,10 +190,12 @@ for (const opener of ["$$", "\\[", "```", "```julia", "> $$"]) {
     await reset(page, before + suffix, before.length);
     await page.keyboard.type(opener);
     await expect(note(page).locator(".cm-content")).toHaveCount(0);
-    const draft = before + opener + suffix;
     await page.keyboard.press("Enter");
     const input = note(page).locator(".axiom-embedded .cm-content");
     await expect(input).toBeFocused();
+    const empty = await page.evaluate(
+      () => window.editorLab.snapshot()[0].source,
+    );
     await page.keyboard.type("x=1");
     await page.keyboard.press("Enter");
     await page.keyboard.type("y=2");
@@ -213,16 +209,18 @@ for (const opener of ["$$", "\\[", "```", "```julia", "> $$"]) {
     expect(populated.endsWith(suffix)).toBe(true);
     await page.keyboard.press("ControlOrMeta+a");
     await page.keyboard.press("Backspace");
-    await shared(page, draft);
-    await expect(input).toHaveCount(0);
-    await caret(page, before.length + opener.length);
+    await shared(page, empty);
+    await expect(input).toBeFocused();
     await page.keyboard.press("ControlOrMeta+z");
     await shared(page, populated);
     await expect(input).toBeFocused();
     await page.keyboard.press("ControlOrMeta+Shift+z");
-    await shared(page, draft);
-    await page.keyboard.press("Enter");
-    await expect(input).toBeFocused();
+    await shared(page, empty);
+    await page.keyboard.press("Backspace");
+    await expect(input).toHaveCount(0);
+    await expect(note(page)).toBeVisible();
+    await page.keyboard.type("Plain text");
+    await expect(note(page)).toContainText("Plain text");
   });
 }
 
@@ -412,7 +410,7 @@ test("list Tab and Shift-Tab change only the inner item indentation", async ({
   await expect(note(page)).toContainText("Second!");
 });
 
-test("first-line language completion and empty code reversal preserve the definition", async ({
+test("first-line language completion and empty code deletion preserve the definition", async ({
   page,
 }) => {
   const source = "Before\n\n[^a]: ";
@@ -426,13 +424,18 @@ test("first-line language completion and empty code reversal preserve the defini
   await shared(page, source + "```julia");
   await page.keyboard.press("Enter");
   await expect(note(page).locator(".axiom-embedded .cm-content")).toBeFocused();
+  const empty = await page.evaluate(
+    () => window.editorLab.snapshot()[0].source,
+  );
   await page.keyboard.type("x");
   await page.keyboard.press("Backspace");
-  await shared(page, source + "```julia");
+  await shared(page, empty);
+  await expect(note(page).locator(".axiom-embedded .cm-content")).toBeFocused();
+  await page.keyboard.press("Backspace");
   await expect(note(page).locator(".cm-content")).toHaveCount(0);
   await expect(pane(page).getByRole("listbox")).toHaveCount(0);
-  await page.keyboard.press("Enter");
-  await expect(note(page).locator(".axiom-embedded .cm-content")).toBeFocused();
+  await page.keyboard.type("Plain");
+  await expect(note(page)).toContainText("Plain");
 });
 
 test("composition in a footnote rebases once over a peer edit without losing prefixes", async ({

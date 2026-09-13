@@ -41,6 +41,7 @@ import MathPreviewActions from "./MathPreviewActions";
 import Dialog from "../Dialog";
 import MathAssistant from "./MathAssistant";
 import ResourceDiscussion from "./ResourceDiscussion";
+import ResourceSharing from "../workspace/ResourceSharing";
 import { retainDraft } from "../../lib/editor-recovery";
 import {
   readMathBridge,
@@ -230,9 +231,9 @@ export default function MathStudio({ project }: { project: ToolProject }) {
     >
       <header className="studio-header">
         <WorkspaceLink
-          to="/tools"
+          to={`/explorer?space=${project.space_id}${project.parent_id ? `&folder=${project.parent_id}` : ""}`}
           className="icon-button"
-          aria-label="Back to tools"
+          aria-label="Back to folder"
         >
           <ArrowLeft size={18} />
         </WorkspaceLink>
@@ -241,6 +242,7 @@ export default function MathStudio({ project }: { project: ToolProject }) {
           <h1>{project.name}</h1>
         </div>
         <span className="tool-spacer" />
+        <ResourceSharing resourceId={project.resource_id} />
         {noteBridge && (
           <button
             className="button secondary"

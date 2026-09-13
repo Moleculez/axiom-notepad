@@ -153,7 +153,7 @@ describe("quoted equation source commands and caret projection", () => {
       ).toBe(finish.at);
       expect(
         projection.activeProse.map((r) => finish.source.slice(r.from, r.to)),
-      ).toEqual([prefix.replace(/^(?: {0,3}>[ \t]?)+/, "")]);
+      ).toEqual([""]);
       expect(
         projection.blocks.filter((b) => b.node.type === "mathBlock"),
       ).toHaveLength(1);

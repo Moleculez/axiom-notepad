@@ -8,7 +8,6 @@ import {
   BookOpen,
   ChevronDown,
   File,
-  FileSearch,
   FileText,
   FlaskConical,
   FolderOpen,
@@ -27,24 +26,31 @@ import {
   Trash2,
   Network,
   Braces,
+  Music2,
+  Film,
 } from "lucide-react";
 import { tabTitle } from "@axiom/shared/application-tabs";
 import {
   locationResourceId,
   workspaceLocation,
 } from "@axiom/shared/workspace-location";
-import { useAppTabs } from "../../lib/application-tabs";
+import { useAppTabs, publishTabTitle } from "../../lib/application-tabs";
 import { openContextMenu } from "../../lib/context-menu";
 import Dialog from "../Dialog";
 import { useData, useLocation, useWorkspace, WorkspaceLink } from "./ui";
 import type { ResourceLocation } from "@axiom/shared/workspace";
+import { requestFileCreation } from "../../lib/file-creation";
+import { fileRouteId } from "@axiom/shared/file-routes";
+import {
+  settingsCategories,
+  settingsCategory,
+} from "../../lib/settings-registry";
 
 export const destinations = [
   ["/home", "Home", "Recent work and your day", Home],
   ["/explorer", "Explorer", "Notes, folders and files", FolderOpen],
   ["/projects", "Projects", "Tasks, milestones and reviews", FlaskConical],
   ["/research", "Research", "References and connections", BookOpen],
-  ["/tools", "Tools", "Math, images and enriched file previews", Sigma],
   ["/groups", "Groups", "Create, join and manage your groups", Users],
   ["/workspaces", "Workspaces", "Access, storage and administration", Blocks],
   ["/audit", "Audit", "Change history and operation progress", History],
@@ -56,10 +62,14 @@ export const destinations = [
 const icon = (path: string) => {
   if (path.startsWith("/notes/")) return FileText;
   if (path.startsWith("/files/")) return File;
-  if (/^\/tools\/image(?:\/|\?|$)/.test(path)) return ImageIcon;
-  if (/^\/tools\/canvas(?:\/|\?|$)/.test(path)) return Network;
-  if (/^\/tools\/text(?:\/|\?|$)/.test(path)) return Braces;
-  if (/^\/tools\/viewer(?:\/|\?|$)/.test(path)) return FileSearch;
+  if (path.startsWith("/image/")) return ImageIcon;
+  if (path.startsWith("/canvas/")) return Network;
+  if (path.startsWith("/text/")) return Braces;
+  if (path.startsWith("/math/")) return Sigma;
+  if (path.startsWith("/audio/")) return Music2;
+  if (path.startsWith("/video/")) return Film;
+  if (path.startsWith("/pdf/")) return BookOpen;
+  if (path.startsWith("/document/")) return FileText;
   return (
     destinations.find(
       ([route]) => route.split("/")[1] === path.split(/[/?]/)[1],
@@ -75,13 +85,6 @@ export default function ApplicationTabs() {
     latest = useRef(tabs);
   latest.current = tabs;
   useEffect(() => {
-    const title = (event: Event) => {
-      const { path, title } = (
-        event as CustomEvent<{ path: string; title: string }>
-      ).detail;
-      for (const tab of latest.current.state.tabs)
-        if (tab.path === path) latest.current.update(tab.id, { title });
-    };
     const keys = (event: KeyboardEvent) => {
       if (
         event.isComposing ||
@@ -106,10 +109,8 @@ export default function ApplicationTabs() {
         }
       }
     };
-    window.addEventListener("axiom:tab-title", title);
     window.addEventListener("keydown", keys);
     return () => {
-      window.removeEventListener("axiom:tab-title", title);
       window.removeEventListener("keydown", keys);
       if (hover.current) clearTimeout(hover.current);
     };
@@ -207,20 +208,21 @@ export default function ApplicationTabs() {
                         disabledReason: "Settings uses one coordinated draft.",
                         action: () => tabs.create(tab.path, true),
                       },
-                      ...(/^\/(notes|files)\//.test(tab.path)
+                      ...(fileRouteId(tab.path)
                         ? [
                             {
                               label: "Open beside",
                               icon: "split" as const,
                               disabled:
                                 !tabs.active ||
-                                !/^\/(notes|files)\//.test(tabs.active.path) ||
+                                !fileRouteId(tabs.active.path) ||
                                 tabs.active.path === tab.path,
                               action: () => {
                                 const url = new URL(tab.path, location.origin);
                                 open(
                                   {
                                     id: url.pathname.split("/")[2],
+                                    route: url.pathname + url.search + url.hash,
                                     kind: url.pathname.startsWith("/notes")
                                       ? "note"
                                       : "file",
@@ -461,9 +463,19 @@ export function LocationToolbar() {
         ? spaces.find((s) => s.kind === "personal")
         : undefined);
   const data = useData<ResourceLocation>(resourcePath, revision);
+  useEffect(() => {
+    if (data.data?.resource.id === resourceId && fileRouteId(route))
+      publishTabTitle(route + location.hash, data.data.resource.name);
+  }, [data.data, resourceId, route]);
   const { crumbs, up } = workspaceLocation({
     route,
-    title: tabs.active?.title,
+    title: path.startsWith("/settings/")
+      ? settingsCategories.find(
+          (category) =>
+            category.id ===
+            settingsCategory(path.split("/")[2], params.get("section")),
+        )?.label
+      : tabs.active?.title,
     location: data.data,
     space,
   });
@@ -540,6 +552,27 @@ export function NewApplicationTab() {
       <span className="ws-eyebrow">YOUR WORKSPACE</span>
       <h1>Room for your next idea.</h1>
       <p>Choose a page, or search your notes and research.</p>
+      <section className="application-create-files" aria-label="Create a file">
+        {(
+          [
+            ["markdown", "Markdown", FileText],
+            ["canvas", "Canvas", Network],
+            ["math", "Math", Sigma],
+            ["image", "Drawing", ImageIcon],
+            ["text", "Text", Braces],
+          ] as const
+        ).map(([type, label, Icon]) => (
+          <button
+            type="button"
+            key={type}
+            className="button secondary"
+            onClick={() => requestFileCreation({ type })}
+          >
+            <Icon size={16} />
+            {label}
+          </button>
+        ))}
+      </section>
       <div className="application-destinations">
         {destinations.map(([path, title, description, Icon]) => (
           <button key={path} onClick={() => tabs.create(path)}>

@@ -1,4 +1,5 @@
 "use client";
+import { confirmAction } from "../lib/app-prompt";
 import { useEffect, useState } from "react";
 import {
   Bookmark,
@@ -16,6 +17,9 @@ import {
   type CachedPaper,
 } from "../lib/research-store";
 import { download } from "../lib/client";
+import BookmarkManager from "./BookmarkManager";
+import { exportNoteMarks } from "../lib/note-marks-store";
+import { exportVisualMarks } from "../lib/visual-mark-store";
 const size = (bytes: number) =>
   bytes < 1024 * 1024
     ? `${(bytes / 1024).toFixed(0)} KB`
@@ -105,10 +109,15 @@ export default function ResearchDataSettings({
         <button
           className="button secondary small"
           disabled={!research.papers.length}
-          onClick={() => {
+          onClick={async () => {
             if (
-              confirm(
+              await confirmAction(
                 "Remove all offline PDF copies from this account on this device? Notes, annotations, and unsynced changes will be kept.",
+                {
+                  title: "Clear offline PDFs?",
+                  confirmLabel: "Clear copies",
+                  destructive: true,
+                },
               )
             )
               void work(async () => {
@@ -129,30 +138,11 @@ export default function ResearchDataSettings({
           Bookmarks in the current research group. Reading positions resume
           automatically.
         </p>
-        {bookmarks.map((e) => {
-          const item = e.value as ReadingItem;
-          return (
-            <div className="offline-paper-row" key={e.key}>
-              <button
-                className="text-button"
-                onClick={() => onOpenBookmark(item)}
-              >
-                {item.data.label || "Untitled bookmark"}
-                {item.data.page
-                  ? ` · p. ${item.data.page}`
-                  : item.data.heading
-                    ? ` · ${item.data.heading}`
-                    : ""}
-              </button>
-              <button
-                className="text-button"
-                onClick={() => void work(() => research.remove(e))}
-              >
-                Remove
-              </button>
-            </div>
-          );
-        })}
+        <BookmarkManager
+          research={research}
+          userId={userId}
+          onOpen={onOpenBookmark}
+        />
         {!bookmarks.length && (
           <p className="muted">
             Bookmark a note section or a PDF page to return to it later.
@@ -187,6 +177,8 @@ export default function ResearchDataSettings({
                       version: 1,
                       exportedAt: new Date().toISOString(),
                       preferences,
+                      noteMarks: await exportNoteMarks(userId),
+                      visualMarks: await exportVisualMarks(userId),
                       items: all.filter(
                         (r) =>
                           r.kind === "reading" ||
@@ -268,10 +260,15 @@ export default function ResearchDataSettings({
                 ) : (
                   <button
                     className="button secondary small"
-                    onClick={() => {
+                    onClick={async () => {
                       if (
-                        confirm(
+                        await confirmAction(
                           "Discard this local unsynchronized item? Export it first if you need a copy.",
+                          {
+                            title: "Discard local item?",
+                            confirmLabel: "Discard item",
+                            destructive: true,
+                          },
                         )
                       )
                         void work(async () => {

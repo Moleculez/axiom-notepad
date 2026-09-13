@@ -2511,6 +2511,10 @@ export class NativeEditorView {
     }
     this.insertText(event.dataTransfer?.getData("text/plain") ?? "", "paste");
   };
+  openBlockMenu(x: number, y: number, target = this.selection) {
+    this.focus(target.anchor, target.head);
+    this.openMenu(x, y);
+  }
   private openMenu(x: number, y: number) {
     const block = nodeAt(this.source, this.selection.head, [
       "table",

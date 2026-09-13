@@ -17,6 +17,7 @@ import {
   type ApplicationTabs,
 } from "@axiom/shared/application-tabs";
 import { closeDocument } from "./document-sessions";
+import { fileRouteId } from "@axiom/shared/file-routes";
 import { go, BASE } from "../components/workspace/ui";
 
 export function useApplicationTabs(
@@ -30,7 +31,8 @@ export function useApplicationTabs(
     closed: [],
   });
   const ref = useRef(state),
-    ready = useRef("");
+    ready = useRef(""),
+    hydratedAccount = useRef<string | null>(null);
   const commit = useCallback(
     (next: ApplicationTabs) => {
       ref.current = next;
@@ -62,28 +64,32 @@ export function useApplicationTabs(
   useEffect(() => {
     ready.current = account ?? "";
     if (!account) {
+      hydratedAccount.current = null;
       commit({ version: 2, tabs: [], active: "", closed: [] });
       return;
     }
-    let raw: unknown, legacy: unknown;
-    try {
-      raw = JSON.parse(
-        localStorage.getItem(`axiom:application-tabs:${account}`) ?? "null",
+    if (hydratedAccount.current !== account) {
+      let raw: unknown, legacy: unknown;
+      try {
+        raw = JSON.parse(
+          localStorage.getItem(`axiom:application-tabs:${account}`) ?? "null",
+        );
+        legacy = JSON.parse(
+          localStorage.getItem(`axiom:tabs:${account}`) ?? "null",
+        );
+      } catch {
+        /* Corrupt navigation metadata cannot affect work. */
+      }
+      commit(
+        restoreApplicationTabs(
+          raw,
+          legacy,
+          location.pathname + location.search + location.hash,
+          () => crypto.randomUUID(),
+        ),
       );
-      legacy = JSON.parse(
-        localStorage.getItem(`axiom:tabs:${account}`) ?? "null",
-      );
-    } catch {
-      /* Corrupt navigation metadata cannot affect work. */
+      hydratedAccount.current = account;
     }
-    commit(
-      restoreApplicationTabs(
-        raw,
-        legacy,
-        location.pathname + location.search,
-        () => crypto.randomUUID(),
-      ),
-    );
     const route = (event: Event) => {
       const detail = (
         event as CustomEvent<{ destination: string; replace: boolean }>
@@ -148,15 +154,53 @@ export function useApplicationTabs(
       route(
         new CustomEvent("route", {
           detail: {
-            destination: location.pathname + location.search,
+            destination: location.pathname + location.search + location.hash,
             replace: false,
           },
         }),
       );
+    const canonical = (event: Event) => {
+      const { from, to } = (event as CustomEvent<{ from: string; to: string }>)
+        .detail;
+      if (!fileRouteId(from) || fileRouteId(from) !== fileRouteId(to)) return;
+      const current = ref.current;
+      commit({
+        ...current,
+        tabs: current.tabs.map((tab) =>
+          tab.id === current.active && tab.path === tabRoute(from)
+            ? {
+                ...tab,
+                path: tabRoute(to),
+                history: tab.history.map((path, index) =>
+                  index === tab.index ? tabRoute(to) : path,
+                ),
+              }
+            : tab,
+        ),
+      });
+    };
+    const title = (event: Event) => {
+      const { path, title } = (
+        event as CustomEvent<{ path: string; title: string }>
+      ).detail;
+      const current = ref.current;
+      if (!current.tabs.some((tab) => tab.path === path && tab.title !== title))
+        return;
+      commit({
+        ...current,
+        tabs: current.tabs.map((tab) =>
+          tab.path === path ? { ...tab, title } : tab,
+        ),
+      });
+    };
+    window.addEventListener("axiom:tab-title", title);
+    window.addEventListener("axiom:canonical-file", canonical);
     window.addEventListener("axiom:route", route);
     window.addEventListener("popstate", pop);
     return () => {
+      window.removeEventListener("axiom:tab-title", title);
       window.removeEventListener("axiom:route", route);
+      window.removeEventListener("axiom:canonical-file", canonical);
       window.removeEventListener("popstate", pop);
       ready.current = "";
     };
@@ -248,12 +292,10 @@ export function useApplicationTabs(
       )
     )
       return;
-    const note = /^\/notes\/([\da-f-]{36})(?:\?|$)/i.exec(tab.path)?.[1];
+    const note = fileRouteId(tab.path);
     if (
       note &&
-      !current.tabs.some(
-        (t) => t.id !== id && t.path.startsWith(`/notes/${note}`),
-      ) &&
+      !current.tabs.some((t) => t.id !== id && fileRouteId(t.path) === note) &&
       account &&
       !closeDocument(account, note)
     ) {
@@ -285,8 +327,7 @@ export function useApplicationTabs(
     const finish = () => {
       if (ready.current !== owner) return;
       const current = ref.current,
-        noteId = (tab: ApplicationTab) =>
-          /^\/notes\/([\da-f-]{36})(?:\?|$)/i.exec(tab.path)?.[1],
+        noteId = (tab: ApplicationTab) => fileRouteId(tab.path),
         retained = current.tabs.filter((tab) => !targets.has(tab.id)),
         notes = new Set(
           current.tabs.filter((tab) => targets.has(tab.id)).map(noteId),

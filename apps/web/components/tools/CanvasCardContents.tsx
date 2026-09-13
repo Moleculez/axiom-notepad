@@ -67,19 +67,32 @@ export default function CanvasCardContents(props: Props) {
         const text = root.querySelector<HTMLElement>(".canvas-size-measure"),
           content = root.querySelector<HTMLElement>(".canvas-preview-content"),
           img = content?.querySelector("img");
+        // offsetHeight is in canvas coordinates, independent of board zoom.
+        // Header/caption chrome grows with UI typography; never subtract a
+        // fixed 32px from a card or clip the preview under a wrapped toolbar.
+        const chrome =
+            (root.querySelector<HTMLElement>(".canvas-card-toolbar")
+              ?.offsetHeight ?? 0) + 4,
+          caption =
+            root.querySelector<HTMLElement>(".canvas-resource-caption")
+              ?.offsetHeight ?? 0;
         const value =
           n.type === "link"
-            ? 350
+            ? 314 + chrome
             : text
-              ? text.scrollHeight + 36
+              ? text.scrollHeight + chrome
               : img?.naturalWidth
-                ? (img.naturalHeight / img.naturalWidth) * (n.width - 2) + 76
+                ? (img.naturalHeight / img.naturalWidth) * (n.width - 2) +
+                  chrome +
+                  caption
                 : content
                   ? Math.max(
                       100,
                       content.firstElementChild?.scrollHeight ??
                         content.scrollHeight,
-                    ) + 76
+                    ) +
+                    chrome +
+                    caption
                   : 200;
         const height = Math.round(Math.max(120, Math.min(800, value)));
         if (Math.abs(n.height - height) > 1) p.height(height, n);
@@ -88,12 +101,12 @@ export default function CanvasCardContents(props: Props) {
     const resize = new ResizeObserver(measure);
     resize.observe(root);
     for (const el of root.querySelectorAll(
-      ".canvas-size-measure,.reading-view,.canvas-preview-content,img,.canvas-nested-stage",
+      ".canvas-size-measure,.reading-view,.canvas-preview-content,img,.canvas-nested-stage,.canvas-card-toolbar,.canvas-resource-caption",
     ))
       resize.observe(el);
     const mutation = new MutationObserver(() => {
       for (const el of root.querySelectorAll(
-        ".canvas-size-measure,.reading-view,.canvas-preview-content,img",
+        ".canvas-size-measure,.reading-view,.canvas-preview-content,img,.canvas-card-toolbar,.canvas-resource-caption",
       ))
         resize.observe(el);
       measure();
@@ -159,6 +172,8 @@ export default function CanvasCardContents(props: Props) {
   return (
     <div
       className="canvas-card-shell"
+      data-visual-resource={props.parentId}
+      data-visual-path={JSON.stringify([node.id])}
       ref={host}
       onCompositionStartCapture={() => {
         composing.current = true;

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { markAnchorSchema, markColors, markTagsSchema } from "./note-comments";
 
 /** Scroll positions are derived UI data: elastic scrolling and document reflow
  * may place scrollTop outside the current scrollable extent. Never persist it. */
@@ -70,6 +71,9 @@ export const readingDataSchema = z
     page: z.number().int().min(1).max(100000).optional(),
     fraction: z.number().min(0).max(1).optional(),
     heading: z.string().max(300).optional(),
+    anchor: markAnchorSchema.optional(),
+    tags: markTagsSchema.optional(),
+    color: z.enum(markColors).optional(),
     quote: z.string().max(500).optional(),
     generation: z.number().int().positive().optional(),
     status: z.enum(["want", "reading", "read", "archived"]).optional(),

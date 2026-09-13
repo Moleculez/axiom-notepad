@@ -125,10 +125,14 @@ export class RichSurface {
           Math.min(selection.anchor, selection.head) === block.node.from &&
           Math.max(selection.anchor, selection.head) === block.node.to,
       );
+    // Atomic previews (including a document containing only folded blocks)
+    // map source offsets to structural boundaries, not text positions. Keep
+    // ordinary text selections exact; resolve those boundaries to a valid
+    // nearby text/node selection without changing the canonical source caret.
     tr.setSelection(
       image
         ? NodeSelection.create(tr.doc, image.from)
-        : TextSelection.create(tr.doc, anchor, head),
+        : TextSelection.between(tr.doc.resolve(anchor), tr.doc.resolve(head)),
     )
       .setMeta("axiom:projection", true)
       .setMeta("addToHistory", false);

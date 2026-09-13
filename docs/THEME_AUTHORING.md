@@ -26,8 +26,9 @@ selects an entry in the static registry; it never becomes a filesystem/import UR
 Example selector:
 
 ```css
-[data-theme-pack="your-id"] .canvas-card {
-  border-radius: var(--radius);
+[data-theme-pack="your-id"] .canvas-card-toolbar {
+  background-color: var(--paper);
+  color: var(--muted);
 }
 [data-theme-pack="your-id"]
   .canvas-card:where(:not(.is-selected, .is-editing, .is-connection-target)) {
@@ -69,6 +70,45 @@ font to equations. The base application owns `--size-ui`, `--size-prose`,
 Decorative pack rules may consume `--radius` and `--shadow`; they may not redefine
 those tokens or fix sizes in pixels. A zero-radius or no-shadow
 user choice must remain effective everywhere.
+
+Base `appearance.css` derives compact UI type and shape roles and panel padding
+from those preferences. Use those shared roles in component code; theme packs
+must not redefine them. Keep panel frames on the outer, non-scrolling container
+and avoid recoloring flat settings sections as nested cards. A pack's optional
+card shadow never replaces Canvas selection/connection outlines or focus rings.
+The Writing/Interface selector belongs to the shared scratchpad toolbar, so review
+both surfaces without adding another toolbar or duplicating layout in pack CSS.
+
+Block-range guides are editor-only decorations, never saved Markdown. Keep their
+1px rails outside content and preserve pointer transparency; do not add drag
+handles, padding shifts, or guide rules to Read/print output. Base geometry follows
+the prose size rather than each heading's larger font. One margin track serves
+each list level; an inspected item's emphasis overlays it, including task rows with
+negative checkbox margins. Do not add a second permanent rail per list item or
+nested quote. Neutral `--text` mixes supply quiet tracks and stronger hover/caret
+guides; reserve theme accent colors for interactive controls.
+Caret emphasis disappears when the editor loses focus. The base stylesheet owns
+these geometry/state rules, reduced-motion handling and forced system colors.
+Monaco-inspired folding chevrons occupy the same gutter, outside the editable DOM.
+They appear on hover/keyboard focus and stay visible for collapsed blocks. Retain
+their 20px hit area, visible keyboard focus, `aria-expanded` state and compact
+ellipsis summaries. Folding is local projection state, never another document or
+persisted theme setting; hiding guide lines must not strand a collapsed block.
+Metadata uses the same paper and line tokens
+as the document, aligned property rows and an accessible inset field-focus cue;
+avoid filled key columns, heavy outlines or a second table font system. Review
+guides both enabled and disabled, including deeply nested tasks and quotations.
+
+The optional document minimap consumes the same paper, text, muted, accent and
+syntax tokens, with prose/code font roles for its canvas miniature and UI type for
+labels/menus. It is a navigation column, not another editor. Base code owns width,
+geometry, viewport/marker hit targets and compact-pane fallback; theme packs must
+not reposition it, cover document content or change its pointer semantics.
+Keep hover previews opaque and honor zero-radius/no-shadow choices. Review both
+text and block rendering in light/dark modes, plus forced colors and reduced motion.
+The miniature never loads images, renders remote content, or adds equation fonts
+independently; equation/image shapes represent blocks without duplicating their
+rendering work. Print and exports exclude the column, labels and previews.
 
 The default validator checks eight named contrast pairs in each mode. This is
 not a substitute for reviewing every combination: muted/subtle text on a selected

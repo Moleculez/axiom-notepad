@@ -26,7 +26,8 @@ import {
   Database,
 } from "lucide-react";
 import { api, authRequest, download, post, timeAgo } from "../../lib/client";
-import { ExportsPage, GroupsPage } from "./AccountPages";
+import { ExportsPage } from "./AccountPages";
+import GroupsHub from "./GroupsHub";
 import { useResearch } from "../../lib/research-store";
 import AppearanceSettings from "../AppearanceSettings";
 import ResearchDataSettings from "../ResearchDataSettings";
@@ -42,6 +43,7 @@ import {
   preferenceCategory,
   writingControls,
   appearanceSettingGroups,
+  type SettingsCategory,
 } from "../../lib/settings-registry";
 import { Avatar } from "./Pages";
 
@@ -76,13 +78,17 @@ import {
 export function SettingsNavigation() {
   const { parts, params } = useLocation();
   const selected = settingsCategory(parts[1], params.get("section"));
+  const selectedGroup =
+    settingsCategories.find((category) => category.id === selected)?.group ??
+    "Account";
   const [search, setSearch] = useState("");
-  const icons: Record<string, typeof Monitor> = {
+  const icons: Record<SettingsCategory, typeof Monitor> = {
     connections: ShieldCheck,
     profile: UserRound,
     security: ShieldCheck,
     notifications: Bell,
     groups: Users,
+    "appearance-general": SlidersHorizontal,
     theme: Palette,
     typography: Type,
     layout: SlidersHorizontal,
@@ -105,7 +111,27 @@ export function SettingsNavigation() {
       .includes(search.trim().toLowerCase()),
   );
   return (
-    <nav className="settings-center-nav" aria-label="Settings categories">
+    <nav
+      className="settings-center-nav settings-page-navigation"
+      aria-label="Settings categories"
+    >
+      <div className="settings-navigation-groups" aria-label="Settings groups">
+        {["Account", "Appearance", "Writing", "Storage"].map((group) => {
+          const first = settingsCategories.find(
+            (category) => category.group === group,
+          )!;
+          return (
+            <WorkspaceLink
+              key={group}
+              to={`/settings/${first.id}`}
+              className={`page-section-link ${selectedGroup === group ? "active" : ""}`}
+              aria-current={selectedGroup === group ? "true" : undefined}
+            >
+              {group}
+            </WorkspaceLink>
+          );
+        })}
+      </div>
       <label className="settings-search">
         <Search size={16} />
         <input
@@ -131,6 +157,7 @@ export function SettingsNavigation() {
         </p>
       )}
       {["Account", "Appearance", "Writing", "Storage"].map((group) => {
+        if (!search.trim() && group !== selectedGroup) return null;
         const entries = matches.filter((category) => category.group === group);
         return entries.length ? (
           <section key={group}>
@@ -255,6 +282,7 @@ function SettingsReady({
         className={`ws-page ws-settings-page ${preference ? "ws-appearance-page" : ""}`}
         data-settings-section={section}
       >
+        <SettingsNavigation />
         <div className="settings-center-heading">
           <button
             className="text-button"
@@ -319,7 +347,7 @@ function SettingsReady({
         ) : section === "notifications" ? null : section === "storage" ? (
           <StorageSettings />
         ) : section === "groups" ? (
-          <GroupsPage />
+          <GroupsHub embedded />
         ) : section === "exports" ? (
           <ExportsPage />
         ) : section === "data" ? (

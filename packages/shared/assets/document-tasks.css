@@ -103,18 +103,6 @@
 :is(.axiom-prose, .prose) .document-task > input[type="checkbox"]:disabled {
   cursor: default;
 }
-/* Editing the task's Markdown keeps the established source gutter; do not
-   leave an empty control column when the checkbox is intentionally hidden. */
-.axiom-prose li.document-task:has(> div > .axiom-source-prose) {
-  display: list-item;
-  margin-inline-start: 0;
-  padding-inline-start: 0.15em;
-}
-.axiom-prose
-  li.document-task:has(> div > .axiom-source-prose)
-  > input[type="checkbox"] {
-  display: none;
-}
 @media (forced-colors: active) {
   :is(.axiom-prose, .prose) .document-task > input[type="checkbox"] {
     forced-color-adjust: none;

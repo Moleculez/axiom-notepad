@@ -224,12 +224,12 @@ describe("safe preview routing", () => {
   it("persists tools in existing tabs without persisting research source or secrets", () => {
     expect(
       tabRoute("/tools/math/abc?source=secret&token=secret&version=v"),
-    ).toBe("/tools/math/abc?version=v");
-    expect(tabTitle("/tools")).toBe("Research tools");
-    expect(tabTitle("/tools/math/new")).toBe("New math project");
-    expect(tabTitle("/tools/math/abc")).toBe("Math Studio");
-    expect(tabTitle("/tools/image/abc?version=v")).toBe("Image Studio");
-    expect(tabTitle("/tools/viewer")).toBe("File viewer");
+    ).toBe("/math/abc?version=v");
+    expect(tabTitle("/tools")).toBe("Explorer");
+    expect(tabTitle("/tools/math/new")).toBe("Explorer");
+    expect(tabTitle("/tools/math/abc")).toBe("Math");
+    expect(tabTitle("/tools/image/abc?version=v")).toBe("Image");
+    expect(tabTitle("/tools/viewer")).toBe("Explorer");
   });
 });
 describe("provider credential boundaries", () => {

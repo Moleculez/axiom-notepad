@@ -2,11 +2,15 @@ import {
   nodeAt,
   quoteContext,
   footnoteCommand,
+  blockPath,
+  exitEmptyBlockLine,
+  type MarkdownNode,
   type SourceEdit,
   type TextChange,
 } from "@axiom/markdown";
 import { literalBody, literalPrefix } from "./literal";
 import { footnoteEnter } from "./footnotes";
+import { listMarker } from "./list-prose";
 
 /** All coordinates are UTF-16 offsets in the original Markdown, never HTML. */
 export type SourceSelection = { anchor: number; head: number };
@@ -209,12 +213,45 @@ export function enterEdit(
   if (quoted && itemBeforeQuote) {
     if (!soft && !source.slice(quoted.contentFrom, line.to).trim()) {
       const next = quoted.authored.replace(/>[ \t]*$/, "");
-      return {
-        changes: [{ from: line.from, to: line.to, insert: next }],
-        selection: { anchor: line.from + next.length },
-      };
+      return exitEmptyBlockLine(source, line.from, line.to, next);
     }
     return replacement(selection, (soft ? "  \n" : "\n") + quoted.prefix);
+  }
+  const item = options.continuation && nodeAt(source, from, ["item"]);
+  const innerQuote = item && nodeAt(source, from, ["blockquote", "callout"]);
+  if (item && (!innerQuote || innerQuote.from <= item.from)) {
+    const marker = listMarker(source, item);
+    if (marker) {
+      const prefix = marker.prefix,
+        header = marker.line;
+      if (
+        !soft &&
+        line.from === header.from &&
+        !source.slice(marker.bodyFrom, line.to).trim()
+      ) {
+        const path = listPath(source, item);
+        const parent = path.filter((node) => node.type === "item").at(-2);
+        const parentMarker = parent && listMarker(source, parent);
+        const next =
+          parent && parentMarker
+            ? parentMarker.prefix +
+              parentMarker.marker.replace(/\d+/, (n) => String(Number(n) + 1)) +
+              (parentMarker.task ? "[ ] " : "")
+            : prefix;
+        return exitEmptyBlockLine(
+          source,
+          line.from,
+          line.to,
+          next,
+          !!parentMarker,
+        );
+      }
+      const next = soft
+        ? " ".repeat(marker.marker.length)
+        : marker.marker.replace(/\d+/, (n) => String(Number(n) + 1)) +
+          (marker.task ? "[ ] " : "");
+      return replacement(selection, (soft ? "  \n" : "\n") + prefix + next);
+    }
   }
   const prefix =
     /^(\s*)((?:>\s*)*)((?:(?:[-+*]|\d+[.)])\s+)?)(\[[ xX]\]\s+)?(.*)$/.exec(
@@ -235,24 +272,13 @@ export function enterEdit(
           prefix[2] +
           prefix[3] +
           (prefix[4] ? "[ ] " : "");
-      // A parent prefix alone does not end a child's prose: Markdown permits
-      // lazy continuation back into that paragraph once the next letter arrives.
-      // Preserve a quoted blank separator when actually leaving deeper prose.
-      const previous = Math.max(0, line.from - 2);
-      const parentDepth = (next.match(/>/g) ?? []).length;
-      if (
-        !prefix[3] &&
-        parentDepth &&
-        line.from > 0 &&
-        nodeAt(source, previous, ["paragraph"]) &&
-        (quoteContext(source, previous)?.prefix.match(/>/g)?.length ?? 0) >
-          parentDepth
-      )
-        next = next.trimEnd() + "\n" + next;
-      return {
-        changes: [{ from: line.from, to: line.to, insert: next }],
-        selection: { anchor: line.from + next.length },
-      };
+      return exitEmptyBlockLine(
+        source,
+        line.from,
+        line.to,
+        next,
+        !!prefix[3] && !!prefix[1].length,
+      );
     }
     const marker = soft
       ? " ".repeat((prefix[3] ?? "").length + (prefix[4] ?? "").length)
@@ -289,6 +315,10 @@ export function enterEdit(
   return replacement(selection, "\n\n");
 }
 
+function listPath(source: string, item: MarkdownNode) {
+  return blockPath(source, item);
+}
+
 export function indentList(
   source: string,
   selection: SourceSelection,
@@ -303,18 +333,63 @@ export function indentList(
   const item = nodeAt(source, from, ["item"]);
   if (!item) return null;
   const first = lineAt(source, item.from).from;
+  const path = listPath(source, item);
+  const parent = path.filter((node) => node.type === "item").at(-2);
+  if (outdent && !parent) return { changes: [], selection };
+  const siblings = path.at(-2)?.children ?? [];
+  const previous = siblings[siblings.indexOf(item) - 1];
+  const marker = listMarker(source, item);
+  const parentPrefix = parent
+    ? (listMarker(source, parent)?.prefix.length ?? 0)
+    : 0;
+  const quoteEnd =
+    marker?.prefix.lastIndexOf(">") !== undefined
+      ? marker.prefix.lastIndexOf(">") + 1
+      : 0;
+  const offset = Math.max(quoteEnd, parentPrefix);
+  if (outdent && parent)
+    size = (marker?.prefix.length ?? item.from - first) - parentPrefix;
+  if (!outdent) {
+    // A first item has no preceding sibling to own it. Do not accidentally
+    // turn a four-space-indented first item into a code block.
+    if (!previous) return { changes: [], selection };
+    const markerWidth = listMarker(source, previous)?.marker.length ?? 2;
+    size = Math.max(size, markerWidth);
+  }
   const end = from === to ? item.to : lineAt(source, Math.max(from, to - 1)).to;
   const changes: TextChange[] = [];
+  if (!outdent && marker && /^\d/.test(marker.marker)) {
+    const digits = /^\d+/.exec(marker.marker)![0];
+    if (digits !== "1")
+      changes.push({
+        from: marker.from,
+        to: marker.from + digits.length,
+        insert: "1",
+      });
+  }
   for (let at = first; at < end;) {
     const line = lineAt(source, at);
     if (outdent) {
-      const count = Math.min(size, /^ */.exec(line.text)![0].length);
-      if (count) changes.push({ from: at, to: at + count, insert: "" });
-    } else changes.push({ from: at, to: at, insert: " ".repeat(size) });
+      const count = Math.min(
+        size,
+        /^[ \t]*/.exec(line.text.slice(offset))![0].length,
+      );
+      if (count)
+        changes.push({
+          from: at + offset,
+          to: at + offset + count,
+          insert: "",
+        });
+    } else
+      changes.push({
+        from: at + offset,
+        to: at + offset,
+        insert: " ".repeat(size),
+      });
     at = line.to + 1;
   }
   return {
-    changes,
+    changes: changes.sort((a, b) => a.from - b.from || a.to - b.to),
     selection: {
       anchor: mapPosition(selection.anchor, changes),
       head: mapPosition(selection.head, changes),

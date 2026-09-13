@@ -13,9 +13,46 @@ import {
   themeFileSchema,
   appearanceForClient,
   APPEARANCE_SCHEMA_HEADER,
+  APPEARANCE_SCHEMA,
 } from "../packages/shared/src/appearance";
 import { applyDocumentStyle } from "../packages/shared/src/editor-looks";
 describe("personal appearance", () => {
+  it("migrates range guides without restyling v5 and projects safe old-client reads", () => {
+    const {
+      minimap: _minimap,
+      blockGuides: _guides,
+      readingMarkMargin: _margin,
+      readingMarkOverview: _overview,
+      ...old
+    } = defaults;
+    const saved = { ...old, schemaVersion: 5, proseSize: 23, radius: 0 };
+    const current = preferencesSchema.parse(saved);
+    expect(current).toEqual({
+      ...saved,
+      schemaVersion: APPEARANCE_SCHEMA,
+      blockGuides: true,
+      readingMarkMargin: true,
+      readingMarkOverview: true,
+      minimap: defaults.minimap,
+    });
+    const record = {
+      preferences: { ...current, blockGuides: false },
+      version: 9,
+      previousPreferences: current,
+    };
+    const response = appearanceForClient(
+      new Request("http://localhost/preferences", {
+        headers: { [APPEARANCE_SCHEMA_HEADER]: "5" },
+      }),
+      record,
+    );
+    expect(response?.preferences).toEqual(saved);
+    expect(response?.previousPreferences).toEqual(saved);
+    expect(preferencesSchema.parse(record.preferences).blockGuides).toBe(false);
+    expect(() =>
+      preferencesSchema.parse({ ...defaults, blockGuides: "yes" }),
+    ).toThrow();
+  });
   it("has readable built-in palettes for text, links, code and chrome", () => {
     for (const p of Object.values(presets))
       for (const [a, b] of [
@@ -115,7 +152,7 @@ describe("personal appearance", () => {
     };
     const normalized = preferencesSchema.parse(legacy);
     expect(normalized).toMatchObject({
-      schemaVersion: 5,
+      schemaVersion: APPEARANCE_SCHEMA,
       mode: "dark",
       uiFont: "inter",
       headingFont: "sourceSerif",
@@ -134,12 +171,18 @@ describe("personal appearance", () => {
         previousPreferences: normalized,
       }).previousPreferences,
     ).toEqual(normalized);
-    expect(() => preferencesSchema.parse({ schemaVersion: 6 })).toThrow();
+    expect(() =>
+      preferencesSchema.parse({ schemaVersion: APPEARANCE_SCHEMA + 1 }),
+    ).toThrow();
   });
   it("upgrades v2 values without restyling and safely negotiates the new font", () => {
     const {
       documentDecorations: _decoration,
       themePack: _pack,
+      blockGuides: _guides,
+      readingMarkMargin: _margin,
+      readingMarkOverview: _overview,
+      minimap: _minimap,
       ...v3
     } = defaults;
     const old = {
@@ -152,13 +195,17 @@ describe("personal appearance", () => {
     const current = preferencesSchema.parse(old);
     expect(current).toEqual({
       ...old,
-      schemaVersion: 5,
+      schemaVersion: APPEARANCE_SCHEMA,
+      blockGuides: true,
+      readingMarkMargin: true,
+      readingMarkOverview: true,
+      minimap: defaults.minimap,
       themePack: "default",
       documentDecorations: "none",
     });
     const legacy = new Request("http://localhost/preferences");
     const modern = new Request("http://localhost/preferences", {
-      headers: { [APPEARANCE_SCHEMA_HEADER]: "5" },
+      headers: { [APPEARANCE_SCHEMA_HEADER]: String(APPEARANCE_SCHEMA) },
     });
     const record = { preferences: current, version: 7 };
     expect(appearanceForClient(legacy, record)?.preferences).toEqual(old);

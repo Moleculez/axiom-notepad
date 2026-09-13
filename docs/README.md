@@ -17,12 +17,17 @@ Milkdown/ProseMirror and CodeMirror—not a dependency-free rewrite of those lib
 
 ## Product and design contracts
 
+- [File-first workbench, navigation and dialogs](FILE_WORKBENCH.md)
+
 - [Current editor implementation](EDITOR_VNEXT.md), [writing controls](EDITOR.md), [acceptance checklist](EDITOR_VNEXT_ACCEPTANCE.md)
 - [Canvas architecture](CANVAS_ARCHITECTURE.md) and [acceptance](CANVAS_V1_ACCEPTANCE.md)
 - [Research tools and limits](RESEARCH_TOOLS.md)
 - [Workspaces, Audit and Trash](MANAGEMENT_CONSOLE.md)
 - [Files, MCP and offline workflows](PRODUCTIVITY_PLATFORM.md)
 - [Reading, references and annotations](READING.md)
+- [Reading bookmarks, margin marks and annotation cards](READING_MARKS.md)
+- [Document minimap and unified navigation](MINIMAP.md)
+- [Image/Mermaid viewer, metadata and placement annotations](VISUAL_VIEWER.md)
 - [Settings](SETTINGS.md), [design system](DESIGN_SYSTEM.md), [theme authoring criteria](THEME_AUTHORING.md)
 
 ## Historical evidence

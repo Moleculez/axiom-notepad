@@ -5,6 +5,8 @@ export type MarkdownAnchor = {
   end: number[];
   quote: string;
   generation: number;
+  kind?: "block" | "text" | "point";
+  blockType?: string;
 };
 export type SourceAnnotation = { id: string; from: number; to: number };
 /** Existing comment payload, unchanged. Collapsed/deleted/generation-mismatched
@@ -31,10 +33,49 @@ export function resolveAnchor(
       Y.decodeRelativePosition(Uint8Array.from(anchor.end)),
       doc,
     );
-    return a?.type === text && b?.type === text && a.index < b.index
+    return a?.type === text &&
+      b?.type === text &&
+      (a.index < b.index || (anchor.kind === "point" && a.index === b.index))
       ? { from: a.index, to: b.index }
       : null;
   } catch {
     return null;
   }
+}
+
+/** Captures source identity without selecting prose or publishing a cursor. */
+export function createMarkAnchor(
+  doc: Y.Doc,
+  generation: number,
+  from: number,
+  to: number,
+  kind: "block" | "text" | "point" = "text",
+  blockType?: string,
+): MarkdownAnchor | null {
+  const text = doc.getText("markdown");
+  if (
+    !Number.isInteger(from) ||
+    !Number.isInteger(to) ||
+    from < 0 ||
+    to < from ||
+    to > text.length
+  )
+    return null;
+  if (from === to) kind = "point";
+  return {
+    start: Array.from(
+      Y.encodeRelativePosition(
+        Y.createRelativePositionFromTypeIndex(text, from),
+      ),
+    ),
+    end: Array.from(
+      Y.encodeRelativePosition(
+        Y.createRelativePositionFromTypeIndex(text, to, from === to ? 0 : -1),
+      ),
+    ),
+    quote: text.toString().slice(from, to).slice(0, 2000),
+    generation,
+    kind,
+    blockType,
+  };
 }

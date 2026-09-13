@@ -2,7 +2,13 @@ import type { Preferences } from "@axiom/shared/appearance";
 import type { EditorPreferences } from "@axiom/shared/editor";
 
 export const settingsCategories = [
-  { id: "connections", group: "Account", label: "Connected apps", description: "MCP connections, explicit permissions, approvals, and activity." },
+  {
+    id: "connections",
+    group: "Account",
+    label: "Connected apps",
+    description:
+      "MCP connections, explicit permissions, approvals, and activity.",
+  },
   {
     id: "profile",
     group: "Account",
@@ -25,7 +31,15 @@ export const settingsCategories = [
     id: "groups",
     group: "Account",
     label: "My groups",
-    description: "Memberships and group administration.",
+    description:
+      "Memberships, invitations and shared research. Your personal workspace stays private.",
+  },
+  {
+    id: "appearance-general",
+    group: "Appearance",
+    label: "General",
+    description:
+      "Quiet visual guides for understanding your document's structure.",
   },
   {
     id: "theme",
@@ -84,7 +98,7 @@ export const settingsCategories = [
   {
     id: "storage",
     group: "Storage",
-    label: "Files & versions",
+    label: "Management",
     description: "Storage usage and file-version retention.",
   },
   {
@@ -103,6 +117,7 @@ export const settingsCategories = [
 export type SettingsCategory = (typeof settingsCategories)[number]["id"];
 export const preferenceCategory = (id: string) =>
   [
+    "appearance-general",
     "theme",
     "typography",
     "layout",
@@ -121,6 +136,7 @@ export function settingsCategory(
     return (
       (
         {
+          General: "appearance-general",
           Theme: "theme",
           Typography: "typography",
           "Reading & layout": "layout",
@@ -135,6 +151,7 @@ export function settingsCategory(
   );
 }
 export const appearanceSections: Record<string, string> = {
+  "appearance-general": "General",
   theme: "Theme",
   typography: "Typography",
   layout: "Reading & layout",
@@ -146,6 +163,12 @@ export const appearanceSections: Record<string, string> = {
   shortcuts: "Keyboard shortcuts",
 };
 export const appearanceSettingGroups: Record<string, (keyof Preferences)[]> = {
+  General: [
+    "blockGuides",
+    "readingMarkMargin",
+    "readingMarkOverview",
+    "minimap",
+  ],
   Theme: [
     "mode",
     "lightPreset",

@@ -8,6 +8,21 @@ import {
 // every later node view. The projection owns offsets, not the rich document.
 export const nodes: Record<string, NodeSpec> = {
   doc: { content: "block+" },
+  folded_block: {
+    group: "block",
+    atom: true,
+    isolating: true,
+    attrs: {
+      label: { default: "Block" },
+      summary: { default: "" },
+      detail: { default: "" },
+    },
+    toDOM: (node) => [
+      "div",
+      { class: "axiom-folded-block", contenteditable: "false" },
+      node.attrs.label,
+    ],
+  },
   paragraph: {
     whitespace: "pre",
     group: "block",

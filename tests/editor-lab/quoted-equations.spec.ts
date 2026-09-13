@@ -303,9 +303,9 @@ test("an empty paragraph after a nested equation exits only one quote level", as
   await page.keyboard.press("ControlOrMeta+Enter");
   await exact(page, source + "\n> > ", source.length + 5);
   await page.keyboard.press("Enter");
-  await exact(page, source + "\n> ", source.length + 3);
+  await exact(page, source + "\n>\n> ", source.length + 5);
   await page.keyboard.type("Outer");
-  await exact(page, source + "\n> Outer", source.length + 8);
+  await exact(page, source + "\n>\n> Outer", source.length + 10);
   await expect(prose(page).locator("blockquote blockquote")).not.toContainText(
     "Outer",
   );

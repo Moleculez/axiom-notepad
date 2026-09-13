@@ -157,7 +157,7 @@ test("consecutive quote exits and parent paste retain their depth after a peer e
       Object.defineProperty(event, "clipboardData", { value: data });
       element.dispatchEvent(event);
     });
-  const expected = "Peer\n\n> > > Child\n> >\n> Parent\n> Next";
+  const expected = "Peer\n\n> > > Child\n> >\n>\n> Parent\n> Next";
   await shared(page, expected, expected.length);
   await expect(
     pane(page).locator("blockquote blockquote").first(),

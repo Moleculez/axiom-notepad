@@ -30,11 +30,18 @@ export function errorMessage(
   return error instanceof Error ? error.message : fallback;
 }
 let pageLeaving = false;
-const pageRequests = new Set<AbortController>();
+const pageRequests = new Map<AbortController, boolean>();
 if (typeof window !== "undefined") {
+  window.addEventListener("beforeunload", () => {
+    // WebKit can invalidate the old origin before pagehide. Stop current reads
+    // before that boundary; do not cancel writes or permanently disable this
+    // page, because the user may cancel navigation in an unsaved-work prompt.
+    for (const [request, readOnly] of pageRequests)
+      if (readOnly) request.abort();
+  });
   window.addEventListener("pagehide", () => {
     pageLeaving = true;
-    for (const request of pageRequests) request.abort();
+    for (const request of pageRequests.keys()) request.abort();
   });
   window.addEventListener("pageshow", () => {
     pageLeaving = false;
@@ -82,7 +89,10 @@ export async function api<T = any>(
   const abort = () => controller.abort(options.signal?.reason);
   if (options.signal?.aborted) abort();
   else options.signal?.addEventListener("abort", abort, { once: true });
-  pageRequests.add(controller);
+  pageRequests.set(
+    controller,
+    ["GET", "HEAD"].includes(options.method ?? "GET"),
+  );
   try {
     if (
       typeof indexedDB !== "undefined" &&

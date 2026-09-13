@@ -1,4 +1,5 @@
 "use client";
+import { confirmAction } from "../lib/app-prompt";
 import { printDocument } from "../lib/print-document";
 import { openExternalEditorLink } from "../lib/editor-links";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -1760,6 +1761,8 @@ export default function Notebook() {
                   >
                     <ReadingView
                       active={mode === "read"}
+                      source={source}
+                      visual={{resourceId: note.id, anchor:(from,to)=>editor.current?.markAnchor(from,to,"block")}}
                       parsed={parsed}
                       context={renderContext}
                       onLink={openLink}
@@ -1828,13 +1831,17 @@ export default function Notebook() {
                     setPdf(null);
                     history.replaceState(null, "", `/?note=${note.id}`);
                   }}
-                  onInsert={(value, privateMaterial) => {
+                  onInsert={async (value, privateMaterial) => {
                     if (
                       privateMaterial &&
                       note.visibility === "shared" &&
-                      !confirm(
+                      !(await confirmAction(
                         "This inserts private research material into a shared note. Everyone with access to the note will be able to read the inserted text. Continue?",
-                      )
+                        {
+                          title: "Insert private material into a shared note?",
+                          confirmLabel: "Insert material",
+                        },
+                      ))
                     )
                       return;
                     editor.current?.insert(value);

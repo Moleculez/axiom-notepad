@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import {
   ArrowUpRight,
   Bell,
@@ -16,7 +17,9 @@ import {
   Users,
 } from "lucide-react";
 import type { Resource, Space } from "@axiom/shared/workspace";
-import { initials, post, timeAgo } from "../../lib/client";
+import { post, timeAgo } from "../../lib/client";
+import Avatar from "./Avatar";
+import { useManagement } from "./ManagementActions";
 import { templates } from "@axiom/shared/templates";
 import {
   Badge,
@@ -32,9 +35,12 @@ import {
   WorkspaceLink,
 } from "./ui";
 import Dialog from "../Dialog";
-import { CreateResource } from "./Explorer";
+const CreateResource = dynamic(() =>
+  import("./Explorer").then((module) => module.CreateResource),
+);
 
 export function HomePage() {
+  const management = useManagement();
   const { session, spaces, revision, open, navigate } = useWorkspace(),
     result = useData("dashboard", revision),
     [create, setCreate] = useState<Space | null>(null);
@@ -49,10 +55,16 @@ export function HomePage() {
           <button
             className="button primary"
             disabled={!personal}
-            onClick={() => personal && setCreate(personal)}
+            onClick={(event) =>
+              personal &&
+              management.createMenu(event, {
+                spaceId: personal.id,
+                parentId: null,
+              })
+            }
           >
             <Plus size={17} />
-            New note
+            New file
           </button>
         }
       >
@@ -443,31 +455,7 @@ export function PeoplePage() {
     </main>
   );
 }
-export function Avatar({
-  person,
-  className = "",
-}: {
-  person: { name: string; image?: string | null };
-  className?: string;
-}) {
-  const [failedImage, setFailedImage] = useState<string | null>(null),
-    image = person.image?.startsWith("/api/v1/people/") ? person.image : null;
-  return (
-    <span className={`ws-avatar ${className}`.trim()}>
-      {image && image !== failedImage ? (
-        <img
-          key={image}
-          src={image}
-          alt=""
-          onError={() => setFailedImage(image)}
-          onLoad={() => setFailedImage(null)}
-        />
-      ) : (
-        initials(person.name)
-      )}
-    </span>
-  );
-}
+export { default as Avatar } from "./Avatar";
 
 export function ResearchPage() {
   const { spaces, navigate, open, refresh } = useWorkspace(),

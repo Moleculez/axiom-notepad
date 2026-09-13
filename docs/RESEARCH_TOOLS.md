@@ -1,8 +1,12 @@
 # Research tools
 
-Desktop implementation added on 2026-09-10. Open **Workspace pages → Research tools**
-(`/workbench/tools`). These are integrated research tools, not a claim of complete
-LaTeXLive, Photoshop, Microsoft Office, or Typora parity.
+Desktop studios are file views. Open a math, image, text or canvas resource from
+Explorer, or create one through **New** alongside Markdown notes. Canonical routes
+are `/workbench/math/:id`, `/image/:id`, `/text/:id` and `/canvas/:id` under the
+same workbench prefix. Legacy Tools links redirect; the Tools landing and separate
+creation page are removed. See [file navigation](FILE_WORKBENCH.md). These are
+integrated research tools, not a claim of complete LaTeXLive, Photoshop, Office or
+Typora parity.
 
 ## Available now
 

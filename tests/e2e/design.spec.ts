@@ -1,3 +1,4 @@
+import { APPEARANCE_SCHEMA } from "../../packages/shared/src/appearance";
 import {
   test,
   expect,
@@ -26,7 +27,7 @@ async function api(
   const response = await request.fetch("/api/v1/" + path, {
     method,
     data,
-    headers: { origin, "X-Axiom-Appearance-Schema": "5" },
+    headers: { origin, "X-Axiom-Appearance-Schema": String(APPEARANCE_SCHEMA) },
   });
   expect(response.ok(), await response.text()).toBeTruthy();
   return response.json();

@@ -1,6 +1,7 @@
 import type { MarkdownNode, SourceEdit } from "@axiom/markdown";
 import { containerText, quoteContext, sourceLine } from "@axiom/markdown";
 import { lineAt, mapPosition, type SourceSelection } from "./transactions";
+import type { ListProse } from "./list-prose";
 
 export type QuoteProse = {
   depth: number;
@@ -13,6 +14,7 @@ export type QuoteProse = {
 };
 export type EditingProseNode = MarkdownNode & {
   quoteBody?: QuoteProse;
+  listBody?: ListProse;
   /** Parsed images remain atoms even in an otherwise literal authoring unit. */
   images?: MarkdownNode[];
 };

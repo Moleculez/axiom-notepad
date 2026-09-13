@@ -1,3 +1,4 @@
+import { APPEARANCE_SCHEMA } from "../../packages/shared/src/appearance";
 import {
   expect,
   type Browser,
@@ -14,7 +15,9 @@ let ownerState: Awaited<ReturnType<BrowserContext["storageState"]>>;
 export async function fixture(browser: Browser, body: string) {
   const owner = await browser.newContext({
     baseURL: origin,
-    extraHTTPHeaders: { "X-Axiom-Appearance-Schema": "5" },
+    extraHTTPHeaders: {
+      "X-Axiom-Appearance-Schema": String(APPEARANCE_SCHEMA),
+    },
     storageState: ownerState,
   });
   if (!ownerState) {
@@ -39,7 +42,9 @@ export async function fixture(browser: Browser, body: string) {
   });
   const member = await browser.newContext({
     baseURL: origin,
-    extraHTTPHeaders: { "X-Axiom-Appearance-Schema": "5" },
+    extraHTTPHeaders: {
+      "X-Axiom-Appearance-Schema": String(APPEARANCE_SCHEMA),
+    },
     serviceWorkers: "block",
   });
   const response = await member.request.post("/api/v1/register", {

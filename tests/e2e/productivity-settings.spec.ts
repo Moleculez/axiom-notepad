@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { fixture, origin } from "./native-editor-helpers";
 
 test.beforeAll(() => {
-  if (origin !== "http://localhost:3002")
+  if (!["http://localhost:3002", "http://localhost:3004"].includes(origin))
     throw new Error(
       "Productivity tests require the isolated staging app on port 3002.",
     );

@@ -1,4 +1,88 @@
 /* Document surfaces, not application chrome. Color and type remain personal. */
+:is(.axiom-prose, .prose) {
+  --editor-control-size: calc(var(--size-ui) * 2);
+  --editor-toolbar-space: calc(var(--editor-control-size) + 6px);
+  --editor-edge-size: calc(var(--size-ui) * 1.6);
+}
+/* Note references remain inline prose, not buttons or unbreakable pills. The
+   decorative file icon never enters the editor DOM, source or copied label. */
+:is(.axiom-prose, .prose) a.wiki-link {
+  color: color-mix(in srgb, var(--accent) 85%, var(--text));
+  background-color: color-mix(in srgb, var(--accent) 7%, transparent);
+  border-radius: min(0.25em, var(--control-radius-small));
+  padding: 0.08em 0.28em;
+  font-weight: max(500, var(--weight-prose));
+  text-decoration: underline;
+  text-decoration-thickness: 0.06em;
+  text-decoration-color: color-mix(in srgb, currentColor 45%, transparent);
+  text-underline-offset: 0.17em;
+  overflow-wrap: anywhere;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  transition:
+    color 120ms ease,
+    background-color 120ms ease,
+    text-decoration-color 120ms ease;
+}
+:is(.axiom-prose, .prose) a.wiki-link::before {
+  content: "";
+  /* Share the text's font box without adding a break before the label. Bound
+     the ink to the mask area: WebKit leaves inline padding outside it unmasked. */
+  display: inline;
+  padding-inline-start: 0.85em;
+  margin-inline-end: 0.22em;
+  background: linear-gradient(currentColor, currentColor) center / 0.85em 0.95em
+    no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z'/%3E%3Cpath d='M14 2v6h6M8 13h8M8 17h6'/%3E%3C/svg%3E")
+    center / 0.85em 0.95em no-repeat;
+  pointer-events: none;
+}
+:is(.axiom-prose, .prose) a.wiki-link.unresolved {
+  background-color: color-mix(in srgb, var(--muted) 6%, transparent);
+  text-decoration-style: dashed;
+}
+:is(.axiom-prose, .prose) a.wiki-link:is(:hover, :focus-visible) {
+  background-color: color-mix(in srgb, var(--accent) 12%, transparent);
+  text-decoration-color: currentColor;
+}
+:is(.axiom-prose, .prose) a.wiki-link:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+.axiom-prose a.wiki-link {
+  cursor: text;
+}
+@media (prefers-reduced-motion: reduce) {
+  :is(.axiom-prose, .prose) a.wiki-link {
+    transition: none;
+  }
+}
+@media (forced-colors: active) {
+  :is(.axiom-prose, .prose) a.wiki-link {
+    color: LinkText;
+    background-color: Canvas;
+    text-decoration-color: LinkText;
+    outline-color: Highlight;
+  }
+  :is(.axiom-prose, .prose) a.wiki-link::before {
+    color: LinkText;
+    forced-color-adjust: none;
+  }
+}
+@media print {
+  :is(.axiom-prose, .prose) a.wiki-link:any-link {
+    padding: 0;
+    color: inherit;
+    background: none;
+    text-decoration-color: currentColor;
+    outline: none;
+    box-shadow: none;
+  }
+  :is(.axiom-prose, .prose) a.wiki-link::before {
+    display: none;
+  }
+}
 :is(.axiom-prose, .prose) :is(h1, h2, h3, h4, h5, h6) {
   font-family: var(--font-heading);
   font-weight: var(--weight-heading);
@@ -72,8 +156,8 @@
 .axiom-table-shell {
   position: relative;
   overflow: visible;
-  padding: 0 28px 0 0;
-  margin-block: 36px 32px;
+  padding: 0 calc(var(--editor-edge-size) + 4px) 0 0;
+  margin-block: var(--editor-toolbar-space) calc(var(--editor-edge-size) + 8px);
 }
 .axiom-table-scroll {
   overflow-x: auto;
@@ -109,13 +193,13 @@
 }
 .axiom-table-controls {
   position: absolute;
-  inset-block-start: -32px;
-  inset-inline-end: 28px;
+  inset-block-start: calc(-1 * var(--editor-toolbar-space));
+  inset-inline-end: calc(var(--editor-edge-size) + 4px);
   display: flex;
   gap: 2px;
   padding: 1px;
   background: var(--paper);
-  border-radius: 4px;
+  border-radius: var(--control-radius-small);
   opacity: 0;
   pointer-events: none;
   z-index: 2;
@@ -134,24 +218,24 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
-  padding: 6px;
+  width: var(--editor-control-size, calc(var(--size-ui) * 2));
+  height: var(--editor-control-size, calc(var(--size-ui) * 2));
+  padding: 0.45em;
   border: 0;
-  border-radius: 4px;
+  border-radius: var(--control-radius-small);
   background: transparent;
   color: var(--muted);
   cursor: pointer;
   flex: 0 0 auto;
-  font: var(--weight-ui) 12px/1.4 var(--font-ui);
+  font: var(--weight-ui) var(--size-ui-small)/1.4 var(--font-ui);
   transition:
     color 120ms ease,
     background 120ms ease,
     opacity 120ms ease;
 }
 .editor-icon-button svg {
-  width: 18px;
-  height: 18px;
+  width: 1.4em;
+  height: 1.4em;
   flex: none;
 }
 .editor-icon-button:hover,
@@ -181,8 +265,8 @@
   opacity: 0;
   pointer-events: none;
   background: var(--paper);
-  width: 24px;
-  height: 24px;
+  width: var(--editor-edge-size);
+  height: var(--editor-edge-size);
   padding: 4px;
 }
 .axiom-table-edge[hidden] {
@@ -194,8 +278,8 @@
   transform: translateY(-50%);
 }
 .axiom-table-edge[data-axis="row"] {
-  bottom: -28px;
-  left: calc(50% - 14px);
+  bottom: calc(-1 * (var(--editor-edge-size) + 4px));
+  left: calc(50% - (var(--editor-edge-size) + 4px) / 2);
   transform: translateX(-50%);
 }
 .axiom-table-shell.near-right .axiom-table-edge[data-axis="column"],
@@ -211,22 +295,22 @@
   position: fixed;
   inset: auto;
   margin: 0;
-  width: 280px;
+  width: 22em;
   max-width: calc(100vw - 24px);
   box-sizing: border-box;
   padding: 12px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--control-radius);
   box-shadow: var(--shadow);
   background: var(--paper);
   color: var(--text);
-  font: var(--weight-ui) 13px/1.5 var(--font-ui);
+  font: var(--weight-ui) var(--size-ui-small)/1.5 var(--font-ui);
   overflow-y: auto;
   z-index: 10000;
 }
 .editor-panel-caption {
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--size-ui-caption);
   padding: 0 2px 8px;
 }
 .editor-panel-tabs {
@@ -257,7 +341,7 @@
 }
 .editor-panel-icons .editor-icon-button {
   width: 100%;
-  height: 34px;
+  height: 2.6em;
 }
 .editor-panel-footer {
   border-top: 1px solid var(--line);
@@ -282,12 +366,12 @@
   margin: 0;
   max-width: min(240px, calc(100vw - 16px));
   border: 1px solid var(--line);
-  border-radius: 5px;
+  border-radius: var(--control-radius-small);
   padding: 5px 8px;
   background: var(--paper);
   color: var(--text);
   box-shadow: var(--shadow);
-  font: 12px/1.4 var(--font-ui);
+  font: var(--size-ui-small)/1.4 var(--font-ui);
   pointer-events: none;
   z-index: 11000;
 }
@@ -305,7 +389,7 @@
   overscroll-behavior: contain;
   padding: 16px 18px;
   border: 1px solid var(--line);
-  border-radius: 7px;
+  border-radius: var(--control-radius);
   background: var(--paper);
   color: var(--text);
   box-shadow: var(--shadow);
@@ -356,7 +440,7 @@
   border-radius: 0;
   border: 0;
   overflow: visible;
-  margin-block: 36px 24px;
+  margin-block: var(--editor-toolbar-space) 1.4em;
   padding-block-start: 0;
   background: var(--paper);
 }
@@ -365,14 +449,14 @@
 }
 .axiom-block-controls {
   position: absolute;
-  inset-block-start: -30px;
+  inset-block-start: calc(-1 * var(--editor-toolbar-space));
   inset-inline-end: 0;
-  min-height: 28px;
+  min-height: var(--editor-control-size);
   padding: 0;
   gap: 3px;
   z-index: 2;
   background: var(--paper);
-  border-radius: 4px;
+  border-radius: var(--control-radius-small);
   opacity: 0;
   pointer-events: none;
 }
@@ -434,14 +518,14 @@
    Reserve the same space once, without changing geometry on hover or focus. */
 .axiom-table-shell:first-child,
 .axiom-embedded:first-child {
-  padding-block-start: 32px;
+  padding-block-start: var(--editor-toolbar-space);
 }
 .axiom-table-shell:first-child > .axiom-table-controls,
 .axiom-embedded:first-child > .axiom-block-controls {
   inset-block-start: 0;
 }
 .axiom-table-shell:first-child > .axiom-table-edge[data-axis="column"] {
-  top: calc(50% + 16px);
+  top: calc(50% + var(--editor-toolbar-space) / 2);
 }
 :is(.axiom-prose, .prose) :is(blockquote, .callout, .axiom-callout) {
   border-radius: 0;

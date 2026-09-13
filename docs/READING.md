@@ -20,7 +20,7 @@ Account defaults follow you across devices. Device overrides apply only to this 
 
 LaTeX Article enables H1–H3 bottom rules, decorative hierarchical section labels (`§ 1`, `§ 1.1`, `§ 1.2`, `§ 2.1`) beside resting H1–H6, and academic double-rule dividers. Numbering follows actual heading ancestry; starting at H2 or skipping levels creates no phantom zero parents. Typography → Document decorations can turn them off without changing fonts. Font/size/spacing and color adjustments retain the decoration choice; another document preset selects its own decoration default. Personal HTML and print retain the same ornaments, but headings in the app and outline are not decorated.
 
-Existing version-1/version-2/version-3 profiles and device caches normalize to appearance schema v4, including pending offline changes. Exact old LaTeX Article presets gain the new decorations; other existing looks default to none and keep all saved typography. New accounts still receive the existing modern defaults. Already-open older app clients must reload before saving appearance; unrepresentable fonts/decorations produce a reload response rather than fallback settings. Portable palette files still use the original `axiom-theme` version-1 format. Writing preferences remain v2.
+Existing profiles and device caches normalize to appearance schema v7, including pending offline changes. Saved typography and decorations are retained; block guides and reading-mark toggles use their current defaults only when absent. Already-open older app clients must reload before saving appearance; unrepresentable choices produce a reload response rather than silently replacing settings. Portable palette files still use the original `axiom-theme` version-1 format. Writing preferences remain v2.
 
 ## Navigate a document
 
@@ -31,6 +31,10 @@ Use the disclosure arrows or Expand all/Collapse all to manage long outlines. Co
 Dialogs are centered on the viewport with internally scrolling content and visible actions. Escape closes a dialog, Tab remains inside it, and focus returns to its opener. Clicking padding or dragging from inside to outside does not dismiss it; a genuine backdrop click does.
 
 ## Read and annotate PDFs
+
+For images and Mermaid diagrams, double-click the rendered visual to inspect,
+compare, export, or add placement-specific private annotations. See the
+[image/diagram viewer guide](VISUAL_VIEWER.md) for metadata privacy and limits.
 
 Attach a PDF to a note and open its attachment card. On desktop, drag the divider or use its arrow keys to resize the paper pane. On narrow screens, switch between Note and Paper tabs without discarding the editor. The reader supports page navigation, fit-width/zoom, rotation, PDF outline, lazy thumbnails, text selection, and cancellable text search.
 
@@ -46,7 +50,7 @@ The reference library is group-shared; your reading status, saved filters, bookm
 
 Edit metadata without changing the citation key. BibTeX updates retain the existing entry type and unedited/uncommon fields. Import `.bib` files or manually add references. **Look up metadata** sends only a DOI/arXiv identifier to Crossref or arXiv and shows a preview before you adopt it. Provider lookup needs connectivity and can be rate-limited. Duplicate identifiers/titles produce a warning. Link related notes and their PDFs to a reference to open them from the library.
 
-Bookmark a note section or paper page; open bookmarks in **Appearance → Offline files & reading data**. Reading positions resume automatically. Heading links such as `[[Note title#section-heading]]` open the section; if a saved heading was removed, Axiom opens the note and explains that the anchor is stale. Bookmarks do not repair renamed/deleted headings automatically.
+Bookmark a note block, passage or paper page; manage labels, tags, colors, deletion/Undo and exports in the document's Reading marks panel or **Settings → Storage → Offline files & reading data**. Right-margin markers and the overview rail show saved locations. New note bookmarks use Yjs-relative anchors; deleted/replaced targets explicitly need reattachment. Older heading/scroll bookmarks keep their fallback. Private-first rich annotation cards sit beside the same blocks and can be explicitly shared into Discussion. See [reading marks and annotation cards](READING_MARKS.md).
 
 ## Offline data and privacy
 

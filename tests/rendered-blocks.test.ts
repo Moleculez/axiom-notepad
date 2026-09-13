@@ -112,12 +112,14 @@ for (const ending of ["\n", "\r\n"]) {
   }
 }
 
-test("exiting a quote after mathematics does not add an unnecessary separator", () => {
+test("exiting a quote after mathematics inserts a parent-level separator", () => {
   const source = "> > $$\n> > x\n> > $$\n> > ";
   const edit = enterEdit(
     source,
     { anchor: source.length, head: source.length },
     editorDefaults,
   );
-  expect(applyChanges(source, edit.changes)).toBe("> > $$\n> > x\n> > $$\n> ");
+  expect(applyChanges(source, edit.changes)).toBe(
+    "> > $$\n> > x\n> > $$\n>\n> ",
+  );
 });

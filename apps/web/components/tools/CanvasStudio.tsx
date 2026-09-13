@@ -77,6 +77,7 @@ import {
   selectedCanvas,
 } from "../../lib/tools/canvas-clipboard";
 import ResourceDiscussion from "./ResourceDiscussion";
+import ResourceSharing from "../workspace/ResourceSharing";
 import Dialog from "../Dialog";
 import { api } from "../../lib/client";
 
@@ -1072,6 +1073,7 @@ export default function CanvasStudio({ project }: { project: ToolProject }) {
           ← Explorer
         </WorkspaceLink>
         <h1>{project.name}</h1>
+        <ResourceSharing resourceId={project.resource_id} />
         <span className="tool-spacer" />
         <button
           className="icon-button"
@@ -1369,6 +1371,7 @@ export default function CanvasStudio({ project }: { project: ToolProject }) {
         >
           <div
             className="canvas-world"
+            data-visual-generation={project.generation ?? 1}
             style={{
               transform: `translate(${view.x}px, ${view.y}px) scale(${view.zoom})`,
             }}
@@ -1518,7 +1521,7 @@ export default function CanvasStudio({ project }: { project: ToolProject }) {
                     "--card-color":
                       canvasColors[node.color ?? ""] ??
                       node.color ??
-                      "var(--border)",
+                      "var(--line)",
                   } as CSSProperties
                 }
                 onPointerDown={(e) => start(e, "move", node)}

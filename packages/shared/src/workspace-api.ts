@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { query } from "./db";
+import { fileRoute } from "./file-routes";
 import {
   HttpError,
   fileAccess,
@@ -305,7 +306,13 @@ export async function workspaceApi(
             rows: [row],
           } = await client.query(
             "INSERT INTO resources(space_id,parent_id,kind,name,owner_id,id) VALUES($1,$2,'folder',$3,$4,coalesce($5::uuid,gen_random_uuid())) RETURNING *",
-            [input.spaceId, input.parentId, input.name, userId, input.id ?? null],
+            [
+              input.spaceId,
+              input.parentId,
+              input.name,
+              userId,
+              input.id ?? null,
+            ],
           );
           resource = row;
         }
@@ -363,6 +370,50 @@ export async function workspaceApi(
         [userId, id],
       );
       return json({ ...row, space });
+    }
+    if (action === "access" && method === "GET") {
+      const search = (url.searchParams.get("q") ?? "").trim().slice(0, 100);
+      const page = Math.min(
+        10000,
+        Math.max(0, Number(url.searchParams.get("page")) || 0),
+      );
+      const members = space.group_id
+        ? await query(
+            `SELECT u.id,u.name,u.image,m.role AS group_role,axiom_space_role(u.id,$2) AS role
+         FROM members m JOIN "user" u ON u.id=m.user_id
+         WHERE m.group_id=$1 AND axiom_space_role(u.id,$2) IS NOT NULL
+           AND ($3='' OR position(lower($3) in lower(u.name))>0)
+           AND EXISTS(SELECT 1 FROM resources r WHERE r.id=$4 AND r.space_id=$2 AND axiom_space_role($5,r.space_id) IS NOT NULL)
+         ORDER BY lower(u.name),u.id LIMIT 51 OFFSET $6`,
+            [
+              space.group_id,
+              space.id,
+              search,
+              resource.id,
+              userId,
+              Math.floor(page) * 50,
+            ],
+          )
+        : [];
+      // Revalidate before returning identity information after a concurrent move/revocation.
+      const current = await resourceAccess(userId, id, "read", true);
+      if (current.space.id !== space.id)
+        throw new HttpError(
+          409,
+          "This file moved. Reopen sharing to refresh its access.",
+        );
+      const [row] = await query<Resource>(
+        `SELECT ${rowFields} FROM resources r ${fileJoin} WHERE r.id=$2 AND r.space_id=$3 AND ${permitted}`,
+        [userId, id, space.id],
+      );
+      if (!row) throw new HttpError(404, "This file is unavailable.");
+      return json({
+        resource: { id: resource.id, name: resource.name },
+        path: fileRoute(row),
+        space: current.space,
+        members: members.slice(0, 50),
+        nextPage: members.length > 50 ? Math.floor(page) + 1 : null,
+      });
     }
     if (action === "opened" && method === "POST") {
       await query(

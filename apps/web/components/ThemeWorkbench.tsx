@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Check,
   Copy,
@@ -18,23 +18,24 @@ import {
 export default function ThemeWorkbench({
   preferences,
   dark,
+  active = true,
 }: {
   preferences: Preferences;
   dark: boolean;
+  active?: boolean;
 }) {
   const [selected, setSelected] = useState(true),
     [query, setQuery] = useState(""),
     [menu, setMenu] = useState(false);
+  useEffect(() => {
+    if (!active) setMenu(false);
+  }, [active]);
   const p = paletteFor(preferences, dark);
   return (
     <section className="theme-workbench" aria-label="Theme workbench">
-      <header>
-        <strong>Interface specimen</strong>
-        <span>{dark ? "Dark" : "Light"} · live draft</span>
-      </header>
       <p className="ws-note">
-        Try the controls. This specimen does not change files or accounts.
-        Switch color mode to review both palettes.
+        Try everyday controls with your current draft. Switch color mode to
+        review both palettes.
       </p>
       <div className="theme-workbench-palette">
         {(

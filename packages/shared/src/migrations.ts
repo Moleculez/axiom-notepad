@@ -7,6 +7,8 @@ import { auditMigration } from "./audit-migration";
 import { managementHardeningMigration } from "./management-hardening-migration";
 import { auditCascadeMigration } from "./audit-cascade-migration";
 import { integrationMigration } from "./integration-migration";
+import { readingMarksMigration } from "./reading-marks-migration";
+import { visualAnnotationsMigration } from "./visual-annotations-migration";
 export const migration = `
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 CREATE TABLE IF NOT EXISTS "user" (id text PRIMARY KEY, name text NOT NULL, email text NOT NULL UNIQUE, email_verified boolean NOT NULL DEFAULT false, image text, created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now());
@@ -196,6 +198,8 @@ CREATE TABLE app_instance(singleton boolean PRIMARY KEY DEFAULT true CHECK(singl
 INSERT INTO app_instance(singleton,setup_completed_at) SELECT true,CASE WHEN EXISTS(SELECT 1 FROM "user") THEN now() END;
 `,
   },
+  { version: 19, name: "reading-marks-and-private-note-annotations", sql: readingMarksMigration },
+  { version: 20, name: "placement-specific-visual-annotations", sql: visualAnnotationsMigration },
 ];
 import { productivityPlatformMigration } from "./productivity-platform-migration";
 import { researchToolsMigration } from "./research-tools-migration";

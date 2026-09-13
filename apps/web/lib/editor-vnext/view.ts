@@ -1,4 +1,9 @@
 import {
+  readingBlocks,
+  readingBlockTypes,
+  type ReadingBlockRect,
+} from "@axiom/editor/reading-marks";
+import {
   MarkdownEngine,
   adoptMarkdownCommandDocument,
   nodeAt,
@@ -24,6 +29,7 @@ import {
   footnoteDefinitionAt,
   footnoteBody,
   footnoteCommand,
+  paragraphBesideBlock,
 } from "@axiom/markdown";
 import {
   commandById,
@@ -49,14 +55,14 @@ import {
   type SourceSelection,
   type NativeTransaction,
 } from "@axiom/editor/transactions";
-import { boundaryDelete, rangeDelete } from "@axiom/editor/deletion";
 import {
-  literalBody,
-  literalPrefix,
-  emptiesLiteralBody,
-} from "@axiom/editor/literal";
+  boundaryDelete,
+  rangeDelete,
+  unwrapBlock,
+  emptyBlockDelete,
+} from "@axiom/editor/deletion";
+import { literalBody, literalPrefix } from "@axiom/editor/literal";
 import { OwnedPairs, pairedInput } from "@axiom/editor/pairs";
-import { GeneratedFences } from "@axiom/editor/generated-fences";
 import {
   codeFenceQuery,
   codeLanguageSuggestions,
@@ -64,6 +70,7 @@ import {
 import { preserveLineEndings } from "@axiom/editor/line-endings";
 import { footnoteAt, footnoteInput } from "@axiom/editor/footnotes";
 import { quoteBodyEdit, quoteBodyDelete } from "@axiom/editor/quote-prose";
+import { listBodyEdit, listBodyDelete } from "@axiom/editor/list-prose";
 import {
   bookmarkTable,
   resolveTable,
@@ -103,6 +110,17 @@ import { mathSymbolIcon } from "../icons/math-symbols";
 import { ImageView, type ImageCacheEntry } from "./image-view";
 import { ImageSourceSession } from "./image-source";
 import { tablePanel, type TablePanelState } from "./table-panel";
+import { paintMathPreview } from "./math-preview";
+import { MetadataView } from "./metadata-view";
+import { BlockFolds } from "@axiom/editor/folding";
+import { FoldingGutter } from "./folding-gutter";
+import {
+  NavigationIndex,
+  type EditorNavigationState,
+  type NavigationBlock,
+  type NavigationPosition,
+} from "@axiom/editor/minimap";
+import type { ProjectedBlock } from "@axiom/editor/projection";
 import {
   editingProjection,
   EditingSession,
@@ -155,12 +173,17 @@ export class AxiomEditorView {
   private rich: RichSurface | null = null;
   private sourceView: TextSurface | null = null;
   private embedded = new Set<EmbeddedView>();
+  private metadata = new Set<MetadataView>();
   private tables = new Set<TableView>();
   private tablePanel: ReturnType<typeof tablePanel> | null = null;
   private projection: Projection | null = null;
+  private folds = new BlockFolds();
+  private printing = false;
+  private folding = new FoldingGutter(this.content, (block) =>
+    this.toggleFold(block),
+  );
   private editing: EditingSession;
   private pairs: OwnedPairs;
-  private fences: GeneratedFences;
   private label = "Markdown editor";
   private testId = "note-editor";
   private find: FindPanel | null = null;
@@ -168,6 +191,7 @@ export class AxiomEditorView {
   private unpresence: () => void;
   private abort = new AbortController();
   private generation = 0;
+  private navigationRevision = 0;
   private destroyed = false;
   private footnotePreviews: ReturnType<typeof footnoteTooltips>;
   private footnoteDraft: ReturnType<NativeBinding["relative"]> | null = null;
@@ -176,7 +200,6 @@ export class AxiomEditorView {
   private composing: Composition | null = null;
   private cmComposing = false;
   private textComposition: TextComposition | null = null;
-  private emptiedLiteral: ReturnType<NativeBinding["relative"]> | null = null;
   private dragging = false;
   // Deltas since the current DOM projection. Pointer selection can still be
   // using that older DOM while incoming Yjs edits are deliberately not painted.
@@ -241,7 +264,6 @@ export class AxiomEditorView {
     this.parsed = this.engine.parse(this.source);
     this.editing = new EditingSession(binding);
     this.pairs = new OwnedPairs(binding);
-    this.fences = new GeneratedFences(binding);
     this.dom.className = "axiom-editor";
     this.dom.dataset.engine = "milkdown";
     this.content.className = "axiom-editor-content";
@@ -253,6 +275,22 @@ export class AxiomEditorView {
       context: () => this.options.context(),
     });
     const signal = this.abort.signal;
+    window.addEventListener(
+      "beforeprint",
+      () => {
+        this.printing = true;
+        this.refresh(false);
+      },
+      { signal },
+    );
+    window.addEventListener(
+      "afterprint",
+      () => {
+        this.printing = false;
+        this.refresh(false);
+      },
+      { signal },
+    );
     let contextPress: EventTarget | null = null;
     // A secondary press inspects content; it never starts text selection.
     for (const type of ["pointerdown", "mousedown"])
@@ -313,6 +351,11 @@ export class AxiomEditorView {
     this.dom.addEventListener(
       "focusin",
       (event) => {
+        if ((event.target as Element).closest("[data-editor-fold]")) {
+          this.focused = false;
+          this.binding.blur();
+          return;
+        }
         // Focusing a task control does not start editing the remembered prose.
         if (
           (event.target as Element).matches(
@@ -422,6 +465,7 @@ export class AxiomEditorView {
     );
     this.unsubscribe = binding.subscribe(
       (source, selection, local, changes) => {
+        this.folds.changed(changes);
         if (
           this.imageSource &&
           !this.imageSource.session.changed(changes, local)
@@ -432,12 +476,12 @@ export class AxiomEditorView {
         this.cellHint = null;
         if (!local) this.cellRange = null;
         if (!local) this.pairs.beforeChange(changes, true);
-        if (!local) this.fences.beforeChange(changes, true);
         this.pairs.rebase();
-        this.fences.rebase();
         this.source = source;
         this.selection = selection;
         this.parsed = this.engine.parse(source);
+        this.folds.reconcile(source, this.parsed);
+        if (local && this.focused) this.folds.reveal(selection);
         this.footnotePreviews.refresh();
         adoptMarkdownCommandDocument(source, this.parsed);
         options.changed(source, this.parsed);
@@ -562,6 +606,159 @@ export class AxiomEditorView {
     }
     return null;
   }
+  markGeometry(): ReadingBlockRect[] {
+    if (this.destroyed) return [];
+    if (this.sourceView) {
+      const box = this.sourceView.view.contentDOM.getBoundingClientRect();
+      const blocks = readingBlocks(this.parsed);
+      if (!blocks.length && !this.source.trim())
+        blocks.push({ from: 0, to: 0, type: "paragraph" });
+      return blocks.flatMap((block) => {
+        const a = this.sourceView!.caretRect(block.from),
+          b = this.sourceView!.caretRect(Math.max(block.from, block.to - 1));
+        return a
+          ? [
+              {
+                ...block,
+                left: box.left,
+                right: box.right,
+                top: a.top,
+                bottom: b?.bottom ?? a.bottom,
+              },
+            ]
+          : [];
+      });
+    }
+    if (!this.rich || !this.projection) return [];
+    return this.projection.blocks.flatMap((block) => {
+      const type =
+        block.node.type === "sourceProse"
+          ? (block.node.kind ?? "paragraph")
+          : block.node.type;
+      if (!readingBlockTypes.has(type)) return [];
+      const dom = this.rich!.view.nodeDOM(block.from);
+      if (!(dom instanceof HTMLElement)) return [];
+      const box = dom.getBoundingClientRect();
+      return box.height
+        ? [
+            {
+              from: block.node.from,
+              to: block.node.to,
+              type,
+              left: box.left,
+              right: box.right,
+              top: box.top,
+              bottom: box.bottom,
+              folded: !!block.folded,
+            },
+          ]
+        : [];
+    });
+  }
+  navigationGeometry(): NavigationBlock[] {
+    if (this.sourceView) {
+      const lines = this.sourceView.navigationLines(),
+        index = new NavigationIndex(lines);
+      return [
+        ...lines,
+        ...readingBlocks(this.parsed).flatMap((b) => {
+          const a = index.atSource(b.from),
+            z = index.atSource(Math.max(b.from, b.to - 1));
+          return a
+            ? [
+                {
+                  ...b,
+                  top: a.top,
+                  bottom: z?.bottom ?? a.bottom,
+                  left: a.left,
+                  right: a.right,
+                },
+              ]
+            : [];
+        }),
+      ];
+    }
+    if (this.mode === "read")
+      return Array.from(
+        this.content.querySelectorAll<HTMLElement>("[data-reading-from]"),
+      ).map((el) => {
+        const b = el.getBoundingClientRect();
+        return {
+          from: Number(el.dataset.readingFrom),
+          to: Number(el.dataset.readingTo),
+          type: el.dataset.readingType!,
+          top: b.top,
+          bottom: b.bottom,
+          left: b.left,
+          right: b.right,
+        };
+      });
+    return this.markGeometry();
+  }
+  navigationPosition(at: number): NavigationPosition | null {
+    if (this.destroyed) return null;
+    if (this.sourceView) return this.sourceView.navigationPosition(at);
+    if (
+      !this.rich ||
+      !this.projection ||
+      this.composing ||
+      this.projection.source !== this.source ||
+      this.projectionChanges.length
+    )
+      return null;
+    for (const view of this.embedded) {
+      const node = view.sourceNode();
+      if (
+        node &&
+        at >= (node.contentFrom ?? node.from) &&
+        at <= (node.contentTo ?? node.to)
+      ) {
+        const position = view.surface.navigationPosition(at);
+        if (position) return position;
+      }
+    }
+    const position = this.projection.map.positionAt(at);
+    // Rendered atoms have no text caret. Their block geometry is a better
+    // fallback than coordsAtPos at the neighboring paragraph's boundary.
+    return this.rich.view.state.doc.resolve(position).parent.inlineContent
+      ? this.rich.view.coordsAtPos(position)
+      : null;
+  }
+  navigationSnapshot(): EditorNavigationState {
+    return {
+      revision: this.navigationRevision,
+      source: this.source,
+      selection: { ...this.selection },
+      composing: !!this.composing || this.cmComposing,
+      markers: [
+        ...(this.find?.matches.slice(0, 1000) ?? []).map((m, i) => ({
+          ...m,
+          id: `search:${i}`,
+          kind: "search" as const,
+          label: `Search result ${i + 1}`,
+        })),
+        ...this.peers.flatMap((p) =>
+          p.selection
+            ? [
+                {
+                  id: `peer:${p.clientId}`,
+                  kind: "peer" as const,
+                  ...selectionRange(p.selection),
+                  label: p.name,
+                  color: p.color,
+                },
+              ]
+            : [],
+        ),
+      ],
+    };
+  }
+  private navigationChanged() {
+    this.navigationRevision++;
+    this.dom.dispatchEvent(
+      new Event("axiom:navigation-state", { bubbles: true }),
+    );
+  }
   configure() {
     if (this.destroyed) return;
     this.contextRevision++;
@@ -582,6 +779,9 @@ export class AxiomEditorView {
       });
     const mode = this.options.mode();
     this.dom.dataset.mode = mode;
+    this.dom.dataset.blockGuides = String(
+      this.options.appearance().blockGuides,
+    );
     this.dom.dataset.typewriter = String(this.options.preferences().typewriter);
     if (mode !== this.mode) {
       if (this.composing || this.cmComposing) return;
@@ -596,6 +796,7 @@ export class AxiomEditorView {
     }
   }
   private async mount() {
+    this.folding.clear();
     this.footnotePreviews.close();
     this.closeImageSource();
     const generation = ++this.generation;
@@ -635,6 +836,7 @@ export class AxiomEditorView {
       this.content.innerHTML = renderDocument(this.parsed, {
         ...this.options.context(),
         scrollTables: true,
+        blockMarks: true,
       });
       this.diagrams.render(this.content);
       return;
@@ -716,6 +918,50 @@ export class AxiomEditorView {
             },
           },
           nodeViews: {
+            folded_block: (node, _view, getPos) => {
+              const dom = document.createElement("div");
+              dom.className = "axiom-folded-block";
+              dom.contentEditable = "false";
+              const label = document.createElement("span"),
+                summary = document.createElement("span"),
+                expand = document.createElement("button");
+              label.className = "axiom-fold-label";
+              summary.className = "axiom-fold-summary";
+              expand.type = "button";
+              expand.className = "axiom-fold-expand";
+              expand.dataset.editorFold = "true";
+              expand.textContent = "···";
+              const render = () => {
+                label.textContent = node.attrs.label;
+                summary.textContent = node.attrs.summary;
+                expand.setAttribute(
+                  "aria-label",
+                  `Expand ${node.attrs.label.toLowerCase()}`,
+                );
+                expand.title = `Expand ${node.attrs.detail}`;
+              };
+              const open = () => {
+                const block = this.projection?.blocks.find(
+                  (b) => b.folded && b.from === getPos(),
+                );
+                if (block) this.toggleFold(block, true);
+              };
+              expand.addEventListener("click", open);
+              dom.addEventListener("dblclick", open);
+              dom.append(label, summary, expand);
+              render();
+              return {
+                dom,
+                stopEvent: () => true,
+                ignoreMutation: () => true,
+                update: (next) => {
+                  if (next.type.name !== "folded_block") return false;
+                  node = next;
+                  render();
+                  return true;
+                },
+              };
+            },
             table: (node, _view, getPos) => new TableView(this, node, getPos),
             inline_preview: (node, _view, getPos) => {
               const source = () => this.embeddedNode(getPos());
@@ -749,6 +995,12 @@ export class AxiomEditorView {
                 if (html !== previous) {
                   if (node.attrs.kind === "footnoteRef")
                     paintFootnoteReference(dom, html);
+                  else if (node.attrs.kind === "mathInline")
+                    paintMathPreview(
+                      dom,
+                      html,
+                      this.options.preferences().mathKeepLastPreview,
+                    );
                   else dom.innerHTML = html;
                   previous = html;
                 }
@@ -798,10 +1050,77 @@ export class AxiomEditorView {
             },
             embedded: (node, _view, getPos) =>
               new EmbeddedView(this, node, getPos),
-            raw_block: (node, _view, getPos) =>
-              node.attrs.kind === "hr"
-                ? dividerView(this, getPos)
-                : new EmbeddedView(this, node, getPos),
+            raw_block: (node, _view, getPos) => {
+              if (node.attrs.kind === "hr") return dividerView(this, getPos);
+              if (node.attrs.kind === "frontmatter") {
+                const view = new MetadataView(this, getPos);
+                this.metadata.add(view);
+                const refresh = () => view.render();
+                this.inlineRefresh.add(refresh);
+                return {
+                  dom: view.dom,
+                  update: (next) => view.update(next),
+                  stopEvent: () => true,
+                  ignoreMutation: () => true,
+                  destroy: () => {
+                    this.inlineRefresh.delete(refresh);
+                    this.metadata.delete(view);
+                    view.destroy();
+                  },
+                };
+              }
+              if (node.attrs.kind === "toc") {
+                const dom = document.createElement("section");
+                dom.className = "axiom-toc";
+                dom.dataset.kind = "toc";
+                dom.contentEditable = "false";
+                let previous = "";
+                const render = () => {
+                  const current = this.embeddedNode(getPos());
+                  if (!current) return;
+                  const html = this.renderFragment(current);
+                  if (html !== previous) {
+                    dom.innerHTML = html;
+                    previous = html;
+                  }
+                };
+                dom.addEventListener("mousedown", (event) => {
+                  if (event.button !== 0 || event.metaKey || event.ctrlKey)
+                    return;
+                  if ((event.target as Element).closest("a")) return;
+                  event.preventDefault();
+                  const current = this.embeddedNode(getPos());
+                  if (current) this.focus(current.from, current.to);
+                });
+                dom.addEventListener("click", (event) => {
+                  const link = (
+                    event.target as Element
+                  ).closest<HTMLAnchorElement>("a[href]");
+                  if (link && this.followAnchor(link.getAttribute("href")!)) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                  }
+                });
+                render();
+                this.inlineRefresh.add(render);
+                return {
+                  dom,
+                  update: (next) => {
+                    if (
+                      next.type.name !== "raw_block" ||
+                      next.attrs.kind !== "toc"
+                    )
+                      return false;
+                    render();
+                    return true;
+                  },
+                  stopEvent: () => true,
+                  ignoreMutation: () => true,
+                  destroy: () => this.inlineRefresh.delete(render),
+                };
+              }
+              return new EmbeddedView(this, node, getPos);
+            },
             list_item: (node, _view, getPos) =>
               taskItemView(this, node, getPos),
             footnote: (node, _view, getPos) => footnoteView(this, node, getPos),
@@ -887,17 +1206,33 @@ export class AxiomEditorView {
       true,
     );
     const projection = projectMarkdown(this.source, {
+      folded: this.printing ? [] : this.folds.ranges,
       schema,
       parsed: this.parsed,
       nodes,
       selection: this.selection,
       reveal: this.focused && !this.options.readOnly(),
       proseSource: true,
-      literalSource: this.emptyLiteralSource(),
       footnoteDraft: draft,
       draftHeader: this.editing.header(),
       imageSource: this.activeImageSource(),
     });
+    if (
+      this.mode === "write" &&
+      this.selection.anchor === this.selection.head
+    ) {
+      const hidden = projection.activeProse
+        .flatMap((range) => range.list?.lines ?? [])
+        .find(
+          (line) =>
+            this.selection.head >= line.from &&
+            this.selection.head < line.bodyFrom,
+        );
+      if (hidden) {
+        this.selection = { anchor: hidden.bodyFrom, head: hidden.bodyFrom };
+        this.binding.select(this.selection);
+      }
+    }
     this.projection = projection;
     this.projectionChanges = [];
     return projection;
@@ -925,56 +1260,13 @@ export class AxiomEditorView {
     }
     return line.from;
   }
-  private emptyLiteralSource() {
-    const range =
-      this.emptiedLiteral && this.binding.absolute(this.emptiedLiteral);
-    if (!range || range.anchor >= range.head) return;
-    const node = nodeAt(this.source, range.anchor, ["codeBlock", "mathBlock"]);
-    const selection = selectionRange(this.selection);
-    if (
-      node?.from === range.anchor &&
-      selection.from >= node.from &&
-      selection.to <= node.to &&
-      literalBody(this.source, node).text.length === 0
-    )
-      return node.from;
-  }
-  private revealEmptyLiteral() {
-    if (this.mode !== "write" || this.options.readOnly()) return false;
-    const embedded = this.activeEmbedded(),
-      node = embedded?.sourceNode();
-    if (
-      !embedded ||
-      !node ||
-      !["codeBlock", "mathBlock"].includes(node.type) ||
-      embedded.surface.view.state.doc.length !== 0
-    )
-      return false;
-    const collapse = this.collapseGeneratedLiteral(node);
-    if (collapse) return this.edit(collapse);
-    this.emptiedLiteral = this.binding.relative({
-      anchor: node.from,
-      head: node.to,
-    });
+  private removeEmptyBlock() {
+    if (this.mode !== "write" || this.structureLocked) return false;
+    const edit = emptyBlockDelete(this.source, this.selection);
+    if (!edit) return false;
     this.closePopup();
-    this.focus(this.selection.anchor, this.selection.head);
-    return true;
-  }
-  private collapseGeneratedLiteral(node: MarkdownNode) {
-    const edit = this.fences.collapse(node);
-    if (edit) {
-      const line = sourceLine(this.source, node.from);
-      // Register before the transaction: a later fence must not swallow this
-      // restored draft (or the following note) during the synchronous refresh.
-      this.editing.beginHeader(line.from, line.to);
-      this.emptiedLiteral = null;
-      this.closePopup();
-      // Returning to the opener is a deletion, not a fresh completion request.
-      // Set this before refresh, including when peers have moved the block.
-      this.dismissedQuery =
-        applyChanges(this.source, edit.changes) + ":" + edit.selection.anchor;
-    }
-    return edit;
+    this.footnoteDraft = null;
+    return this.edit(edit, "command");
   }
   private followAnchor(href: string) {
     const id = href.slice(1),
@@ -1022,6 +1314,7 @@ export class AxiomEditorView {
       this.content.innerHTML = renderDocument(this.parsed, {
         ...this.options.context(),
         scrollTables: true,
+        blockMarks: true,
       });
       this.diagrams.render(this.content);
       return;
@@ -1063,10 +1356,15 @@ export class AxiomEditorView {
     this.tables.forEach((view) => view.configure());
     this.tablePanel?.refresh();
     this.diagrams.render(this.content);
+    this.folding.update(this.rich.view, this.source, projection.blocks);
+    this.dom.dispatchEvent(new Event("axiom:mark-layout", { bubbles: true }));
     // An unchanged embedded editor keeps its DOM, native composition and focus.
     // A peer can insert a same-kind block above ours and ProseMirror can reuse
     // the focused node view for it. Follow our rebased source selection instead.
-    if (focus || (retainEmbedded && embedded))
+    const metadataFocused = Array.from(this.metadata).some((view) =>
+      view.dom.contains(document.activeElement),
+    );
+    if ((focus || (retainEmbedded && embedded)) && !metadataFocused)
       this.focusSurface(embedded?.dom.isConnected ? embedded : undefined);
     if (this.focused) this.completions();
   }
@@ -1101,6 +1399,7 @@ export class AxiomEditorView {
         : null;
     this.cellHint = cell ? { ...cell, at: this.selection.head } : null;
     this.binding.select(this.selection);
+    this.navigationChanged();
   }
   private dispatch(tr: Transaction) {
     if (!this.rich || !this.projection || this.destroyed) return;
@@ -1311,6 +1610,7 @@ export class AxiomEditorView {
         if (this.textComposition) return;
         this.selection = selection;
         this.binding.select(selection);
+        this.navigationChanged();
         this.options.navigate(selection.head);
         if (this.focused) this.completions();
       },
@@ -1391,7 +1691,7 @@ export class AxiomEditorView {
   edit(
     edit: SourceEdit | null,
     kind: NativeTransaction["kind"] = "command",
-    intent?: "code-language",
+    _intent?: "code-language",
     focus = true,
   ) {
     if (!edit || this.destroyed || this.options.readOnly()) return false;
@@ -1460,23 +1760,6 @@ export class AxiomEditorView {
       };
     }
     if (focus) this.focused = true;
-    const literal =
-      this.mode === "write" ? this.activeEmbedded()?.sourceNode() : undefined;
-    if (literal && emptiesLiteralBody(this.source, literal, edit.changes)) {
-      const collapse = this.collapseGeneratedLiteral(literal);
-      if (collapse) {
-        // Body deletion and removal of our generated closer are one undo step.
-        edit = collapse;
-        kind = "command";
-      } else {
-        // Authored/imported fences remain untouched; only reveal their source.
-        this.emptiedLiteral = this.binding.relative({
-          anchor: literal.from,
-          head: literal.to,
-        });
-        this.closePopup();
-      }
-    }
     const selection = {
       anchor: edit.selection.anchor,
       head: edit.selection.head ?? edit.selection.anchor,
@@ -1486,7 +1769,6 @@ export class AxiomEditorView {
       (c) => this.source.slice(c.from, c.to) !== c.insert,
     );
     this.pairs.beforeChange(changes);
-    this.fences.beforeChange(changes, false, intent);
     this.binding.transact({
       changes,
       selection,
@@ -1554,6 +1836,9 @@ export class AxiomEditorView {
       (this.mode === "write"
         ? footnoteInput(this.source, this.selection, value)
         : undefined) ??
+        (this.mode === "write"
+          ? listBodyEdit(this.source, this.selection, value)
+          : undefined) ??
         quoteBodyEdit(this.source, this.selection, value, this.activeQuote()),
       "typing",
     );
@@ -1605,7 +1890,35 @@ export class AxiomEditorView {
     const table = this.tableAt();
     if (table) {
       if (soft) this.insertText("\n");
-      else this.navigateCell(0, 1);
+      else if (
+        table.row > 0 &&
+        table.row === table.model.rows.length - 1 &&
+        table.model.rows[table.row].cells.every((cell) => !cell.raw.trim())
+      ) {
+        // A blank final row is the table equivalent of an empty list item.
+        // Never remove a populated row just to move the caret outside.
+        const changes = tableAction(
+          table.model,
+          this.source,
+          table.row,
+          table.column,
+          "deleteRow",
+        );
+        const after = applyChanges(this.source, changes);
+        const node = nodeAt(after, table.node.from, ["table"]);
+        if (node) {
+          const exit = paragraphBesideBlock(after, node);
+          this.edit(
+            {
+              changes: [
+                minimalChange(this.source, applyChanges(after, exit.changes)),
+              ],
+              selection: exit.selection,
+            },
+            "command",
+          );
+        }
+      } else this.navigateCell(0, 1);
       return;
     }
     // ATX/setext headings cannot contain a hard line break.
@@ -1613,36 +1926,20 @@ export class AxiomEditorView {
       soft = false;
     const pending = !!this.editing.header();
     if (!soft) this.editing.commitHeader();
-    const before = this.source;
     const edit = preserveLineEndings(
       this.source,
       this.selection,
       (source, selection) => {
-        const edit = enterEdit(
+        return enterEdit(
           source,
           selection,
           this.options.preferences(),
           soft,
           pending,
         );
-        // Leaving an empty top-level container needs a paragraph boundary.
-        // Otherwise CommonMark treats subsequent text as lazy list content.
-        const exit = edit.changes[0];
-        if (
-          !soft &&
-          exit?.insert === "" &&
-          exit.from > 0 &&
-          exit.to > exit.from &&
-          !footnoteAt(source, selection.head)
-        ) {
-          exit.insert = "\n";
-          edit.selection.anchor++;
-        }
-        return edit;
       },
     );
-    if (this.edit(edit) && !soft && this.mode === "write")
-      this.fences.remember(before, edit);
+    this.edit(edit);
   }
   private deleteSelection() {
     const { from, to } = selectionRange(this.selection);
@@ -1677,11 +1974,45 @@ export class AxiomEditorView {
     }
     const backward = !kind.includes("Forward"),
       table = this.tableAt();
+    if (backward && this.removeEmptyBlock()) return;
     if (backward && this.deletePair()) return;
     const active = this.projection?.activeProse.find(
       (range) => from >= range.from && from <= range.to,
     );
-    if (active?.quote && this.mode === "write") {
+    if (active?.list && this.mode === "write") {
+      const edit = listBodyDelete(from, backward, active.list);
+      if (edit) {
+        this.edit(edit, "delete");
+        return;
+      }
+      if (backward && from === active.list.lines[0]?.bodyFrom) {
+        const outdent = indentList(
+          this.source,
+          this.selection,
+          true,
+          this.options.preferences().indentSize,
+        );
+        if (outdent?.changes.length) {
+          this.edit(outdent, "command");
+          return;
+        }
+        const scoped = footnoteCommand(
+          this.source,
+          this.selection,
+          (body, at) => {
+            const item = nodeAt(body, at.head, ["item"]);
+            return item ? unwrapBlock(body, item, at.head) : null;
+          },
+        );
+        const item = nodeAt(this.source, from, ["item"]);
+        const unwrap = scoped ?? (item && unwrapBlock(this.source, item, from));
+        if (unwrap) {
+          this.edit(unwrap, "command");
+          return;
+        }
+      }
+    }
+    if (active?.quote && !active.list && this.mode === "write") {
       const edit = quoteBodyDelete(this.source, from, backward, active.quote);
       if (edit) {
         // Each structural unwrap is its own undo step, unlike consecutive
@@ -1704,25 +2035,6 @@ export class AxiomEditorView {
       footnote.definition.from !== this.footnoteDraftFrom()
     ) {
       if (backward && from === footnote.offsets[0]) {
-        if (!footnote.text.trim()) {
-          const opener = /^ {0,3}\[\^[^\]]+\]:/.exec(footnote.header.text)![0];
-          const at = footnote.header.from + opener.length;
-          this.edit({
-            changes: [
-              {
-                from: footnote.header.from,
-                to: footnote.lines.at(-1)!.to,
-                insert: opener,
-              },
-            ],
-            selection: { anchor: at },
-          });
-          this.footnoteDraft = this.binding.relative({
-            anchor: footnote.header.from,
-            head: at,
-          });
-          this.refresh(true);
-        }
         return;
       }
       const scoped = footnoteCommand(
@@ -1936,6 +2248,21 @@ export class AxiomEditorView {
     const matches = editorCommands.filter((c) =>
       keysFor(c.id, this.options.preferences(), platform).includes(key),
     );
+    // Within list prose Mod+Enter is a hard line break, not "finish block".
+    // Embedded code/math keep their established finish-block shortcut.
+    if (
+      !text &&
+      event.key === "Enter" &&
+      (event.metaKey || event.ctrlKey) &&
+      !event.altKey &&
+      !this.options.readOnly() &&
+      !this.tableActive() &&
+      nodeAt(this.source, this.selection.head, ["item"])
+    ) {
+      event.preventDefault();
+      this.enter(true);
+      return true;
+    }
     const command =
       (this.tableActive() && matches.find((c) => c.scope === "table")) ||
       matches.find((c) => c.scope !== "table");
@@ -1977,10 +2304,7 @@ export class AxiomEditorView {
       return true;
     }
     if (text) {
-      if (
-        (event.key === "Backspace" || event.key === "Delete") &&
-        this.revealEmptyLiteral()
-      ) {
+      if (event.key === "Backspace" && this.removeEmptyBlock()) {
         event.preventDefault();
         return true;
       }
@@ -2148,12 +2472,14 @@ export class AxiomEditorView {
     return true;
   }
   setSelection(selection: SourceSelection, focus = false) {
+    this.folds.reveal(selection);
     this.selection = clampSelection(selection, this.source.length);
     this.binding.select(this.selection, focus || this.focused);
     if (focus) this.focus(this.selection.anchor, this.selection.head);
     else this.refresh(false);
   }
   focus(position = this.selection.head, head = position) {
+    this.folds.reveal({ anchor: position, head });
     this.cellHint = null;
     this.focused = true;
     this.selection = clampSelection(
@@ -2171,6 +2497,11 @@ export class AxiomEditorView {
       return;
     }
     const range = selectionRange(this.selection);
+    if (
+      range.from === range.to &&
+      Array.from(this.metadata).some((view) => view.focus(range.from))
+    )
+      return;
     const contains = (view: EmbeddedView) => {
       const n = view.sourceNode();
       return (
@@ -2208,7 +2539,7 @@ export class AxiomEditorView {
     const index = documentIndex(this.parsed);
     const key = JSON.stringify([
       this.contextRevision,
-      this.parsed.outline,
+      this.parsed.outline.map(({ level, text, id }) => [level, text, id]),
       this.parsed.citations,
       [...index.labels],
       index.macros,
@@ -2851,6 +3182,9 @@ export class AxiomEditorView {
     };
     this.paintPresence();
     return true;
+  }
+  openBlockMenu(x: number, y: number, target = this.selection) {
+    this.openMenu(x, y, target);
   }
   openMenu(x: number, y: number, target = this.selection) {
     this.closePopup();
@@ -3597,6 +3931,64 @@ export class AxiomEditorView {
     )
       return DecorationSet.empty;
     const decorations: Decoration[] = [];
+    if (this.options.appearance().blockGuides) {
+      const ranges: {
+        from: number;
+        to: number;
+        depth: number;
+        type: string;
+      }[] = [];
+      const walk = (
+        node: ProseNode,
+        pos: number,
+        depth: number,
+        parent?: ProseNode,
+      ) => {
+        // Cells and a list item's sole paragraph already share their owner's
+        // range. Distinct paragraph/container ranges get independent rails.
+        const skip =
+          ["table_row", "table_cell", "table_header"].includes(
+            node.type.name,
+          ) ||
+          (node.isTextblock &&
+            parent &&
+            [
+              "list_item",
+              "blockquote",
+              "callout",
+              "footnote_definition",
+            ].includes(parent.type.name) &&
+            parent.firstChild === node);
+        if (node.isBlock && !skip)
+          ranges.push({
+            from: pos,
+            to: pos + node.nodeSize,
+            depth,
+            type: node.type.name,
+          });
+        if (!node.isLeaf && !node.isTextblock && node.type.name !== "table")
+          node.forEach((child, offset) =>
+            walk(child, pos + 1 + offset, depth + (skip ? 0 : 1), node),
+          );
+      };
+      doc.forEach((node, offset) => walk(node, offset, 0));
+      const head = this.projection.map.positionAt(this.selection.head);
+      const active = ranges
+        .filter((range) => head >= range.from && head <= range.to)
+        .sort(
+          (a, b) => b.depth - a.depth || a.to - a.from - (b.to - b.from),
+        )[0];
+      for (const range of ranges)
+        decorations.push(
+          Decoration.node(range.from, range.to, {
+            class:
+              "axiom-block-guide" +
+              (range === active ? " axiom-block-guide-active" : ""),
+            "data-block-depth": String(range.depth),
+            "data-block-type": range.type,
+          }),
+        );
+    }
     const activeImage = this.imageSource;
     if (activeImage && this.projection.imageSource) {
       const { session } = activeImage;
@@ -3727,6 +4119,7 @@ export class AxiomEditorView {
     return DecorationSet.create(doc, decorations);
   }
   private paintPresence() {
+    this.navigationChanged();
     const markers: TextMarker[] = [
       ...this.peers.flatMap((peer) =>
         peer.selection
@@ -3761,6 +4154,37 @@ export class AxiomEditorView {
         decorations: (state) => this.decorations(state.doc),
       });
   }
+  private toggleFold(block: ProjectedBlock, enter = false) {
+    if (
+      this.destroyed ||
+      this.composing ||
+      this.cmComposing ||
+      this.dragging ||
+      this.mode !== "write"
+    )
+      return;
+    const current = this.projection?.blocks.find(
+      (b) => b.node.from === block.node.from && b.node.type === block.node.type,
+    );
+    if (!current) return;
+    this.closePopup();
+    this.closeImageSource();
+    this.focused = false;
+    this.binding.blur();
+    this.folds.toggle(current.node);
+    if (
+      !current.folded &&
+      this.selection.anchor < current.node.to &&
+      this.selection.head >= current.node.from
+    ) {
+      this.selection = { anchor: current.node.to, head: current.node.to };
+      this.binding.select(this.selection, false);
+    }
+    this.refresh(false);
+    if (enter && current.folded)
+      this.focus(current.node.contentFrom ?? current.node.from);
+    else this.folding.focus(current);
+  }
   jumpToPeer(clientId: number) {
     const peer = this.peers.find((p) => p.clientId === clientId);
     if (!peer?.selection) return false;
@@ -3768,6 +4192,7 @@ export class AxiomEditorView {
     return true;
   }
   destroy() {
+    this.folding.clear();
     this.destroyed = true;
     this.footnotePreviews.destroy();
     this.closeImageSource();
@@ -4611,6 +5036,15 @@ class EmbeddedView implements NodeView {
         "referenceDefinition",
       ].includes(node.type);
     const diagram = node?.type === "codeBlock" && node.lang === "mermaid";
+    if (diagram) {
+      this.preview.dataset.visualKind = "mermaid";
+      this.preview.dataset.visualFrom = String(node.from);
+      this.preview.dataset.visualTo = String(node.to);
+    } else {
+      delete this.preview.dataset.visualKind;
+      delete this.preview.dataset.visualFrom;
+      delete this.preview.dataset.visualTo;
+    }
     if (
       !node ||
       (!specialized && !diagram) ||
@@ -4628,7 +5062,9 @@ class EmbeddedView implements NodeView {
     this.preview.setAttribute("aria-label", "Edit " + this.blockName());
     this.dom.dataset.preview = "true";
     const source = this.owner.source.slice(node.from, node.to);
-    const key = JSON.stringify([source, node.from, this.owner.previewKey()]);
+    const math = this.preview.querySelector<HTMLElement>(".math-block");
+    if (math) math.dataset.mathFrom = String(node.from);
+    const key = JSON.stringify([source, this.owner.previewKey()]);
     if (key === this.lastPreview) return;
     this.lastPreview = key;
     this.label.textContent =
@@ -4641,7 +5077,14 @@ class EmbeddedView implements NodeView {
       return;
     }
     delete this.preview.dataset.mermaid;
-    this.preview.innerHTML = this.owner.renderFragment(node);
+    const html = this.owner.renderFragment(node);
+    if (node.type === "mathBlock")
+      paintMathPreview(
+        this.preview,
+        html,
+        this.owner.options.preferences().mathKeepLastPreview,
+      );
+    else this.preview.innerHTML = html;
     if (node.type === "frontmatter") {
       const fields = source
         .split(/\r?\n/)

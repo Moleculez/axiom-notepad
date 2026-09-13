@@ -2,6 +2,7 @@
 import { useMemo } from "react";
 import type { Resource } from "@axiom/shared/workspace";
 import { parseMarkdown } from "@axiom/markdown";
+import { fileVisuals } from "../../lib/visual-assets";
 import Dialog from "../Dialog";
 import ReadingView from "../ReadingView";
 import FilePreviewSurface from "../tools/FilePreviewSurface";
@@ -9,9 +10,11 @@ import { ErrorNotice, Loading, useData, useWorkspace } from "./ui";
 export default function FileQuickPreview({
   resource,
   onClose,
+  gallery = [],
 }: {
   resource: Resource;
   onClose: () => void;
+  gallery?: Resource[];
 }) {
   const { open } = useWorkspace();
   const note = useData<{ body: string }>(
@@ -34,12 +37,22 @@ export default function FileQuickPreview({
           note.loading ? (
             <Loading />
           ) : (
-            <ReadingView parsed={parsed} context={{}} onLink={() => {}} />
+            <ReadingView
+              source={note.data?.body || ""}
+              parsed={parsed}
+              context={{}}
+              onLink={() => {}}
+            />
           )
         ) : resource.kind === "folder" || resource.kind === "shortcut" ? (
           <p>Open this {resource.kind} to explore its contents.</p>
         ) : (
-          <FilePreviewSurface resourceId={resource.id} versionId={resource.current_version_id} compact />
+          <FilePreviewSurface
+            resourceId={resource.id}
+            versionId={resource.current_version_id}
+            visualGallery={fileVisuals(gallery)}
+            compact
+          />
         )}
       </div>
       <div className="dialog-footer">

@@ -1,8 +1,53 @@
 # Markdown typing integrity
 
-The current desktop vNext editor keeps **the active paragraph, heading, list item or quote body as literal Markdown**, with complete images remaining rendered. A completed `> ` prefix immediately opens an editable quote and is hidden; a bare marker stays literal. Headings retain their H1–H6 typography, with real editable `#` markers. Leaving hides the inline syntax; deliberately returning the caret reveals the original body without changing heading size or font. Hover and secondary clicks never activate prose editing. This supersedes vNext's earlier caret-local prose reveal. Code, mathematics and tables retain their specialized surfaces. The production-default native rollback editor keeps its earlier behavior; this is not a claim of complete Typora parity.
+The current desktop vNext editor keeps active paragraph/heading text and list/quote **body contents** as literal Markdown, with complete images remaining rendered. Whitespace-completed list and quote markers remain rendered chrome, never duplicated in focused body text. Headings retain H1–H6 typography with editable `#` markers. Leaving hides inline syntax; returning reveals the original body without changing typography. Hover and secondary clicks never activate prose editing. Code, mathematics, tables and metadata retain specialized surfaces; dividers and TOC remain static. The native rollback engine retains its earlier behavior and is not the production default. This is not a claim of complete Typora parity.
 
 ## Interaction contract
+
+- Lists render on `- `, `* `, `+ `, a number followed by `. ` or `) `, and complete task markers.
+  Bare markers remain plain text outside list wrappers until their space arrives.
+  Command/Ctrl+Enter (also Shift+Enter) inserts a hard break within the same item;
+  ordinary Enter creates a sibling. A second Enter on the empty sibling exits one
+  actual nesting level, independently of indentation preferences. Tab/Shift+Tab
+  preserve quoted/footnote prefixes; indenting an ordered item starts its nested
+  sequence at 1. Hidden-marker caret positions snap to the body in Write mode.
+  The authoring dialect recognizes empty nested markers before setext underlines;
+  CommonMark/GFM parsing is unchanged.
+- Enter advances vertically through a table, creating a row at its end if enabled.
+  Enter on a wholly empty final body row removes that row and continues outside;
+  populated rows are never discarded to exit. Mod+Enter retains its table-row
+  shortcut. Quotes/callouts and footnotes use empty-line exits one container at a time.
+- Shared block-boundary commands insert or reuse parent-level separators, including
+  quoted blank lines. Leaving `> 1\n> 2\n> ` produces `> 1\n> 2\n\n` before
+  subsequent typing. Imported lazy continuations remain valid Markdown.
+- Backspace on an already-empty visual block removes its structure in one local
+  undo step. Deleting the last character first leaves an editable empty block;
+  the next Backspace removes it. Populated parents/siblings survive. A table is
+  removable this way only when all cells are empty; images, dividers and TOCs are
+  meaningful atoms, not zero-length bodies. Code/math Enter remains literal;
+  Mod+Enter exits them inside the correct parent container.
+- Appearance → General controls view-only block guides. They have no source
+  spans, selection targets or exported content. Toggling cannot write Y.Text or
+  change document geometry. Metadata uses a flat, theme-token property table.
+- Monaco-style fold chevrons are outside the editable DOM. A collapsed scope is a
+  view-only atomic projection with the full canonical Markdown span, not deleted
+  or separately serialized content. Nested fold state survives parent toggles;
+  peer edits rebase it, replaced opening identities retire it, and explicit
+  navigation reveals enclosing scopes. Folding adds no Y.Text updates or undo
+  entries and cannot change another collaborator's view. Code/math, list groups,
+  quotes/callouts, tables, metadata and footnotes are eligible when multiline.
+  Structural preview boundaries resolve to valid rich text/node selections, even
+  when the only or final block is folded; canonical source offsets stay separate.
+- Math previews distinguish source positions from typesetting input. Moving an
+  unchanged equation never recreates its rendered subtree; changed TeX retains
+  the last preview while the worker runs. Outdated worker results cannot paint a
+  node carrying a newer request. Source code/math editing surfaces keep their DOM.
+- `[TOC]` is a static, keyboard-accessible heading navigator. Left/right click never
+  reveals its token. Selecting its non-link area allows normal deletion/undo.
+  Frontmatter is a metadata table: editable scalar keys/values, quiet add-property
+  control, grouped context actions and Enter navigation. Structured YAML is shown
+  read-only in its value cell; use Source for nested structures. Field commits
+  rebase and compare their original ranges; conflicts retain a recoverable draft.
 
 - In vNext Write, `[^id]:` remains an editable opener until Enter creates a titled
   rich footnote. The body is part of the main ProseMirror projection, with child
@@ -11,7 +56,7 @@ The current desktop vNext editor keeps **the active paragraph, heading, list ite
   reveals its usual syntax; math/code/tables retain specialized editing surfaces.
   Title/ref navigation focuses the body; hidden source-marker caret positions
   map to the body on entering Write, without a source edit. Backspace on an empty
-  first body position returns to the opener, with reopening and undo/redo. It never
+  first body position removes the definition, with author-local undo/redo. It never
   joins a populated definition to preceding prose. Tab/Shift-Tab cannot consume
   the footnote's indentation. `tests/footnote-rich.test.ts` verifies projection,
   literal/command ranges, table growth and equation indexing;
@@ -56,8 +101,8 @@ The current desktop vNext editor keeps **the active paragraph, heading, list ite
 - Code-body autocomplete and snippet expansion are disabled, including the
   Ctrl+Space trigger. Tab/Shift+Tab indent/outdent; Enter inserts a newline.
   Math snippet fields never intercept code indentation. Language-name and math
-  completion remain enabled. Generated-block empty deletion returns to the sole
-  opener; ordinary code editing retains source prefixes and collaboration carets.
+  completion remain enabled. Empty-block Backspace removes both fences instead
+  of restoring an opener; ordinary code editing retains prefixes and collaboration carets.
 - Code-language suggestions are optional on opening fences. Typing three backticks
   or tildes shows the same alias-aware catalog used by the code block's language
   combobox. Tab completes; arrows select and Enter accepts; Escape dismisses.
@@ -66,7 +111,7 @@ The current desktop vNext editor keeps **the active paragraph, heading, list ite
   body caret, permits custom names and guards live peer/permission changes.
 - Slash image/attachment pickers bookmark their query without selecting or deleting it. Cancellation preserves the live caret, so immediate typing appends normally. The workspace must not replace the engine's relative bookmark with the visible selection. Insertion replaces the query in one author-local undo step; overlapping peer edits are rejected.
 - Modifier-click navigation is a pointer action, not an editing selection. Resolve rendered or literal links before prose reveal; open on release only once. Preserve WebKit's pre-context-menu DOM range, keep actual right-click editing menus, and block unsafe destinations.
-- Inline syntax in the active prose unit is ordinary editable text, including `# `, list/task prefixes, strong/emphasis/link delimiters, entities and escapes. Completed quote prefixes are hidden using per-line source ranges, not deleted. A quiet prefix tint uses the same font size and line height. Other list items and quote paragraphs remain rendered; nested lists and specialized blocks are not flattened. Merely focusing, leaving or returning never changes shared Markdown.
+- Inline syntax in the active prose unit is ordinary editable text, including `# `, strong/emphasis/link delimiters, entities and escapes. Completed list/task and quote prefixes are hidden using per-line source ranges, not deleted. A quiet heading-prefix tint uses the same font size and line height. Other list items and quote paragraphs remain rendered; nested lists and specialized blocks are not flattened. Merely focusing, leaving or returning never changes shared Markdown.
 - `>` followed by space/tab immediately exposes a mapped empty quote body. Bare/unspaced markers remain literal while active, including pending nested markers. Body-start Backspace unwraps one quote level of the active paragraph; at subsequent visual line boundaries it joins lines and removes the intervening hidden prefix. Lazy inner continuations never lose an outer quote marker. Enter continues the quote and empty Enter exits one level. Multiline body typing/paste/composition expands explicit prefixes and the existing newline convention once. Explicit source-mode carets inside hidden prefixes reveal the exact source unit instead of snapping to the body.
 - Active headings use semantic H1–H6 elements and the same personal heading font, weight, scale and spacing as resting headings. Removing the heading marker restores paragraph typography; undo restores it. Non-heading text such as `#hashtag` remains a paragraph. Setext headings retain their authored underline instead of acquiring generated hashes. These are view-only attributes, not stored source or a preference change.
 - Typing never commits a block by moving the caret to a different source position. A fence header stays editable until Enter. Its newly paired body is inserted before following content, even when another fenced block follows. Enter on an existing closed fence header moves into its existing body.
@@ -178,25 +223,18 @@ headings, exact conformance HTML and whole-document numbering in rendered fragme
 `tests/editor-lab/dividers.spec.ts` checks rendered click/focus behavior, direct
 Backspace/Delete, exact CRLF undo, peer rebasing, permission guards and Source/Write
 switching. Divider selections never become active source prose or embedded fields.
-`tests/literal-source.test.ts` and `tests/editor-lab/empty-blocks.spec.ts` cover
-zero-character code/TeX handoff, exact source/caret preservation, Backspace/Delete,
-selected contents, owned pairs, whitespace, quoted CRLF fences, undo/redo,
-author-local display state and read-only guards. Newly created empty blocks still
-open in their specialized editor; no handoff occurs solely because a block loads.
-`tests/generated-fences.test.ts` and `tests/editor-lab/generated-fences.spec.ts`
-verify Enter-generated ownership, single-opener reversal, automatic versus authored
-language labels, quoted/list fences, LF/CRLF and no blank-line growth across cycles.
-Language-field edits retain already-owned scaffolding, but never claim imported or
-peer-edited fences. Reversal restores the original opener even after repeated
-language changes or clearing the field. `editor-vnext.test.ts` checks that undo and
-redo bookmark their actual pre-history selections, including replacements and
-peer rebasing. Browser checks cover exact opener/caret restoration, dismissed
-suggestions through redo, and reopening suggestions on fresh typing.
-Whole-body deletion plus generated scaffolding removal is one shared update and
-one local undo step. Peer edits above rebase; peer-edited delimiters/body or restored
-fences are never claimed as generated. Edited separators and following paragraphs
-survive. DOM caret, re-entry, undo/redo and read-only permission changes are checked
-in all three browser engines; read-only Backspace must not navigate away in WebKit.
+`tests/block-boundaries.test.ts` covers marker gating, scoped separators, empty
+deletion and imported lazy-continuation preservation. `tests/editor-lab/block-boundaries.spec.ts`
+checks actual per-key typing, parent ownership, undo and guide geometry/state.
+`tests/editor-lab/empty-blocks.spec.ts` and `generated-fences.spec.ts` cover empty
+code/TeX removal, selected bodies, owned inline pairs, whitespace, quoted CRLF,
+automatic/authored language labels, following-block protection and remote undo.
+Deleting the final character and removing an already-empty block are separate
+actions; no source reveal occurs just because the body reaches zero. Imported and
+peer-edited delimiters survive body edits but can be deliberately removed once the
+entire block is empty. The obsolete generated-fence-collapse tracking is no longer
+used by vNext. `editor-vnext.test.ts` checks pre-history selection bookmarks,
+replacements and peer rebasing. Read-only Backspace must not navigate away in WebKit.
 `tests/code-languages.test.ts` covers the safe catalog, alias ranking and opening-
 fence-only source ranges. `tests/editor-lab/languages.spec.ts` covers both menus,
 keyboard/pointer acceptance, unselected Enter, dismissal, aliases/custom names,

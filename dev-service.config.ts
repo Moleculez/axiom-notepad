@@ -1,4 +1,5 @@
 import { defineConfig } from "@playwright/test";
+import { APPEARANCE_SCHEMA } from "./packages/shared/src/appearance";
 
 /** Read-only application smoke; editing exercises use the local scratchpad. */
 export default defineConfig({
@@ -15,7 +16,9 @@ export default defineConfig({
   use: {
     baseURL: "http://localhost:8080",
     browserName: "chromium",
-    extraHTTPHeaders: { "X-Axiom-Appearance-Schema": "5" },
+    extraHTTPHeaders: {
+      "X-Axiom-Appearance-Schema": String(APPEARANCE_SCHEMA),
+    },
     viewport: { width: 1440, height: 1000 },
     serviceWorkers: "block",
     // Never record authenticated request headers or session storage in a trace.

@@ -1,7 +1,6 @@
 "use client";
 import FilePreviewSurface from "../tools/FilePreviewSurface";
 import ResourceDiscussion from "../tools/ResourceDiscussion";
-import { WorkspaceLink } from "./ui";
 import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import {
@@ -37,6 +36,8 @@ import {
 } from "@axiom/markdown";
 import type { Note } from "@axiom/shared/access";
 import type { Resource, ResourcePage, Space } from "@axiom/shared/workspace";
+import { fileRoute } from "@axiom/shared/file-routes";
+import { tabRoute } from "@axiom/shared/application-tabs";
 import {
   editorCommands,
   eventBinding,
@@ -54,6 +55,8 @@ import {
   timeAgo,
 } from "../../lib/client";
 import { useResearch } from "../../lib/research-store";
+import { useNoteThreads } from "../../lib/note-marks-store";
+import ReadingMarks from "../ReadingMarks";
 import { publishTabTitle, useAppTabs } from "../../lib/application-tabs";
 import {
   recoveryDrafts,
@@ -68,7 +71,7 @@ import Dialog from "../Dialog";
 import TableOfContents from "../TableOfContents";
 import NoteTitle from "../NoteTitle";
 import DocumentStatistics from "../DocumentStatistics";
-import NoteSharing from "./NoteSharing";
+import ResourceSharing from "./ResourceSharing";
 import ReadingView from "../ReadingView";
 import EquationInspector from "../EquationInspector";
 import { literalBody, literalPrefix } from "@axiom/editor/literal";
@@ -92,7 +95,12 @@ import {
   useAction,
   useData,
   useWorkspace,
+  go,
 } from "./ui";
+const StudioFile = dynamic(() => import("./StudioFile"), {
+  ssr: false,
+  loading: () => <Loading label="Opening file editor…" />,
+});
 
 const Editor = dynamic(() => import("../Editor"), {
   ssr: false,
@@ -106,9 +114,11 @@ type Tab = Pick<Resource, "id" | "kind"> & {
   name?: string;
   versionId?: string;
   viewId?: string;
+  route?: string;
+  document_type?: Resource["document_type"];
+  mime?: string | null;
 };
-const tabPath = (tab: Tab) =>
-  `/${tab.kind === "note" ? "notes" : "files"}/${tab.id}${tab.versionId ? "?version=" + tab.versionId : ""}`;
+const tabPath = (tab: Tab) => tab.route ?? fileRoute(tab, tab.versionId);
 type ViewState = {
   mode: EditorMode;
   scroll: number;
@@ -220,7 +230,7 @@ export default function Workbench({
           onPointerDownCapture={() => setActive("primary")}
         >
           <ResourcePane
-            key={primary.viewId ?? tabPath(primary)}
+            key={`${primary.viewId ?? "primary"}:${primary.id}:${primary.versionId ?? "current"}`}
             tab={primary}
             active={active === "primary"}
             onName={name}
@@ -327,56 +337,80 @@ function ResourcePane({
   onName: (id: string, name: string) => void;
 }) {
   const { session, revision } = useWorkspace(),
-    data = useCachedData<Note | Resource>(
-      `${tab.kind === "note" ? "notes" : "resources"}/${tab.id}`,
+    data = useCachedData<Resource>(
+      `resources/${tab.id}`,
       session.user.id,
       revision,
     );
   useEffect(() => {
-    if (data.data)
-      onName(tab.id, "title" in data.data ? data.data.title : data.data.name);
+    if (data.data) onName(tab.id, data.data.name);
   }, [data.data, tab.id]);
   useEffect(() => {
     if (navigator.onLine)
       void post(`resources/${tab.id}/opened`).catch(() => {});
   }, [tab.id]);
-  return data.data &&
-    "source_format" in data.data &&
-    data.data.source_format !== "markdown" ? (
-    <main className="ws-page">
-      <Empty
-        icon={FileText}
-        title="Collaborative studio project"
-        action={
-          <WorkspaceLink
-            className="button primary"
-            to={`/tools/${data.data.source_format === "latex" ? "math" : data.data.source_format}/${tab.id}`}
-          >
-            Open project
-          </WorkspaceLink>
-        }
-      >
-        Open this resource in its dedicated studio to edit and collaborate.
-      </Empty>
-    </main>
-  ) : data.data ? (
-    tab.kind === "note" ? (
-      <DocumentPane
-        metadata={data.data as Note}
-        viewId={tab.viewId}
-        active={active}
-        reload={data.reload}
-      />
+  useEffect(() => {
+    if (!data.data || !tab.route) return;
+    const current = new URL(tab.route, "http://workspace.local");
+    const canonical = new URL(fileRoute(data.data), current);
+    canonical.search = current.search;
+    canonical.hash = current.hash;
+    const destination = canonical.pathname + canonical.search + canonical.hash;
+    if (
+      tabRoute(destination) !== tabRoute(tab.route) &&
+      location.pathname + location.search + location.hash ===
+        "/workbench" + tab.route
+    ) {
+      window.dispatchEvent(
+        new CustomEvent("axiom:canonical-file", {
+          detail: { from: tab.route, to: destination },
+        }),
+      );
+      go(destination, true, true);
+    }
+  }, [data.data, tab.route]);
+  return data.data ? (
+    data.data.document_type &&
+    data.data.document_type !== "markdown" &&
+    !(
+      data.data.kind === "file" &&
+      tab.versionId &&
+      !new URL(tab.route ?? "/", "http://workspace.local").searchParams.has(
+        "file",
+      )
+    ) ? (
+      <StudioFile resource={data.data} route={tab.route} />
+    ) : data.data.kind === "note" ? (
+      <MarkdownFile tab={tab} active={active} />
     ) : (
-      <FilePane
-        resource={data.data as Resource}
-        requestedVersion={tab.versionId}
-      />
+      <FilePane resource={data.data} requestedVersion={tab.versionId} />
     )
   ) : (
     <>
       <ErrorNotice message={data.error} retry={data.reload} />
       {data.loading && <Loading label={`Opening ${tab.kind}…`} />}
+    </>
+  );
+}
+
+function MarkdownFile({ tab, active }: { tab: Tab; active: boolean }) {
+  const { session, revision } = useWorkspace();
+  const data = useCachedData<Note>(
+    `notes/${tab.id}`,
+    session.user.id,
+    revision,
+  );
+  return data.data ? (
+    <DocumentPane
+      metadata={data.data}
+      viewId={tab.viewId}
+      active={active}
+      reload={data.reload}
+    />
+  ) : (
+    <>
+      <ErrorNotice message={data.error} retry={data.reload} />
+      {data.loading && <Loading label="Opening note…" />}
     </>
   );
 }
@@ -444,7 +478,9 @@ function DocumentPane({
     [comment, setComment] = useState(""),
     [reply, setReply] = useState<string | null>(null),
     [anchor, setAnchor] = useState<CommentAnchor | null>(null),
-    [bookmarkLabel, setBookmarkLabel] = useState(""),
+    [marksHost, setMarksHost] = useState<HTMLDivElement | null>(null),
+    [minimapHost, setMinimapHost] = useState<HTMLDivElement | null>(null),
+    [markOpen, setMarkOpen] = useState<string | null>(null),
     [snapshotLabel, setSnapshotLabel] = useState(""),
     [restoring, setRestoring] = useState<any>(null),
     [unresolvedComments, setUnresolvedComments] = useState<string[]>([]),
@@ -454,7 +490,7 @@ function DocumentPane({
       session.user.id,
       revision,
     ),
-    comments = useData<any[]>(`notes/${note.id}/comments`, revision),
+    comments = useNoteThreads(session.user, note.id, revision, active),
     versions = useData<any[]>(
       modal === "history" ? `notes/${note.id}/history` : null,
       revision,
@@ -685,7 +721,32 @@ function DocumentPane({
       setPanel("comments");
     } else if (id === "outline")
       setPanel((value) => (value === "outline" ? null : "outline"));
-    else if (id === "focusMode")
+    else if (id === "minimap" || id === "focusMinimap") {
+      const minimap = appearance.preferences.minimap;
+      appearance.apply(
+        {
+          ...appearance.preferences,
+          minimap: {
+            ...minimap,
+            enabled: id === "focusMinimap" || !minimap.enabled,
+            ...(id === "focusMinimap" ? { [mode]: true } : {}),
+          },
+        },
+        appearance.device,
+      );
+      if (id === "focusMinimap")
+        requestAnimationFrame(() =>
+          requestAnimationFrame(() =>
+            scroller.current?.dispatchEvent(
+              new CustomEvent("axiom:minimap-command", { detail: "focus" }),
+            ),
+          ),
+        );
+    } else if (id === "returnToCursor") {
+      scroller.current?.dispatchEvent(
+        new CustomEvent("axiom:minimap-command", { detail: "return" }),
+      );
+    } else if (id === "focusMode")
       appearance.apply(
         {
           ...appearance.preferences,
@@ -767,24 +828,6 @@ function DocumentPane({
     setSource(body);
     setParsed(parsed);
   };
-  const saveBookmark = () =>
-    action.run(async () => {
-      const heading = parsed.outline.find((item) => item.id === section);
-      await research.saveReading("bookmark", "note", note.id, {
-        label: bookmarkLabel || heading?.text || note.title,
-        heading: heading?.id,
-        fraction: scrollFraction(scroller.current),
-      });
-      setBookmarkLabel("");
-      notify("Reading bookmark saved.");
-    });
-  const bookmarkEntries = research.entries.filter(
-    (entry) =>
-      entry.kind === "reading" &&
-      (entry.value as ReadingItem).kind === "bookmark" &&
-      (entry.value as ReadingItem).target_id === note.id &&
-      !entry.value.deleted,
-  );
   const scroll = () => {
     const node = scroller.current;
     if (!node) return;
@@ -927,11 +970,7 @@ function DocumentPane({
             </button>
           ))}
         </div>
-        <NoteSharing
-          noteId={note.id}
-          space={context.data?.space}
-          members={context.data?.members ?? []}
-        />
+        <ResourceSharing resourceId={note.id} />
         <button
           className="icon-button"
           aria-label="Document history"
@@ -1074,124 +1113,137 @@ function DocumentPane({
       )}
       <div className="ws-document-body">
         <div className="ws-document-main">
-          <div
-            ref={scroller}
-            className="ws-document-scroll document-scroll"
-            onScroll={scroll}
-            onWheel={() => {
-              touched.current = true;
-            }}
-            onTouchMove={() => {
-              touched.current = true;
-            }}
-            onKeyDown={() => {
-              touched.current = true;
-            }}
-          >
-            <div className="ws-paper document-content">
-              <div className="ws-note-meta">
-                <span>{context.data?.space.name}</span>
-                <Badge>
-                  {note.visibility === "private" ? "Only you" : "Shared"}
-                </Badge>
-                <span>{parsed.outline.length} sections</span>
-              </div>
-              {readonly ? (
-                <h1 className="document-title">{note.title}</h1>
-              ) : (
-                <NoteTitle
-                  value={note.title}
-                  typography={appearance.effective}
-                  onContinue={() => editor.current?.focus()}
-                  onSave={(title) =>
-                    void action.run(async () => {
-                      const resource = await api<Resource>(
-                        `resources/${note.id}`,
-                      );
-                      await mutate(
-                        `resources/${note.id}`,
-                        { version: resource.version, name: title },
-                        "PATCH",
-                      );
-                      setNote((current) => ({ ...current, title }));
-                      refresh();
-                    })
-                  }
-                />
-              )}
-              <div
-                className={`editor-mount ${mode === "read" ? "hidden" : ""}`}
-              >
-                <Editor
-                  key={note.generation}
-                  ref={editor}
-                  note={note}
-                  user={session.user}
-                  mode={mode}
-                  appearance={appearance.effective}
-                  preferences={editorSettings.effective}
-                  readOnly={readonly}
-                  retainSession
-                  renderContext={renderContext}
-                  notes={context.data?.notes ?? []}
-                  annotations={comments.data ?? undefined}
-                  onUnresolvedAnnotations={setUnresolvedComments}
-                  onAnnotation={(id) => {
-                    setActiveDiscussion(id);
-                    setPanel("comments");
-                    requestAnimationFrame(() =>
-                      document
-                        .querySelector(
-                          `[data-discussion-thread="${CSS.escape(id)}"]`,
-                        )
-                        ?.scrollIntoView({ block: "nearest" }),
-                    );
-                  }}
-                  onCommand={(id) => commandRef.current(id, true)}
-                  onRecover={(value) => {
-                    setRecovered(value);
-                    try {
-                      retainDraft(session.user.id, note.id, value);
-                      setRecoveries(recoveryDrafts(session.user.id, note.id));
-                      return true;
-                    } catch {
-                      setError(
-                        "Recovered text is in memory only. Download it before closing.",
-                      );
-                      return false;
+          <div className="document-navigation-row">
+            <div
+              ref={scroller}
+              id={`document-scroll-${viewId ?? note.id}`}
+              tabIndex={-1}
+              className="ws-document-scroll document-scroll"
+              onScroll={scroll}
+              onWheel={() => {
+                touched.current = true;
+              }}
+              onTouchMove={() => {
+                touched.current = true;
+              }}
+              onKeyDown={() => {
+                touched.current = true;
+              }}
+            >
+              <div className="ws-paper document-content">
+                <div className="ws-note-meta">
+                  <span>{context.data?.space.name}</span>
+                  <Badge>
+                    {note.visibility === "private" ? "Only you" : "Shared"}
+                  </Badge>
+                  <span>{parsed.outline.length} sections</span>
+                </div>
+                {readonly ? (
+                  <h1 className="document-title">{note.title}</h1>
+                ) : (
+                  <NoteTitle
+                    value={note.title}
+                    typography={appearance.effective}
+                    onContinue={() => editor.current?.focus()}
+                    onSave={(title) =>
+                      void action.run(async () => {
+                        const resource = await api<Resource>(
+                          `resources/${note.id}`,
+                        );
+                        await mutate(
+                          `resources/${note.id}`,
+                          { version: resource.version, name: title },
+                          "PATCH",
+                        );
+                        setNote((current) => ({ ...current, title }));
+                        refresh();
+                      })
                     }
-                  }}
-                  onChange={change}
-                  onNavigation={(position) =>
-                    setSection(sectionAtPosition(parsed.outline, position))
-                  }
-                  onStatus={setStatus}
-                  onPresence={setPresence}
-                  onRefresh={() => {
-                    reload();
-                    refresh();
-                  }}
-                  onError={setError}
-                  onLink={(target) => void openLink(target)}
-                  onFiles={(files) => {
-                    if (!context.data?.space || readonly) return;
-                    upload(files, context.data.space.id);
-                    setModal("files");
-                  }}
-                />
-              </div>
-              <div
-                className={`read-mount ${mode !== "read" ? "print-only" : ""}`}
-              >
-                <ReadingView
-                  active={mode === "read"}
-                  parsed={parsed}
-                  context={renderContext}
-                  onLink={(target) => void openLink(target)}
-                  personalPrint={appearance.effective.exportTypography}
-                />
+                  />
+                )}
+                <div
+                  className={`editor-mount ${mode === "read" ? "hidden" : ""}`}
+                >
+                  <Editor
+                    key={note.generation}
+                    ref={editor}
+                    note={note}
+                    user={session.user}
+                    mode={mode}
+                    appearance={appearance.effective}
+                    preferences={editorSettings.effective}
+                    readOnly={readonly}
+                    retainSession
+                    renderContext={renderContext}
+                    notes={context.data?.notes ?? []}
+                    annotations={comments.data ?? undefined}
+                    onUnresolvedAnnotations={setUnresolvedComments}
+                    onAnnotation={(id) => {
+                      if (
+                        comments.data?.find((c) => c.id === id)?.kind ===
+                        "annotation"
+                      ) {
+                        setMarkOpen(id);
+                        return;
+                      }
+                      setActiveDiscussion(id);
+                      setPanel("comments");
+                      requestAnimationFrame(() =>
+                        document
+                          .querySelector(
+                            `[data-discussion-thread="${CSS.escape(id)}"]`,
+                          )
+                          ?.scrollIntoView({ block: "nearest" }),
+                      );
+                    }}
+                    onCommand={(id) => commandRef.current(id, true)}
+                    onRecover={(value) => {
+                      setRecovered(value);
+                      try {
+                        retainDraft(session.user.id, note.id, value);
+                        setRecoveries(recoveryDrafts(session.user.id, note.id));
+                        return true;
+                      } catch {
+                        setError(
+                          "Recovered text is in memory only. Download it before closing.",
+                        );
+                        return false;
+                      }
+                    }}
+                    onChange={change}
+                    onNavigation={(position) =>
+                      setSection(sectionAtPosition(parsed.outline, position))
+                    }
+                    onStatus={setStatus}
+                    onPresence={setPresence}
+                    onRefresh={() => {
+                      reload();
+                      refresh();
+                    }}
+                    onError={setError}
+                    onLink={(target) => void openLink(target)}
+                    onFiles={(files) => {
+                      if (!context.data?.space || readonly) return;
+                      upload(files, context.data.space.id);
+                      setModal("files");
+                    }}
+                  />
+                </div>
+                <div
+                  className={`read-mount ${mode !== "read" ? "print-only" : ""}`}
+                >
+                  <ReadingView
+                    blockMarks
+                    active={mode === "read"}
+                    parsed={parsed}
+                    context={renderContext}
+                    onLink={(target) => void openLink(target)}
+                    personalPrint={appearance.effective.exportTypography}
+                  />
+                </div>
               </div>
             </div>
+            <div className="minimap-slot" ref={setMinimapHost} />
           </div>
           <footer className="ws-note-footer">
             <DocumentStatistics source={source} parsed={parsed} />
@@ -1203,6 +1255,24 @@ function DocumentPane({
                   : "Reading"}
             </span>
           </footer>
+          <ReadingMarks
+            active={active}
+            editor={editor}
+            scroller={scroller}
+            panelHost={marksHost}
+            minimapHost={minimapHost}
+            openPanel={() => setPanel("bookmarks")}
+            note={note}
+            source={source}
+            parsed={parsed}
+            mode={mode}
+            research={research}
+            threads={comments}
+            canComment={canComment}
+            context={renderContext}
+            openId={markOpen}
+            onOpened={() => setMarkOpen(null)}
+          />
         </div>
         {panel && (
           <aside className="ws-document-context">
@@ -1298,7 +1368,7 @@ function DocumentPane({
                               ending: current.includes("\r\n") ? "\r\n" : "\n",
                             });
                             refresh();
-                            navigate(`/tools/math/${created.id}`);
+                            navigate(`/math/${created.id}`);
                           })
                           .catch((e) => setError(e.message))
                           .finally(() => {
@@ -1360,7 +1430,9 @@ function DocumentPane({
                 <h2>Discussion</h2>
                 <ErrorNotice message={comments.error} retry={comments.reload} />
                 {comments.data
-                  ?.filter((item) => !item.parent_id)
+                  ?.filter(
+                    (item) => !item.parent_id && item.visibility !== "private",
+                  )
                   .map((item) => (
                     <article
                       className={`ws-note-comment ${item.resolved ? "resolved" : ""} ${activeDiscussion === item.id ? "active-discussion" : ""}`}
@@ -1377,7 +1449,7 @@ function DocumentPane({
                           onClick={() => {
                             if (mode === "read") setMode("write");
                             setActiveDiscussion(item.id);
-                            if (!editor.current?.locate(item.anchor))
+                            if (!editor.current?.locate(item.anchor!))
                               setError(
                                 "The original selection is no longer available in this revision.",
                               );
@@ -1385,6 +1457,8 @@ function DocumentPane({
                         >
                           {item.anchor.quote}
                           {(unresolvedComments.includes(item.id) ||
+                            (editor.current &&
+                              !editor.current.resolveMark(item.anchor)) ||
                             item.anchor.generation !== note.generation) && (
                             <small>
                               Original text unavailable · discussion retained
@@ -1392,13 +1466,32 @@ function DocumentPane({
                           )}
                         </button>
                       )}
-                      <p>{item.body}</p>
+                      {item.kind === "annotation" ? (
+                        <button
+                          className="annotation-list-card"
+                          onClick={() => setMarkOpen(item.id)}
+                        >
+                          <MessageSquare size={14} />
+                          <span>
+                            {item.deleted
+                              ? "Removed annotation · replies retained"
+                              : item.title || item.body.slice(0, 100)}
+                            <small>Open annotation card</small>
+                          </span>
+                        </button>
+                      ) : (
+                        <p>
+                          {item.deleted ? "This entry was removed." : item.body}
+                        </p>
+                      )}
                       {comments.data
                         ?.filter((reply) => reply.parent_id === item.id)
                         .map((reply) => (
                           <div className="ws-note-reply" key={reply.id}>
                             <strong>{reply.author_name}</strong>
-                            <p>{reply.body}</p>
+                            <p>
+                              {reply.deleted ? "Reply removed." : reply.body}
+                            </p>
                           </div>
                         ))}
                       {canComment && (
@@ -1524,53 +1617,7 @@ function DocumentPane({
                 )}
               </>
             )}
-            {panel === "bookmarks" && (
-              <>
-                <h2>Reading bookmarks</h2>
-                <form
-                  onSubmit={(event) => {
-                    event.preventDefault();
-                    void saveBookmark();
-                  }}
-                >
-                  <label>
-                    Bookmark label
-                    <input
-                      value={bookmarkLabel}
-                      onChange={(event) => setBookmarkLabel(event.target.value)}
-                      placeholder="Current section"
-                    />
-                  </label>
-                  <button className="button secondary" disabled={action.busy}>
-                    <BookmarkPlus size={15} />
-                    Save this position
-                  </button>
-                </form>
-                {bookmarkEntries.map((entry) => {
-                  const item = entry.value as ReadingItem;
-                  return (
-                    <div className="ws-bookmark" key={entry.key}>
-                      <button
-                        className="text-button"
-                        onClick={() => {
-                          const heading = parsed.outline.find(
-                            (heading) => heading.id === item.data.heading,
-                          );
-                          if (heading) navigateSection(heading);
-                          else if (scroller.current)
-                            scroller.current.scrollTop =
-                              (item.data.fraction ?? 0) *
-                              (scroller.current.scrollHeight -
-                                scroller.current.clientHeight);
-                        }}
-                      >
-                        {item.data.label || "Saved position"}
-                      </button>
-                    </div>
-                  );
-                })}
-              </>
-            )}
+            {panel === "bookmarks" && <div ref={setMarksHost} />}
           </aside>
         )}
       </div>
@@ -1934,13 +1981,14 @@ function FilePane({
       <header className="ws-file-toolbar">
         <ResourceIcon resource={resource} />
         <h1>{resource.name}</h1>
+        <ResourceSharing resourceId={resource.id} />
         <select
           aria-label="File version"
           value={version ?? ""}
           onChange={(event) => {
             setVersion(event.target.value);
             setPermission(false);
-            navigate(`/files/${resource.id}?version=${event.target.value}`);
+            navigate(fileRoute(resource, event.target.value));
           }}
         >
           {data.data?.map((item) => (
@@ -1988,6 +2036,10 @@ function FilePane({
           )}
           <FilePreviewSurface
             resourceId={resource.id}
+            creationTarget={{
+              spaceId: resource.space_id,
+              parentId: resource.parent_id,
+            }}
             versionId={version}
             pdf={
               Number(current?.bytes ?? resource.bytes) > 100_000_000 &&

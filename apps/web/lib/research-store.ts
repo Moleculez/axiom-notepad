@@ -582,7 +582,7 @@ export function useResearch(userId?: string, groupId?: string) {
           all.find(
             (r) =>
               r.kind === "reading" &&
-              !r.value.deleted &&
+              (!r.value.deleted || !!existing) &&
               (existing
                 ? r.value.id === existing.id
                 : ["progress", "reading"].includes(kind) &&

@@ -1,5 +1,6 @@
 "use client";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { Folder } from "lucide-react";
 import type {
   Resource,
@@ -14,25 +15,40 @@ import { droppedFiles } from "../../lib/folder-drop";
 import Dialog from "../Dialog";
 import NewFileDialog from "./NewFileDialog";
 import { fileTypes, type FileType } from "@axiom/shared/file-types";
+import { fileRoute } from "@axiom/shared/file-routes";
 import { pinOffline } from "../../lib/offline-files";
-import { CreateGroupDialog } from "./GroupsHub";
-import {
-  FileOperationDialog,
-  ShortcutDialog,
-  type FolderTarget,
-} from "./FileOperations";
+import type { FolderTarget } from "./FileOperations";
+const CreateGroupDialog = dynamic(() =>
+  import("./GroupsHub").then((module) => module.CreateGroupDialog),
+);
+const FileOperationDialog = dynamic(() =>
+  import("./FileOperations").then((module) => module.FileOperationDialog),
+);
+const ShortcutDialog = dynamic(() =>
+  import("./FileOperations").then((module) => module.ShortcutDialog),
+);
 import {
   folderColors,
   type FileOperationInput,
 } from "@axiom/shared/file-workflows";
-import {
-  CreateResource,
-  NameDialog,
-  MoveResource,
-  TransferResource,
-  FileSafetyDialog,
-  ResourceInspector,
-} from "./Explorer";
+const CreateResource = dynamic(() =>
+  import("./Explorer").then((module) => module.CreateResource),
+);
+const NameDialog = dynamic(() =>
+  import("./Explorer").then((module) => module.NameDialog),
+);
+const MoveResource = dynamic(() =>
+  import("./Explorer").then((module) => module.MoveResource),
+);
+const TransferResource = dynamic(() =>
+  import("./Explorer").then((module) => module.TransferResource),
+);
+const FileSafetyDialog = dynamic(() =>
+  import("./Explorer").then((module) => module.FileSafetyDialog),
+);
+const ResourceInspector = dynamic(() =>
+  import("./Explorer").then((module) => module.ResourceInspector),
+);
 import {
   bytes,
   ErrorNotice,
@@ -135,6 +151,7 @@ type Management = {
   ) => void;
   workspaceMenu: (event: MenuEvent, space: Space) => void;
   backgroundMenu: (event: MenuEvent, target?: Target) => void;
+  createMenu: (event: MenuEvent, target: Target) => void;
   manage: () => void;
   fileActivity: () => void;
   beginDrag: (event: React.DragEvent<HTMLElement>, items: Resource[]) => void;
@@ -170,9 +187,7 @@ function place(event: MenuEvent, items: ContextAction[], label: string) {
 }
 const keys = (key: string) => shortcutLabel("Mod-" + key, shortcutPlatform());
 function resourceUrl(item: Resource) {
-  return item.kind === "folder"
-    ? `/explorer?space=${item.space_id}&folder=${item.id}`
-    : `/${item.kind === "note" ? "notes" : "files"}/${item.id}`;
+  return fileRoute(item);
 }
 
 export function ManagementProvider({
@@ -539,16 +554,19 @@ export function ManagementProvider({
     const space = spaces.find((s) => s.id === target.spaceId),
       enabled = space?.role === "editor" && space.effective_status === "active";
     return [
-      {
-        label: "New note…",
-        icon: "newNote",
-        group: "Create",
-        disabled: !enabled,
-        action: () =>
-          setModal({ kind: "create", resourceKind: "note", target }),
-      },
+      ...["markdown", "canvas", "math", "image", "text"].map((id) => {
+        const type = fileTypes.find((type) => type.id === id)!;
+        return {
+          label: `New ${type.id === "markdown" ? "note" : type.label.toLowerCase()}…`,
+          icon: type.icon as ActionIconName,
+          group: "Create",
+          disabled: !enabled,
+          action: () => setModal({ kind: "newFile", type: type.id, target }),
+        };
+      }),
       {
         label: "New folder…",
+        group: "Folders & uploads",
         icon: "newFolder",
         disabled: !enabled,
         action: () =>
@@ -563,7 +581,7 @@ export function ManagementProvider({
           fileInput.current?.click();
         },
       },
-      ...["Research", "Text & data", "Office"].map((group) => ({
+      ...["Text & data", "Office"].map((group) => ({
         label: group === "Research" ? "Research file" : group,
         icon: (group === "Research"
           ? "canvas"
@@ -573,7 +591,11 @@ export function ManagementProvider({
         disabled: !enabled,
         action: () => {},
         children: fileTypes
-          .filter((t) => t.group === group && t.id !== "markdown")
+          .filter(
+            (t) =>
+              t.group === group &&
+              !["markdown", "canvas", "math", "image", "text"].includes(t.id),
+          )
           .map((type) => ({
             label: type.label,
             icon: type.icon as ActionIconName,
@@ -792,17 +814,13 @@ export function ManagementProvider({
         workspaceItems(space),
         `Workspace actions for ${space.name}`,
       ),
+    createMenu: (event, target) =>
+      place(event, newItems(target), "Create a file"),
     backgroundMenu: (event, target) =>
       place(
         event,
         [
           ...(target ? newItems(target) : []),
-          {
-            label: "New workspace…",
-            icon: "workspace",
-            group: "Workspaces",
-            action: () => setModal({ kind: "newWorkspace" }),
-          },
           {
             label: "Manage workspaces…",
             icon: "settings",

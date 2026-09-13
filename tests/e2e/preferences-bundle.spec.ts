@@ -1,3 +1,4 @@
+import { APPEARANCE_SCHEMA } from "../../packages/shared/src/appearance";
 import { test, expect, type BrowserContext } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import { signInOwner } from "./auth";
@@ -17,7 +18,7 @@ test.beforeEach(async ({ context }) => {
 async function read(context: BrowserContext) {
   return (
     await context.request.get("/api/v1/me/preferences-bundle", {
-      headers: { "X-Axiom-Appearance-Schema": "5" },
+      headers: { "X-Axiom-Appearance-Schema": String(APPEARANCE_SCHEMA) },
     })
   ).json();
 }
@@ -88,11 +89,18 @@ test("routed settings retain drafts, apply together and cancel live previews", a
   ).toBeVisible();
   const original = await read(context);
   await page.getByLabel("Note font size value", { exact: true }).fill("25");
+  const categories = page.getByRole("navigation", {
+    name: "Settings categories",
+  });
+  await categories.getByRole("link", { name: "Writing", exact: true }).click();
   await page
     .getByRole("navigation", { name: "Settings categories" })
     .getByRole("link", { name: "Code", exact: true })
     .click();
   await page.getByLabel("Default code language", { exact: true }).fill("julia");
+  await categories
+    .getByRole("link", { name: "Appearance", exact: true })
+    .click();
   await page
     .getByRole("navigation", { name: "Settings categories" })
     .getByRole("link", { name: "Typography", exact: true })
@@ -114,16 +122,22 @@ test("routed settings retain drafts, apply together and cancel live previews", a
     page.getByLabel("Note font size value", { exact: true }),
   ).toHaveValue("25");
   await page.getByLabel("Note font size value", { exact: true }).fill("26");
-  await page
-    .getByRole("navigation", { name: "App navigation" })
-    .getByRole("link", { name: "Home", exact: true })
-    .click();
+  // Switching pages retains the Settings tab and its coordinated draft.
+  await page.getByRole("button", { name: "Back to workspace" }).click();
+  await expect(page).toHaveURL(/\/workbench\/home/);
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await page.getByRole("tab", { name: "Settings", exact: true }).click();
+  await expect(
+    page.getByLabel("Note font size value", { exact: true }),
+  ).toHaveValue("26");
+  // Closing that tab, unlike switching away, must resolve the draft.
+  await page.getByRole("button", { name: "Close Settings tab" }).click();
   await expect(page.getByRole("dialog")).toBeVisible();
   await page.getByRole("button", { name: "Stay in settings" }).click();
   await expect(
     page.getByLabel("Note font size value", { exact: true }),
   ).toHaveValue("26");
-  await page.getByRole("button", { name: "Back to workspace" }).click();
+  await page.getByRole("button", { name: "Close Settings tab" }).click();
   await page.getByRole("button", { name: "Discard changes" }).click();
   await expect(page).toHaveURL(/\/workbench\/home/);
   expect(errors).toEqual([]);
@@ -220,7 +234,7 @@ test("unavailable device storage leaves the preference draft unapplied", async (
     "Device storage is unavailable",
   );
   expect(await read(context)).toEqual(original);
-  await page.getByRole("button", { name: "Back to workspace" }).click();
+  await page.getByRole("button", { name: "Close Settings tab" }).click();
   await expect(
     page.getByRole("button", { name: "Stay in settings" }),
   ).toBeVisible();

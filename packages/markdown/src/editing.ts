@@ -1,7 +1,8 @@
 import { parseMarkdown } from "./parser";
 import { parsedForCommands } from "./engine";
 import type { MarkdownNode, TextChange } from "./types";
-import { quotedEquationEdit, quotedEquationParagraph } from "./containers";
+import { quotedEquationEdit } from "./containers";
+import { paragraphBesideBlock } from "./block-boundaries";
 import {
   footnoteCommand,
   footnoteDefinitionAt,
@@ -72,6 +73,24 @@ export function sourceCommand(
     value?: string;
   } = {},
 ): SourceEdit | null {
+  if (id === "metadata") {
+    const existing = parsedForCommands(source).ast.children?.find(
+      (node) => node.type === "frontmatter",
+    );
+    if (existing) return { changes: [], selection: { anchor: existing.from } };
+    const ending = source.includes("\r\n") ? "\r\n" : "\n";
+    const insert = ["---", "title: Untitled", "tags: []", "---", "", ""].join(
+      ending,
+    );
+    const query = /^\/[^\r\n]*$/.test(source.slice(from, to));
+    return {
+      changes: [
+        { from: 0, to: query && from === 0 ? to : 0, insert },
+        ...(query && from > 0 ? [{ from, to, insert: "" }] : []),
+      ],
+      selection: { anchor: 3 + ending.length + 7 },
+    };
+  }
   if (id !== "footnote") {
     const scoped = footnoteCommand(
       source,
@@ -290,21 +309,16 @@ export function sourceCommand(
       "blockquote",
       "callout",
       "list",
+      "toc",
+      "frontmatter",
     ]);
-    if (n?.type === "mathBlock") {
-      const quoted = quotedEquationParagraph(
-        source,
-        n,
-        id === "paragraphBefore",
-      );
-      if (quoted) return quoted;
-    }
+    if (n) return paragraphBesideBlock(source, n, id === "paragraphBefore");
     const at =
       id === "paragraphBefore"
-        ? (n?.from ?? start) === 0
+        ? start === 0
           ? 0
-          : source.lastIndexOf("\n", (n?.from ?? start) - 1) + 1
-        : (n?.to ?? end);
+          : source.lastIndexOf("\n", start - 1) + 1
+        : end;
     const insert = (source[at - 1] === "\n" ? "" : "\n") + "\n";
     return result(
       { from: at, to: at, insert },
@@ -332,6 +346,10 @@ export function sourceCommand(
   if (id === "divider") {
     content = "---";
     caret = 3;
+  }
+  if (id === "toc") {
+    content = "[TOC]";
+    caret = 5;
   }
   if (id === "table") {
     const cols = Math.max(1, Math.min(30, options.columns ?? 2)),

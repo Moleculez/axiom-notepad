@@ -12,6 +12,7 @@ import {
 } from "../workspace/ui";
 import StudioSource from "./StudioSource";
 import ResourceDiscussion from "./ResourceDiscussion";
+import ResourceSharing from "../workspace/ResourceSharing";
 export default function TextStudio({ project }: { project: ToolProject }) {
   const { session } = useWorkspace(),
     shared = useToolDocument(
@@ -33,6 +34,7 @@ export default function TextStudio({ project }: { project: ToolProject }) {
           ← Explorer
         </WorkspaceLink>
         <h1>{project.name}</h1>
+        <ResourceSharing resourceId={project.resource_id} />
         <span className="tool-spacer" />
         <button
           className="icon-button"

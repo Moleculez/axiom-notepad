@@ -16,9 +16,9 @@ async function api(
   return response.json();
 }
 test.beforeAll(() => {
-  if (origin !== "http://localhost:3002")
+  if (!["http://localhost:3002", "http://localhost:3004"].includes(origin))
     throw new Error(
-      "Destructive productivity tests require isolated staging on port 3002.",
+      "Destructive productivity tests require isolated staging on port 3002 or 3004.",
     );
 });
 test("Trash execution rechecks manager authority after preview", async ({
@@ -226,7 +226,7 @@ test("group administration handles deduplicated invitations, rotated links, role
     await ownerPage.goto(`/workbench/admin/${f.group.id}/members`);
     await expect(
       ownerPage.getByRole("navigation", {
-        name: "Management navigation",
+        name: "Workspace sections",
       }),
     ).toBeVisible();
     await expect(

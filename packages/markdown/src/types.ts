@@ -41,6 +41,10 @@ export interface ParsedDocument {
   definitions?: MarkdownNode[];
 }
 export interface RenderContext {
+  /** Interactive preview locations; omitted from portable/export HTML. */
+  visuals?: boolean;
+  /** Interactive reading surfaces only; never enable for exported HTML. */
+  blockMarks?: boolean;
   /** Clipboard HTML cannot rely on the application's task-row stylesheet. */
   taskLayout?: "gutter" | "inline";
   /** Application/HTML reading surfaces opt into a locally scrollable table frame. */

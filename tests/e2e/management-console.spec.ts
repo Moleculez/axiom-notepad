@@ -14,8 +14,12 @@ import {
 
 const origin = process.env.TEST_APP_URL;
 test.beforeAll(() => {
-  if (origin !== "http://localhost:3002")
-    throw new Error("Management acceptance uses isolated staging only.");
+  if (
+    !["http://localhost:3002", "http://localhost:3004"].includes(origin ?? "")
+  )
+    throw new Error(
+      "Management acceptance uses isolated staging on port 3002 or 3004 only.",
+    );
 });
 let ownerState: Awaited<ReturnType<BrowserContext["storageState"]>>;
 async function api(
@@ -377,7 +381,7 @@ test("unified console redirects, guards drafts, renders Audit and Trash with fre
       .getByLabel("Group description")
       .fill("A preserved unsaved draft.");
     await page
-      .getByRole("navigation", { name: "Management navigation" })
+      .getByRole("navigation", { name: "Workspace sections" })
       .getByRole("link", { name: "People & access" })
       .click();
     const guard = page.getByRole("dialog", { name: "Unsaved group settings" });
@@ -397,7 +401,7 @@ test("unified console redirects, guards drafts, renders Audit and Trash with fre
       fullPage: true,
     });
     await page
-      .getByRole("navigation", { name: "Management navigation" })
+      .getByRole("navigation", { name: "Administration" })
       .getByRole("link", { name: "Workspaces", exact: true })
       .click();
     await page.getByLabel("Find a workspace").fill(f.name);
@@ -480,7 +484,7 @@ test("unified console redirects, guards drafts, renders Audit and Trash with fre
       version: folder.version,
     });
     await page
-      .getByRole("navigation", { name: "Management navigation" })
+      .getByRole("navigation", { name: "Administration" })
       .getByRole("link", { name: "Trash", exact: true })
       .click();
     await page

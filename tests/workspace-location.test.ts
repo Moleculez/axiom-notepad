@@ -60,14 +60,14 @@ describe("workspace breadcrumb routes", () => {
   it("shows every ancestor and uses the physical parent for Up", () => {
     const result = workspaceLocation({ route: `/notes/${id}`, location });
     expect(result.crumbs.map((c) => c.label)).toEqual([
-      "Research notes",
+      "Explorer",
       "Physics lab",
       "Research",
       "量子 & optics",
       "Derivation",
     ]);
     expect(result.crumbs.map((c) => c.to)).toEqual([
-      "/explorer?kind=note&view=all",
+      "/explorer?view=all",
       folderRoute(space),
       folderRoute(space, parent),
       folderRoute(space, child),
@@ -82,10 +82,10 @@ describe("workspace breadcrumb routes", () => {
       location,
     });
     expect(result.crumbs.map((c) => c.label)).toEqual([
-      "Files",
+      "Explorer",
       "Another file",
     ]);
-    expect(result.up).toBe("/explorer?kind=file&view=all");
+    expect(result.up).toBe("/explorer?view=all");
   });
   it("navigates a root item back to its workspace, without a fake folder", () => {
     expect(
@@ -126,6 +126,6 @@ describe("workspace breadcrumb routes", () => {
     expect(workspaceLocation({ route: "/admin/a/members" }).up).toBe("/groups");
     expect(
       workspaceLocation({ route: "/tools/math/new" }).crumbs.at(-1),
-    ).toEqual({ label: "New math project" });
+    ).toEqual({ label: "Explorer" });
   });
 });

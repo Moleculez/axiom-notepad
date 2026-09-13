@@ -171,7 +171,7 @@ test("the larger task hit area toggles without stealing the caret or exposing so
   expect(await page.evaluate(() => window.editorLab.recovery())).toEqual([]);
 });
 
-test("editing a task hides its control gutter and restores it without a layout jump", async ({
+test("editing a task retains its control gutter without a layout jump", async ({
   page,
 }) => {
   const source = "Caret\n\n- [ ] **First task**\n  - [x] Nested task\n\nEnd";
@@ -186,8 +186,9 @@ test("editing a task hides its control gutter and restores it without a layout j
   const before = await checkbox.boundingBox();
   await pane.locator(".document-task strong").click();
   const raw = pane.locator(".document-task .axiom-source-prose").first();
-  await expect(raw).toContainText("- [ ] **First task**");
-  await expect(pane.locator(".document-task > input").first()).toBeHidden();
+  await expect(raw).toContainText("**First task**");
+  await expect(pane.locator(".document-task > input").first()).toBeVisible();
+  expect(await checkbox.boundingBox()).toEqual(before);
   await pane
     .locator("p")
     .filter({ hasText: /^Caret$/ })

@@ -18,7 +18,7 @@ import {
   type ParsedDocument,
   type RenderContext,
 } from "@axiom/markdown";
-import { post, colorFor, ApiError } from "../lib/client";
+import { api, colorFor, ApiError } from "../lib/client";
 import {
   cachePointer,
   currentCache,
@@ -30,8 +30,17 @@ import type { EditorPreferences, EditorCommandId } from "@axiom/shared/editor";
 import { NativeBinding } from "../lib/native-editor/binding";
 import { type CommandArguments } from "../lib/native-editor/view";
 import { EditorView } from "../lib/editor-view";
+import { installMarkdownVisuals } from "../lib/visual-surface";
 import { selectionRange } from "../lib/native-editor/transactions";
-import { resolveAnchor } from "@axiom/editor/annotations";
+import { resolveAnchor, createMarkAnchor } from "@axiom/editor/annotations";
+import type { MarkAnchor } from "@axiom/shared/note-comments";
+import type { ReadingBlockRect } from "@axiom/editor/reading-marks";
+import type {
+  EditorNavigationState,
+  NavigationBlock,
+  NavigationPosition,
+} from "@axiom/editor/minimap";
+import { editorAppearanceKey } from "@axiom/shared/minimap";
 export type EditorMode = "write" | "source" | "read";
 export type CommentAnchor = {
   start: number[];
@@ -40,6 +49,17 @@ export type CommentAnchor = {
   generation: number;
 };
 export interface EditorHandle {
+  markAnchor: (
+    from: number,
+    to: number,
+    kind?: MarkAnchor["kind"],
+    blockType?: string,
+  ) => MarkAnchor | null;
+  resolveMark: (anchor: MarkAnchor) => { from: number; to: number } | null;
+  markGeometry: () => ReadingBlockRect[];
+  navigationGeometry: () => NavigationBlock[];
+  navigationSnapshot: () => EditorNavigationState | null;
+  navigationPosition: (position: number) => NavigationPosition | null;
   execute: (id: EditorCommandId, args?: CommandArguments) => boolean;
   jumpToCollaborator: (clientId: number) => boolean;
   tableActive: () => boolean;
@@ -106,7 +126,7 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(props, ref) {
       text: string;
     } | null>(null),
     propsRef = useRef(props),
-    unresolvedAnnotations = useRef(""),
+    unresolvedAnnotations = useRef<string | null>(null),
     flushRef = useRef<() => Promise<void>>(async () => {}),
     waiters = useRef(
       new Map<
@@ -186,6 +206,49 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(props, ref) {
             position ?? view.selection.anchor,
             position ?? view.selection.head,
           );
+      },
+      markAnchor(from, to, kind, blockType) {
+        return docRef.current
+          ? createMarkAnchor(
+              docRef.current,
+              propsRef.current.note.generation,
+              from,
+              to,
+              kind,
+              blockType,
+            )
+          : null;
+      },
+      resolveMark(anchor) {
+        return docRef.current
+          ? resolveAnchor(
+              docRef.current,
+              propsRef.current.note.generation,
+              anchor,
+            )
+          : null;
+      },
+      markGeometry() {
+        const view = viewRef.current;
+        return view && "markGeometry" in view ? view.markGeometry() : [];
+      },
+      navigationGeometry() {
+        const view = viewRef.current;
+        return view && "navigationGeometry" in view
+          ? view.navigationGeometry()
+          : [];
+      },
+      navigationSnapshot() {
+        const view = viewRef.current;
+        return view && "navigationSnapshot" in view
+          ? view.navigationSnapshot()
+          : null;
+      },
+      navigationPosition(position) {
+        const view = viewRef.current;
+        return view && "navigationPosition" in view
+          ? view.navigationPosition(position)
+          : null;
       },
       anchor() {
         const view = viewRef.current,
@@ -312,6 +375,7 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(props, ref) {
   );
   useEffect(() => {
     if (!container.current) return;
+    const requests = new AbortController();
     let alive = true,
       localRevision = 0,
       parseVersion = 0,
@@ -492,9 +556,12 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(props, ref) {
           await persistence.whenSynced.catch(() => {});
           if (!alive || quarantined) return "";
           temporaryAuthorizationFailure = false;
-          const result = await post(`notes/${props.note.id}/sync-token`, {
-            accessProtocol: 1,
+          const result = await api(`notes/${props.note.id}/sync-token`, {
+            method: "POST",
+            body: JSON.stringify({ accessProtocol: 1 }),
+            signal: requests.signal,
           });
+          if (!alive || requests.signal.aborted) return "";
           if (result.room !== room) {
             propsRef.current.onStatus("New version available");
             propsRef.current.onRefresh();
@@ -526,6 +593,7 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(props, ref) {
           if (alive) setAccess();
           return result.token;
         } catch (error) {
+          if (!alive || requests.signal.aborted) return "";
           accessUnavailable =
             quarantined ||
             (error instanceof ApiError &&
@@ -651,6 +719,10 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(props, ref) {
     provider.attach();
 
     const binding = new NativeBinding(doc, undoManager, provider.awareness);
+    // A cached thread may arrive before persistence hydrates this view. Strict
+    // Mode remounts must not reuse a notification signature whose callback was
+    // discarded by the previous lifecycle's cleanup.
+    unresolvedAnnotations.current = null;
     const view = new EditorView(container.current, binding, {
       mode: () => propsRef.current.mode,
       preferences: () => propsRef.current.preferences,
@@ -698,6 +770,23 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(props, ref) {
       },
     });
     viewRef.current = view;
+    const closeVisuals = installMarkdownVisuals(view.dom, {
+      selection: () => view.selection,
+      parsed: () => view.parsed,
+      source: () => view.source,
+      binding,
+      generation: props.note.generation,
+      context: () => ({ resourceId: props.note.id }),
+      captureRestore: () => {
+        const bookmark = binding.relative(view.selection);
+        return () => {
+          const at = binding.absolute(bookmark);
+          if (alive && at) view.focus(at.anchor, at.head);
+        };
+      },
+      editorMenu: (x, y, at) =>
+        view.openBlockMenu(x, y, { anchor: at, head: at }),
+    });
     const unsubscribe = binding.subscribe(() => {
       localRevision++;
       parseVersion++;
@@ -838,6 +927,7 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(props, ref) {
 
     return () => {
       alive = false;
+      requests.abort();
       pendingInsert.current = null;
       clearInterval(retry);
       clearTimeout(saveTimer);
@@ -860,6 +950,7 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(props, ref) {
         };
         retained.selection = binding.relative(view.selection);
       }
+      closeVisuals();
       view.destroy();
       provider.destroy();
       transport.destroy();
@@ -883,7 +974,7 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(props, ref) {
     props.readOnly,
     props.mode,
     props.renderContext,
-    props.appearance,
+    editorAppearanceKey(props.appearance),
     props.preferences,
     props.annotations,
   ]);

@@ -48,7 +48,7 @@
   left: 2px;
   border-radius: 50%;
   background: var(--paper);
-  box-shadow: 0 1px 3px #0003;
+  box-shadow: none;
 }
 .settings-routed .setting-toggle > input[type="checkbox"]:checked {
   background: var(--accent);
@@ -57,7 +57,7 @@
 .settings-routed .setting-toggle > input[type="checkbox"]:checked::before {
   left: auto;
   right: 2px;
-  background: #fff;
+  background: var(--on-accent);
 }
 .editor-selection-bar {
   position: fixed;
@@ -66,9 +66,9 @@
   gap: 2px;
   padding: 5px;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--control-radius);
   background: var(--paper);
-  box-shadow: 0 6px 25px #0002;
+  box-shadow: var(--shadow);
   font-family: var(--font-ui);
 }
 .editor-selection-bar button {
@@ -107,9 +107,9 @@
   align-items: center;
   padding: 3px;
   border: 1px solid var(--line);
-  border-radius: 9px;
+  border-radius: var(--control-radius);
   background: var(--paper);
-  box-shadow: 0 2px 8px #0001;
+  box-shadow: var(--shadow);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.12s;
@@ -197,16 +197,14 @@
   inset: auto;
   margin: 0;
   z-index: 10000;
-  width: 280px;
+  width: calc(var(--size-ui) * 19);
   max-width: calc(100vw - 24px);
   padding: 7px;
   border: 1px solid var(--line);
-  border-radius: 13px;
+  border-radius: var(--control-radius);
   background: var(--paper);
   color: var(--text);
-  box-shadow:
-    0 12px 42px #0002,
-    0 2px 6px #0001;
+  box-shadow: var(--shadow);
   overflow-y: auto;
   overscroll-behavior: contain;
   font-family: var(--font-ui);
@@ -221,10 +219,10 @@
   align-items: center;
   gap: 16px;
   width: 100%;
-  min-height: 33px;
+  min-height: 2.5em;
   padding: 6px 9px;
   text-align: left;
-  border-radius: 7px;
+  border-radius: var(--control-radius-small);
   font-size: 0.87em;
   line-height: 1.4;
 }
@@ -551,22 +549,6 @@
   align-items: center;
   gap: 8px;
 }
-.ws-settings-page.ws-appearance-page {
-  max-width: 1020px;
-}
-.settings-routed.appearance-settings {
-  display: block;
-  overflow: visible;
-  min-height: 0;
-}
-.settings-routed .settings-content {
-  padding: 0;
-  overflow: visible;
-  max-height: none;
-}
-.settings-routed .settings-intro {
-  margin-bottom: 24px;
-}
 .settings-routed .settings-intro h1 {
   font-family: var(--font-ui);
   font-weight: 600;
@@ -578,20 +560,6 @@
 .settings-routed .settings-intro .eyebrow {
   display: none;
 }
-.settings-routed .settings-card {
-  margin-bottom: 20px;
-  border-radius: max(12px, var(--radius));
-  background: var(--paper);
-  padding: clamp(16px, 2.4vw, 28px);
-}
-.settings-routed .settings-card:empty {
-  display: none;
-}
-.settings-routed .settings-content-search {
-  max-width: 480px;
-  margin: 20px 0 0;
-}
-.settings-routed .settings-footer,
 .ws-settings-page > .settings-footer {
   position: sticky;
   bottom: max(12px, env(safe-area-inset-bottom));
@@ -600,12 +568,12 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 12px;
-  margin: 24px -8px 0;
+  margin: 24px 0 0;
   padding: 16px;
   border: 1px solid var(--line);
-  border-radius: 16px;
+  border-radius: var(--panel-radius);
   background: var(--paper);
-  box-shadow: 0 -8px 28px color-mix(in srgb, var(--text) 4%, transparent);
+  box-shadow: none;
 }
 .settings-routed .settings-draft-status {
   flex-basis: 100%;

@@ -1,6 +1,3 @@
-[data-theme-pack="paper-research"] .canvas-card {
-  border-radius: var(--radius);
-}
 [data-theme-pack="paper-research"]
   .canvas-card:where(:not(.is-selected, .is-editing, .is-connection-target)) {
   box-shadow: var(--shadow);
@@ -9,7 +6,8 @@
   color: var(--muted);
   background-color: var(--paper);
 }
-[data-theme-pack="paper-research"] .settings-card {
+[data-theme-pack="paper-research"]
+  .settings-card:where(:not(.settings-stage .settings-card)) {
   border-color: var(--line);
   background-color: var(--paper);
 }

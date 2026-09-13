@@ -93,7 +93,7 @@ export const integrationActions: Action[] = [
     "note_comments",
     "notes/:id/comments",
     "resource",
-    "Read discussion and text annotations.",
+    "Read shared discussion plus this account's private text annotations. Other members' private cards are never included.",
   ),
   read(
     "project_details",
@@ -256,7 +256,7 @@ export const integrationActions: Action[] = [
     "note_comment",
     "notes/:id/comments",
     "resource",
-    "Add a discussion or annotation. payload: body, anchor?, parentId?.",
+    "Add a discussion or annotation. payload: body, anchor?, parentId?, kind?, visibility?, title?, category?, tags?, bodyFormat?. kind=annotation defaults to private; sharing requires visibility=shared. Private content must not be copied into a shared note without the user's approval.",
   ),
   write(
     "resource_comment",

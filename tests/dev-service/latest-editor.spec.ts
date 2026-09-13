@@ -1,3 +1,4 @@
+import { APPEARANCE_SCHEMA } from "../../packages/shared/src/appearance";
 import {
   expect,
   test,
@@ -494,7 +495,7 @@ test("LaTeX Article and paper palettes preview with compact table controls witho
     digest(
       await (
         await page.request.get("/api/v1/me/preferences-bundle", {
-          headers: { "X-Axiom-Appearance-Schema": "5" },
+          headers: { "X-Axiom-Appearance-Schema": String(APPEARANCE_SCHEMA) },
         })
       ).text(),
     );
@@ -896,7 +897,7 @@ test("8080 previews formatted footnotes in light and dark themes without changin
     digest(
       await (
         await page.request.get("/api/v1/me/preferences-bundle", {
-          headers: { "X-Axiom-Appearance-Schema": "5" },
+          headers: { "X-Axiom-Appearance-Schema": String(APPEARANCE_SCHEMA) },
         })
       ).text(),
     );
@@ -980,7 +981,7 @@ test("8080 authors a titled rich footnote with equations in the disposable scrat
     digest(
       await (
         await page.request.get("/api/v1/me/preferences-bundle", {
-          headers: { "X-Axiom-Appearance-Schema": "5" },
+          headers: { "X-Axiom-Appearance-Schema": String(APPEARANCE_SCHEMA) },
         })
       ).text(),
     );

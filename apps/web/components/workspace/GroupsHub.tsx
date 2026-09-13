@@ -28,7 +28,11 @@ type Invitation = {
   expires_at: string;
   already_joined: boolean;
 };
-export default function GroupsHub() {
+export default function GroupsHub({
+  embedded = false,
+}: {
+  embedded?: boolean;
+}) {
   const { session, revision, refresh, refreshSession, navigate, notify } =
     useWorkspace();
   const invitations = useData<Invitation[]>("group-invitations", revision);
@@ -56,17 +60,20 @@ export default function GroupsHub() {
           ? "Invitation declined."
           : `You are a member of ${invite.group_name}.`,
       );
-      if (!decline) navigate(`/people?groupId=${invite.group_id}`);
+      if (!decline && !embedded) navigate(`/people?groupId=${invite.group_id}`);
     });
   const groups = session.groups.filter((g) =>
     `${g.name} ${g.description}`.toLowerCase().includes(search.toLowerCase()),
   );
+  const Container = embedded ? "section" : "main";
   return (
-    <main className="ws-page groups-hub">
-      <PageHeading eyebrow="RESEARCH COMMUNITY" title="Your groups">
-        Private places for shared research. Your personal workspace always
-        remains yours.
-      </PageHeading>
+    <Container className={embedded ? "groups-hub" : "ws-page groups-hub"}>
+      {!embedded && (
+        <PageHeading eyebrow="RESEARCH COMMUNITY" title="Your groups">
+          Private places for shared research. Your personal workspace always
+          remains yours.
+        </PageHeading>
+      )}
       <div className="workspace-action-row">
         <input
           aria-label="Search your groups"
@@ -190,7 +197,11 @@ export default function GroupsHub() {
           onCreated={async (id) => {
             await changed();
             setCreating(false);
-            navigate(`/admin/${id}/overview`);
+            if (embedded)
+              notify(
+                "Group created. You can invite collaborators from Manage group.",
+              );
+            else navigate(`/admin/${id}/overview`);
           }}
         />
       )}
@@ -204,7 +215,7 @@ export default function GroupsHub() {
             pendingInvitation("");
             await changed();
             setJoining(false);
-            navigate(`/people?groupId=${id}`);
+            if (!embedded) navigate(`/people?groupId=${id}`);
             notify("Group membership is ready.");
           }}
         />
@@ -267,7 +278,7 @@ export default function GroupsHub() {
           </div>
         </Dialog>
       )}
-    </main>
+    </Container>
   );
 }
 

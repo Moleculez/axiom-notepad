@@ -38,6 +38,12 @@ import {
 import { useCanvasPreview } from "../../lib/tools/canvas-preview";
 import { useWorkspace, ResourceIcon } from "../workspace/ui";
 import ReadingView from "../ReadingView";
+import {
+  inheritedVisualContext,
+  installVisualSurface,
+  visualPlacement,
+} from "../../lib/visual-surface";
+import type { FilePreviewManifest } from "@axiom/shared/file-preview";
 
 const FilePreviewSurface = dynamic(() => import("./FilePreviewSurface"), {
   ssr: false,
@@ -106,6 +112,7 @@ export function CanvasMarkdownPreview({ source }: { source: string }) {
   );
   return (
     <ReadingView
+      source={source}
       parsed={parsed}
       context={context}
       onLink={(target) => {
@@ -392,7 +399,11 @@ function CanvasResourceContent({
         <CanvasMathPreview source={data.source} settings={data.settings} />
       );
     if (data.format === "markdown")
-      return <CanvasMarkdownPreview source={data.source} />;
+      return (
+        <div data-visual-revision={data.revision}>
+          <CanvasMarkdownPreview source={data.source} />
+        </div>
+      );
     return (
       <pre className="canvas-source-preview">
         {data.source.slice(0, 20000)}
@@ -404,7 +415,14 @@ function CanvasResourceContent({
   }
   const file = data.file;
   if (file.kind === "image")
-    return <CanvasImage source={file.source} name={file.name} fit={node.fit} />;
+    return (
+      <CanvasImage
+        file={file}
+        source={file.source}
+        name={file.name}
+        fit={node.fit}
+      />
+    );
   if (file.kind === "pdf" && !active)
     return (
       <div className="canvas-pdf-poster">
@@ -441,29 +459,68 @@ function CanvasResourceContent({
   );
 }
 function CanvasImage({
+  file,
   source,
   name,
   fit = "contain",
 }: {
+  file: FilePreviewManifest;
   source: string;
   name: string;
   fit?: "cover" | "contain";
 }) {
   const [failed, setFailed] = useState(false);
+  const root = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!root.current) return;
+    const placement = visualPlacement(
+      inheritedVisualContext(root.current) ?? { resourceId: file.resourceId },
+    );
+    if (placement) placement.versionId = file.versionId;
+    return installVisualSurface(root.current, {
+      assets: () => [
+        {
+          id: file.resourceId,
+          kind: "image",
+          url: source,
+          name,
+          mime: file.mime,
+          bytes: file.bytes,
+          placement,
+        },
+      ],
+    });
+  }, [
+    file.resourceId,
+    file.versionId,
+    file.mime,
+    file.bytes,
+    source,
+    name,
+    failed,
+  ]);
   useEffect(() => setFailed(false), [source]);
   return failed ? (
     <PreviewNotice>
       This image cannot be decoded. Open the original to download it.
     </PreviewNotice>
   ) : (
-    <img
-      className={`canvas-image fit-${fit}`}
-      src={source}
-      alt={name}
-      draggable={false}
-      loading="lazy"
-      onError={() => setFailed(true)}
-    />
+    <div ref={root} className="canvas-visual-image">
+      <span
+        className="canvas-visual-image"
+        data-visual-kind="image"
+        data-visual-id={file.resourceId}
+      >
+        <img
+          className={`canvas-image fit-${fit}`}
+          src={source}
+          alt={name}
+          draggable={false}
+          loading="lazy"
+          onError={() => setFailed(true)}
+        />
+      </span>
+    </div>
   );
 }
 function EquationFile({ source, bytes }: { source: string; bytes: number }) {
@@ -666,6 +723,7 @@ export function CanvasReadScene({
         <article
           key={node.id}
           data-export-node={node.id}
+          data-visual-path={JSON.stringify([node.id])}
           className={`canvas-card canvas-read-card canvas-${node.type}`}
           style={{
             left: node.x,

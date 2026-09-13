@@ -93,6 +93,15 @@ export function projectFootnote(
     selection: contains ? selection : undefined,
     reveal: !!contains && options.reveal,
     footnoteDraft: undefined,
+    folded: options.folded
+      ?.filter(
+        (range) => range.from >= body.offsets[0] && range.to <= definition.to,
+      )
+      .map((range) => ({
+        ...range,
+        from: body.bodyAt(range.from),
+        to: body.bodyAt(range.to),
+      })),
     draftHeader: undefined,
     imageSource:
       options.imageSource &&

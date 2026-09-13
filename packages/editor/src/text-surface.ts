@@ -31,6 +31,7 @@ import { tags } from "@lezer/highlight";
 import { search, searchKeymap, openSearchPanel } from "@codemirror/search";
 import { minimalChange, containerText, type TextChange } from "@axiom/markdown";
 import type { NativeTransaction, SourceSelection } from "./transactions";
+import type { NavigationBlock, NavigationPosition } from "./minimap";
 
 export type TextSurfaceValue = {
   text: string;
@@ -352,11 +353,50 @@ export class TextSurface {
   sourceAt(position: number) {
     return this.value.offsets?.[position] ?? this.value.from + position;
   }
+  /** Uses the editor height map, including virtualized offscreen source lines. */
+  navigationLines(limit = 12000): NavigationBlock[] {
+    if (this.destroyed) return [];
+    const doc = this.view.state.doc,
+      box = this.view.contentDOM.getBoundingClientRect();
+    const top = this.view.documentTop,
+      stride = Math.max(1, Math.ceil(doc.lines / limit));
+    const result: NavigationBlock[] = [];
+    for (let number = 1; number <= doc.lines; number += stride) {
+      const start = doc.line(number),
+        end = doc.line(Math.min(doc.lines, number + stride - 1));
+      const first = this.view.lineBlockAt(start.from),
+        last = this.view.lineBlockAt(end.to);
+      result.push({
+        from: this.sourceAt(start.from),
+        to: this.sourceAt(end.to),
+        type: "sourceLine",
+        left: box.left,
+        right: box.right,
+        top: top + first.top,
+        bottom: top + last.bottom,
+      });
+    }
+    return result;
+  }
   /** Viewport coordinates in this surface, not the parent rich projection. */
   caretRect(source: number) {
     return this.destroyed
       ? null
       : this.view.coordsAtPos(this.positionAt(source));
+  }
+  navigationPosition(source: number): NavigationPosition | null {
+    if (this.destroyed || !this.view.dom.getClientRects().length) return null;
+    const at = this.positionAt(source),
+      caret = this.view.coordsAtPos(at);
+    if (caret && caret.bottom > caret.top) return caret;
+    // Virtualized lines have no DOM Range; use their own height-map row, never
+    // interpolate the source character offset across a whole paragraph/block.
+    const line = this.view.lineBlockAt(at);
+    return {
+      top: this.view.documentTop + line.top,
+      bottom: this.view.documentTop + line.bottom,
+      estimated: true,
+    };
   }
   private positionAt(source: number) {
     const offsets = this.value.offsets;

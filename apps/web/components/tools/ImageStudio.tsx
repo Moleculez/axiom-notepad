@@ -53,6 +53,7 @@ import { post, SIGN_OUT_PENDING } from "../../lib/client";
 import { openContextMenu } from "../../lib/context-menu";
 import Dialog from "../Dialog";
 import ResourceDiscussion from "./ResourceDiscussion";
+import ResourceSharing from "../workspace/ResourceSharing";
 import {
   ErrorNotice,
   go,
@@ -487,7 +488,7 @@ export default function ImageStudio({
       if (copy) {
         await post(`tools/${target}/lease`, { token: l.token, release: true });
         // The copy is committed; bypass only our unsaved-original guard here.
-        go(`/tools/image/${target}`, false, true);
+        go(`/image/${target}`, false, true);
       } else {
         latest.current.baseVersion = result.versionId;
         latest.current.savedRevision = revision;
@@ -707,9 +708,9 @@ export default function ImageStudio({
     <main className="research-studio image-studio">
       <header className="studio-header">
         <WorkspaceLink
-          to="/tools"
+          to={`/explorer?space=${project.space_id}${project.parent_id ? `&folder=${project.parent_id}` : ""}`}
           className="icon-button"
-          aria-label="Back to tools"
+          aria-label="Back to folder"
         >
           <ArrowLeft size={18} />
         </WorkspaceLink>
@@ -718,6 +719,7 @@ export default function ImageStudio({
           <h1>{project.name.replace(/\.axiom-image$/i, "")}</h1>
         </div>
         <span className="tool-spacer" />
+        <ResourceSharing resourceId={project.resource_id} />
         <input
           type="file"
           ref={upload}

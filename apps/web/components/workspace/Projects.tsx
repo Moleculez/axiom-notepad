@@ -97,7 +97,10 @@ export default function ProjectsPage({
               {project.archived_at && <Badge tone="warning">Archived</Badge>}
               <span>{project.timezone}</span>
             </div>
-            <nav className="ws-page-tabs" aria-label="Project sections">
+            <nav
+              className="page-section-navigation"
+              aria-label="Project sections"
+            >
               {[
                 "tasks",
                 "milestones",
@@ -110,7 +113,7 @@ export default function ProjectsPage({
               ].map((tab) => (
                 <WorkspaceLink
                   key={tab}
-                  className={tab === section ? "active" : ""}
+                  className={`page-section-link ${tab === section ? "active" : ""}`}
                   aria-current={tab === section ? "page" : undefined}
                   to={`/projects/${id}/${tab}`}
                 >

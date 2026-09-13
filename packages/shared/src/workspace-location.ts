@@ -1,4 +1,5 @@
 import { tabRoute, tabTitle } from "./application-tabs";
+import { fileRouteId, isFileView } from "./file-routes";
 import type { ResourceLocation, Space } from "./workspace";
 
 export type LocationCrumb = { label: string; to?: string };
@@ -11,13 +12,9 @@ export function folderRoute(spaceId: string, folderId?: string | null) {
 export function locationResourceId(route: string) {
   const url = new URL(route, "http://workspace.local"),
     parts = url.pathname.split("/").filter(Boolean);
-  const id = ["notes", "files"].includes(parts[0])
-    ? parts[1]
-    : parts[0] === "explorer"
-      ? url.searchParams.get("folder")
-      : parts[0] === "tools" && ["math", "image"].includes(parts[1])
-        ? parts[2]
-        : null;
+  const id =
+    fileRouteId(route) ??
+    (parts[0] === "explorer" ? url.searchParams.get("folder") : null);
   return id && /^[\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12}$/i.test(id)
     ? id
     : null;
@@ -40,7 +37,7 @@ export function workspaceLocation({
   const root =
     section === "admin"
       ? "/groups"
-      : section === "explorer"
+      : section === "explorer" || isFileView(section) || section === "tools"
         ? "/explorer?view=all"
         : tabRoute(`/${section}`);
   const first: LocationCrumb = { label: tabTitle(root), to: root };

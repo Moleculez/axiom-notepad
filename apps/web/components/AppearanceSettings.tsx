@@ -1,4 +1,5 @@
 "use client";
+import { confirmAction } from "../lib/app-prompt";
 import {
   workspaceThemeFamilies,
   workspaceThemes,
@@ -21,8 +22,8 @@ import {
 } from "lucide-react";
 import EditorSettings from "./EditorSettings";
 import SettingsEditorPreview from "./SettingsEditorPreview";
+import MinimapSettings from "./MinimapSettings";
 import SettingsSplitPanel from "./SettingsSplitPanel";
-import ThemeWorkbench from "./ThemeWorkbench";
 import { themePacks, type ThemePackId } from "@axiom/shared/theme-packs";
 import {
   editorThemes,
@@ -106,12 +107,11 @@ function AppearanceSettingsReady({
     [themeName, setThemeName] = useState("");
   const [showPreview, setShowPreview] = useState(true),
     [emptySearch, setEmptySearch] = useState(false);
-  const [previewTab, setPreviewTab] = useState("writing");
   const fields = useRef<HTMLDivElement>(null);
   const previewCategory =
     section === "Keyboard shortcuts"
       ? undefined
-      : ["Editor", "Tables", "Code", "Mathematics"].includes(section)
+      : ["General", "Editor", "Tables", "Code", "Mathematics"].includes(section)
         ? section
         : "Appearance";
   const description = settingsCategories.find(
@@ -237,6 +237,7 @@ function AppearanceSettingsReady({
           </label>
           <nav aria-label="Personal settings">
             {[
+              ["General", SlidersHorizontal],
               ["Theme", Palette],
               ["Typography", Type],
               ["Reading & layout", SlidersHorizontal],
@@ -339,41 +340,15 @@ function AppearanceSettingsReady({
           showPreview={showPreview}
           preview={
             previewCategory ? (
-              <div className="settings-theme-preview">
-                <div
-                  className="settings-theme-preview-tabs"
-                  role="group"
-                  aria-label="Preview surface"
-                >
-                  <button
-                    className="button ghost"
-                    aria-pressed={previewTab === "writing"}
-                    onClick={() => setPreviewTab("writing")}
-                  >
-                    Writing
-                  </button>
-                  <button
-                    className="button ghost"
-                    aria-pressed={previewTab === "interface"}
-                    onClick={() => setPreviewTab("interface")}
-                  >
-                    Interface
-                  </button>
-                </div>
-                <div
-                  className="settings-theme-writing"
-                  hidden={previewTab !== "writing"}
-                >
-                  <SettingsEditorPreview
-                    preferences={editorDraft}
-                    appearance={draft}
-                    category={previewCategory}
-                  />
-                </div>
-                {previewTab === "interface" && (
-                  <ThemeWorkbench preferences={draft} dark={appearance.dark} />
-                )}
-              </div>
+              <SettingsEditorPreview
+                preferences={editorDraft}
+                appearance={draft}
+                category={previewCategory}
+                showInterface
+                dark={appearance.dark}
+                active={showPreview}
+                onAppearanceChange={setDraft}
+              />
             ) : undefined
           }
         >
@@ -426,6 +401,46 @@ function AppearanceSettingsReady({
                 onChange={setEditorDraft}
                 shortcuts
                 search={query}
+              />
+            )}
+            {show(
+              "General",
+              "block ranges guides nesting structure bookmarks annotations reading overview",
+            ) && (
+              <section className="settings-card">
+                <h4>Document structure</h4>
+                <p className="settings-note">
+                  Follow nested blocks with a quiet margin. Use its chevrons to
+                  fold longer blocks.
+                </p>
+                {toggle(
+                  "General",
+                  "blockGuides",
+                  "Show block ranges",
+                  "Vertical guides beside blocks while writing. Hidden in Read, Source and exports.",
+                )}
+                {toggle(
+                  "General",
+                  "readingMarkMargin",
+                  "Show reading marks in the margin",
+                  "Bookmarks and annotation actions beside document blocks. Your saved marks remain available in the panel when hidden.",
+                )}
+                {toggle(
+                  "General",
+                  "readingMarkOverview",
+                  "Show reading marks overview",
+                  "A quiet right-edge map of bookmarks and annotations throughout the document.",
+                )}
+              </section>
+            )}
+            {show(
+              "General",
+              "minimap miniature document map navigation sizing width position preview selection search collaborators",
+            ) && (
+              <MinimapSettings
+                value={draft.minimap}
+                onChange={(value) => change("minimap", value)}
+                onInvalid={(value) => invalidField("minimap.width", value)}
               />
             )}
             {show(
@@ -1405,11 +1420,15 @@ function AppearanceSettingsReady({
         <div className="settings-reset-actions">
           <button
             className="button appearance-reset"
-            onClick={() => {
+            onClick={async () => {
               if (
-                !confirm(
+                !(await confirmAction(
                   "Preview default appearance and writing preferences? Apply saves the reset; Cancel keeps your saved settings.",
-                )
+                  {
+                    title: "Preview default preferences?",
+                    confirmLabel: "Preview defaults",
+                  },
+                ))
               )
                 return;
               setDraft(defaults);

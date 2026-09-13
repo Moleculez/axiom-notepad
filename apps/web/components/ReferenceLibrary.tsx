@@ -1,4 +1,5 @@
 "use client";
+import { promptText } from "../lib/app-prompt";
 import { useCallback, useEffect, useState } from "react";
 import {
   ArrowUpRight,
@@ -133,13 +134,21 @@ export default function ReferenceLibrary({
             A shared bibliography. A reading journey that is yours.
           </p>
         </div>
-        <button className="button primary" disabled={readOnly} onClick={() => setEditing(null)}>
+        <button
+          className="button primary"
+          disabled={readOnly}
+          onClick={() => setEditing(null)}
+        >
           <Plus size={16} />
           Add reference
         </button>
       </div>
       <div className="collection-tools">
-        <button className="button secondary small" disabled={readOnly} onClick={onImport}>
+        <button
+          className="button secondary small"
+          disabled={readOnly}
+          onClick={onImport}
+        >
           <Upload size={14} />
           Import BibTeX
         </button>
@@ -233,8 +242,8 @@ export default function ReferenceLibrary({
       <div className="saved-filters">
         <button
           className="text-button"
-          onClick={() => {
-            const label = prompt("Name this personal library filter");
+          onClick={async () => {
+            const label = await promptText("Name this personal library filter");
             if (label?.trim())
               void work(async () => {
                 await research.saveReading("filter", "group", groupId, {
@@ -378,7 +387,11 @@ export default function ReferenceLibrary({
             Import BibTeX, add a reference, or look up a DOI or arXiv
             identifier.
           </p>
-          <button className="button secondary" disabled={readOnly} onClick={() => setEditing(null)}>
+          <button
+            className="button secondary"
+            disabled={readOnly}
+            onClick={() => setEditing(null)}
+          >
             Add a reference
           </button>
         </div>

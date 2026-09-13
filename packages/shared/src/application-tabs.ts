@@ -1,3 +1,9 @@
+import {
+  fileViewRoutes,
+  isFileView,
+  normalizeFileRoute,
+  fileRouteId,
+} from "./file-routes";
 /** Device-local navigation metadata only. Never persist invitation/security tokens. */
 export type ApplicationTab = {
   id: string;
@@ -50,6 +56,7 @@ export function safeApplicationView(
   return Object.keys(view).length ? view : undefined;
 }
 const sections = new Set([
+  ...fileViewRoutes,
   "home",
   "explorer",
   "projects",
@@ -68,6 +75,7 @@ const sections = new Set([
   "new",
 ]);
 const queries = new Set([
+  "create",
   "space",
   "folder",
   "view",
@@ -98,10 +106,10 @@ export function tabRoute(input: string): string {
     if (url.origin !== "http://workspace.local") return "/home";
     let path = url.pathname.replace(/^\/workbench(?=\/|$)/, "") || "/home";
     if (!sections.has(path.split("/")[1])) return "/home";
-    if (path === "/settings/groups") return "/groups";
     const params = new URLSearchParams();
     for (const [key, value] of url.searchParams)
       if (queries.has(key) && value.length <= 500) params.set(key, value);
+    path = normalizeFileRoute(path, params);
     if (/^\/(notes|files)\/?$/.test(path)) {
       params.set("kind", path.startsWith("/notes") ? "note" : "file");
       params.set("view", "all");
@@ -109,8 +117,12 @@ export function tabRoute(input: string): string {
       params.delete("version");
       path = "/explorer";
     }
+    if (isFileView(path.split("/")[1]) && !path.split("/")[2])
+      path = "/explorer";
     params.sort();
-    return path + (params.size ? `?${params}` : "");
+    const anchor =
+      fileRouteId(path) && /^#[\w%:.-]{1,200}$/.test(url.hash) ? url.hash : "";
+    return path + (params.size ? `?${params}` : "") + anchor;
   } catch {
     return "/home";
   }
@@ -157,6 +169,14 @@ export function tabTitle(path: string) {
         admin: "Group administration",
         notes: "Research note",
         files: "File",
+        canvas: "Canvas",
+        math: "Math",
+        text: "Text",
+        image: "Image",
+        audio: "Audio",
+        video: "Video",
+        pdf: "PDF",
+        document: "Document",
         new: "New tab",
       } as Record<string, string>
     )[section] ?? "Home"

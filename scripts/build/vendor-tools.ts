@@ -20,13 +20,15 @@ for (const [name, file] of [
   ["ag-psd", "LICENSE"],
   ["exceljs", "LICENSE"],
   ["file-type", "license"],
+  ["exifreader", "LICENSE"],
+  ["@xmldom/xmldom", "LICENSE"],
 ]) {
   const pkg = resolve("node_modules", name);
   const metadata = JSON.parse(
     await readFile(resolve(pkg, "package.json"), "utf8"),
   );
   notices.push(
-    `${name} ${metadata.version}\n${await readFile(resolve(pkg, file), "utf8")}`,
+    `${name} ${metadata.version}\n${name === "exifreader" ? `Unmodified source: https://registry.npmjs.org/exifreader/-/exifreader-${metadata.version}.tgz\n` : ""}${await readFile(resolve(pkg, file), "utf8")}`,
   );
 }
 await writeFile(

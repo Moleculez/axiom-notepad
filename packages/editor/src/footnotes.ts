@@ -3,11 +3,12 @@ import {
   footnoteCommand,
   quoteContext,
   containerText,
-  nodeAt,
+  exitEmptyBlockLine,
   type MarkdownNode,
   type SourceEdit,
 } from "@axiom/markdown";
 import type { SourceSelection } from "./transactions";
+import { listBodyEdit } from "./list-prose";
 export { footnoteAt } from "@axiom/markdown";
 
 export function footnoteEnter(
@@ -38,34 +39,9 @@ export function footnoteEnter(
     line.bodyFrom === line.to &&
     !literal(context.definition.children ?? [])
   ) {
-    return {
-      changes: [{ from: line.from, to: line.to, insert: "\n" }],
-      selection: { anchor: line.from + 1 },
-    };
+    return exitEmptyBlockLine(source, line.from, line.to, "");
   }
-  return (
-    footnoteCommand(source, selection, (body, at) => {
-      const edit = command(body, at);
-      const exit = edit.changes[0];
-      // Leaving a populated quote/list needs a blank body separator. Otherwise
-      // the next letter is parsed as lazy continuation of the previous child.
-      const populated = (node: MarkdownNode): boolean =>
-        !!node.text?.trim() || !!node.children?.some(populated);
-      const container = nodeAt(body, at.head, ["blockquote", "list"]);
-      if (
-        !soft &&
-        exit?.insert === "" &&
-        exit.to > exit.from &&
-        container &&
-        populated(container)
-      ) {
-        exit.insert = "\n";
-        edit.selection.anchor++;
-        if (edit.selection.head !== undefined) edit.selection.head++;
-      }
-      return edit;
-    }) ?? undefined
-  );
+  return footnoteCommand(source, selection, command) ?? undefined;
 }
 
 /** Ordinary rich input/paste/composition carries body text, not hidden prefixes. */
@@ -75,6 +51,8 @@ export function footnoteInput(
   value: string,
 ) {
   return footnoteCommand(source, selection, (body, at) => {
+    const listed = listBodyEdit(body, at, value);
+    if (listed) return listed;
     const from = Math.min(at.anchor, at.head),
       to = Math.max(at.anchor, at.head);
     const prefix = quoteContext(body, from)?.prefix ?? "";

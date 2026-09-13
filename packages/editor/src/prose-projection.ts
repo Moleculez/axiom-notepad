@@ -1,6 +1,7 @@
 import type { MarkdownNode } from "@axiom/markdown";
 import { lineAt, type SourceSelection } from "./transactions";
 import { quoteProse, type EditingProseNode } from "./quote-prose";
+import { listMarker, listProse } from "./list-prose";
 
 /** Presentation-only nodes. Their ranges always refer to the original Markdown,
  * including prefixes that the canonical parser omits from prose children. */
@@ -33,7 +34,14 @@ export function proseProjection(
   const prose = new Set(["paragraph", "heading", "editingParagraph"]);
   // A divider has no inline body to edit. Keep its rendered view even when
   // its source range is selected; Source mode still exposes the real markers.
-  const special = new Set(["codeBlock", "mathBlock", "table", "hr"]);
+  const special = new Set([
+    "codeBlock",
+    "mathBlock",
+    "table",
+    "hr",
+    "toc",
+    "frontmatter",
+  ]);
   const hardBreakStart = (node: MarkdownNode): number | null => {
     if (node.type !== "paragraph") return null;
     const match = source.slice(node.from, node.to).match(/( {2,}|\\+)\r?\n$/);
@@ -67,6 +75,7 @@ export function proseProjection(
     from: number,
     to: number,
     depth = 0,
+    item?: MarkdownNode,
   ): EditingProseNode => {
     let quoteBody = quoteProse(source, from, to, depth);
     // A source-mode caret can explicitly address a hidden marker. Reveal the
@@ -91,6 +100,7 @@ export function proseProjection(
       contentFrom: from,
       contentTo: to,
       quoteBody,
+      listBody: item ? listProse(source, from, to, item) : undefined,
       images: images.filter((image) => image.from >= from && image.to <= to),
     };
   };
@@ -98,7 +108,7 @@ export function proseProjection(
     node: MarkdownNode,
     parent?: MarkdownNode,
     depth = 0,
-  ): MarkdownNode => {
+  ): MarkdownNode | MarkdownNode[] => {
     if (node.type === "footnoteDefinition") return node;
     if (special.has(node.type)) {
       if (
@@ -111,6 +121,11 @@ export function proseProjection(
     }
     const from = start(node);
     let to = end(node);
+    // CommonMark accepts a marker at EOL as an empty item. During authoring it
+    // remains ordinary text until its delimiter space exists. Never retain an
+    // outer list wrapper, which would display a bullet beside the raw marker.
+    if (node.type === "item" && !listMarker(source, node))
+      return raw({ ...node, kind: "paragraph" }, from, to, depth);
     if (prose.has(node.type)) {
       // An unfinished quote continuation ("> ") is omitted from the AST's
       // paragraph. Keep it in the active paragraph, not a hidden caret gap.
@@ -127,7 +142,13 @@ export function proseProjection(
       const hardBreak = hardBreakStart(node);
       if (hardBreak !== null) to = Math.max(to, node.to);
       if (selected(from, to) || node.type === "editingParagraph")
-        return raw(node, from, to, depth);
+        return raw(
+          node,
+          from,
+          to,
+          depth,
+          parent?.type === "item" ? parent : undefined,
+        );
       if (hardBreak !== null)
         return {
           ...node,
@@ -158,8 +179,14 @@ export function proseProjection(
       const nextDepth = depth + (complete ? 1 : 0);
       if (!node.children?.length) {
         if (!selected(from, to)) return node;
-        const body = raw({ ...node, kind: "paragraph" }, from, to, nextDepth);
-        return complete ? { ...node, children: [body] } : body;
+        const body = raw(
+          { ...node, kind: "paragraph" },
+          from,
+          to,
+          nextDepth,
+          node.type === "item" ? node : undefined,
+        );
+        return complete || body.listBody ? { ...node, children: [body] } : body;
       }
       // Legacy draft projection adds a callout header separately. The new raw
       // paragraph already includes that header, so never duplicate its offsets.
@@ -185,13 +212,15 @@ export function proseProjection(
                 start(child),
                 end(children[last]),
                 nextDepth,
+                node,
               ),
             );
             i = last;
             continue;
           }
         }
-        processed.push(visit(child, node, nextDepth));
+        const projected = visit(child, node, nextDepth);
+        processed.push(...(Array.isArray(projected) ? projected : [projected]));
       }
       // Parsers omit empty quoted paragraphs after specialized blocks. Give an
       // active explicit quote prefix its own source-mapped insertion point.
@@ -227,6 +256,7 @@ export function proseProjection(
               line.from,
               lineTo,
               nextDepth,
+              node.type === "item" ? node : undefined,
             ),
           );
         }
@@ -236,16 +266,43 @@ export function proseProjection(
       // paragraph with a decorated container as soon as its prefix parses.
       if (
         !complete &&
+        !["list", "item"].includes(node.type) &&
         processed.length === 1 &&
         processed[0].type === "sourceProse"
       )
         return { ...processed[0], to: Math.max(node.to, processed[0].to) };
-      // Lists require list_item children. A raw item in a mixed list retains a
-      // non-decorated wrapper; its siblings retain their normal numbering.
-      if (node.type === "list")
-        for (let i = 0; i < processed.length; i++)
-          if (processed[i].type === "sourceProse")
-            processed[i] = { ...children[i], children: [processed[i]] };
+      if (
+        node.type === "list" &&
+        processed.some((child) => child.type !== "item")
+      ) {
+        const groups: MarkdownNode[] = [];
+        let items: MarkdownNode[] = [];
+        const flush = () => {
+          if (!items.length) return;
+          const first = items[0];
+          groups.push({
+            ...node,
+            from: first.from,
+            to: items.at(-1)!.to,
+            start: node.ordered
+              ? Number(
+                  /^\d+/.exec(source.slice(first.from))?.[0] ?? node.start ?? 1,
+                )
+              : node.start,
+            children: items,
+          });
+          items = [];
+        };
+        for (const child of processed) {
+          if (child.type === "item") items.push(child);
+          else {
+            flush();
+            groups.push(child);
+          }
+        }
+        flush();
+        return groups;
+      }
       // A callout header is actual editable source, not a second generated title.
       const activeHeader =
         node.type === "callout" &&
@@ -288,7 +345,8 @@ export function proseProjection(
   let previous = 0;
   nodes.forEach((node, index) => {
     gap(previous, start(node), index === 0, false);
-    result.push(visit(node));
+    const projected = visit(node);
+    result.push(...(Array.isArray(projected) ? projected : [projected]));
     previous = node.to;
   });
   const last = result.at(-1);
@@ -301,7 +359,9 @@ export function proseProjection(
     !nodes.length ||
     /\n$/.test(source) ||
     (lastOriginal &&
-      ["codeBlock", "mathBlock", "table", "hr"].includes(lastOriginal.type));
+      ["codeBlock", "mathBlock", "table", "hr", "toc", "frontmatter"].includes(
+        lastOriginal.type,
+      ));
   if (!finalHardBreak && (previous < source.length || terminal))
     gap(previous, source.length, !nodes.length, true);
   if (!finalHardBreak && terminal && result.at(-1)?.type !== "blankParagraph")

@@ -7,16 +7,19 @@ import {
   Maximize,
   Search,
   WrapText,
-  ZoomIn,
-  ZoomOut,
-  ImagePlus,
   Link,
 } from "lucide-react";
 import type { FilePreviewManifest } from "@axiom/shared/file-preview";
 import { parseDelimited } from "@axiom/shared/file-preview";
 import { parseMarkdown } from "@axiom/markdown";
 import ReadingView from "../ReadingView";
+import VisualFilePreview from "../visual/VisualFilePreview";
+import type { VisualAsset } from "../../lib/visual-assets";
 import { post } from "../../lib/client";
+import {
+  requestFileCreation,
+  type FileCreationRequest,
+} from "../../lib/file-creation";
 import {
   bytes,
   ErrorNotice,
@@ -39,6 +42,8 @@ export default function FilePreviewSurface({
   pdf,
   initialManifest,
   onReload,
+  creationTarget,
+  visualGallery,
 }: {
   resourceId: string;
   versionId?: string | null;
@@ -46,6 +51,8 @@ export default function FilePreviewSurface({
   pdf?: React.ReactNode;
   initialManifest?: FilePreviewManifest;
   onReload?: () => void;
+  creationTarget?: FileCreationRequest["target"];
+  visualGallery?: VisualAsset[];
 }) {
   const manifest = useData<FilePreviewManifest>(
     initialManifest
@@ -73,7 +80,12 @@ export default function FilePreviewSurface({
       )}
       <ErrorNotice message={conversionError} />
       {file.kind === "image" ? (
-        <ImagePreview key={file.versionId} file={file} />
+        <ImagePreview
+          key={file.versionId}
+          file={file}
+          target={creationTarget}
+          gallery={visualGallery}
+        />
       ) : file.kind === "audio" || file.kind === "video" ? (
         <MediaPreview key={file.versionId} file={file} />
       ) : file.kind === "pdf" ? (
@@ -148,111 +160,31 @@ export function DownloadFallback({
     </div>
   );
 }
-function ImagePreview({ file }: { file: FilePreviewManifest }) {
-  const [scale, setScale] = useState(1),
-    [size, setSize] = useState(""),
-    [error, setError] = useState("");
+function ImagePreview({
+  file,
+  target,
+  gallery,
+}: {
+  file: FilePreviewManifest;
+  target?: FileCreationRequest["target"];
+  gallery?: VisualAsset[];
+}) {
   const { navigate } = useWorkspace();
-  const viewport = useRef<HTMLDivElement>(null),
-    drag = useRef<{ x: number; y: number; left: number; top: number } | null>(
-      null,
-    );
   return (
-    <>
-      <div className="tool-controls">
-        <span>{size || file.mime}</span>
-        <span className="tool-spacer" />
-        <button
-          className="icon-button"
-          title="Zoom out"
-          aria-label="Zoom out"
-          onClick={() => setScale(Math.max(0.25, scale / 1.25))}
-        >
-          <ZoomOut size={16} />
-        </button>
-        <button
-          className="button ghost"
-          title="Fit image"
-          onClick={() => setScale(1)}
-        >
-          {Math.round(scale * 100)}%
-        </button>
-        <button
-          className="icon-button"
-          title="Zoom in"
-          aria-label="Zoom in"
-          onClick={() => setScale(Math.min(8, scale * 1.25))}
-        >
-          <ZoomIn size={16} />
-        </button>
-        <span className="tool-separator" />
-        <button
-          className="button secondary"
-          onClick={() =>
-            navigate(
-              file.mime === "application/vnd.axiom.image+zip"
-                ? `/tools/image/${file.resourceId}`
-                : `/tools/image/new?file=${file.resourceId}&version=${file.versionId}`,
-            )
-          }
-        >
-          <ImagePlus size={15} />
-          {file.mime === "application/vnd.axiom.image+zip"
-            ? "Open Image Studio"
-            : "Edit a copy"}
-        </button>
-      </div>
-      <ErrorNotice message={error} />
-      <div
-        ref={viewport}
-        className="image-preview-stage transparency-grid"
-        onPointerDown={(e) => {
-          if (e.button !== 0) return;
-          e.currentTarget.setPointerCapture(e.pointerId);
-          drag.current = {
-            x: e.clientX,
-            y: e.clientY,
-            left: e.currentTarget.scrollLeft,
-            top: e.currentTarget.scrollTop,
-          };
-        }}
-        onPointerMove={(e) => {
-          if (drag.current) {
-            e.currentTarget.scrollLeft =
-              drag.current.left + drag.current.x - e.clientX;
-            e.currentTarget.scrollTop =
-              drag.current.top + drag.current.y - e.clientY;
-          }
-        }}
-        onPointerUp={() => {
-          drag.current = null;
-        }}
-        onPointerCancel={() => {
-          drag.current = null;
-        }}
-      >
-        <img
-          src={file.source}
-          alt={file.name}
-          draggable={false}
-          style={{
-            width: `${scale * 100}%`,
-            maxWidth: "none",
-            objectFit: "contain",
-          }}
-          onLoad={(e) =>
-            setSize(
-              `${e.currentTarget.naturalWidth} × ${e.currentTarget.naturalHeight} · ${bytes(file.bytes)}`,
-            )
-          }
-          onError={() =>
-            setError(
-              "The browser cannot decode this image. The original is available to download.",
-            )
-          }
-        />
-      </div>
-    </>
+    <VisualFilePreview
+      file={file}
+      gallery={gallery}
+      onEdit={() =>
+        file.mime === "application/vnd.axiom.image+zip"
+          ? navigate(`/image/${file.resourceId}`)
+          : requestFileCreation({
+              type: "image",
+              target,
+              importFile: file.resourceId,
+              importVersion: file.versionId,
+            })
+      }
+    />
   );
 }
 export function MediaPreview({ file }: { file: FilePreviewManifest }) {

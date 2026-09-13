@@ -15,7 +15,7 @@ describe("application tabs", () => {
       true,
     );
     expect(project.id).toBe(tab.id);
-    expect(project.history).toEqual(["/tools/math/created?file=f&version=v"]);
+    expect(project.history).toEqual(["/math/created?file=f&version=v"]);
     expect(project.path).not.toContain("/new");
     expect(project.index).toBe(0);
   });
@@ -42,10 +42,30 @@ describe("application tabs", () => {
       tabRoute("/workbench/groups?invite=private&token=secret&reset=1"),
     ).toBe("/groups");
     expect(tabRoute("https://untrusted.example/notes/a")).toBe("/home");
-    expect(tabRoute("/settings/groups")).toBe("/groups");
+    expect(tabRoute("/settings/groups?invite=private")).toBe(
+      "/settings/groups",
+    );
     expect(tabRoute("/files/a?version=v&token=secret")).toBe(
       "/files/a?version=v",
     );
+  });
+  it("keeps My groups within the Settings tab and restores its navigation history", () => {
+    const profile = newApplicationTab("/settings/profile", "settings");
+    const groups = navigateApplicationTab(profile, "/settings/groups");
+    const storage = navigateApplicationTab(groups, "/settings/storage");
+    const restored = restoreApplicationTabs(
+      { version: 2, tabs: [storage], active: "settings" },
+      null,
+      "/settings/storage",
+      () => "new",
+    );
+    expect(restored.tabs).toHaveLength(1);
+    expect(restored.tabs[0].history).toEqual([
+      "/settings/profile",
+      "/settings/groups",
+      "/settings/storage",
+    ]);
+    expect(restored.tabs[0].path).toBe("/settings/storage");
   });
   it("keeps independent histories and file versions", () => {
     const a = newApplicationTab("/files/a?version=1", "a"),

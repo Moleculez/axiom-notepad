@@ -25,6 +25,7 @@ import type { Resource, Space } from "@axiom/shared/workspace";
 import type { useAppearance } from "../../lib/appearance";
 import type { useEditorPreferences } from "../../lib/editor-preferences";
 import { api, errorMessage } from "../../lib/client";
+import { sharedRequest } from "../../lib/shared-request";
 
 export type Session = {
   user: { id: string; name: string; email: string; image?: string | null };
@@ -50,6 +51,11 @@ export type WorkspaceContextValue = {
   notify: (message: string) => void;
 };
 export type OpenResource = Pick<Resource, "id" | "kind"> & {
+  route?: string;
+  name?: string;
+  mime?: string | null;
+  space_id?: string;
+  parent_id?: string | null;
   document_type?: Resource["document_type"];
   versionId?: string;
 };
@@ -150,6 +156,8 @@ export function WorkspaceLink({
   );
 }
 export function useData<T = any>(path: string | null, revision = 0) {
+  const workspace = useContext(WorkspaceContext);
+  const account = workspace?.session.user.id ?? "bootstrap";
   const [state, setState] = useState<{
     data: T | null;
     error: string;
@@ -170,7 +178,8 @@ export function useData<T = any>(path: string | null, revision = 0) {
       error: "",
       path,
     }));
-    void api<T>(path, { signal: controller.signal })
+    const request = sharedRequest<T>(account, path, revision, retry);
+    void request.promise
       .then((data) => {
         if (!controller.signal.aborted)
           setState({ data, loading: false, error: "", path });
@@ -179,8 +188,11 @@ export function useData<T = any>(path: string | null, revision = 0) {
         if (!controller.signal.aborted && error?.name !== "AbortError")
           setState({ data: null, loading: false, error: error.message, path });
       });
-    return () => controller.abort();
-  }, [path, revision, retry]);
+    return () => {
+      controller.abort();
+      request.release();
+    };
+  }, [path, revision, retry, account]);
   return { ...state, data: state.path === path ? state.data : null, reload };
 }
 export function useAction() {
@@ -303,15 +315,23 @@ export function ResourceIcon({
   size?: number;
 }) {
   const Icon =
-    resource.document_type === "canvas" ? Network : resource.document_type === "math" ? Sigma : resource.document_type === "text" ? Braces : resource.document_type === "image" ? FileImage : resource.kind === "shortcut"
-      ? Link2
-      : resource.kind === "folder"
-        ? Folder
-        : resource.kind === "note"
-          ? FileText
-          : resource.mime?.startsWith("image/")
+    resource.document_type === "canvas"
+      ? Network
+      : resource.document_type === "math"
+        ? Sigma
+        : resource.document_type === "text"
+          ? Braces
+          : resource.document_type === "image"
             ? FileImage
-            : File;
+            : resource.kind === "shortcut"
+              ? Link2
+              : resource.kind === "folder"
+                ? Folder
+                : resource.kind === "note"
+                  ? FileText
+                  : resource.mime?.startsWith("image/")
+                    ? FileImage
+                    : File;
   return <Icon size={size} strokeWidth={1.6} aria-hidden="true" />;
 }
 export function bytes(value?: number | string | null) {

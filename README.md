@@ -56,8 +56,14 @@ and a new build.
 - Groups and accounts: invitations, administrative/content roles, profiles/avatars,
   membership and ownership flows, sessions, password MFA/recovery and optional
   explicitly linked institutional identity.
-- Research tools: Math Studio, layered Image Studio, Text Studio, shared media/text/
+- File-specific views: Math Studio, layered Image Studio, Text Studio, shared media/text/
   CSV/XLSX/PDF viewers, reading annotations, reference libraries and task/review workflows.
+- [Reading marks](docs/READING_MARKS.md): editable bookmarks, right-margin navigation,
+  private-first Markdown/math annotation cards, offline drafts and shared discussion.
+- [Document minimap](docs/MINIMAP.md): opt-in visual/source miniatures, scroll-only
+  navigation, unified research markers and configurable appearance with live preview.
+- [Image/Mermaid viewer](docs/VISUAL_VIEWER.md): intrinsic zoom, comparison,
+  metadata, figure inspection, exports and private-first placement annotations.
 - Canvas: collaborative rich-text and file cards, names/tags, side-aware connections,
   positioning/alignment, locks/automatic height, protected previews, card discussions
   and PNG/JPG/SVG/PDF/Markdown/JSON Canvas/portable ZIP exports.
@@ -69,6 +75,11 @@ and a new build.
   Provider-assisted OCR/AI and private Office conversion stay disabled until configured.
 
 See the [documentation index](docs/README.md) for behavior and feature limits.
+All file types open directly in resource tabs: `/workbench/notes/:id`,
+`/canvas/:id`, `/math/:id`, `/image/:id`, `/text/:id` and media/document views
+under the same `/workbench` prefix. Explorer's New menu creates notes, canvases,
+equations, drawings and text files together. Old `/tools` links redirect; there is
+no separate Tools landing or creation tab. See [file-first navigation](docs/FILE_WORKBENCH.md).
 The [theme authoring criteria](docs/THEME_AUTHORING.md) define consistent tokens,
 typography, controls, accessibility, licensing and acceptance checks for developers.
 

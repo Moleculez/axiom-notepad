@@ -35,7 +35,7 @@ test.each([
 ])("completed quote has an editable, exactly mapped body: %s", (source) => {
   const p = project(source);
   expect(p.activeProse[0].quote).toBeDefined();
-  for (const line of p.activeProse[0].quote!.lines)
+  for (const line of (p.activeProse[0].list ?? p.activeProse[0].quote)!.lines)
     for (let at = line.bodyFrom; at <= line.to; at++)
       expect(p.map.sourceAt(p.map.positionAt(at))).toBe(at);
   expect(p.doc.check()).toBeUndefined();

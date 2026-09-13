@@ -8,6 +8,8 @@ export * from "./section-numbers";
 export * from "./math-contract";
 export * from "./table-clipboard";
 export * from "./engine";
+export * from "./metadata";
 export * from "./containers";
+export * from "./block-boundaries";
 export * from "./statistics";
 export * from "./footnotes";

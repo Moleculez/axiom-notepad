@@ -70,7 +70,7 @@ test("parenthesized inline math stays source while typing and renders on departu
 
 for (const prefix of ["", "> ", "> > ", "> - ", "- > "]) {
   test(
-    "typed bracket fences create and collapse without losing their opener: " +
+    "typed bracket fences keep empty editing until explicit removal: " +
       JSON.stringify(prefix),
     async ({ page }) => {
       await reset(page, prefix, prefix.length);
@@ -93,15 +93,21 @@ for (const prefix of ["", "> ", "> > ", "> - ", "- > "]) {
         6 + before.length + 1,
       );
       await page.keyboard.press("Backspace");
-      await shared(page, "Peer\n\n" + opener, 6 + opener.length);
-      await expect(tex(page)).toHaveCount(0);
+      await shared(page, "Peer\n\n" + before + after, 6 + before.length);
+      await expect(tex(page)).toBeFocused();
       await page.keyboard.press("ControlOrMeta+z");
       await shared(page, "Peer\n\n" + before + "x" + after);
       await page.keyboard.press("ControlOrMeta+Shift+z");
-      await shared(page, "Peer\n\n" + opener, 6 + opener.length);
-      await page.keyboard.press("Enter");
-      await expect(tex(page)).toBeFocused();
       await shared(page, "Peer\n\n" + before + after, 6 + before.length);
+      await page.keyboard.press("Backspace");
+      await shared(
+        page,
+        "Peer\n\n" +
+          prefix +
+          (bodyPrefix.includes(">") ? "\n" + bodyPrefix : "\n\n"),
+        6 + prefix.length,
+      );
+      await expect(tex(page)).toHaveCount(0);
     },
   );
 }
@@ -218,7 +224,7 @@ test("checking the first task without an editing caret never opens source; Space
   // Deliberately clicking the text still opens its normal source-prose editor.
   await pane(page).locator(".axiom-task strong").click();
   await expect(pane(page).locator(".axiom-source-prose")).toContainText(
-    "- [x] **Task**",
+    "**Task**",
   );
 });
 

@@ -3,11 +3,11 @@ import { fixture, origin, caret } from "./native-editor-helpers";
 
 test.beforeAll(() => {
   if (
-    origin !== "http://localhost:3002" ||
+    !["http://localhost:3002", "http://localhost:3004"].includes(origin) ||
     process.env.NEXT_PUBLIC_AXIOM_EDITOR_ENGINE !== "milkdown"
   )
     throw new Error(
-      "Editor vNext acceptance requires the isolated Milkdown candidate on port 3002.",
+      "Editor vNext acceptance requires the isolated current-engine candidate on port 3002 or 3004.",
     );
 });
 

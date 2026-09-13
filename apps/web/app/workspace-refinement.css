@@ -19,9 +19,9 @@
 }
 .ws-app .workspace-action-row > :is(input, .button) {
   min-height: calc(var(--size-ui) * 2.8);
-  height: calc(var(--size-ui) * 2.8);
+  height: auto;
   margin: 0;
-  padding-block: 0;
+  padding-block: 0.6em;
 }
 .group-card-grid {
   display: grid;
@@ -31,9 +31,9 @@
 .group-membership-card,
 .group-invitations {
   border: 1px solid var(--line);
-  border-radius: var(--radius);
+  border-radius: var(--panel-radius);
   background: var(--paper);
-  padding: 24px;
+  padding: var(--panel-padding);
   min-width: 0;
 }
 .group-membership-card {
@@ -42,6 +42,8 @@
 }
 .group-card-heading {
   display: flex;
+  flex-wrap: wrap;
+  gap: 0.75em;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 20px;
@@ -216,7 +218,7 @@
   grid-template-columns: 1fr 1fr;
   width: 100%;
   overflow: hidden;
-  border-radius: 6px;
+  border-radius: var(--control-radius-small);
 }
 .theme-family-samples > span {
   display: flex;

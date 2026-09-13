@@ -62,7 +62,7 @@ test("a bare fence shows optional suggestions without intercepting Enter or empt
     page.locator('[data-pane="0"] .axiom-embedded .cm-content'),
   ).toBeFocused();
   await page.keyboard.press("Backspace");
-  await shared(page, "```");
+  await shared(page, "\n\n");
   await expect(menu(page)).toHaveCount(0);
 });
 
@@ -73,7 +73,7 @@ for (const [opener, ending, content] of [
   ["- ~~~~", "\n", "x"],
   ["```py", "\n", "x"],
 ] as const) {
-  test(`changing a generated block's language still collapses to its original opener: ${opener} ${JSON.stringify(content)}`, async ({
+  test(`changed languages retain empty rich editing until explicit block removal: ${opener} ${JSON.stringify(content)}`, async ({
     page,
   }) => {
     const before = "Before" + ending.repeat(2),
@@ -88,42 +88,55 @@ for (const [opener, ending, content] of [
     await input.press("Tab");
     const body = page.locator('[data-pane="0"] .axiom-embedded .cm-content');
     await expect(body).toBeFocused();
+    const empty = await page.evaluate(
+      () => window.editorLab.snapshot()[0].source,
+    );
     if (content) await page.keyboard.type(content);
     const populated = await page.evaluate(
       () => window.editorLab.snapshot()[0].source,
     );
     expect(populated).toContain("julia");
+    if (content) {
+      await page.keyboard.press("Backspace");
+      await shared(page, empty);
+      await expect(body).toBeFocused();
+    }
     const updates = await page.evaluate(
       () => window.editorLab.snapshot()[0].updates,
     );
     await page.keyboard.press("Backspace");
-    await shared(page, peer + before + opener + after);
+    const prefix = opener.replace(/(?:`{3,}|~{3,}).*$/, "");
+    const removed = peer + before + prefix + ending.repeat(2) + after;
+    await shared(page, removed);
     await expect(body).toHaveCount(0);
     await expect(menu(page)).toHaveCount(0);
     await expect(page.locator('[data-pane="0"] .axiom-prose')).toBeFocused();
     expect(await page.evaluate(() => window.editorLab.domSelection(0))).toEqual(
       {
-        anchor: peer.length + before.length + opener.length,
-        head: peer.length + before.length + opener.length,
+        anchor: peer.length + before.length + prefix.length,
+        head: peer.length + before.length + prefix.length,
       },
     );
     expect(
       await page.evaluate(() => window.editorLab.snapshot()[0].updates),
     ).toBe(updates + 1);
     await page.keyboard.press("ControlOrMeta+z");
-    await shared(page, populated);
+    await shared(page, empty);
     await expect(body).toBeFocused();
     await page.keyboard.press("ControlOrMeta+Shift+z");
-    await shared(page, peer + before + opener + after);
+    await shared(page, removed);
     expect(await page.evaluate(() => window.editorLab.domSelection(0))).toEqual(
       {
-        anchor: peer.length + before.length + opener.length,
-        head: peer.length + before.length + opener.length,
+        anchor: peer.length + before.length + prefix.length,
+        head: peer.length + before.length + prefix.length,
       },
     );
     await expect(menu(page)).toHaveCount(0);
-    await page.keyboard.press("Backspace");
-    await shared(page, peer + before + opener.slice(0, -1) + after);
+    await page.keyboard.type("Plain");
+    await shared(
+      page,
+      peer + before + prefix + "Plain" + ending.repeat(2) + after,
+    );
   });
 }
 
@@ -136,15 +149,16 @@ test("deletion dismisses suggestions after peer rebasing but fresh typing can re
   await page.evaluate(() => window.editorLab.remote(1, 0, 0, "Peer\n\n"));
   await page.keyboard.type("x");
   await page.keyboard.press("Backspace");
-  await shared(page, "Peer\n\n```");
+  await page.keyboard.press("Backspace");
+  await shared(page, "Peer\n\n\n\n");
   await expect(menu(page)).toHaveCount(0);
-  await page.keyboard.type("ju");
+  await page.keyboard.type("```ju");
   await expect(menu(page)).toBeVisible();
   await page.keyboard.press("Tab");
-  await shared(page, "Peer\n\n```julia");
+  await shared(page, "Peer\n\n```julia\n\n");
 });
 
-test("changing an imported or peer-owned block's language never claims its closing fence", async ({
+test("imported and peer-owned fences persist through content deletion until empty Backspace", async ({
   page,
 }) => {
   for (const existing of ["imported", "peer header", "peer body"]) {
@@ -165,9 +179,11 @@ test("changing an imported or peer-owned block's language never claims its closi
     await page.keyboard.press("Backspace");
     await shared(page, "```julia\n\n```\n\n");
     await expect(
-      page.locator('[data-pane="0"] .axiom-source-prose'),
-    ).toHaveText("```julia\n\n```");
+      page.locator('[data-pane="0"] .axiom-embedded .cm-content'),
+    ).toBeFocused();
     await expect(menu(page)).toHaveCount(0);
+    await page.keyboard.press("Backspace");
+    await shared(page, "\n\n");
   }
 });
 
@@ -195,7 +211,10 @@ for (const prefix of ["```", "> ```", "- ```", "~~~~"]) {
       page.locator('[data-pane="0"] .axiom-embedded .cm-content'),
     ).toBeFocused();
     await page.keyboard.press("Backspace");
-    await shared(page, before + prefix + "julia" + after);
+    await shared(
+      page,
+      before + prefix.replace(/(?:`{3,}|~{3,}).*$/, "") + "\r\n\r\n" + after,
+    );
   });
 }
 

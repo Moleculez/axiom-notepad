@@ -1,9 +1,5 @@
 /* Workspace chrome. Content typography remains governed by appearance.css. */
 :root {
-  --control-radius: var(--radius);
-  --card-radius: calc(var(--radius) * 1.35);
-  --panel-radius: var(--card-radius);
-  --window-radius: calc(var(--radius) * 1.8);
   --chrome-background: var(--sidebar);
   --material-filter: none;
   --glass-opacity: 80%;
@@ -544,15 +540,19 @@ select:focus-visible {
   position: fixed;
   inset: 0;
   margin: auto;
-  width: min(var(--dialog-width, 560px), calc(100vw - 32px));
+  width: min(var(--dialog-width, 520px), calc(100vw - 48px));
   max-width: calc(100vw - 32px);
-  max-height: calc(100dvh - 32px);
+  max-height: calc(100dvh - 48px);
   padding: 0;
   overflow: hidden;
   border-radius: var(--window-radius);
   border: 1px solid var(--line);
   box-shadow: var(--shadow);
   text-align: start;
+  background: var(--paper);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: var(--size-ui);
 }
 .dialog[open] {
   display: flex;
@@ -576,8 +576,8 @@ select:focus-visible {
 .dialog > .dialog-heading,
 .dialog:has(.appearance-settings) > .dialog-heading {
   margin: 0;
-  padding: 22px 26px;
-  border-bottom: 1px solid var(--line);
+  padding: 24px 24px 18px;
+  border-bottom: 0;
   gap: 18px;
   flex: 0 0 auto;
   align-items: start;
@@ -598,8 +598,9 @@ select:focus-visible {
   margin-top: 6px;
 }
 .dialog-heading .icon-button {
-  background: var(--surface);
-  border-radius: 50%;
+  background: transparent;
+  border-radius: var(--control-radius);
+  flex-shrink: 0;
 }
 .dialog-heading .icon-button:hover {
   background: var(--hover);
@@ -608,23 +609,67 @@ select:focus-visible {
   min-height: 0;
   overflow: auto;
   overscroll-behavior: contain;
-  padding: 24px 26px;
+  padding: 4px 24px 24px;
   scrollbar-width: thin;
+  scrollbar-gutter: stable;
+  flex: 1 1 auto;
+}
+.dialog-form {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  margin: 0;
+}
+.dialog-body > label + label,
+.dialog-body > fieldset + fieldset {
+  margin-top: 18px;
+}
+.dialog-body > label {
+  display: grid;
+  gap: 7px;
+}
+.dialog label:has(> input:is([type="checkbox"], [type="radio"])) {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 9px;
+  margin-block: 12px;
+  line-height: 1.5;
+}
+.dialog input:is([type="checkbox"], [type="radio"]) {
+  width: 1em;
+  height: 1em;
+  min-height: 0;
+  flex: 0 0 1em;
+  margin: 0;
+  accent-color: var(--accent);
+}
+.dialog-body input:not([type="checkbox"]):not([type="radio"]),
+.dialog-body select,
+.dialog-body textarea {
+  min-width: 0;
+  max-width: 100%;
+}
+.dialog-spacer {
+  flex: 1;
 }
 .dialog-body > :first-child {
   margin-top: 0;
 }
 .dialog-footer {
-  position: sticky;
-  bottom: -24px;
-  z-index: 3;
+  position: static;
+  flex: 0 0 auto;
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  margin: 24px -26px -24px;
-  padding: 18px 26px;
+  margin: 0;
+  padding: 16px 24px;
   border-top: 1px solid var(--line);
   background: var(--paper);
+  align-items: center;
+  justify-content: flex-end;
 }
 .dialog-body .button {
   white-space: normal;

@@ -22,6 +22,31 @@ function pendingFetch() {
   return fetcher;
 }
 
+test.each(["GET", "HEAD"])(
+  "navigation preparation cancels %s reads but preserves writes and a canceled navigation",
+  async (method) => {
+    pendingFetch();
+    const { api } = await import("../apps/web/lib/client");
+    const caller = new AbortController();
+    const reading = api("spaces", { method });
+    const writing = api("spaces", { method: "POST", signal: caller.signal });
+    let writeSettled = false;
+    const acknowledged = writing.finally(() => {
+      writeSettled = true;
+    });
+    window.dispatchEvent(new Event("beforeunload"));
+    await expect(reading).rejects.toMatchObject({ name: "AbortError" });
+    expect(writeSettled).toBe(false);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => Response.json({ ready: true })),
+    );
+    await expect(api("spaces")).resolves.toEqual({ ready: true });
+    caller.abort();
+    await expect(acknowledged).rejects.toMatchObject({ name: "AbortError" });
+  },
+);
+
 test("departing pages cancel requests and cannot launch delayed background reads", async () => {
   const fetcher = pendingFetch();
   const { api } = await import("../apps/web/lib/client");

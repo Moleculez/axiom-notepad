@@ -20,6 +20,15 @@
   --sidebar-width: 248px;
   --panel-width: 300px;
   --radius: 12px;
+  /* Shared chrome geometry/type also serves isolated editors and previews. */
+  --control-radius: var(--radius);
+  --control-radius-small: calc(var(--radius) * 0.5);
+  --card-radius: calc(var(--radius) * 1.35);
+  --panel-radius: var(--card-radius);
+  --window-radius: calc(var(--radius) * 1.8);
+  --size-ui-small: calc(var(--size-ui) * 0.85);
+  --size-ui-caption: calc(var(--size-ui) * 0.75);
+  --panel-padding: calc(var(--size-ui) * 1.5);
   --row-space: 10px;
   --selection: #b8daca;
   --focus: #216c78;

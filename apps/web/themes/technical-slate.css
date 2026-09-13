@@ -1,6 +1,3 @@
-[data-theme-pack="technical-slate"] .canvas-card {
-  border-radius: var(--radius);
-}
 [data-theme-pack="technical-slate"]
   .canvas-card:where(:not(.is-selected, .is-editing, .is-connection-target)) {
   box-shadow: var(--shadow);
@@ -13,7 +10,8 @@
   border-color: var(--line);
   background-color: var(--surface);
 }
-[data-theme-pack="technical-slate"] .settings-card {
+[data-theme-pack="technical-slate"]
+  .settings-card:where(:not(.settings-stage .settings-card)) {
   border-color: var(--line);
   background-color: var(--surface);
 }

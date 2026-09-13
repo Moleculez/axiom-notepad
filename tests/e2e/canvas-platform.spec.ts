@@ -38,13 +38,16 @@ test.afterAll(async () => {
 });
 
 for (const kind of ["math", "image", "canvas", "text"])
-  test(`Creating ${kind} replaces the creation tab and its history`, async ({}, info) => {
+  test(`Creating ${kind} uses the shared dialog without retaining a creation tab`, async ({}, info) => {
     test.setTimeout(90000);
     const page = f.page;
     await page.goto(`/workbench/tools/${kind}/new?space=${spaceId}`);
-    await page.getByLabel("Project name").fill(`Tab replacement ${kind}`);
+    const dialog = page.getByRole("dialog");
+    await dialog
+      .getByLabel("Name", { exact: true })
+      .fill(`Tab replacement ${kind}`);
     await expect(
-      page.getByRole("button", { name: "Create project", exact: true }),
+      dialog.getByRole("button", { name: "Create", exact: true }),
     ).toBeEnabled();
     const before = await page.evaluate(() =>
       JSON.parse(
@@ -55,10 +58,11 @@ for (const kind of ["math", "image", "canvas", "text"])
         )!,
       ),
     );
-    await page
-      .getByRole("button", { name: "Create project", exact: true })
-      .click();
-    await expect(page).toHaveURL(new RegExp(`/tools/${kind}/[a-f0-9-]{36}$`));
+    await dialog.getByRole("button", { name: "Create", exact: true }).click();
+    await expect(dialog).toBeHidden();
+    await expect(page).toHaveURL(
+      new RegExp(`/workbench/${kind}/[a-f0-9-]{36}$`),
+    );
     const after = await page.evaluate(() =>
       JSON.parse(
         localStorage.getItem(
@@ -68,9 +72,8 @@ for (const kind of ["math", "image", "canvas", "text"])
         )!,
       ),
     );
-    expect(after.tabs.length).toBe(before.tabs.length);
-    expect(after.active).toBe(before.active);
-    const tab = after.tabs.find((t: any) => t.id === before.active);
+    expect(after.tabs.length).toBeLessThanOrEqual(before.tabs.length + 1);
+    const tab = after.tabs.find((t: any) => t.id === after.active);
     expect(tab.path).not.toContain("/new");
     expect(
       tab.history.some((p: string) => p.includes(`/tools/${kind}/new`)),
@@ -95,21 +98,12 @@ for (const kind of ["math", "image", "canvas", "text"])
     });
   });
 
-test("A creation finishing in the background replaces only its originating tab", async () => {
+test("File creation is single-submit and keeps its dialog guarded while pending", async () => {
   const page = f.page;
   await page.goto(`/workbench/tools/text/new?space=${spaceId}`);
-  await page.getByLabel("Project name").fill("Background creation");
-  const tabs = () =>
-    page.evaluate(() =>
-      JSON.parse(
-        localStorage.getItem(
-          Object.keys(localStorage).find((k) =>
-            k.startsWith("axiom:application-tabs:"),
-          )!,
-        )!,
-      ),
-    );
-  const creation = (await tabs()).active;
+  const dialog = page.getByRole("dialog", { name: "New plain text" });
+  await dialog.getByLabel("Name", { exact: true }).fill("Guarded creation");
+  let requests = 0;
   let release!: () => void, intercepted!: () => void;
   const hold = new Promise<void>((resolve) => {
       release = resolve;
@@ -117,34 +111,29 @@ test("A creation finishing in the background replaces only its originating tab",
     started = new Promise<void>((resolve) => {
       intercepted = resolve;
     });
-  await page.route("**/api/v1/tools", async (route) => {
+  await page.route("**/api/v1/files/new", async (route) => {
     if (route.request().method() === "POST") {
+      requests++;
       intercepted();
       await hold;
     }
     await route.continue();
   });
   try {
-    await page
-      .getByRole("button", { name: "Create project", exact: true })
-      .click();
+    await dialog.getByRole("button", { name: "Create", exact: true }).click();
     await started;
-    await page.getByRole("tab").first().click();
-    const active = (await tabs()).active,
-      url = page.url();
-    expect(active).not.toBe(creation);
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeVisible();
+    await expect(
+      dialog.getByRole("button", { name: "Creating…", exact: true }),
+    ).toBeDisabled();
     release();
-    await expect
-      .poll(
-        async () =>
-          (await tabs()).tabs.find((t: any) => t.id === creation).path,
-      )
-      .toMatch(/\/tools\/text\/[a-f0-9-]{36}$/);
-    expect((await tabs()).active).toBe(active);
-    expect(page.url()).toBe(url);
+    await expect(dialog).toBeHidden();
+    await expect(page).toHaveURL(/\/workbench\/text\/[a-f0-9-]{36}$/);
+    expect(requests).toBe(1);
   } finally {
     release();
-    await page.unroute("**/api/v1/tools");
+    await page.unroute("**/api/v1/files/new");
   }
 });
 
@@ -338,20 +327,14 @@ test("Explorer blank-space menu has keyboard submenus and creates native files i
     .then(async (n) => (n ? area : page.locator(".ws-resource-container")));
   await (await region).click({ button: "right", position: { x: 30, y: 180 } });
   await expect(
-    page.getByRole("menuitem", { name: /Research file/ }),
+    page.getByRole("menuitem", { name: /New canvas/ }),
     JSON.stringify(await call(f.member.request, "spaces")),
   ).toBeEnabled();
-  await page.getByRole("menuitem", { name: /Research file/ }).focus();
+  await page.getByRole("menuitem", { name: /Text & data/ }).focus();
   await page.keyboard.press("ArrowRight");
-  await expect(
-    page.getByRole("menuitem", { name: "Canvas", exact: true }),
-  ).toBeVisible();
+  await expect(page.getByRole("menuitem", { name: /CSV/ })).toBeVisible();
   await page.keyboard.press("Escape");
-  await expect(
-    page.getByRole("menuitem", { name: /Research file/ }),
-  ).toBeVisible();
-  await page.getByRole("menuitem", { name: /Text & data/ }).hover();
-  await page.getByRole("menuitem", { name: "Plain text", exact: true }).click();
+  await page.getByRole("menuitem", { name: /New plain text/ }).click();
   await page.getByRole("dialog").getByLabel("Name").fill("Experiment log");
   await page
     .getByRole("dialog")
@@ -547,6 +530,40 @@ test("MCP OAuth consent, tools, approval, stale edits and revoked tokens are enf
   };
   const source = await tool("note_read", { spaceId, id: f.note.id });
   expect(source.contentHash).toMatch(/^[a-f\d]{64}$/);
+  const privateCard = await tool("note_comment", {
+    spaceId,
+    id: f.note.id,
+    payload: {
+      body: "Private automation note",
+      kind: "annotation",
+      bodyFormat: "markdown",
+    },
+  });
+  expect(privateCard.isError).not.toBe(true);
+  expect(privateCard.visibility).toBe("private");
+  const hiddenCard = await call(
+    f.member.request,
+    `notes/${f.note.id}/comments`,
+    {
+      body: "Another author's private evidence",
+      kind: "annotation",
+    },
+  );
+  const visibleCards = await tool("note_comments", { spaceId, id: f.note.id });
+  expect(JSON.stringify(visibleCards)).toContain("Private automation note");
+  expect(JSON.stringify(visibleCards)).not.toContain(hiddenCard.id);
+  const thread = await tool("note_comment", {
+    spaceId,
+    id: f.note.id,
+    payload: { body: "Shared review" },
+  });
+  const reply = await tool("note_comment", {
+    spaceId,
+    id: f.note.id,
+    payload: { body: "Follow-up", parentId: thread.id },
+  });
+  expect(reply.isError).not.toBe(true);
+  expect(reply.parent_id).toBe(thread.id);
   const edit = {
     mutationId: randomUUID(),
     noteId: f.note.id,
@@ -687,11 +704,11 @@ test("Selected offline work opens after reload and a new Canvas replays without 
   await page.goto(
     `/workbench/tools/canvas/new?space=${spaceId}&folder=${folder.id}`,
   );
-  await page.getByLabel("Project name").fill("Offline canvas");
-  await page
-    .getByRole("button", { name: "Create project", exact: true })
-    .click();
-  await expect(page).toHaveURL(/\/tools\/canvas\/[a-f0-9-]{36}$/);
+  const creation = page.getByRole("dialog", { name: "New canvas" });
+  await creation.getByLabel("Name", { exact: true }).fill("Offline canvas");
+  await creation.getByRole("button", { name: "Create", exact: true }).click();
+  await expect(creation).toBeHidden();
+  await expect(page).toHaveURL(/\/workbench\/canvas\/[a-f0-9-]{36}$/);
   const id = page.url().split("/").at(-1)!;
   await page
     .getByRole("button", { name: "Add text card", exact: true })
