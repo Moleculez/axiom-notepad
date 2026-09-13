@@ -31,7 +31,7 @@ self.addEventListener('fetch', event => {
     event.respondWith(fetch(event.request).catch(async () => synthetic(await caches.match(url.pathname.startsWith('/workbench') ? '/workbench' : '/'))));
     return;
   }
-  if (url.pathname.startsWith('/_next/static/') || self.AXIOM_ASSETS.includes(url.pathname) || ['/icon.svg', '/icons/192.png', '/icons/512.png', '/manifest.webmanifest'].includes(url.pathname)) {
+  if (url.pathname.startsWith('/_next/static/') || self.AXIOM_ASSETS.includes(url.pathname) || ['/icon.svg', '/icons/180.png', '/icons/192.png', '/icons/512.png', '/manifest.webmanifest'].includes(url.pathname)) {
     event.respondWith(caches.match(event.request).then(cached => cached || fetch(event.request).then(response => {
       if (response.ok) { const copy = response.clone(); event.waitUntil(caches.open(CACHE).then(cache => cache.put(event.request, copy))); }
       return response;

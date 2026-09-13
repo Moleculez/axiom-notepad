@@ -1,4 +1,5 @@
 "use client";
+import BrandMark from "./BrandMark";
 import { confirmAction } from "../lib/app-prompt";
 import { printDocument } from "../lib/print-document";
 import { openExternalEditorLink } from "../lib/editor-links";
@@ -1042,7 +1043,7 @@ export default function Notebook() {
   if (booting)
     return (
       <div className="boot-screen">
-        <span className="brand-mark">a</span>
+        <BrandMark />
         <p>Opening your workspace…</p>
       </div>
     );
@@ -1074,7 +1075,7 @@ export default function Notebook() {
                 navigate("home");
               }}
             >
-              <span className="brand-mark">a</span>
+              <BrandMark />
               <span>
                 Axiom<span className="brand-dot">.</span>
               </span>

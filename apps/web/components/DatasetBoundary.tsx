@@ -1,4 +1,5 @@
 "use client";
+import BrandMark from "./BrandMark";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   allowVerifiedOfflineDataset,
@@ -92,7 +93,7 @@ export default function DatasetBoundary({ children }: { children: ReactNode }) {
     );
   return (
     <main className="ws-boot">
-      <span className="brand-mark">a</span>
+      <BrandMark />
       <p role={state === "error" ? "alert" : "status"}>
         {state === "reset"
           ? "Clearing replaced development data and signing out…"

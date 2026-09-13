@@ -1,4 +1,5 @@
 "use client";
+import BrandMark from "../BrandMark";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ChevronDown,
@@ -470,7 +471,7 @@ export default function WorkspaceApp() {
   if (booting)
     return (
       <div className="ws-boot">
-        <span className="brand-mark">a</span>
+        <BrandMark />
         <Loading label="Opening your research workspace…" />
       </div>
     );
@@ -534,7 +535,7 @@ export default function WorkspaceApp() {
                   className="brand"
                   aria-label="Axiom home"
                 >
-                  <span className="brand-mark">a</span>
+                  <BrandMark />
                   <span>
                     Axiom<span className="brand-dot">.</span>
                   </span>

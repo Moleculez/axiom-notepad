@@ -1,4 +1,5 @@
 "use client";
+import BrandMark from "./BrandMark";
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 
@@ -19,7 +20,7 @@ export default function WorkspaceEntry() {
     <Notebook />
   ) : (
     <main className="ws-boot" role="status">
-      <span className="brand-mark">a</span>
+      <BrandMark />
       <p>Opening your workspace…</p>
     </main>
   );

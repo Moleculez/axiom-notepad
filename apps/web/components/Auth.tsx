@@ -1,4 +1,5 @@
 "use client";
+import BrandMark from "./BrandMark";
 import { useEffect, useState } from "react";
 import {
   ArrowRight,
@@ -133,7 +134,7 @@ export default function Auth({
     <main className="auth-layout">
       <section className="auth-story">
         <a className="brand" href="/">
-          <span className="brand-mark">a</span>
+          <BrandMark />
           <span>
             Axiom<span className="brand-dot">.</span>
           </span>

@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { brandVersion } from "@axiom/shared/brand";
 import "../../../packages/shared/assets/latin-modern/fonts.css";
 import "@fontsource/inter/400.css";
 import "@fontsource/inter/500.css";
@@ -91,7 +92,14 @@ export const metadata: Metadata = {
   description:
     "A collaborative notebook for mathematics, physics, and machine learning. Write, connect, and think together.",
   manifest: "/manifest.webmanifest",
-  icons: { icon: "/icon.svg", apple: "/icon.svg" },
+  icons: {
+    icon: { url: `/icon.svg?v=${brandVersion}`, type: "image/svg+xml" },
+    apple: {
+      url: `/icons/180.png?v=${brandVersion}`,
+      sizes: "180x180",
+      type: "image/png",
+    },
+  },
 };
 export const viewport: Viewport = {
   width: "device-width",

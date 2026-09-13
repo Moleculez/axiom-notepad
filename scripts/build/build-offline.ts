@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { brandVersion } from "../../packages/shared/src/brand";
 import { readdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 const output = join("apps/web", process.env.AXIOM_DIST_DIR || ".next");
@@ -27,6 +28,8 @@ const files = [
   ...(await assets("apps/web/public/tool-assets", "", "/tool-assets/")),
   "/icons/192.png",
   "/icons/512.png",
+  `/icon.svg?v=${brandVersion}`,
+  ...[180, 192, 512].map((size) => `/icons/${size}.png?v=${brandVersion}`),
 ];
 await writeFile(
   join(output, "offline-assets.js"),

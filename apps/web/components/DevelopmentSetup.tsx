@@ -1,4 +1,5 @@
 "use client";
+import BrandMark from "./BrandMark";
 import { useState } from "react";
 import { ArrowRight, LockKeyhole } from "lucide-react";
 import { post } from "../lib/client";
@@ -18,7 +19,7 @@ export default function DevelopmentSetup({
   return (
     <main className="development-setup">
       <section className="development-setup-card">
-        <span className="brand-mark">a</span>
+        <BrandMark />
         <span className="eyebrow">LOCAL DEVELOPMENT · FIRST RUN</span>
         <h1>A fresh space for your research</h1>
         <p>

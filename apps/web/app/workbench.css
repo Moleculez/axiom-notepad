@@ -210,8 +210,7 @@
 .ws-brand-area .brand-mark {
   width: 30px;
   height: 30px;
-  font-size: 25px;
-  border-radius: 9px;
+  border-radius: var(--control-radius-small);
 }
 .ws-app-nav {
   display: flex;

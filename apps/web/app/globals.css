@@ -284,16 +284,26 @@ kbd {
   justify-content: center;
   align-items: center;
   width: 32px;
-  height: 33px;
-  background: #344f60;
-  color: #faf9f4;
-  font-family: var(--font-prose);
-  font-style: italic;
-  font-size: calc(var(--size-ui) * 2.7692);
+  height: 32px;
+  background: var(--accent, #334d64);
+  color: var(--on-accent, #f9f8f4);
+  flex: none;
   line-height: 1;
-  border-radius: 8px;
-  padding: 0 3px 4px 0;
-  letter-spacing: -3px;
+  border-radius: var(--control-radius-small, 8px);
+  padding: 3px;
+}
+.brand-mark svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  flex: none;
+}
+@media (forced-colors: active) {
+  .brand-mark {
+    color: CanvasText;
+    background: Canvas;
+    outline: 1px solid CanvasText;
+  }
 }
 .avatar {
   display: flex;
@@ -522,8 +532,7 @@ kbd {
 }
 .boot-screen .brand-mark {
   width: 45px;
-  height: 46px;
-  font-size: calc(var(--size-ui) * 3.6923);
+  height: 45px;
 }
 .app-shell {
   display: flex;
@@ -552,7 +561,6 @@ kbd {
 .sidebar-brand .brand-mark {
   height: 29px;
   width: 29px;
-  font-size: calc(var(--size-ui) * 2.5385);
 }
 .sidebar-toggle {
   opacity: 0;
