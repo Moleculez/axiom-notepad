@@ -1,4 +1,4 @@
-import { Server, type Document, type Connection } from "@hocuspocus/server";
+import { Server, type Connection } from "@hocuspocus/server";
 import type pg from "pg";
 import * as Y from "yjs";
 import { query, pool, transaction } from "@axiom/shared/db";
@@ -25,6 +25,8 @@ import {
 } from "@axiom/shared/integration-security";
 import { requireScope } from "@axiom/shared/workspace-service";
 import { HttpError } from "@axiom/shared/access";
+import { revisionCommandSchema } from "@axiom/shared/revisions";
+import { executeRevisionCommand } from "@axiom/shared/revision-command";
 const committedCommand = Symbol("durably-committed-command");
 
 type Context = {
@@ -60,13 +62,17 @@ function enqueue<T>(room: string, work: () => Promise<T>): Promise<T> {
     .catch(() => {})
     .then(work);
   queues.set(room, next);
+  void next
+    .finally(() => {
+      if (queues.get(room) === next) queues.delete(room);
+    })
+    .catch(() => {});
   return next;
 }
 async function persist(room: string, document: Y.Doc) {
   await enqueue(room, async () => {
     const release = await acquireRoom(room);
     try {
-      const state = Buffer.from(Y.encodeStateAsUpdate(document));
       await transaction(async (client) => {
         await client.query(
           "SELECT pg_advisory_xact_lock_shared(hashtext('axiom:file-references'))",
@@ -83,9 +89,14 @@ async function persist(room: string, document: Y.Doc) {
         )
           return;
         const latest = await client.query(
-          "SELECT coalesce(max(id),0) AS revision FROM document_updates WHERE room=$1",
+          "SELECT greatest(coalesce((SELECT revision FROM documents WHERE room=$1),0),coalesce(max(id),0)) AS revision,count(*)::int AS pending FROM document_updates WHERE room=$1",
           [room],
         );
+        // Nothing changed: do not serialize, overwrite the binary state or
+        // rebuild search/link indexes. In particular deletion-only revisions
+        // are identified by the durable journal, never by a Yjs state vector.
+        if (!latest.rows[0].pending) return;
+        const state = Buffer.from(Y.encodeStateAsUpdate(document));
         await client.query(
           "INSERT INTO documents(room,note_id,state,revision) VALUES($1,$2,$3,$4) ON CONFLICT(room) DO UPDATE SET state=excluded.state,revision=excluded.revision,updated_at=now()",
           [room, room.split(":")[0], state, latest.rows[0].revision],
@@ -324,6 +335,69 @@ const server = new Server<Context>({
       throw null;
     }
     if (
+      url.pathname === "/internal/revision-command" &&
+      request.method === "POST"
+    ) {
+      if (
+        !process.env.SYNC_SECRET ||
+        request.headers.authorization !== "Bearer " + process.env.SYNC_SECRET
+      ) {
+        response.writeHead(403);
+        response.end();
+        throw null;
+      }
+      try {
+        const chunks: Buffer[] = [];
+        let bytes = 0;
+        for await (const chunk of request) {
+          bytes += chunk.length;
+          if (bytes > 100_000)
+            throw new HttpError(413, "Revision command is too large.");
+          chunks.push(Buffer.from(chunk));
+        }
+        const input = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+        if (
+          typeof input.actorId !== "string" ||
+          typeof input.sessionId !== "string"
+        )
+          throw new HttpError(401, "A signed-in user is required.");
+        const command = revisionCommandSchema.parse(input.command);
+        const room = command.noteId + ":" + command.generation;
+        const result = await enqueue(room, async () => {
+          const release = await acquireRoom(room);
+          try {
+            const loaded = instance.documents.get(room);
+            const applied = await transaction((client) =>
+              executeRevisionCommand(
+                client,
+                loaded,
+                input.actorId,
+                input.sessionId,
+                command,
+              ),
+            );
+            if (loaded && applied.update && !applied.restore)
+              Y.applyUpdate(loaded, applied.update, committedCommand);
+            return applied.result;
+          } finally {
+            release();
+          }
+        });
+        response.writeHead(200, { "content-type": "application/json" });
+        response.end(JSON.stringify(result));
+      } catch (e) {
+        response.writeHead(e instanceof HttpError ? e.status : 409, {
+          "content-type": "application/json",
+        });
+        response.end(
+          JSON.stringify({
+            error: e instanceof Error ? e.message : "Revision action failed.",
+          }),
+        );
+      }
+      throw null;
+    }
+    if (
       url.pathname === "/internal/document-command" &&
       request.method === "POST"
     ) {
@@ -546,7 +620,7 @@ const server = new Server<Context>({
                 const {
                   rows: [saved],
                 } = await client.query(
-                  "SELECT d.state,n.source_format FROM documents d JOIN notes n ON n.id=d.note_id WHERE d.room=$1 AND n.generation=$2",
+                  "SELECT d.state,d.revision,n.source_format FROM documents d JOIN notes n ON n.id=d.note_id WHERE d.room=$1 AND n.generation=$2",
                   [room, Number(room.split(":")[1])],
                 );
                 const { rows: updates } = await client.query(
@@ -561,7 +635,11 @@ const server = new Server<Context>({
                 Y.applyUpdate(recovered, new Uint8Array(saved.state));
                 for (const update of updates)
                   Y.applyUpdate(recovered, new Uint8Array(update.data));
-                const revision = updates.at(-1)!.id;
+                const revision = String(
+                  BigInt(saved.revision) > BigInt(updates.at(-1)!.id)
+                    ? saved.revision
+                    : updates.at(-1)!.id,
+                );
                 await client.query(
                   "UPDATE documents SET state=$2,revision=$3,updated_at=now() WHERE room=$1",
                   [
@@ -610,11 +688,12 @@ const maintenance = setInterval(async () => {
   if (maintaining) return;
   maintaining = true;
   try {
-    for (const [room, doc] of server.hocuspocus.documents as Map<
-      string,
-      Document
-    >) {
-      await persist(room, doc);
+    const dirty = await query<{ room: string }>(
+      "SELECT DISTINCT room FROM document_updates LIMIT 100",
+    );
+    for (const { room } of dirty) {
+      const doc = server.hocuspocus.documents.get(room);
+      if (doc) await persist(room, doc);
     }
     await flushPendingReferenceIndex();
     await saveDueCheckpoints();

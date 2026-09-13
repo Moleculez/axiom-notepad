@@ -24,6 +24,10 @@ tested workflows from remaining device, accessibility and provider checks.
   citations, Mermaid and a hierarchical outline.
 - **Keep the context.** Linked notes, private-first annotation cards, discussions,
   editable reading bookmarks, a configurable minimap and an image/diagram viewer.
+- **Review deliberately.** Rendered/source version comparisons, named milestones,
+  guarded restores, separate Markdown/math suggestions, assigned reviews and changes
+  since your last visit. Image Studio adds shared cloud drafts and recovery heads.
+  See [version history and review](docs/VERSION_REVIEW.md).
 - **Connect the evidence.** Collaborative Canvas with rich text and file cards,
   labeled connections, embedded previews, layout controls and portable exports.
 - **Work as a group.** Invitations, roles, personal and team spaces, shared projects,

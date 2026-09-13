@@ -19,6 +19,7 @@ import { processTrashOperation } from "./trash-api";
 import { processFileOperation } from "./file-workflows-api";
 import { withAuditContext } from "./audit-context";
 import { activeConnection } from "./integration-security";
+import { pruneImageDraftAssets } from "./image-cloud-api";
 
 export async function processRecurrences() {
   const rules = await query(
@@ -304,6 +305,7 @@ export async function processWorkspaceJob() {
   return true;
 }
 export async function workspaceMaintenance() {
+  await pruneImageDraftAssets();
   await processRecurrences();
   const expired = await query(
     "UPDATE upload_sessions SET status='cancelled',error='The upload expired after seven days.' WHERE status IN ('uploading','failed') AND expires_at<now() RETURNING *",

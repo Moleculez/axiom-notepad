@@ -63,6 +63,9 @@ import { workspaceEvents } from "@axiom/shared/workspace-events";
 import { uploadsApi } from "@axiom/shared/uploads-api";
 import { filePreviewApi } from "@axiom/shared/file-preview-api";
 import { canvasPreviewApi } from "@axiom/shared/canvas-preview-api";
+import { revisionApi } from "@axiom/shared/revision-api";
+import { imageCloudApi } from "@axiom/shared/image-cloud-api";
+import { resourceReviewApi } from "@axiom/shared/resource-review-api";
 import { researchToolsApi } from "@axiom/shared/research-tools-api";
 import { fileCreateApi } from "@axiom/shared/file-create-api";
 import { integrationApi } from "@axiom/shared/integration-api";
@@ -180,6 +183,21 @@ async function handleRequest(
     if (!session) throw new HttpError(401, "Please sign in.");
     const user = session.user;
     setAuditActor(user.id);
+    const imageCloudResponse = await imageCloudApi(request, path, user.id);
+    if (imageCloudResponse) return imageCloudResponse;
+    const resourceReviewResponse = await resourceReviewApi(
+      request,
+      path,
+      user.id,
+    );
+    if (resourceReviewResponse) return resourceReviewResponse;
+    const revisionResponse = await revisionApi(
+      request,
+      path,
+      user.id,
+      session.session.id,
+    );
+    if (revisionResponse) return revisionResponse;
     if (!principal) {
       const integration = await integrationApi(request, path, user.id);
       if (integration) return integration;

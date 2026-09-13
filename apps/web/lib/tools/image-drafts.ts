@@ -4,6 +4,10 @@ export type ImageDraft = {
   baseVersion: string | null;
   updatedAt: string;
 };
+type StoredImageDraft = Omit<ImageDraft, "blob"> & {
+  blob: Blob | ArrayBuffer;
+  mime?: string;
+};
 async function database(userId: string) {
   if (localStorage.getItem(SIGN_OUT_PENDING))
     throw new Error("Sign-out is in progress.");
@@ -22,24 +26,47 @@ export async function imageDraft(
   id: string,
   value?: ImageDraft | null,
 ) {
+  // Some WebKit environments reject Blob records in IndexedDB. Store cloneable
+  // bytes, but continue accepting existing Blob drafts without a migration.
+  const stored = value
+    ? {
+        ...value,
+        blob: await value.blob.arrayBuffer(),
+        mime: value.blob.type,
+      }
+    : value;
   const db = await database(userId);
   try {
-    return await new Promise<ImageDraft | undefined>((resolve, reject) => {
-      const tx = db.transaction(
-          "drafts",
-          value === undefined ? "readonly" : "readwrite",
-          { durability: "strict" },
-        ),
-        store = tx.objectStore("drafts");
-      const r =
-        value === undefined
-          ? store.get(id)
-          : value === null
-            ? store.delete(id)
-            : store.put(value, id);
-      tx.oncomplete = () => resolve(value === undefined ? r.result : undefined);
-      tx.onabort = () => reject(tx.error);
-    });
+    const result = await new Promise<StoredImageDraft | undefined>(
+      (resolve, reject) => {
+        const tx = db.transaction(
+            "drafts",
+            value === undefined ? "readonly" : "readwrite",
+            { durability: "strict" },
+          ),
+          store = tx.objectStore("drafts");
+        const r =
+          value === undefined
+            ? store.get(id)
+            : value === null
+              ? store.delete(id)
+              : store.put(stored, id);
+        tx.oncomplete = () =>
+          resolve(value === undefined ? r.result : undefined);
+        tx.onabort = () => reject(tx.error);
+      },
+    );
+    if (!result) return undefined;
+    return {
+      baseVersion: result.baseVersion,
+      updatedAt: result.updatedAt,
+      blob:
+        result.blob instanceof Blob
+          ? result.blob
+          : new Blob([result.blob], {
+              type: result.mime ?? "application/vnd.axiom.image+zip",
+            }),
+    };
   } finally {
     db.close();
   }

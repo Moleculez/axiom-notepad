@@ -41,6 +41,8 @@ export interface ParsedDocument {
   definitions?: MarkdownNode[];
 }
 export interface RenderContext {
+  /** Read-only revision decorations; never supplied to source/export serializers. */
+  reviewRanges?: { from: number; to: number; kind: "add" | "remove" }[];
   /** Interactive preview locations; omitted from portable/export HTML. */
   visuals?: boolean;
   /** Interactive reading surfaces only; never enable for exported HTML. */

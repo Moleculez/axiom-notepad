@@ -31,6 +31,7 @@ export async function fileCreateApi(
       mutationId: z.uuid(),
       source: z.string().max(5_000_000).optional(),
       initialState: z.string().max(8_000_000).optional(),
+      settings: z.record(z.string(), z.unknown()).optional(),
     })
     .parse(await request.json());
   const type = fileTypes.find((t) => t.id === input.type)!,

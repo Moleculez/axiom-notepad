@@ -1,5 +1,6 @@
 "use client";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import {
   Check,
   Download,
@@ -46,6 +47,9 @@ import {
   type SettingsCategory,
 } from "../../lib/settings-registry";
 import { Avatar } from "./Pages";
+const AvatarCropDialog = dynamic(() => import("./AvatarCropDialog"), {
+  ssr: false,
+});
 
 type RetainedForm = { dirty: boolean; discard: () => void };
 const SettingsForms = createContext<Map<string, RetainedForm> | null>(null);
@@ -497,6 +501,7 @@ function ProfileForm({
     [base, setBase] = useState(profile),
     [links, setLinks] = useState(profile.links.join("\n")),
     [saved, setSaved] = useState(false),
+    [avatarFile, setAvatarFile] = useState<File | null>(null),
     action = useAction(),
     avatar = useRef<HTMLInputElement>(null);
   const normalizedLinks = links
@@ -529,255 +534,259 @@ function ProfileForm({
     setDraft((previous: any) => ({ ...previous, [key]: value }));
   };
   return (
-    <form
-      className="ws-settings-form"
-      onSubmit={(event) => {
-        event.preventDefault();
-        if (!dirty || action.busy || normalizedLinks.length > 8) return;
-        void action.run(async () => {
-          const value = await mutate(
-            "me/profile",
-            {
-              ...draft,
-              links: links
-                .split("\n")
-                .map((line: string) => line.trim())
-                .filter(Boolean),
-            },
-            "PATCH",
-          );
-          const next = { ...draft, ...value };
-          setDraft(next);
-          setBase(next);
-          setLinks(next.links.join("\n"));
-          setSaved(true);
-          onSaved();
-        });
-      }}
-    >
-      <fieldset className="settings-form-fields" disabled={action.busy}>
-        <section className="settings-form-section">
-          <header>
-            <h2>Identity</h2>
-            <p>How your collaborators see you in Axiom.</p>
-          </header>
-          <div className="ws-profile-photo">
-            <Avatar person={draft} />
-            <div>
-              <button
-                type="button"
-                className="button secondary"
-                disabled={action.busy}
-                onClick={() => avatar.current?.click()}
-              >
-                <Upload size={16} />
-                Change photo
-              </button>
-              <p className="ws-small muted">
-                PNG, JPEG, GIF or WebP, up to 5 MB. Images are resized and
-                metadata is removed. Photos update immediately.
-              </p>
+    <>
+      <form
+        className="ws-settings-form"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (!dirty || action.busy || normalizedLinks.length > 8) return;
+          void action.run(async () => {
+            const value = await mutate(
+              "me/profile",
+              {
+                ...draft,
+                links: links
+                  .split("\n")
+                  .map((line: string) => line.trim())
+                  .filter(Boolean),
+              },
+              "PATCH",
+            );
+            const next = { ...draft, ...value };
+            setDraft(next);
+            setBase(next);
+            setLinks(next.links.join("\n"));
+            setSaved(true);
+            onSaved();
+          });
+        }}
+      >
+        <fieldset className="settings-form-fields" disabled={action.busy}>
+          <section className="settings-form-section">
+            <header>
+              <h2>Identity</h2>
+              <p>How your collaborators see you in Axiom.</p>
+            </header>
+            <div className="ws-profile-photo">
+              <Avatar person={draft} />
+              <div>
+                <button
+                  type="button"
+                  className="button secondary"
+                  disabled={action.busy}
+                  onClick={() => avatar.current?.click()}
+                >
+                  <Upload size={16} />
+                  Change photo
+                </button>
+                <p className="ws-small muted">
+                  PNG, JPEG, GIF or WebP, up to 5 MB. Images are resized and
+                  metadata is removed. Crop and preview before saving your
+                  photo.
+                </p>
+              </div>
+              <input
+                ref={avatar}
+                type="file"
+                aria-label="Upload profile picture"
+                hidden
+                accept="image/png,image/jpeg,image/gif,image/webp"
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (!file) return;
+                  setAvatarFile(file);
+                  event.target.value = "";
+                }}
+              />
             </div>
-            <input
-              ref={avatar}
-              type="file"
-              hidden
-              accept="image/png,image/jpeg,image/gif,image/webp"
-              onChange={(event) => {
-                const file = event.target.files?.[0];
-                if (!file) return;
-                const body = new FormData();
-                body.set("file", file);
-                body.set("version", String(draft.version));
-                void action.run(async () => {
-                  const response = await fetch("/api/v1/me/avatar", {
-                    method: "POST",
-                    body,
-                  });
-                  const data = await response.json();
-                  if (!response.ok)
-                    throw new Error(data.error ?? "Photo upload failed.");
-                  setDraft((previous: any) => ({
-                    ...previous,
-                    image: data.image,
-                    version: data.version,
-                  }));
-                  setBase((previous: any) => ({
-                    ...previous,
-                    image: data.image,
-                    version: data.version,
-                  }));
-                  onSaved();
-                });
-                event.target.value = "";
-              }}
-            />
-          </div>
-          <div className="ws-form-grid">
+            <div className="ws-form-grid">
+              <label>
+                Full name
+                <input
+                  required
+                  maxLength={100}
+                  value={draft.name}
+                  onChange={(event) => set("name", event.target.value)}
+                />
+              </label>
+              <label>
+                Email address
+                <input value={draft.email} readOnly autoComplete="email" />
+                <small>
+                  Contact your administrator for account identity changes.
+                </small>
+              </label>
+            </div>
             <label>
-              Full name
+              Institution or affiliation
               <input
-                required
-                maxLength={100}
-                value={draft.name}
-                onChange={(event) => set("name", event.target.value)}
+                maxLength={200}
+                value={draft.affiliation}
+                onChange={(event) => set("affiliation", event.target.value)}
+                placeholder="Your lab, university, or research group"
+              />
+            </label>
+          </section>
+          <section className="settings-form-section">
+            <header>
+              <h2>Research profile</h2>
+              <p>Share your interests, background, and published work.</p>
+            </header>
+            <label>
+              Research interests
+              <input
+                maxLength={500}
+                value={draft.interests}
+                onChange={(event) => set("interests", event.target.value)}
+                placeholder="e.g. Scientific ML, dynamical systems, quantum information"
               />
             </label>
             <label>
-              Email address
-              <input value={draft.email} readOnly autoComplete="email" />
-              <small>
-                Contact your administrator for account identity changes.
-              </small>
-            </label>
-          </div>
-          <label>
-            Institution or affiliation
-            <input
-              maxLength={200}
-              value={draft.affiliation}
-              onChange={(event) => set("affiliation", event.target.value)}
-              placeholder="Your lab, university, or research group"
-            />
-          </label>
-        </section>
-        <section className="settings-form-section">
-          <header>
-            <h2>Research profile</h2>
-            <p>Share your interests, background, and published work.</p>
-          </header>
-          <label>
-            Research interests
-            <input
-              maxLength={500}
-              value={draft.interests}
-              onChange={(event) => set("interests", event.target.value)}
-              placeholder="e.g. Scientific ML, dynamical systems, quantum information"
-            />
-          </label>
-          <label>
-            Biography
-            <textarea
-              aria-label="Biography"
-              maxLength={3000}
-              rows={5}
-              value={draft.biography}
-              onChange={(event) => set("biography", event.target.value)}
-            />
-            <span className="settings-field-note">
-              <span>A short introduction for your group.</span>
-              <span>{draft.biography.length.toLocaleString()} / 3,000</span>
-            </span>
-          </label>
-          <label>
-            Research links (one per line, up to eight)
-            <textarea
-              aria-label="Research links (one per line, up to eight)"
-              aria-invalid={normalizedLinks.length > 8 || undefined}
-              rows={3}
-              value={links}
-              onChange={(event) => {
-                setLinks(event.target.value);
-                setSaved(false);
-              }}
-              placeholder="https://orcid.org/…"
-            />
-            <span className="settings-field-note">
-              <span>ORCID, publications, or your lab website.</span>
-              <span>{normalizedLinks.length} / 8 links</span>
-            </span>
-            {normalizedLinks.length > 8 && (
-              <small className="form-error" role="alert">
-                Keep up to eight research links before saving.
-              </small>
-            )}
-          </label>
-        </section>
-        <section className="settings-form-section">
-          <header>
-            <h2>Working rhythm</h2>
-            <p>Your local time and a realistic weekly planning target.</p>
-          </header>
-          <div className="ws-form-grid">
-            <label>
-              Time zone
-              <input
-                required
-                list="profile-timezones"
-                aria-label="Time zone"
-                value={draft.timezone}
-                onChange={(event) => set("timezone", event.target.value)}
+              Biography
+              <textarea
+                aria-label="Biography"
+                maxLength={3000}
+                rows={5}
+                value={draft.biography}
+                onChange={(event) => set("biography", event.target.value)}
               />
-              <datalist id="profile-timezones">
-                {[
-                  "UTC",
-                  "Asia/Shanghai",
-                  "Asia/Tokyo",
-                  "Asia/Singapore",
-                  "Europe/London",
-                  "Europe/Paris",
-                  "America/New_York",
-                  "America/Chicago",
-                  "America/Los_Angeles",
-                  "Australia/Sydney",
-                ].map((zone) => (
-                  <option key={zone} value={zone} />
-                ))}
-              </datalist>
+              <span className="settings-field-note">
+                <span>A short introduction for your group.</span>
+                <span>{draft.biography.length.toLocaleString()} / 3,000</span>
+              </span>
             </label>
             <label>
-              Weekly planning capacity (hours)
-              <input
-                type="number"
-                min={0}
-                max={168}
-                step="0.5"
-                value={draft.weeklyCapacity}
-                onChange={(event) =>
-                  set("weeklyCapacity", Number(event.target.value))
-                }
+              Research links (one per line, up to eight)
+              <textarea
+                aria-label="Research links (one per line, up to eight)"
+                aria-invalid={normalizedLinks.length > 8 || undefined}
+                rows={3}
+                value={links}
+                onChange={(event) => {
+                  setLinks(event.target.value);
+                  setSaved(false);
+                }}
+                placeholder="https://orcid.org/…"
               />
+              <span className="settings-field-note">
+                <span>ORCID, publications, or your lab website.</span>
+                <span>{normalizedLinks.length} / 8 links</span>
+              </span>
+              {normalizedLinks.length > 8 && (
+                <small className="form-error" role="alert">
+                  Keep up to eight research links before saving.
+                </small>
+              )}
             </label>
-          </div>
-        </section>
-      </fieldset>
-      <p className="ws-note">
-        Your name, affiliation, biography, interests, links, and time zone are
-        visible to people who share a group with you. Personal-space contents
-        are not.
-      </p>
-      <ErrorNotice message={action.error} />
-      {saved && (
-        <p role="status">
-          <Check size={15} />
-          Profile saved.
+          </section>
+          <section className="settings-form-section">
+            <header>
+              <h2>Working rhythm</h2>
+              <p>Your local time and a realistic weekly planning target.</p>
+            </header>
+            <div className="ws-form-grid">
+              <label>
+                Time zone
+                <input
+                  required
+                  list="profile-timezones"
+                  aria-label="Time zone"
+                  value={draft.timezone}
+                  onChange={(event) => set("timezone", event.target.value)}
+                />
+                <datalist id="profile-timezones">
+                  {[
+                    "UTC",
+                    "Asia/Shanghai",
+                    "Asia/Tokyo",
+                    "Asia/Singapore",
+                    "Europe/London",
+                    "Europe/Paris",
+                    "America/New_York",
+                    "America/Chicago",
+                    "America/Los_Angeles",
+                    "Australia/Sydney",
+                  ].map((zone) => (
+                    <option key={zone} value={zone} />
+                  ))}
+                </datalist>
+              </label>
+              <label>
+                Weekly planning capacity (hours)
+                <input
+                  type="number"
+                  min={0}
+                  max={168}
+                  step="0.5"
+                  value={draft.weeklyCapacity}
+                  onChange={(event) =>
+                    set("weeklyCapacity", Number(event.target.value))
+                  }
+                />
+              </label>
+            </div>
+          </section>
+        </fieldset>
+        <p className="ws-note">
+          Your name, affiliation, biography, interests, links, and time zone are
+          visible to people who share a group with you. Personal-space contents
+          are not.
         </p>
-      )}
-      <div className="settings-form-actions">
-        <span>
-          {dirty ? "Unsaved profile changes" : "Your profile is up to date"}
-        </span>
-        <button
-          type="button"
-          className="button secondary"
-          disabled={!dirty || action.busy}
-          onClick={() => {
-            setDraft(base);
-            setLinks(base.links.join("\n"));
+        <ErrorNotice message={action.error} />
+        {saved && (
+          <p role="status">
+            <Check size={15} />
+            Profile saved.
+          </p>
+        )}
+        <div className="settings-form-actions">
+          <span>
+            {dirty ? "Unsaved profile changes" : "Your profile is up to date"}
+          </span>
+          <button
+            type="button"
+            className="button secondary"
+            disabled={!dirty || action.busy}
+            onClick={() => {
+              setDraft(base);
+              setLinks(base.links.join("\n"));
+              setSaved(false);
+              action.setError("");
+            }}
+          >
+            Cancel changes
+          </button>
+          <button
+            className="button primary"
+            disabled={action.busy || !dirty || normalizedLinks.length > 8}
+          >
+            {action.busy ? "Saving…" : "Save profile"}
+          </button>
+        </div>
+      </form>
+      {avatarFile && (
+        <AvatarCropDialog
+          file={avatarFile}
+          version={draft.version}
+          onClose={() => setAvatarFile(null)}
+          onSaved={(data) => {
+            setDraft((previous: any) => ({
+              ...previous,
+              image: data.image,
+              version: data.version,
+            }));
+            setBase((previous: any) => ({
+              ...previous,
+              image: data.image,
+              version: data.version,
+            }));
+            setAvatarFile(null);
             setSaved(false);
-            action.setError("");
+            onSaved();
           }}
-        >
-          Cancel changes
-        </button>
-        <button
-          className="button primary"
-          disabled={action.busy || !dirty || normalizedLinks.length > 8}
-        >
-          {action.busy ? "Saving…" : "Save profile"}
-        </button>
-      </div>
-    </form>
+        />
+      )}
+    </>
   );
 }
 function SecuritySettings() {
@@ -1438,6 +1447,14 @@ export function StorageSettings({ scopeId }: { scopeId?: string } = {}) {
                 <div>
                   <dt>Previous versions</dt>
                   <dd>{bytes(storage.totals.versions)}</dd>
+                </div>
+                <div>
+                  <dt>Image working drafts</dt>
+                  <dd>{bytes(storage.totals.drafts ?? 0)}</dd>
+                </div>
+                <div>
+                  <dt>Generated previews</dt>
+                  <dd>{bytes(storage.totals.previews ?? 0)}</dd>
                 </div>
                 <div>
                   <dt>In trash</dt>

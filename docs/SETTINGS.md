@@ -97,7 +97,20 @@ profile links have visible limits; more than eight links blocks submission.
 Save changes is enabled only for a changed, valid form. Cancel changes restores
 that form's last saved values, without discarding pending appearance preferences.
 Saving disables the fields until the request settles; a failed save retains the
-draft for retry. Avatar changes still save immediately and are labeled accordingly.
+draft for retry.
+
+**Account → Profile → Change photo** opens a local crop dialog before uploading.
+Move the square selection, drag a corner to resize it, or enter exact dimensions;
+arrow keys adjust by one pixel (Shift by ten). The round preview shows the avatar
+as collaborators will see it. Reset restores a centered square; Cancel or Escape
+leaves the saved photo unchanged. **Save photo** uploads only the selected area,
+at 256 × 256 px, separately from other unsaved profile fields. The profile and
+account-toolbar photo refresh together. Image metadata is removed and EXIF
+orientation is respected. PNG/JPEG/GIF/WebP inputs are limited to 5 MB and
+20 megapixels; animated inputs use a still frame. Large photos use a bounded
+working preview, but the saved crop is sampled from the original resolution.
+Failed uploads keep the crop for retry; stale profile versions cannot overwrite
+newer changes. Unsaved crop selections are not durable across a page reload.
 
 Notifications groups in-app choices and delivery options, with matching switches,
 changed-state Save/Cancel actions and a saved baseline. Cancel affects only the
@@ -135,6 +148,9 @@ at production or the normal development database.
 `tests/e2e/settings-navigation.spec.ts` checks embedded groups, create/join/leave
 and invitation acceptance, retained profile drafts, Storage → Management, reloads,
 and footer removal on the port-3004 candidate.
+`tests/e2e/avatar-crop.spec.ts` checks crop/cancel/save, selected output pixels,
+EXIF orientation/removal, profile drafts, toolbar updates, invalid inputs, upload
+retry and stale-version protection on the isolated port-3004 candidate.
 `npm run test:dev` refreshes screenshots from port 8080 using disposable previews
 and canceled account edits, without saving live preferences or changing notes.
 See [editor verification](EDITOR_VNEXT.md) and the

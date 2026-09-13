@@ -33,7 +33,9 @@ async function fileUsage(
     (SELECT count(*)::int FROM resource_references WHERE version_id=ANY($1::uuid[]) AND NOT(source_id=ANY($2::uuid[]))) AS references,
     (SELECT count(*)::int FROM paper_annotations WHERE attachment_id=ANY($1::uuid[]) AND NOT deleted) AS annotations,
     (SELECT count(*)::int FROM reading_items WHERE target_type='attachment' AND target_id=ANY($1::uuid[]) AND NOT deleted) AS reading,
-    (SELECT count(*)::int FROM reference_attachments WHERE attachment_id=ANY($1::uuid[])) AS citations`,
+    (SELECT count(*)::int FROM reference_attachments WHERE attachment_id=ANY($1::uuid[])) AS citations,
+    (SELECT count(*)::int FROM image_cloud_drafts d WHERE (base_version=ANY($1::uuid[]) OR previous_base_version=ANY($1::uuid[])) AND NOT(resource_id=ANY($2::uuid[]))) AS drafts,
+    (SELECT count(*)::int FROM review_requests WHERE file_version_id=ANY($1::uuid[])) AS reviews`,
     [versions, ignoredSources],
   );
   return counts as {
@@ -59,6 +61,12 @@ export async function deleteVersions(
   client: pg.PoolClient,
   versions: string[],
 ) {
+  // Whole-project cleanup releases its own draft heads before deleting the
+  // versions they pin. A single-version cleanup is guarded by fileUsage.
+  await client.query(
+    "DELETE FROM image_cloud_drafts d WHERE EXISTS(SELECT 1 FROM file_versions v WHERE v.resource_id=d.resource_id AND v.id=ANY($1::uuid[])) AND NOT EXISTS(SELECT 1 FROM file_versions v WHERE v.resource_id=d.resource_id AND NOT(v.id=ANY($1::uuid[])))",
+    [versions],
+  );
   const { rows: blobs } = await client.query(
     "SELECT storage_key::text AS key FROM attachments WHERE id=ANY($1::uuid[]) UNION SELECT storage_key::text FROM file_derivatives WHERE version_id=ANY($1::uuid[])",
     [versions],
@@ -186,6 +194,19 @@ export async function resourceOperationsApi(
         } else {
           if (current.deleted_at)
             throw new HttpError(409, "Restore this file from trash first.");
+          // The resource lock also serializes image lease/head writes. A generic
+          // file restore cannot capture a newer layered draft as Before restore.
+          const {
+            rows: [imageDraft],
+          } = await client.query(
+            "SELECT EXISTS(SELECT 1 FROM image_cloud_drafts WHERE resource_id=$1) OR EXISTS(SELECT 1 FROM image_edit_leases WHERE resource_id=$1 AND expires_at>now()) AS active",
+            [id],
+          );
+          if (imageDraft.active)
+            throw new HttpError(
+              409,
+              "This image has a working draft or an active editor. Restore it from Image Studio history to preserve the draft first.",
+            );
           const { rows: derivatives } = await client.query(
             "SELECT * FROM file_derivatives WHERE version_id=$1",
             [file.id],
@@ -402,7 +423,7 @@ export async function deleteUnusedBlob(key: string) {
     const {
       rows: [used],
     } = await client.query(
-      "SELECT EXISTS(SELECT 1 FROM attachments WHERE storage_key=$1) OR EXISTS(SELECT 1 FROM file_derivatives WHERE storage_key=$1::uuid) OR EXISTS(SELECT 1 FROM user_profiles WHERE avatar_key=$1::uuid) OR EXISTS(SELECT 1 FROM workspace_exports WHERE storage_key=$1::uuid) OR EXISTS(SELECT 1 FROM upload_sessions WHERE storage_key=$1::uuid AND status IN ('uploading','verifying')) AS present",
+      "SELECT EXISTS(SELECT 1 FROM attachments WHERE storage_key=$1) OR EXISTS(SELECT 1 FROM file_derivatives WHERE storage_key=$1::uuid) OR EXISTS(SELECT 1 FROM user_profiles WHERE avatar_key=$1::uuid) OR EXISTS(SELECT 1 FROM workspace_exports WHERE storage_key=$1::uuid) OR EXISTS(SELECT 1 FROM upload_sessions WHERE storage_key=$1::uuid AND status IN ('uploading','verifying')) OR EXISTS(SELECT 1 FROM image_draft_assets WHERE storage_key=$1::uuid) AS present",
       [key],
     );
     if (used.present) return;

@@ -3,6 +3,165 @@
 Updated September 14, 2026. Historical logs are [archived separately](archive/VERIFICATION-2026-09-11.md).
 Do not treat historical browser totals or local build IDs as current release evidence.
 
+## September 14 version history, suggestions and save coordination
+
+[Version and review workflows](VERSION_REVIEW.md) now cover in-file comparisons,
+named milestones, guarded restore/copy/export, separate Markdown/math proposals,
+atomic decisions/Undo, assigned reviews, previous-visit baselines and shared image
+working drafts. Existing crop/avatar work and the current editor remain intact.
+
+- **1,762 unit tests across 76 files**, TypeScript, ESLint, theme validation,
+  documentation checks and the isolated production build pass. The build prepares
+  **703 offline assets**. Diff/projection tests include exact repeated-text anchors,
+  Unicode, overlapping peers, unchanged accepted source, bounded large-change
+  fallback, single-flight acknowledgement and durable-write microtask ordering.
+- The **built production candidate passes 44 of 45 review browser cases**:
+  15 Chromium, 15 Firefox and 14 WebKit. This includes a deliberately closed
+  editing socket and failed sync-token retries: **Mark reviewed** still records
+  the already-durable compared revision over HTTP with exact hash/settings and
+  permission checks. It does not need to force a document save. The remaining
+  WebKit failure is a reload-time sync-token access-control console diagnostic;
+  all permission, overlap and idempotent-decision assertions in that scenario
+  passed. It is not a fully green browser gate. Evidence:
+  `test-results/revision-production-verified-{chromium,firefox,webkit}`.
+- The final development-server review run passes **15 Chromium**, **15 Firefox**
+  and **14 of 15 WebKit** cases. Coverage includes arbitrary revision pairs,
+  rendered/source/unified comparisons, atomic tables/equations in light/dark,
+  metadata version conflicts, safe text/math/image restore, proposed insertions,
+  author/editor permissions, replies/decisions, bulk overlap rejection,
+  idempotent retry, two-tab draft ownership, sign-out and offline proposal recovery.
+  All assertions in the WebKit dark comparison scenario passed except its final
+  no-console-errors check: a full-page reload intermittently reports access-control
+  diagnostics for reads from the outgoing page. This is **not a green suite** and
+  the broader WebKit navigation gate remains open. Evidence:
+  `test-results/revision-final-{chromium,firefox,webkit}`.
+- **Nine current-editor/collaboration regressions pass** after the final code
+  changes: heading/source fidelity, ten-client convergence and local Undo,
+  offline rich/source peers, membership revocation, snapshot generation/Trash,
+  local-storage failure, contextual math/table controls, pinned status, discussion
+  anchors and quoted equations with offline export. Evidence:
+  `test-results/revision-final-editor-regression`.
+- **27 image-engine browser cases pass**, nine per browser, including cached
+  unchanged PNGs, pixel invalidation, Undo/reopening, crop/resize, masks/groups,
+  editable text, filters, PSD and allocation failures. Firefox can encode an
+  untouched transparent canvas differently from restored transparent pixels;
+  the test now decodes the saved PNG and checks actual pixels, not encoding identity.
+  Evidence: `test-results/revision-image-engine-final-verified`.
+- Fresh initialization, **18 → 24 upgrade** and idempotent migration rehearsals
+  pass. The actual draft-maintenance SQL passes a rollback-only staging rehearsal:
+  both recovery heads survive even when old/new assets share a path, both previews
+  and recent uploads survive, and expired orphans enqueue reference-safe cleanup.
+  Reversible decisions retain attachment versions independently of live indexing
+  and release those references on Undo. Reproduce with
+  `npx tsx scripts/verify/verify-revision-storage.ts` after isolated image fixtures.
+- Isolated synchronization fault injection passes: acknowledged edits survive
+  SIGKILL, denied database writes return a save error rather than success, binary
+  journals recover, and graceful shutdown drains pending writes. This is not a
+  full database/file backup-restore or Docker deployment rehearsal; neither was
+  repeated for this change.
+- Five repeated Chromium accept/Undo/reaccept cases and five Firefox math
+  restore/suggest cases pass after hardening stale-card and reconnect transitions.
+  Background list refresh no longer temporarily disables a button between pointer
+  down/up; only an outstanding action or required newer proposal version blocks it.
+  Earlier failed harness reports are retained, not counted as passing evidence.
+
+An earlier production run exposed the unnecessary editing-connection dependency
+in Mark reviewed; the final candidate above removes it and adds explicit connection-
+interruption coverage. A previous WebKit production run passed all 15 cases, but
+the subsequent console diagnostic means the intermittent navigation issue must
+not be declared resolved merely by retrying until a run passes.
+
+### Performance limit still open
+
+The opt-in same-machine editor benchmark **does not pass its full gate**.
+With 100,000 characters, the current Axiom rich surface measured input-to-frame
+p95 **38.6 / 37.3 / 37.7 ms** at top/middle/end (50 edits at each position).
+At 980,000 characters, top-of-document p95 was **2,685.2 ms**, above the 200 ms
+target; the run timed out at five minutes before completing the remaining rich
+locations. Evidence is `test-results/revision-editor-performance`. Near-million-
+character rich editing needs further projection/rendering work; this release
+must not be described as large-document performance-ready.
+
+A separate ten-sample Node smoke measurement of the new source diff, for one
+localized edit, recorded p95 **2.4 ms at 100k** and **13.4 ms at 980k** characters.
+This measures the diff algorithm only, not editing, worker transfer or painting.
+Comparison rendering and storage queues are bounded; that does not remove the
+existing rich-surface workload limit.
+
+### Local service and deployment boundary
+
+Only isolated staging on **3004/1236** was used for browser mutations and fault
+injection. Local development on **8080/1234** was forward-migrated to schema **24**,
+with original row values in **18 content, identity and file tables checked unchanged**.
+No working data was reset, reseeded or purged; web and sync health checks pass.
+No commit, push, public deployment or provider configuration was performed.
+
+Physical IME/clipboard, real Safari devices, assistive technology, real large
+research workloads and a matched database/file restore rehearsal remain deployment
+acceptance gates. Image draft assets are included in the backup inventory, but
+that implementation change alone is not a completed restore rehearsal.
+
+## September 14 crop, resize and profile pictures
+
+- Image Studio now has a shared crop/resize preview with pointer and keyboard
+  selection, aspect ratios, current dimensions, linked proportions, resampling,
+  cancellation and preflight size limits. Geometry changes are atomic and
+  undoable, use document coordinates, and retain groups and masks. The dialog
+  warns when transformed or nonuniformly resized text must become pixels.
+- Profile photo selection uses the same crop surface with a fixed square and a
+  round avatar preview. Only the selected area is uploaded, sampled from the
+  original image into 256 × 256 px; large inputs have a bounded working preview.
+  EXIF orientation, metadata removal, cancellation, retries, unsaved profile
+  drafts and existing profile-version conflict checks are retained.
+- **18 UI scenarios pass**, six each in Chromium, Firefox and WebKit. Coverage
+  includes crop handles/arrows/presets, cancel, undo/redo, save/reopen, invalid
+  dimensions, resampling, context menus/shortcuts, avatar output pixels,
+  orientation, metadata, upload retry, stale versions and account-toolbar refresh.
+  Light/dark previews and the avatar dialog have current screenshots; assertions
+  check the actual image surface fits beside the controls. Evidence is in
+  `test-results/image-crop-final-{chromium,firefox,webkit}`.
+- **24 image-engine browser cases pass**, eight per browser, covering document-
+  space crop/resize, rotated/grouped/masked layers, editable-text recovery,
+  bundle reopening, unchanged state after failed allocation and existing pixel,
+  selection, filter and PSD behavior. Evidence is in
+  `test-results/image-geometry-engine-current`.
+- Five existing Chromium image-import/recovery/authorization cases and the
+  existing profile draft/cancel/save/failure case pass again on this build.
+  Outputs are `test-results/image-copy-geometry-final-chromium` and
+  `test-results/avatar-profile-regression-final`.
+- **1,721 unit tests across 70 files**, TypeScript, ESLint, documentation checks
+  and the isolated production build pass (**687 offline assets**). Browser
+  mutation tests use only isolated staging on **3004/1236**. The existing
+  port-8080 development service and working data are preserved. These changes
+  have not been committed, pushed or deployed to production; physical-device
+  Safari and assistive-technology acceptance remain outside these checks.
+
+## September 14 image editing and recovery regression
+
+- Reproduced **Edit a copy** opening a transparent 1200 × 800 starter instead of
+  the selected 320 × 200 image. New projects already have an immutable blank
+  version, which previously bypassed the import. The loader now imports only into
+  the untouched initial template; saved versions and local drafts take priority.
+- Fixed the Markdown image viewer's edit action reaching a PDF-only metadata
+  check, and Save copy using an obsolete empty-version expectation. Metadata
+  remains permission-checked; paper annotations still reject non-PDF files.
+- WebKit rejected Blob objects during local recovery writes. Drafts now store
+  binary bytes and accept earlier Blob records when reading; leaving still waits
+  for the IndexedDB transaction to commit.
+- **15 browser scenarios pass**, five each in Chromium, Firefox and WebKit:
+  visible imported pixels, cloud save/reload, a pinned older image opened from a
+  Markdown note, Save copy followed by another save, recovery without re-fetching
+  the source, intentionally saved blank canvases, and metadata authorization.
+  Tests verify unchanged original image bytes/versions and Markdown. Fresh
+  evidence is under `test-results/image-edit-copy-current-{chromium,firefox,webkit}`.
+- **1,700 unit tests across 69 files**, TypeScript, ESLint and the isolated
+  production build pass (**685 offline assets**). Two existing Chromium viewer
+  regressions also pass: deletion access checks and source-safe image interaction
+  with keyboard access and dark-theme geometry.
+- Tests use only isolated staging on **3004/1236**. The existing port-8080
+  development service and working dataset are preserved; its direct local health
+  check returns 200. This fix has not been deployed or pushed.
+
 ## September 13–14 documentation and identity release review
 
 This review preserves the working development dataset and port-8080 service.

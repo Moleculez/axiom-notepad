@@ -33,7 +33,7 @@ const conflict = (current: unknown) =>
     },
     409,
   );
-async function attachmentAccess(user: string, id: string) {
+async function attachmentAccess(user: string, id: string, pdfOnly = true) {
   const { file, space } = await fileAccess(user, uuid.parse(id));
   const note = {
     id: file.note_id as string | null,
@@ -42,7 +42,7 @@ async function attachmentAccess(user: string, id: string) {
     space_id: space.id,
     role: space.role,
   };
-  if (file.mime !== "application/pdf")
+  if (pdfOnly && file.mime !== "application/pdf")
     throw new HttpError(400, "Choose a PDF attachment.");
   return { file, note, space };
 }
@@ -132,7 +132,13 @@ export async function researchApi(
     method = request.method,
     url = new URL(request.url);
   if (resource === "attachments" && ["meta", "annotations"].includes(action)) {
-    const { file, note, space } = await attachmentAccess(userId, id);
+    // Metadata also resolves image versions for the visual viewer. Paper
+    // annotations and reading actions still require PDF attachments.
+    const { file, note, space } = await attachmentAccess(
+      userId,
+      id,
+      action !== "meta",
+    );
     if (action === "meta" && method === "GET") {
       return json({
         id: file.id,

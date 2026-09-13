@@ -3,6 +3,13 @@ import {
   imageProjectManifest,
   isProjectPng,
 } from "@axiom/shared/research-tools";
+import {
+  cropError,
+  imageGeometryLimits,
+  imageSizeError,
+  keepsEditableText,
+  type ImageSampling,
+} from "./image-geometry";
 export const blendModes = [
   "source-over",
   "multiply",
@@ -56,8 +63,8 @@ type Entry = {
   bytes: number;
 };
 export const imageLimits = {
-  pixels: 16_000_000,
-  side: 8192,
+  pixels: imageGeometryLimits.pixels,
+  side: imageGeometryLimits.side,
   layers: 100,
   history: 128_000_000,
 };
@@ -67,18 +74,8 @@ export const imageFonts = [
   "JetBrains Mono",
 ] as const;
 export function imageCanvas(width: number, height: number) {
-  if (
-    !Number.isInteger(width) ||
-    !Number.isInteger(height) ||
-    width < 1 ||
-    height < 1 ||
-    width > imageLimits.side ||
-    height > imageLimits.side ||
-    width * height > imageLimits.pixels
-  )
-    throw new Error(
-      "Image dimensions must fit within 8,192 px per side and 16 megapixels.",
-    );
+  const error = imageSizeError(width, height);
+  if (error) throw new Error(error);
   const c = document.createElement("canvas");
   c.width = width;
   c.height = height;
@@ -119,6 +116,33 @@ export class ImageDocument {
   private past: Entry[] = [];
   private future: Entry[] = [];
   private listeners = new Set<() => void>();
+  private encoded = new WeakMap<
+    HTMLCanvasElement,
+    Promise<{ blob: Blob; hash: string; path: string }>
+  >();
+  private previewCache: {
+    revision: number;
+    value: Promise<{ blob: Blob; hash: string; path: string }>;
+  } | null = null;
+  private png(canvas: HTMLCanvasElement) {
+    let value = this.encoded.get(canvas);
+    if (!value) {
+      value = (async () => {
+        const blob = await canvasBlob(canvas);
+        const digest = await crypto.subtle.digest(
+          "SHA-256",
+          await blob.arrayBuffer(),
+        );
+        const hash = Array.from(new Uint8Array(digest), (b) =>
+          b.toString(16).padStart(2, "0"),
+        ).join("");
+        return { blob, hash, path: "layers/" + crypto.randomUUID() + ".png" };
+      })();
+      this.encoded.set(canvas, value);
+      void value.catch(() => this.encoded.delete(canvas));
+    }
+    return value;
+  }
   constructor(width = 1200, height = 800) {
     this.width = width;
     this.height = height;
@@ -130,7 +154,13 @@ export class ImageDocument {
       this.listeners.delete(fn);
     };
   }
-  changed() {
+  /** External canvas mutations must call changed(); owned operations invalidate
+   * individual canvases and pass false to retain other layers' encodings. */
+  changed(invalidatePixels = true) {
+    if (invalidatePixels) {
+      this.encoded = new WeakMap();
+      this.previewCache = null;
+    }
     this.revision++;
     this.listeners.forEach((fn) => fn());
   }
@@ -149,14 +179,14 @@ export class ImageDocument {
     let size = this.past.reduce((n, e) => n + e.bytes, 0);
     while (size > imageLimits.history && this.past.length > 1)
       size -= this.past.shift()!.bytes;
-    this.changed();
+    this.changed(false);
   }
   undo() {
     const entry = this.past.pop();
     if (entry) {
       entry.undo();
       this.future.push(entry);
-      this.changed();
+      this.changed(false);
     }
   }
   redo() {
@@ -164,7 +194,7 @@ export class ImageDocument {
     if (entry) {
       entry.redo();
       this.past.push(entry);
-      this.changed();
+      this.changed(false);
     }
   }
   select(id: string) {
@@ -325,7 +355,7 @@ export class ImageDocument {
       next.mask = imageCanvas(layer.mask.width, layer.mask.height);
       next.mask.getContext("2d")!.drawImage(layer.mask, 0, 0);
     }
-    this.changed();
+    this.changed(false);
   }
   setText(
     layer: ImageLayer | undefined,
@@ -551,11 +581,18 @@ export class ImageDocument {
       );
     const ctx = layer.canvas.getContext("2d")!,
       after = ctx.getImageData(x, y, w, h);
+    this.encoded.delete(layer.canvas);
     this.remember({
       label,
       bytes: w * h * 8,
-      undo: () => ctx.putImageData(clipped, x, y),
-      redo: () => ctx.putImageData(after, x, y),
+      undo: () => {
+        ctx.putImageData(clipped, x, y);
+        this.encoded.delete(layer.canvas);
+      },
+      redo: () => {
+        ctx.putImageData(after, x, y);
+        this.encoded.delete(layer.canvas);
+      },
     });
   }
   async filter(filter: string, amount: number) {
@@ -617,61 +654,103 @@ export class ImageDocument {
       worker.terminate();
     }
   }
-  resize(width: number, height: number, crop?: { x: number; y: number }) {
-    imageCanvas(width, height);
-    if (width * height * this.layers.length > 64_000_000)
-      throw new Error("Resizing exceeds the project pixel budget.");
-    const old = {
+  resize(
+    width: number,
+    height: number,
+    crop?: { x: number; y: number },
+    sampling: ImageSampling = "smooth",
+  ) {
+    const error =
+      imageSizeError(width, height, this.layers.length) ||
+      (crop ? cropError({ ...crop, width, height }, this) : "");
+    if (error) throw new Error(error);
+    if (
+      width === this.width &&
+      height === this.height &&
+      (!crop || (!crop.x && !crop.y))
+    )
+      return;
+    const snapshot = () => ({
       width: this.width,
       height: this.height,
-      canvases: this.layers.map((l) => ({
-        layer: l,
-        canvas: l.canvas,
-        mask: l.mask,
-        x: l.x,
-        y: l.y,
-      })),
-    };
-    for (const layer of this.layers) {
-      const next = imageCanvas(width, height),
-        ctx = next.getContext("2d")!;
-      if (crop) ctx.drawImage(layer.canvas, -crop.x, -crop.y);
-      else ctx.drawImage(layer.canvas, 0, 0, width, height);
-      layer.canvas = next;
-      if (layer.mask) {
-        const mask = imageCanvas(width, height);
-        if (crop)
-          mask.getContext("2d")!.drawImage(layer.mask, -crop.x, -crop.y);
-        else mask.getContext("2d")!.drawImage(layer.mask, 0, 0, width, height);
-        layer.mask = mask;
+      selection: this.selection ? structuredClone(this.selection) : null,
+      canvases: this.layers.map((layer) => ({ layer, values: { ...layer } })),
+    });
+    const old = snapshot(),
+      sx = crop ? 1 : width / this.width,
+      sy = crop ? 1 : height / this.height;
+    const output = new DOMMatrix()
+      .scale(sx, sy)
+      .translate(-(crop?.x ?? 0), -(crop?.y ?? 0));
+    // Prepare every replacement before mutation. A failed allocation must never
+    // leave only some layers resized. Bake in document coordinates so a rotated,
+    // moved or grouped layer does not jump when its canvas center changes.
+    const canvases = this.layers.map((layer) => {
+      const parent = this.layers.find((p) => p.id === layer.parent);
+      const matrix = output.multiply(layerMatrix(layer, parent));
+      const resample = (source: HTMLCanvasElement) => {
+        // Render geometry at its original resolution first, using exactly the
+        // same transform sequence as the artboard. Composing rotation into the
+        // resize matrix otherwise changes edge coverage in some canvas engines.
+        const projected = imageCanvas(old.width, old.height);
+        this.drawLayer(projected.getContext("2d")!, {
+          ...layer,
+          canvas: source,
+          mask: undefined,
+          visible: true,
+          opacity: 1,
+          blend: "source-over",
+        });
+        const result = imageCanvas(width, height),
+          ctx = result.getContext("2d")!;
+        ctx.imageSmoothingEnabled = sampling === "smooth";
+        ctx.imageSmoothingQuality = "high";
+        ctx.setTransform(output);
+        ctx.drawImage(projected, parent?.x ?? 0, parent?.y ?? 0);
+        return result;
+      };
+      const values: ImageLayer = {
+        ...layer,
+        canvas: resample(layer.canvas),
+        mask: layer.mask ? resample(layer.mask) : undefined,
+        x: 0,
+        y: 0,
+        rotation: 0,
+        scaleX: 1,
+        scaleY: 1,
+      };
+      if (layer.kind === "text") {
+        if (keepsEditableText(layer, sx, sy)) {
+          const origin = new DOMPoint(
+            layer.textOrigin?.x ?? 0,
+            layer.textOrigin?.y ?? 0,
+          ).matrixTransform(matrix);
+          values.textOrigin = { x: origin.x, y: origin.y };
+          values.fontSize = (layer.fontSize ?? 40) * sy;
+        } else {
+          // The dialog warns before applying this conversion; Undo restores the
+          // complete editable text record, not just its flattened appearance.
+          values.kind = "raster";
+          values.text = values.fontFamily = values.color = undefined;
+          values.textOrigin = values.fontSize = undefined;
+        }
       }
-      if (!crop) {
-        layer.x *= width / this.width;
-        layer.y *= height / this.height;
-      }
-    }
-    this.width = width;
-    this.height = height;
-    this.selection = null;
-    const after = {
-      width,
-      height,
-      canvases: this.layers.map((l) => ({
-        layer: l,
-        canvas: l.canvas,
-        mask: l.mask,
-        x: l.x,
-        y: l.y,
-      })),
-    };
+      return { layer, values };
+    });
+    const after = { width, height, selection: null, canvases };
     const apply = (s: typeof old) => {
       this.width = s.width;
       this.height = s.height;
-      s.canvases.forEach(({ layer, ...v }) => Object.assign(layer, v));
+      this.selection = s.selection ? structuredClone(s.selection) : null;
+      s.canvases.forEach(({ layer, values }) => Object.assign(layer, values));
     };
+    apply(after);
     this.remember({
       label: crop ? "Crop image" : "Resize image",
-      bytes: (old.width * old.height + width * height) * this.layers.length * 4,
+      bytes:
+        (old.width * old.height + width * height) *
+        this.layers.reduce((n, l) => n + (l.mask ? 2 : 1), 0) *
+        4,
       undo: () => apply(old),
       redo: () => apply(after),
     });
@@ -728,40 +807,51 @@ export class ImageDocument {
       },
     });
   }
-  async bundle() {
+  async snapshot() {
     const revision = this.revision,
-      zip = new JSZip();
-    const layers = [];
+      assets: { blob: Blob; hash: string; path: string }[] = [],
+      layers = [];
     for (const layer of this.layers) {
-      const asset = `layers/${layer.id}.png`;
-      zip.file(asset, await (await canvasBlob(layer.canvas)).arrayBuffer());
-      let mask: string | undefined;
-      if (layer.mask) {
-        mask = `layers/${crypto.randomUUID()}.png`;
-        zip.file(mask, await (await canvasBlob(layer.mask)).arrayBuffer());
-      }
-      layers.push({ ...layerData(layer), asset, mask });
+      const asset = await this.png(layer.canvas),
+        mask = layer.mask ? await this.png(layer.mask) : undefined;
+      assets.push(asset);
+      if (mask) assets.push(mask);
+      layers.push({ ...layerData(layer), asset: asset.path, mask: mask?.path });
     }
-    zip.file(
-      "preview.png",
-      await (
-        await canvasBlob(this.render(imageCanvas(this.width, this.height)))
-      ).arrayBuffer(),
-    );
-    zip.file(
-      "manifest.json",
-      JSON.stringify({
+    if (this.previewCache?.revision !== revision)
+      this.previewCache = {
+        revision,
+        value: this.png(this.render(imageCanvas(this.width, this.height))),
+      };
+    const pendingPreview = this.previewCache;
+    const preview = await pendingPreview.value.catch((error) => {
+      if (this.previewCache === pendingPreview) this.previewCache = null;
+      throw error;
+    });
+    if (this.revision !== revision)
+      throw new Error(
+        "Image changed while preparing its draft. The next completed operation will be saved.",
+      );
+    return {
+      revision,
+      project: imageProjectManifest.parse({
         format: "axiom-image",
         version: 1,
         width: this.width,
         height: this.height,
         layers,
       }),
-    );
-    if (revision !== this.revision)
-      throw new Error(
-        "The image changed while preparing its snapshot. Try saving again.",
-      );
+      assets,
+      preview,
+    };
+  }
+  async bundle() {
+    const snapshot = await this.snapshot(),
+      zip = new JSZip();
+    for (const asset of snapshot.assets)
+      zip.file(asset.path, await asset.blob.arrayBuffer());
+    zip.file("preview.png", await snapshot.preview.blob.arrayBuffer());
+    zip.file("manifest.json", JSON.stringify(snapshot.project));
     return zip.generateAsync({
       type: "blob",
       compression: "STORE",

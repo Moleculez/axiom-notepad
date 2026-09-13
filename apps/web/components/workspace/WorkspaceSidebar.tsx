@@ -2,6 +2,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import {
   Blocks,
+  ClipboardCheck,
   ChevronRight,
   Clock3,
   Folder,
@@ -110,6 +111,13 @@ export default function WorkspaceSidebar() {
         ))}
       </div>
       <SavedViews />
+      <WorkspaceLink
+        className={"ws-side-link " + (path === "/inbox" ? "active" : "")}
+        to="/inbox?view=reviews"
+      >
+        <ClipboardCheck size={17} />
+        Review inbox
+      </WorkspaceLink>
       <div
         className="ws-tree-section"
         onContextMenu={(event) => {

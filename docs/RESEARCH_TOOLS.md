@@ -27,6 +27,10 @@ Typora parity.
   equation numbering, foreground/paper colors, font size and export resolution.
   Switching modes is not an authored edit. A peer update during visual editing
   retains the visual draft and refuses to overwrite the shared equation.
+- Math history now compares source and rendering settings, names milestones and
+  safely restores both. Checkpoints include pending settings with a version check.
+  Math suggestions use a separate visual/source projection; accepted equations
+  change only after an editor decides. See [version and review workflows](VERSION_REVIEW.md).
 - Source-mode LaTeX autocomplete: type `\` or a command prefix, or request
   suggestions with Ctrl+Space. Use arrows to choose, Enter/Tab to insert, Escape
   to dismiss, and Tab/Shift+Tab to navigate template arguments. Suggestions
@@ -64,12 +68,34 @@ Typora parity.
   rotation/flips, resize, merge, and worker-based image adjustments. Pixel-history
   entries store affected regions. PNG/JPEG/WebP, editable `.axiom-image` bundles
   and common 8-bit RGB PSD interchange are available.
+- **Crop** opens a preview with draggable corners, move/draw selection, exact
+  coordinates, aspect-ratio presets and keyboard adjustment. A rectangular
+  selection seeds the crop; Cancel does not change the project. **Resize** opens
+  with the current dimensions, linked proportions, 25/50/100/200% presets and
+  smooth or nearest-neighbor resampling. Both appear in the toolbar and artboard
+  context menu; shortcuts are **C** and **Ctrl/Cmd+Alt+I**. Apply affects all layers
+  in document coordinates, retains groups/masks, and supports Undo/Redo and saved
+  version reopening. Invalid sizes fail before modifying any layer.
 - Image projects use a 90-second edit lease with fenced saves, an expected source
   version, idempotent commits, immutable version history and saved-version
   discussions. Heartbeats extend the lease; a conflicting session is read-only.
   Local IndexedDB recovery is account-scoped. Leaving with unpublished work offers
   a durable local draft first; full page exits also release the lease. Older cloud
   versions and original imported images are never overwritten.
+- Shared image working drafts now autosave cached layer assets after 3 seconds
+  idle / 15 seconds maximum. Metadata-only edits reuse PNGs; both the current and
+  preceding cloud heads are recoverable and included in quotas/backups. **Save
+  version** creates an immutable milestone. History includes split/wipe comparisons,
+  copies/exports and guarded restore with a **Before restore** milestone; generic
+  Explorer restore refuses to bypass an active draft. This is exclusive leased
+  image editing, not simultaneous multi-user painting.
+- **Edit a copy** imports the displayed immutable image version into the new
+  project's untouched starter canvas. Saved edits and recoverable local drafts
+  take precedence over import URL parameters on reopening. Imports can autosave as
+  shared working drafts but stay unpublished until Save version; Save copy uses the new project's version fence.
+  Local recovery stores binary bytes for WebKit compatibility and still reads
+  existing Blob drafts. Attachment metadata supports images without relaxing
+  file permissions or the PDF-only paper-annotation contract.
 - One file-preview surface for Explorer quick previews and full file tabs.
   Native audio/video playback has speed, loop, local WebVTT
   captions and timestamp links; images have zoom/pan and Edit a copy. Text has
@@ -102,6 +128,10 @@ Typora parity.
   free-transform handles, arbitrary nested groups and Photoshop-grade healing are
   unfinished; the current healing brush is a softened sampled-clone operation.
 - Canvas resize/crop is destructive but undoable, not a live adjustment layer.
+  Plain text stays editable through cropping or uniform resizing. Transformed
+  text, nonuniform text resizing, or a new font size outside 8–500 px requires
+  rasterization to retain its appearance; the dialog warns before applying.
+  Undo restores the editable text as well as its pixels and dimensions.
   Text and shape tools are not vector-design tools. PSD decoding still runs on the
   main thread within explicit size/memory bounds; pixel filters run in workers.
 - Editable image bundles are used for saved projects, local recovery and export.

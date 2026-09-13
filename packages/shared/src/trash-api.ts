@@ -222,7 +222,7 @@ async function checkItems(
   }
   const { rows: protectedItems } = await client.query(
     `SELECT r.id, CASE
-    WHEN EXISTS(SELECT 1 FROM review_requests WHERE note_id=r.note_id) THEN 'Formal review evidence must be retained.'
+    WHEN EXISTS(SELECT 1 FROM review_requests WHERE note_id=r.note_id OR resource_id=r.id) THEN 'Formal review evidence must be retained.'
     WHEN EXISTS(SELECT 1 FROM upload_sessions WHERE (resource_id=r.id OR parent_id=r.id) AND status IN ('uploading','verifying','failed')) THEN 'Finish or cancel transfers targeting this item.'
     WHEN EXISTS(SELECT 1 FROM file_versions v JOIN paper_annotations a ON a.attachment_id=v.id WHERE v.resource_id=r.id AND NOT a.deleted) THEN 'This file has annotations.'
     WHEN EXISTS(SELECT 1 FROM file_versions v JOIN reading_items a ON a.target_id=v.id AND a.target_type='attachment' WHERE v.resource_id=r.id AND NOT a.deleted) THEN 'This file is in a reading list or bookmark.'

@@ -91,7 +91,8 @@ export async function api<T = any>(
   else options.signal?.addEventListener("abort", abort, { once: true });
   pageRequests.set(
     controller,
-    ["GET", "HEAD"].includes(options.method ?? "GET"),
+    ["GET", "HEAD"].includes(options.method ?? "GET") ||
+      (options.method === "POST" && path.endsWith("/sync-token")),
   );
   try {
     if (

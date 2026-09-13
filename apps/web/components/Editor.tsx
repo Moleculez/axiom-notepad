@@ -12,6 +12,7 @@ import {
   HocuspocusProviderWebsocket,
 } from "@hocuspocus/provider";
 import { LocalPersistence } from "../lib/persistence";
+import { SaveCoordinator } from "../lib/save-coordinator";
 import { acquireDocument, releaseDocument } from "../lib/document-sessions";
 import {
   type FormatCommand,
@@ -49,6 +50,7 @@ export type CommentAnchor = {
   generation: number;
 };
 export interface EditorHandle {
+  reviewBinding: () => NativeBinding | null;
   markAnchor: (
     from: number,
     to: number,
@@ -177,6 +179,7 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(props, ref) {
   useImperativeHandle(
     ref,
     () => ({
+      reviewBinding: () => viewRef.current?.binding ?? null,
       execute,
       jumpToCollaborator: (clientId) =>
         viewRef.current?.jumpToPeer(clientId) ?? false,
@@ -379,7 +382,6 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(props, ref) {
     let alive = true,
       localRevision = 0,
       parseVersion = 0,
-      saveTimer: ReturnType<typeof setTimeout> | undefined,
       connected = false,
       accessUnavailable = false,
       temporaryAuthorizationFailure = false,
@@ -540,7 +542,8 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(props, ref) {
           JSON.stringify({ type: "save-check", id }),
         );
       });
-    flushRef.current = sendCheck;
+    const saves = new SaveCoordinator(sendCheck);
+    flushRef.current = () => saves.flush();
     const transport = new HocuspocusProviderWebsocket({
       autoConnect: false,
       url:
@@ -629,15 +632,16 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(props, ref) {
       onSynced: () => {
         if (alive) {
           parse();
-          void sendCheck().catch(() => {});
+          saves.reconnect();
+          void saves
+            .confirm()
+            .catch(() => {})
+            .finally(() => saves.schedule());
         }
       },
       onUnsyncedChanges: ({ number }) => {
         if (number === 0 && alive && connected && !quarantined) {
-          clearTimeout(saveTimer);
-          saveTimer = setTimeout(() => {
-            void sendCheck().catch(() => {});
-          }, 50);
+          saves.schedule();
         }
       },
       onAuthenticationFailed: () => {
@@ -658,6 +662,13 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(props, ref) {
       },
       onClose: ({ event }) => {
         connected = false;
+        for (const waiter of waiters.current.values())
+          waiter.reject(
+            new Error(
+              "Connection changed before this save was confirmed. Reconnect and retry.",
+            ),
+          );
+        waiters.current.clear();
         if (alive)
           localStatus(
             accessUnavailable
@@ -787,22 +798,22 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(props, ref) {
       editorMenu: (x, y, at) =>
         view.openBlockMenu(x, y, { anchor: at, head: at }),
     });
-    const unsubscribe = binding.subscribe(() => {
-      localRevision++;
-      parseVersion++;
-      clearTimeout(saveTimer);
-      if (alive)
-        localStatus(
-          accessUnavailable
-            ? "Access changed · local copy retained"
-            : connected
-              ? "Saving…"
-              : "Saved locally · offline",
-        );
-      saveTimer = setTimeout(() => {
-        void sendCheck().catch(() => {});
-      }, 600);
-    });
+    const unsubscribe = binding.subscribe(
+      (_source, _selection, _local, changes) => {
+        if (!changes.length) return;
+        localRevision++;
+        parseVersion++;
+        if (alive)
+          localStatus(
+            accessUnavailable
+              ? "Access changed · local copy retained"
+              : connected
+                ? "Saving…"
+                : "Saved locally · offline",
+          );
+        saves.changed();
+      },
+    );
     if (retained?.selection) {
       const selection = binding.absolute(retained.selection);
       if (selection) view.setSelection(selection);
@@ -921,7 +932,7 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(props, ref) {
       propsRef.current.onLink((event as CustomEvent<string>).detail);
     editorContainer.addEventListener("axiom-open-note", navigateNote);
     const retry = setInterval(() => {
-      if (connected) void sendCheck().catch(() => {});
+      if (connected) void saves.confirm().catch(() => {});
       else resumeVisible(); // Some browsers miss `online` after an offline reload.
     }, 12000);
 
@@ -930,7 +941,7 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(props, ref) {
       requests.abort();
       pendingInsert.current = null;
       clearInterval(retry);
-      clearTimeout(saveTimer);
+      saves.destroy();
       window.removeEventListener("online", online);
       window.removeEventListener("offline", offline);
       window.removeEventListener("storage", cacheChanged);

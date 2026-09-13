@@ -1,7 +1,20 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
+import type { CloudImageDraft } from "@axiom/shared/image-cloud-drafts";
+import { ImageCloudQueue, openCloudImage } from "../../lib/tools/image-cloud";
+import {
+  copyImageRevision,
+  imageBundleBase64,
+  readImageRevision,
+} from "../../lib/tools/image-history";
+import type { RevisionContent } from "@axiom/shared/revisions";
+const ResourceHistory = dynamic(() => import("../revisions/ResourceHistory"), {
+  ssr: false,
+});
 import {
   ArrowLeft,
+  History,
   MousePointer2,
   Hand,
   Brush,
@@ -29,6 +42,7 @@ import {
   Scissors,
   SlidersHorizontal,
   RotateCw,
+  RotateCcw,
   FlipHorizontal,
   FlipVertical,
   ZoomIn,
@@ -48,12 +62,17 @@ import {
   type ImageLayer,
 } from "../../lib/tools/image-engine";
 import { imageDraft, type ImageDraft } from "../../lib/tools/image-drafts";
+import {
+  isInitialImageTemplate,
+  isInitialImageVersion,
+} from "../../lib/tools/image-initial-state";
 import { downloadBlob } from "../../lib/tools/download";
-import { post, SIGN_OUT_PENDING } from "../../lib/client";
+import { api, post, SIGN_OUT_PENDING } from "../../lib/client";
 import { openContextMenu } from "../../lib/context-menu";
 import Dialog from "../Dialog";
 import ResourceDiscussion from "./ResourceDiscussion";
 import ResourceSharing from "../workspace/ResourceSharing";
+import ImageGeometryDialog from "./ImageGeometryDialog";
 import {
   ErrorNotice,
   go,
@@ -109,6 +128,8 @@ export default function ImageStudio({
   const [doc, setDoc] = useState<ImageDocument | null>(null),
     [, repaint] = useState(0),
     [error, setError] = useState(""),
+    [historyOpen, setHistoryOpen] = useState(false),
+    [cloudRecovery, setCloudRecovery] = useState<CloudImageDraft | null>(null),
     [lease, setLease] = useState<ImageEditLease | null>(null),
     [status, setStatus] = useState("Opening project…"),
     [busy, setBusy] = useState(false),
@@ -125,18 +146,23 @@ export default function ImageStudio({
     [recoveryReady, setRecoveryReady] = useState(false),
     [leaving, setLeaving] = useState<(() => void) | null>(null),
     [dialog, setDialog] = useState<
-      "export" | "resize" | "text" | "adjust" | "discussion" | null
+      "export" | "text" | "adjust" | "discussion" | null
     >(null),
+    [geometry, setGeometry] = useState<"crop" | "resize" | null>(null),
     [warnings, setWarnings] = useState<string[]>([]),
     [text, setText] = useState("Research figure"),
     [fontSize, setFontSize] = useState(40),
     [fontFamily, setFontFamily] = useState<string>("Inter"),
-    [width, setWidth] = useState(1200),
-    [height, setHeight] = useState(800),
     [filter, setFilter] = useState("brightness"),
     [amount, setAmount] = useState(10),
     [feather, setFeather] = useState(0);
   const canvas = useRef<HTMLCanvasElement>(null),
+    cloud = useRef<ImageCloudQueue | null>(null),
+    cloudHead = useRef<CloudImageDraft | null>(null),
+    historyDocumentRevision = useRef<number | null>(null),
+    cloudDocument = useRef<ImageDocument | null>(null),
+    cloudSaved = useRef(-1),
+    cloudEligibility = useRef({ draft, recoveryReady, historyOpen }),
     overlay = useRef<HTMLCanvasElement>(null),
     stage = useRef<HTMLDivElement>(null),
     upload = useRef<HTMLInputElement>(null),
@@ -164,11 +190,13 @@ export default function ImageStudio({
     pendingText = useRef({ x: 100, y: 100 });
   const editingText = useRef<string | null>(null);
   latest.current = { doc, lease, baseVersion, savedRevision, busy };
+  cloudEligibility.current = { draft, recoveryReady, historyOpen };
   const editable =
     project.role === "editor" &&
     !!lease &&
     new Date(lease.expiresAt).valueOf() > Date.now() &&
-    !busy;
+    !busy &&
+    !historyOpen;
   const active = doc?.active,
     dirty = !!doc && doc.revision !== savedRevision;
   const keepDraft = (
@@ -238,8 +266,32 @@ export default function ImageStudio({
   useEffect(() => {
     alive.current = true;
     const controller = new AbortController();
+    setDoc(null);
+    setGeometry(null);
+    setLease(null);
+    setBaseVersion(project.current_version_id ?? null);
+    setSavedRevision(0);
+    setDraft(null);
+    setRecoveryReady(false);
+    setWarnings([]);
+    setError("");
+    setStatus("Opening project…");
     void (async () => {
-      let d: ImageDocument;
+      const recovery = await imageDraft(
+        session.user.id,
+        project.resource_id,
+      ).catch(() => undefined);
+      if (controller.signal.aborted) return;
+      let d: ImageDocument | undefined;
+      const shared = await api<CloudImageDraft | null>(
+        "tools/" + project.resource_id + "/draft",
+        { signal: controller.signal },
+      );
+      cloudHead.current = shared;
+      cloudDocument.current = null;
+      let importOriginal =
+        !!importFile && project.role === "editor" && !recovery;
+      let imported = false;
       if (project.current_version_id) {
         const response = await fetch(
           `/api/v1/files/${project.resource_id}/content?version=${project.current_version_id}`,
@@ -248,7 +300,36 @@ export default function ImageStudio({
         if (!response.ok)
           throw new Error("Saved image project could not be loaded.");
         d = await ImageDocument.open(await response.arrayBuffer());
-      } else if (importFile) {
+        // New drawings already have a valid blank version. It is only a starter,
+        // not the selected image. Never replay the import over authored versions.
+        if (importOriginal && isInitialImageTemplate(d)) {
+          const history = await fetch(
+            `/api/v1/files/${project.resource_id}/versions`,
+            {
+              signal: controller.signal,
+            },
+          );
+          if (!history.ok)
+            throw new Error(
+              "Image history could not be checked before importing. Reload to try again.",
+            );
+          importOriginal = isInitialImageVersion(
+            project.current_version_id,
+            await history.json(),
+          );
+        } else importOriginal = false;
+      }
+      if (controller.signal.aborted) return;
+      if (shared && shared.baseVersion === project.current_version_id) {
+        d = await openCloudImage(
+          project.resource_id,
+          shared.manifest,
+          controller.signal,
+        );
+        cloudDocument.current = d;
+        importOriginal = false;
+      }
+      if (importOriginal && importFile) {
         const response = await fetch(
           `/api/v1/files/${importFile}/content${importVersion ? `?version=${importVersion}` : ""}`,
           { signal: controller.signal },
@@ -262,37 +343,47 @@ export default function ImageStudio({
             await import("../../lib/tools/image-psd")
           ).importPsd(await blob.arrayBuffer());
           d = imported.doc;
-          setWarnings(imported.warnings);
+          if (!controller.signal.aborted) setWarnings(imported.warnings);
         } else {
           const bitmap = await createImageBitmap(blob);
-          d = new ImageDocument(bitmap.width, bitmap.height);
-          d.addLayer("Original image", bitmap);
-          bitmap.close();
+          try {
+            d = new ImageDocument(bitmap.width, bitmap.height);
+            d.addLayer("Original image", bitmap);
+          } finally {
+            bitmap.close();
+          }
         }
-      } else {
+        imported = true;
+      } else if (!d) {
         d = new ImageDocument();
         d.addLayer("Layer 1");
       }
-      if (!alive.current) return;
+      if (controller.signal.aborted) return;
       setDoc(d);
-      setWidth(d.width);
-      setHeight(d.height);
-      setSavedRevision(project.current_version_id ? d.revision : -1);
-      const recovery = await imageDraft(
-        session.user.id,
-        project.resource_id,
-      ).catch(() => undefined);
-      if (alive.current && recovery) setDraft(recovery);
-      if (alive.current) setRecoveryReady(true);
+      setSavedRevision(
+        project.current_version_id && !imported && d !== cloudDocument.current
+          ? d.revision
+          : -1,
+      );
+      cloudSaved.current = imported ? -1 : d.revision;
+      if (recovery) setDraft(recovery);
+      setRecoveryReady(true);
       if (project.role === "editor") {
         const current = await post(`tools/${project.resource_id}/lease`, {});
-        if (alive.current) {
+        if (!controller.signal.aborted) {
           setLease(current);
           setStatus("Editing lease acquired · local recovery enabled");
-        }
+        } else
+          void post(`tools/${project.resource_id}/lease`, {
+            token: current.token,
+            release: true,
+          }).catch(() => {});
       } else setStatus("Read-only saved version");
     })().catch((e) => {
-      if (alive.current) setError(e.message);
+      if (!controller.signal.aborted) {
+        setError(e.message);
+        setStatus("Image could not be opened.");
+      }
     });
     return () => {
       alive.current = false;
@@ -341,6 +432,45 @@ export default function ImageStudio({
     return () => clearInterval(interval);
   }, [!!lease, project.resource_id]);
   useEffect(() => {
+    if (!doc || !lease || !recoveryReady || draft) return;
+    const queue = new ImageCloudQueue(
+      project.resource_id,
+      doc,
+      cloudHead.current,
+      () => {
+        const s = latest.current,
+          eligibility = cloudEligibility.current;
+        return {
+          doc: s.doc,
+          lease: s.lease,
+          baseVersion: s.baseVersion,
+          blocked:
+            s.busy ||
+            !!pointer.current ||
+            !!eligibility.draft ||
+            !eligibility.recoveryReady ||
+            eligibility.historyOpen,
+        };
+      },
+      (message, revision) => {
+        if (alive.current && latest.current.doc === doc) {
+          if (revision !== undefined) cloudSaved.current = revision;
+          setStatus(message);
+        }
+      },
+    );
+    cloud.current = queue;
+    if (
+      doc.revision !== latest.current.savedRevision &&
+      doc !== cloudDocument.current
+    )
+      queue.dirty();
+    return () => {
+      queue.destroy();
+      if (cloud.current === queue) cloud.current = null;
+    };
+  }, [doc, !!lease, recoveryReady, !!draft, project.resource_id]);
+  useEffect(() => {
     if (!doc || !dirty || draft || busy || !recoveryReady) return;
     const version = doc.revision;
     const timeout = setTimeout(() => {
@@ -348,6 +478,7 @@ export default function ImageStudio({
         .then((saved) => {
           if (
             saved &&
+            cloudSaved.current !== version &&
             alive.current &&
             latest.current.doc === doc &&
             doc.revision === version
@@ -376,7 +507,12 @@ export default function ImageStudio({
   useEffect(() => {
     const unload = (e: BeforeUnloadEvent) => {
       const s = latest.current;
-      if (s.doc && (pointer.current || s.doc.revision !== s.savedRevision)) {
+      if (
+        s.doc &&
+        (pointer.current ||
+          (s.doc.revision !== s.savedRevision &&
+            s.doc.revision !== cloudSaved.current))
+      ) {
         e.preventDefault();
         e.returnValue = "";
       }
@@ -423,7 +559,10 @@ export default function ImageStudio({
       const s = latest.current;
       if (
         !s.doc ||
-        (!pointer.current && s.doc.revision === s.savedRevision && !s.busy)
+        (!pointer.current &&
+          (s.doc.revision === s.savedRevision ||
+            s.doc.revision === cloudSaved.current) &&
+          !s.busy)
       )
         return;
       event.preventDefault();
@@ -452,6 +591,7 @@ export default function ImageStudio({
     setError("");
     setStatus(copy ? "Saving a project copy…" : "Saving a new cloud version…");
     try {
+      if (!copy) await cloud.current?.flush();
       const revision = state.doc.revision,
         blob = await state.doc.bundle();
       let target = project.resource_id,
@@ -466,7 +606,9 @@ export default function ImageStudio({
         });
         target = created.id;
         l = await post(`tools/${target}/lease`, {});
-        expected = null;
+        expected =
+          (await api<ToolProject>(`tools/${target}`)).current_version_id ??
+          null;
       }
       if (!l)
         throw new Error(
@@ -494,6 +636,9 @@ export default function ImageStudio({
         latest.current.savedRevision = revision;
         setBaseVersion(result.versionId);
         setSavedRevision(revision);
+        cloudSaved.current = revision;
+        cloud.current?.reset();
+        cloudHead.current = null;
         const clear = draftQueue.current
           .catch(() => {})
           .then(() => imageDraft(session.user.id, project.resource_id, null));
@@ -508,6 +653,148 @@ export default function ImageStudio({
     } finally {
       setBusy(false);
       latest.current.busy = false;
+    }
+  };
+  const openHistory = async () => {
+    if (latest.current.busy || pointer.current) return;
+    latest.current.busy = true;
+    setBusy(true);
+    try {
+      if (latest.current.lease) await cloud.current?.flush();
+      await draftQueue.current;
+      historyDocumentRevision.current = latest.current.doc?.revision ?? null;
+      setHistoryOpen(true);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      latest.current.busy = false;
+      setBusy(false);
+    }
+  };
+  const restoreRevision = async (
+    selected: RevisionContent,
+    current: RevisionContent,
+  ) => {
+    const state = latest.current;
+    if (
+      !state.doc ||
+      !state.lease ||
+      state.busy ||
+      state.doc.revision !== historyDocumentRevision.current
+    )
+      throw new Error(
+        "The working image changed. Reopen history before restoring.",
+      );
+    state.busy = true;
+    setBusy(true);
+    try {
+      const restored = await ImageDocument.open(
+        await (await readImageRevision(selected)).arrayBuffer(),
+      );
+      const bundle = await imageBundleBase64(await state.doc.bundle());
+      const saved = await post("tools/" + project.resource_id + "/save", {
+        token: state.lease.token,
+        fence: state.lease.fence,
+        expectedVersion: current.fileVersion,
+        expectedDraftRevision: current.cloudRevision ?? 0,
+        restoreVersion: selected.fileVersion,
+        bundle,
+        mutationId: crypto.randomUUID(),
+      });
+      cloud.current?.destroy();
+      cloud.current = null;
+      cloudHead.current = null;
+      cloudDocument.current = null;
+      cloudSaved.current = restored.revision;
+      latest.current = {
+        ...latest.current,
+        doc: restored,
+        baseVersion: saved.versionId,
+        savedRevision: restored.revision,
+      };
+      setDoc(restored);
+      setBaseVersion(saved.versionId);
+      setSavedRevision(restored.revision);
+      draftQueue.current = draftQueue.current
+        .catch(() => {})
+        .then(() => imageDraft(session.user.id, project.resource_id, null));
+      await draftQueue.current;
+      setStatus(
+        "Revision restored · previous working image retained in history",
+      );
+      return saved;
+    } finally {
+      latest.current.busy = false;
+      setBusy(false);
+    }
+  };
+  const showCloudRecovery = async () => {
+    if (!editable || pointer.current) return;
+    setBusy(true);
+    latest.current.busy = true;
+    try {
+      await cloud.current?.flush();
+      const head = await api<CloudImageDraft | null>(
+        "tools/" + project.resource_id + "/draft",
+      );
+      if (!head?.previousManifest)
+        throw new Error(
+          "No previous working draft yet. Saved milestones are available in image history.",
+        );
+      setCloudRecovery(head);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      latest.current.busy = false;
+      setBusy(false);
+    }
+  };
+  const recoverCloudDraft = async () => {
+    if (!cloudRecovery?.previousManifest || !latest.current.lease) return;
+    setBusy(true);
+    latest.current.busy = true;
+    try {
+      const head = await api<CloudImageDraft | null>(
+        "tools/" + project.resource_id + "/draft",
+      );
+      if (
+        head?.revision !== cloudRecovery.revision ||
+        head.baseVersion !== latest.current.baseVersion
+      )
+        throw new Error(
+          "The shared draft changed. Reopen recovery to compare it again.",
+        );
+      const recovered = await openCloudImage(
+        project.resource_id,
+        cloudRecovery.previousManifest,
+      );
+      const recoveryBlob = await recovered.bundle();
+      draftQueue.current = draftQueue.current
+        .catch(() => {})
+        .then(() =>
+          imageDraft(session.user.id, project.resource_id, {
+            blob: recoveryBlob,
+            baseVersion: head.baseVersion,
+            updatedAt: new Date().toISOString(),
+          }),
+        );
+      await draftQueue.current;
+      cloud.current?.destroy();
+      cloud.current = null;
+      cloudHead.current = head;
+      cloudDocument.current = null;
+      cloudSaved.current = -1;
+      latest.current.doc = recovered;
+      latest.current.savedRevision = -1;
+      setDoc(recovered);
+      setSavedRevision(-1);
+      setCloudRecovery(null);
+      setStatus("Previous working draft recovered · preparing cloud save");
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      latest.current.busy = false;
+      setBusy(false);
     }
   };
   const importImage = async (file: File) => {
@@ -663,6 +950,7 @@ export default function ImageStudio({
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       if (
+        historyOpen ||
         e.isComposing ||
         (e.target as HTMLElement).closest(
           "input,textarea,select,[contenteditable=true],dialog",
@@ -677,6 +965,19 @@ export default function ImageStudio({
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "z") {
         e.preventDefault();
         if (editable) safely(() => (e.shiftKey ? doc?.redo() : doc?.undo()));
+        return;
+      }
+      if (
+        editable &&
+        !pointer.current &&
+        ((!e.metaKey &&
+          !e.ctrlKey &&
+          !e.altKey &&
+          e.key.toLowerCase() === "c") ||
+          ((e.metaKey || e.ctrlKey) && e.altKey && e.key.toLowerCase() === "i"))
+      ) {
+        e.preventDefault();
+        setGeometry(e.key.toLowerCase() === "c" ? "crop" : "resize");
         return;
       }
       if (e.key === "Escape") {
@@ -703,7 +1004,7 @@ export default function ImageStudio({
     };
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
-  }, [doc, editable, busy, baseVersion]);
+  }, [doc, editable, busy, baseVersion, historyOpen]);
   return (
     <main className="research-studio image-studio">
       <header className="studio-header">
@@ -720,6 +1021,24 @@ export default function ImageStudio({
         </div>
         <span className="tool-spacer" />
         <ResourceSharing resourceId={project.resource_id} />
+        <button
+          className="icon-button"
+          aria-label="Image version history"
+          title="Compare image versions and working draft"
+          disabled={busy}
+          onClick={() => void openHistory()}
+        >
+          <History size={17} />
+        </button>
+        <button
+          className="icon-button"
+          aria-label="Recover previous cloud draft"
+          title="Recover previous cloud working draft"
+          disabled={!editable}
+          onClick={() => void showCloudRecovery()}
+        >
+          <RotateCcw size={17} />
+        </button>
         <input
           type="file"
           ref={upload}
@@ -857,7 +1176,17 @@ export default function ImageStudio({
         <button
           className="button ghost"
           disabled={!editable}
-          onClick={() => setDialog("resize")}
+          title="Crop image (C)"
+          onClick={() => setGeometry("crop")}
+        >
+          <Crop size={15} />
+          Crop
+        </button>
+        <button
+          className="button ghost"
+          disabled={!editable}
+          title="Resize image (⌘/Ctrl+Alt+I)"
+          onClick={() => setGeometry("resize")}
         >
           <Maximize size={15} />
           Resize
@@ -875,6 +1204,15 @@ export default function ImageStudio({
       </div>
       <div className="studio-body image-body">
         <nav className="image-tool-rail" aria-label="Image editing tools">
+          <button
+            className="icon-button"
+            aria-label="Crop image (C)"
+            title="Crop image (C)"
+            disabled={!editable}
+            onClick={() => setGeometry("crop")}
+          >
+            <Crop size={19} strokeWidth={1.6} />
+          </button>
           {tools.map(({ id, label, icon: Icon }) => (
             <button
               className="icon-button"
@@ -891,6 +1229,48 @@ export default function ImageStudio({
         <div
           className="image-stage"
           ref={stage}
+          onContextMenu={(e) => {
+            e.preventDefault();
+            if (!doc) return;
+            openContextMenu({
+              owner: e.currentTarget,
+              x: e.clientX,
+              y: e.clientY,
+              label: "Image actions",
+              items: [
+                {
+                  label: "Crop image",
+                  icon: "crop",
+                  shortcut: "C",
+                  group: "Image",
+                  disabled: !editable || !!pointer.current,
+                  action: () => setGeometry("crop"),
+                },
+                {
+                  label: "Resize image",
+                  icon: "resize",
+                  shortcut: "⌘/Ctrl+Alt+I",
+                  group: "Image",
+                  disabled: !editable || !!pointer.current,
+                  action: () => setGeometry("resize"),
+                },
+                {
+                  label: "Undo",
+                  icon: "undo",
+                  group: "History",
+                  disabled: !editable || !doc.canUndo,
+                  action: () => safely(() => doc.undo()),
+                },
+                {
+                  label: "Redo",
+                  icon: "redo",
+                  group: "History",
+                  disabled: !editable || !doc.canRedo,
+                  action: () => safely(() => doc.redo()),
+                },
+              ],
+            });
+          }}
           onDragOver={(e) => e.preventDefault()}
           onDrop={(e) => {
             e.preventDefault();
@@ -899,7 +1279,9 @@ export default function ImageStudio({
           }}
         >
           {!doc ? (
-            <Loading label="Opening image project…" />
+            error ? null : (
+              <Loading label="Opening image project…" />
+            )
           ) : (
             <div
               className="image-artboard transparency-grid"
@@ -1456,16 +1838,7 @@ export default function ImageStudio({
               <button
                 className="button secondary"
                 disabled={!editable || doc.selection.kind !== "rectangle"}
-                onClick={() =>
-                  safely(() => {
-                    const [a, b] = doc.selection!.points;
-                    doc.resize(
-                      Math.max(1, Math.round(Math.abs(b.x - a.x))),
-                      Math.max(1, Math.round(Math.abs(b.y - a.y))),
-                      { x: Math.min(a.x, b.x), y: Math.min(a.y, b.y) },
-                    );
-                  })
-                }
+                onClick={() => setGeometry("crop")}
               >
                 <Crop size={14} />
                 Crop to selection
@@ -1609,20 +1982,39 @@ export default function ImageStudio({
           </div>
         </Dialog>
       )}
+      {geometry && doc && (
+        <ImageGeometryDialog
+          doc={doc}
+          mode={geometry}
+          editable={editable}
+          onClose={() => setGeometry(null)}
+          onApply={(rect, sampling) => {
+            if (!editable)
+              throw new Error(
+                "Acquire editing access before changing the image.",
+              );
+            doc.resize(
+              rect.width,
+              rect.height,
+              geometry === "crop" ? { x: rect.x, y: rect.y } : undefined,
+              sampling,
+            );
+            setGeometry(null);
+          }}
+        />
+      )}
       {dialog && (
         <Dialog
           title={
             dialog === "export"
               ? "Export image"
-              : dialog === "resize"
-                ? "Resize canvas"
-                : dialog === "text"
-                  ? editingText.current
-                    ? "Edit text layer"
-                    : "Add text layer"
-                  : dialog === "discussion"
-                    ? "Saved-version discussion"
-                    : "Image adjustments"
+              : dialog === "text"
+                ? editingText.current
+                  ? "Edit text layer"
+                  : "Add text layer"
+                : dialog === "discussion"
+                  ? "Saved-version discussion"
+                  : "Image adjustments"
           }
           onClose={() => setDialog(null)}
         >
@@ -1680,44 +2072,6 @@ export default function ImageStudio({
                 ))}
               </div>
             </>
-          ) : dialog === "resize" ? (
-            <div className="tool-settings-fields">
-              <label>
-                Width
-                <input
-                  type="number"
-                  min={1}
-                  max={8192}
-                  value={width}
-                  onChange={(e) => setWidth(Number(e.target.value))}
-                />
-              </label>
-              <label>
-                Height
-                <input
-                  type="number"
-                  min={1}
-                  max={8192}
-                  value={height}
-                  onChange={(e) => setHeight(Number(e.target.value))}
-                />
-              </label>
-              <p>
-                Resampling affects all layers. This operation can be undone.
-              </p>
-              <button
-                className="button primary"
-                disabled={!editable}
-                onClick={() =>
-                  safely(() => {
-                    doc?.resize(width, height);
-                    setDialog(null);
-                  })
-                }
-              >
-                Resize image
-              </button>
-            </div>
           ) : dialog === "text" ? (
             <div className="tool-settings-fields">
               <label className="tool-setting-stack">
@@ -1835,6 +2189,72 @@ export default function ImageStudio({
             </div>
           )}
           <ErrorNotice message={error} />
+        </Dialog>
+      )}
+      {historyOpen && (
+        <ResourceHistory
+          resourceId={project.resource_id}
+          canEdit={project.role === "editor"}
+          imageActions={{
+            restore: restoreRevision,
+            copy: (revision, name) =>
+              copyImageRevision(project, revision, name),
+          }}
+          flush={async () => {
+            await draftQueue.current;
+          }}
+          onClose={() => setHistoryOpen(false)}
+          onRestore={() => refresh()}
+        />
+      )}
+      {cloudRecovery?.previousManifest && (
+        <Dialog
+          title="Recover previous working draft?"
+          onClose={() => !busy && setCloudRecovery(null)}
+        >
+          <p>
+            The previous draft becomes your working image. The current draft
+            remains recoverable, and saved milestones are unchanged.
+          </p>
+          <div className="revision-recovery-images">
+            {[cloudRecovery.manifest, cloudRecovery.previousManifest].map(
+              (m, i) => (
+                <figure key={i}>
+                  <img
+                    alt={i ? "Previous working draft" : "Current working draft"}
+                    src={
+                      "/api/v1/tools/" +
+                      project.resource_id +
+                      "/draft/assets/" +
+                      m.preview
+                    }
+                  />
+                  <figcaption>
+                    {i ? "Recover this draft" : "Current draft"} ·{" "}
+                    {m.project.width} × {m.project.height} ·{" "}
+                    {m.project.layers.length} layers
+                  </figcaption>
+                </figure>
+              ),
+            )}
+          </div>
+          <ErrorNotice message={error} />
+          <div className="dialog-footer">
+            <button
+              className="button secondary"
+              disabled={busy}
+              onClick={() => setCloudRecovery(null)}
+            >
+              Cancel
+            </button>
+            <button
+              className="button primary"
+              disabled={busy}
+              onClick={() => void recoverCloudDraft()}
+            >
+              Recover previous draft
+            </button>
+          </div>
         </Dialog>
       )}
     </main>

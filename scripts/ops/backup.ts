@@ -137,6 +137,10 @@ if (operation === "create") {
     // workspace migration. Avatars and derivatives are part of the DB/storage pair.
     const extras = [
       [
+        "image_draft_assets",
+        "SELECT storage_key::text,'image/png' AS mime,sha256,bytes FROM image_draft_assets",
+      ],
+      [
         "user_profiles",
         "SELECT avatar_key::text AS storage_key,'image/webp' AS mime,avatar_sha256 AS sha256,NULL AS bytes FROM user_profiles WHERE avatar_key IS NOT NULL",
       ],

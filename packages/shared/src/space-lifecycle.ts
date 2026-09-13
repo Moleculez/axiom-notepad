@@ -98,7 +98,7 @@ export async function spaceImpact(client: pg.PoolClient, space: Space) {
     rows: [uses],
   } = await client.query(
     `SELECT
-   (SELECT count(*)::int FROM review_requests WHERE note_id=ANY($1::uuid[]) OR project_id=ANY($4::uuid[])) AS reviews,
+   (SELECT count(*)::int FROM review_requests WHERE note_id=ANY($1::uuid[]) OR resource_id=ANY($3::uuid[]) OR file_version_id=ANY($2::uuid[]) OR project_id=ANY($4::uuid[])) AS reviews,
    (SELECT count(*)::int FROM resource_references WHERE version_id=ANY($2::uuid[]) AND NOT(source_id=ANY($3::uuid[]))) AS external_files,
    (SELECT count(*)::int FROM note_links WHERE target_id=ANY($1::uuid[]) AND NOT(source_id=ANY($1::uuid[]))) AS external_notes,
    (SELECT count(*)::int FROM paper_annotations WHERE attachment_id=ANY($2::uuid[]) AND NOT deleted) AS annotations,

@@ -9,6 +9,7 @@ import { auditCascadeMigration } from "./audit-cascade-migration";
 import { integrationMigration } from "./integration-migration";
 import { readingMarksMigration } from "./reading-marks-migration";
 import { visualAnnotationsMigration } from "./visual-annotations-migration";
+import { revisionMigration } from "./revision-migration";
 export const migration = `
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 CREATE TABLE IF NOT EXISTS "user" (id text PRIMARY KEY, name text NOT NULL, email text NOT NULL UNIQUE, email_verified boolean NOT NULL DEFAULT false, image text, created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now());
@@ -198,8 +199,39 @@ CREATE TABLE app_instance(singleton boolean PRIMARY KEY DEFAULT true CHECK(singl
 INSERT INTO app_instance(singleton,setup_completed_at) SELECT true,CASE WHEN EXISTS(SELECT 1 FROM "user") THEN now() END;
 `,
   },
-  { version: 19, name: "reading-marks-and-private-note-annotations", sql: readingMarksMigration },
-  { version: 20, name: "placement-specific-visual-annotations", sql: visualAnnotationsMigration },
+  {
+    version: 19,
+    name: "reading-marks-and-private-note-annotations",
+    sql: readingMarksMigration,
+  },
+  {
+    version: 20,
+    name: "placement-specific-visual-annotations",
+    sql: visualAnnotationsMigration,
+  },
+  {
+    version: 21,
+    name: "resource-revisions-and-review",
+    sql: revisionMigration,
+  },
+  {
+    version: 22,
+    name: "proposal-references-and-draft-retention",
+    sql: revisionRetentionMigration,
+  },
+  {
+    version: 23,
+    name: "bounded-visits-and-image-metadata-cache",
+    sql: revisionPerformanceMigration,
+  },
+  {
+    version: 24,
+    name: "reversible-decision-attachment-retention",
+    sql: revisionUndoRetentionMigration,
+  },
 ];
+import { revisionUndoRetentionMigration } from "./revision-undo-retention-migration";
+import { revisionPerformanceMigration } from "./revision-performance-migration";
+import { revisionRetentionMigration } from "./revision-retention-migration";
 import { productivityPlatformMigration } from "./productivity-platform-migration";
 import { researchToolsMigration } from "./research-tools-migration";

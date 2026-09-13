@@ -9,6 +9,7 @@ not installation instructions or proof of today's test results.
 
 - [Workspace guide](WORKSPACE.md) — navigation, sharing, files and everyday limits
 - [Editor and shortcuts](EDITOR.md) — visual/source editing and research blocks
+- [Version history and review](VERSION_REVIEW.md) — comparisons, suggestions, milestones, assigned reviews and cloud drafts
 - [Reading and references](READING.md) — paper reading, bibliography and appearance
 - [Reading marks](READING_MARKS.md) — bookmarks, private notes and shared annotation cards
 - [Document minimap](MINIMAP.md) — navigation, markers, folding and appearance

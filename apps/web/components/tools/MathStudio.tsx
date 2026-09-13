@@ -1,12 +1,23 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
+import { useRevisionVisit } from "../../lib/revision-visit";
+import type { Suggestion } from "@axiom/shared/revisions";
+const SuggestionEditor = dynamic(
+  () => import("../revisions/SuggestionEditor"),
+  { ssr: false },
+);
+const SuggestionReview = dynamic(
+  () => import("../revisions/SuggestionReview"),
+  { ssr: false },
+);
 import {
   ArrowLeft,
   Braces,
   Eye,
   Download,
   History,
+  FilePenLine,
   PanelLeftClose,
   Undo2,
   Redo2,
@@ -31,8 +42,8 @@ import { post, api } from "../../lib/client";
 import {
   ErrorNotice,
   Loading,
-  useData,
   useWorkspace,
+  useLocation,
   WorkspaceLink,
 } from "../workspace/ui";
 import StudioSource, { type StudioSourceHandle } from "./StudioSource";
@@ -49,8 +60,13 @@ import {
   type MathNoteBridge,
 } from "../../lib/tools/math-note-bridge";
 const MathVisual = dynamic(() => import("./MathVisual"), { ssr: false });
+const ResourceHistory = dynamic(() => import("../revisions/ResourceHistory"), {
+  ssr: false,
+});
 export default function MathStudio({ project }: { project: ToolProject }) {
-  const { session, notify, navigate } = useWorkspace(),
+  const reviewLocation = useLocation(),
+    requestedReview = reviewLocation.params.get("review");
+  const { session, notify, navigate, refresh } = useWorkspace(),
     document = useToolDocument(
       project.resource_id,
       project.generation ?? 1,
@@ -58,6 +74,8 @@ export default function MathStudio({ project }: { project: ToolProject }) {
       project.role === "editor",
     );
   const [mode, setMode] = useState<"source" | "visual">("source"),
+    [review, setReview] = useState(false),
+    [proposal, setProposal] = useState<Suggestion | "new" | null>(null),
     [noteBridge, setNoteBridge] = useState<MathNoteBridge | null>(null),
     [palette, setPalette] = useState(true),
     [visualRecovery, setVisualRecovery] = useState<string | null>(null),
@@ -67,6 +85,14 @@ export default function MathStudio({ project }: { project: ToolProject }) {
     [error, setError] = useState(""),
     [stacked, setStacked] = useState(false),
     [busy, setBusy] = useState(false);
+  const previousVisit = useRevisionVisit(session.user.id, project.resource_id);
+  useEffect(() => {
+    if (
+      requestedReview === "suggestions" &&
+      reviewLocation.path.endsWith("/" + project.resource_id)
+    )
+      setReview(true);
+  }, [requestedReview, reviewLocation.path, project.resource_id]);
   const validatedSettings = mathProjectSettings.safeParse(project.settings);
   const defaults = validatedSettings.success
     ? validatedSettings.data
@@ -78,19 +104,26 @@ export default function MathStudio({ project }: { project: ToolProject }) {
     [fontSize, setFontSize] = useState(defaults.fontSize),
     [numbered, setNumbered] = useState(defaults.numbered),
     [scale, setScale] = useState(3),
-    [imageFormat, setImageFormat] = useState<MathImageFormat>("png"),
-    [settingsVersion, setSettingsVersion] = useState(project.version);
+    [imageFormat, setImageFormat] = useState<MathImageFormat>("png");
+  const savedSettings = useRef({ value: defaults, version: project.version }),
+    settingsWrite = useRef<Promise<void> | null>(null);
   const sourceEditor = useRef<StudioSourceHandle>(null),
-    preview = useRef<HTMLDivElement>(null),
-    history = useData<
-      {
-        id: string;
-        label: string;
-        source: string;
-        created_at: string;
-        author: string;
-      }[]
-    >(panel === "history" ? `tools/${project.resource_id}/history` : null);
+    preview = useRef<HTMLDivElement>(null);
+  const settingsGeneration = useRef(project.generation);
+  useEffect(() => {
+    // Ordinary collaborator refreshes must not overwrite an open settings draft.
+    // Restoring a revision is a new document generation and restores its settings.
+    if (settingsGeneration.current === project.generation) return;
+    settingsGeneration.current = project.generation;
+    const restored = mathProjectSettings.parse(project.settings ?? {});
+    setMacros(restored.macros);
+    setForeground(restored.foreground);
+    setBackground(restored.background);
+    setTransparent(restored.transparent);
+    setFontSize(restored.fontSize);
+    setNumbered(restored.numbered);
+    savedSettings.current = { value: restored, version: project.version };
+  }, [project.generation, project.settings, project.version]);
   useEffect(() => {
     setNoteBridge(readMathBridge(session.user.id, project.resource_id));
   }, [project.resource_id, session.user.id]);
@@ -124,13 +157,11 @@ export default function MathStudio({ project }: { project: ToolProject }) {
     setBusy(true);
     setError("");
     try {
-      await document.flush();
-      await post(`tools/${project.resource_id}/history`, {
+      await flushProject();
+      await post(`resources/${project.resource_id}/history`, {
         label: `Checkpoint · ${new Date().toLocaleString()}`,
-        source: document.source,
         mutationId: crypto.randomUUID(),
       });
-      history.reload();
       notify("Named checkpoint saved to project history.");
     } catch (e) {
       setError((e as Error).message);
@@ -138,23 +169,46 @@ export default function MathStudio({ project }: { project: ToolProject }) {
       setBusy(false);
     }
   };
+  const persistSettings = async () => {
+    const value = mathProjectSettings.parse({
+      macros,
+      foreground,
+      background,
+      transparent,
+      fontSize,
+      numbered,
+    });
+    // Settings share the checkpoint boundary with source. Serialize overlapping
+    // saves and retain the CAS version so a collaborator is never overwritten.
+    while (settingsWrite.current) await settingsWrite.current;
+    if (JSON.stringify(value) === JSON.stringify(savedSettings.current.value))
+      return;
+    const write = api(`tools/${project.resource_id}/settings`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        version: savedSettings.current.version,
+        settings: value,
+      }),
+    }).then(() => {
+      savedSettings.current = {
+        value,
+        version: savedSettings.current.version + 1,
+      };
+    });
+    settingsWrite.current = write;
+    try {
+      await write;
+    } finally {
+      if (settingsWrite.current === write) settingsWrite.current = null;
+    }
+  };
+  const flushProject = async () => {
+    await document.flush();
+    await persistSettings();
+  };
   const saveSettings = async () => {
     try {
-      await api(`tools/${project.resource_id}/settings`, {
-        method: "PATCH",
-        body: JSON.stringify({
-          version: settingsVersion,
-          settings: {
-            macros,
-            foreground,
-            background,
-            transparent,
-            fontSize,
-            numbered,
-          },
-        }),
-      });
-      setSettingsVersion((v) => v + 1);
+      await persistSettings();
       notify("Project rendering settings saved.");
     } catch (e) {
       setError((e as Error).message);
@@ -283,6 +337,16 @@ export default function MathStudio({ project }: { project: ToolProject }) {
         >
           <History size={17} />
         </button>
+        {project.role !== "viewer" && (
+          <button
+            className="icon-button"
+            aria-label="Review suggestions"
+            title="Review and suggest changes to the equation"
+            onClick={() => setReview(true)}
+          >
+            <FilePenLine size={17} />
+          </button>
+        )}
         <button
           className="icon-button"
           title="Rendering settings"
@@ -505,7 +569,31 @@ export default function MathStudio({ project }: { project: ToolProject }) {
           / Visual
         </span>
       </footer>
-      {panel && (
+      {panel === "history" && (
+        <ResourceHistory
+          previousVisit={previousVisit}
+          resourceId={project.resource_id}
+          canEdit={!document.readOnly}
+          capture={() => ({
+            body: document.binding?.source ?? document.source,
+            settings: {
+              macros,
+              foreground,
+              background,
+              transparent,
+              fontSize,
+              numbered,
+            },
+          })}
+          flush={flushProject}
+          onClose={() => setPanel(null)}
+          onRestore={() => {
+            refresh();
+            setPanel(null);
+          }}
+        />
+      )}
+      {panel && panel !== "history" && (
         <Dialog
           title={
             panel === "export"
@@ -519,9 +607,7 @@ export default function MathStudio({ project }: { project: ToolProject }) {
                     : "Checkpoint history"
           }
           onClose={() => setPanel(null)}
-          size={
-            panel === "history" || panel === "assistant" ? "wide" : undefined
-          }
+          size={panel === "assistant" ? "wide" : undefined}
         >
           {panel === "assistant" ? (
             <MathAssistant
@@ -642,47 +728,37 @@ export default function MathStudio({ project }: { project: ToolProject }) {
                 Save project settings
               </button>
             </div>
-          ) : history.loading ? (
-            <Loading />
-          ) : (
-            <>
-              <ErrorNotice message={history.error} />
-              {history.data?.length ? (
-                history.data.map((item) => (
-                  <article className="tool-checkpoint" key={item.id}>
-                    <h3>{item.label}</h3>
-                    <small>{item.author}</small>
-                    <pre>{item.source}</pre>
-                    <button
-                      className="button secondary"
-                      onClick={() =>
-                        downloadText(item.source, item.label + ".tex")
-                      }
-                    >
-                      Download LaTeX
-                    </button>
-                    <button
-                      className="button secondary"
-                      disabled={document.readOnly}
-                      onClick={() => {
-                        insert(item.source);
-                        setPanel(null);
-                      }}
-                    >
-                      Insert at selection
-                    </button>
-                  </article>
-                ))
-              ) : (
-                <p>
-                  No checkpoints yet. Use Checkpoint to save a named moment
-                  without interrupting collaboration.
-                </p>
-              )}
-            </>
-          )}
+          ) : null}
           <ErrorNotice message={error} />
         </Dialog>
+      )}
+      {review && (
+        <SuggestionReview
+          noteId={project.resource_id}
+          generation={project.generation ?? 1}
+          canEdit={project.role === "editor"}
+          onClose={() => setReview(false)}
+          onCompose={(value) => {
+            if (!document.binding) {
+              notify(
+                "Wait for the equation to connect before suggesting edits.",
+              );
+              return;
+            }
+            setProposal(value ?? "new");
+          }}
+        />
+      )}
+      {proposal && document.binding && (
+        <SuggestionEditor
+          noteId={project.resource_id}
+          generation={project.generation ?? 1}
+          title={project.name}
+          accepted={document.binding}
+          format="latex"
+          proposal={proposal === "new" ? undefined : proposal}
+          onClose={() => setProposal(null)}
+        />
       )}
     </main>
   );

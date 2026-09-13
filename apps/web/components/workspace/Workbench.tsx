@@ -3,6 +3,18 @@ import FilePreviewSurface from "../tools/FilePreviewSurface";
 import ResourceDiscussion from "../tools/ResourceDiscussion";
 import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
+import type { Suggestion } from "@axiom/shared/revisions";
+const SuggestionEditor = dynamic(
+  () => import("../revisions/SuggestionEditor"),
+  { ssr: false },
+);
+const SuggestionReview = dynamic(
+  () => import("../revisions/SuggestionReview"),
+  { ssr: false },
+);
+const ResourceHistory = dynamic(() => import("../revisions/ResourceHistory"), {
+  ssr: false,
+});
 import {
   ArrowUpRight,
   Bold,
@@ -11,6 +23,7 @@ import {
   Code2,
   Download,
   FileText,
+  FilePenLine,
   History,
   ImagePlus,
   Italic,
@@ -35,7 +48,7 @@ import {
   type RenderContext,
 } from "@axiom/markdown";
 import type { Note } from "@axiom/shared/access";
-import type { Resource, ResourcePage, Space } from "@axiom/shared/workspace";
+import type { Resource, Space } from "@axiom/shared/workspace";
 import { fileRoute } from "@axiom/shared/file-routes";
 import { tabRoute } from "@axiom/shared/application-tabs";
 import {
@@ -63,7 +76,6 @@ import {
   retainDraft,
   type RecoveryDraft,
 } from "../../lib/editor-recovery";
-import { printDocument } from "../../lib/print-document";
 import { openExternalEditorLink } from "../../lib/editor-links";
 import { sectionAtPosition, type OutlineHeading } from "../../lib/outline";
 import type { EditorHandle, EditorMode, CommentAnchor } from "../Editor";
@@ -72,6 +84,8 @@ import TableOfContents from "../TableOfContents";
 import NoteTitle from "../NoteTitle";
 import DocumentStatistics from "../DocumentStatistics";
 import ResourceSharing from "./ResourceSharing";
+import InsertResource from "./InsertResource";
+import { useRevisionVisit } from "../../lib/revision-visit";
 import ReadingView from "../ReadingView";
 import EquationInspector from "../EquationInspector";
 import { literalBody, literalPrefix } from "@axiom/editor/literal";
@@ -94,6 +108,7 @@ import {
   ResourceIcon,
   useAction,
   useData,
+  useLocation,
   useWorkspace,
   go,
 } from "./ui";
@@ -473,6 +488,8 @@ function DocumentPane({
     [modal, setModal] = useState<
       "commands" | "insert" | "table" | "files" | "links" | "history" | null
     >(null),
+    [review, setReview] = useState(false),
+    [proposal, setProposal] = useState<Suggestion | "new" | null>(null),
     [recovered, setRecovered] = useState(""),
     [recoveries, setRecoveries] = useState<RecoveryDraft[]>([]),
     [comment, setComment] = useState(""),
@@ -481,20 +498,25 @@ function DocumentPane({
     [marksHost, setMarksHost] = useState<HTMLDivElement | null>(null),
     [minimapHost, setMinimapHost] = useState<HTMLDivElement | null>(null),
     [markOpen, setMarkOpen] = useState<string | null>(null),
-    [snapshotLabel, setSnapshotLabel] = useState(""),
-    [restoring, setRestoring] = useState<any>(null),
     [unresolvedComments, setUnresolvedComments] = useState<string[]>([]),
     [activeDiscussion, setActiveDiscussion] = useState<string | null>(null);
+  const reviewLocation = useLocation(),
+    requestedReview = reviewLocation.params.get("review");
+  const previousVisit = useRevisionVisit(session.user.id, note.id, active);
+  useEffect(() => {
+    if (
+      active &&
+      requestedReview === "suggestions" &&
+      reviewLocation.path.endsWith("/" + note.id)
+    )
+      setReview(true);
+  }, [active, requestedReview, reviewLocation.path, note.id]);
   const context = useCachedData<NoteContext>(
       `notes/${note.id}/context`,
       session.user.id,
       revision,
     ),
     comments = useNoteThreads(session.user, note.id, revision, active),
-    versions = useData<any[]>(
-      modal === "history" ? `notes/${note.id}/history` : null,
-      revision,
-    ),
     action = useAction();
   const research = useResearch(
     session.user.id,
@@ -971,6 +993,16 @@ function DocumentPane({
           ))}
         </div>
         <ResourceSharing resourceId={note.id} />
+        {canComment && (
+          <button
+            className="icon-button"
+            aria-label="Review suggestions"
+            title="Review and suggest edits"
+            onClick={() => setReview(true)}
+          >
+            <FilePenLine size={17} />
+          </button>
+        )}
         <button
           className="icon-button"
           aria-label="Document history"
@@ -1172,7 +1204,9 @@ function DocumentPane({
                     mode={mode}
                     appearance={appearance.effective}
                     preferences={editorSettings.effective}
-                    readOnly={readonly}
+                    readOnly={
+                      readonly || review || modal === "history" || !!proposal
+                    }
                     retainSession
                     renderContext={renderContext}
                     notes={context.data?.notes ?? []}
@@ -1702,253 +1736,54 @@ function DocumentPane({
         />
       )}
       {modal === "history" && (
-        <Dialog
-          title="Document history"
-          subtitle="Snapshots preserve a specific revision. Restoring creates a new generation and retains a Before restore checkpoint."
+        <ResourceHistory
+          previousVisit={previousVisit}
+          resourceId={note.id}
+          canEdit={!readonly}
+          capture={() => ({ body: editor.current?.text() ?? source })}
+          flush={async () => {
+            await editor.current?.flush();
+          }}
           onClose={closeModal}
-          wide
-        >
-          <div className="ws-actions">
-            <button
-              className="button secondary"
-              onClick={() =>
-                download(note.title + ".md", editor.current?.text() ?? source)
-              }
-            >
-              <Download size={15} />
-              Export current Markdown
-            </button>
-            <a
-              className="button secondary"
-              href={`/api/v1/notes/${note.id}/export?format=html`}
-            >
-              <Download size={15} />
-              HTML
-            </a>
-            <button
-              className="button secondary"
-              onClick={() => {
-                closeModal();
-                setMode("read");
-                void printDocument().catch((error) => setError(error.message));
-              }}
-            >
-              Print / PDF
-            </button>
-          </div>
-          {!readonly && (
-            <form
-              className="ws-snapshot-form"
-              onSubmit={(event) => {
-                event.preventDefault();
-                void action.run(async () => {
-                  await editor.current?.flush();
-                  await post(`notes/${note.id}/history`, {
-                    label: snapshotLabel,
-                  });
-                  setSnapshotLabel("");
-                  versions.reload();
-                });
-              }}
-            >
-              <label>
-                Name a snapshot
-                <input
-                  required
-                  maxLength={100}
-                  value={snapshotLabel}
-                  onChange={(event) => setSnapshotLabel(event.target.value)}
-                  placeholder="e.g. Before changing the model assumptions"
-                />
-              </label>
-              <button className="button primary" disabled={action.busy}>
-                Save snapshot
-              </button>
-            </form>
-          )}
-          <ErrorNotice
-            message={versions.error || action.error}
-            retry={versions.error ? versions.reload : undefined}
-          />
-          <div className="ws-history-list">
-            {versions.data?.map((version) => (
-              <div className="ws-setting-row" key={version.id}>
-                <div>
-                  <strong>{version.label || "Automatic snapshot"}</strong>
-                  <small>
-                    {version.author_name} · {timeAgo(version.created_at)}
-                  </small>
-                </div>
-                {!readonly && (
-                  <button
-                    className="button secondary"
-                    onClick={() => setRestoring(version)}
-                  >
-                    Restore
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-        </Dialog>
+          onRestore={(restored) => {
+            setNote({ ...note, ...restored });
+            setSource(restored.body);
+            setParsed(parseMarkdown(restored.body));
+            refresh();
+          }}
+        />
       )}
-      {restoring && (
-        <Dialog
-          title="Restore this snapshot?"
-          onClose={() => !action.busy && setRestoring(null)}
-        >
-          <p>
-            “{restoring.label || "Automatic snapshot"}” becomes a new document
-            generation. Current synchronized content is preserved in a Before
-            restore snapshot. Export unsynchronized text first.
-          </p>
-          <ErrorNotice message={action.error} />
-          <div className="dialog-footer">
-            <button
-              className="button secondary"
-              disabled={action.busy}
-              onClick={() =>
-                download(
-                  note.title + "-before-restore.md",
-                  editor.current?.text() ?? source,
-                )
-              }
-            >
-              Export local draft
-            </button>
-            <button
-              className="button primary"
-              disabled={action.busy}
-              onClick={() =>
-                void action.run(async () => {
-                  await editor.current?.flush();
-                  const restored = await post(
-                    `notes/${note.id}/restore-version`,
-                    { snapshotId: restoring.id },
-                  );
-                  setNote({ ...note, ...restored });
-                  setSource(restored.body);
-                  setParsed(parseMarkdown(restored.body));
-                  setRestoring(null);
-                  closeModal();
-                  refresh();
-                })
-              }
-            >
-              Restore snapshot
-            </button>
-          </div>
-        </Dialog>
+      {review && (
+        <SuggestionReview
+          noteId={note.id}
+          generation={note.generation}
+          canEdit={!readonly}
+          onClose={() => setReview(false)}
+          onCompose={(value) => {
+            if (!editor.current?.reviewBinding()) {
+              notify("Wait for the editor to connect before suggesting edits.");
+              return;
+            }
+            setProposal(value ?? "new");
+          }}
+        />
+      )}
+      {proposal && editor.current?.reviewBinding() && (
+        <SuggestionEditor
+          noteId={note.id}
+          generation={note.generation}
+          title={note.title}
+          accepted={editor.current.reviewBinding()!}
+          proposal={proposal === "new" ? undefined : proposal}
+          context={renderContext}
+          insertScope={{ note, space: context.data?.space }}
+          onClose={() => setProposal(null)}
+        />
       )}
     </section>
   );
 }
 
-function InsertResource({
-  kind,
-  note,
-  space,
-  onClose,
-  onInsert,
-}: {
-  kind: "file" | "note";
-  note: Note;
-  space?: Space;
-  onClose: () => void;
-  onInsert: (value: string) => void;
-}) {
-  const { revision, upload, refresh } = useWorkspace(),
-    [search, setSearch] = useState(""),
-    data = useData<ResourcePage>(
-      `resources?kind=${kind}&view=all&limit=60&q=${encodeURIComponent(search)}${note.visibility === "shared" && space ? "&spaceId=" + space.id : ""}`,
-      revision,
-    ),
-    input = useRef<HTMLInputElement>(null);
-  return (
-    <Dialog
-      title={
-        kind === "file"
-          ? "Insert a file from Explorer"
-          : "Link another research note"
-      }
-      onClose={onClose}
-      wide
-    >
-      <label className="ws-search-field">
-        <Search size={17} />
-        <input
-          autoFocus
-          aria-label={`Find ${kind}`}
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder={`Search ${kind === "file" ? "files" : "notes"}…`}
-        />
-      </label>
-      <p className="ws-small muted">
-        {kind === "file"
-          ? "File embeds pin the current immutable version. Uploading a later version won’t silently change this note."
-          : "Note links use stable identifiers, so renaming a note keeps the connection intact."}
-        {note.visibility === "shared" &&
-          " Only this shared space is offered to avoid linking inaccessible personal work."}
-      </p>
-      <ErrorNotice message={data.error} retry={data.reload} />
-      <div className="ws-search-results">
-        {data.data?.items
-          .filter((item) => item.id !== note.id)
-          .map((item) => (
-            <button
-              key={item.id}
-              onClick={() =>
-                onInsert(
-                  kind === "note"
-                    ? `[[${item.id}|${item.name.replace(/[\[\]|]/g, "")}]]`
-                    : `${item.mime?.startsWith("image/") ? "!" : ""}[${item.name.replace(/[\[\]\\]/g, "\\$&")}](/api/v1/attachments/${item.current_version_id})`,
-                )
-              }
-            >
-              <ResourceIcon resource={item} />
-              <span>
-                <strong>{item.name}</strong>
-                <small>
-                  {kind === "file" ? bytes(item.bytes) : "Research note"}
-                </small>
-              </span>
-              <Plus size={15} />
-            </button>
-          ))}
-      </div>
-      {kind === "file" && space?.role === "editor" && (
-        <div className="ws-actions">
-          <button
-            className="button secondary"
-            onClick={() => input.current?.click()}
-          >
-            Upload to this space
-          </button>
-          <button
-            className="button secondary"
-            onClick={() => {
-              data.reload();
-              refresh();
-            }}
-          >
-            Refresh ready files
-          </button>
-          <input
-            ref={input}
-            hidden
-            type="file"
-            multiple
-            onChange={(event) => {
-              upload(Array.from(event.target.files ?? []), space.id);
-              event.target.value = "";
-            }}
-          />
-        </div>
-      )}
-    </Dialog>
-  );
-}
 function FilePane({
   resource,
   requestedVersion,

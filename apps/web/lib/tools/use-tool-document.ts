@@ -6,6 +6,7 @@ import {
 } from "@hocuspocus/provider";
 import { NativeBinding, type PeerSelection } from "@axiom/editor/binding";
 import { LocalPersistence } from "../persistence";
+import { SaveCoordinator } from "../save-coordinator";
 import { acquireDocument, releaseDocument } from "../document-sessions";
 import {
   currentCache,
@@ -14,7 +15,7 @@ import {
   cachePointer,
   recoveryEvent,
 } from "../editor-recovery";
-import { post, ApiError, colorFor, SIGN_OUT_PENDING } from "../client";
+import { api, ApiError, colorFor, SIGN_OUT_PENDING } from "../client";
 import type * as Y from "yjs";
 import {
   documentSource,
@@ -55,8 +56,8 @@ export function useToolDocument(
       blocked = false,
       localSaved = false,
       localError = false,
-      revision = 0,
-      timer: ReturnType<typeof setTimeout> | undefined;
+      revision = 0;
+    const tokenRequests = new AbortController();
     const scope = `${user.id}:${noteId}:${generation}`,
       cache = currentCache(scope),
       key = `${user.id}:${noteId}:${generation}${cache ? ":" + cache : ""}`,
@@ -151,7 +152,8 @@ export function useToolDocument(
         });
         provider.sendStateless(JSON.stringify({ type: "save-check", id }));
       });
-    flush.current = check;
+    const saves = new SaveCoordinator(check);
+    flush.current = () => saves.flush();
     const provider = new HocuspocusProvider({
       websocketProvider: transport,
       name: `${noteId}:${generation}`,
@@ -161,8 +163,10 @@ export function useToolDocument(
         if (!alive || blocked || localStorage.getItem(SIGN_OUT_PENDING))
           return "";
         try {
-          const result = await post(`notes/${noteId}/sync-token`, {
-            accessProtocol: 1,
+          const result = await api(`notes/${noteId}/sync-token`, {
+            method: "POST",
+            body: JSON.stringify({ accessProtocol: 1 }),
+            signal: tokenRequests.signal,
           });
           if (!alive) return "";
           const epoch = String(result.accessEpoch ?? "0"),
@@ -223,13 +227,16 @@ export function useToolDocument(
       onSynced: () => {
         if (alive && !blocked) {
           setError("");
-          void check().catch(() => {});
+          saves.reconnect();
+          void saves
+            .confirm()
+            .catch(() => {})
+            .finally(() => saves.schedule());
         }
       },
       onUnsyncedChanges: ({ number }) => {
         if (!number && alive && authorized && !blocked) {
-          clearTimeout(timer);
-          timer = setTimeout(() => void check().catch(() => {}), 100);
+          saves.schedule();
         }
       },
       onAuthenticationFailed: () => {
@@ -240,9 +247,23 @@ export function useToolDocument(
       },
       onClose: ({ event }) => {
         connected = false;
+        for (const p of pending.values()) {
+          clearTimeout(p.timer);
+          p.reject(
+            new Error(
+              "Connection changed before this save was confirmed. Reconnect and retry.",
+            ),
+          );
+        }
+        pending.clear();
         if (alive && !blocked && !("wasClean" in event)) {
           authorized = false;
           setReadOnly(true);
+          const reconnect = () => {
+            transport.off("disconnect", reconnect);
+            if (alive && !blocked) void transport.connect();
+          };
+          transport.on("disconnect", reconnect);
           transport.disconnect();
           setStatus("Connection interrupted · reconnecting…");
         }
@@ -273,24 +294,25 @@ export function useToolDocument(
     setDocument(doc);
     setBinding(adapter);
     setSource(adapter.source);
-    const unsubscribe = adapter.subscribe((value) => {
-      revision++;
-      if (alive) {
-        setSource(value);
-        // Only the journal's transaction-complete callback may acknowledge a
-        // device save. Rendering the new source is not a durability boundary.
-        setStatus(connected ? "Saving…" : "Saving on device…");
-      }
-      clearTimeout(timer);
-      timer = setTimeout(() => void check().catch(() => {}), 600);
-    });
+    const unsubscribe = adapter.subscribe(
+      (value, _selection, _local, changes) => {
+        if (!changes.length) return;
+        revision++;
+        if (alive) {
+          setSource(value);
+          // Only the journal's transaction-complete callback may acknowledge a
+          // device save. Rendering the new source is not a durability boundary.
+          setStatus(connected ? "Saving…" : "Saving on device…");
+        }
+        saves.changed();
+      },
+    );
     const canvasChanged = () => {
       if (format !== "canvas" || !alive) return;
       revision++;
       setSource(sourceValue());
       setStatus(connected ? "Saving…" : "Saving on device…");
-      clearTimeout(timer);
-      timer = setTimeout(() => void check().catch(() => {}), 600);
+      saves.changed();
     };
     doc.on("update", canvasChanged);
     const presence = adapter.onPresence((value) => {
@@ -325,6 +347,7 @@ export function useToolDocument(
       .catch(() => {});
     const interval = setInterval(() => {
       if (!connected) reconnect();
+      else void saves.confirm().catch(() => {});
     }, 5000);
     const signout = () => {
       blocked = true;
@@ -352,7 +375,8 @@ export function useToolDocument(
     window.addEventListener(recoveryEvent, cacheEvent);
     return () => {
       alive = false;
-      clearTimeout(timer);
+      tokenRequests.abort();
+      saves.destroy();
       clearInterval(interval);
       window.removeEventListener("online", reconnect);
       window.removeEventListener("axiom:close-documents", signout);

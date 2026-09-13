@@ -45,6 +45,14 @@ source and embedded editing, and the legacy engine uses the same document contra
 
 ## Retained researcher workflows
 
+- [Version history and review](VERSION_REVIEW.md): in-file rendered/source diffs,
+  guarded milestones/restores, an isolated suggestion projection over the same
+  editor, assigned reviews and previous-visit comparisons. Proposal edits never
+  enter accepted Y.Text until an authorized, anchor-checked decision commits.
+- Note and studio save confirmation is revision-aware and single-flight. Clean
+  selection/presence events do not trigger materialization writes; a reconnect
+  requires its own acknowledgement. Local/server journals remain authoritative.
+
 - Optional [document minimap](MINIMAP.md): mode-aware miniature, scroll-only
   navigation, viewport dragging and unified reading/search/presence markers.
 

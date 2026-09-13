@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import {
   ArrowUpRight,
@@ -31,10 +31,14 @@ import {
   ResourceIcon,
   useAction,
   useData,
+  useLocation,
   useWorkspace,
   WorkspaceLink,
 } from "./ui";
 import Dialog from "../Dialog";
+const ReviewInbox = dynamic(() => import("../revisions/ReviewInbox"), {
+  ssr: false,
+});
 const CreateResource = dynamic(() =>
   import("./Explorer").then((module) => module.CreateResource),
 );
@@ -232,10 +236,18 @@ export function HomePage() {
 }
 
 export function InboxPage() {
+  const { params } = useLocation(),
+    requestedView = params.get("view");
   const { revision, refresh, spaces } = useWorkspace(),
-    data = useData<any[]>("inbox", revision),
-    action = useAction(),
-    [filter, setFilter] = useState("unread");
+    [filter, setFilter] = useState(
+      requestedView === "reviews" ? "reviews" : "unread",
+    ),
+    data = useData<any[]>(filter === "reviews" ? null : "inbox", revision),
+    action = useAction();
+  useEffect(
+    () => setFilter(requestedView === "reviews" ? "reviews" : "unread"),
+    [requestedView],
+  );
   const entries =
     data.data?.filter((item) => filter === "all" || !item.read_at) ?? [];
   return (
@@ -272,13 +284,17 @@ export function InboxPage() {
         Assignments, mentions, review requests, and due-date reminders.
       </PageHeading>
       <div className="ws-segmented ws-inline-tabs">
-        {["unread", "all"].map((value) => (
+        {["unread", "all", "reviews"].map((value) => (
           <button
             key={value}
             aria-pressed={filter === value}
             onClick={() => setFilter(value)}
           >
-            {value === "unread" ? "Unread" : "All activity"}
+            {value === "unread"
+              ? "Unread"
+              : value === "reviews"
+                ? "Reviews"
+                : "All activity"}
           </button>
         ))}
       </div>
@@ -286,7 +302,9 @@ export function InboxPage() {
         message={data.error || action.error}
         retry={data.error ? data.reload : undefined}
       />
-      {data.loading && !data.data ? (
+      {filter === "reviews" ? (
+        <ReviewInbox />
+      ) : data.loading && !data.data ? (
         <Loading />
       ) : !entries.length ? (
         <Empty icon={Bell} title="All caught up">
@@ -337,8 +355,9 @@ export function InboxPage() {
         </div>
       )}
       <p className="ws-small muted">
-        Only events from spaces you can currently access are shown. Showing the
-        latest 100 events.
+        {filter === "reviews"
+          ? "Showing up to 200 assigned reviews and 200 pending proposals from accessible workspaces."
+          : "Only events from spaces you can currently access are shown. Showing the latest 100 events."}
       </p>
     </main>
   );

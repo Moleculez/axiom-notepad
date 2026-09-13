@@ -358,6 +358,19 @@ export async function accountsApi(
         "SELECT coalesce(sum(bytes),0) AS bytes FROM upload_sessions WHERE space_id=$1 AND status IN ('uploading','verifying') AND expires_at>now()",
         [id],
       );
+      const [drafts] = await query(
+        "SELECT coalesce(sum(a.bytes),0) AS bytes FROM image_draft_assets a JOIN resources r ON r.id=a.resource_id WHERE r.space_id=$1",
+        [id],
+      );
+      const [derivatives] = await query(
+        "SELECT coalesce(sum(d.bytes),0) AS bytes FROM file_derivatives d JOIN file_versions v ON v.id=d.version_id JOIN resources r ON r.id=v.resource_id WHERE r.space_id=$1",
+        [id],
+      );
+      totals.drafts = drafts.bytes;
+      totals.previews = derivatives.bytes;
+      totals.bytes = String(
+        BigInt(totals.bytes) + BigInt(drafts.bytes) + BigInt(derivatives.bytes),
+      );
       const [budget] = space.group_id
         ? await query(
             "SELECT quota_bytes FROM spaces WHERE kind='team' AND group_id=$1",

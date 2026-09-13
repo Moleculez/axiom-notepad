@@ -23,10 +23,11 @@ export async function writeDueCheckpoints(
   );
   for (const pending of rows) {
     await client.query(
-      `INSERT INTO snapshots(note_id,title,body,state,generation,contributors,author_id,source_format)
-         SELECT n.id,n.title,n.body,d.state,n.generation,$2::text[],CASE WHEN cardinality($2::text[])=1 AND EXISTS(SELECT 1 FROM "user" WHERE id=($2::text[])[1]) THEN ($2::text[])[1] END,n.source_format
-         FROM notes n JOIN documents d ON d.room=n.id::text||':'||n.generation::text WHERE n.id=$1
-         AND n.body IS DISTINCT FROM (SELECT body FROM snapshots WHERE note_id=n.id ORDER BY created_at DESC,id DESC LIMIT 1)`,
+      `INSERT INTO snapshots(note_id,title,body,state,generation,contributors,author_id,source_format,settings)
+         SELECT n.id,n.title,n.body,d.state,n.generation,$2::text[],CASE WHEN cardinality($2::text[])=1 AND EXISTS(SELECT 1 FROM "user" WHERE id=($2::text[])[1]) THEN ($2::text[])[1] END,n.source_format,p.settings
+         FROM notes n JOIN documents d ON d.room=n.id::text||':'||n.generation::text LEFT JOIN tool_projects p ON p.resource_id=n.id WHERE n.id=$1
+         AND (n.body IS DISTINCT FROM (SELECT body FROM snapshots WHERE note_id=n.id ORDER BY created_at DESC,id DESC LIMIT 1)
+           OR p.settings IS DISTINCT FROM (SELECT settings FROM snapshots WHERE note_id=n.id ORDER BY created_at DESC,id DESC LIMIT 1))`,
       [pending.note_id, pending.contributors],
     );
     await client.query(

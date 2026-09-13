@@ -10,6 +10,7 @@ import {
   recordActivity,
 } from "./workspace-service";
 import { resourceNameSchema } from "./workspace";
+import { lockRevisionResource } from "./revision-audit";
 import { reserveCapacity } from "./uploads-api";
 import { putAttachment, removeAttachment } from "./storage";
 import JSZip from "jszip";
@@ -50,6 +51,7 @@ export async function researchToolsApi(
         parentId: uuid.nullable().default(null),
         id: uuid.optional(),
         initialState: z.string().max(8_000_000).optional(),
+        settings: settings.optional(),
       })
       .parse(await request.json());
     const space = await spaceAccess(userId, input.spaceId, "edit");
@@ -172,8 +174,14 @@ export async function researchToolsApi(
             );
           }
           await client.query(
-            "INSERT INTO tool_projects(resource_id,kind) VALUES($1,$2)",
-            [resourceId, input.kind],
+            "INSERT INTO tool_projects(resource_id,kind,settings) VALUES($1,$2,$3)",
+            [
+              resourceId,
+              input.kind,
+              input.kind === "math"
+                ? mathProjectSettings.parse(input.settings ?? {})
+                : (input.settings ?? {}),
+            ],
           );
           await recordActivity(client, {
             spaceId: space.id,
@@ -228,6 +236,9 @@ export async function researchToolsApi(
       .parse(await request.json());
     await transaction(async (client) => {
       await requireScope(client, userId, resource.space_id, "edit");
+      await lockRevisionResource(client, id, resource.space_id);
+      if (project.kind === "math")
+        await client.query("SELECT id FROM notes WHERE id=$1 FOR UPDATE", [id]);
       const r = await client.query(
         "UPDATE tool_projects SET settings=$2,version=version+1 WHERE resource_id=$1 AND version=$3 RETURNING version",
         [
@@ -244,6 +255,11 @@ export async function researchToolsApi(
         throw new HttpError(
           409,
           "Studio settings changed elsewhere. Reload before applying your changes.",
+        );
+      if (project.kind === "math")
+        await client.query(
+          "INSERT INTO document_checkpoint_pending(note_id,contributors) VALUES($1,ARRAY[$2]::text[]) ON CONFLICT(note_id) DO UPDATE SET last_edit_at=now(),contributors=ARRAY(SELECT DISTINCT unnest(document_checkpoint_pending.contributors||excluded.contributors))",
+          [id, userId],
         );
     });
     return json({ ok: true });
@@ -351,6 +367,9 @@ export async function researchToolsApi(
         expectedVersion: uuid.nullable(),
         mutationId: uuid,
         bundle: z.string().max(48_000_000),
+        restoreVersion: uuid.optional(),
+        expectedDraftRevision: z.number().int().nonnegative().optional(),
+        label: z.string().trim().min(1).max(120).optional(),
       })
       .parse(await request.json());
     const data = Buffer.from(input.bundle, "base64");
@@ -454,6 +473,9 @@ export async function researchToolsApi(
           token: input.token,
           fence: input.fence,
           expectedVersion: input.expectedVersion,
+          restoreVersion: input.restoreVersion,
+          expectedDraftRevision: input.expectedDraftRevision,
+          label: input.label,
         },
         async (client) => {
           await requireScope(client, userId, resource.space_id, "edit");
@@ -494,10 +516,45 @@ export async function researchToolsApi(
               409,
               "A newer version was saved. Keep your draft and save it as a copy.",
             );
+          const {
+            rows: [head],
+          } = await client.query(
+            "SELECT revision FROM image_cloud_drafts WHERE resource_id=$1 FOR UPDATE",
+            [id],
+          );
+          if (
+            input.expectedDraftRevision !== undefined &&
+            Number(head?.revision ?? 0) !== input.expectedDraftRevision
+          )
+            throw new HttpError(
+              409,
+              "The shared working draft changed. Refresh the comparison before restoring.",
+            );
+          const {
+            rows: [restore],
+          } = input.restoreVersion
+            ? await client.query(
+                "SELECT a.*,v.label FROM attachments a JOIN file_versions v ON v.id=a.id WHERE v.resource_id=$1 AND v.id=$2 FOR SHARE OF v",
+                [id, input.restoreVersion],
+              )
+            : { rows: [] };
+          if (input.restoreVersion && !restore)
+            throw new HttpError(404, "This image revision is unavailable.");
+          const { rows: restoreDerivatives } = restore
+            ? await client.query(
+                "SELECT * FROM file_derivatives WHERE version_id=$1",
+                [restore.id],
+              )
+            : { rows: [] };
           await reserveCapacity(
             client,
             target.space_id,
-            data.length + preview.length,
+            data.length +
+              preview.length +
+              (restore
+                ? Number(restore.bytes) +
+                  restoreDerivatives.reduce((n, d) => n + Number(d.bytes), 0)
+                : 0),
           );
           const version = randomUUID();
           await client.query(
@@ -518,18 +575,72 @@ export async function researchToolsApi(
             "INSERT INTO file_derivatives(version_id,kind,storage_key,mime,bytes) VALUES($1,'image-project-v1',$2,'image/png',$3)",
             [version, previewKey, preview.length],
           );
+          if (input.label || restore)
+            await client.query(
+              "UPDATE file_versions SET label=$2 WHERE id=$1",
+              [version, restore ? "Before restore" : input.label],
+            );
+          let publishedVersion = version;
+          if (restore) {
+            publishedVersion = randomUUID();
+            await client.query(
+              "INSERT INTO attachments(id,name,mime,bytes,storage_key,sha256) VALUES($1,$2,$3,$4,$5,$6)",
+              [
+                publishedVersion,
+                restore.name,
+                restore.mime,
+                restore.bytes,
+                restore.storage_key,
+                restore.sha256,
+              ],
+            );
+            await client.query(
+              "INSERT INTO file_versions(id,resource_id,ordinal,created_by,label) SELECT $1,$2,coalesce(max(ordinal),0)+1,$3,$4 FROM file_versions WHERE resource_id=$2",
+              [
+                publishedVersion,
+                id,
+                userId,
+                ("Restored · " + (restore.label ?? "earlier image")).slice(
+                  0,
+                  120,
+                ),
+              ],
+            );
+            for (const derivative of restoreDerivatives)
+              await client.query(
+                "INSERT INTO file_derivatives(version_id,kind,storage_key,mime,bytes) VALUES($1,$2,$3,$4,$5)",
+                [
+                  publishedVersion,
+                  derivative.kind,
+                  derivative.storage_key,
+                  derivative.mime,
+                  derivative.bytes,
+                ],
+              );
+          }
           await client.query(
             "UPDATE resources SET current_version_id=$2,version=version+1,updated_at=now() WHERE id=$1",
-            [id, version],
+            [id, publishedVersion],
           );
           await recordActivity(client, {
             spaceId: target.space_id,
             userId,
             resourceId: id,
             kind: "uploaded",
-            title: "Saved an image project version",
+            title: restore
+              ? "Restored an image revision; previous draft retained"
+              : "Saved an image project version",
           });
-          return { versionId: version, storageKey: key };
+          // The explicit immutable version now contains the working draft.
+          await client.query(
+            "DELETE FROM image_cloud_drafts WHERE resource_id=$1",
+            [id],
+          );
+          return {
+            versionId: publishedVersion,
+            beforeRestore: restore ? version : undefined,
+            storageKey: key,
+          };
         },
       );
       published = result.storageKey === key;

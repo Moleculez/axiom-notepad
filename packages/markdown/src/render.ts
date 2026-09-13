@@ -21,6 +21,34 @@ export function highlightCode(source: string, language: string) {
     ? hljs.highlight(source, { language, ignoreIllegals: true }).value
     : escapeHtml(source);
 }
+function reviewText(n: N, ranges: RenderContext["reviewRanges"]) {
+  const text = n.text ?? "";
+  const matching = ranges?.filter((r) => r.from < n.to && r.to > n.from);
+  if (!matching?.length) return escapeHtml(text);
+  if (text.length !== n.to - n.from)
+    return (
+      '<span class="revision-word revision-' +
+      matching[0].kind +
+      '">' +
+      escapeHtml(text) +
+      "</span>"
+    );
+  let at = 0,
+    html = "";
+  for (const r of matching) {
+    const from = Math.max(at, r.from - n.from),
+      to = Math.min(text.length, r.to - n.from);
+    html +=
+      escapeHtml(text.slice(at, from)) +
+      '<span class="revision-word revision-' +
+      r.kind +
+      '">' +
+      escapeHtml(text.slice(from, to)) +
+      "</span>";
+    at = to;
+  }
+  return html + escapeHtml(text.slice(at));
+}
 export function safeUrl(url: string, image = false): string {
   const cleaned = url.trim().replace(/[\u0000-\u0020\u007f]/g, "");
   if (
@@ -70,7 +98,25 @@ export function renderDocument(
       ? ` data-reading-from="${n.from}" data-reading-to="${n.to}" data-reading-type="${attr(n.type)}"`
       : "";
   const render = (n: N, tight = false): string => {
-    const html = renderNode(n, tight);
+    let html = renderNode(n, tight);
+    if (
+      !exact &&
+      context.reviewRanges?.some((r) => r.from < n.to && r.to > n.from) &&
+      [
+        "paragraph",
+        "heading",
+        "codeBlock",
+        "mathBlock",
+        "table",
+        "frontmatter",
+        "image",
+        "hr",
+      ].includes(n.type)
+    )
+      html = html.replace(
+        /^<([a-z][\w-]*)(?=[\s>])/i,
+        '<$1 data-revision="changed"',
+      );
     return context.blockMarks &&
       !exact &&
       [
@@ -99,7 +145,7 @@ export function renderDocument(
       case "document":
         return children(n);
       case "text":
-        return escapeHtml(n.text ?? "");
+        return reviewText(n, exact ? undefined : context.reviewRanges);
       case "softbreak":
         return "\n";
       case "hardbreak":
