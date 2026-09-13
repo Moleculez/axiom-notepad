@@ -45,7 +45,15 @@ Offline sign-out stores a pending-revocation marker before clearing caches, lock
 
 ## Offline limits
 
-The production service worker caches only the public application shell and immutable code/font assets—not API responses or private files. IndexedDB stores opened documents per account and generation. Small metadata caches support navigation. First-time sign-in, unopened notes, unpinned attachments/PDFs, new notes, membership, group import/export, and server history require connectivity. Do not treat offline caches as the sole backup.
+The production service worker caches only the public application shell and
+immutable code/font assets—not API responses or private files. IndexedDB stores
+opened documents per account and generation. Explicit offline packages retain
+selected metadata/files separately and can queue supported native creation,
+rename, same-workspace move and Trash operations. First-time sign-in, unselected
+content, administration, cross-workspace jobs and server history require
+connectivity. Queued operations reauthorize and resolve conflicts on reconnect;
+they are not server-confirmed changes while offline. See [offline boundaries](PRODUCTIVITY_PLATFORM.md).
+Do not treat offline caches as the sole backup.
 
 PDF copies are per-paper opt-in, stored as binary arrays in the account's `research-v1` IndexedDB database; legacy Blob copies remain readable. SHA-256 is checked on pin and load. Online viewing does not require writable research storage. Pins are reauthorized on opening, reconnect/focus, and periodic visible-tab checks. A denial removes the cached PDF and synchronized annotation copies; unsynchronized personal work remains available for export. Offline copies cannot be remotely recalled.
 
@@ -60,24 +68,26 @@ reconfigure the existing sample view; hiding it preserves the session. Profile
 and notification forms use independent saved baselines and their existing APIs,
 not the Appearance/Writing draft controller. See [settings behavior](SETTINGS.md).
 
-Appearance schema v2 adds Frost/Graphite and bounded material controls. The reader normalizes v1 profiles/caches using the old defaults, preserving custom fields. New profiles use sans-serif typography and glass chrome. Migration 2 adds only `user_preferences.previous_preferences`. The authenticated, no-store preference PATCH accepts optional `savePrevious`; snapshot capture and the new preference version commit in the same compare-and-swap statement. Retries with the same mutation ID cannot overwrite the snapshot. Restoring uses the same revision/merge path; no privileged restore endpoint exists. Writes from v1 clients receive HTTP 426 to prevent dropping fields they cannot represent. Portable palette JSON remains version 1.
+Current appearance preferences use **schema 8**; Writing uses **schema 2** and
+portable palette JSON remains **version 1**. Clients advertise
+`X-Axiom-Appearance-Schema: 8` on bundle requests. Readers normalize older saved
+profiles without dropping authored choices. Older clients receive a representable
+shape or HTTP 426; stale writes cannot silently erase new settings. The optional
+`savePrevious` snapshot and preference revision commit in the same compare-and-swap
+statement. Restoring uses the same conflict/idempotency path, not a privileged endpoint.
 
-Appearance schema v3 added `latinModern`; v4 adds `documentDecorations: none | latex`
-without database DDL or default typography changes. Exact old LaTeX Article
-signatures upgrade with decorations enabled; other old profiles use none. Current
-clients now advertise `X-Axiom-Appearance-Schema: 5` on bundle requests. Legacy GETs
-receive v2/v3/v4 only if the current and previous appearance can be represented;
-otherwise 426. The account-scoped prepaint cache includes the decoration mode.
-Legacy appearance writes are rejected before mutation. Writing remains schema v2.
-LaTeX Article and Paper Ink/Night Paper are independent optional type/color presets.
-Fonts are local WOFF2 assets included in the offline build; personal HTML embeds
-their bytes and license. Engine rollback must retain this compatibility layer.
+Earlier schema additions were materials/restore points (2), Latin Modern (3),
+document decorations (4), theme packs (5), block guides (6), reading marks (7) and
+the minimap (8). These are preference-format revisions, not database versions.
+Theme packs are statically registered, scoped CSS; arbitrary user CSS and remote
+font URLs are not accepted. User overrides and high-contrast choices stay
+authoritative. Fonts are bundled local WOFF2 assets; personal HTML embeds the
+required fonts and licenses. See [settings](SETTINGS.md) and [theme authoring](THEME_AUTHORING.md).
 
-Schema v5 adds a statically registered `themePack` ID with paired base palettes.
-User overrides and high-contrast presets stay authoritative; packs are trusted,
-scoped CSS compiled into the application, never loaded from user-supplied URLs.
-The settings Interface workbench and build-time manifest/CSS/contrast validator
-share the same tokens. See [theme authoring](THEME_AUTHORING.md).
+The database migration sequence currently ends at **20**: migration 19 adds
+annotation-thread support and migration 20 extends visual placement annotations.
+Fresh initialization and an 18 → 20 upgrade are rehearsed on separate disposable
+databases; the migration receipt is not a backup or a production rollout.
 
 Canvas now uses internal schema v1 with explicit JSON Canvas interchange, modular
 geometry/sizing/preview/export boundaries and nested collaborative text. Migration

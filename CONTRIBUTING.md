@@ -13,12 +13,12 @@ packages/editor/   Canonical-source editing/projection adapters
 packages/markdown/ Axiom Markdown parser and renderers
 packages/shared/   Server services, authorization, migrations and shared contracts
 scripts/dev/       Local setup, fixtures and isolated staging
-scripts/build/     Vendored browser assets and offline manifests
+scripts/build/     Vendored assets, brand/showcase generation and offline manifests
 scripts/ops/       Administration, migration, backup, worker and safe cleanup
 scripts/verify/    Theme, migration, persistence and integration checks
 tests/             Unit, parser fixtures and browser regressions
 deploy/            Docker/Compose support and secondary native services
-docs/              Current guides; dated development logs in docs/archive/
+docs/              Current guides, curated assets and dated historical records
 ```
 
 Three root script shims preserve existing worker/watch and dated staging invocations.
@@ -42,6 +42,33 @@ tests require an isolated database, attachment root, origin and synchronization 
 See [verification](docs/VERIFICATION.md); a passing unit suite is not browser acceptance.
 Record actual results, skipped gates and build identity. Retain failure evidence until
 the cause is resolved. Keep private reports, `.env*`, backups and datasets out of Git.
+
+For changes involving the current database sequence, run the non-destructive
+fresh/upgrade rehearsal against local PostgreSQL:
+
+```sh
+npx tsx scripts/verify/rehearse-current-migrations.ts
+```
+
+It creates and retains two uniquely named test databases; it never migrates or
+resets the application database from `.env`. The configured local role needs
+permission to create databases. This tests schema upgrades, not full backup recovery.
+
+## Documentation and visual assets
+
+Keep README concise and route readers through the [documentation index](docs/README.md).
+Update the relevant current guide alongside behavior changes. Preserve dated
+evidence as history; label superseded release records instead of presenting their
+test totals, ports or dependency decisions as current. The docs checker covers
+local Markdown links, reference definitions and HTML image/picture assets; it does
+not validate external websites or fragment anchors.
+
+Use [brand criteria](docs/BRANDING.md) and [showcase generation](docs/SHOWCASE.md) for
+the shared mark, icons and banners. `npm run brand:build` is deterministic;
+`npm run docs:assets` captures a fresh fictional workspace on isolated staging.
+Only the reviewed outputs in `docs/assets/` and the public brand folder belong in
+Git. Raw screenshots/traces, auth state and capture receipts do not. Check light
+and dark artwork visually, including reduced-size readability, before committing.
 
 ## Change contracts
 

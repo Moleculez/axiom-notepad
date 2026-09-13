@@ -1,21 +1,23 @@
 # Canvas, Explorer, connections and selected offline work
 
-September 11, 2026. This extends the existing research workspace; it is not a
+Current file-first workbench contract. This extends the research workspace; it is not a
 claim of complete Obsidian Canvas, Google Drive or Office parity.
 
 ## Creation and application tabs
 
-Creating a Math, Image, Canvas or Text project replaces its **Create project**
-tab and the current entry in that tab's history. The tab identity, order, group
-and pin are preserved. Completion in a background tab changes only that tab;
-closing the creation tab or navigating elsewhere while saving never replaces an
-unrelated page. Image import file/version parameters survive the replacement.
-New drawings contain a valid blank, downloadable image-project version immediately.
+Explorer's New menu, blank-space menu, sidebar folder actions and New Tab open the
+same **New File** dialog. Markdown, Canvas, Math, Drawing and Text are peers. The
+dialog validates the destination, guards duplicate submissions and closes after
+successful creation; the resource opens at its canonical `/workbench/:type/:id`
+route without leaving a creation tab. A background completion cannot replace an
+unrelated active tab. Legacy creation URLs route through this dialog and retain
+image import/version parameters. New drawings immediately contain a valid blank,
+downloadable image-project version. See [file-first navigation](FILE_WORKBENCH.md).
 
 ## Native Canvas
 
-Open Research tools → Canvas, or Explorer's blank-space context menu → Research
-file → Canvas. Text/Markdown, file, web-link and group cards use the JSON Canvas
+Choose **New → Canvas** in Explorer, or **New canvas** in its blank-space context
+menu. Text/Markdown, file, web-link and group cards use the JSON Canvas
 1.0 interchange format, with supported custom metadata retained on import/export.
 Native files use the existing workspace permissions, Trash, discussions, snapshots,
 application tabs and durable synchronization service.
@@ -111,8 +113,8 @@ caching is disabled in the development server to avoid stale development code.
 Build with `npm run build`; use HTTPS or localhost. Browser install availability
 depends on the browser, with manual installation guidance when needed.
 
-In Explorer, choose **Available offline** on selected work. Settings → Offline
-research shows downloaded packages, progress, device storage and queued actions.
+In Explorer, choose **Available offline** on selected work. Settings → Storage →
+Offline research shows downloaded packages, progress, device storage and queued actions.
 Only explicitly selected private metadata/files are stored in this offline cache;
 ready status requires durable document journals and verified file downloads.
 Downloads are currently bounded to 500 resources and 512 MB per selection.

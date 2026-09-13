@@ -36,6 +36,9 @@ test("authentication and installed-app assets share the new identity", async ({
   expect(
     manifest.shortcuts.every((s: { url: string }) => !s.url.includes("tools")),
   ).toBe(true);
+  const social = await request.get("/brand/social-preview.png");
+  expect(social.ok()).toBe(true);
+  expect(social.headers()["content-type"]).toContain("image/png");
 });
 
 for (const mode of ["light", "dark"] as const)

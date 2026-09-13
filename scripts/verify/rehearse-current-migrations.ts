@@ -37,7 +37,9 @@ try {
         commentId = randomUUID(),
         groupId = randomUUID();
       const document = new Y.Doc();
-      document.getText("content").insert(0, "# Preserved research\n\nA = B.\n");
+      document
+        .getText("markdown")
+        .insert(0, "# Preserved research\n\nA = B.\n");
       const state = Buffer.from(Y.encodeStateAsUpdate(document));
       document.destroy();
       let before: unknown;

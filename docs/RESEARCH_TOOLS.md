@@ -70,8 +70,8 @@ Typora parity.
   Local IndexedDB recovery is account-scoped. Leaving with unpublished work offers
   a durable local draft first; full page exits also release the lease. Older cloud
   versions and original imported images are never overwritten.
-- One file-preview surface for Explorer quick previews, full file tabs and the
-  Tools file viewer. Native audio/video playback has speed, loop, local WebVTT
+- One file-preview surface for Explorer quick previews and full file tabs.
+  Native audio/video playback has speed, loop, local WebVTT
   captions and timestamp links; images have zoom/pan and Edit a copy. Text has
   encoding detection/selection, search, wrapping and bounded incremental loading.
   CSV/TSV and XLSX use a virtualized data grid with cell addresses. XLSX parsing is
@@ -147,7 +147,11 @@ configuration was validated, but the converter was not built/deployed and real
 LibreOffice conversion was not accepted. No real OCR/AI provider was configured or
 called. These are operational acceptance gates, not working external services.
 
-## Verification
+## Historical tool-release verification
+
+The following records preserve September 10–11 acceptance of the tool releases.
+Their ports, totals and private screenshots are historical, not a rerun of the
+current build. See [current verification and remaining gates](VERIFICATION.md).
 
 Migration 12 is additive. A database/attachment backup was created and verified
 before applying it to the live local database; the separate verification database

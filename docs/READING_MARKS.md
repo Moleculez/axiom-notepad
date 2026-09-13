@@ -14,7 +14,7 @@ current block. Empty documents support a point bookmark.
 The bookmark panel supports label/tag/color editing, search, location/recent
 sorting, previous/next navigation, individual and selected deletion, Undo, explicit
 conflict review, and Markdown/JSON export. The same manager is available under
-Settings → Storage → Offline files & reading data. Reattachment is performed in
+Settings → Storage → Offline research. Reattachment is performed in
 the document: choose Reattach, then the new block's menu → Attach here.
 
 Margin icons identify marked blocks. The far-right overview navigates marks

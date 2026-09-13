@@ -1,16 +1,52 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/showcase/banner-dark.png">
+  <img src="docs/assets/showcase/banner-light.png" alt="Axiom research workspace: collaborative Markdown with equations and annotation cards, alongside a connected Canvas. Fictional demonstration content." width="1600">
+</picture>
+
 # Axiom
 
 A self-hosted research workspace for groups in AI, mathematics, physics and STEM.
-Collaborative notes, files and research tools, without billing or commerce.
-This release targets a **controlled research-group beta**, not complete Typora,
-Google Drive or Photoshop parity.
+Write together, connect ideas, and keep the evidence close. Markdown, mathematics,
+Canvas and files share one collaborative workbench, without billing or commerce.
+
+[Quick start](#start-locally) · [Deployment](docs/DEPLOYMENT.md) ·
+[Documentation](docs/README.md) · [Showcase](docs/SHOWCASE.md) ·
+[Contributing](CONTRIBUTING.md)
+
+This is a **controlled research-group beta**, not complete Typora, Google Drive or
+Photoshop parity. [Verification and release gates](docs/VERIFICATION.md) distinguish
+tested workflows from remaining device, accessibility and provider checks.
+
+## Built for research
+
+- **Write with structure.** Collaborative Markdown, visual/source/read modes,
+  display and inline LaTeX, chemistry, nested lists, tables, code, footnotes,
+  citations, Mermaid and a hierarchical outline.
+- **Keep the context.** Linked notes, private-first annotation cards, discussions,
+  editable reading bookmarks, a configurable minimap and an image/diagram viewer.
+- **Connect the evidence.** Collaborative Canvas with rich text and file cards,
+  labeled connections, embedded previews, layout controls and portable exports.
+- **Work as a group.** Invitations, roles, personal and team spaces, shared projects,
+  resource tabs, Explorer drag/move/copy, immutable file versions, Audit and Trash.
+- **Make it yours.** Semantic light/dark themes, Paper Research and Technical Slate
+  packs, separate reading/interface/code typography, device overrides and a live
+  settings scratchpad.
+
+Math Studio, layered Image Studio, Text Studio and protected media/document viewers
+open files in the same workbench. Scoped OAuth/MCP integration and selected offline
+work are included. Provider-assisted OCR/AI and private Office conversion stay
+disabled until explicitly configured. See [feature boundaries](docs/RESEARCH_TOOLS.md)
+and [offline/MCP behavior](docs/PRODUCTIVITY_PLATFORM.md).
+
+## One document, two editing surfaces
 
 Axiom's customized editor preserves canonical Markdown across visual/source editing.
 It owns its parser, source transactions, block interactions and UI, and uses
 Milkdown/ProseMirror and CodeMirror as underlying editing libraries. The current Axiom
 editor is the default in both development and production. The older native engine is
 an explicit rollback path—not a second user-facing product. See [the architecture and
-exact dependency boundary](docs/EDITOR_VNEXT.md).
+exact dependency boundary](docs/EDITOR_VNEXT.md). Code is displayed, never executed;
+this is not an end-to-end encrypted vault or an executable notebook platform.
 
 ## Start locally
 
@@ -45,43 +81,10 @@ Development output uses `.next/dev-8080`, separate from `AXIOM_DIST_DIR` product
 builds. Editor rollback requires an explicit `NEXT_PUBLIC_AXIOM_EDITOR_ENGINE=native`
 and a new build.
 
-## Included workflows
-
-- Research writing: collaborative Markdown, rich/source/read modes, math/chemistry,
-  tables/code, nested quotes/lists, footnotes, citations, Mermaid, outline,
-  anchored discussions, versions, local persistence and server-confirmed saves.
-- Workspace and file management: resource tabs, list/grid Explorer, folders,
-  drag/move/copy, selection menus, immutable versions, resumable uploads,
-  protected previews, Audit, workspace administration and guarded Trash recovery.
-- Groups and accounts: invitations, administrative/content roles, profiles/avatars,
-  membership and ownership flows, sessions, password MFA/recovery and optional
-  explicitly linked institutional identity.
-- File-specific views: Math Studio, layered Image Studio, Text Studio, shared media/text/
-  CSV/XLSX/PDF viewers, reading annotations, reference libraries and task/review workflows.
-- [Reading marks](docs/READING_MARKS.md): editable bookmarks, right-margin navigation,
-  private-first Markdown/math annotation cards, offline drafts and shared discussion.
-- [Document minimap](docs/MINIMAP.md): opt-in visual/source miniatures, scroll-only
-  navigation, unified research markers and configurable appearance with live preview.
-- [Image/Mermaid viewer](docs/VISUAL_VIEWER.md): intrinsic zoom, comparison,
-  metadata, figure inspection, exports and private-first placement annotations.
-- Canvas: collaborative rich-text and file cards, names/tags, side-aware connections,
-  positioning/alignment, locks/automatic height, protected previews, card discussions
-  and PNG/JPG/SVG/PDF/Markdown/JSON Canvas/portable ZIP exports.
-- Personal appearance: semantic light/dark palettes, reviewed Paper Research and
-  Technical Slate packs, typography/layout controls, account/device overrides,
-  theme import/export and live writing/interface previews.
-- Integration and offline work: scoped OAuth/MCP access, installable PWA shell,
-  explicitly selected offline content, reconnect/recovery controls and exports.
-  Provider-assisted OCR/AI and private Office conversion stay disabled until configured.
-
-See the [documentation index](docs/README.md) for behavior and feature limits.
-All file types open directly in resource tabs: `/workbench/notes/:id`,
-`/canvas/:id`, `/math/:id`, `/image/:id`, `/text/:id` and media/document views
-under the same `/workbench` prefix. Explorer's New menu creates notes, canvases,
-equations, drawings and text files together. Old `/tools` links redirect; there is
-no separate Tools landing or creation tab. See [file-first navigation](docs/FILE_WORKBENCH.md).
-The [theme authoring criteria](docs/THEME_AUTHORING.md) define consistent tokens,
-typography, controls, accessibility, licensing and acceptance checks for developers.
+All file types open directly in resource tabs under `/workbench`: notes, Canvas,
+math, images, text and media/document views. Explorer's New menu creates them
+together. There is no separate Tools landing or creation tab; old links redirect.
+See [file-first navigation](docs/FILE_WORKBENCH.md).
 
 ## Deployment
 
@@ -114,6 +117,7 @@ npm run lint
 npm test
 npm run validate:themes
 npm run docs:check
+npm run brand:build        # regenerate the shared logo and installed-app icons
 npm run clean:generated     # inventory only; add --apply after review
 ```
 
@@ -123,6 +127,11 @@ from historical runs and lists remaining device/provider gates.
 [Contributing](CONTRIBUTING.md) explains project structure and change contracts;
 [maintenance](docs/MAINTENANCE.md) explains safe cleanup and regeneration.
 
-Private configuration, databases, attachments, backups, caches, screenshots and
-traces are excluded from Git. A server database backup without its matching stored
-files is not a complete recovery plan.
+Private configuration, databases, attachments, backups, caches and raw test reports
+stay outside Git. Only reviewed, fictional [showcase assets](docs/SHOWCASE.md) are
+committed. The [brand guide](docs/BRANDING.md) and [theme authoring criteria](docs/THEME_AUTHORING.md)
+keep future visual work consistent. Third-party licenses remain with their assets;
+this documentation does not introduce a new project license.
+
+A server database backup without its matching stored files is not a complete
+recovery plan. Always rehearse recovery before relying on the deployment.

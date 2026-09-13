@@ -17,6 +17,7 @@
     "test:deployment": "tsx scripts/verify/rehearse-deployment.ts",
     "tools:assets": "tsx scripts/build/vendor-tools.ts",
     "brand:build": "tsx scripts/build/brand.ts",
+    "docs:assets": "tsx scripts/build/docs-assets.ts",
     "setup": "tsx scripts/dev/setup.ts",
     "backup": "tsx scripts/ops/backup.ts",
     "reset:development": "tsx scripts/ops/reset-development.ts",

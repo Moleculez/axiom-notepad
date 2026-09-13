@@ -93,7 +93,7 @@ Local IndexedDB drafts are account-scoped. Local writes do not wait on network
 requests. Reconnect replay continues after closing the viewer; failed or stale
 mutations remain visible for retry, server-version selection, or JSON recovery.
 Posting a reply durably queues it; text not yet posted in a reply composer is
-transient. **Settings → Storage → Offline files & reading data** includes owned
+transient. **Settings → Storage → Offline research** includes owned
 visual annotations in the personal export. These caches are trusted-device data,
 not end-to-end encrypted storage. Sign out follows the application's account-cache
 cleanup contract; export unsynchronized work first.

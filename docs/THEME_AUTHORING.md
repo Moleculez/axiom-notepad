@@ -5,6 +5,11 @@ The JSON palette importer remains color-only (`axiom-theme`, v1). It never accep
 CSS, HTML, JavaScript, font URLs, or executable expressions. A saved pack ID only
 selects an entry in the static registry; it never becomes a filesystem/import URL.
 
+The connected-knowledge logo is a shared component, not a pack-specific drawing.
+It follows semantic accent/on-accent colors and radius. Packs must retain its
+geometry, accessible naming and focus behavior; see [brand criteria](BRANDING.md).
+Do not replace it with an upstream editor mark or add a remote font for lettering.
+
 ## Authoring a pack
 
 1. Add a typed manifest to `packages/shared/src/theme-packs.ts` and register its ID

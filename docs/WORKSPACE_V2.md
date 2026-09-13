@@ -1,5 +1,10 @@
 # Workspace reliability and desktop workflows
 
+> Historical September 10, 2026 implementation and acceptance snapshot. Theme
+> counts, navigation and test totals below belong to that snapshot. Current
+> contracts are in [the workbench guide](FILE_WORKBENCH.md),
+> [Settings](SETTINGS.md) and [Verification](VERIFICATION.md).
+
 Desktop implementation and verification, 2026-09-10. This is an everyday
 research-workspace release, not a claim of complete Google Drive or Chrome
 feature parity. Research permissions, Markdown, file identities/versions and

@@ -10,9 +10,14 @@ The default landing page is `/workbench/home`. Existing `/?note=…` and `/?pape
 - **Research:** reading tools, STEM note starters, reference libraries and the knowledge graph.
 - **Inbox:** assignments, reviews, discussions and due-date reminders; category and optional email controls live in account settings.
 - **People:** researchers in your groups, searchable interests/affiliations and profiles.
-- **Workspaces / Audit / Trash:** full-page workspace administration, durable authorized change history, operation progress and batch file/workspace recovery. See [the management console guide](MANAGEMENT_CONSOLE.md).
+- **Administration:** Workspaces, Groups, Audit and Trash stay below Your spaces in the same sidebar. They provide workspace and membership administration, authorized change history, operation progress and batch recovery. See [the management console guide](MANAGEMENT_CONSOLE.md).
 
-The top bar changes application pages; the left tree changes context. An item's information button opens its inspector. Search, transfers and account tools stay in the top bar; creation lives in the relevant page and context menus. Account settings remain separate from the Workspaces administration console.
+The top bar holds resource tabs, a pages launcher, search, transfers and account
+tools. The same workspace tree remains visible across documents, settings and
+administration. An item's information action opens its inspector. Creation lives
+in Explorer, relevant pages and context menus, not a permanent top-bar Create
+button. Account → My groups stays inside Settings; explicit management links open
+the full workspace/group administration pages. See [file-first navigation](FILE_WORKBENCH.md).
 
 The profile dropdown closes after choosing an item, clicking outside, moving keyboard focus away or pressing Escape. Escape returns focus to the profile trigger; canceling sign-out also returns there.
 
@@ -20,7 +25,13 @@ Click a workspace or folder name to open it and expand its tree, including an al
 
 Right-click a workspace, folder or selected Explorer item for its contextual actions. Shift+F10 opens the same menu from the keyboard; Escape returns focus to the original item. Explorer supports arrow navigation, F2 rename, platform Copy/Cut/Paste and guarded Delete. Folder menus create notes/folders or upload directly into that folder. Cross-workspace operations confirm the destination audience.
 
-Use **Manage workspaces** beside **Your spaces** or in the profile menu to open the full directory of Active, Archived and Trash workspaces. Each workspace has General, People, Invitations, Storage, Integrations, Activity and Lifecycle sections. Archive pauses editing and scheduled work. Workspace Trash has no expiry, and restoration preserves independently archived projects and individually trashed resources. Owner-only permanent removal checks outside evidence and has a cancellation window. See [management and recovery details](MANAGEMENT_CONSOLE.md).
+Use **Administration → Workspaces** for the directory of Active, Archived and
+Trash workspaces and workspace creation. Each workspace has General, People,
+Invitations, Storage, Integrations, Activity and Lifecycle sections. Archive pauses
+editing and scheduled work. Workspace Trash has no expiry, and restoration
+preserves independently archived projects and individually trashed resources.
+Owner-only permanent removal checks outside evidence and has a cancellation
+window. See [management and recovery details](MANAGEMENT_CONSOLE.md).
 
 ## Ownership and sharing
 
@@ -34,7 +45,10 @@ Transfer ownership before leaving a group; assign another project lead before re
 
 Keep up to 20 resources in working-set tabs, with at most two visible panes. Hidden notes retain local undo history. Closing a note checks device persistence before releasing the retained document. Narrow screens switch panes instead of squeezing two editors together.
 
-Write, Source and Read use the same Markdown document. `Command+/` on macOS or `Ctrl+/` elsewhere switches Write/Source. The 69-command palette, customizable shortcuts, slash insertion, math/code/table/quote editing and nested outline remain available. See [the editor guide](EDITOR.md).
+Write, Source and Read use the same Markdown document. `Command+/` on macOS or
+`Ctrl+/` elsewhere switches Write/Source. The searchable command palette,
+customizable shortcuts, slash insertion, rich research blocks, nested outline,
+reading marks and optional minimap remain available. See [the editor guide](EDITOR.md).
 
 The document panel holds the outline, comments, references and bookmarks. Reading positions resume across devices; hash links and deliberate navigation take priority. Recovered source remains available after a generation change. “Saved on server” is a persistence acknowledgment, not simply a connected indicator.
 
@@ -42,7 +56,13 @@ The document panel holds the outline, comments, references and bookmarks. Readin
 
 Explorer accepts files up to **1,000,000,000 bytes (1 GB)** in resumable 8 MiB parts. Transfers are checksummed before publishing. Pause, resume/reselect the original, retry verification or cancel in the transfer panel. Interrupted uploads expire after seven days. Keep the workspace worker running: it completes uploads and prepares previews/exports/reminders.
 
-Replacing a file creates an immutable version. Pinned links, annotations and citations keep their version identity. Restoring an older version creates a new current version without modifying old bytes. Images, PDFs and small text files have protected previews; other file types download. The PDF annotation reader loads a complete copy; files over 100 MB ask before opening to avoid unexpected memory pressure.
+Replacing a file creates an immutable version. Pinned links, annotations and
+citations keep their version identity. Restoring an older version creates a new
+current version without modifying old bytes. Images, media, PDFs, text/data and
+supported Office files have protected viewers; unsupported formats download.
+Office conversion requires explicit deployment setup. The PDF annotation reader
+loads a complete copy; files over 100 MB ask before opening to avoid unexpected
+memory pressure. See [viewer capabilities and limits](RESEARCH_TOOLS.md).
 
 Storage settings show current files, versions, trash and upload reservations. Team/project libraries share a group quota; displayed space subtotals are not the whole group's usage. Quotas count logical file-version bytes, even when blobs are physically shared. Avatars, previews, exports and multipart staging also occupy server disk but are outside file-version quota totals.
 
@@ -66,4 +86,10 @@ Appearance retains synced/portable themes, semantic color editing, independent i
 
 ## Intentional boundaries
 
-No public sharing, commerce, spreadsheet calculations, Office-document co-editing, OCR, automatic AI-provider uploads, executable notebooks, SAML or SCIM is included. Richer graph exploration, a dedicated equation navigator and custom template authoring are possible follow-ups. SMTP, S3, real institutional identity and Internet-facing deployment need their own configuration and verification.
+There is no public sharing, commerce, spreadsheet calculation engine, Office
+co-editing, executable notebook runtime, SAML or SCIM. Provider-assisted OCR/AI is
+optional and disabled until configured; opening research never uploads it to a
+provider automatically. MCP exposes its advertised tool catalog, not every UI
+operation. SMTP, S3, institutional identity and Internet-facing deployment need
+their own configuration and verification. See [research-tool boundaries](RESEARCH_TOOLS.md)
+and [remaining acceptance gates](VERIFICATION.md).

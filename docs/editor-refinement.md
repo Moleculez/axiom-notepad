@@ -1,6 +1,9 @@
 # Editor and preferences refinement
 
-Historical acceptance record for the pre-native refinement release. The subsequent first-party engine replacement has separate [implementation and release gates](NATIVE_EDITOR_IMPLEMENTATION.md); the checks below do not certify that replacement.
+Historical acceptance record for the pre-native refinement release. The later
+[native replacement](NATIVE_EDITOR_IMPLEMENTATION.md) is also historical. Neither
+record certifies the current [Axiom editor](EDITOR_VNEXT.md); consult
+[current verification](VERIFICATION.md) for executed checks and remaining gates.
 
 Approved product contract: routed settings with Apply/Cancel and retained drafts;
 context-first Markdown editing; local MathJax STEM rendering. Markdown and Yjs

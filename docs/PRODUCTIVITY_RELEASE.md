@@ -1,5 +1,10 @@
 # Productivity release — September 2026
 
+> Historical September 9, 2026 acceptance record, including the then-current
+> native editor and administration layout. For today's behavior, use
+> [Settings](SETTINGS.md), [the management console](MANAGEMENT_CONSOLE.md),
+> [the current editor](EDITOR_VNEXT.md) and [Verification](VERIFICATION.md).
+
 ## Interface criteria
 
 - Use the shared semantic palette, typography and focus tokens. Quiet input surfaces still need visible keyboard focus; destructive actions need plain-language confirmation.

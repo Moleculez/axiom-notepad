@@ -1,5 +1,6 @@
 import { access, readFile, readdir } from "node:fs/promises";
 import { dirname, relative, resolve } from "node:path";
+import { documentationLinks } from "./doc-links";
 
 const root = process.cwd();
 async function markdown(directory: string): Promise<string[]> {
@@ -20,37 +21,33 @@ const errors: string[] = [];
 let checked = 0,
   privateReferences = 0;
 for (const path of files) {
-  let fence = "";
-  const lines = (await readFile(path, "utf8")).split("\n");
-  for (let n = 0; n < lines.length; n++) {
-    const line = lines[n],
-      start = line.trimStart().match(/^(`{3,}|~{3,})/);
-    if (start) {
-      fence = fence ? "" : start[1][0];
-      continue;
-    }
-    if (fence) continue;
-    for (const match of line
-      .replace(/`[^`]*`/g, "")
-      .matchAll(/\[[^\]]*\]\((<?[^\s)]+>?)(?:\s+"[^"]*")?\)/g)) {
-      const target = match[1].replace(/^<|>$/g, "");
-      if (/^(?:[a-z][a-z0-9+.-]*:|#|\/\/)/i.test(target)) continue;
+  for (const { target, line } of documentationLinks(
+    await readFile(path, "utf8"),
+  )) {
+    try {
+      const decoded = decodeURIComponent(target.split(/[?#]/)[0]);
       const destination = resolve(
-        dirname(path),
-        decodeURIComponent(target.split(/[?#]/)[0]),
+        decoded.startsWith("/") ? root : dirname(path),
+        decoded.replace(/^\/+/, ""),
       );
       const local = relative(root, destination);
+      if (local === ".." || local.startsWith("../")) {
+        errors.push(
+          `${relative(root, path)}:${line}: outside repository: ${target}`,
+        );
+        continue;
+      }
       // Historical private reports are intentionally not part of a clean clone.
       if (/^(?:data|test-results|playwright-report)\//.test(local)) {
         privateReferences++;
         continue;
       }
-      try {
-        await access(destination);
-        checked++;
-      } catch {
-        errors.push(`${relative(root, path)}:${n + 1}: missing ${target}`);
-      }
+      await access(destination);
+      checked++;
+    } catch {
+      errors.push(
+        `${relative(root, path)}:${line}: missing or invalid ${target}`,
+      );
     }
   }
 }
@@ -70,5 +67,5 @@ if (errors.length) {
   process.exitCode = 1;
 } else
   console.log(
-    `${files.length} Markdown documents and npm script paths checked: ${checked} local references resolved; ${privateReferences} historical private-artifact links excluded. External URLs and fragment anchors are not validated.`,
+    `${files.length} Markdown documents, HTML image/picture assets and npm script paths checked: ${checked} local references resolved; ${privateReferences} historical private-artifact links excluded. External URLs and fragment anchors are not validated.`,
   );

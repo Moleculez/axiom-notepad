@@ -1,7 +1,58 @@
 # Current verification and beta release gates
 
-Updated September 13, 2026. Historical logs are [archived separately](archive/VERIFICATION-2026-09-11.md).
+Updated September 14, 2026. Historical logs are [archived separately](archive/VERIFICATION-2026-09-11.md).
 Do not treat historical browser totals or local build IDs as current release evidence.
+
+## September 13–14 documentation and identity release review
+
+This review preserves the working development dataset and port-8080 service.
+Mutation tests and fictional showcase capture use a separate local PostgreSQL
+database, attachment store and production-build profile on ports **3004/1236**.
+The local checks use Node **22.17.0** and npm **11.18.0**; Node 24 remains the
+recommended runtime and Docker image target. No public deployment or push was run.
+
+- **1,685 unit tests across 68 files pass**, including shared SVG geometry,
+  maskable-icon pixel bounds and 12 documentation-link parser cases.
+- TypeScript, ESLint, both theme-pack validators, formatting/diff checks and the
+  isolated production build pass. The final build prepares **685 offline assets**.
+  Documentation checks cover 42 Markdown guides plus local HTML image/picture
+  references and npm script paths; external URLs and fragment anchors are not checked.
+- **57 product browser scenarios pass** during the pre-branding review: 30
+  file-first/reading-mark/settings/viewer scenarios, five editor-vNext scenarios,
+  nine management/productivity API scenarios and all 13 Canvas-platform scenarios.
+  This includes collaboration/offline convergence, discussions, create/join group
+  flows, workspace lifecycle, Trash, native-file creation and Canvas interactions.
+- **Nine branding scenarios pass** on the final candidate, three each in Chromium,
+  Firefox and WebKit: auth/workspace identity, light/dark geometry, named controls,
+  focus, forced colors, unchanged source, versioned favicon/PNG routes, Apple icon,
+  manifest shortcuts and the public social-image asset. The five editor-vNext
+  scenarios also pass again after the visual rollout. These reruns are not added
+  to the product total a second time.
+- Fresh initialization and **18 → 20 upgrade rehearsals pass**, including an
+  idempotent migration rerun, retained note/Yjs state and legacy discussion data.
+  `scripts/verify/rehearse-current-migrations.ts` creates two new named test
+  databases and retains them for inspection; it never migrates the configured
+  application database. This is not a full backup/restore or Docker rehearsal.
+- Real light/dark editor and Canvas views were captured from fictional content.
+  The 1600 × 900 banners, 1200 × 630 social preview and original SVG/PNG logo were
+  visually inspected. Assets, source composition and reproducible capture commands
+  are in [Showcase](SHOWCASE.md) and [Branding](BRANDING.md).
+
+Private evidence directories are `test-results/release-docs-product-baseline`,
+`release-docs-editor-baseline`, `release-docs-management-verified`,
+`release-docs-canvas-verified` and `release-docs-final-{chromium,firefox,webkit}`,
+all under `test-results/`.
+The first product invocation omitted the editor suite's explicit vNext environment
+flag, so its preflight failed and four cases were skipped; the separate five-case
+rerun passes. Stale management/Canvas test navigation was updated to the current
+shared creation dialog and persistent sidebar, then rerun successfully. Earlier
+failed harness reports remain retained and are not counted as passing suites.
+
+The cross-browser branding checks do **not** clear the older WebKit navigation
+access-control diagnostic below. Physical IME/clipboard, Safari device behavior,
+assistive technology, printing, large real workloads and configured external
+providers still require target-environment acceptance. The September 11 Docker
+rehearsal below is historical, not repeated by this documentation release.
 
 ## September 13 note-link icon alignment
 
@@ -283,6 +334,19 @@ Existing browser suites may enforce a specific isolated origin. The historical
 root staging wrappers preserve those profiles, but new work should use the shared
 runner. Test owner credentials can be supplied with `TEST_OWNER_EMAIL` and
 `TEST_OWNER_PASSWORD`; do not seed the main instance to satisfy older tests.
+
+For the current editor and branding checks, with isolated staging already running:
+
+```sh
+TEST_APP_URL=http://localhost:3004 NEXT_PUBLIC_AXIOM_EDITOR_ENGINE=milkdown \
+  npx playwright test tests/e2e/editor-vnext.spec.ts tests/e2e/branding.spec.ts
+# Repeat branding with TEST_BROWSER=firefox and TEST_BROWSER=webkit.
+npx tsx scripts/verify/rehearse-current-migrations.ts
+```
+
+The migration rehearsal needs a local PostgreSQL role with database-creation
+permission. Its new databases are deliberately retained, not silently dropped.
+For artwork generation, use the separate [showcase workflow](SHOWCASE.md).
 
 ## Required operator acceptance
 

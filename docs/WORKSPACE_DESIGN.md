@@ -1,5 +1,10 @@
 # Desktop workspace design criteria
 
+This is supporting design rationale. The [design system](DESIGN_SYSTEM.md),
+[theme criteria](THEME_AUTHORING.md) and [file-first workbench](FILE_WORKBENCH.md)
+are authoritative for current tokens, navigation and shared dialogs when older
+examples below differ.
+
 The workspace is a private research tool, not a commerce surface. The interface
 should make location, permissions, save state and recovery understandable without
 competing with the research document.

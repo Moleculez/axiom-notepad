@@ -1,5 +1,10 @@
 # Unified workspace implementation
 
+> Historical September 8, 2026 release record. Navigation and deployment
+> checkpoints below are not current operating instructions. Use the
+> [workspace guide](WORKSPACE.md), [file-first workbench](FILE_WORKBENCH.md),
+> [deployment guide](DEPLOYMENT.md) and [current verification](VERIFICATION.md).
+
 Approved: calm/balanced design, top app navigation, unified Explorer, tabs and split view, account-owned personal work, project-boundary viewer/commenter/editor access, 1 GB resumable uploads, manual completed-file/version cleanup, advanced research project management, and configurable invite-only institutional OIDC.
 
 ## Delivery gates

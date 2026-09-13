@@ -1,5 +1,10 @@
 # Desktop editor and workspace management
 
+> Historical pre-vNext desktop release record. The framework-free dependency
+> statement and editor interactions below describe that version, not today's
+> default. Use [the current editor architecture](EDITOR_VNEXT.md),
+> [typing contracts](TYPING_INTEGRITY.md) and [Verification](VERIFICATION.md).
+
 This release continues the first-party editor, without Tiptap, CodeMirror or another editor framework. The installed Typora was used as a visual reference; these are tested Typora-inspired interactions, not a claim of complete compatibility or physical-keyboard/IME certification. Mobile development is explicitly deferred.
 
 ## Editing

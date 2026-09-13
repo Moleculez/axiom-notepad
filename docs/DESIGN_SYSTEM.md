@@ -1,5 +1,10 @@
 # Axiom design criteria
 
+The [brand guide](BRANDING.md) defines the shared connected-knowledge mark and
+showcase identity. Application branding inherits semantic accent and radius
+preferences; it must not impose fixed brand colors on document or account themes.
+Use [theme authoring criteria](THEME_AUTHORING.md) for reviewed pack extensions.
+
 ## Principles
 
 The application should feel calm, legible, predictable and precise. App navigation answers where; the Explorer tree answers what belongs where; the inspector answers what is selected. Do not repeat navigation in all three surfaces.

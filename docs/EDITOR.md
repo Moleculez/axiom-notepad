@@ -2,25 +2,32 @@
 
 Write, Source and Read share one canonical Markdown document. Switching modes, changing appearance or rebinding keys does not reserialize it or create a new collaborative session. Editing commands apply source-range transactions; undo is local to the author, including table operations.
 
-Development on port 8080 uses the Milkdown/CodeMirror-based vNext editor; the
-production default remains the native rollback editor. Both retain these source
-and collaboration contracts. Verified coverage and remaining release gates are
+Development and production both default to Axiom's customized editor, built on
+Milkdown/ProseMirror and CodeMirror. The older native engine requires an explicit
+build-time rollback choice. It is not a separate user-facing product or the
+production default. Ownership, verified coverage and remaining release gates are
 tracked in [Editor vNext](EDITOR_VNEXT.md).
 
-In vNext Write mode, the active heading, paragraph, list item or quote paragraph
-stays literal Markdown, except that complete images remain rendered until explicitly
-opened for in-document source editing. Completed `> ` quote prefixes
-are hidden immediately while the body remains literal inside a rendered quote.
+In Write mode, active prose keeps its editable inline Markdown. Headings retain
+their typography and editable `#` markers. List structure stays rendered: complete
+bullet/number/task prefixes are hidden while the item's body remains editable.
+Complete images remain rendered until explicitly opened for in-document source
+editing. Completed `> ` quote prefixes are hidden immediately while the body
+remains literal inside a rendered quote.
 A bare `>` or `>text` stays source-visible while active. Backspace at the start
 of the quote body unwraps one level of that paragraph; later line boundaries join
 without leaving stray prefixes. Undo restores the operation. Headings keep their H1–H6
 font, size and weight while their real `#` markers remain visible and editable.
 Leaving hides the syntax; deliberately returning the caret reveals the original source without changing
 the heading's typography. Other items stay rendered. Read and export stay clean.
-Enter creates a paragraph (continuing lists/tasks/quotes); Shift-Enter makes a
-hard break, except in single-line headings. Repeated Enter creates visible blank
-paragraphs. Code/math/table surfaces remain specialized. There are no left block
-handles; right-click/Shift-F10 and Alt-Up/Down remain available.
+Enter creates a paragraph or the next list/task/quote item. Shift-Enter makes a
+hard break except in single-line headings; Mod-Enter also makes a hard break
+inside a list item. Enter on a terminal empty item leaves one nesting level.
+Empty-container exits insert the required separators, so the next paragraph does
+not become a lazy continuation of the preceding quote or list. Outside containers,
+repeated Enter creates visible blank paragraphs. Code/math/table surfaces remain
+specialized. There are no left insertion handles; optional folding guides and
+right-margin reading actions have separate controls in Appearance → General.
 
 Hover and right-click never enter source editing or move the typing caret.
 Context actions inspect the clicked block; Escape restores the original caret.
@@ -36,28 +43,28 @@ changed/replaced task marker or lost permission during activation is not overwri
 
 `Mod` means Command on macOS and Control on Windows/Linux. Defaults:
 
-| Action                                              | Shortcut                                      |
-| --------------------------------------------------- | --------------------------------------------- |
-| Write / Source                                      | Mod-/; Mod-Shift-M remains an alias           |
-| Command palette                                     | Mod-Shift-.                                   |
-| Search notes                                        | Mod-K                                         |
-| Shortcut settings                                   | Mod-Alt-/                                     |
-| Find / replace in this note                         | Mod-F / Mod-Shift-F                           |
-| Bold / italic                                       | Mod-B / Mod-I                                 |
-| Strikethrough / highlight                           | Mod-Shift-X / Mod-Shift-H                     |
-| Inline code / inline math                           | Mod-Shift-backtick / Mod-Shift-E              |
-| Insert or edit link                                 | Mod-Alt-K                                     |
-| Heading 1–6 / paragraph                             | Mod-Alt-1–6 / Mod-Alt-0                       |
-| Bullet / numbered / task list                       | Mod-Alt-U / Mod-Alt-O / Mod-Alt-X             |
-| Toggle task completion                              | Mod-Shift-Enter                               |
-| Quote / code / display math / table                 | Mod-Alt-Q / Mod-Alt-C / Mod-Alt-B / Mod-Alt-T |
-| Duplicate selection or block                        | Mod-Shift-D                                   |
-| Move block up / down                                | Alt-Up / Alt-Down                             |
-| Indent / outdent                                    | Mod-] / Mod-[                                 |
-| Continue after a block                              | Mod-Enter                                     |
-| Copy selected Markdown (whole note if no selection) | Mod-Alt-M                                     |
-| Comment on selection                                | Mod-Alt-Shift-M                               |
-| Outline / focus mode                                | Mod-Shift-L / F8                              |
+| Action                                                | Shortcut                                      |
+| ----------------------------------------------------- | --------------------------------------------- |
+| Write / Source                                        | Mod-/; Mod-Shift-M remains an alias           |
+| Command palette                                       | Mod-Shift-.                                   |
+| Search notes                                          | Mod-K                                         |
+| Shortcut settings                                     | Mod-Alt-/                                     |
+| Find / replace in this note                           | Mod-F / Mod-Shift-F                           |
+| Bold / italic                                         | Mod-B / Mod-I                                 |
+| Strikethrough / highlight                             | Mod-Shift-X / Mod-Shift-H                     |
+| Inline code / inline math                             | Mod-Shift-backtick / Mod-Shift-E              |
+| Insert or edit link                                   | Mod-Alt-K                                     |
+| Heading 1–6 / paragraph                               | Mod-Alt-1–6 / Mod-Alt-0                       |
+| Bullet / numbered / task list                         | Mod-Alt-U / Mod-Alt-O / Mod-Alt-X             |
+| Toggle task completion                                | Mod-Shift-Enter                               |
+| Quote / code / display math / table                   | Mod-Alt-Q / Mod-Alt-C / Mod-Alt-B / Mod-Alt-T |
+| Duplicate selection or block                          | Mod-Shift-D                                   |
+| Move block up / down                                  | Alt-Up / Alt-Down                             |
+| Indent / outdent                                      | Mod-] / Mod-[                                 |
+| Break within a list item; continue after other blocks | Mod-Enter                                     |
+| Copy selected Markdown (whole note if no selection)   | Mod-Alt-M                                     |
+| Comment on selection                                  | Mod-Alt-Shift-M                               |
+| Outline / focus mode                                  | Mod-Shift-L / F8                              |
 
 The palette, contextual menus, optional toolbar and writing guide use the same registry as the keyboard handler. Right-click opens actions for the inspected block; Shift-F10 uses the current selection. Escape restores focus. Selecting prose shows a compact formatting palette. A persistent formatting bar is optional in Writing → General. Insertion offers theorem, proof, definition, lemma, research question, warning/note callouts, diagrams, citations, footnotes, equation references and linked notes. Tables open a size picker; attachments use the existing protected upload flow.
 
@@ -162,7 +169,16 @@ literal. A selection spanning different containers is not converted automaticall
 
 ## Live blocks
 
-The active prose paragraph shows its inline Markdown and list/task markers, while complete images stay rendered. Quotes hide completed `> ` prefixes only; the remaining body and whitespace stay literal. Headings retain their configured heading typography; other prose uses the reading font. Other paragraphs render normally. Selection reveals endpoint prose; nested lists and quotes reveal only the active leaf. An explicit source-mode caret inside a quote prefix reveals that unit for literal marker editing. Source characters are never silently decoded or moved. See [typing integrity](TYPING_INTEGRITY.md) for the full contract.
+The active prose paragraph shows its inline Markdown, while list/task structure
+and complete images stay rendered. Quotes hide completed `> ` prefixes only;
+the remaining body and whitespace stay literal. Headings retain their configured
+typography. Selection reveals endpoint prose; nested lists and quotes edit the
+active leaf, not the whole container. An explicit Source-mode caret inside a quote
+prefix can reveal that unit for literal marker editing. Source characters are never
+silently decoded or moved. See [typing integrity](TYPING_INTEGRITY.md) for the full contract.
+
+- **Lists:** type `- `, `* ` or a numbered prefix followed by a space to render its marker; a bare `-` or `*` does not trigger conversion. Task checkboxes remain interactive without exposing their source syntax. Enter creates the next item; Mod-Enter continues on a new line within the item. Enter on the last empty item exits its current level, stepping back to the parent in a nested list before leaving the group. Indent/outdent and empty Backspace act on that level and retain author-local undo. Focus, hover and context menus never expose a whole group's markers.
+- **TOC, metadata and dividers:** a TOC block is a rendered section navigator, not a click-to-edit source surface. Dividers also stay rendered; Backspace/Delete removes a selected divider. Metadata uses a dedicated property table for supported YAML fields, with guarded commits. Nested or unsupported YAML stays lossless and can be edited in Source mode. None of these views rewrites the whole document.
 
 - **Images:** left-click a complete image to reveal its Markdown as ordinary prose above the retained preview. For inline images, the sentence stays together above the selected preview. Quotes, lists, table cells and rich footnotes retain their containers. Edits synchronize immediately, with normal typing, Enter, clipboard and undo; there is no Apply button or source popup. Leaving collapses valid source; Escape keeps edits and selects the image for Backspace/Delete or arrow exit. Removing all source removes the preview. Incomplete syntax retains a visibly labeled last valid preview only while editing; leaving keeps the literal Markdown. Hover/right-click never reveal source; Enter/Space opens a keyboard-selected image. Right-click still offers explicit address, alt-text and title details. Same-address edits retain the loaded image element. Changed-address loading keeps the previous preview until the current request finishes; failed, disabled and unsafe states are clearly distinguished. Preview state never changes shared Markdown.
 - **Mathematics:** click a rendered equation to edit LaTeX alongside a local MathJax preview. Invalid expressions retain their source and diagnostic; optionally keep the last valid preview, visibly marked stale. Type a backslash for Greek symbols and fraction, root, integral, sum, matrix, cases and aligned-equation snippets; Tab moves between fields. Escape leaves the construct; Mod-Enter continues after a display block. Typing `$$` then Enter creates paired delimiters. The equation menu copies TeX/SVG, adds or selects a label and inserts paragraphs. The workbench equation inspector searches TeX/labels, counts references and links to missing/duplicate-label warnings.

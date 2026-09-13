@@ -1,5 +1,11 @@
 # Native editor replacement
 
+> Historical record of the September 8–9 native-editor work. Its dependency
+> removal, port assignments and cutover checklists describe that release only.
+> The current default is the [customized Axiom editor](EDITOR_VNEXT.md), built on
+> Milkdown/ProseMirror and CodeMirror in development and production. Use
+> [current verification](VERIFICATION.md) for today's evidence and release gates.
+
 The September 9 typing-integrity follow-up supersedes the earlier caret/input behavior below. See [its interaction and engine contract](TYPING_INTEGRITY.md) and [current verification](VERIFICATION.md). The September 8 results remain historical evidence, not proof of the subsequently reported typing cases.
 
 The approved direction is a first-party Markdown editing engine, not an editor-framework wrapper. Markdown in `Y.Text("markdown")` remains the canonical document. Yjs/Hocuspocus, the existing Markdown parser, MathJax, Mermaid and syntax highlighting remain specialized infrastructure.

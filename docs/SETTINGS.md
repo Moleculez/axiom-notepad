@@ -38,7 +38,7 @@ focus indicators; scrollbars never displace the other pane or shared actions.
   overview** independently toggle block markers/actions and the right-edge map.
   Both default on; saved bookmarks and annotations remain in Reading marks when
   hidden. Bookmark editing, tagging, coloring, deletion/Undo and export also live
-  in Storage → Offline files & reading data. See [reading marks](READING_MARKS.md).
+  in Storage → Offline research. See [reading marks](READING_MARKS.md).
 
 - **Appearance → General → Show document minimap** adds an opt-in, current-mode
   document miniature outside the writing area. Configure visibility in Write,

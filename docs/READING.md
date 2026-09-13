@@ -1,12 +1,26 @@
 # Appearance and paper reading
 
-Open the gear in the top bar for personal appearance. **Settings & members** still opens group/account administration; these are separate from your personal choices.
+Open Settings from the account menu or pages launcher, then choose Appearance.
+Personal preferences remain separate from workspace access and group roles.
+Account → My groups stays inside Settings; full administration is also available
+below Your spaces in the persistent sidebar.
 
 ## Make the workspace yours
 
-Theme supports System, Light and Dark modes, each with an independently selected palette. Sixteen palettes are available: the eight existing Frost, Graphite, Paper, Sepia, Slate, Midnight and high-contrast looks, plus Pearl/Carbon, Ivory/Espresso, Mist/Deep Sea and Paper Ink/Night Paper. The visual editor changes semantic colors for paper, text, links, controls, code, selection and focus. Contrast checks flag risky combinations; arbitrary CSS and remote fonts are not accepted. Save named themes or import/export validated Axiom theme JSON. New palettes store ordinary semantic color overrides, so the portable format remains compatible.
+Theme supports System, Light and Dark modes, with independent light/dark palettes.
+Choose paper, neutral, mineral and high-contrast looks, or the reviewed Paper
+Research and Technical Slate theme packs. The visual editor changes semantic
+colors for paper, text, links, controls, code, selection and focus. Contrast checks
+flag risky combinations; arbitrary CSS and remote fonts are not accepted. Save
+named themes or import/export validated Axiom theme JSON. Palettes store semantic
+color overrides; theme packs additionally supply trusted application styling.
 
-Choose Glass or Solid window material and adjust glass intensity from 0–100%. Glass affects navigation, toolbars and dialogs only: document, mathematics, code and PDF surfaces stay opaque. High-contrast palettes, reduced-transparency preferences, increased OS contrast and unsupported browsers fall back to solid chrome. Blur is never animated. Motion and shadow choices remain independent.
+Under Theme → Navigation surfaces, choose Glass or Solid and adjust glass
+intensity from 0–100%. Glass affects navigation, toolbars and dialogs only:
+document, mathematics, code and PDF surfaces stay opaque. High-contrast palettes,
+reduced-transparency preferences, increased OS contrast and unsupported browsers
+fall back to solid chrome. Blur is never animated. Motion and shadow choices
+remain independent.
 
 **Try the modern look** previews Frost/Graphite with system-sans interface/headings and Source Sans 3 prose. Apply saves the preceding account appearance as a restore point without changing text sizes, reading metrics, saved palettes, motion/shadow choices or device overrides. **Restore previous appearance** previews that account-scoped snapshot; Apply swaps it with the current look. You can also select **Keep current look as a restore point** before applying any customization. There is one durable restore point, not a full appearance history. Offline restore intent is queued with the preference change and follows the normal conflict-resolution flow.
 
@@ -20,7 +34,14 @@ Account defaults follow you across devices. Device overrides apply only to this 
 
 LaTeX Article enables H1–H3 bottom rules, decorative hierarchical section labels (`§ 1`, `§ 1.1`, `§ 1.2`, `§ 2.1`) beside resting H1–H6, and academic double-rule dividers. Numbering follows actual heading ancestry; starting at H2 or skipping levels creates no phantom zero parents. Typography → Document decorations can turn them off without changing fonts. Font/size/spacing and color adjustments retain the decoration choice; another document preset selects its own decoration default. Personal HTML and print retain the same ornaments, but headings in the app and outline are not decorated.
 
-Existing profiles and device caches normalize to appearance schema v7, including pending offline changes. Saved typography and decorations are retained; block guides and reading-mark toggles use their current defaults only when absent. Already-open older app clients must reload before saving appearance; unrepresentable choices produce a reload response rather than silently replacing settings. Portable palette files still use the original `axiom-theme` version-1 format. Writing preferences remain v2.
+Existing profiles and device caches normalize to appearance schema v8, including
+pending offline changes. Saved typography and decorations are retained; missing
+block-guide, reading-mark and minimap fields receive their current defaults.
+Appearance → General controls folding guides, margin marks and the optional
+[document minimap](MINIMAP.md). Already-open older app clients must reload before
+saving appearance; unrepresentable choices produce a reload response rather than
+silently replacing settings. Portable palette files still use `axiom-theme`
+version 1. Writing preferences remain v2.
 
 ## Navigate a document
 
@@ -42,7 +63,13 @@ Select text to highlight it, choose **Area** to mark a figure, or add a **Page n
 
 **Insert quotation** saves the annotation and inserts escaped Markdown with a page/annotation link and citation key when available. Inserting private content into a shared note asks for confirmation. The copied text becomes part of that note; making the annotation private later does not retract an already copied quotation. Export your annotations as Markdown or JSON from the annotation panel.
 
-Text search and selection need a PDF text layer. Scanned papers still allow area/page notes; OCR is not included. Encrypted or malformed files report an error. Uploads are limited to 50 MB. PDF rendering is page-based, not an unlimited multi-page canvas; very complex files may still be expensive on low-memory devices.
+Text search and selection need a PDF text layer. Scanned papers still allow
+area/page notes; opening a PDF does not run OCR. Optional provider-assisted OCR is
+a separate, explicitly configured workflow. Encrypted or malformed files report
+an error. Explorer supports resumable files up to 1 GB; the legacy attachment
+endpoint is limited to 50 MB. The annotation reader asks before loading PDFs over
+100 MB. Rendering is page-based, not an unlimited multi-page canvas; complex files
+may still be expensive on low-memory devices. See [file-viewer limits](RESEARCH_TOOLS.md).
 
 ## References and personal reading
 
@@ -50,7 +77,14 @@ The reference library is group-shared; your reading status, saved filters, bookm
 
 Edit metadata without changing the citation key. BibTeX updates retain the existing entry type and unedited/uncommon fields. Import `.bib` files or manually add references. **Look up metadata** sends only a DOI/arXiv identifier to Crossref or arXiv and shows a preview before you adopt it. Provider lookup needs connectivity and can be rate-limited. Duplicate identifiers/titles produce a warning. Link related notes and their PDFs to a reference to open them from the library.
 
-Bookmark a note block, passage or paper page; manage labels, tags, colors, deletion/Undo and exports in the document's Reading marks panel or **Settings → Storage → Offline files & reading data**. Right-margin markers and the overview rail show saved locations. New note bookmarks use Yjs-relative anchors; deleted/replaced targets explicitly need reattachment. Older heading/scroll bookmarks keep their fallback. Private-first rich annotation cards sit beside the same blocks and can be explicitly shared into Discussion. See [reading marks and annotation cards](READING_MARKS.md).
+Bookmark a note block, passage or paper page; manage labels, tags, colors,
+deletion/Undo and exports in the document's Reading marks panel or
+**Settings → Storage → Offline research**. Right-margin markers and the overview
+rail show saved locations. New note bookmarks use Yjs-relative anchors;
+deleted/replaced targets explicitly need reattachment. Older heading/scroll
+bookmarks keep their fallback. Private-first rich annotation cards sit beside the
+same blocks and can be explicitly shared into Discussion.
+See [reading marks and annotation cards](READING_MARKS.md).
 
 ## Offline data and privacy
 
