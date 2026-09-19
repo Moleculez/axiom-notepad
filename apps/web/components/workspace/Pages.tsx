@@ -89,12 +89,12 @@ export function HomePage() {
           </div>
           <ArrowUpRight size={17} />
         </WorkspaceLink>
-        <WorkspaceLink to="/projects">
+        <WorkspaceLink to="/workspaces">
           <span>
             <FlaskConical size={23} />
           </span>
           <div>
-            <strong>Research projects</strong>
+            <strong>Workspaces</strong>
             <small>Connect questions to outcomes</small>
           </div>
           <ArrowUpRight size={17} />
@@ -165,7 +165,7 @@ export function HomePage() {
               <WorkspaceLink
                 className="ws-task-summary"
                 key={task.id}
-                to={`/projects/${task.project_id}/tasks?task=${task.id}`}
+                to={`/workspaces/${task.space_id}/planning?task=${task.id}`}
               >
                 <span className="ws-task-check" />
                 <div>
@@ -195,7 +195,7 @@ export function HomePage() {
               <WorkspaceLink
                 className="ws-task-summary"
                 key={review.id}
-                to={`/projects/${review.project_id}/reviews`}
+                to={`/workspaces/${review.space_id}/reviews`}
               >
                 <FileText size={18} />
                 <div>
@@ -207,7 +207,7 @@ export function HomePage() {
             ))
           ) : (
             <p className="muted">
-              No review requests right now. Project reviews preserve the exact
+              No review requests right now. Workspace reviews preserve the exact
               revision you read.
             </p>
           )}
@@ -316,9 +316,9 @@ export function InboxPage() {
             const space = spaces.find((item) => item.id === event.space_id),
               to = event.resource_id
                 ? `/notes/${event.resource_id}`
-                : space?.project_id
-                  ? `/projects/${space.project_id}/tasks${event.task_id ? "?task=" + event.task_id : ""}`
-                  : `/explorer?space=${event.space_id}`;
+                : event.task_id
+                  ? `/workspaces/${event.space_id}/planning?task=${event.task_id}`
+                  : `/workspaces/${event.space_id}/overview`;
             return (
               <article
                 className={`ws-inbox-entry ${!event.read_at ? "unread" : ""}`}
@@ -567,12 +567,12 @@ export function ResearchPage() {
             definition callouts with labeled equations.
           </p>
           <p>
-            <strong>Review a specific revision.</strong> Project reviews pin a
+            <strong>Review a specific revision.</strong> Workspace reviews pin a
             note snapshot, so a later edit doesn’t change what someone approved.
           </p>
           <p>
             <strong>Protect the thinking space.</strong> Personal notes stay
-            private. Share deliberately by working inside the right project.
+            private. Share deliberately by working inside the right workspace.
           </p>
         </div>
       </section>

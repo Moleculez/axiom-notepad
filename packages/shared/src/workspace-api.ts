@@ -81,7 +81,7 @@ export async function workspaceApi(
     if (id) return json(await spaceAccess(userId, uuid.parse(id)));
     return json(
       await query(
-        `SELECT s.*,CASE WHEN s.kind='personal' THEN 'Personal space' WHEN s.kind='team' THEN g.name ELSE p.name END AS name,g.name AS group_name,p.audience,p.color,axiom_space_role($1,s.id) AS role,axiom_manage_space($1,s.id) AS can_manage FROM spaces s LEFT JOIN groups g ON g.id=s.group_id LEFT JOIN projects p ON p.id=s.project_id WHERE axiom_space_role($1,s.id) IS NOT NULL ORDER BY CASE s.kind WHEN 'personal' THEN 0 WHEN 'team' THEN 1 ELSE 2 END,g.name,p.name`,
+        `SELECT s.*,g.name AS group_name,p.audience,axiom_space_role($1,s.id) AS role,axiom_manage_space($1,s.id) AS can_manage FROM spaces s LEFT JOIN groups g ON g.id=s.group_id LEFT JOIN projects p ON p.id=s.project_id WHERE axiom_space_role($1,s.id) IS NOT NULL ORDER BY CASE s.kind WHEN 'personal' THEN 0 ELSE 1 END,g.name,s.name`,
         [userId],
       ),
     );
@@ -93,7 +93,7 @@ export async function workspaceApi(
         [userId],
       ),
       query(
-        `SELECT t.*,p.name AS project_name FROM tasks t JOIN projects p ON p.id=t.project_id JOIN spaces s ON s.project_id=p.id WHERE t.assignee_id=$1 AND t.deleted_at IS NULL AND t.status NOT IN ('done','cancelled') AND axiom_space_role($1,s.id) IS NOT NULL ORDER BY t.due_on NULLS LAST,t.updated_at DESC LIMIT 20`,
+        `SELECT t.*,s.name AS project_name FROM tasks t JOIN spaces s ON s.id=t.space_id WHERE t.assignee_id=$1 AND t.deleted_at IS NULL AND t.status NOT IN ('done','cancelled') AND axiom_space_role($1,s.id) IS NOT NULL ORDER BY t.due_on NULLS LAST,t.updated_at DESC LIMIT 20`,
         [userId],
       ),
       query(

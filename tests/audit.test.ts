@@ -51,13 +51,15 @@ describe("management console contracts", () => {
       workspaceLocation({
         route: "/workspaces/a/general",
         title: "Lab · General",
+        space: { id: "a", name: "Lab" },
       }),
     ).toEqual({
       crumbs: [
         { label: "Workspaces", to: "/workspaces" },
-        { label: "Lab · General" },
+        { label: "Lab", to: "/workspaces/a" },
+        { label: "General" },
       ],
-      up: "/workspaces",
+      up: "/workspaces/a",
     });
   });
   it("separates workspace and file cleanup while validating restore choices", () => {

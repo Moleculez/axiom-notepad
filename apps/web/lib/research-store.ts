@@ -20,6 +20,9 @@ export type PaperMeta = {
   bytes: number;
   visibility: "shared" | "private";
   role: "owner" | "admin" | "member";
+  resource_id?: string;
+  space_id?: string;
+  content_role?: "viewer" | "commenter" | "editor";
 };
 export type CachedPaper = {
   key: string;
@@ -158,6 +161,56 @@ async function cachedPaperBytes(paper: CachedPaper) {
     "This offline copy is incomplete. Remove it and download the paper again.",
   );
 }
+/** Online readers request authenticated ranges. Full bytes are only needed for
+ * explicitly pinned copies and exports; never write API responses to SW caches. */
+export async function openPaperSource(
+  user: string,
+  id: string,
+): Promise<{
+  meta: PaperMeta;
+  bytes?: Uint8Array;
+  url?: string;
+}> {
+  assertAccount(user);
+  // Do not materialize every pinned PDF just to open one paper.
+  const stored = await researchStorage<StoredResearch | undefined>(
+    user,
+    "readonly",
+    (s, done) => {
+      s.get(`pdf:${id}`).onsuccess = (event) =>
+        done((event.target as IDBRequest<StoredResearch | undefined>).result);
+    },
+  ).catch(() => undefined);
+  const cached = stored?.kind === "pdf" ? stored : undefined;
+  try {
+    const meta = await api<PaperMeta>(`attachments/${id}/meta`);
+    assertAccount(user);
+    if (cached && cached.meta.sha256 === meta.sha256) {
+      const bytes = await cachedPaperBytes(cached);
+      await verifyPaper(bytes, meta.sha256);
+      assertAccount(user);
+      return { meta, bytes };
+    }
+    return { meta, url: `/api/v1/attachments/${id}` };
+  } catch (e) {
+    if (e instanceof ApiError && [401, 403, 404].includes(e.status)) {
+      await revokeCachedPaper(user, id).catch(() => {});
+      throw e;
+    }
+    if (
+      cached &&
+      (!navigator.onLine ||
+        e instanceof TypeError ||
+        (e instanceof ApiError && e.status >= 500))
+    ) {
+      const bytes = await cachedPaperBytes(cached);
+      await verifyPaper(bytes, cached.meta.sha256);
+      assertAccount(user);
+      return { meta: cached.meta, bytes };
+    }
+    throw e;
+  }
+}
 export async function loadPaper(
   user: string,
   id: string,
@@ -242,6 +295,7 @@ export function useResearch(userId?: string, groupId?: string) {
     [papers, setPapers] = useState<CachedPaper[]>([]),
     [status, setStatus] = useState("");
   const watched = useRef<string | null>(null),
+    watchedPapers = useRef(new Map<string, number>()),
     active = useRef(false),
     syncRef = useRef<() => Promise<void>>(async () => {});
   const refresh = useCallback(async () => {
@@ -269,7 +323,6 @@ export function useResearch(userId?: string, groupId?: string) {
     setEntries([]);
     setPapers([]);
     setStatus("");
-    watched.current = null;
     const valid = () =>
       alive &&
       !leaving &&
@@ -463,8 +516,11 @@ export function useResearch(userId?: string, groupId?: string) {
             await cacheRemote("reading", []);
           throw e;
         }
-        const attachmentId = watched.current;
-        if (attachmentId) {
+        for (const attachmentId of new Set(
+          [watched.current, ...watchedPapers.current.keys()].filter(
+            (id): id is string => !!id,
+          ),
+        )) {
           try {
             const annotations = await api<Annotation[]>(
               `attachments/${attachmentId}/annotations`,
@@ -706,6 +762,15 @@ export function useResearch(userId?: string, groupId?: string) {
     watched.current = id;
     if (id) void syncRef.current();
   }, []);
+  const subscribePaper = useCallback((id: string) => {
+    watchedPapers.current.set(id, (watchedPapers.current.get(id) ?? 0) + 1);
+    void syncRef.current();
+    return () => {
+      const count = (watchedPapers.current.get(id) ?? 1) - 1;
+      if (count > 0) watchedPapers.current.set(id, count);
+      else watchedPapers.current.delete(id);
+    };
+  }, []);
   return {
     groupId,
     entries,
@@ -716,6 +781,7 @@ export function useResearch(userId?: string, groupId?: string) {
     remove,
     resolve,
     watchPaper,
+    subscribePaper,
     refresh,
     sync: () => syncRef.current(),
   };

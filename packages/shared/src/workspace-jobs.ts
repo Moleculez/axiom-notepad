@@ -23,17 +23,16 @@ import { pruneImageDraftAssets } from "./image-cloud-api";
 
 export async function processRecurrences() {
   const rules = await query(
-    "SELECT r.id,s.id AS space_id,p.timezone FROM task_recurrences r JOIN projects p ON p.id=r.project_id JOIN spaces s ON s.project_id=p.id WHERE r.enabled AND axiom_space_state(s.id)='active' ORDER BY r.id LIMIT 500",
+    "SELECT r.id,s.id AS space_id,s.timezone FROM task_recurrences r JOIN spaces s ON s.id=r.space_id WHERE r.enabled AND axiom_space_state(s.id)='active' ORDER BY r.id LIMIT 500",
   );
   for (const entry of rules)
     await transaction(async (client) => {
       // Match lifecycle's scope-before-recurrence locking order.
       const {
         rows: [scope],
-      } = await client.query(
-        "SELECT id FROM spaces WHERE id=$1 FOR KEY SHARE",
-        [entry.space_id],
-      );
+      } = await client.query("SELECT id FROM spaces WHERE id=$1 FOR UPDATE", [
+        entry.space_id,
+      ]);
       if (
         !scope ||
         (
@@ -46,7 +45,7 @@ export async function processRecurrences() {
       const {
         rows: [row],
       } = await client.query(
-        "SELECT r.*,s.id AS space_id FROM task_recurrences r JOIN spaces s ON s.project_id=r.project_id WHERE r.id=$1 AND r.enabled FOR UPDATE OF r SKIP LOCKED",
+        "SELECT r.*,s.id AS space_id FROM task_recurrences r JOIN spaces s ON s.id=r.space_id WHERE r.id=$1 AND r.enabled FOR UPDATE OF r SKIP LOCKED",
         [entry.id],
       );
       if (!row) return;
@@ -88,7 +87,7 @@ export async function processRecurrences() {
             const {
               rows: [task],
             } = await client.query(
-              "INSERT INTO tasks(project_id,created_by,title,body,priority,assignee_id,due_on,estimate_hours,labels) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id",
+              "INSERT INTO tasks(project_id,created_by,title,body,priority,assignee_id,due_on,estimate_hours,labels,space_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id",
               [
                 row.project_id,
                 row.created_by,
@@ -99,12 +98,24 @@ export async function processRecurrences() {
                 date,
                 t.estimateHours ?? null,
                 t.labels ?? [],
+                row.space_id,
               ],
             );
             await client.query(
               "INSERT INTO task_occurrences(recurrence_id,occurs_on,task_id) VALUES($1,$2,$3)",
               [row.id, date, task.id],
             );
+            const evidence = [
+              ...new Set([
+                ...(Array.isArray(t.resourceIds) ? t.resourceIds : []),
+                ...(t.noteId ? [t.noteId] : []),
+              ]),
+            ];
+            if (evidence.length)
+              await client.query(
+                "INSERT INTO task_resources(task_id,resource_id) SELECT $1,id FROM resources WHERE id=ANY($2::uuid[]) AND space_id=$3 AND deleted_at IS NULL ON CONFLICT DO NOTHING",
+                [task.id, evidence, row.space_id],
+              );
             await recordActivity(client, {
               userId: row.created_by,
               spaceId: row.space_id,
@@ -320,7 +331,7 @@ export async function workspaceMaintenance() {
     });
   }
   const tasks = await query(
-    "SELECT t.*,s.id AS space_id,p.timezone FROM tasks t JOIN spaces s ON s.project_id=t.project_id JOIN projects p ON p.id=t.project_id WHERE t.deleted_at IS NULL AND t.status NOT IN ('done','cancelled') AND t.assignee_id IS NOT NULL AND t.due_on BETWEEN CURRENT_DATE-1 AND CURRENT_DATE+1 AND axiom_space_state(s.id)='active'",
+    "SELECT t.*,s.id AS space_id,s.timezone FROM tasks t JOIN spaces s ON s.id=t.space_id WHERE t.deleted_at IS NULL AND t.status NOT IN ('done','cancelled') AND t.assignee_id IS NOT NULL AND t.due_on BETWEEN CURRENT_DATE-1 AND CURRENT_DATE+1 AND axiom_space_state(s.id)='active'",
   );
   for (const task of tasks) {
     const today = new Intl.DateTimeFormat("sv-SE", {

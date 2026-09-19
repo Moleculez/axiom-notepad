@@ -13,10 +13,10 @@ import {
 import Dialog from "../Dialog";
 import ResourceHistory from "./ResourceHistory";
 import { timeAgo } from "../../lib/client";
-export default function ReviewInbox() {
+export default function ReviewInbox({ spaceId }: { spaceId?: string } = {}) {
   const { session, revision, notify } = useWorkspace(),
     data = useData<{ requests: any[]; proposals: any[] }>(
-      "reviews/inbox",
+      "reviews/inbox" + (spaceId ? `?spaceId=${spaceId}` : ""),
       revision,
     ),
     action = useAction();

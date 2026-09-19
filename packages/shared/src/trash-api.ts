@@ -223,6 +223,7 @@ async function checkItems(
   const { rows: protectedItems } = await client.query(
     `SELECT r.id, CASE
     WHEN EXISTS(SELECT 1 FROM review_requests WHERE note_id=r.note_id OR resource_id=r.id) THEN 'Formal review evidence must be retained.'
+    WHEN EXISTS(SELECT 1 FROM task_resources WHERE resource_id=r.id) THEN 'Linked task evidence must be retained. Unlink it from the task first.'
     WHEN EXISTS(SELECT 1 FROM upload_sessions WHERE (resource_id=r.id OR parent_id=r.id) AND status IN ('uploading','verifying','failed')) THEN 'Finish or cancel transfers targeting this item.'
     WHEN EXISTS(SELECT 1 FROM file_versions v JOIN paper_annotations a ON a.attachment_id=v.id WHERE v.resource_id=r.id AND NOT a.deleted) THEN 'This file has annotations.'
     WHEN EXISTS(SELECT 1 FROM file_versions v JOIN reading_items a ON a.target_id=v.id AND a.target_type='attachment' WHERE v.resource_id=r.id AND NOT a.deleted) THEN 'This file is in a reading list or bookmark.'
@@ -285,11 +286,11 @@ export async function trashApi(
     const rows = await query<
       Space & { parent_id: string | null; resources: number; bytes: number }
     >(
-      `SELECT s.*,coalesce(p.name,g.name,'Personal space') AS name,g.name AS group_name,m.role AS group_role,
+      `SELECT s.*,g.name AS group_name,m.role AS group_role,
        axiom_base_space_role($1,s.id) AS role,axiom_manage_space($1,s.id) AS can_manage,axiom_space_state(s.id) AS effective_status,
-       parent.id AS parent_id,parent.status AS parent_status,
-       (SELECT count(*)::int FROM resources r JOIN spaces own ON own.id=r.space_id WHERE own.id=s.id OR (s.kind='team' AND own.group_id=s.group_id)) AS resources,
-       (SELECT coalesce(sum(a.bytes),0)::float8 FROM resources r JOIN spaces own ON own.id=r.space_id JOIN file_versions v ON v.resource_id=r.id JOIN attachments a ON a.id=v.id WHERE own.id=s.id OR (s.kind='team' AND own.group_id=s.group_id)) AS bytes
+       NULL::uuid AS parent_id,g.lifecycle_status AS parent_status,
+       (SELECT count(*)::int FROM resources r WHERE r.space_id=s.id) AS resources,
+       (SELECT coalesce(sum(a.bytes),0)::float8 FROM resources r JOIN file_versions v ON v.resource_id=r.id JOIN attachments a ON a.id=v.id WHERE r.space_id=s.id) AS bytes
        FROM spaces s LEFT JOIN groups g ON g.id=s.group_id LEFT JOIN projects p ON p.id=s.project_id
        LEFT JOIN members m ON m.group_id=s.group_id AND m.user_id=$1
        LEFT JOIN spaces parent ON s.kind='project' AND parent.group_id=s.group_id AND parent.kind='team'
@@ -397,8 +398,7 @@ export async function trashApi(
           const requested = input.allMatching ? input.spaceIds : input.ids;
           const { rows: selected } = await client.query(
             `SELECT s.id FROM spaces s WHERE s.id=ANY($1::uuid[]) AND axiom_space_state(s.id) IN ('trashed','purging')
-           AND (axiom_base_space_role($2,s.id) IS NOT NULL OR axiom_manage_space($2,s.id))
-           AND NOT(s.kind='project' AND EXISTS(SELECT 1 FROM spaces parent WHERE parent.kind='team' AND parent.group_id=s.group_id AND parent.id=ANY($1::uuid[]))) ORDER BY s.id`,
+           AND (axiom_base_space_role($2,s.id) IS NOT NULL OR axiom_manage_space($2,s.id)) ORDER BY s.id`,
             [requested, userId],
           );
           if (!selected.length)
@@ -417,7 +417,7 @@ export async function trashApi(
               kind: "workspace",
               note_id: null,
               name: space.name,
-              original_path: `${space.kind === "team" ? "Group and included projects" : (space.group_name ?? "Project")} · ${impact.counts.resources} resources`,
+              original_path: `${space.group_name ?? "Workspace"} · ${impact.counts.resources} resources`,
               bytes: impact.counts.bytes,
               status: "pending",
               reason: null,

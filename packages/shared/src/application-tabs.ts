@@ -45,6 +45,14 @@ export function safeApplicationView(
     if (choices.includes(value[key] as string)) view[key] = value[key];
   if (typeof value.scroll === "number" && Number.isFinite(value.scroll))
     view.scroll = Math.max(0, Math.min(100_000_000, value.scroll));
+  if (
+    typeof value.planningScroll === "number" &&
+    Number.isFinite(value.planningScroll)
+  )
+    view.planningScroll = Math.max(
+      0,
+      Math.min(100_000_000, value.planningScroll),
+    );
   if (Array.isArray(value.selection))
     view.selection = value.selection
       .filter((id) => typeof id === "string" && /^[\da-f-]{36}$/i.test(id))
@@ -99,6 +107,12 @@ const queries = new Set([
   "actor",
   "action",
   "entity",
+  "task",
+  "assignee",
+  "priority",
+  "milestone",
+  "zoom",
+  "deleted",
 ]);
 export function tabRoute(input: string): string {
   try {

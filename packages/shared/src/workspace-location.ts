@@ -14,7 +14,10 @@ export function locationResourceId(route: string) {
     parts = url.pathname.split("/").filter(Boolean);
   const id =
     fileRouteId(route) ??
-    (parts[0] === "explorer" ? url.searchParams.get("folder") : null);
+    (parts[0] === "explorer" ||
+    (parts[0] === "workspaces" && parts[2] === "files")
+      ? url.searchParams.get("folder")
+      : null);
   return id && /^[\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12}$/i.test(id)
     ? id
     : null;
@@ -41,6 +44,58 @@ export function workspaceLocation({
         ? "/explorer?view=all"
         : tabRoute(`/${section}`);
   const first: LocationCrumb = { label: tabTitle(root), to: root };
+  if (section === "workspaces" && parts[1]) {
+    const workspaceId = parts[1],
+      base = `/workspaces/${workspaceId}`,
+      names: Record<string, string> = {
+        overview: "Overview",
+        files: "Files",
+        planning: "Planning",
+        discussions: "Discussions",
+        reviews: "Reviews",
+        settings: "Settings",
+        general: "General",
+        people: "People",
+        storage: "Storage",
+        integrations: "Integrations",
+        activity: "Activity",
+        lifecycle: "Lifecycle",
+      };
+    const crumbs: LocationCrumb[] = [
+      first,
+      { label: space?.name ?? location?.space.name ?? "Workspace", to: base },
+    ];
+    if (parts[2])
+      crumbs.push({
+        label: names[parts[2]] ?? parts[2],
+        to: base + "/" + parts[2],
+      });
+    if (
+      parts[2] === "files" &&
+      location?.resource.id === locationResourceId(route)
+    ) {
+      for (const folder of location.ancestors)
+        crumbs.push({
+          label: folder.name,
+          to: `${base}/files?folder=${folder.id}`,
+        });
+      crumbs.push({ label: location.resource.name });
+      return {
+        crumbs,
+        up: `${base}/files${location.resource.parent_id ? "?folder=" + location.resource.parent_id : ""}`,
+      };
+    }
+    if (parts[3]) crumbs.push({ label: names[parts[3]] ?? parts[3] });
+    delete crumbs.at(-1)!.to;
+    return {
+      crumbs,
+      up: parts[3]
+        ? base + "/settings/general"
+        : parts[2]
+          ? base
+          : "/workspaces",
+    };
+  }
   if (location && location.resource.id === locationResourceId(route)) {
     return {
       crumbs: [

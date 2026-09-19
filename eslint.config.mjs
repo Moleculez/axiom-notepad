@@ -9,6 +9,7 @@ export default tseslint.config(
       "playwright-report/**",
       ".local-db/**",
       "data/**", // Runtime storage and verified release/backup artifacts, not source.
+      "apps/web/public/tool-assets/pdfjs/**", // Unmodified, generated PDF.js distribution assets.
     ],
   },
   ...tseslint.configs.recommended,

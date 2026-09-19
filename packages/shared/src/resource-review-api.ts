@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { query } from "./db";
-import { resourceAccess, HttpError } from "./access";
+import { resourceAccess, spaceAccess, HttpError } from "./access";
 import { readResourceRevision } from "./revision-api";
 import {
   workspaceJson as json,
@@ -18,13 +18,18 @@ export async function resourceReviewApi(
 ): Promise<Response | null> {
   const [endpoint, id, action] = path;
   if (endpoint === "reviews" && id === "inbox" && request.method === "GET") {
+    const scope = z
+      .uuid()
+      .nullable()
+      .parse(new URL(request.url).searchParams.get("spaceId"));
+    if (scope) await spaceAccess(userId, scope);
     const requests = await query(
-      'SELECT q.*,r.name AS title,r.id AS resource_id,u.name AS reviewer,a.name AS requester,coalesce((SELECT name FROM projects WHERE id=s.project_id),(SELECT name FROM groups WHERE id=s.group_id),$$Personal space$$) AS space FROM review_requests q JOIN resources r ON r.id=coalesce(q.resource_id,q.note_id) JOIN spaces s ON s.id=r.space_id JOIN "user" u ON u.id=q.reviewer_id JOIN "user" a ON a.id=q.requested_by WHERE (q.reviewer_id=$1 OR q.requested_by=$1) AND r.deleted_at IS NULL AND axiom_space_state(r.space_id)=\'active\' AND axiom_space_role($1,r.space_id) IS NOT NULL ORDER BY q.created_at DESC LIMIT 200',
-      [userId],
+      "SELECT q.*,r.name AS title,r.id AS resource_id,u.name AS reviewer,a.name AS requester,s.name AS space FROM review_requests q JOIN resources r ON r.id=coalesce(q.resource_id,q.note_id) JOIN spaces s ON s.id=r.space_id JOIN \"user\" u ON u.id=q.reviewer_id JOIN \"user\" a ON a.id=q.requested_by WHERE (($2::uuid IS NULL AND (q.reviewer_id=$1 OR q.requested_by=$1)) OR r.space_id=$2) AND r.deleted_at IS NULL AND axiom_space_state(r.space_id) IN ('active','archived') AND axiom_space_role($1,r.space_id) IS NOT NULL ORDER BY q.created_at DESC LIMIT 200",
+      [userId, scope],
     );
     const proposals = await query(
-      "SELECT p.id,p.note_id AS resource_id,p.status,p.message,p.created_at,r.name AS title,coalesce((SELECT name FROM projects WHERE id=s.project_id),(SELECT name FROM groups WHERE id=s.group_id),$$Personal space$$) AS space,u.name AS author,axiom_space_role($1,r.space_id) AS role,n.generation FROM revision_suggestions p JOIN resources r ON r.note_id=p.note_id JOIN notes n ON n.id=p.note_id JOIN spaces s ON s.id=r.space_id JOIN \"user\" u ON u.id=p.author_id WHERE p.status='pending' AND r.deleted_at IS NULL AND axiom_space_state(r.space_id)='active' AND (p.author_id=$1 OR axiom_space_role($1,r.space_id)='editor') AND axiom_space_role($1,r.space_id) IS NOT NULL ORDER BY p.updated_at DESC LIMIT 200",
-      [userId],
+      "SELECT p.id,p.note_id AS resource_id,p.status,p.message,p.created_at,r.name AS title,s.name AS space,u.name AS author,axiom_space_role($1,r.space_id) AS role,n.generation FROM revision_suggestions p JOIN resources r ON r.note_id=p.note_id JOIN notes n ON n.id=p.note_id JOIN spaces s ON s.id=r.space_id JOIN \"user\" u ON u.id=p.author_id WHERE p.status='pending' AND r.deleted_at IS NULL AND axiom_space_state(r.space_id)='active' AND ($2::uuid IS NULL OR r.space_id=$2) AND (p.author_id=$1 OR axiom_space_role($1,r.space_id)='editor') AND axiom_space_role($1,r.space_id) IS NOT NULL ORDER BY p.updated_at DESC LIMIT 200",
+      [userId, scope],
     );
     return json({ requests, proposals });
   }

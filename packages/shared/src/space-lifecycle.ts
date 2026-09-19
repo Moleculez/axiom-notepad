@@ -23,9 +23,8 @@ const mutation = z.object({
   mutationId: z.uuid().default(() => randomUUID()),
   version: z.number().int().positive(),
 });
-const spaceFields = `s.*,CASE WHEN s.kind='personal' THEN 'Personal space' WHEN s.kind='team' THEN g.name ELSE p.name END AS name,
- (SELECT parent.status FROM spaces parent WHERE s.kind='project' AND parent.kind='team' AND parent.group_id=s.group_id) AS parent_status,
- coalesce(p.description,g.description,'') AS description,g.name AS group_name,p.audience,p.color,p.timezone,p.version AS project_version,p.archived_at,m.role AS group_role,
+const spaceFields = `s.*,g.lifecycle_status AS parent_status,
+ g.name AS group_name,p.audience,p.version AS project_version,p.archived_at,m.role AS group_role,
  axiom_space_state(s.id) AS effective_status,axiom_space_role($1,s.id) AS role,axiom_manage_space($1,s.id) AS can_manage`;
 const spaceJoin = `LEFT JOIN groups g ON g.id=s.group_id LEFT JOIN projects p ON p.id=s.project_id LEFT JOIN members m ON m.group_id=s.group_id AND m.user_id=$1`;
 function decorate<T extends Space>(space: T) {
@@ -49,28 +48,25 @@ async function lockLifecycle(
   client: pg.PoolClient,
   userId: string,
   id: string,
+  metadata = false,
 ) {
   const scope = await lifecycleSpace(client, userId, id);
-  if (scope.kind === "personal")
+  if (scope.kind === "personal" && !metadata)
     throw new HttpError(
       400,
       "Personal space is protected and cannot be archived or deleted.",
     );
-  // Same parent-first ordering as ownership transfer. Lock all project spaces
-  // with a team transition so uploads and CRDT writes cannot race its state.
+  // A workspace action never changes sibling workspaces or group membership.
   await client.query("SELECT id FROM groups WHERE id=$1 FOR NO KEY UPDATE", [
     scope.group_id,
   ]);
-  await client.query(
-    "SELECT id FROM spaces WHERE (id=$1 OR ($2='team' AND group_id=$3)) ORDER BY id FOR UPDATE",
-    [id, scope.kind, scope.group_id],
-  );
+  await client.query("SELECT id FROM spaces WHERE id=$1 FOR UPDATE", [id]);
   return lifecycleSpace(client, userId, id);
 }
 async function scopeIds(client: pg.PoolClient, space: Space) {
   const { rows } = await client.query(
-    "SELECT id,project_id FROM spaces WHERE id=$1 OR ($2='team' AND group_id=$3)",
-    [space.id, space.kind, space.group_id],
+    "SELECT id,project_id FROM spaces WHERE id=$1",
+    [space.id],
   );
   return {
     spaces: rows.map((row) => row.id as string),
@@ -101,6 +97,7 @@ export async function spaceImpact(client: pg.PoolClient, space: Space) {
    (SELECT count(*)::int FROM review_requests WHERE note_id=ANY($1::uuid[]) OR resource_id=ANY($3::uuid[]) OR file_version_id=ANY($2::uuid[]) OR project_id=ANY($4::uuid[])) AS reviews,
    (SELECT count(*)::int FROM resource_references WHERE version_id=ANY($2::uuid[]) AND NOT(source_id=ANY($3::uuid[]))) AS external_files,
    (SELECT count(*)::int FROM note_links WHERE target_id=ANY($1::uuid[]) AND NOT(source_id=ANY($1::uuid[]))) AS external_notes,
+   (SELECT count(*)::int FROM task_resources e JOIN tasks t ON t.id=e.task_id WHERE e.resource_id=ANY($3::uuid[]) AND NOT(t.space_id=ANY($5::uuid[]))) AS task_evidence,
    (SELECT count(*)::int FROM paper_annotations WHERE attachment_id=ANY($2::uuid[]) AND NOT deleted) AS annotations,
    (SELECT count(*)::int FROM reference_attachments WHERE attachment_id=ANY($2::uuid[])) AS citations,
    (SELECT count(*)::int FROM reading_items WHERE target_id=ANY($2::uuid[]) AND target_type='attachment' AND NOT deleted) AS reading,
@@ -112,6 +109,7 @@ export async function spaceImpact(client: pg.PoolClient, space: Space) {
     reviews: "Retained formal reviews",
     external_files: "File references outside this workspace",
     external_notes: "Note links outside this workspace",
+    task_evidence: "Task evidence outside this workspace",
     annotations: "Retained paper annotations",
     citations: "Linked citation evidence",
     reading: "Files in reading records",
@@ -152,7 +150,7 @@ export async function transitionSpace(
   if (!space.lifecycle_actions.includes(action))
     throw new HttpError(
       403,
-      "Your role or the parent workspace state does not allow this action.",
+      "Your role or the group lifecycle state does not allow this action.",
     );
   if (["trash", "purge"].includes(action) && confirmation !== space.name)
     throw new HttpError(
@@ -191,8 +189,8 @@ export async function transitionSpace(
   if (["unarchive", "restore"].includes(action)) {
     const scope = await scopeIds(client, space);
     await client.query(
-      "UPDATE task_recurrences r SET last_date=greatest(coalesce(last_date,DATE '0001-01-01'),(now() AT TIME ZONE p.timezone)::date) FROM projects p WHERE r.project_id=p.id AND r.project_id=ANY($1::uuid[])",
-      [scope.projects],
+      "UPDATE task_recurrences r SET last_date=greatest(coalesce(last_date,DATE '0001-01-01'),(now() AT TIME ZONE s.timezone)::date) FROM spaces s WHERE r.space_id=s.id AND r.space_id=ANY($1::uuid[])",
+      [scope.spaces],
     );
   }
   await client.query(
@@ -266,22 +264,14 @@ export async function spaceLifecycleApi(
           "SELECT coalesce(sum(a.bytes),0)::float8 AS bytes FROM resources r JOIN file_versions v ON v.resource_id=r.id JOIN attachments a ON a.id=v.id WHERE r.space_id=$1",
           [id],
         );
-        const {
-          rows: [parent],
-        } = await client.query(
-          "SELECT id FROM spaces WHERE kind='team' AND group_id=$1",
-          [space.group_id],
-        );
         return {
           space,
           counts: { ...counts, bytes: storage.bytes },
-          parentId: space.kind === "project" ? parent?.id : null,
+          parentId: null,
           capabilities: {
             readContent: !!space.role,
             editSettings:
-              space.kind !== "personal" &&
-              space.can_manage &&
-              space.effective_status === "active",
+              space.can_manage && space.effective_status === "active",
             managePeople: space.can_manage,
             integrations: ["owner", "admin"].includes(space.group_role ?? ""),
             lifecycle: space.lifecycle_actions,
@@ -319,6 +309,8 @@ export async function spaceLifecycleApi(
       .extend({
         name: resourceNameSchema,
         description: z.string().max(3000).optional(),
+        color: z.enum(["blue", "green", "purple", "orange"]).optional(),
+        audience: z.enum(["group", "restricted"]).optional(),
       })
       .parse(await request.json());
     const result = await workspaceMutation(
@@ -327,26 +319,28 @@ export async function spaceLifecycleApi(
       "space-metadata:" + id,
       input,
       async (client) => {
-        const space = await lockLifecycle(client, userId, id);
+        const space = await lockLifecycle(client, userId, id, true);
         if (!space.can_manage || space.effective_status !== "active")
           throw new HttpError(
             403,
             "Restore this workspace and use a manager account to change its settings.",
           );
         assertRevision(space.version, input.version);
-        if (space.kind === "team")
+        if (space.project_id)
           await client.query(
-            "UPDATE groups SET name=$2,description=coalesce($3,description) WHERE id=$1",
-            [space.group_id, input.name, input.description],
+            "UPDATE projects SET name=$2,description=coalesce($3,description),audience=coalesce($4,audience),color=coalesce($5,color),version=version+1 WHERE id=$1",
+            [
+              space.project_id,
+              input.name,
+              input.description,
+              input.audience,
+              input.color,
+            ],
           );
-        else
-          await client.query(
-            "UPDATE projects SET name=$2,description=coalesce($3,description),version=version+1 WHERE id=$1",
-            [space.project_id, input.name, input.description],
-          );
-        await client.query("UPDATE spaces SET version=version+1 WHERE id=$1", [
-          id,
-        ]);
+        await client.query(
+          "UPDATE spaces SET name=$2,description=coalesce($3,description),color=coalesce($4,color),version=version+1 WHERE id=$1",
+          [id, input.name, input.description, input.color],
+        );
         await recordActivity(client, {
           spaceId: id,
           userId,
@@ -393,7 +387,7 @@ export async function purgeSpace(id: string, userId: string, version: number) {
   z.uuid().parse(id);
   // Flush accepted CRDT updates after the workspace has become inaccessible.
   const pending = await query(
-    "SELECT DISTINCT n.id,n.generation FROM notes n JOIN resources r ON r.note_id=n.id JOIN spaces s ON s.id=r.space_id JOIN document_updates u ON u.room=n.id::text||':'||n.generation::text WHERE s.id=$1 OR (s.group_id=(SELECT group_id FROM spaces WHERE id=$1 AND kind='team'))",
+    "SELECT DISTINCT n.id,n.generation FROM notes n JOIN resources r ON r.note_id=n.id JOIN spaces s ON s.id=r.space_id JOIN document_updates u ON u.room=n.id::text||':'||n.generation::text WHERE s.id=$1",
     [id],
   );
   for (const note of pending)
@@ -404,6 +398,11 @@ export async function purgeSpace(id: string, userId: string, version: number) {
     } = await client.query("SELECT id FROM spaces WHERE id=$1", [id]);
     if (!existing) return;
     const space = await lockLifecycle(client, userId, id);
+    if (space.kind === "team")
+      throw new HttpError(
+        409,
+        "The group's default workspace is protected from permanent removal. Restore it or leave it in trash.",
+      );
     if (space.status !== "purging" || space.group_role !== "owner")
       throw new HttpError(
         409,
@@ -425,6 +424,10 @@ export async function purgeSpace(id: string, userId: string, version: number) {
         impact.blockers.map((item) => item.label).join("; "),
       );
     const { scope, ids, notes, versions } = impact;
+    await client.query(
+      "DELETE FROM task_resources WHERE task_id IN (SELECT id FROM tasks WHERE space_id=$1)",
+      [id],
+    );
     await client.query(
       "INSERT INTO space_tombstones(space_id,group_id,project_id,deleted_by,counts) SELECT id,group_id,project_id,$2,$3 FROM spaces WHERE id=ANY($1::uuid[]) ON CONFLICT DO NOTHING",
       [scope.spaces, userId, JSON.stringify(impact.counts)],
@@ -470,22 +473,7 @@ export async function purgeSpace(id: string, userId: string, version: number) {
     await client.query("DELETE FROM resources WHERE space_id=ANY($1::uuid[])", [
       scope.spaces,
     ]);
-    if (space.kind === "team") {
-      // Preserve citation metadata used by personal notes whose group provenance
-      // will be detached by the FK; no personal Markdown or CRDT is changed.
-      await client.query(
-        "INSERT INTO personal_citations(note_id,cite_key,data) SELECT n.id,b.cite_key,to_jsonb(b) FROM notes n JOIN bibliography b ON b.group_id=n.group_id WHERE n.group_id=$1 AND n.visibility='private' ON CONFLICT DO NOTHING",
-        [space.group_id],
-      );
-      await client.query("DELETE FROM reading_items WHERE group_id=$1", [
-        space.group_id,
-      ]);
-      await client.query(
-        "UPDATE tasks SET parent_id=NULL WHERE project_id=ANY($1::uuid[])",
-        [scope.projects],
-      );
-      await client.query("DELETE FROM groups WHERE id=$1", [space.group_id]);
-    } else {
+    if (space.project_id) {
       await client.query(
         "UPDATE tasks SET parent_id=NULL WHERE project_id=$1",
         [space.project_id],

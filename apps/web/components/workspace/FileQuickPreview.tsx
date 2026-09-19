@@ -29,6 +29,11 @@ export default function FileQuickPreview({
       title={resource.name}
       subtitle="Quick preview · originals and permissions remain unchanged"
       onClose={onClose}
+      returnFocus={() =>
+        document.querySelector<HTMLElement>(
+          `.ws-resource-row[data-resource-id="${CSS.escape(resource.id)}"]`,
+        )
+      }
       size="wide"
     >
       <ErrorNotice message={note.error} />

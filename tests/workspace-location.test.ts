@@ -110,6 +110,34 @@ describe("workspace breadcrumb routes", () => {
     expect(result.crumbs.at(-1)).toEqual({ label: "Derivation" });
     expect(result.up).toBe(folderRoute(space, child));
   });
+  it("retains the workspace shell through nested file and settings breadcrumbs", () => {
+    const base = `/workspaces/${space}`;
+    const result = workspaceLocation({
+      route: `${base}/files?folder=${id}`,
+      location,
+    });
+    expect(result.crumbs.map((c) => c.label)).toEqual([
+      "Workspaces",
+      "Physics lab",
+      "Files",
+      "Research",
+      "量子 & optics",
+      "Derivation",
+    ]);
+    expect(result.crumbs.at(-2)?.to).toBe(`${base}/files?folder=${child}`);
+    expect(result.up).toBe(`${base}/files?folder=${child}`);
+    const settings = workspaceLocation({
+      route: `${base}/settings/people`,
+      space: location.space,
+    });
+    expect(settings.crumbs.map((c) => c.label)).toEqual([
+      "Workspaces",
+      "Physics lab",
+      "Settings",
+      "People",
+    ]);
+    expect(settings.up).toBe(`${base}/settings/general`);
+  });
   it("keeps workspace roots and special collection views navigable", () => {
     expect(
       workspaceLocation({

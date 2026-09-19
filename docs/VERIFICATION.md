@@ -1,7 +1,109 @@
 # Current verification and beta release gates
 
-Updated September 14, 2026. Historical logs are [archived separately](archive/VERIFICATION-2026-09-11.md).
+Updated September 20, 2026. Historical logs are [archived separately](archive/VERIFICATION-2026-09-11.md).
 Do not treat historical browser totals or local build IDs as current release evidence.
+
+## September 20 PDF reader redesign
+
+The [PDF reader guide](PDF_READER.md) separates implemented workflows from the
+remaining Zotero-style features. Existing Workspace/Gantt changes and research
+data were preserved; no commit, push, provider call or external deployment was
+performed.
+
+- TypeScript, ESLint, **1,788 unit tests across 79 files**, documentation links
+  and the isolated production build pass. The build prepares **913 offline
+  assets**, including self-hosted PDF.js maps/fonts/decoders. These are build
+  checks, not production-browser or offline-installation acceptance.
+- The new reader scenario passes in **Chromium, Firefox and WebKit** on isolated
+  port **3004**. It covers a generated 12-page PDF with nested contents, selection
+  popups (no automatic annotation editor), explicit Add note, private one-click
+  highlighting, collapse/filter/current-section navigation, exact search-hit
+  movement, private annotation persistence, editable bookmarks, split view,
+  appearance, assistant context preparation without transmission, and arranged
+  PDF download. The exported PDF is reopened to verify page count/rotation;
+  original stored bytes are compared unchanged. Browser page-error lists are empty.
+- Fresh selection, outline and warm-reader screenshots are under
+  `test-results/pdf-reader-{chromium,firefox,webkit}`. These generated fictional
+  fixtures are not published documentation assets. Earlier failed traces remain
+  private and are not included as passing evidence.
+- Unit checks cover range limits, individual/Unicode text matches, safe links,
+  source-preserving page copies and form refusal, appearance v8→v9/down-projection,
+  evidence-bound assistant page links, and mocked API authorization/consent/version/
+  provider-capability/private-history/quota-retention boundaries.
+
+Real provider/worker OCR and answer quality, two-user annotation synchronization,
+password/CJK/rotated-mixed-page fixtures, large-document virtualization budgets,
+physical clipboard/assistive-technology use, Quick Preview/canvas integration and
+complete offline/revocation rehearsal remain acceptance gates. Richer annotation
+tools, collaborative side notes, application-managed page-copy/version saving,
+native annotation import/export and whole-paper assistant batching are **not yet
+implemented**. The implementation is a substantial reader update, not full Zotero
+parity or completion of every item in the larger plan.
+
+The Workspace → Files overflow regression is also fixed: its flex rule now targets
+the actual Explorer wrapper, with a bounded, independently scrollable file pane
+and inspector. The new `workspace-files-scroll.spec.ts` passes in Chromium,
+Firefox and WebKit using 44 real staging resources, list/grid modes, a shorter
+desktop viewport, repeated wheel input and an open details panel. The final item
+and pagination footer remain reachable without moving the workspace tabs.
+Screenshots are in `test-results/workspace-files-scroll-{chromium,firefox,webkit}`.
+
+## September 20 unified workspaces and planning
+
+Projects now open as workspaces with Overview, Files, Planning, Discussions,
+Reviews and Settings. Planning adds a shared task inspector, recoverable local
+Markdown drafts, List/Board/Calendar/Gantt/Workload, calendar-aware schedule
+preview/apply/Undo, milestones, routines, evidence links and bounded exports.
+Group-wide lifecycle is separate from workspace lifecycle. See the current
+[planning contract and explicit limits](WORKSPACE_PLANNING.md).
+
+- **1,776 unit tests across 77 files**, TypeScript, ESLint, theme validation and
+  documentation checks pass. The isolated production build succeeds with
+  **707 offline assets**. These are build checks, not a new public deployment.
+- **18 Chromium workspace/management/review/navigation cases pass** in
+  `test-results/unified-workspace-verified-chromium`. This includes server-side
+  authorization, retained private-history boundaries, invitation roles, independent
+  Trash restoration, schedule preview/apply/Undo, task-draft recovery, legacy links
+  and virtualized 5,000-row rendering. Actual 5,000-row database filtering is also
+  tested separately; browser virtualization fixtures do not stand in for API tests.
+- The two new planning cases also pass in **Firefox and WebKit**. Additional
+  Chromium regressions pass for collaborative table edits/peer rebasing/local
+  Undo, Explorer selection/drag-and-drop/tabs, account-setting drafts and native
+  folder upload/preview focus. A stable opener resolver fixes losing keyboard
+  focus after a preview's original file row is replaced by a list refresh.
+  Final bar/edge-drag, cancellation and draft/virtualization reruns pass in all
+  three browsers under `test-results/unified-workspace-resize-{chromium,firefox,webkit}`.
+- Fresh initialization, **18 → 25**, and seeded **24 → 25** upgrade rehearsals
+  pass in disposable databases, including idempotency and preserved note/Yjs
+  content. Planning API checks cover independent lifecycle, personal/shared
+  permissions, dependency cycles, stale previews, atomic apply/Undo, task
+  deletion/restoration, evidence and metadata audit. The latest maintained-statistics
+  5,000-task read/filter rehearsals take **57–68 ms** on this machine. Earlier
+  freshly bulk-loaded fixtures with stale statistics took about ten seconds;
+  this is not a production latency guarantee. Keep PostgreSQL autovacuum/analyze
+  enabled and verify real workloads.
+- At the user's request, local development **8080/1234** was started with the
+  new code. Before schema 25, a paired backup was created and its database and
+  **14 stored-file checksums** verified. All original values in **13 existing
+  content/planning tables** were compared across the migration. No working data
+  was reset, reseeded or purged; web/workbench/sync health checks return 200 and
+  the worker is running. The backup is under
+  `data/before-workspace-planning-20260920` and contains private data.
+
+Browser mutation tests run only on isolated **3004/1236**, never the working
+8080 dataset. Initial failures from retired group/project navigation, an obsolete
+post-move dialog, and old origin guards were updated and rechecked. A historical
+unopened-journal fixture requires its separate named database and was deliberately
+not run against the working database. These targeted checks are not a rerun of
+every historical suite. Earlier failed reports remain available and are not
+counted as green runs.
+
+Personal/default group workspaces remain protected from permanent deletion;
+permanent group deletion, critical path/resource leveling, and live co-editing
+of task descriptions are not implemented. Full restore rehearsal, real deployment,
+physical IME/clipboard and assistive-technology gates remain open, as do the older
+large-document and intermittent WebKit navigation issues below. No commit, push
+or external deployment was performed for this change.
 
 ## September 14 version history, suggestions and save coordination
 

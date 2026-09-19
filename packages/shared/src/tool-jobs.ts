@@ -45,7 +45,9 @@ export async function processToolJob() {
     const { resource, space } = await resourceAccess(
       job.owner_id,
       job.resource_id,
-      job.kind === "office-preview" ? "read" : "edit",
+      job.kind === "office-preview" || job.input.context === "paper"
+        ? "read"
+        : "edit",
     );
     let result: unknown;
     if (job.kind === "office-preview") {
@@ -143,12 +145,36 @@ export async function processToolJob() {
       }
       return true;
     } else {
+      if (job.input.context === "paper") {
+        const { file } = await fileAccess(job.owner_id, job.version_id);
+        if (file.resource_id !== resource.id || file.mime !== "application/pdf")
+          throw new HttpError(404, "The PDF version is no longer accessible.");
+      }
       const [provider] = await query(
         "SELECT p.* FROM tool_providers p JOIN members m ON m.group_id=p.group_id AND m.user_id=$2 WHERE p.id=$1 AND p.enabled AND ($3::uuid IS NULL OR p.group_id=$3)",
         [job.provider_id, job.owner_id, space.group_id],
       );
       if (!provider)
         throw new Error("Provider access changed before processing began.");
+      if (
+        !provider.capabilities.includes(
+          job.kind === "ocr"
+            ? "ocr"
+            : job.input.context === "paper"
+              ? "paper"
+              : "math",
+        )
+      )
+        throw new Error(
+          "Provider capability was disabled before processing began.",
+        );
+      if (
+        job.input.context === "paper" &&
+        !provider.capabilities.includes("paper")
+      )
+        throw new Error(
+          "Paper assistance was disabled before processing began.",
+        );
       submitted = true;
       result = await callMathProvider(
         {
@@ -162,7 +188,13 @@ export async function processToolJob() {
       );
     }
     // Access is checked again before publishing generated research material.
-    await resourceAccess(job.owner_id, job.resource_id, "edit");
+    await resourceAccess(
+      job.owner_id,
+      job.resource_id,
+      job.input.context === "paper" ? "read" : "edit",
+    );
+    if (job.input.context === "paper")
+      await fileAccess(job.owner_id, job.version_id);
     await query(
       "UPDATE tool_jobs SET status='complete',result=$2,input='{}',updated_at=now() WHERE id=$1 AND status='running'",
       [
@@ -170,6 +202,8 @@ export async function processToolJob() {
         JSON.stringify({
           ...(result as Record<string, unknown>),
           source: job.input.source,
+          context: job.input.context,
+          versionId: job.version_id,
         }),
       ],
     );

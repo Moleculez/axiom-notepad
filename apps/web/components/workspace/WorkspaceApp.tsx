@@ -63,13 +63,13 @@ const PeoplePage = dynamic(() =>
 const ResearchPage = dynamic(() =>
   import("./Pages").then((module) => module.ResearchPage),
 );
-const ProjectsPage = dynamic(() => import("./Projects"));
+const ProjectsPage = dynamic(() =>
+  import("./UnifiedWorkspace").then((m) => m.LegacyProjectRedirect),
+);
 const SettingsPage = dynamic(() => import("./Settings"));
-const WorkspacesPage = dynamic(() => import("./WorkspacesPage"));
-const LegacyAdministrationRedirect = dynamic(() =>
-  import("./WorkspacesPage").then(
-    (module) => module.LegacyAdministrationRedirect,
-  ),
+const WorkspacesPage = dynamic(() => import("./UnifiedWorkspace"));
+const LegacyAdministrationRedirect = dynamic(
+  () => import("./GroupAdministration"),
 );
 const AuditPage = dynamic(() => import("./AuditPage"));
 const TrashPage = dynamic(() => import("./TrashPage"));
@@ -613,7 +613,7 @@ export default function WorkspaceApp() {
             {offline && (
               <div className="ws-offline" role="status">
                 Offline · Open cached notes remain available. File management
-                and project changes need a connection.
+                and planning changes need a connection.
               </div>
             )}
             <div className="ws-body">
@@ -711,7 +711,11 @@ export default function WorkspaceApp() {
                 ) : page === "groups" ? (
                   <GroupsHub />
                 ) : page === "workspaces" ? (
-                  <WorkspacesPage id={parts[1]} section={parts[2]} />
+                  <WorkspacesPage
+                    id={parts[1]}
+                    section={parts[2]}
+                    setting={parts[3]}
+                  />
                 ) : page === "audit" ? (
                   <AuditPage />
                 ) : page === "trash" ? (

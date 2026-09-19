@@ -30,8 +30,13 @@ tested workflows from remaining device, accessibility and provider checks.
   See [version history and review](docs/VERSION_REVIEW.md).
 - **Connect the evidence.** Collaborative Canvas with rich text and file cards,
   labeled connections, embedded previews, layout controls and portable exports.
-- **Work as a group.** Invitations, roles, personal and team spaces, shared projects,
-  resource tabs, Explorer drag/move/copy, immutable file versions, Audit and Trash.
+- **Plan in your workspace.** Files, tasks, milestones, discussions and reviews in
+  one place. Switch between List, Board, Calendar, Gantt and Workload; preview
+  dependency-aware schedule changes before applying them, with guarded Undo.
+  See [workspace planning](docs/WORKSPACE_PLANNING.md).
+- **Work as a group.** Invitations, roles, personal and shared workspaces, resource
+  tabs, Explorer drag/move/copy, immutable file versions, Audit and independent
+  workspace Trash. Group administration stays separate from workspace settings.
 - **Make it yours.** Semantic light/dark themes, Paper Research and Technical Slate
   packs, separate reading/interface/code typography, device overrides and a live
   settings scratchpad.
@@ -41,6 +46,12 @@ open files in the same workbench. Scoped OAuth/MCP integration and selected offl
 work are included. Provider-assisted OCR/AI and private Office conversion stay
 disabled until explicitly configured. See [feature boundaries](docs/RESEARCH_TOOLS.md)
 and [offline/MCP behavior](docs/PRODUCTIVITY_PLATFORM.md).
+
+The [PDF research workbench](docs/PDF_READER.md) adds continuous/facing pages,
+collapsible contents, selection popups, exact text search, editable bookmarks,
+private annotations, split reading and reversible page-copy organization.
+Paper assistance is explicitly opt-in; the guide lists current limits and
+remaining Zotero-style features.
 
 ## One document, two editing surfaces
 

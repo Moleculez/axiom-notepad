@@ -226,14 +226,14 @@ test("group administration handles deduplicated invitations, rotated links, role
     await ownerPage.goto(`/workbench/admin/${f.group.id}/members`);
     await expect(
       ownerPage.getByRole("navigation", {
-        name: "Workspace sections",
+        name: "Group administration sections",
       }),
     ).toBeVisible();
     await expect(
       ownerPage.getByText("New reader", { exact: true }),
     ).toBeVisible();
     await ownerPage
-      .getByRole("link", { name: "General", exact: true })
+      .getByRole("link", { name: "Settings", exact: true })
       .last()
       .click();
     await expect(ownerPage.getByLabel("Group description")).toBeVisible();

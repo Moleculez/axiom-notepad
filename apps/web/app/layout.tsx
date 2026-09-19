@@ -55,6 +55,8 @@ import "./reading-marks.css";
 import "./visual-viewer.css";
 import "./minimap.css";
 import "./revisions.css";
+import "./workspace-planning.css";
+import "./pdf-reader.css";
 import "../themes/paper-research.css";
 import "../themes/technical-slate.css";
 import "../../../packages/shared/assets/document-decorations.css";

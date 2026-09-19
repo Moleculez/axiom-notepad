@@ -45,7 +45,7 @@ describe("document minimap", () => {
     });
   });
   it("migrates v7 and down-projects all supported readers without restyling", () => {
-    const { minimap: _map, ...previous } = defaults;
+    const { minimap: _map, pdfReader: _pdf, ...previous } = defaults;
     const old = {
       ...previous,
       schemaVersion: 7,
@@ -58,6 +58,7 @@ describe("document minimap", () => {
       ...old,
       schemaVersion: APPEARANCE_SCHEMA,
       minimap: minimapDefaults,
+      pdfReader: defaults.pdfReader,
     });
     for (const schema of [2, 3, 4, 5, 6, 7]) {
       const record = appearanceForClient(

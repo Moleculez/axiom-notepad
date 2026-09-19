@@ -16,12 +16,22 @@ const notices = [
   "Axiom Research Tools - third-party notices",
   "MathLive 0.110.0\n" + license,
 ];
+// Keep PDF text maps, fallback fonts and image decoders on the same origin.
+const pdfSource = resolve("node_modules/pdfjs-dist");
+const pdfTarget = resolve("apps/web/public/tool-assets/pdfjs");
+await mkdir(pdfTarget, { recursive: true });
+for (const folder of ["cmaps", "standard_fonts", "wasm"]) {
+  await cp(resolve(pdfSource, folder), resolve(pdfTarget, folder), {
+    recursive: true,
+  });
+}
 for (const [name, file] of [
   ["ag-psd", "LICENSE"],
   ["exceljs", "LICENSE"],
   ["file-type", "license"],
   ["exifreader", "LICENSE"],
   ["@xmldom/xmldom", "LICENSE"],
+  ["pdfjs-dist", "LICENSE"],
 ]) {
   const pkg = resolve("node_modules", name);
   const metadata = JSON.parse(
@@ -35,4 +45,6 @@ await writeFile(
   resolve(target, "../THIRD_PARTY_NOTICES.txt"),
   notices.join("\n\n====================\n\n"),
 );
-console.log("MathLive runtime fonts and license prepared locally.");
+console.log(
+  "MathLive and PDF.js runtime assets and licenses prepared locally.",
+);

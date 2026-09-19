@@ -189,6 +189,7 @@ describe("reading marks", () => {
       readingMarkMargin: _a,
       readingMarkOverview: _b,
       minimap: _minimap,
+      pdfReader: _pdf,
       ...previous
     } = defaults;
     const old = { ...previous, schemaVersion: 6, blockGuides: false };
@@ -199,6 +200,7 @@ describe("reading marks", () => {
       readingMarkMargin: true,
       readingMarkOverview: true,
       minimap: defaults.minimap,
+      pdfReader: defaults.pdfReader,
     });
     expect(
       appearanceForClient(

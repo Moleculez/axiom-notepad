@@ -8,9 +8,11 @@ not installation instructions or proof of today's test results.
 ## For researchers
 
 - [Workspace guide](WORKSPACE.md) — navigation, sharing, files and everyday limits
+- [Workspace planning](WORKSPACE_PLANNING.md) — unified navigation, tasks, Gantt, calendars, drafts and migration
 - [Editor and shortcuts](EDITOR.md) — visual/source editing and research blocks
 - [Version history and review](VERSION_REVIEW.md) — comparisons, suggestions, milestones, assigned reviews and cloud drafts
 - [Reading and references](READING.md) — paper reading, bibliography and appearance
+- [PDF research workbench](PDF_READER.md) — reader, selection actions, contents, page copies and opt-in assistance
 - [Reading marks](READING_MARKS.md) — bookmarks, private notes and shared annotation cards
 - [Document minimap](MINIMAP.md) — navigation, markers, folding and appearance
 - [Image and Mermaid viewer](VISUAL_VIEWER.md) — inspection, comparison and annotations

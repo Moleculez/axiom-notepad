@@ -174,8 +174,8 @@ export async function resourceTransferApi(
         if (
           (
             await client.query(
-              "SELECT 1 FROM tasks WHERE note_id=ANY($1::uuid[]) UNION SELECT 1 FROM review_requests WHERE note_id=ANY($1::uuid[]) LIMIT 1",
-              [noteIds],
+              "SELECT 1 FROM tasks WHERE note_id=ANY($1::uuid[]) UNION SELECT 1 FROM review_requests WHERE note_id=ANY($1::uuid[]) UNION SELECT 1 FROM task_resources WHERE resource_id=ANY($2::uuid[]) LIMIT 1",
+              [noteIds, ids],
             )
           ).rowCount
         )

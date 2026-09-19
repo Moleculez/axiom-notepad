@@ -76,11 +76,15 @@ export async function assertGroupActive(
   const {
     rows: [space],
   } = await client.query(
-    "SELECT id FROM spaces WHERE group_id=$1 AND kind='team' FOR KEY SHARE",
+    "SELECT id,lifecycle_status AS state FROM groups WHERE id=$1 FOR KEY SHARE",
     [groupId],
   );
-  if (!space) throw new HttpError(404, "This workspace is unavailable.");
-  await assertSpaceActive(client, space.id);
+  if (!space) throw new HttpError(404, "This group is unavailable.");
+  if (space.state !== "active")
+    throw new HttpError(
+      409,
+      "Restore this group in Group administration before making changes.",
+    );
 }
 export async function requireNoteScope(
   client: pg.PoolClient,

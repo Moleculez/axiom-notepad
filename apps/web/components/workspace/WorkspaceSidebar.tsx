@@ -1,7 +1,6 @@
 "use client";
 import { createContext, useContext, useEffect, useState } from "react";
 import {
-  Blocks,
   ClipboardCheck,
   ChevronRight,
   Clock3,
@@ -20,6 +19,7 @@ import type {
   Space,
 } from "@axiom/shared/workspace";
 import { fileRouteId } from "@axiom/shared/file-routes";
+import { workspaceDestination } from "../../lib/workspace-navigation";
 import { useManagement } from "./ManagementActions";
 import {
   ResourceIcon,
@@ -31,7 +31,7 @@ import {
 const ActiveAncestors = createContext<readonly string[]>([]);
 
 function folderLocation(spaceId: string, parentId?: string | null) {
-  return `/explorer?space=${spaceId}${parentId ? "&folder=" + parentId : ""}`;
+  return `/workspaces/${spaceId}/files${parentId ? "?folder=" + parentId : ""}`;
 }
 function isPlainClick(event: React.MouseEvent<HTMLElement>) {
   return (
@@ -87,7 +87,11 @@ export default function WorkspaceSidebar() {
     resourceId ? `resources/${resourceId}/location` : null,
     revision,
   );
-  const selected = params.get("space") ?? location.data?.space.id ?? null,
+  const selected =
+      (path.startsWith("/workspaces/") ? path.split("/")[2] : null) ??
+      params.get("space") ??
+      location.data?.space.id ??
+      null,
     parent = params.get("folder") ?? location.data?.resource.parent_id ?? null;
   const views = [
     ["recent", Clock3, "Recent"],
@@ -126,29 +130,44 @@ export default function WorkspaceSidebar() {
         }}
       >
         <div className="ws-tree-section-heading">
-          <span className="ws-section-label">Your spaces</span>
+          <WorkspaceLink to="/workspaces" className="ws-section-label">
+            Your workspaces
+          </WorkspaceLink>
         </div>
         <ul className="ws-tree" aria-label="Spaces and folders">
-          {spaces
-            .filter(
-              (space) =>
-                space.kind !== "project" && space.effective_status === "active",
-            )
-            .map((space) => (
-              <SpaceBranch
-                key={space.id}
-                space={space}
-                selected={selected}
-                parent={parent}
-                revision={revision}
-                projects={spaces.filter(
-                  (project) =>
-                    project.kind === "project" &&
-                    project.effective_status === "active" &&
-                    project.group_id === space.group_id,
-                )}
-              />
-            ))}
+          {[
+            ...new Set(
+              spaces
+                .filter((s) => s.effective_status === "active")
+                .map((s) => s.group_id ?? "personal"),
+            ),
+          ].map((groupId) => (
+            <li key={groupId} className="workspace-tree-group">
+              <span className="workspace-tree-group-label">
+                {groupId === "personal"
+                  ? "Your account"
+                  : (spaces.find((s) => s.group_id === groupId)?.group_name ??
+                    "Shared work")}
+              </span>
+              <ul>
+                {spaces
+                  .filter(
+                    (s) =>
+                      (s.group_id ?? "personal") === groupId &&
+                      s.effective_status === "active",
+                  )
+                  .map((space) => (
+                    <SpaceBranch
+                      key={space.id}
+                      space={space}
+                      selected={selected}
+                      parent={parent}
+                      revision={revision}
+                    />
+                  ))}
+              </ul>
+            </li>
+          ))}
         </ul>
       </div>
       <nav
@@ -158,7 +177,6 @@ export default function WorkspaceSidebar() {
         <span className="ws-section-label">Administration</span>
         {(
           [
-            ["/workspaces", "Workspaces", Blocks],
             ["/groups", "Groups", Users],
             ["/audit", "Audit", History],
             ["/trash", "Trash", Trash2],
@@ -185,28 +203,20 @@ function SpaceBranch({
   selected,
   parent,
   revision,
-  projects = [],
 }: {
   space: Space;
   selected: string | null;
   parent: string | null;
   revision: number;
-  projects?: Space[];
 }) {
   const management = useManagement();
-  const activeBranch =
-    selected === space.id ||
-    projects.some((project) => project.id === selected);
+  const { session } = useWorkspace();
+  const activeBranch = selected === space.id;
   const [expanded, setExpanded] = useState(activeBranch);
   useEffect(() => {
     if (activeBranch) setExpanded(true);
   }, [selected, activeBranch]);
-  const Icon =
-    space.kind === "personal"
-      ? LockKeyhole
-      : space.kind === "project"
-        ? Folder
-        : Folder;
+  const Icon = space.kind === "personal" ? LockKeyhole : Folder;
   return (
     <li>
       <div
@@ -243,7 +253,7 @@ function SpaceBranch({
           <ChevronRight size={13} />
         </button>
         <WorkspaceLink
-          to={folderLocation(space.id)}
+          to={workspaceDestination(session.user.id, space.id)}
           title={space.name}
           onClick={(event) => {
             if (isPlainClick(event)) setExpanded(true);
@@ -261,21 +271,8 @@ function SpaceBranch({
             selected={parent}
             revision={revision}
             ancestors={[]}
-            showEmpty={!projects.length}
+            showEmpty
           />
-          {projects.length > 0 && (
-            <ul aria-label={`${space.name} projects`}>
-              {projects.map((project) => (
-                <SpaceBranch
-                  key={project.id}
-                  space={project}
-                  selected={selected}
-                  parent={parent}
-                  revision={revision}
-                />
-              ))}
-            </ul>
-          )}
         </>
       )}
     </li>

@@ -5,12 +5,13 @@ The default landing page is `/workbench/home`. Existing `/?note=…` and `/?pape
 ## Navigation
 
 - **Home:** recent documents, assigned tasks and review requests.
-- **Explorer:** notes, folders, images, PDFs, datasets and other files in one hierarchy. Projects are grouped under their research group in the tree.
-- **Projects:** overview, board/list/calendar, milestones, discussions, snapshot-bound reviews, workload, activity and access settings.
+- **Workspaces:** personal and shared research spaces, grouped by ownership in the sidebar. Each has Overview, Files, Planning, Discussions, Reviews and Settings. Clicking a workspace resumes its last view; first visits open Overview.
+- **Explorer:** notes, folders, images, PDFs, datasets and other files in one hierarchy, either across accessible spaces or inside a workspace's Files section.
+- **Planning:** List, Board, Calendar, Gantt and Workload share tasks and filters. Tasks support subtasks, dependencies, milestones, linked evidence, Markdown descriptions and recoverable drafts. See [the planning guide](WORKSPACE_PLANNING.md).
 - **Research:** reading tools, STEM note starters, reference libraries and the knowledge graph.
 - **Inbox:** assignments, reviews, discussions and due-date reminders; category and optional email controls live in account settings.
 - **People:** researchers in your groups, searchable interests/affiliations and profiles.
-- **Administration:** Workspaces, Groups, Audit and Trash stay below Your spaces in the same sidebar. They provide workspace and membership administration, authorized change history, operation progress and batch recovery. See [the management console guide](MANAGEMENT_CONSOLE.md).
+- **Administration:** Groups, Audit and Trash stay below Your workspaces in the same sidebar. They provide membership administration, authorized change history, operation progress and batch recovery. See [the management console guide](MANAGEMENT_CONSOLE.md).
 
 The top bar holds resource tabs, a pages launcher, search, transfers and account
 tools. The same workspace tree remains visible across documents, settings and
@@ -25,21 +26,23 @@ Click a workspace or folder name to open it and expand its tree, including an al
 
 Right-click a workspace, folder or selected Explorer item for its contextual actions. Shift+F10 opens the same menu from the keyboard; Escape returns focus to the original item. Explorer supports arrow navigation, F2 rename, platform Copy/Cut/Paste and guarded Delete. Folder menus create notes/folders or upload directly into that folder. Cross-workspace operations confirm the destination audience.
 
-Use **Administration → Workspaces** for the directory of Active, Archived and
-Trash workspaces and workspace creation. Each workspace has General, People,
-Invitations, Storage, Integrations, Activity and Lifecycle sections. Archive pauses
-editing and scheduled work. Workspace Trash has no expiry, and restoration
-preserves independently archived projects and individually trashed resources.
-Owner-only permanent removal checks outside evidence and has a cancellation
-window. See [management and recovery details](MANAGEMENT_CONSOLE.md).
+Use the **Workspaces** launcher for the directory of Active, Archived and Trash
+workspaces and creation. Workspace Settings contains identity, working calendar,
+access, storage, integrations, activity and lifecycle. Group identity, invitations,
+membership and group-wide lifecycle stay in Group administration. Archive pauses
+editing and scheduled work in that scope. Workspace Trash has no expiry; restoring
+one workspace preserves all other workspace and individual file states. Eligible
+shared workspaces have owner-only permanent removal with reference checks and a
+cancellation window. Personal and default group workspaces are protected from
+permanent deletion. See [management and recovery details](MANAGEMENT_CONSOLE.md).
 
 ## Ownership and sharing
 
-An account's personal space survives leaving a group. Other members, including group administrators, cannot browse it. Group owner/admin/member roles control administration; viewer/commenter/editor roles control team/project content. Restricted projects admit explicitly assigned people. Group-audience projects inherit group access unless an explicit project role applies. Project leads manage settings/access. Archived projects are read-only until restored by a manager.
+An account's personal workspace survives leaving a group. Other members, including group administrators, cannot browse it. Group owner/admin/member roles control administration; viewer/commenter/editor roles control workspace content. Restricted workspaces admit explicitly assigned people. Group-audience workspaces inherit group access unless an explicit role applies. Workspace leads manage settings/access. Archived workspaces are read-only until restored by a manager. Existing project IDs remain compatibility records, not a separate navigation level.
 
 There are no public links or per-item permissions. Items inherit their destination space's audience. Copy/move across spaces requires explicit audience confirmation. A copy creates new identities and includes exact linked file versions the caller can read; history, discussions, annotations and reading records are not copied. A move retains identities and history, but is refused when it would break outside evidence or project task/review bindings. Use a copy to preserve the original research record.
 
-Transfer ownership before leaving a group; assign another project lead before removing its last lead. Revocation ends online access but cannot erase downloaded or offline copies.
+Transfer ownership before leaving a group; assign another workspace lead before removing its last lead. Revocation ends online access but cannot erase downloaded or offline copies.
 
 ## Writing and reading
 

@@ -4,7 +4,7 @@ import { fixture, origin, caret } from "./native-editor-helpers";
 
 test.beforeAll(() => {
   if (
-    origin !== "http://localhost:3002" ||
+    !["http://localhost:3002", "http://localhost:3004"].includes(origin) ||
     process.env.NEXT_PUBLIC_AXIOM_EDITOR_ENGINE !== "milkdown"
   )
     throw new Error(

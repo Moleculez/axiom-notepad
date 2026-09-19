@@ -625,14 +625,14 @@ export function ManagementProvider({
       label: "Open workspace",
       icon: "open",
       disabled: ["trashed", "purging"].includes(space.effective_status),
-      action: () => navigate(`/explorer?space=${space.id}`),
+      action: () => navigate(`/workspaces/${space.id}`),
     },
     ...newItems(
       { spaceId: space.id, parentId: null },
       space.kind === "team"
         ? [
             {
-              label: "New project…",
+              label: "New workspace in group…",
               icon: "project",
               disabled:
                 space.role !== "editor" || space.effective_status !== "active",
@@ -654,15 +654,15 @@ export function ManagementProvider({
             icon: "users" as const,
             label: space.can_manage
               ? space.project_id
-                ? "Project members and settings…"
+                ? "Workspace members and settings…"
                 : "Members and invitations…"
               : "Workspace members…",
             action: () =>
               navigate(
                 space.can_manage
                   ? space.project_id
-                    ? `/projects/${space.project_id}/settings`
-                    : `/admin/${space.group_id}`
+                    ? `/workspaces/${space.id}/settings/people`
+                    : `/admin/${space.group_id}/members`
                   : `/people?groupId=${space.group_id}`,
               ),
           },
@@ -715,7 +715,7 @@ export function ManagementProvider({
       label: "Manage workspace",
       icon: "settings",
       group: "All workspaces",
-      action: () => navigate(`/workspaces/${space.id}/overview`),
+      action: () => navigate(`/workspaces/${space.id}/settings/general`),
     },
   ];
   const management: Management = {
@@ -974,18 +974,18 @@ export function ManagementProvider({
       )}
       {modal?.kind === "newProject" && (
         <NameDialog
-          title="Create a project"
-          label="Project name"
+          title="Create a workspace"
+          label="Workspace name"
           onClose={closed}
           onSave={async (name) => {
-            const project = await mutate("projects", {
+            const project = await mutate("spaces", {
               groupId: modal.space.group_id,
               name,
               audience: "restricted",
               timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
             });
             done();
-            navigate(`/projects/${project.id}`);
+            navigate(`/workspaces/${project.space_id}/overview`);
           }}
         />
       )}

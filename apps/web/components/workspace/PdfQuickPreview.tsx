@@ -1,7 +1,9 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import { ErrorNotice } from "./ui";
+import PdfPages from "../pdf/PdfPages";
+import { pdfRuntimeOptions } from "../../lib/pdf-runtime";
 export default function PdfQuickPreview({
   source,
   interactive = true,
@@ -13,15 +15,12 @@ export default function PdfQuickPreview({
 }) {
   const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null),
     [page, setPage] = useState(initialPage),
-    [error, setError] = useState(""),
-    [text, setText] = useState("");
-  const canvas = useRef<HTMLCanvasElement>(null);
+    [error, setError] = useState("");
   useEffect(() => {
     setPage(Math.max(1, initialPage));
   }, [source, initialPage]);
   useEffect(() => {
     setPdf(null);
-    setText("");
     setError("");
     let active = true;
     let loading:
@@ -34,9 +33,10 @@ export default function PdfQuickPreview({
           import.meta.url,
         ).toString();
         loading = lib.getDocument({
+          ...pdfRuntimeOptions,
           url: source,
-          enableXfa: false,
           disableAutoFetch: true,
+          disableStream: true,
         });
         return loading.promise;
       })
@@ -57,44 +57,8 @@ export default function PdfQuickPreview({
       void loading?.destroy();
     };
   }, [source]);
-  useEffect(() => {
-    if (!pdf || !canvas.current) return;
-    let active = true;
-    let render:
-      | ReturnType<Awaited<ReturnType<PDFDocumentProxy["getPage"]>>["render"]>
-      | undefined;
-    void pdf
-      .getPage(Math.min(page, pdf.numPages))
-      .then(async (p) => {
-        if (!active || !canvas.current) return;
-        const viewport = p.getViewport({
-          scale: Math.min(1.5, 850 / p.getViewport({ scale: 1 }).width),
-        });
-        const el = canvas.current;
-        el.width = Math.ceil(viewport.width);
-        el.height = Math.ceil(viewport.height);
-        render = p.render({ canvas: el, viewport });
-        await render.promise;
-        const content = await p.getTextContent();
-        if (active)
-          setText(
-            content.items
-              .map((item) => ("str" in item ? item.str : ""))
-              .join(" ")
-              .slice(0, 20000),
-          );
-      })
-      .catch((e) => {
-        if (active && e.name !== "RenderingCancelledException")
-          setError("This page cannot be previewed.");
-      });
-    return () => {
-      active = false;
-      render?.cancel();
-    };
-  }, [pdf, page]);
   return (
-    <div className="pdf-quick-preview">
+    <div className="pdf-quick-preview pdf-workbench pdf-preview-reader">
       <ErrorNotice message={error} />
       {interactive && (
         <div className="ws-actions">
@@ -117,8 +81,24 @@ export default function PdfQuickPreview({
           </button>
         </div>
       )}
-      <canvas ref={canvas} aria-label={`PDF page ${page}`} role="img" />
-      <p className="sr-only">{text}</p>
+      {pdf && (
+        <PdfPages
+          pdf={pdf}
+          page={page}
+          jump={page}
+          scale="page"
+          rotation={0}
+          view="single"
+          labels={[]}
+          annotations={[]}
+          selected=""
+          query=""
+          area={false}
+          onPage={setPage}
+          onSelect={() => {}}
+          onAnnotation={() => {}}
+        />
+      )}
     </div>
   );
 }

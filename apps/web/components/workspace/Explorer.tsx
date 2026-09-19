@@ -60,7 +60,9 @@ import {
 } from "./ui";
 
 function folderLocation(spaceId: string, parentId?: string | null) {
-  return `/explorer?space=${spaceId}${parentId ? "&folder=" + parentId : ""}`;
+  return location.pathname.includes("/workspaces/")
+    ? `/workspaces/${spaceId}/files${parentId ? "?folder=" + parentId : ""}`
+    : `/explorer?space=${spaceId}${parentId ? "&folder=" + parentId : ""}`;
 }
 
 export default function Explorer() {
@@ -77,10 +79,10 @@ function ResourceExplorer() {
   const tabs = useAppTabs(),
     tabId = tabs?.state.active;
   const { spaces, revision, navigate, open, upload, refresh } = useWorkspace(),
-    { params } = useLocation();
+    { params, parts } = useLocation();
   const view = params.get("view") ?? "folder",
     spaceId =
-      params.get("space") ||
+      (parts[0] === "workspaces" ? parts[1] : params.get("space")) ||
       (view === "folder" ? spaces.find((s) => s.kind === "personal")?.id : ""),
     parentId = params.get("folder");
   const space = spaces.find((s) => s.id === spaceId),
@@ -1066,7 +1068,11 @@ function ResourceExplorer() {
         <FileQuickPreview
           key={preview.id}
           resource={preview}
-          gallery={selected.length > 1 && selected.some(r=>r.id===preview.id) ? selected : rows}
+          gallery={
+            selected.length > 1 && selected.some((r) => r.id === preview.id)
+              ? selected
+              : rows
+          }
           onClose={() => setPreview(null)}
         />
       )}

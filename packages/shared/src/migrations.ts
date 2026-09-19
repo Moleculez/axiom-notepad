@@ -229,7 +229,13 @@ INSERT INTO app_instance(singleton,setup_completed_at) SELECT true,CASE WHEN EXI
     name: "reversible-decision-attachment-retention",
     sql: revisionUndoRetentionMigration,
   },
+  {
+    version: 25,
+    name: "unified-workspaces-and-planning",
+    sql: unifiedWorkspacesMigration,
+  },
 ];
+import { unifiedWorkspacesMigration } from "./unified-workspaces-migration";
 import { revisionUndoRetentionMigration } from "./revision-undo-retention-migration";
 import { revisionPerformanceMigration } from "./revision-performance-migration";
 import { revisionRetentionMigration } from "./revision-retention-migration";

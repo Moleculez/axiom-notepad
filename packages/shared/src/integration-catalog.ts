@@ -11,7 +11,7 @@ type Action = {
   scope: IntegrationScope;
   method: string;
   path: string;
-  target: "workspace" | "resource" | "project" | "group" | "account";
+  target: "workspace" | "resource" | "project" | "group" | "account" | "task";
   approval?: boolean;
 };
 const read = (
@@ -47,6 +47,92 @@ const write = (
 /** Deliberately no shell, SQL, password, secrets, authentication, or provider
  * credentials. Payloads are validated again by the same application services. */
 export const integrationActions: Action[] = [
+  read(
+    "workspace_planning",
+    "spaces/:id/planning",
+    "workspace",
+    "List workspace tasks, milestones and calendar. query: q, status, priority, assignee, milestone, limit (5000 max), offset, deleted=1. Counts are server-filtered.",
+  ),
+  read(
+    "workspace_calendar",
+    "spaces/:id/planning-settings",
+    "workspace",
+    "Read the working calendar and planning revision.",
+  ),
+  read(
+    "workspace_discussions",
+    "spaces/:id/discussions",
+    "workspace",
+    "Read discussions; optional query.task filters a task thread.",
+  ),
+  read(
+    "workspace_reviews",
+    "spaces/:id/reviews",
+    "workspace",
+    "Read workspace file review requests.",
+  ),
+  read(
+    "workspace_task",
+    "tasks/:id",
+    "task",
+    "Read task details with its optimistic concurrency version.",
+  ),
+  write(
+    "workspace_task_create",
+    "spaces/:id/tasks",
+    "workspace",
+    "Create a task. payload: title, body?, status?, assigneeId?, parentId?, startOn?, dueOn?, estimateHours?, labels?, milestoneId?, dependencies?, resourceIds?.",
+  ),
+  write(
+    "workspace_task_update",
+    "tasks/:id",
+    "task",
+    "Update task with required version. Use deleted=true/false for recoverable deletion or restoration. Dependencies must remain acyclic.",
+    "PATCH",
+  ),
+  write(
+    "workspace_milestone_create",
+    "spaces/:id/milestones",
+    "workspace",
+    "Create a milestone. payload: title, dueOn?.",
+  ),
+  write(
+    "workspace_discussion_create",
+    "spaces/:id/discussions",
+    "workspace",
+    "Post a workspace discussion. payload: body, taskId?, parentId?.",
+  ),
+  write(
+    "workspace_schedule_preview",
+    "spaces/:id/schedule/preview",
+    "workspace",
+    "Preview date changes without modifying tasks. payload.changes: [{id,version,startOn,dueOn}]. Returns conflicts, direct and proposed changes, and an expiring preview id.",
+  ),
+  write(
+    "workspace_schedule_apply",
+    "spaces/:id/schedule/apply",
+    "workspace",
+    "Apply reviewed schedule atomically. payload: previewId, mode (direct or proposed). Requires explicit approval of these arguments.",
+    "POST",
+    true,
+  ),
+  write(
+    "workspace_schedule_undo",
+    "spaces/:id/schedule/undo",
+    "workspace",
+    "Undo an applied schedule only if affected task versions are unchanged. payload: previewId.",
+    "POST",
+    true,
+  ),
+  write(
+    "workspace_calendar_update",
+    "spaces/:id/planning-settings",
+    "workspace",
+    "Update calendar without rewriting dates. payload: version, calendar {timezone,workingDays,exceptions}.",
+    "PATCH",
+    true,
+    true,
+  ),
   read(
     "files_list",
     "resources",

@@ -48,7 +48,7 @@ export async function memberAccess(
     content_role: ContentRole;
     effective_status: Space["effective_status"];
   }>(
-    "SELECT m.role,CASE WHEN axiom_space_state(s.id)='archived' THEN 'viewer' ELSE m.content_role END AS content_role,axiom_space_state(s.id) AS effective_status FROM members m JOIN spaces s ON s.group_id=m.group_id AND s.kind='team' WHERE m.user_id=$1 AND m.group_id=$2",
+    "SELECT m.role,CASE WHEN g.lifecycle_status='archived' THEN 'viewer' ELSE m.content_role END AS content_role,g.lifecycle_status AS effective_status FROM members m JOIN groups g ON g.id=m.group_id WHERE m.user_id=$1 AND m.group_id=$2",
     [userId, groupId],
   );
   if (!member || (manage && member.role === "member"))
@@ -91,7 +91,7 @@ export async function spaceAccess(
   allowInactive = false,
 ): Promise<Space> {
   const [space] = await query<Space>(
-    `SELECT s.*,CASE WHEN s.kind='personal' THEN 'Personal space' WHEN s.kind='team' THEN g.name ELSE p.name END AS name,axiom_space_state(s.id) AS effective_status,(SELECT parent.status FROM spaces parent WHERE s.kind='project' AND parent.kind='team' AND parent.group_id=s.group_id) AS parent_status,m.role AS group_role,axiom_space_role($1,s.id) AS role,axiom_manage_space($1,s.id) AS can_manage FROM spaces s LEFT JOIN groups g ON g.id=s.group_id LEFT JOIN projects p ON p.id=s.project_id LEFT JOIN members m ON m.group_id=s.group_id AND m.user_id=$1 WHERE s.id=$2`,
+    `SELECT s.*,g.name AS group_name,p.audience,axiom_space_state(s.id) AS effective_status,g.lifecycle_status AS parent_status,m.role AS group_role,axiom_space_role($1,s.id) AS role,axiom_manage_space($1,s.id) AS can_manage FROM spaces s LEFT JOIN groups g ON g.id=s.group_id LEFT JOIN projects p ON p.id=s.project_id LEFT JOIN members m ON m.group_id=s.group_id AND m.user_id=$1 WHERE s.id=$2`,
     [userId, spaceId],
   );
   if (
@@ -158,7 +158,7 @@ export async function projectAccess(
   allowInactive = false,
 ) {
   const [project] = await query(
-    "SELECT p.*,s.id AS space_id FROM projects p JOIN spaces s ON s.project_id=p.id WHERE p.id=$1",
+    "SELECT p.*,s.id AS space_id,s.name,s.description,s.color,s.timezone FROM projects p JOIN spaces s ON s.project_id=p.id WHERE p.id=$1",
     [projectId],
   );
   if (!project) throw new HttpError(404, "This project is unavailable.");
@@ -181,7 +181,7 @@ export async function spaceAccessEpoch(
   client?: pg.PoolClient,
 ): Promise<string> {
   const sql = `SELECT s.id::text||':'||count(e.id)::text AS epoch FROM spaces s
-    LEFT JOIN space_lifecycle_events e ON (e.space_id=s.id OR e.space_id=(SELECT id FROM spaces WHERE group_id=s.group_id AND kind='team'))
+    LEFT JOIN space_lifecycle_events e ON e.space_id=s.id
       AND e.action IN ('archive','trash','purge') WHERE s.id=$1 GROUP BY s.id`;
   const rows = client
     ? (await client.query(sql, [spaceId])).rows

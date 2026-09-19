@@ -1726,7 +1726,7 @@ export function ProjectMembers({ project }: { project: any }) {
   return (
     <>
       <div className="ws-section-heading">
-        <h2>Project collaborators</h2>
+        <h2>Workspace collaborators</h2>
         {project.can_manage && (
           <button className="button primary" onClick={() => setAdding(true)}>
             <Plus size={16} />
@@ -1736,8 +1736,8 @@ export function ProjectMembers({ project }: { project: any }) {
       </div>
       <p className="muted">
         {project.audience === "group"
-          ? "The whole group can access this project. Removing an explicit role restores that person’s group content role; it does not remove access."
-          : "Only explicitly invited project members can read this project. Group administrators manage access without automatic access to its contents."}{" "}
+          ? "The whole group can access this workspace. Removing an explicit role restores that person’s group content role; it does not remove access."
+          : "Only explicitly invited workspace members can read this workspace. Group administrators manage access without automatic access to its contents."}{" "}
         Leads manage membership; content roles determine reading, commenting,
         and editing.
       </p>
@@ -1751,7 +1751,7 @@ export function ProjectMembers({ project }: { project: any }) {
           <div>
             <strong>{person.name}</strong>
             <small>
-              {person.can_manage ? "Project lead" : "Collaborator"}
+              {person.can_manage ? "Workspace lead" : "Collaborator"}
               {!person.explicit ? " · Group access" : ""}
             </small>
           </div>
@@ -1817,8 +1817,8 @@ export function ProjectMembers({ project }: { project: any }) {
       ))}
       {adding && (
         <Dialog
-          title="Add a project collaborator"
-          subtitle="Only existing group members can be invited to a project."
+          title="Add a workspace collaborator"
+          subtitle="Only existing group members can be invited to a workspace."
           onClose={() => !action.busy && setAdding(false)}
         >
           <form
@@ -1867,7 +1867,7 @@ export function ProjectMembers({ project }: { project: any }) {
                 checked={lead}
                 onChange={(event) => setLead(event.target.checked)}
               />
-              Can manage this project’s settings and members
+              Can manage this workspace’s settings and members
             </label>
             <ErrorNotice message={action.error || people.error} />
             <div className="dialog-footer">

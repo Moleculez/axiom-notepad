@@ -120,7 +120,7 @@ export async function groupInvitationsApi(
       EXISTS(SELECT 1 FROM members m WHERE m.group_id=g.id AND m.user_id=$2) AS already_joined
       FROM invitations i JOIN groups g ON g.id=i.group_id JOIN spaces s ON s.group_id=g.id AND s.kind='team'
       WHERE lower(i.email)=lower($1) AND i.accepted_at IS NULL AND i.revoked_at IS NULL AND i.expires_at>now()
-      AND axiom_space_state(s.id)='active' ORDER BY i.created_at DESC LIMIT 100`,
+      AND g.lifecycle_status='active' ORDER BY i.created_at DESC LIMIT 100`,
         [email, userId],
       ),
     );
@@ -131,7 +131,7 @@ export async function groupInvitationsApi(
       .parse(await request.json());
     const [invite] = await query(
       `SELECT i.id,i.group_id,i.email,i.role,i.content_role,i.expires_at,i.accepted_at,i.revoked_at,g.name AS group_name,g.description,
-      axiom_space_state(s.id) AS group_status,EXISTS(SELECT 1 FROM members m WHERE m.group_id=g.id AND m.user_id=$2) AS already_joined
+      g.lifecycle_status AS group_status,EXISTS(SELECT 1 FROM members m WHERE m.group_id=g.id AND m.user_id=$2) AS already_joined
       FROM invitations i JOIN groups g ON g.id=i.group_id JOIN spaces s ON s.group_id=g.id AND s.kind='team' WHERE token_hash=$1`,
       [hash(token), userId],
     );

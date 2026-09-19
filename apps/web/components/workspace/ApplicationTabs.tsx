@@ -9,7 +9,6 @@ import {
   ChevronDown,
   File,
   FileText,
-  FlaskConical,
   FolderOpen,
   Home,
   Image as ImageIcon,
@@ -49,10 +48,14 @@ import {
 export const destinations = [
   ["/home", "Home", "Recent work and your day", Home],
   ["/explorer", "Explorer", "Notes, folders and files", FolderOpen],
-  ["/projects", "Projects", "Tasks, milestones and reviews", FlaskConical],
   ["/research", "Research", "References and connections", BookOpen],
   ["/groups", "Groups", "Create, join and manage your groups", Users],
-  ["/workspaces", "Workspaces", "Access, storage and administration", Blocks],
+  [
+    "/workspaces",
+    "Workspaces",
+    "Files, planning, milestones and collaboration",
+    Blocks,
+  ],
   ["/audit", "Audit", "Change history and operation progress", History],
   ["/trash", "Trash", "Recover files and workspaces", Trash2],
   ["/inbox", "Inbox", "Mentions and notifications", Bell],
@@ -455,7 +458,13 @@ export function LocationToolbar() {
     resourceId = locationResourceId(route),
     resourcePath = resourceId ? `resources/${resourceId}/location` : null,
     space =
-      spaces.find((s) => s.id === params.get("space")) ??
+      spaces.find(
+        (s) =>
+          s.id ===
+          (path.startsWith("/workspaces/")
+            ? path.split("/")[2]
+            : params.get("space")),
+      ) ??
       (path === "/explorer" &&
       !params.has("space") &&
       !params.has("folder") &&

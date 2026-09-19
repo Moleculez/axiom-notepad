@@ -35,6 +35,7 @@ export default function ProviderSettings({ groupId }: { groupId: string }) {
     [model, setModel] = useState(""),
     [credential, setCredential] = useState(""),
     [ocr, setOcr] = useState(false),
+    [paper, setPaper] = useState(false),
     [enabled, setEnabled] = useState(false),
     [limit, setLimit] = useState(25),
     [busy, setBusy] = useState(false),
@@ -47,6 +48,7 @@ export default function ProviderSettings({ groupId }: { groupId: string }) {
     setModel(p?.model ?? "");
     setCredential("");
     setOcr(p?.capabilities.includes("ocr") ?? false);
+    setPaper(p?.capabilities.includes("paper") ?? false);
     setEnabled(p?.enabled ?? false);
     setLimit(p?.daily_limit ?? 25);
     setError("");
@@ -159,7 +161,11 @@ export default function ProviderSettings({ groupId }: { groupId: string }) {
                     endpoint,
                     model,
                     credential: credential || undefined,
-                    capabilities: ocr ? ["math", "ocr"] : ["math"],
+                    capabilities: [
+                      "math",
+                      ...(ocr ? ["ocr"] : []),
+                      ...(paper ? ["paper"] : []),
+                    ],
                     enabled,
                     dailyLimit: limit,
                     version: edit !== "new" ? edit.version : undefined,
@@ -250,6 +256,14 @@ export default function ProviderSettings({ groupId }: { groupId: string }) {
                 onChange={(e) => setOcr(e.target.checked)}
               />
               Model accepts images for OCR
+            </label>
+            <label>
+              <input
+                type="checkbox"
+                checked={paper}
+                onChange={(e) => setPaper(e.target.checked)}
+              />
+              Enable paper reading assistance (explicit excerpts only)
             </label>
             <label>
               <input

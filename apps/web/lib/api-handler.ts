@@ -76,6 +76,7 @@ import { resourceCommentsApi } from "@axiom/shared/resource-comments-api";
 import { noteCommentsApi } from "@axiom/shared/note-comments-api";
 import { visualAnnotationsApi } from "@axiom/shared/visual-annotations-api";
 import { projectsApi } from "@axiom/shared/projects-api";
+import { planningApi } from "@axiom/shared/planning-api";
 import { accountsApi } from "@axiom/shared/accounts-api";
 import { groupAdministrationApi } from "@axiom/shared/group-administration";
 import { trashApi } from "@axiom/shared/trash-api";
@@ -107,7 +108,7 @@ const json = (value: unknown, status = 200) =>
   Response.json(value, { status, headers: { "cache-control": "no-store" } });
 async function inviteFor(token: string) {
   const [invite] = await query(
-    "SELECT i.*,g.name AS group_name FROM invitations i JOIN groups g ON g.id=i.group_id JOIN spaces s ON s.group_id=g.id AND s.kind='team' WHERE token_hash=$1 AND expires_at>now() AND accepted_at IS NULL AND revoked_at IS NULL AND axiom_space_state(s.id)='active'",
+    "SELECT i.*,g.name AS group_name FROM invitations i JOIN groups g ON g.id=i.group_id WHERE token_hash=$1 AND expires_at>now() AND accepted_at IS NULL AND revoked_at IS NULL AND g.lifecycle_status='active'",
     [hash(token)],
   );
   if (!invite)
@@ -218,6 +219,15 @@ async function handleRequest(
         userId: user.id,
         sessionId: session.session.id,
       });
+    if (resource === "spaces" && path.length === 1 && method === "POST") {
+      const created = (await projectsApi(request, ["projects"], user.id))!;
+      if (!created.ok) return created;
+      const project = await created.json();
+      const space = await spaceAccess(user.id, project.space_id);
+      return json({ ...space, space_id: space.id }, created.status);
+    }
+    const planningResponse = await planningApi(request, path, user.id);
+    if (planningResponse) return planningResponse;
     const lifecycleResponse = await spaceLifecycleApi(request, path, user.id);
     if (lifecycleResponse) return lifecycleResponse;
     const accountResponse = await accountsApi(request, path, user.id);

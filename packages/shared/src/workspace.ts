@@ -85,7 +85,9 @@ export function spaceLifecycleActions(
     return [];
   if (space.status === "trashed")
     return space.group_role === "owner"
-      ? ["restore", "purge"]
+      ? space.kind === "team"
+        ? ["restore"]
+        : ["restore", "purge"]
       : space.kind === "project"
         ? ["restore"]
         : [];

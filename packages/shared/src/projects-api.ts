@@ -24,6 +24,7 @@ import {
   assertRevision,
 } from "./workspace-service";
 import { lifecycleSpace, transitionSpace } from "./space-lifecycle";
+import { planningApi } from "./planning-api";
 
 const uuid = z.uuid(),
   user = z.string().min(1).max(100),
@@ -140,6 +141,9 @@ export async function projectsApi(
   path: string[],
   userId: string,
 ): Promise<Response | null> {
+  // Legacy project URLs are adapters, never a separate planning write engine.
+  const planning = await planningApi(request, path, userId);
+  if (planning) return planning;
   const [endpoint, id, action, childId] = path,
     method = request.method,
     url = new URL(request.url);
@@ -189,7 +193,12 @@ export async function projectsApi(
             userId,
           ],
         );
-        return project;
+        const [space] = (
+          await client.query("SELECT id FROM spaces WHERE project_id=$1", [
+            project.id,
+          ])
+        ).rows;
+        return { ...project, space_id: space.id };
       },
     );
     await notifyWorkspace();
@@ -324,6 +333,10 @@ export async function projectsApi(
             kind: "project-settings",
             title: "Updated project settings",
           });
+          await client.query(
+            "UPDATE spaces SET name=$2,description=$3,color=$4,timezone=$5,planning_version=planning_version+1 WHERE id=$1",
+            [space.id, row.name, row.description, row.color, row.timezone],
+          );
           return row;
         },
       );

@@ -784,7 +784,6 @@ function WorkspaceTrash() {
   const [search, setSearch] = useState(""),
     [selected, setSelected] = useState<string[]>([]),
     [operation, setOperation] = useState<string | null>(null),
-    [showChildren, setShowChildren] = useState(false),
     action = useAction();
   const anchor = useRef<string | null>(null);
   useEffect(() => {
@@ -794,16 +793,13 @@ function WorkspaceTrash() {
   }, [data.data, refresh]);
   useEffect(() => {
     setSelected([]);
-  }, [search, showChildren]);
+  }, [search]);
   const rows = (data.data ?? []).filter(
     (s) =>
-      (!search ||
-        `${s.name} ${s.group_name ?? ""}`
-          .toLowerCase()
-          .includes(search.toLowerCase())) &&
-      (showChildren ||
-        !s.parent_id ||
-        !data.data?.some((parent) => parent.id === s.parent_id)),
+      !search ||
+      `${s.name} ${s.group_name ?? ""}`
+        .toLowerCase()
+        .includes(search.toLowerCase()),
   );
   const preview = (command: "restore" | "purge", ids = selected) =>
     void action.run(async () => {
@@ -840,7 +836,7 @@ function WorkspaceTrash() {
           label: "Review lifecycle and blockers",
           icon: "info",
           group: "Recovery",
-          action: () => navigate(`/workspaces/${row.id}/lifecycle`),
+          action: () => navigate(`/workspaces/${row.id}/settings/lifecycle`),
         },
         {
           label: "Delete permanently…",
@@ -849,7 +845,9 @@ function WorkspaceTrash() {
           tone: "danger",
           disabled: !row.lifecycle_actions.includes("purge"),
           disabledReason:
-            "Only the group owner can purge an independently trashed workspace.",
+            row.kind === "team"
+              ? "The group's default workspace is protected from permanent deletion."
+              : "Only the group owner can purge an independently trashed workspace.",
           action: () => preview("purge", [row.id]),
         },
       ],
@@ -867,14 +865,6 @@ function WorkspaceTrash() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </label>
-        <label className="ws-checkbox">
-          <input
-            type="checkbox"
-            checked={showChildren}
-            onChange={(e) => setShowChildren(e.target.checked)}
-          />
-          Show included projects
-        </label>
         <span className="ws-spacer" />
         <button
           className="button secondary"
@@ -891,9 +881,10 @@ function WorkspaceTrash() {
         </button>
       </div>
       <p className="ws-note">
-        A group includes its projects once. Independently archived states are
-        preserved on restore. Personal space is protected. Workspace deletion is
-        always separate from emptying file Trash.
+        Each workspace is restored independently, including its previous
+        archived state. Restore a trashed group in Group administration first.
+        Personal and default group workspaces are protected from permanent
+        deletion. Emptying file Trash never deletes a workspace.
       </p>
       <ErrorNotice message={data.error || action.error} retry={data.reload} />
       {!!selected.length && (
@@ -996,20 +987,18 @@ function WorkspaceTrash() {
                       />
                     </td>
                     <td>
-                      <WorkspaceLink to={`/workspaces/${s.id}/lifecycle`}>
+                      <WorkspaceLink
+                        to={`/workspaces/${s.id}/settings/lifecycle`}
+                      >
                         {s.name}
                       </WorkspaceLink>
-                      <small>
-                        {s.kind === "team"
-                          ? "Group and included projects"
-                          : s.group_name}
-                      </small>
+                      <small>{s.group_name}</small>
                     </td>
                     <td>
                       <Badge>{s.effective_status}</Badge>
                       <small>
                         {s.effective_status !== s.status
-                          ? "Inherited · restore parent first"
+                          ? "Inherited · restore group first"
                           : s.deleted_at
                             ? new Date(s.deleted_at).toLocaleString()
                             : ""}

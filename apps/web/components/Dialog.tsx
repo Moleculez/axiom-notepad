@@ -206,6 +206,7 @@ export default function Dialog({
   surfaceRef,
   expanded = false,
   onEscape,
+  returnFocus,
 }: {
   title: string;
   subtitle?: string;
@@ -217,6 +218,8 @@ export default function Dialog({
   surfaceRef?: RefObject<HTMLDivElement | null>;
   expanded?: boolean;
   onEscape?: () => void;
+  /** Resolve a stable opener when a refreshed list may replace its DOM node. */
+  returnFocus?: () => HTMLElement | null;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const trigger = useContext(OpenerContext);
@@ -225,6 +228,8 @@ export default function Dialog({
     titleId = useId(),
     subtitleId = useId();
   closeRef.current = onClose;
+  const focusRef = useRef(returnFocus);
+  focusRef.current = returnFocus;
   useEffect(() => {
     const dialog = ref.current!;
     const originalOpener = trigger?.current?.isConnected
@@ -254,7 +259,8 @@ export default function Dialog({
         !active || active === document.body || dialog.contains(active);
       dialog.close();
       // Native focus restoration is supplemented for opener buttons moved by React.
-      if (restore && opener?.isConnected) opener.focus({ preventScroll: true });
+      const target = focusRef.current?.() ?? opener;
+      if (restore && target?.isConnected) target.focus({ preventScroll: true });
     };
   }, []);
   const outside = (event: React.PointerEvent<HTMLDialogElement>) => {

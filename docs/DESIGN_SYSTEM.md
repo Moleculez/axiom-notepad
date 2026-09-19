@@ -94,13 +94,25 @@ sizes, spacing and colors; another document preset resets it to that preset's lo
 Top app navigation uses resource tabs, a pages launcher, search and account tools.
 Creation belongs to Explorer/New Tab/context menus, with note, canvas, math,
 drawing and text as peers. Every route shares the same sidebar: Quick access,
-Your spaces, then Administration (Workspaces, Groups, Audit, Trash). Section
+Your workspaces, then Administration (Groups, Audit, Trash). Workspaces are
+ownership-grouped peers; there is no separate Projects navigation product. Section
 navigation belongs inside its page, never in a replacement sidebar. See
 [file-first navigation](FILE_WORKBENCH.md).
 
 Context tree + central workbench + at most one optional inspector. Trees use actual depth indentation and one overflow action per row. The workbench supports resource tabs and up to two visible panes; below two useful pane widths use a state-preserving pane switcher. Auxiliary panels become drawers before they crowd the document.
 
 Explorer lists default to a balanced density; compact/comfortable preferences remain available. Rows expose selection and a contextual action menu. Details that are not required for navigation belong in optional columns or the inspector.
+
+Workspace section navigation stays inside the shared shell. Planning view tabs
+share one filter row and one task inspector, rather than competing sidebars.
+Gantt uses a single scrollport, aligned sticky labels, calendar shading and a
+quiet today marker. Bars are keyboard-openable; date fields provide a non-drag
+alternative. Dragging previews dates, never commits them. Schedule review states
+the affected tasks and before/after dates, including dependencies outside the
+current filter. Compact bars omit clipped text; full titles remain in row labels
+and accessible names. Lists/timelines virtualize dense rows, not the editing
+surface. Filters and scroll are view state, never task content. Drafts survive
+navigation and stale background refreshes cannot overwrite them.
 
 ## Writing and preferences
 

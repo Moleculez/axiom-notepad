@@ -121,9 +121,9 @@ reload unless saved; closing a dirty Settings tab prompts before discarding them
 ## Implementation and verification
 
 `SettingsSplitPanel.tsx` owns pointer/keyboard resizing; `settings.css` scopes the
-layout and form treatment. Appearance schema 8 adds nested minimap preferences,
-retaining the two reading-mark toggles from schema 7 and `blockGuides` from schema 6.
-Versions 1–7 migrate without dropping
+layout and form treatment. Appearance schema 9 adds PDF-reader defaults, retaining
+nested minimap preferences from schema 8, the reading-mark toggles from schema 7
+and `blockGuides` from schema 6. Versions 1–8 migrate without dropping
 saved choices; older readers receive a compatible shape, and stale writes are
 rejected with 426.
 Save, cancel, section reset, offline merging and previous preferences include it.

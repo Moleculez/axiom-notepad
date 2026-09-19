@@ -164,6 +164,31 @@ with the current schema; never restore an older database simply to undo a UI cha
 and discard newer research. Never run `docker compose down -v` on data you intend to
 keep. Upgrade PostgreSQL major versions only through a tested database-upgrade process.
 
+### Workspace planning migration 25
+
+Before upgrading from schema 24, finish or cancel queued/running Trash operations
+and workspace purge jobs. Migration 25 deliberately refuses an in-flight deletion
+instead of reinterpreting its frozen group/workspace targets. Take and verify a
+paired database/blob backup, rehearse on a restored copy, then stop old web,
+sync and worker processes before migrating and starting the new image together.
+Coordinate a browser reload; mixed old/new lifecycle writers are unsupported.
+
+The migration preserves file/note IDs, Markdown, Yjs state and planning identities.
+Existing root-workspace lifecycle becomes the group's lifecycle; that default
+workspace receives an independent active own-state. An inactive group still
+restricts all its workspaces. Existing project APIs/URLs remain adapters. New
+workspace lifecycle never implicitly archives or trashes an entire group.
+Personal and default group workspaces are protected from permanent deletion.
+
+Local-only rehearsal (creates and retains a **new** test database; never migrates
+the configured application database):
+
+```sh
+npx tsx scripts/verify/verify-workspace-planning.ts
+```
+
+See [workspace planning](WORKSPACE_PLANNING.md) for current behavior and bounds.
+
 ## Isolated deployment rehearsal
 
 With Docker available and localhost ports 8181/8443 free, run:

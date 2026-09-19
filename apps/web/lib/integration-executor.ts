@@ -59,6 +59,16 @@ export async function executeIntegrationAction(
           "Resource is not in the selected authorized workspace.",
         );
     }
+    if (action.target === "task") {
+      const [task] = await query("SELECT space_id FROM tasks WHERE id=$1", [
+        input.id,
+      ]);
+      if (!task || task.space_id !== input.spaceId)
+        throw new HttpError(
+          403,
+          "Task does not belong to the authorized workspace.",
+        );
+    }
     if (action.target === "project" && input.id !== space.project_id)
       throw new HttpError(
         403,
@@ -78,9 +88,17 @@ export async function executeIntegrationAction(
     for (const field of ["parentId", "resourceId", "noteId"])
       if (typeof input.payload[field] === "string") {
         const [row] = await query(
-          name === "note_comment" && field === "parentId"
-            ? "SELECT r.space_id FROM comments c JOIN resources r ON r.note_id=c.note_id WHERE c.id=$1"
-            : "SELECT space_id FROM resources WHERE id=$1",
+          [
+            "task_create",
+            "workspace_task_create",
+            "workspace_task_update",
+          ].includes(name) && field === "parentId"
+            ? "SELECT space_id FROM tasks WHERE id=$1"
+            : name === "workspace_discussion_create" && field === "parentId"
+              ? "SELECT space_id FROM project_discussions WHERE id=$1"
+              : name === "note_comment" && field === "parentId"
+                ? "SELECT r.space_id FROM comments c JOIN resources r ON r.note_id=c.note_id WHERE c.id=$1"
+                : "SELECT space_id FROM resources WHERE id=$1",
           [input.payload[field]],
         );
         if (!row || !live.space_ids.includes(row.space_id))

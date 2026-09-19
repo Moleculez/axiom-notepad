@@ -1,4 +1,5 @@
 "use client";
+import PdfReaderSettings from "./pdf/PdfReaderSettings";
 import { confirmAction } from "../lib/app-prompt";
 import {
   workspaceThemeFamilies,
@@ -441,6 +442,15 @@ function AppearanceSettingsReady({
                 value={draft.minimap}
                 onChange={(value) => change("minimap", value)}
                 onInvalid={(value) => invalidField("minimap.width", value)}
+              />
+            )}
+            {show(
+              "General",
+              "pdf reader paper annotations layout pages navigator research",
+            ) && (
+              <PdfReaderSettings
+                value={draft.pdfReader}
+                onChange={(value) => change("pdfReader", value)}
               />
             )}
             {show(

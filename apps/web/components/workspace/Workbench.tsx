@@ -1801,12 +1801,12 @@ function FilePane({
     [permission, setPermission] = useState(false);
   const data = useData<any[]>(`files/${resource.id}/versions`),
     current = data.data?.find((item) => item.id === version),
-    space = useData<Space>(`spaces/${resource.space_id}`),
+    space = useData<{ space: Space }>(`spaces/${resource.space_id}`),
     research = useResearch(
       session.user.id,
-      space.data?.kind === "personal"
+      space.data?.space.kind === "personal"
         ? resource.space_id
-        : (space.data?.group_id ?? undefined),
+        : (space.data?.space.group_id ?? undefined),
     );
   useEffect(() => {
     if (requestedVersion) setVersion(requestedVersion);
@@ -1892,8 +1892,8 @@ function FilePane({
                   }
                 >
                   This PDF is {bytes(current?.bytes ?? resource.bytes)}. The
-                  annotation reader loads a full copy into memory; downloading
-                  may be preferable on a smaller device.
+                  reader loads pages on demand; complex pages may still be
+                  expensive on a smaller device.
                 </Empty>
               ) : version && space.data ? (
                 <PdfViewer

@@ -34,9 +34,9 @@ Account defaults follow you across devices. Device overrides apply only to this 
 
 LaTeX Article enables H1–H3 bottom rules, decorative hierarchical section labels (`§ 1`, `§ 1.1`, `§ 1.2`, `§ 2.1`) beside resting H1–H6, and academic double-rule dividers. Numbering follows actual heading ancestry; starting at H2 or skipping levels creates no phantom zero parents. Typography → Document decorations can turn them off without changing fonts. Font/size/spacing and color adjustments retain the decoration choice; another document preset selects its own decoration default. Personal HTML and print retain the same ornaments, but headings in the app and outline are not decorated.
 
-Existing profiles and device caches normalize to appearance schema v8, including
+Existing profiles and device caches normalize to appearance schema v9, including
 pending offline changes. Saved typography and decorations are retained; missing
-block-guide, reading-mark and minimap fields receive their current defaults.
+block-guide, reading-mark, minimap and PDF-reader fields receive their current defaults.
 Appearance → General controls folding guides, margin marks and the optional
 [document minimap](MINIMAP.md). Already-open older app clients must reload before
 saving appearance; unrepresentable choices produce a reload response rather than
@@ -53,6 +53,10 @@ Dialogs are centered on the viewport with internally scrolling content and visib
 
 ## Read and annotate PDFs
 
+See the [PDF research workbench guide](PDF_READER.md) for the redesigned layout,
+selection popups, collapsible contents, bookmark editing, page organization and
+explicitly configured paper assistant, including current limits.
+
 For images and Mermaid diagrams, double-click the rendered visual to inspect,
 compare, export, or add placement-specific private annotations. See the
 [image/diagram viewer guide](VISUAL_VIEWER.md) for metadata privacy and limits.
@@ -65,8 +69,8 @@ Select text to highlight it, choose **Area** to mark a figure, or add a **Page n
 
 Text search and selection need a PDF text layer. Scanned papers still allow
 area/page notes; opening a PDF does not run OCR. Optional provider-assisted OCR is
-a separate, explicitly configured workflow. Encrypted or malformed files report
-an error. Explorer supports resumable files up to 1 GB; the legacy attachment
+a separate, explicitly configured workflow. The full reader prompts for a password
+when required; unsupported or malformed files report an error. Explorer supports resumable files up to 1 GB; the legacy attachment
 endpoint is limited to 50 MB. The annotation reader asks before loading PDFs over
 100 MB. Rendering is page-based, not an unlimited multi-page canvas; complex files
 may still be expensive on low-memory devices. See [file-viewer limits](RESEARCH_TOOLS.md).

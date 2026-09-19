@@ -331,6 +331,18 @@ export async function resourceOperationsApi(
         if (
           (
             await client.query(
+              "SELECT 1 FROM task_resources WHERE resource_id=ANY($1::uuid[]) LIMIT 1",
+              [ids],
+            )
+          ).rowCount
+        )
+          throw new HttpError(
+            409,
+            "Linked task evidence must be retained. Unlink it from the task before permanent removal.",
+          );
+        if (
+          (
+            await client.query(
               "SELECT 1 FROM review_requests WHERE note_id=ANY($1::uuid[]) LIMIT 1",
               [notes],
             )

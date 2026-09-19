@@ -542,7 +542,9 @@ export function WorkspaceLifecycle({
       <p className="ws-note">
         {space.kind === "personal"
           ? "Personal space is protected and cannot be archived or deleted."
-          : "Archive for read-only access. Trash is recoverable indefinitely. Permanent deletion is owner-only, checks retained research references, and has a 30-second cancellation window."}
+          : space.kind === "team"
+            ? "This is the group's default workspace. You can archive or trash it independently; permanent removal is protected to preserve group services. Group-wide actions are in Group administration."
+            : "Archive for read-only access. Trash is recoverable indefinitely. Permanent deletion is owner-only, checks retained research references, and has a 30-second cancellation window."}
       </p>
       {parentId && space.parent_status !== "active" && (
         <div className="settings-card">
@@ -591,7 +593,7 @@ export function WorkspaceLifecycle({
                 {a === "purge"
                   ? "Removes owned content and eligible versions. Audit metadata remains."
                   : a === "trash"
-                    ? "Hide this workspace and its included projects from everyday navigation."
+                    ? "Hide only this workspace. Other workspaces and group membership are unchanged."
                     : a === "archive"
                       ? "Keep reading and exporting. Pause editing, uploads and invitations."
                       : "Preserve existing permissions and independently archived or trashed items."}

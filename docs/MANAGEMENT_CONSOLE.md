@@ -1,25 +1,28 @@
 # Workspaces, Audit and Trash
 
-Implemented September 11, 2026. This release reorganizes management without
+Updated September 20, 2026 for unified workspaces. This release reorganizes management without
 changing the Markdown/Yjs format, editor engine, existing content, or account
 appearance preferences.
 
 ## Where to go
 
-| Page | Purpose |
-| --- | --- |
-| `/workbench/workspaces` | Find personal, team and project libraries; filter by group, state, kind and access; sort by name or stored bytes. |
-| `/workbench/workspaces/:id/:section` | Overview, General, People & access, Invitations, Storage, Integrations, Activity and Lifecycle. |
-| `/workbench/audit` | Searchable metadata history, changed fields, retained document-version comparisons and authorized JSON export. |
-| `/workbench/audit?view=operations` | Background file/Trash operation progress, results, cancellation, retry and revision-safe file-operation undo. |
-| `/workbench/trash` | Recover or permanently remove selected files/folders with a frozen, reviewable operation. |
-| `/workbench/trash?view=workspaces` | Restore trashed workspaces or request owner-only permanent removal. |
+| Page                                          | Purpose                                                                                                        |
+| --------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `/workbench/workspaces`                       | Search personal and shared workspaces by identity/group; filter lifecycle state and create a workspace.        |
+| `/workbench/workspaces/:id/:section`          | Overview, Files, Planning, Discussions, Reviews and Settings.                                                  |
+| `/workbench/workspaces/:id/settings/:section` | General, People, Storage, Integrations, Activity and Lifecycle.                                                |
+| `/workbench/admin/:group/:section`            | Group-wide identity, membership, invitations, providers and lifecycle.                                         |
+| `/workbench/audit`                            | Searchable metadata history, changed fields, retained document-version comparisons and authorized JSON export. |
+| `/workbench/audit?view=operations`            | Background file/Trash operation progress, results, cancellation, retry and revision-safe file-operation undo.  |
+| `/workbench/trash`                            | Recover or permanently remove selected files/folders with a frozen, reviewable operation.                      |
+| `/workbench/trash?view=workspaces`            | Restore trashed workspaces or request owner-only permanent removal.                                            |
 
 The application page picker and management sidebar link these pages. Profile
 **Manage workspaces** now opens the directory, not the old small dialog.
 Workspace context menus open the selected workspace's management page.
-Old `/workbench/admin/:group/:section` links redirect to the corresponding team
-workspace. Account preferences remain separate from group administration.
+Group administration no longer redirects to the default group workspace. Old
+workspace management and project URLs redirect into the unified workspace shell.
+Account preferences remain separate from group administration.
 
 The old **File operations** history entry/modal is retired. Normal move, copy,
 rename, Trash and destination dialogs remain. Queuing an operation closes its
@@ -27,29 +30,33 @@ action dialog and leaves you in Explorer; progress and recovery live in Audit.
 
 ## Workspace management
 
-- Directory cards show state, content role, management capability and stored
-  bytes. Personal space is explicitly account-owned and protected from group
+- Directory cards show identity, group, state and content role. Personal space
+  is explicitly account-owned and protected from group
   lifecycle actions.
 - General settings retain version checks, Save/Cancel and unsaved-draft guards.
-  Group name/description and project name/description/color/audience/time zone reuse
-  their canonical APIs; stale edits are not silently overwritten.
+  Workspace name/description/color/audience and calendar use workspace APIs;
+  changing them does not rename the group. Stale edits are not silently overwritten.
 - People, content roles, project leads, invitations and group ownership reuse
   the existing deduplication, revision and last-owner/last-lead safeguards.
 - Storage distinguishes current versions, previous versions, Trash and upload
   reservations. Group and project libraries share the group quota. Inactive
   workspaces cannot change quotas. Managers without private project content
   access see aggregate storage, never its file names.
-- Lifecycle presents affected counts, inherited parent state, blockers,
+- Lifecycle presents affected counts, inherited group state, blockers,
   archive/unarchive, Trash/restore and the owner's purge grace period. Restoring
-  a group preserves independently archived projects and individually trashed
-  resources. Invitations/integrations keep their existing role restrictions.
+  a group preserves independently archived/trashed workspaces and individually
+  trashed resources. Archiving/trashing the default workspace affects only that
+  workspace. Group-wide actions require the explicit Group administration page.
+  Personal and default group workspaces cannot be permanently purged. Permanent
+  group deletion is not offered. Invitations/integrations retain role restrictions.
 
 ## What Audit records
 
 An append-only PostgreSQL log records committed changes to resources,
 workspaces, groups, projects, memberships, invitations, integration metadata,
 private favorites/folder colors, file versions, document checkpoints, named
-versions and document generation restoration.
+versions, tasks, milestones, dependency/evidence links, planning calendars and
+document generation restoration.
 
 Records carry an event-time actor name, actor ID when known, scope, timestamp,
 changed metadata, operation ID and/or version ID where available. Current
@@ -133,10 +140,10 @@ results; retry/recheck reuse the frozen selection, not a new live search.
 ### Workspaces
 
 The workspace view includes state, group, affected item counts and stored bytes.
-Groups collapse their included projects by default; they can be expanded for
-inspection. Selecting a group and its projects collapses to one lifecycle
-target, so restoration does not accidentally unarchive an independently
-archived project.
+Each row is an independent workspace, not a group cascade. A selection produces
+one lifecycle target per workspace. Restoring a previously archived workspace
+returns it to archived, not active. Workspaces inherited from a trashed group
+require restoring that group in Group administration first.
 
 Batch restore and permanent-removal previews use the same durable operation
 reporting. Only the group owner can request permanent removal. A successful
@@ -153,21 +160,25 @@ dialogs. Filters wrap, selection toolbars stay contextual, and Audit uses a
 list plus a details panel. Keyboard focus remains visible even though mouse
 inputs have no default browser outline. No separate mobile redesign was added.
 
-## Migration and verification
+## Historical management verification
+
+The following September 11 receipts describe the original management release,
+not the current workspace lifecycle contract. For migration 25 and fresh checks,
+use [workspace planning](WORKSPACE_PLANNING.md) and [Verification](VERIFICATION.md).
 
 Local verification on September 11:
 
-| Check | Result |
-| --- | --- |
-| TypeScript and ESLint | Passed |
-| Unit/conformance tests | 1,437 passed across 49 files |
-| Next.js production candidate | Passed; build `dQiRZDAwZQZCq1N_9i1Wr`, 603 offline assets |
-| Isolated migration/transaction/checkpoint rehearsal | Passed through migration 15 |
-| Chromium management/productivity regressions | 17 passed |
-| Firefox management acceptance | 5 passed |
+| Check                                                | Result                                                        |
+| ---------------------------------------------------- | ------------------------------------------------------------- |
+| TypeScript and ESLint                                | Passed                                                        |
+| Unit/conformance tests                               | 1,437 passed across 49 files                                  |
+| Next.js production candidate                         | Passed; build `dQiRZDAwZQZCq1N_9i1Wr`, 603 offline assets     |
+| Isolated migration/transaction/checkpoint rehearsal  | Passed through migration 15                                   |
+| Chromium management/productivity regressions         | 17 passed                                                     |
+| Firefox management acceptance                        | 5 passed                                                      |
 | WebKit management acceptance, application navigation | 5 passed; routed UI also passed three consecutive repetitions |
-| Collaboration/offline/generation regressions | 3 passed |
-| Live 8080 management smoke | Passed, read-only; web and sync health checks passed |
+| Collaboration/offline/generation regressions         | 3 passed                                                      |
+| Live 8080 management smoke                           | Passed, read-only; web and sync health checks passed          |
 
 Screenshots for the final UI flow are in
 `test-results/management-console-chromium-ui-final/`,

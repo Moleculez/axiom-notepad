@@ -19,6 +19,7 @@ import { applyDocumentStyle } from "../packages/shared/src/editor-looks";
 describe("personal appearance", () => {
   it("migrates range guides without restyling v5 and projects safe old-client reads", () => {
     const {
+      pdfReader: _pdf,
       minimap: _minimap,
       blockGuides: _guides,
       readingMarkMargin: _margin,
@@ -34,6 +35,7 @@ describe("personal appearance", () => {
       readingMarkMargin: true,
       readingMarkOverview: true,
       minimap: defaults.minimap,
+      pdfReader: defaults.pdfReader,
     });
     const record = {
       preferences: { ...current, blockGuides: false },
@@ -183,6 +185,7 @@ describe("personal appearance", () => {
       readingMarkMargin: _margin,
       readingMarkOverview: _overview,
       minimap: _minimap,
+      pdfReader: _pdf,
       ...v3
     } = defaults;
     const old = {
@@ -200,6 +203,7 @@ describe("personal appearance", () => {
       readingMarkMargin: true,
       readingMarkOverview: true,
       minimap: defaults.minimap,
+      pdfReader: defaults.pdfReader,
       themePack: "default",
       documentDecorations: "none",
     });

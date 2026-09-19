@@ -87,11 +87,135 @@ export async function groupAdministrationApi(
   if (
     endpoint !== "group-admin" ||
     !groupId ||
-    !["members", "invitations", "activity", "overview"].includes(section)
+    ![
+      "members",
+      "invitations",
+      "activity",
+      "overview",
+      "lifecycle",
+      "settings",
+    ].includes(section)
   )
     return null;
   uuid.parse(groupId);
   const actor = await memberAccess(userId, groupId, true, true);
+  if (section === "settings" && method === "PATCH") {
+    const input = z
+      .object({
+        mutationId,
+        version: z.number().int().positive(),
+        name: z.string().trim().min(1).max(200),
+        description: z.string().max(3000),
+      })
+      .parse(await request.json());
+    const result = await workspaceMutation(
+      userId,
+      input.mutationId,
+      `group-settings:${groupId}`,
+      input,
+      async (client) => {
+        await authority(client, userId, groupId);
+        const [group] = (
+          await client.query(
+            "UPDATE groups SET name=$2,description=$3,lifecycle_version=lifecycle_version+1 WHERE id=$1 AND lifecycle_version=$4 RETURNING *",
+            [groupId, input.name, input.description, input.version],
+          )
+        ).rows;
+        if (!group)
+          throw new HttpError(
+            409,
+            "Group settings changed. Refresh before saving.",
+          );
+        await audit(
+          client,
+          userId,
+          groupId,
+          "group-settings",
+          "Updated group identity",
+        );
+        return { ok: true };
+      },
+    );
+    await notifyWorkspace();
+    return json(result);
+  }
+  if (section === "lifecycle") {
+    if (method === "GET") {
+      const [group] = await query(
+        "SELECT id,name,lifecycle_status AS status,lifecycle_version AS version,(SELECT count(*)::int FROM spaces WHERE group_id=groups.id) AS workspaces FROM groups WHERE id=$1",
+        [groupId],
+      );
+      return json({ ...group, role: actor.role });
+    }
+    if (method !== "POST")
+      throw new HttpError(405, "Use POST for group lifecycle actions.");
+    const input = z
+      .object({
+        mutationId,
+        version: z.number().int().positive(),
+        action: z.enum(["archive", "unarchive", "trash", "restore"]),
+        confirmation: z.string(),
+      })
+      .parse(await request.json());
+    const result = await workspaceMutation(
+      userId,
+      input.mutationId,
+      `group-lifecycle:${groupId}`,
+      input,
+      async (client) => {
+        const role = await authority(client, userId, groupId, true);
+        const [group] = (
+          await client.query("SELECT * FROM groups WHERE id=$1", [groupId])
+        ).rows;
+        if (group.lifecycle_version !== input.version)
+          throw new HttpError(409, "Group changed. Refresh before continuing.");
+        if (input.confirmation !== group.name)
+          throw new HttpError(400, "Type the group name exactly to confirm.");
+        if (["trash", "restore"].includes(input.action) && role !== "owner")
+          throw new HttpError(
+            403,
+            "Only the group owner can trash or restore the whole group.",
+          );
+        const valid: Record<string, string[]> = {
+          active: ["archive", "trash"],
+          archived: ["unarchive", "trash"],
+          trashed: ["restore"],
+        };
+        if (!valid[group.lifecycle_status]?.includes(input.action))
+          throw new HttpError(
+            409,
+            "This action is not available in the current group state.",
+          );
+        await client.query(
+          "SELECT id FROM spaces WHERE group_id=$1 ORDER BY id FOR UPDATE",
+          [groupId],
+        );
+        await client.query(
+          "UPDATE groups SET lifecycle_status=CASE $2 WHEN 'archive' THEN 'archived' WHEN 'unarchive' THEN 'active' WHEN 'trash' THEN 'trashed' ELSE lifecycle_restore_state END,lifecycle_restore_state=CASE WHEN $2='trash' THEN lifecycle_status ELSE lifecycle_restore_state END,lifecycle_version=lifecycle_version+1 WHERE id=$1",
+          [groupId, input.action],
+        );
+        await client.query(
+          "INSERT INTO space_lifecycle_events(space_id,group_id,actor_id,action,name,details) SELECT id,group_id,$2,$3,name,jsonb_build_object('scope','group') FROM spaces WHERE group_id=$1",
+          [groupId, userId, input.action],
+        );
+        if (["unarchive", "restore"].includes(input.action))
+          await client.query(
+            "UPDATE task_recurrences r SET last_date=greatest(coalesce(last_date,DATE '0001-01-01'),(now() AT TIME ZONE s.timezone)::date) FROM spaces s WHERE r.space_id=s.id AND s.group_id=$1",
+            [groupId],
+          );
+        await audit(
+          client,
+          userId,
+          groupId,
+          "group-settings",
+          `${input.action}: entire group`,
+        );
+        return { ok: true };
+      },
+    );
+    await notifyWorkspace(true);
+    return json(result);
+  }
   if (method === "GET") {
     const limit = z.coerce
       .number()
@@ -112,9 +236,9 @@ export async function groupAdministrationApi(
     const filter = url.searchParams.get("filter") ?? "all";
     if (section === "overview") {
       const [row] = await query(
-        `SELECT g.id,g.name,g.description,s.id AS space_id,s.version,s.status,s.quota_bytes,
+        `SELECT g.id,g.name,g.description,s.id AS space_id,g.lifecycle_version AS version,g.lifecycle_status AS status,s.quota_bytes,
         (SELECT count(*)::int FROM members m WHERE m.group_id=g.id) AS members,
-        (SELECT count(*)::int FROM projects p WHERE p.group_id=g.id) AS projects,
+        (SELECT count(*)::int FROM spaces own WHERE own.group_id=g.id) AS projects,
         (SELECT count(*)::int FROM invitations i WHERE i.group_id=g.id AND accepted_at IS NULL AND revoked_at IS NULL AND expires_at>now()) AS invitations
         FROM groups g JOIN spaces s ON s.group_id=g.id AND s.kind='team' WHERE g.id=$1`,
         [groupId],

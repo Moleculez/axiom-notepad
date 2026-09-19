@@ -28,9 +28,9 @@ const api = async (
   return r.json();
 };
 test.beforeAll(() => {
-  if (origin !== "http://localhost:3002")
+  if (!["http://localhost:3002", "http://localhost:3004"].includes(origin))
     throw new Error(
-      "Workspace v2 fixtures require the isolated database and blob store on 3002.",
+      "Workspace v2 fixtures require the isolated database and blob store on 3002 or 3004.",
     );
 });
 test("group hub creates once, invites explicitly, declines and never rejoins through a consumed link", async ({
@@ -342,9 +342,7 @@ test("Explorer selects ranges, opens with double click, drops files and retains 
         async () => (await api(request, `resources/${items[0].id}`)).parent_id,
       )
       .toBe(items[1].id);
-    await page
-      .getByRole("button", { name: "Continue working", exact: true })
-      .click();
+    await expect(move).not.toBeVisible();
     await b.locator(".ws-resource-name").dblclick();
     await expect(page).toHaveURL(new RegExp("folder=" + items[1].id));
     await page
@@ -475,6 +473,7 @@ test("settings drafts survive app-tab switches, suspend previews and guard tab c
     await expect(page.getByLabel("Accent & links color picker")).toHaveValue(
       "#1964c8",
     );
+    await page.getByRole("link", { name: "Account", exact: true }).click();
     await page.getByRole("link", { name: "Profile", exact: true }).click();
     await page
       .getByLabel("Institution or affiliation", { exact: true })

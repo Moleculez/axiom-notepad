@@ -34,9 +34,13 @@ describe("workspace lifecycle authority", () => {
     ).toEqual(["restore"]);
   });
   test("an owner can restore or purge only independently trashed workspaces", () => {
-    expect(actions({ status: "trashed", effective_status: "trashed" })).toEqual(
-      ["restore", "purge"],
-    );
+    expect(
+      actions({
+        kind: "project",
+        status: "trashed",
+        effective_status: "trashed",
+      }),
+    ).toEqual(["restore", "purge"]);
     expect(actions({ kind: "project", effective_status: "trashed" })).toEqual(
       [],
     );
@@ -52,6 +56,10 @@ describe("workspace lifecycle authority", () => {
       }),
     ).toEqual([]);
   });
+  test("the default group workspace is independently recoverable but protected from permanent removal", () =>
+    expect(actions({ status: "trashed", effective_status: "trashed" })).toEqual(
+      ["restore"],
+    ));
   test("only the owner can cancel pending permanent removal", () => {
     expect(actions({ status: "purging", effective_status: "purging" })).toEqual(
       ["restore"],

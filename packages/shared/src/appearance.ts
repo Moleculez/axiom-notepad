@@ -2,6 +2,7 @@ import { z } from "zod";
 import { legacyDocumentDecorations } from "./document-style";
 import { themePack, themePackIds } from "./theme-packs";
 import { minimapPreferencesSchema } from "./minimap";
+import { pdfReaderPreferencesSchema } from "./pdf-reader";
 
 export const fonts = {
   latinModern: {
@@ -268,7 +269,7 @@ export const presets: Record<
     },
   },
 };
-export const APPEARANCE_SCHEMA = 8;
+export const APPEARANCE_SCHEMA = 9;
 export const APPEARANCE_SCHEMA_HEADER = "X-Axiom-Appearance-Schema";
 const currentPreferencesSchema = z
   .object({
@@ -291,6 +292,7 @@ const currentPreferencesSchema = z
     readingMarkMargin: z.boolean().default(true),
     readingMarkOverview: z.boolean().default(true),
     minimap: minimapPreferencesSchema.prefault({}),
+    pdfReader: pdfReaderPreferencesSchema.prefault({}),
     material: z.enum(["glass", "solid"]).default("glass"),
     glassIntensity: z.number().int().min(0).max(100).default(65),
     codeFont: z
@@ -371,7 +373,8 @@ export const preferencesSchema = z.preprocess((value) => {
       value.schemaVersion === 4 ||
       value.schemaVersion === 5 ||
       value.schemaVersion === 6 ||
-      value.schemaVersion === 7)
+      value.schemaVersion === 7 ||
+      value.schemaVersion === 8)
   )
     return {
       documentDecorations: legacyDocumentDecorations(value),
@@ -421,9 +424,23 @@ export function appearanceForClient(
 ) {
   const version = request.headers.get(APPEARANCE_SCHEMA_HEADER);
   if (version === String(APPEARANCE_SCHEMA)) return record;
+  if (version === "8") {
+    const legacy = ({ pdfReader: _pdf, ...rest }: Preferences) => ({
+      ...rest,
+      schemaVersion: 8,
+    });
+    return {
+      ...record,
+      preferences: legacy(record.preferences),
+      previousPreferences: record.previousPreferences
+        ? legacy(record.previousPreferences)
+        : record.previousPreferences,
+    };
+  }
   if (version === "5" || version === "6" || version === "7") {
     const legacy = (p: Preferences) => {
       const {
+        pdfReader: _pdf,
         minimap: _minimap,
         readingMarkMargin,
         readingMarkOverview,
@@ -470,6 +487,7 @@ export function appearanceForClient(
 }
 function legacyAppearance(p: Preferences, version: string | null) {
   const {
+    pdfReader: _pdf,
     themePack: _pack,
     documentDecorations: _decorations,
     blockGuides: _guides,

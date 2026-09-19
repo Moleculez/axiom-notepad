@@ -65,7 +65,7 @@ export function TrashOperationDialog({
         <>
           <p>
             {op.status === "preview"
-              ? `${op.pending} eligible · ${op.blocked + op.skipped} protected or changed · ${op.total} unique ${op.target_kind === "workspaces" ? "workspace targets (groups include projects once)" : "items including descendants"}.`
+              ? `${op.pending} eligible · ${op.blocked + op.skipped} protected or changed · ${op.total} unique ${op.target_kind === "workspaces" ? "independent workspace targets" : "items including descendants"}.`
               : `${op.done} completed · ${op.pending} remaining · ${op.blocked + op.skipped + op.cancelled} retained.`}
           </p>
           <p className="muted">
@@ -77,7 +77,7 @@ export function TrashOperationDialog({
             <p className="ws-note">
               {op.action === "purge"
                 ? "Completed here means the owner’s deletion request was queued. Each workspace has a 30-second cancellation window; review its Lifecycle page for final progress and blockers."
-                : "Restores the workspace’s previous active or archived state. Independent project and file Trash states are preserved."}
+                : "Restores the workspace’s previous active or archived state. Other workspaces and individual file Trash states are preserved."}
             </p>
           )}
           {op.action === "restore" && op.target_kind !== "workspaces" && (

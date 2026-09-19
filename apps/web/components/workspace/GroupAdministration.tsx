@@ -22,6 +22,7 @@ import {
   useAction,
   useData,
   useWorkspace,
+  mutate,
   WorkspaceLink,
 } from "./ui";
 
@@ -267,7 +268,7 @@ export function GroupContent({
                     "Pending invitations",
                     "invitations",
                   ],
-                  [Folder, group.projects, "Projects", "settings"],
+                  [Folder, group.projects, "Workspaces", "settings"],
                 ].map(([Icon, count, label, destination]) => {
                   const Component = Icon as typeof Users;
                   return (
@@ -309,20 +310,16 @@ export function GroupContent({
                     </span>
                     <WorkspaceLink
                       className="button secondary small"
-                      to={
-                        s.project_id
-                          ? `/projects/${s.project_id}/overview`
-                          : `/explorer?space=${s.id}`
-                      }
+                      to={`/workspaces/${s.id}`}
                     >
                       Open workspace
                     </WorkspaceLink>
                     {s.project_id && (
                       <WorkspaceLink
                         className="text-button"
-                        to={`/projects/${s.project_id}/settings`}
+                        to={`/workspaces/${s.id}/settings/general`}
                       >
-                        Project settings
+                        Workspace settings
                       </WorkspaceLink>
                     )}
                   </div>
@@ -1035,7 +1032,7 @@ export function GroupSettings({
             }
             onClick={() =>
               void action.run(async () => {
-                await api(`spaces/${group.space_id}`, {
+                await api(`group-admin/${group.id}/settings`, {
                   method: "PATCH",
                   body: JSON.stringify({
                     mutationId: crypto.randomUUID(),
@@ -1056,14 +1053,13 @@ export function GroupSettings({
       <section className="settings-card">
         <h2>Storage & lifecycle</h2>
         <p className="muted">
-          Archiving makes a workspace read-only. Moving a group to Trash
-          includes its projects. Permanent group deletion is owner-only and has
-          a separate safety review.
+          Group lifecycle applies to all group workspaces. Individual workspace
+          actions only affect that workspace and never change group membership.
         </p>
         <div className="ws-actions">
           <WorkspaceLink
             className="button secondary"
-            to={`/workspaces/${group.space_id}/storage`}
+            to={`/workspaces/${group.space_id}/settings/storage`}
           >
             <Settings2 size={16} />
             Storage & file versions
@@ -1079,6 +1075,7 @@ export function GroupSettings({
           )}
         </div>
       </section>
+      <GroupLifecycle groupId={group.id} />
       {leaving && (
         <Dialog title="Unsaved group settings" onClose={() => setLeaving(null)}>
           <p>Your group name or description has not been saved.</p>
@@ -1103,5 +1100,110 @@ export function GroupSettings({
         </Dialog>
       )}
     </>
+  );
+}
+
+function GroupLifecycle({ groupId }: { groupId: string }) {
+  const { revision, refresh } = useWorkspace(),
+    data = useData<{
+      id: string;
+      name: string;
+      status: string;
+      version: number;
+      workspaces: number;
+      role: string;
+    }>(`group-admin/${groupId}/lifecycle`, revision),
+    action = useAction();
+  const [operation, setOperation] = useState<string | null>(null),
+    [confirmation, setConfirmation] = useState("");
+  const group = data.data;
+  return (
+    <section className="settings-card">
+      <h2>Group lifecycle</h2>
+      <p>
+        These actions affect every workspace in this group. Independently
+        archived or trashed workspaces keep their own state when the group is
+        restored. Personal workspaces are unaffected.
+      </p>
+      <ErrorNotice
+        message={data.error || action.error}
+        retry={data.error ? data.reload : undefined}
+      />
+      {group && (
+        <>
+          <p>
+            <strong>{group.workspaces}</strong> workspaces · {group.status}
+          </p>
+          <div className="ws-actions">
+            {(group.status === "trashed"
+              ? ["restore"]
+              : group.status === "archived"
+                ? ["unarchive", "trash"]
+                : ["archive", "trash"]
+            )
+              .filter(
+                (value) =>
+                  !["trash", "restore"].includes(value) ||
+                  group.role === "owner",
+              )
+              .map((value) => (
+                <button
+                  key={value}
+                  className={`button ${value === "trash" ? "danger" : "secondary"}`}
+                  onClick={() => {
+                    setOperation(value);
+                    setConfirmation("");
+                  }}
+                >
+                  {value[0].toUpperCase() + value.slice(1)} entire group
+                </button>
+              ))}
+          </div>
+        </>
+      )}
+      {operation && group && (
+        <Dialog
+          title={`${operation[0].toUpperCase() + operation.slice(1)} entire group?`}
+          subtitle={`Affects ${group.workspaces} workspaces in ${group.name}. This does not permanently remove content.`}
+          onClose={() => !action.busy && setOperation(null)}
+        >
+          <label>
+            Type “{group.name}” to confirm
+            <input
+              autoFocus
+              value={confirmation}
+              onChange={(e) => setConfirmation(e.target.value)}
+            />
+          </label>
+          <ErrorNotice message={action.error} />
+          <div className="dialog-footer">
+            <button
+              className="button secondary"
+              onClick={() => setOperation(null)}
+              disabled={action.busy}
+            >
+              Cancel
+            </button>
+            <button
+              className={`button ${operation === "trash" ? "danger" : "primary"}`}
+              disabled={action.busy || confirmation !== group.name}
+              onClick={() =>
+                void action.run(async () => {
+                  await mutate(`group-admin/${groupId}/lifecycle`, {
+                    version: group.version,
+                    action: operation,
+                    confirmation,
+                  });
+                  setOperation(null);
+                  refresh();
+                })
+              }
+            >
+              Confirm {operation}
+            </button>
+          </div>
+        </Dialog>
+      )}
+    </section>
   );
 }

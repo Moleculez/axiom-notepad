@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { query, transaction } from "./db";
-import { memberAccess, resourceAccess, HttpError } from "./access";
+import { memberAccess, resourceAccess, fileAccess, HttpError } from "./access";
 import {
   workspaceJson as json,
   requireScope,
@@ -77,9 +77,9 @@ export async function toolServicesApi(
           model: z.string().trim().min(1).max(160),
           credential: z.string().max(2000).optional(),
           capabilities: z
-            .array(z.enum(["math", "ocr"]))
+            .array(z.enum(["math", "ocr", "paper"]))
             .min(1)
-            .max(2),
+            .max(3),
           enabled: z.boolean(),
           dailyLimit: z.number().int().min(1).max(10000),
           version: z.number().int().positive().optional(),
@@ -182,7 +182,7 @@ export async function toolServicesApi(
       await resourceAccess(userId, resourceId);
       return json(
         await query(
-          "SELECT id,kind,status,result,error,created_at,updated_at,provider_id FROM tool_jobs WHERE resource_id=$1 AND owner_id=$2 ORDER BY created_at DESC LIMIT 50",
+          "SELECT id,kind,status,result,error,created_at,updated_at,provider_id,version_id FROM tool_jobs WHERE resource_id=$1 AND owner_id=$2 AND coalesce(result->>'deleted','false') <> 'true' ORDER BY created_at DESC LIMIT 50",
           [resourceId, userId],
         ),
       );
@@ -197,13 +197,29 @@ export async function toolServicesApi(
           prompt: z.string().max(10000),
           image: z.string().max(12_000_000).optional(),
           consent: z.literal(true),
+          context: z.literal("paper").optional(),
+          versionId: uuid.optional(),
         })
         .parse(await request.json());
       const { resource, space } = await resourceAccess(
         userId,
         input.resourceId,
-        "edit",
+        input.context === "paper" ? "read" : "edit",
       );
+      if (input.context === "paper") {
+        if (!input.versionId)
+          throw new HttpError(400, "Choose an immutable PDF version.");
+        const { file } = await fileAccess(userId, input.versionId);
+        if (
+          file.resource_id !== input.resourceId ||
+          file.mime !== "application/pdf"
+        )
+          throw new HttpError(
+            400,
+            "Choose a PDF version belonging to this file.",
+          );
+      } else if (input.versionId)
+        throw new HttpError(400, "A PDF version requires paper context.");
       if (input.kind === "ocr" && !input.image)
         throw new HttpError(400, "Choose or paste an image to transcribe.");
       if (
@@ -215,7 +231,12 @@ export async function toolServicesApi(
         throw new HttpError(400, "Use a PNG, JPEG or WebP image.");
       return json(
         await transaction(async (client) => {
-          await requireScope(client, userId, resource.space_id, "edit");
+          await requireScope(
+            client,
+            userId,
+            resource.space_id,
+            input.context === "paper" ? "read" : "edit",
+          );
           await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [
             "tool-queue:" + userId,
           ]);
@@ -241,8 +262,14 @@ export async function toolServicesApi(
           );
           if (
             !provider ||
+            (input.context === "paper" &&
+              !provider.capabilities.includes("paper")) ||
             !provider.capabilities.includes(
-              input.kind === "ocr" ? "ocr" : "math",
+              input.kind === "ocr"
+                ? "ocr"
+                : input.context === "paper"
+                  ? "paper"
+                  : "math",
             )
           )
             throw new HttpError(
@@ -262,7 +289,7 @@ export async function toolServicesApi(
             );
           return (
             await client.query(
-              "INSERT INTO tool_jobs(resource_id,owner_id,provider_id,kind,input) VALUES($1,$2,$3,$4,$5) RETURNING id,kind,status,created_at",
+              "INSERT INTO tool_jobs(resource_id,owner_id,provider_id,kind,input,version_id) VALUES($1,$2,$3,$4,$5,$6) RETURNING id,kind,status,created_at",
               [
                 input.resourceId,
                 userId,
@@ -272,7 +299,9 @@ export async function toolServicesApi(
                   source: input.source,
                   prompt: input.prompt,
                   image: input.image,
+                  context: input.context,
                 }),
+                input.versionId ?? null,
               ],
             )
           ).rows[0];
@@ -286,7 +315,17 @@ export async function toolServicesApi(
         [uuid.parse(id), userId],
       );
       if (!job) throw new HttpError(404, "Job unavailable.");
+      if (job.result?.deleted) throw new HttpError(404, "Job unavailable.");
       if (job.resource_id) await resourceAccess(userId, job.resource_id);
+      if (job.version_id) await fileAccess(userId, job.version_id);
+      if (method === "DELETE") {
+        // Keep the receipt for quotas; deletion must not make billed calls free.
+        await query(
+          "UPDATE tool_jobs SET status=CASE WHEN status IN ('queued','running') THEN 'cancelled' ELSE status END,input='{}',result='{\"deleted\":true}',error=NULL,updated_at=now() WHERE id=$1 AND owner_id=$2",
+          [id, userId],
+        );
+        return json({ ok: true });
+      }
       if (method === "GET")
         return json({
           id: job.id,

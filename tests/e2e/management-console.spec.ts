@@ -288,7 +288,7 @@ test("file Trash restores hierarchy, handles duplicate names and freezes destina
   }
 });
 
-test("workspace Trash collapses groups, preserves archived projects and supports cancelling owner purge", async ({
+test("workspace Trash is independent, protects the default and supports cancelling owner purge", async ({
   browser,
 }) => {
   const f = await setup(browser);
@@ -313,7 +313,13 @@ test("workspace Trash collapses groups, preserves archived projects and supports
         (s: any) =>
           s.id === projectSpace.id && s.effective_status === "trashed",
       ),
-    ).toBeTruthy();
+    ).toBeFalsy();
+    const archived = (await api(f.request, `spaces/${projectSpace.id}`)).space;
+    expect(archived.effective_status).toBe("archived");
+    await api(f.request, `spaces/${projectSpace.id}/trash`, {
+      version: archived.version,
+      confirmation: archived.name,
+    });
     const preview = await api(f.request, "trash/preview", {
       mutationId: randomUUID(),
       target: "workspaces",
@@ -322,38 +328,38 @@ test("workspace Trash collapses groups, preserves archived projects and supports
       ids: [f.team.id, projectSpace.id],
     });
     expect(preview.operation.target_kind).toBe("workspaces");
-    expect(preview.operation.total).toBe(1);
+    expect(preview.operation.total).toBe(2);
     expect((await finish(f.request, preview.operation.id)).operation.done).toBe(
-      1,
+      2,
     );
     expect(
       (await api(f.request, `spaces/${projectSpace.id}`)).space.status,
     ).toBe("archived");
-    const team = (await api(f.request, `spaces/${f.team.id}`)).space;
-    await api(f.request, `spaces/${team.id}/trash`, {
-      version: team.version,
-      confirmation: team.name,
+    const target = (await api(f.request, `spaces/${projectSpace.id}`)).space;
+    await api(f.request, `spaces/${target.id}/trash`, {
+      version: target.version,
+      confirmation: target.name,
     });
     const purge = await api(f.request, "trash/preview", {
       mutationId: randomUUID(),
       target: "workspaces",
       action: "purge",
-      spaceIds: [team.id],
-      ids: [team.id],
+      spaceIds: [target.id],
+      ids: [target.id],
     });
     expect((await finish(f.request, purge.operation.id)).operation.done).toBe(
       1,
     );
-    const purging = (await api(f.request, `spaces/${team.id}`)).space;
+    const purging = (await api(f.request, `spaces/${target.id}`)).space;
     expect(purging.status).toBe("purging");
-    await api(f.request, `spaces/${team.id}/restore`, {
+    await api(f.request, `spaces/${target.id}/restore`, {
       version: purging.version,
     });
-    expect((await api(f.request, `spaces/${team.id}`)).space.status).toBe(
-      "active",
+    expect((await api(f.request, `spaces/${target.id}`)).space.status).toBe(
+      "archived",
     );
     expect(
-      (await api(f.request, `audit?space=${team.id}`)).items.some(
+      (await api(f.request, `audit?space=${target.id}`)).items.some(
         (e: any) => e.action === "purging",
       ),
     ).toBeTruthy();
@@ -371,9 +377,7 @@ test("unified console redirects, guards drafts, renders Audit and Trash with fre
   page.on("pageerror", (e) => errors.push(e.message));
   try {
     await page.goto(`/workbench/admin/${f.group.id}/settings`);
-    await expect(page).toHaveURL(
-      new RegExp(`/workspaces/${f.team.id}/general`),
-    );
+    await expect(page).toHaveURL(new RegExp(`/admin/${f.group.id}/settings`));
     await expect(
       page.getByRole("button", { name: "File operations", exact: true }),
     ).toHaveCount(0);
@@ -381,8 +385,8 @@ test("unified console redirects, guards drafts, renders Audit and Trash with fre
       .getByLabel("Group description")
       .fill("A preserved unsaved draft.");
     await page
-      .getByRole("navigation", { name: "Workspace sections" })
-      .getByRole("link", { name: "People & access" })
+      .getByRole("navigation", { name: "Group administration sections" })
+      .getByRole("link", { name: "Members", exact: true })
       .click();
     const guard = page.getByRole("dialog", { name: "Unsaved group settings" });
     await expect(guard).toBeVisible();
@@ -393,19 +397,17 @@ test("unified console redirects, guards drafts, renders Audit and Trash with fre
     await expect
       .poll(
         async () =>
-          (await api(f.request, `spaces/${f.team.id}`)).space.description,
+          (await api(f.request, `group-admin/${f.group.id}/overview`))
+            .description,
       )
       .toBe("A preserved unsaved draft.");
     await page.screenshot({
       path: test.info().outputPath("workspace-general.png"),
       fullPage: true,
     });
-    await page
-      .getByRole("navigation", { name: "Administration" })
-      .getByRole("link", { name: "Workspaces", exact: true })
-      .click();
-    await page.getByLabel("Find a workspace").fill(f.name);
-    await expect(page.locator(".console-workspace-card")).toHaveCount(1);
+    await page.goto("/workbench/workspaces");
+    await page.getByPlaceholder("Find a workspace…").fill(f.name);
+    await expect(page.locator(".unified-workspace-card")).toHaveCount(1);
     await page.screenshot({
       path: test.info().outputPath("workspace-directory.png"),
       fullPage: true,
@@ -531,8 +533,7 @@ test("unified console redirects, guards drafts, renders Audit and Trash with fre
       .click();
     await page.getByLabel("Search workspaces").fill(f.name);
     await expect(page.locator(".productivity-table tbody tr")).toHaveCount(1);
-    await page.getByLabel("Show included projects").check();
-    await expect(page.locator(".productivity-table tbody tr")).toHaveCount(2);
+    await expect(page.getByLabel("Show included projects")).toHaveCount(0);
     await page.getByLabel("Select matching workspaces").check();
     await page.screenshot({
       path: test.info().outputPath("trash-workspaces.png"),

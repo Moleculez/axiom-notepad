@@ -68,9 +68,9 @@ reconfigure the existing sample view; hiding it preserves the session. Profile
 and notification forms use independent saved baselines and their existing APIs,
 not the Appearance/Writing draft controller. See [settings behavior](SETTINGS.md).
 
-Current appearance preferences use **schema 8**; Writing uses **schema 2** and
+Current appearance preferences use **schema 9**; Writing uses **schema 2** and
 portable palette JSON remains **version 1**. Clients advertise
-`X-Axiom-Appearance-Schema: 8` on bundle requests. Readers normalize older saved
+`X-Axiom-Appearance-Schema: 9` on bundle requests. Readers normalize older saved
 profiles without dropping authored choices. Older clients receive a representable
 shape or HTTP 426; stale writes cannot silently erase new settings. The optional
 `savePrevious` snapshot and preference revision commit in the same compare-and-swap
@@ -78,16 +78,27 @@ statement. Restoring uses the same conflict/idempotency path, not a privileged e
 
 Earlier schema additions were materials/restore points (2), Latin Modern (3),
 document decorations (4), theme packs (5), block guides (6), reading marks (7) and
-the minimap (8). These are preference-format revisions, not database versions.
+the minimap (8), followed by PDF-reader defaults (9). These are preference-format revisions, not database versions.
 Theme packs are statically registered, scoped CSS; arbitrary user CSS and remote
 font URLs are not accepted. User overrides and high-contrast choices stay
 authoritative. Fonts are bundled local WOFF2 assets; personal HTML embeds the
 required fonts and licenses. See [settings](SETTINGS.md) and [theme authoring](THEME_AUTHORING.md).
 
-The database migration sequence currently ends at **20**: migration 19 adds
-annotation-thread support and migration 20 extends visual placement annotations.
-Fresh initialization and an 18 → 20 upgrade are rehearsed on separate disposable
-databases; the migration receipt is not a backup or a production rollout.
+The database migration sequence currently ends at **25**. Migrations 19–20 add
+annotation threads and visual placement; 21–24 add resource revisions, review,
+draft retention, bounded visits and reversible decision evidence. Migration 25
+unifies workspace planning and separates group/workspace lifecycle. Fresh
+initialization, 18 → 25 and seeded 24 → 25 upgrades are rehearsed on disposable
+databases. These receipts are not a backup or a production rollout.
+
+`space_id` is authoritative for tasks, milestones, routines, discussions and
+reviews. Legacy `project_id`/membership records remain an ACL and URL adapter;
+personal/default workspaces need no fabricated project. `planning-api.ts` owns
+planning writes, workspace locking, revision checks and idempotent schedule
+receipts. Scheduling uses date-only values, a validated dependency DAG and the
+workspace working calendar; preview never writes task dates. Apply and guarded
+Undo are atomic. Gantt/List virtualize rows and fetch description bodies only
+when needed. See [planning architecture and limits](WORKSPACE_PLANNING.md).
 
 Canvas now uses internal schema v1 with explicit JSON Canvas interchange, modular
 geometry/sizing/preview/export boundaries and nested collaborative text. Migration
@@ -133,7 +144,7 @@ Cached worker scripts use synthetic responses to retain their original bootstrap
 
 The design targets small research groups (roughly 50 members and up to 10 simultaneous editors on a note). Ten-client convergence is an acceptance test, not a public-internet load/SLA guarantee. Text is limited to one million characters per note. Code blocks are displayed, never executed. Bibliography metadata is group-shared; there is no automatic external AI-provider upload or paper scraping.
 
-There is no billing, checkout, public signup/sharing or arbitrary user-defined database system. Research projects have bounded board/list/calendar task workflows, recurrences, dependencies, snapshot-bound reviews and discussions. PostgreSQL DATE values remain calendar strings to prevent time-zone shifts during JSON round trips. Email requires explicit preferences and SMTP configuration.
+There is no billing, checkout, public signup/sharing or arbitrary user-defined database system. Workspaces have bounded List/Board/Calendar/Gantt/Workload planning, recurrences, dependencies, snapshot-bound reviews and discussions. PostgreSQL DATE values remain calendar strings to prevent time-zone shifts during JSON round trips. Email requires explicit preferences and SMTP configuration.
 
 Workspace jobs use lease identities, fenced heartbeats and final writes; old attempts cannot mark a new lease complete. Exports have a per-job lock and reauthorize every required resource before publication/download. Backup inventory and `pg_dump` share one database snapshot and a shared blob lock. File cleanup takes the exclusive lock, rejects pending document journals and protects live/snapshot references before queuing exact unreferenced-blob deletion. Shared immutable blobs have distinct version identities and are backed up once. Restore never overwrites the source database; unfinished multipart sessions are cancelled in the restored copy because staging is not part of a backup.
 
