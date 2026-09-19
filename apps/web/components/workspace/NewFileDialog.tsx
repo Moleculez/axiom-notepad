@@ -5,7 +5,7 @@ import { fileTypes, type FileType } from "@axiom/shared/file-types";
 import { fileRoute } from "@axiom/shared/file-routes";
 import type { Resource } from "@axiom/shared/workspace";
 import { post } from "../../lib/client";
-import { useAppTabs } from "../../lib/application-tabs";
+import { useWorkSessions } from "../../lib/workspace-sessions";
 import type { FileCreationRequest } from "../../lib/file-creation";
 import Dialog from "../Dialog";
 import { ErrorNotice, go, useData, useLocation, useWorkspace } from "./ui";
@@ -18,7 +18,7 @@ export default function NewFileDialog({
   onClose,
 }: FileCreationRequest & { onClose: () => void }) {
   const { navigate, refresh, spaces, notify, session } = useWorkspace();
-  const tabs = useAppTabs();
+  const tabs = useWorkSessions();
   const owner = useRef({ tab: tabs?.state.active, user: session.user.id });
   const current = useRef({ tabs, session });
   current.current = { tabs, session };

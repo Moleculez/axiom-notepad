@@ -41,7 +41,7 @@ test("My groups and storage management stay in Settings without sidebar footer s
     ).toBeVisible();
     await expect(page.locator(".ws-sidebar-footer")).toHaveCount(0);
     await expect(
-      page.getByRole("tab", { name: "Settings", exact: true }),
+      page.getByRole("navigation", { name: "Current location", exact: true }),
     ).toHaveCount(1);
     await page.screenshot({ path: info.outputPath("settings-my-groups.png") });
 

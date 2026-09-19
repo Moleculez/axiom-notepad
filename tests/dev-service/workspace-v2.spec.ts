@@ -26,7 +26,7 @@ test.beforeEach(async ({ context, page }) => {
   });
 });
 
-test("8080 shows the current workspace tabs, group hub and file toolbar", async ({
+test("8080 shows the unified toolbar, group hub and file toolbar", async ({
   page,
 }, info) => {
   const errors: string[] = [];
@@ -69,9 +69,11 @@ test("8080 shows the current workspace tabs, group hub and file toolbar", async 
     await expect(avatar).not.toBeEmpty();
   }
   await page.screenshot({ path: info.outputPath("workspace-groups-tabs.png") });
-  await page.getByRole("button", { name: "New application tab" }).click();
+  await page.getByRole("button", { name: "Search workspace" }).click();
+  await page.getByLabel("Global search").fill("> Explorer");
   await page
-    .getByRole("button", { name: /Explorer Notes, folders and files/ })
+    .getByRole("group", { name: "Commands", exact: true })
+    .getByRole("option")
     .click();
   await expect(
     page.getByRole("button", { name: "Upload folder", exact: true }),
@@ -142,166 +144,32 @@ test("8080 previews all six coordinated theme families without saving", async ({
   ).toBe(before);
 });
 
-test("close all tabs includes pinned tabs and retains reopen history after reload", async ({
-  page,
-}, info) => {
-  const errors: string[] = [];
-  page.on("pageerror", (error) => errors.push(error.message));
-  await page.goto("/workbench/groups");
-  const tabs = page.getByRole("tablist", { name: "Application tabs" });
-  await tabs.getByRole("tab", { name: "Groups", exact: true }).click({
-    button: "right",
-  });
-  await page.getByRole("menuitem", { name: "Pin tab", exact: true }).click();
-  for (const destination of [
-    /Home Recent work and your day/,
-    /People Your collaborators/,
-  ]) {
-    await page.getByRole("button", { name: "New application tab" }).click();
-    await page.getByRole("button", { name: destination }).click();
-  }
-  await expect(tabs.getByRole("tab")).toHaveCount(4);
-  // Invoke from a background pinned tab; the active page reopens first.
-  await tabs.getByRole("tab", { name: "Groups", exact: true }).click({
-    button: "right",
-  });
-  await expect(
-    page.getByRole("menuitem", { name: "Close all tabs", exact: true }),
-  ).toBeVisible();
-  await page.screenshot({ path: info.outputPath("close-all-tabs-menu.png") });
-  await page
-    .getByRole("menuitem", { name: "Close all tabs", exact: true })
-    .click();
-  await expect(page.getByRole("menu")).toHaveCount(0);
-  await expect(tabs.getByRole("tab")).toHaveCount(1);
-  await expect(
-    tabs.getByRole("tab", { name: "New tab", exact: true }),
-  ).toHaveAttribute("aria-selected", "true");
-  await expect(page).toHaveURL(/\/workbench\/new$/);
-  await page.reload();
-  await expect(tabs.getByRole("tab")).toHaveCount(1);
-  await tabs
-    .getByRole("tab", { name: "New tab", exact: true })
-    .click({ button: "right" });
-  await page
-    .getByRole("menuitem", { name: "Reopen closed tab", exact: true })
-    .click();
-  await expect(
-    tabs.getByRole("tab", { name: "People", exact: true }),
-  ).toHaveAttribute("aria-selected", "true");
-  await page.keyboard.press("ControlOrMeta+Alt+Shift+t");
-  await expect(
-    tabs.getByRole("tab", { name: "Home", exact: true }),
-  ).toHaveAttribute("aria-selected", "true");
-  await page.keyboard.press("ControlOrMeta+Alt+Shift+t");
-  await expect(tabs.locator('[role="tab"][aria-selected="true"]')).toHaveText(
-    "New tab",
-  );
-  await page.keyboard.press("ControlOrMeta+Alt+Shift+t");
-  await expect(
-    tabs
-      .locator(".application-tab.pinned")
-      .getByRole("tab", { name: "Groups", exact: true }),
-  ).toHaveAttribute("aria-selected", "true");
-  await expect(tabs.getByRole("tab")).toHaveCount(5);
-  expect(errors).toEqual([]);
-});
-
-test("close all tabs confirms retained settings drafts before closing any tabs", async ({
-  page,
-}, info) => {
-  const errors: string[] = [];
-  page.on("pageerror", (error) => errors.push(error.message));
-  await page.goto("/workbench/settings/profile");
-  const affiliation = page.getByLabel("Institution or affiliation"),
-    tabs = page.getByRole("tablist", { name: "Application tabs" });
-  await expect(affiliation).toBeVisible();
-  const original = await affiliation.inputValue();
-  await affiliation.fill("Unsaved close-all verification draft");
-  await page.getByRole("button", { name: "New application tab" }).click();
-  await page.getByRole("button", { name: /Groups Create, join/ }).click();
-  await tabs
-    .getByRole("tab", { name: "Groups", exact: true })
-    .click({ button: "right" });
-  await page
-    .getByRole("menuitem", { name: "Close all tabs", exact: true })
-    .click();
-  const dialog = page.getByRole("dialog", {
-    name: "Keep your unsaved settings?",
-  });
-  await expect(dialog).toBeVisible();
-  await expect(tabs.getByRole("tab")).toHaveCount(3);
-  await page.screenshot({
-    path: info.outputPath("close-all-unsaved-settings.png"),
-  });
-  await dialog.getByRole("button", { name: "Stay in settings" }).click();
-  await expect(dialog).not.toBeVisible();
-  await expect(affiliation).toHaveValue("Unsaved close-all verification draft");
-  await expect(tabs.getByRole("tab")).toHaveCount(3);
-  await tabs
-    .getByRole("tab", { name: "Settings", exact: true })
-    .click({ button: "right" });
-  await page
-    .getByRole("menuitem", { name: "Close all tabs", exact: true })
-    .click();
-  await dialog
-    .getByRole("button", { name: "Discard changes", exact: true })
-    .click();
-  await expect(tabs.getByRole("tab")).toHaveCount(1);
-  await expect(page).toHaveURL(/\/workbench\/new$/);
-  await page.keyboard.press("ControlOrMeta+Alt+Shift+t");
-  await expect(affiliation).toHaveValue(original);
-  expect(errors).toEqual([]);
-});
-
-test("close all tabs waits for navigation guards and keeps tabs opened after the request", async ({
+test("recent-work navigation retains unsaved settings without saving to live data", async ({
   page,
 }) => {
-  await page.goto("/workbench/groups");
-  const tabs = page.getByRole("tablist", { name: "Application tabs" });
-  await expect(
-    tabs.getByRole("tab", { name: "Groups", exact: true }),
-  ).toBeVisible();
-  await page.evaluate(() => {
-    window.addEventListener(
-      "axiom:before-navigate",
-      (event) => {
-        event.preventDefault();
-        const { proceed } = (event as CustomEvent<{ proceed: () => void }>)
-          .detail;
-        window.addEventListener("test:confirm-close-all", proceed, {
-          once: true,
-        });
-      },
-      { once: true },
-    );
-  });
-  await tabs
-    .getByRole("tab", { name: "Groups", exact: true })
-    .click({ button: "right" });
+  await page.goto("/workbench/settings/profile");
+  const affiliation = page.getByLabel("Institution or affiliation");
+  await affiliation.fill("Unsaved recent-work verification draft");
   await page
-    .getByRole("menuitem", { name: "Close all tabs", exact: true })
+    .getByRole("banner")
+    .getByRole("link", { name: "Open inbox" })
     .click();
+  await expect(page).toHaveURL(/\/inbox$/);
+  await page.getByRole("button", { name: "Go back", exact: true }).click();
+  await expect(affiliation).toHaveValue(
+    "Unsaved recent-work verification draft",
+  );
+  await page.getByRole("button", { name: "Recent work", exact: true }).click();
+  const recent = page.getByRole("region", { name: "Recent work switcher" });
+  await recent.getByRole("button", { name: "Pin Inbox", exact: true }).click();
   await expect(
-    tabs.getByRole("tab", { name: "Groups", exact: true }),
-  ).toBeVisible();
-  await expect(page).toHaveURL(/\/workbench\/groups$/);
-  await page.getByRole("button", { name: "New application tab" }).click();
-  const newTabId = await tabs
-    .locator(".application-tab.active")
-    .getAttribute("data-tab-id");
-  await expect(tabs.getByRole("tab")).toHaveCount(2);
-  await page.evaluate(() =>
-    window.dispatchEvent(new Event("test:confirm-close-all")),
-  );
-  await expect(tabs.getByRole("tab")).toHaveCount(1);
-  await expect(tabs.locator(".application-tab.active")).toHaveAttribute(
-    "data-tab-id",
-    newTabId!,
-  );
+    recent.getByRole("region", { name: "Pinned work" }),
+  ).toContainText("Inbox");
+  await page.keyboard.press("Escape");
+  await expect(recent).not.toBeVisible();
 });
 
-test("8080 action menus use visible icons and dividers across tabs, workspaces and Explorer", async ({
+test("8080 action menus use visible icons and dividers across workspaces and Explorer", async ({
   page,
 }, info) => {
   const errors: string[] = [];
@@ -337,10 +205,6 @@ test("8080 action menus use visible icons and dividers across tabs, workspaces a
     await expect(menu).toHaveCount(0);
   };
   await page.goto("/workbench/groups");
-  await page
-    .getByRole("tab", { name: "Groups", exact: true })
-    .click({ button: "right" });
-  await checkMenu("tabs-icons-dividers", true);
   await page
     .getByRole("list", { name: "Spaces and folders" })
     .getByRole("link")

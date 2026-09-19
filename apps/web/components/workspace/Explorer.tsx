@@ -37,7 +37,10 @@ import type {
 import { templates } from "@axiom/shared/templates";
 import { post, timeAgo } from "../../lib/client";
 import { selectFileRange } from "@axiom/shared/file-workflows";
-import { publishTabTitle, useAppTabs } from "../../lib/application-tabs";
+import {
+  publishSessionTitle,
+  useWorkSessions,
+} from "../../lib/workspace-sessions";
 import { openContextMenu } from "../../lib/context-menu";
 const FileQuickPreview = dynamic(() => import("./FileQuickPreview"));
 import Dialog from "../Dialog";
@@ -67,7 +70,7 @@ function folderLocation(spaceId: string, parentId?: string | null) {
 
 export default function Explorer() {
   const { params } = useLocation();
-  const tabs = useAppTabs();
+  const tabs = useWorkSessions();
   return params.get("view") === "trash" ? (
     <TrashPage />
   ) : (
@@ -76,7 +79,7 @@ export default function Explorer() {
 }
 function ResourceExplorer() {
   const management = useManagement();
-  const tabs = useAppTabs(),
+  const tabs = useWorkSessions(),
     tabId = tabs?.state.active;
   const { spaces, revision, navigate, open, upload, refresh } = useWorkspace(),
     { params, parts } = useLocation();
@@ -154,9 +157,12 @@ function ResourceExplorer() {
               space?.name ??
               "Explorer");
   useEffect(() => {
-    publishTabTitle(`/explorer?${params}`, title);
+    publishSessionTitle(`/explorer?${params}`, title);
   }, [title, params.toString()]);
   const saved = useRef<{ id?: string; view?: Record<string, unknown> }>({});
+  const pendingScroll = useRef<number | null>(
+    Number(tabs?.active?.view?.scroll) || 0,
+  );
   useEffect(() => {
     const value = tabs?.active?.view;
     if (value) {
@@ -168,16 +174,33 @@ function ResourceExplorer() {
         setDirection(value.direction);
       if (Array.isArray(value.selection))
         setSelection(value.selection as string[]);
-      requestAnimationFrame(() => {
-        if (scrollRoot.current)
-          scrollRoot.current.scrollTop = Number(value.scroll) || 0;
-      });
+      pendingScroll.current = Number(value.scroll) || 0;
     }
-    return () => {
+    const save = () => {
       if (saved.current.id)
         tabs?.update(saved.current.id, { view: saved.current.view });
     };
+    window.addEventListener("pagehide", save);
+    return () => {
+      window.removeEventListener("pagehide", save);
+      save();
+    };
   }, [tabId]);
+  useEffect(() => {
+    // Wait for rows: restoring while the loading placeholder is mounted clamps
+    // scrollTop to zero and silently loses the previous reading position.
+    if (result.loading || !result.data || pendingScroll.current === null)
+      return;
+    const frame = requestAnimationFrame(() => {
+      if (scrollRoot.current && pendingScroll.current !== null) {
+        scrollRoot.current.scrollTop = pendingScroll.current;
+        if (saved.current.view)
+          saved.current.view.scroll = scrollRoot.current.scrollTop;
+        pendingScroll.current = null;
+      }
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [result.loading, result.data, tabId]);
   useEffect(() => {
     saved.current = {
       id: tabId,
@@ -187,7 +210,7 @@ function ResourceExplorer() {
         direction,
         columns,
         selection,
-        scroll: scrollRoot.current?.scrollTop ?? 0,
+        scroll: pendingScroll.current ?? scrollRoot.current?.scrollTop ?? 0,
       },
     };
   }, [tabId, layout, sort, direction, selection, columns]);
@@ -267,7 +290,7 @@ function ResourceExplorer() {
           });
         }}
         onScroll={() => {
-          if (saved.current.view)
+          if (saved.current.view && pendingScroll.current === null)
             saved.current.view.scroll = scrollRoot.current?.scrollTop ?? 0;
         }}
       >

@@ -33,7 +33,7 @@ import {
   type SchedulePlan,
 } from "@axiom/shared/planning";
 import PlanningGantt, { type Milestone } from "./PlanningGantt";
-import { useAppTabs } from "../../lib/application-tabs";
+import { useWorkSessions } from "../../lib/workspace-sessions";
 import { confirmAction } from "../../lib/app-prompt";
 import { timeAgo } from "../../lib/client";
 import Dialog from "../Dialog";
@@ -109,7 +109,7 @@ export function useOnline() {
 export default function WorkspacePlanning({ space }: { space: Space }) {
   const { revision, refresh, notify } = useWorkspace(),
     { params, path } = useLocation(),
-    tabs = useAppTabs();
+    tabs = useWorkSessions();
   const online = useOnline(),
     readOnly =
       space.role !== "editor" || space.effective_status !== "active" || !online;
@@ -150,7 +150,7 @@ export default function WorkspacePlanning({ space }: { space: Space }) {
     scrollPosition.current = null;
     const saveScroll = () => {
       const current = tabsRef.current;
-      const tab = current?.state.tabs.find((row) => row.id === tabId);
+      const tab = current?.state.sessions.find((row) => row.id === tabId);
       if (tab && scrollPosition.current != null) {
         current?.update(tab.id, {
           view: { ...tab.view, planningScroll: scrollPosition.current },

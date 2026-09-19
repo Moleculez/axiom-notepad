@@ -345,9 +345,7 @@ test("Explorer selects ranges, opens with double click, drops files and retains 
     await expect(move).not.toBeVisible();
     await b.locator(".ws-resource-name").dblclick();
     await expect(page).toHaveURL(new RegExp("folder=" + items[1].id));
-    await page
-      .getByRole("button", { name: "Back in tab", exact: true })
-      .click();
+    await page.getByRole("button", { name: "Go back", exact: true }).click();
     await expect(page).not.toHaveURL(/folder=/);
     await page.getByRole("button", { name: "Choose file columns" }).click();
     await page
@@ -358,50 +356,33 @@ test("Explorer selects ranges, opens with double click, drops files and retains 
         .locator(".ws-resource-head")
         .getByRole("button", { name: "Size", exact: true }),
     ).toHaveCount(0);
-    const explorerTab = page
-      .getByRole("tablist", { name: "Application tabs" })
-      .locator('[aria-selected="true"]');
-    const explorerId = await explorerTab
-      .locator("..")
-      .getAttribute("data-tab-id");
-    await explorerTab.click({ button: "right" });
-    await page.getByRole("menuitem", { name: "Pin tab", exact: true }).click();
-    await expect(page.locator(`[data-tab-id="${explorerId}"]`)).toHaveClass(
-      /pinned/,
-    );
-    await page.getByRole("button", { name: "New application tab" }).click();
+    const explorerPath =
+      new URL(page.url()).pathname + new URL(page.url()).search;
     await page
-      .getByRole("button", { name: /Settings Make the workspace yours/ })
+      .getByRole("button", { name: "Recent work", exact: true })
       .click();
-    await expect(
-      page.getByRole("tab", { name: "Settings", exact: true }),
-    ).toBeVisible();
-    await page.getByRole("button", { name: "New application tab" }).click();
-    await page.getByRole("button", { name: /Groups Create, join/ }).click();
-    await expect(
-      page.getByRole("tab", { name: "Settings", exact: true }),
-    ).toBeVisible();
-    await expect(page.locator(".ws-document-tabs")).toHaveCount(0);
-    await expect(page.locator(".ws-app-nav")).toHaveCount(0);
-    await page.locator(`[data-tab-id="${explorerId}"] [role="tab"]`).click();
+    const recent = page.getByRole("region", { name: "Recent work switcher" });
+    await recent
+      .locator('.workspace-recent-row[data-active="true"]')
+      .getByRole("button", { name: /^Pin / })
+      .click();
+    await page.keyboard.press("Escape");
+    await page
+      .getByRole("banner")
+      .getByRole("link", { name: "Open inbox" })
+      .click();
+    await page.getByRole("button", { name: "Go back", exact: true }).click();
+    await expect(page).toHaveURL(origin + explorerPath);
     await expect(
       page
         .locator(".ws-resource-head")
         .getByRole("button", { name: "Size", exact: true }),
     ).toHaveCount(0);
-    await page.getByRole("tab", { name: "Groups", exact: true }).click();
-    await page
-      .getByRole("button", { name: "Close Groups tab", exact: true })
-      .click();
     await expect(
-      page.getByRole("tab", { name: "Groups", exact: true }),
+      page.getByRole("tablist", { name: "Application tabs" }),
     ).toHaveCount(0);
-    await page.keyboard.press("ControlOrMeta+Alt+Shift+t");
-    await expect(
-      page.getByRole("tab", { name: "Groups", exact: true }),
-    ).toHaveAttribute("aria-selected", "true");
     await page.screenshot({
-      path: test.info().outputPath("whole-app-tabs.png"),
+      path: test.info().outputPath("workspace-recent-work.png"),
     });
   } finally {
     await f.close();
@@ -445,7 +426,7 @@ test("group creation is reachable from the hub and grants administration immedia
   }
 });
 
-test("settings drafts survive app-tab switches, suspend previews and guard tab closing", async ({
+test("settings drafts survive page switches and suspend inactive previews", async ({
   browser,
 }) => {
   const f = await fixture(browser, "# Retained note\n");
@@ -455,7 +436,10 @@ test("settings drafts survive app-tab switches, suspend previews and guard tab c
     await page.getByText("Visual theme editor", { exact: true }).click();
     await page.getByLabel("Accent & links color value").fill("#1964c8");
     await page.getByLabel("Accent & links color value").press("Enter");
-    await page.getByRole("button", { name: "New application tab" }).click();
+    await page
+      .getByRole("banner")
+      .getByRole("link", { name: "Open inbox" })
+      .click();
     await expect
       .poll(() =>
         page.evaluate(() =>
@@ -468,7 +452,7 @@ test("settings drafts survive app-tab switches, suspend previews and guard tab c
     await expect(
       page.locator(".settings-preview-editor .ProseMirror"),
     ).toHaveCount(0);
-    await page.getByRole("tab", { name: "Settings", exact: true }).click();
+    await page.getByRole("button", { name: "Go back", exact: true }).click();
     await page.getByText("Visual theme editor", { exact: true }).click();
     await expect(page.getByLabel("Accent & links color picker")).toHaveValue(
       "#1964c8",
@@ -478,35 +462,20 @@ test("settings drafts survive app-tab switches, suspend previews and guard tab c
     await page
       .getByLabel("Institution or affiliation", { exact: true })
       .fill("Retained laboratory draft");
-    await page.getByRole("button", { name: "New application tab" }).click();
-    await page.getByRole("tab", { name: "Settings", exact: true }).click();
+    await page
+      .getByRole("banner")
+      .getByRole("link", { name: "Open inbox" })
+      .click();
+    await page.getByRole("button", { name: "Go back", exact: true }).click();
     await expect(
       page.getByLabel("Institution or affiliation", { exact: true }),
     ).toHaveValue("Retained laboratory draft");
-    await page
-      .getByRole("button", { name: "Close Settings tab", exact: true })
-      .click();
-    const warning = page.getByRole("dialog", {
-      name: "Keep your unsaved settings?",
-    });
-    await expect(warning).toBeVisible();
-    await warning.getByRole("button", { name: "Stay in settings" }).click();
     await page
       .getByRole("button", { name: "Save profile", exact: true })
       .click();
     await expect(
       page.getByRole("button", { name: "Save profile", exact: true }),
     ).toBeDisabled();
-    await page
-      .getByRole("button", { name: "Close Settings tab", exact: true })
-      .click();
-    await page
-      .getByRole("dialog")
-      .getByRole("button", { name: "Discard changes", exact: true })
-      .click();
-    await expect(
-      page.getByRole("tab", { name: "Settings", exact: true }),
-    ).toHaveCount(0);
     expect(await f.source()).toBe("# Retained note\n");
   } finally {
     await f.close();

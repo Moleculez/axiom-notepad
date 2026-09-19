@@ -122,23 +122,20 @@ test("routed settings retain drafts, apply together and cancel live previews", a
     page.getByLabel("Note font size value", { exact: true }),
   ).toHaveValue("25");
   await page.getByLabel("Note font size value", { exact: true }).fill("26");
-  // Switching pages retains the Settings tab and its coordinated draft.
+  // Switching pages retains the single Settings session and its coordinated draft.
   await page.getByRole("button", { name: "Back to workspace" }).click();
   await expect(page).toHaveURL(/\/workbench\/home/);
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  await page.getByRole("tab", { name: "Settings", exact: true }).click();
+  await page.getByRole("button", { name: "Go back", exact: true }).click();
   await expect(
     page.getByLabel("Note font size value", { exact: true }),
   ).toHaveValue("26");
-  // Closing that tab, unlike switching away, must resolve the draft.
-  await page.getByRole("button", { name: "Close Settings tab" }).click();
-  await expect(page.getByRole("dialog")).toBeVisible();
-  await page.getByRole("button", { name: "Stay in settings" }).click();
+  // Explicit Cancel discards the preview; navigation itself never closes drafts.
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
   await expect(
     page.getByLabel("Note font size value", { exact: true }),
-  ).toHaveValue("26");
-  await page.getByRole("button", { name: "Close Settings tab" }).click();
-  await page.getByRole("button", { name: "Discard changes" }).click();
+  ).toHaveValue("25");
+  await page.getByRole("button", { name: "Back to workspace" }).click();
   await expect(page).toHaveURL(/\/workbench\/home/);
   expect(errors).toEqual([]);
   const latest = await read(context);
@@ -234,11 +231,8 @@ test("unavailable device storage leaves the preference draft unapplied", async (
     "Device storage is unavailable",
   );
   expect(await read(context)).toEqual(original);
-  await page.getByRole("button", { name: "Close Settings tab" }).click();
-  await expect(
-    page.getByRole("button", { name: "Stay in settings" }),
-  ).toBeVisible();
-  await page.getByRole("button", { name: "Stay in settings" }).click();
+  await page.getByRole("link", { name: "Open inbox", exact: true }).click();
+  await page.getByRole("button", { name: "Go back", exact: true }).click();
   await expect(
     page.getByLabel("Note font size value", { exact: true }),
   ).toHaveValue("27");

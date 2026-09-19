@@ -126,12 +126,16 @@ test("direct nested notes show the full path; ancestor, Up and Back links open r
   );
   await page.getByRole("button", { name: "Up one level" }).click();
   await expect(page).toHaveURL(new RegExp(`folder=${folders[1].id}`));
-  await page.getByRole("button", { name: "Back in tab" }).click();
+  await page.getByRole("button", { name: "Go back" }).click();
   await expect(page).toHaveURL(new RegExp(`folder=${folders[2].id}`));
-  // Opening a parent keeps the document in its own tab; Explorer history is separate.
-  await page.getByRole("button", { name: "Forward in tab" }).click();
+  // Global history traverses folders; Recent work keeps the document available.
+  await page.getByRole("button", { name: "Go forward" }).click();
   await expect(page).toHaveURL(new RegExp(`folder=${folders[1].id}`));
-  await page.getByRole("tab", { name: note.name, exact: true }).click();
+  await page.getByRole("button", { name: "Recent work", exact: true }).click();
+  await page
+    .locator(".workspace-recent-open")
+    .filter({ hasText: note.name })
+    .click();
   await expect(page).toHaveURL(new RegExp(`/notes/${note.id}$`));
   await nav.getByRole("link", { name: "Explorer", exact: true }).click();
   await expect(page).toHaveURL(/\/explorer\?view=all$/);

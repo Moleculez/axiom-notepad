@@ -1,4 +1,5 @@
 "use client";
+import TimeZoneInput from "../TimeZoneInput";
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import {
@@ -18,7 +19,7 @@ import type { Space } from "@axiom/shared/workspace";
 import type { PlanningCalendar, PlanningTask } from "@axiom/shared/planning";
 import { calendarSchema } from "@axiom/shared/planning";
 import { tabRoute } from "@axiom/shared/application-tabs";
-import { publishTabTitle } from "../../lib/application-tabs";
+import { publishSessionTitle } from "../../lib/workspace-sessions";
 import Dialog from "../Dialog";
 import DraftGuard from "./DraftGuard";
 import { useManagement } from "./ManagementActions";
@@ -168,7 +169,7 @@ export default function UnifiedWorkspace({
   }, [session.user.id, id, section, setting, params.toString()]);
   useEffect(() => {
     if (space)
-      publishTabTitle(path + (params.size ? `?${params}` : ""), space.name);
+      publishSessionTitle(path + (params.size ? `?${params}` : ""), space.name);
   }, [space?.id, space?.name, path, params.toString()]);
   if (!id) return <WorkspaceDirectory />;
   if (!space)
@@ -864,12 +865,10 @@ function CalendarForm({
       >
         <label>
           Time zone
-          <input
+          <TimeZoneInput
+            required
             value={calendar.timezone}
-            onChange={(e) =>
-              setCalendar({ ...calendar, timezone: e.target.value })
-            }
-            placeholder="Asia/Shanghai"
+            onChange={(zone) => setCalendar({ ...calendar, timezone: zone })}
           />
         </label>
         <div

@@ -671,7 +671,7 @@ test("folds, passive previews and navigation-only preferences preserve block edi
       path: info.outputPath("minimap-dark-folded.png"),
     });
     await f.page
-      .getByRole("button", { name: "New application tab", exact: true })
+      .getByRole("link", { name: "Open inbox", exact: true })
       .click();
     await expect(
       f.page.locator(".document-minimap").filter({ visible: true }),

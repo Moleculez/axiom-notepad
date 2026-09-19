@@ -1,0 +1,107 @@
+.timezone-combobox {
+  position: relative;
+  display: block;
+  min-width: 0;
+  width: 100%;
+  font-weight: 400;
+}
+.timezone-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--control-radius);
+  background: var(--surface);
+  padding: 0 8px 0 11px;
+  color: var(--muted);
+}
+.timezone-input-row:focus-within {
+  border-color: var(--accent);
+}
+.timezone-input-row > svg {
+  flex-shrink: 0;
+}
+.ws-app .timezone-input-row input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 10px 0;
+  margin: 0;
+}
+.timezone-input-row .icon-button {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+}
+.timezone-options {
+  display: block;
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 0;
+  right: 0;
+  z-index: 45;
+  border: 1px solid var(--line);
+  border-radius: var(--control-radius);
+  background: var(--surface);
+  box-shadow: 0 8px 24px #0002;
+  overflow: hidden;
+}
+.timezone-options [role="listbox"] {
+  display: block;
+  max-height: 250px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 5px;
+}
+.timezone-combobox[data-placement="above"] .timezone-options {
+  top: auto;
+  bottom: calc(100% + 5px);
+}
+.timezone-option {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px;
+  border-radius: var(--control-radius-small);
+  cursor: pointer;
+  color: var(--text);
+}
+.timezone-option[aria-selected="true"],
+.timezone-option:hover {
+  background: var(--accent-bg);
+}
+.timezone-option > span {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 5px 12px;
+  flex: 1;
+  min-width: 0;
+}
+.timezone-option strong {
+  font-weight: 450;
+  font-size: 0.9em;
+  overflow-wrap: anywhere;
+}
+.timezone-option small {
+  color: var(--muted);
+  font-size: 0.8em;
+  white-space: nowrap;
+}
+.timezone-hint {
+  display: block;
+  border-top: 1px solid var(--line);
+  padding: 8px 12px;
+  font-size: 0.74em;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.timezone-combobox > .form-error {
+  display: block;
+  margin-top: 5px;
+}

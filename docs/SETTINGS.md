@@ -15,7 +15,7 @@ focus indicators; scrollbars never displace the other pane or shared actions.
 - The workspace tree remains visible on every page. Account, Appearance, Writing
   and Storage are grouped inside Settings, with the selected group's categories
   below them. Restoring an inactive Settings tab does not load its editor preview
-  until first visited; after visiting, drafts survive switching app tabs.
+  until first visited; after visiting, drafts survive navigation between pages.
 
 - **Appearance → General → Show block ranges** controls the quiet vertical
   guides in visual editors. Enabled by default; nested ranges step inward and
@@ -115,7 +115,7 @@ newer changes. Unsaved crop selections are not durable across a page reload.
 Notifications groups in-app choices and delivery options, with matching switches,
 changed-state Save/Cancel actions and a saved baseline. Cancel affects only the
 notification form. Visited profile/notification forms remain mounted while switching
-categories or application tabs. These drafts are not durable and do not survive a
+categories or pages. These drafts are not durable and do not survive a
 reload unless saved; closing a dirty Settings tab prompts before discarding them.
 
 ## Implementation and verification

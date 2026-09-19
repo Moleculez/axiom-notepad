@@ -2,7 +2,7 @@
 
 ## Navigation and creation
 
-All resources share tabs, location breadcrumbs, sharing and a persistent navigation
+All resources share a compact context toolbar, location breadcrumbs, sharing and a persistent navigation
 tree. The canonical route is resolved by `packages/shared/src/file-routes.ts`:
 
 | Resource                            | Path below `/workbench`                               |
@@ -15,16 +15,46 @@ tree. The canonical route is resolved by `packages/shared/src/file-routes.ts`:
 
 Studio and viewer implementations are file views, not separate navigation systems.
 `?version=` preserves immutable-version intent. Legacy `/tools/:type/:id` routes
-resolve to the same resource; canonicalization updates the active tab rather than
+resolve to the same resource; canonicalization updates the active work session rather than
 creating a duplicate. Old creation links open the shared New File dialog over
 Explorer, carrying their destination and image-import parameters.
 
-Explorer's New/background menu, sidebar folder actions and New Tab use the same
+Explorer's New/background menu, sidebar folder actions and the legacy `/new` launcher use the same
 creation path. Markdown, Canvas, Math, Drawing and Text appear at the same level;
 less common text/data/Office formats are grouped. Current writable folders are
 prefilled; otherwise the dialog requires a workspace choice. Creation is guarded
 against double submission and uses the API's idempotency key. Completion in an
-inactive app tab does not redirect a different active tab.
+inactive work session does not redirect a different active page.
+
+### Context toolbar and recent work
+
+The application tab strip and separate breadcrumb row are retired. One toolbar
+contains sidebar toggle, Back/Forward across pages, physical parent navigation,
+authorized breadcrumbs, Recent work, search/commands, connectivity, Inbox,
+transfers and the account menu. Specialized editing tools remain in their pages.
+
+- `Command/Ctrl K`: search authorized files/tags; type `>` for destination commands.
+  The fixed-height palette offers Everything/Files/Commands scopes, matched-name
+  highlighting, workspace/type/modified-time context, and recent destinations.
+  Arrow keys move selection without taking focus from the input; Enter opens the
+  selected result. Escape returns focus to the invoking control. Pending searches
+  never activate results from an earlier query.
+- `Command/Ctrl Alt R`: open Recent work. Filter, pin/unpin, or open a file beside
+  the current document. Escape closes the switcher and restores focus.
+- Up to 100 recent locations and 20 user pins are device/account-local. Old tabs
+  migrate to recent locations; old pins and safe view preferences are retained.
+  Browser-lifetime Back/Forward history is separate from the recent list.
+- Session metadata stores sanitized routes and bounded presentation fields, not
+  document text, titles, credentials, settings drafts or invitation tokens.
+  The recent switcher resolves known resource names from authorized recent files.
+- Notes retain their existing local document/undo sessions across navigation.
+  Only visible editor panes mount. Explorer restores view choices and scrolling
+  after its rows load; Settings keeps its single in-memory draft after first visit.
+  Reload does not preserve unsaved Settings drafts. Existing navigation and
+  sign-out guards remain in force. Pruning recent metadata never deletes drafts.
+- “Online” means network availability, not a successful save. For an active
+  Markdown note the toolbar reflects the editor's reported synchronization state;
+  each studio/reader keeps its own detailed save indicators.
 
 ## Sidebar and dialogs
 
@@ -33,6 +63,14 @@ Quick access, saved views, Your spaces, then Workspaces/Groups/Audit/Trash. Curr
 file ancestors expand automatically. Workspace creation lives on Workspaces, not
 as a permanent sidebar control. Settings and workspace/project section links live
 inside their own pages.
+
+The sidebar explorer has a local workspace-name/group filter, a collapse-all action,
+and device/account-local expansion memory (resource IDs only). Authorized ancestry
+reveals directly opened folders and documents. Compact rows use nested guides,
+open-folder icons and an active marker; their overflow menus appear on hover or
+keyboard focus. Up/Down and Home/End move between loaded rows, Left/Right traverse
+branches, Enter opens the row and Shift-F10 opens its context menu. Resource loading,
+permission checks, drag/drop and the full-folder handoff remain unchanged.
 
 Use the shared native `Dialog`, `DialogBody` and `DialogFooter`. Header and actions
 stay outside the scrolling body. A submitting form must own both body and footer;

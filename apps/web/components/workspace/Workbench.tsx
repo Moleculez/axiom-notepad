@@ -70,7 +70,10 @@ import {
 import { useResearch } from "../../lib/research-store";
 import { useNoteThreads } from "../../lib/note-marks-store";
 import ReadingMarks from "../ReadingMarks";
-import { publishTabTitle, useAppTabs } from "../../lib/application-tabs";
+import {
+  publishSessionTitle,
+  useWorkSessions,
+} from "../../lib/workspace-sessions";
 import {
   recoveryDrafts,
   retainDraft,
@@ -177,7 +180,7 @@ export default function Workbench({
     setActive("primary");
   }, [resource.id, resource.versionId]);
   const name = (id: string, title: string) => {
-    if (id === resource.id) publishTabTitle(tabPath(resource), title);
+    if (id === resource.id) publishSessionTitle(tabPath(resource), title);
   };
   const drag = (event: React.PointerEvent<HTMLDivElement>) => {
     const separator = event.currentTarget;
@@ -441,8 +444,8 @@ function DocumentPane({
   active: boolean;
   reload: () => void;
 }) {
-  const tabs = useAppTabs();
-  const stored = tabs?.state.tabs.find((tab) => tab.id === viewId)?.view;
+  const tabs = useWorkSessions();
+  const stored = tabs?.state.sessions.find((tab) => tab.id === viewId)?.view;
   const {
       session,
       appearance,
@@ -503,6 +506,14 @@ function DocumentPane({
   const reviewLocation = useLocation(),
     requestedReview = reviewLocation.params.get("review");
   const previousVisit = useRevisionVisit(session.user.id, note.id, active);
+  useEffect(() => {
+    if (active)
+      window.dispatchEvent(
+        new CustomEvent("axiom:document-status", {
+          detail: { id: note.id, status },
+        }),
+      );
+  }, [active, note.id, status]);
   useEffect(() => {
     if (
       active &&

@@ -91,15 +91,28 @@ sizes, spacing and colors; another document preset resets it to that preset's lo
 
 ## Layout
 
-Top app navigation uses resource tabs, a pages launcher, search and account tools.
-Creation belongs to Explorer/New Tab/context menus, with note, canvas, math,
+Top app navigation uses one context toolbar: history, breadcrumbs, a compact Recent
+work switcher, search/commands, connection state, Inbox, transfers and account tools.
+Do not reintroduce a tab strip or a second breadcrumb row. Keep formatting and
+specialized reader/planning controls inside their pages.
+The global command palette keeps a stable height and input position while results
+change. Group headings, secondary location text and restrained type labels provide
+hierarchy; the selected row is distinct without taking keyboard focus from the query.
+Scope styles to this palette so editor command menus remain unaffected.
+Creation belongs to Explorer/context menus, with note, canvas, math,
 drawing and text as peers. Every route shares the same sidebar: Quick access,
 Your workspaces, then Administration (Groups, Audit, Trash). Workspaces are
 ownership-grouped peers; there is no separate Projects navigation product. Section
 navigation belongs inside its page, never in a replacement sidebar. See
 [file-first navigation](FILE_WORKBENCH.md).
 
-Context tree + central workbench + at most one optional inspector. Trees use actual depth indentation and one overflow action per row. The workbench supports resource tabs and up to two visible panes; below two useful pane widths use a state-preserving pane switcher. Auxiliary panels become drawers before they crowd the document.
+Context tree + central workbench + at most one optional inspector. Trees use actual depth indentation and one overflow action per row. Recent work replaces application tabs; the workbench supports up to two visible panes. Below two useful pane widths use a state-preserving pane switcher. Auxiliary panels become drawers before they crowd the document.
+
+Time-zone fields use the shared `TimeZoneInput` editable combobox: runtime IANA
+zone suggestions, city/region matching, current UTC offsets and typed-value
+validation. Arrow keys navigate, Enter selects without submitting the form, Escape
+closes suggestions, and Tab leaves normally. Reuse it rather than a partial static
+list or unassisted text field.
 
 Explorer lists default to a balanced density; compact/comfortable preferences remain available. Rows expose selection and a contextual action menu. Details that are not required for navigation belong in optional columns or the inspector.
 

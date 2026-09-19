@@ -1,4 +1,5 @@
 "use client";
+import TimeZoneInput from "../TimeZoneInput";
 import DraftGuard from "./DraftGuard";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -284,11 +285,11 @@ function CreateProject({
           </label>
           <label>
             Calendar time zone
-            <input
+            <TimeZoneInput
               required
+              aria-label="Calendar time zone"
               value={timezone}
-              onChange={(event) => setTimezone(event.target.value)}
-              placeholder="Asia/Shanghai"
+              onChange={setTimezone}
             />
           </label>
         </div>
@@ -1984,10 +1985,11 @@ export function ProjectSettings({ project }: { project: any }) {
       </label>
       <label>
         Calendar time zone
-        <input
+        <TimeZoneInput
           required
+          aria-label="Calendar time zone"
           value={timezone}
-          onChange={(event) => setTimezone(event.target.value)}
+          onChange={setTimezone}
         />
       </label>
       <label>

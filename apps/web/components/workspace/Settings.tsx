@@ -1,4 +1,5 @@
 "use client";
+import TimeZoneInput from "../TimeZoneInput";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import {
@@ -687,29 +688,12 @@ function ProfileForm({
             <div className="ws-form-grid">
               <label>
                 Time zone
-                <input
+                <TimeZoneInput
                   required
-                  list="profile-timezones"
                   aria-label="Time zone"
                   value={draft.timezone}
-                  onChange={(event) => set("timezone", event.target.value)}
+                  onChange={(zone) => set("timezone", zone)}
                 />
-                <datalist id="profile-timezones">
-                  {[
-                    "UTC",
-                    "Asia/Shanghai",
-                    "Asia/Tokyo",
-                    "Asia/Singapore",
-                    "Europe/London",
-                    "Europe/Paris",
-                    "America/New_York",
-                    "America/Chicago",
-                    "America/Los_Angeles",
-                    "Australia/Sydney",
-                  ].map((zone) => (
-                    <option key={zone} value={zone} />
-                  ))}
-                </datalist>
               </label>
               <label>
                 Weekly planning capacity (hours)

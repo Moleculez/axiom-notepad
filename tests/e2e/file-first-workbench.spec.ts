@@ -156,7 +156,7 @@ test("one sidebar remains mounted across Settings and administration without los
   await expect(
     sidebar.getByText("Create workspace", { exact: true }),
   ).toHaveCount(0);
-  await page.getByRole("tab", { name: "Settings", exact: true }).click();
+  await page.getByRole("button", { name: "Go back", exact: true }).click();
   await expect(page.getByLabel("Full name", { exact: true })).toHaveValue(
     "Retained file-first draft",
   );

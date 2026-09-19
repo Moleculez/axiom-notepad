@@ -3,6 +3,53 @@
 Updated September 20, 2026. Historical logs are [archived separately](archive/VERIFICATION-2026-09-11.md).
 Do not treat historical browser totals or local build IDs as current release evidence.
 
+## September 20 search palette and sidebar refinement
+
+Search now uses a scoped, fixed-height command palette with retained query focus,
+keyboard selection, highlighted file names, location/type/time context and clear
+loading/empty states. Sidebar rows have quieter hierarchy guides, active markers,
+hover/focus menus, workspace filtering, collapse-all and account-local expansion
+memory. Direct folder paths reveal their authorized ancestors.
+
+- The three dedicated discovery scenarios pass in Chromium, Firefox and WebKit
+  on isolated port 3004. They cover scope/prefix behavior, initial/restored focus,
+  keyboard selection, empty results, stable input positioning, dark colors with
+  22px dialog typography, direct-folder ancestry, filtering, menus, branch
+  navigation and restored expansion. Screenshots are under
+  `test-results/workspace-discovery-{chromium,firefox,webkit}`.
+- TypeScript, ESLint, 1,798 unit tests, documentation checks and the isolated
+  production build pass. Existing toolbar/time-zone acceptance also passes.
+- Search styles are separately namespaced; editor command-palette styles are not
+  replaced. No commit, push or deployment was performed for this refinement.
+
+## September 20 context toolbar and time-zone autocomplete
+
+Application tabs and the separate location row have been replaced by one context
+toolbar. Global history and bounded recent work are independent; prior pins/view
+metadata migrate without serializing drafts or credentials. The shared time-zone
+combobox is used by profile, workspace-calendar and legacy project fields.
+
+- TypeScript, ESLint, **1,798 unit tests across 81 files**, documentation links and
+  the isolated production build pass (**913 offline assets**).
+- **Nine Chromium scenarios** pass for nested/authorized breadcrumbs, parent and
+  global history navigation, versioned-file paths, selection actions, pinned recent
+  work, command destinations, time-zone keyboard/mouse selection, invalid values,
+  retained Settings drafts, filter-input focus and saving the workspace's IANA calendar zone.
+- The toolbar and profile time-zone scenarios also pass in **Firefox and WebKit**.
+  Fresh screenshots are in `test-results/workspace-navigation` and
+  `test-results/workspace-toolbar-{firefox,webkit}`.
+- Chromium regressions pass for note-local Undo after navigation, split-pane
+  shortcuts, and Workspace Files list/grid/inspector scrolling, including returning
+  to the previous scroll position after opening Inbox.
+- Maximum typography, dark mode, reduced motion and forced-colors shell checks
+  pass at desktop widths in Chromium.
+- Shared-dialog creation/handoff for math, image, canvas and text files also passes
+  in Chromium without retaining a creation page in Recent work.
+
+Checks use isolated port **3004**, not production/user files. No commit, push or
+deployment was performed for this change. Real assistive-technology use and a full
+application-wide browser suite remain outside this acceptance pass.
+
 ## September 20 PDF reader redesign
 
 The [PDF reader guide](PDF_READER.md) separates implemented workflows from the

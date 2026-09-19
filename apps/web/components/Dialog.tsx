@@ -207,6 +207,7 @@ export default function Dialog({
   expanded = false,
   onEscape,
   returnFocus,
+  className = "",
 }: {
   title: string;
   subtitle?: string;
@@ -220,6 +221,7 @@ export default function Dialog({
   onEscape?: () => void;
   /** Resolve a stable opener when a refreshed list may replace its DOM node. */
   returnFocus?: () => HTMLElement | null;
+  className?: string;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const trigger = useContext(OpenerContext);
@@ -299,7 +301,7 @@ export default function Dialog({
   return (
     <dialog
       ref={ref}
-      className={`dialog ${wide ? "wide" : ""}`}
+      className={`dialog ${wide ? "wide" : ""} ${className}`}
       data-size={size ?? (wide ? "wide" : "standard")}
       data-expanded={expanded || undefined}
       onCancel={(event) => {

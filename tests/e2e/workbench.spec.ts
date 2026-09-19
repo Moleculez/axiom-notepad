@@ -46,7 +46,7 @@ test("new pages reflow with maximum typography, dark theme and reduced motion", 
       ]) {
         await page.goto("/workbench/" + route);
         await expect(
-          page.getByRole("tablist", { name: "Application tabs" }),
+          page.getByRole("navigation", { name: "Current location" }),
         ).toBeVisible();
         await expect(
           page.locator(".ws-page:visible, .ws-explorer-main:visible").first(),
@@ -143,7 +143,7 @@ test("routed shell, Explorer dialogs, appearance and navigation work at desktop 
   try {
     await page.goto("/workbench/home");
     await expect(
-      page.getByRole("tablist", { name: "Application tabs" }),
+      page.getByRole("navigation", { name: "Current location" }),
     ).toBeVisible();
     await expect(
       page.getByRole("heading", { name: /next idea, Ada/ }),
@@ -201,7 +201,7 @@ test("routed shell, Explorer dialogs, appearance and navigation work at desktop 
     if (process.env.TEST_MOBILE === "1") {
       await page.setViewportSize({ width: 390, height: 844 });
       await expect(
-        page.getByRole("tablist", { name: "Application tabs" }),
+        page.getByRole("navigation", { name: "Current location" }),
       ).toBeVisible();
       expect(
         await page.evaluate(
@@ -264,7 +264,13 @@ test("research editor retains local undo across document tabs and scopes split-p
     await expect(page.getByTestId("note-editor")).toContainText(
       "Another result",
     );
-    await page.getByRole("tab", { name: "Derivation A" }).click();
+    await page
+      .getByRole("button", { name: "Recent work", exact: true })
+      .click();
+    await page
+      .locator(".workspace-recent-open")
+      .filter({ hasText: "Derivation A" })
+      .click();
     await expect(page.getByTestId("note-editor")).toContainText(
       "Retained tab edit.",
     );
@@ -278,10 +284,13 @@ test("research editor retains local undo across document tabs and scopes split-p
       page.getByRole("button", { name: "Write", exact: true }),
     ).toHaveAttribute("aria-pressed", "true");
     await page
-      .getByRole("tab", { name: "Derivation B", exact: true })
-      .click({ button: "right" });
+      .getByRole("button", { name: "Recent work", exact: true })
+      .click();
     await page
-      .getByRole("menuitem", { name: "Open beside", exact: true })
+      .getByRole("button", {
+        name: "Open Derivation B in split view",
+        exact: true,
+      })
       .click();
     await expect(page.getByTestId("note-editor")).toHaveCount(2);
     await page
@@ -441,7 +450,7 @@ test("two-step setup and recovery-code sign-in are complete without exposing ses
     await page.getByLabel("Recovery code", { exact: true }).fill(backup!);
     await page.getByRole("button", { name: "Verify and sign in" }).click();
     await expect(
-      page.getByRole("tablist", { name: "Application tabs" }),
+      page.getByRole("navigation", { name: "Current location" }),
     ).toBeVisible();
   } finally {
     await context.close();

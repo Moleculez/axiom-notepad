@@ -101,6 +101,13 @@ test("workspace Files scrolls list and grid to the final item without clipping t
     await page.screenshot({
       path: info.outputPath("workspace-files-list-bottom.png"),
     });
+    const savedScroll = await scroller.evaluate((node) => node.scrollTop);
+    await page.getByRole("link", { name: "Open inbox", exact: true }).click();
+    await page.getByRole("button", { name: "Go back", exact: true }).click();
+    await expect(scroller.locator(".ws-resource-row")).toHaveCount(44);
+    await expect
+      .poll(() => scroller.evaluate((node) => node.scrollTop))
+      .toBeCloseTo(savedScroll, 0);
     await page.getByRole("button", { name: "Grid view", exact: true }).click();
     await expect(scroller.locator(".ws-resource-grid")).toBeVisible();
     await page.setViewportSize({ width: 1200, height: 600 });

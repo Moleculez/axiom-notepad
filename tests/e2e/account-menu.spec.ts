@@ -61,13 +61,13 @@ test("account dropdown dismisses outside, on Escape and when keyboard focus leav
       .click();
     await expect(menu).toHaveJSProperty("open", false);
     await expect(
-      f.page.getByRole("dialog", { name: "Find something worth revisiting" }),
+      f.page.getByRole("dialog", { name: "Search & commands" }),
     ).toBeVisible();
     await f.page.keyboard.press("Escape");
     // Start a new interaction as soon as the native dialog closes; delayed
     // React cleanup must not steal focus back from the account dropdown.
     await expect(
-      f.page.getByRole("dialog", { name: "Find something worth revisiting" }),
+      f.page.getByRole("dialog", { name: "Search & commands" }),
     ).toBeHidden();
     await trigger.focus();
     await f.page.keyboard.press("Enter");
@@ -122,7 +122,7 @@ test("sign-out confirmation closes the account menu and returns focus on cancell
   }
 });
 
-test("administration choice and browser history dismiss an open account dropdown", async ({
+test("workspace management and browser history dismiss an open account dropdown", async ({
   browser,
 }) => {
   const f = await fixture(
@@ -136,9 +136,9 @@ test("administration choice and browser history dismiss an open account dropdown
     const trigger = menu.locator("summary");
     await trigger.click();
     await menu
-      .getByRole("link", { name: "Group administration", exact: true })
+      .getByRole("link", { name: "Manage workspaces", exact: true })
       .click();
-    await expect(page).toHaveURL(/\/workbench\/admin$/);
+    await expect(page).toHaveURL(/\/workbench\/workspaces$/);
     await expect(menu).toHaveJSProperty("open", false);
     await trigger.click();
     await page.goBack();

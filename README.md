@@ -34,8 +34,8 @@ tested workflows from remaining device, accessibility and provider checks.
   one place. Switch between List, Board, Calendar, Gantt and Workload; preview
   dependency-aware schedule changes before applying them, with guarded Undo.
   See [workspace planning](docs/WORKSPACE_PLANNING.md).
-- **Work as a group.** Invitations, roles, personal and shared workspaces, resource
-  tabs, Explorer drag/move/copy, immutable file versions, Audit and independent
+- **Work as a group.** Invitations, roles, personal and shared workspaces, a compact
+  context toolbar with pinned recent work, Explorer drag/move/copy, immutable file versions, Audit and independent
   workspace Trash. Group administration stays separate from workspace settings.
 - **Make it yours.** Semantic light/dark themes, Paper Research and Technical Slate
   packs, separate reading/interface/code typography, device overrides and a live
@@ -96,9 +96,11 @@ Development output uses `.next/dev-8080`, separate from `AXIOM_DIST_DIR` product
 builds. Editor rollback requires an explicit `NEXT_PUBLIC_AXIOM_EDITOR_ENGINE=native`
 and a new build.
 
-All file types open directly in resource tabs under `/workbench`: notes, Canvas,
+All file types open directly under `/workbench`: notes, Canvas,
 math, images, text and media/document views. Explorer's New menu creates them
 together. There is no separate Tools landing or creation tab; old links redirect.
+Back/Forward traverses pages; Recent work restores views without a tab strip.
+Use `⌘/Ctrl K` for search and commands, or `⌘/Ctrl Alt R` for Recent work.
 See [file-first navigation](docs/FILE_WORKBENCH.md).
 
 ## Deployment

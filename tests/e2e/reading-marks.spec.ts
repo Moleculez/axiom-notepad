@@ -664,11 +664,11 @@ test("floating rich cards respect dark appearance, square corners and no shadows
         .filter({ hasText: "Draft saved on this device" }),
     ).toBeVisible();
     await f.page
-      .getByRole("button", { name: "New application tab", exact: true })
+      .getByRole("link", { name: "Open inbox", exact: true })
       .click();
     await expect(f.page.locator("[data-annotation-card]")).toHaveCount(0);
     await f.page
-      .getByRole("tab", { name: "Native editor study", exact: true })
+      .getByRole("button", { name: "Go back", exact: true })
       .click();
     await f.page
       .getByRole("button", { name: "bookmarks panel", exact: true })

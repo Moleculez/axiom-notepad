@@ -53,7 +53,7 @@ for (const kind of ["math", "image", "canvas", "text"])
       JSON.parse(
         localStorage.getItem(
           Object.keys(localStorage).find((k) =>
-            k.startsWith("axiom:application-tabs:"),
+            k.startsWith("axiom:workspace-sessions:"),
           )!,
         )!,
       ),
@@ -67,16 +67,20 @@ for (const kind of ["math", "image", "canvas", "text"])
       JSON.parse(
         localStorage.getItem(
           Object.keys(localStorage).find((k) =>
-            k.startsWith("axiom:application-tabs:"),
+            k.startsWith("axiom:workspace-sessions:"),
           )!,
         )!,
       ),
     );
-    expect(after.tabs.length).toBeLessThanOrEqual(before.tabs.length + 1);
-    const tab = after.tabs.find((t: any) => t.id === after.active);
-    expect(tab.path).not.toContain("/new");
+    expect(after.sessions.length).toBeLessThanOrEqual(
+      before.sessions.length + 1,
+    );
+    const current = after.sessions.at(-1);
+    expect(current.path).not.toContain("/new");
     expect(
-      tab.history.some((p: string) => p.includes(`/tools/${kind}/new`)),
+      after.sessions.some((item: any) =>
+        item.path.includes(`/tools/${kind}/new`),
+      ),
     ).toBe(false);
     await expect(
       page.getByRole("heading", { name: new RegExp(`New ${kind}`) }),

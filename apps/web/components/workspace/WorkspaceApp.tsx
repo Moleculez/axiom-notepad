@@ -3,6 +3,7 @@ import BrandMark from "../BrandMark";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ChevronDown,
+  Bell,
   LogOut,
   Menu,
   Palette,
@@ -12,7 +13,7 @@ import {
   Users,
   X,
 } from "lucide-react";
-import type { Resource, ResourcePage, Space } from "@axiom/shared/workspace";
+import type { Resource, Space } from "@axiom/shared/workspace";
 import {
   api,
   cacheAvailable,
@@ -31,16 +32,18 @@ import {
 } from "../../lib/offline-files";
 import Dialog, { DialogFocusBoundary } from "../Dialog";
 import WorkspaceSidebar from "./WorkspaceSidebar";
+import WorkspaceSearch from "./WorkspaceSearch";
 import Avatar from "./Avatar";
 import { pendingInvitation } from "../../lib/pending-invitation";
 import {
-  ApplicationTabsContext,
-  useApplicationTabs,
-} from "../../lib/application-tabs";
-import ApplicationTabs, {
-  LocationToolbar,
-  NewApplicationTab,
-} from "./ApplicationTabs";
+  WorkspaceSessionsContext,
+  useWorkspaceSessions,
+} from "../../lib/workspace-sessions";
+import {
+  WorkspaceLocation,
+  WorkspaceLauncher,
+  WorkspaceStatus,
+} from "./WorkspaceToolbar";
 import { ManagementProvider } from "./ManagementActions";
 import { FileCreationHost } from "./NewFileDialog";
 import VisualViewerHost from "../VisualViewerHost";
@@ -79,7 +82,6 @@ import {
   ErrorNotice,
   go,
   Loading,
-  ResourceIcon,
   type Session,
   type OpenResource,
   useData,
@@ -107,17 +109,12 @@ export default function WorkspaceApp() {
     page = parts[0] || "home",
     sessionRef = useRef(session);
   sessionRef.current = session;
-  const applicationTabs = useApplicationTabs(session?.user.id, setNotice);
+  const workSessions = useWorkspaceSessions(session?.user.id, setNotice);
   const [settingsVisit, setSettingsVisit] = useState<string | null>(null);
   useEffect(() => {
     if (page === "settings" && session) setSettingsVisit(session.user.id);
-    else if (
-      !applicationTabs.state.tabs.some((tab) =>
-        tab.path.startsWith("/settings"),
-      )
-    )
-      setSettingsVisit(null);
-  }, [page, session, applicationTabs.state.tabs]);
+    else if (!session) setSettingsVisit(null);
+  }, [page, session]);
   const refresh = useCallback(() => setRevision((value) => value + 1), []),
     data = useData<Space[]>(session ? "spaces" : null, revision),
     [cachedSpaces, setCachedSpaces] = useState<Space[]>([]),
@@ -510,7 +507,7 @@ export default function WorkspaceApp() {
         notify: setNotice,
       }}
     >
-      <ApplicationTabsContext.Provider value={applicationTabs}>
+      <WorkspaceSessionsContext.Provider value={workSessions}>
         <DialogFocusBoundary
           className={`ws-app ${sidebar ? "sidebar-open" : ""}`}
         >
@@ -541,16 +538,27 @@ export default function WorkspaceApp() {
                   </span>
                 </WorkspaceLink>
               </div>
-              <ApplicationTabs />
+              <WorkspaceLocation />
+              <button
+                className="workspace-command-trigger"
+                aria-label="Search workspace"
+                title="Search & commands · ⌘/Ctrl K"
+                onClick={() => setSearchOpen(true)}
+              >
+                <Search size={16} />
+                <span>Search & commands</span>
+                <kbd>⌘/Ctrl K</kbd>
+              </button>
               <div className="ws-app-tools">
-                <button
+                <WorkspaceStatus offline={offline} />
+                <WorkspaceLink
                   className="icon-button"
-                  aria-label="Search workspace"
-                  title="Search · ⌘/Ctrl K"
-                  onClick={() => setSearchOpen(true)}
+                  to="/inbox"
+                  aria-label="Open inbox"
+                  title="Inbox · Mentions and reviews"
                 >
-                  <Search size={19} />
-                </button>
+                  <Bell size={18} />
+                </WorkspaceLink>
                 <button
                   className="icon-button"
                   aria-label="File transfers"
@@ -609,7 +617,6 @@ export default function WorkspaceApp() {
                 </details>
               </div>
             </header>
-            <LocationToolbar />
             {offline && (
               <div className="ws-offline" role="status">
                 Offline · Open cached notes remain available. File management
@@ -640,7 +647,7 @@ export default function WorkspaceApp() {
                       </button>
                     </div>
                     <div className="ws-sidebar-scroll">
-                      <WorkspaceSidebar />
+                      <WorkspaceSidebar key={session.user.id} />
                     </div>
                   </aside>
                 </>
@@ -656,31 +663,27 @@ export default function WorkspaceApp() {
                         : undefined
                   }
                 />
-                {(page === "settings" ||
-                  (settingsVisit === session.user.id &&
-                    applicationTabs.state.tabs.some((tab) =>
-                      tab.path.startsWith("/settings"),
-                    ))) && (
+                {(page === "settings" || settingsVisit === session.user.id) && (
                   <SettingsPage
                     active={page === "settings"}
                     section={
                       page === "settings"
                         ? parts[1]
-                        : applicationTabs.state.tabs
+                        : workSessions.state.sessions
                             .find((tab) => tab.path.startsWith("/settings"))
                             ?.path.split(/[/?]/)[2]
                     }
                   />
                 )}
                 {page === "settings" ? null : page === "new" ? (
-                  <NewApplicationTab />
+                  <WorkspaceLauncher />
                 ) : workbench ? (
                   <Workbench
                     key={session.user.id}
                     resource={{
                       kind: page === "notes" ? "note" : "file",
                       id: parts[1],
-                      viewId: applicationTabs.state.active,
+                      viewId: workSessions.state.active,
                       versionId: params.get("version") ?? undefined,
                       route:
                         location.pathname.slice(BASE.length) +
@@ -779,76 +782,7 @@ export default function WorkspaceApp() {
             )}
           </ManagementProvider>
         </DialogFocusBoundary>
-      </ApplicationTabsContext.Provider>
+      </WorkspaceSessionsContext.Provider>
     </WorkspaceContext.Provider>
   );
 }
-function WorkspaceSearch({ onClose }: { onClose: () => void }) {
-  const [query, setQuery] = useState(""),
-    [debounced, setDebounced] = useState(""),
-    { revision, open, navigate } = useWorkspaceForSearch();
-  useEffect(() => {
-    const timer = setTimeout(() => setDebounced(query), 200);
-    return () => clearTimeout(timer);
-  }, [query]);
-  const data = useData<ResourcePage>(
-    debounced.trim()
-      ? `resources?view=all&q=${encodeURIComponent(debounced)}&limit=30`
-      : null,
-    revision,
-  );
-  return (
-    <Dialog
-      title="Find something worth revisiting"
-      size="wide"
-      onClose={onClose}
-    >
-      <label className="ws-search-field">
-        <Search size={19} />
-        <input
-          autoFocus
-          aria-label="Global search"
-          placeholder="Search notes, folders, files, and tags…"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-        />
-      </label>
-      <ErrorNotice message={data.error} retry={data.reload} />
-      <div className="ws-search-results">
-        {data.loading ? (
-          <Loading label="Searching authorized spaces…" />
-        ) : (
-          data.data?.items.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => {
-                onClose();
-                if (item.kind === "folder")
-                  navigate(
-                    `/explorer?space=${item.space_id}&folder=${item.id}`,
-                  );
-                else open(item);
-              }}
-            >
-              <ResourceIcon resource={item} />
-              <span>
-                <strong>{item.name}</strong>
-                <small>
-                  {item.kind} · {item.tags.join(", ")}
-                </small>
-              </span>
-            </button>
-          ))
-        )}
-        {debounced && !data.loading && data.data?.items.length === 0 && (
-          <p className="muted">No matching work in your authorized spaces.</p>
-        )}
-      </div>
-      <p className="ws-small muted">
-        Search never reveals another person’s personal space or a restricted
-        project you haven’t joined.
-      </p>
-    </Dialog>
-  );
-}
-import { useWorkspace as useWorkspaceForSearch } from "./ui";

@@ -202,7 +202,7 @@ for (const mode of ["light", "dark"] as const)
         "Reference destination.",
       );
       await f.page
-        .getByRole("tab", { name: "Native editor study", exact: true })
+        .getByRole("button", { name: "Go back", exact: true })
         .click();
       await expect(f.page).toHaveURL(
         new RegExp(`/workbench/notes/${f.note.id}`),
