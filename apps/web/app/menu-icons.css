@@ -30,15 +30,21 @@
   overflow-wrap: anywhere;
 }
 .editor-context-menu {
-  width: 22em;
+  width: 18em;
   max-width: calc(100vw - 24px);
 }
 .editor-context-menu button {
   display: grid;
   grid-template-columns: 1.15em minmax(0, 1fr) auto;
-  gap: 0.75em;
-  min-height: 2.5em;
+  gap: 0.65em;
+  min-height: 2.2em;
   align-items: center;
+}
+.editor-context-menu > button > .action-icon {
+  color: var(--muted);
+}
+.editor-context-menu > button[data-tone="danger"] > .action-icon {
+  color: inherit;
 }
 .editor-menu-group {
   padding-inline-start: calc(9px + var(--size-ui) * 1.65);

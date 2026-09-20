@@ -10,6 +10,8 @@ import { integrationMigration } from "./integration-migration";
 import { readingMarksMigration } from "./reading-marks-migration";
 import { visualAnnotationsMigration } from "./visual-annotations-migration";
 import { revisionMigration } from "./revision-migration";
+import { pdfWorkbenchMigration } from "./pdf-workbench-migration";
+import { pdfOcrMigration } from "./pdf-ocr-migration";
 export const migration = `
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 CREATE TABLE IF NOT EXISTS "user" (id text PRIMARY KEY, name text NOT NULL, email text NOT NULL UNIQUE, email_verified boolean NOT NULL DEFAULT false, image text, created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now());
@@ -234,6 +236,12 @@ INSERT INTO app_instance(singleton,setup_completed_at) SELECT true,CASE WHEN EXI
     name: "unified-workspaces-and-planning",
     sql: unifiedWorkspacesMigration,
   },
+  {
+    version: 26,
+    name: "pdf-workbench-safety-and-threads",
+    sql: pdfWorkbenchMigration,
+  },
+  { version: 27, name: "private-durable-pdf-ocr", sql: pdfOcrMigration },
 ];
 import { unifiedWorkspacesMigration } from "./unified-workspaces-migration";
 import { revisionUndoRetentionMigration } from "./revision-undo-retention-migration";

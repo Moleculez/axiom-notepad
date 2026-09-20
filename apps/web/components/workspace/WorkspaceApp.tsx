@@ -295,6 +295,7 @@ export default function WorkspaceApp() {
     };
     events.onmessage = (event) => {
       refresh();
+      window.dispatchEvent(new Event("axiom:workspace-invalidated"));
       try {
         if (JSON.parse(event.data).access) void loadSession();
       } catch {

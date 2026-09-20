@@ -98,6 +98,33 @@ export function environmentErrors(env: NodeJS.ProcessEnv) {
     errors.push(
       "Office conversion requires both a private service URL and a secret token.",
     );
+  if (!!env.PDF_OCR_URL !== !!env.PDF_OCR_TOKEN)
+    errors.push("Self-hosted OCR requires both PDF_OCR_URL and PDF_OCR_TOKEN.");
+  if (env.PDF_OCR_TOKEN && env.PDF_OCR_TOKEN.length < 32)
+    errors.push("PDF_OCR_TOKEN must contain at least 32 random characters.");
+  if (env.PDF_RESEARCH_OCR_URL && !env.PDF_OCR_URL)
+    errors.push(
+      "Equation-aware OCR requires the standard PDF OCR service too.",
+    );
+  for (const key of ["PDF_OCR_URL", "PDF_RESEARCH_OCR_URL"]) {
+    if (!env[key]) continue;
+    try {
+      const value = new URL(env[key]!);
+      if (
+        !["http:", "https:"].includes(value.protocol) ||
+        value.username ||
+        value.password ||
+        value.search ||
+        value.hash ||
+        value.pathname !== "/"
+      )
+        errors.push(
+          `${key} must be a private HTTP(S) service origin without credentials or a path.`,
+        );
+    } catch {
+      errors.push(`${key} must be a valid private service origin.`);
+    }
+  }
   if (
     env.TOOL_PROVIDER_KEY &&
     !/^[A-Za-z0-9+/]{43}=$/.test(env.TOOL_PROVIDER_KEY)

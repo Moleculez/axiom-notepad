@@ -1,12 +1,9 @@
 import { randomUUID, createHash } from "node:crypto";
+import { isDeepStrictEqual } from "node:util";
 import { z } from "zod";
 import { query, transaction } from "./db";
 import { fileAccess, HttpError, resourceAccess, spaceAccess } from "./access";
-import {
-  MAX_FILE_BYTES,
-  UPLOAD_CHUNK_BYTES,
-  resourceNameSchema,
-} from "./workspace";
+import { UPLOAD_CHUNK_BYTES, resourceNameSchema } from "./workspace";
 import {
   workspaceJson as json,
   requireScope,
@@ -24,6 +21,9 @@ import {
   detectStoredMime,
 } from "./storage-streams";
 import { notifyWorkspace } from "./documents";
+import { uploadInputSchema, uploadHeadMatches } from "./upload-contract";
+import { mapPdfAnnotation } from "./pdf-annotations";
+import type { Annotation } from "./research";
 
 const uuid = z.uuid();
 type Upload = {
@@ -40,6 +40,11 @@ type Upload = {
   sha256: string | null;
   completed_resource_id: string | null;
   expires_at: Date;
+  error?: string;
+  expected_version_id: string | null;
+  expected_resource_version: number | null;
+  provenance:
+    import("zod").infer<typeof uploadInputSchema>["provenance"] | null;
 };
 async function uploadAccess(userId: string, id: string) {
   const [upload] = await query<Upload>(
@@ -74,7 +79,7 @@ export async function reserveCapacity(
     const {
       rows: [usage],
     } = await client.query(
-      `SELECT (SELECT coalesce(sum(a.bytes),0) FROM attachments a JOIN file_versions v ON v.id=a.id JOIN resources r ON r.id=v.resource_id JOIN spaces s ON s.id=r.space_id WHERE CASE WHEN $2::uuid IS NULL THEN s.id=$1::uuid ELSE s.group_id=$2 END)+(SELECT coalesce(sum(d.bytes),0) FROM file_derivatives d JOIN file_versions v ON v.id=d.version_id JOIN resources r ON r.id=v.resource_id JOIN spaces s ON s.id=r.space_id WHERE CASE WHEN $2::uuid IS NULL THEN s.id=$1::uuid ELSE s.group_id=$2 END)+(SELECT coalesce(sum(u.bytes),0) FROM upload_sessions u JOIN spaces s ON s.id=u.space_id WHERE u.status IN ('uploading','verifying','failed') AND u.expires_at>now() AND u.id IS DISTINCT FROM $3::uuid AND CASE WHEN $2::uuid IS NULL THEN s.id=$1::uuid ELSE s.group_id=$2 END)+(SELECT coalesce(sum(a.bytes),0) FROM image_draft_assets a JOIN resources r ON r.id=a.resource_id JOIN spaces s ON s.id=r.space_id WHERE CASE WHEN $2::uuid IS NULL THEN s.id=$1::uuid ELSE s.group_id=$2 END) AS bytes`,
+      `SELECT (SELECT coalesce(sum(a.bytes),0) FROM attachments a JOIN file_versions v ON v.id=a.id JOIN resources r ON r.id=v.resource_id JOIN spaces s ON s.id=r.space_id WHERE CASE WHEN $2::uuid IS NULL THEN s.id=$1::uuid ELSE s.group_id=$2 END)+(SELECT coalesce(sum(d.bytes),0) FROM file_derivatives d JOIN file_versions v ON v.id=d.version_id JOIN resources r ON r.id=v.resource_id JOIN spaces s ON s.id=r.space_id WHERE CASE WHEN $2::uuid IS NULL THEN s.id=$1::uuid ELSE s.group_id=$2 END)+(SELECT coalesce(sum(u.bytes),0) FROM upload_sessions u JOIN spaces s ON s.id=u.space_id WHERE u.status IN ('uploading','verifying','failed') AND u.expires_at>now() AND u.id IS DISTINCT FROM $3::uuid AND CASE WHEN $2::uuid IS NULL THEN s.id=$1::uuid ELSE s.group_id=$2 END)+(SELECT coalesce(sum(j.output_bytes+j.text_bytes),0) FROM pdf_ocr_jobs j JOIN file_versions v ON v.id=j.version_id JOIN resources r ON r.id=v.resource_id JOIN spaces s ON s.id=r.space_id WHERE CASE WHEN $2::uuid IS NULL THEN s.id=$1::uuid ELSE s.group_id=$2 END)+(SELECT coalesce(sum(a.bytes),0) FROM image_draft_assets a JOIN resources r ON r.id=a.resource_id JOIN spaces s ON s.id=r.space_id WHERE CASE WHEN $2::uuid IS NULL THEN s.id=$1::uuid ELSE s.group_id=$2 END) AS bytes`,
       [spaceId, scope.group_id, excludeUploadId],
     );
     if (Number(usage.bytes) + newBytes > Number(budget.quota_bytes))
@@ -108,25 +113,12 @@ export async function uploadsApi(
   if (endpoint === "uploads" && !id && method === "GET")
     return json(
       await query(
-        "SELECT u.id,u.space_id,u.parent_id,u.resource_id,u.name,u.bytes,u.status,u.error,u.completed_resource_id,u.created_at,u.expires_at,coalesce((SELECT sum(c.bytes) FROM upload_chunks c WHERE c.upload_id=u.id),0) AS received FROM upload_sessions u WHERE u.owner_id=$1 AND axiom_space_role($1,u.space_id)='editor' ORDER BY u.created_at DESC LIMIT 100",
+        "SELECT u.id,u.space_id,u.parent_id,u.resource_id,u.expected_version_id,u.expected_resource_version,u.name,u.bytes,u.status,u.error,u.completed_resource_id,u.created_at,u.expires_at,coalesce((SELECT sum(c.bytes) FROM upload_chunks c WHERE c.upload_id=u.id),0) AS received FROM upload_sessions u WHERE u.owner_id=$1 AND axiom_space_role($1,u.space_id)='editor' ORDER BY u.created_at DESC LIMIT 100",
         [userId],
       ),
     );
   if (endpoint === "uploads" && !id && method === "POST") {
-    const input = z
-      .object({
-        id: uuid,
-        spaceId: uuid,
-        parentId: uuid.nullable().default(null),
-        resourceId: uuid.nullable().default(null),
-        name: resourceNameSchema,
-        bytes: z.number().int().min(1).max(MAX_FILE_BYTES),
-        sha256: z
-          .string()
-          .regex(/^[a-f0-9]{64}$/)
-          .optional(),
-      })
-      .parse(await request.json());
+    const input = uploadInputSchema.parse(await request.json());
     await spaceAccess(userId, input.spaceId, "edit");
     const result = await transaction(async (client) => {
       await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [
@@ -144,6 +136,13 @@ export async function uploadsApi(
           existing.space_id !== input.spaceId ||
           existing.parent_id !== input.parentId ||
           existing.resource_id !== input.resourceId ||
+          existing.expected_version_id !== (input.expectedVersionId ?? null) ||
+          existing.expected_resource_version !==
+            (input.expectedResourceVersion ?? null) ||
+          !isDeepStrictEqual(
+            existing.provenance ?? null,
+            input.provenance ?? null,
+          ) ||
           existing.name !== input.name ||
           Number(existing.bytes) !== input.bytes ||
           (input.sha256 && existing.sha256 !== input.sha256)
@@ -173,13 +172,40 @@ export async function uploadsApi(
         );
         if (resource.space_id !== input.spaceId || resource.kind !== "file")
           throw new HttpError(400, "Choose a file in this space to replace.");
+        if (
+          !uploadHeadMatches(
+            {
+              expected_version_id: input.expectedVersionId!,
+              expected_resource_version: input.expectedResourceVersion!,
+            },
+            resource,
+          )
+        )
+          throw new HttpError(
+            409,
+            "This file changed. Refresh it or save a separate copy.",
+          );
+      }
+      if (input.provenance) {
+        const { file } = await fileAccess(
+          userId,
+          input.provenance.sourceVersionId,
+        );
+        if (
+          file.sha256 !== input.provenance.sourceSha256 ||
+          file.mime !== "application/pdf"
+        )
+          throw new HttpError(
+            409,
+            "The source PDF no longer matches this output.",
+          );
       }
       const key = randomUUID(),
         multipartId = await startMultipart(key, input.id);
       const {
         rows: [upload],
       } = await client.query<Upload>(
-        "INSERT INTO upload_sessions(id,owner_id,space_id,parent_id,resource_id,name,bytes,storage_key,multipart_id,sha256) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *",
+        "INSERT INTO upload_sessions(id,owner_id,space_id,parent_id,resource_id,name,bytes,storage_key,multipart_id,sha256,expected_version_id,expected_resource_version,provenance) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *",
         [
           input.id,
           userId,
@@ -191,6 +217,9 @@ export async function uploadsApi(
           key,
           multipartId,
           input.sha256 ?? null,
+          input.expectedVersionId ?? null,
+          input.expectedResourceVersion ?? null,
+          input.provenance ?? null,
         ],
       );
       return upload;
@@ -217,11 +246,56 @@ export async function uploadsApi(
         name: upload.name,
         bytes: upload.bytes,
         status: upload.status,
+        error: upload.error,
         resourceId: upload.completed_resource_id,
         expiresAt: upload.expires_at,
         chunkBytes: UPLOAD_CHUNK_BYTES,
         chunks,
       });
+    }
+    if (action === "save-copy" && method === "POST") {
+      const input = z
+        .object({
+          name: resourceNameSchema,
+          parentId: uuid.nullable().default(null),
+        })
+        .strict()
+        .parse(await request.json());
+      await transaction(async (client) => {
+        await requireScope(client, userId, upload.space_id, "edit");
+        const {
+          rows: [current],
+        } = await client.query<Upload>(
+          "SELECT * FROM upload_sessions WHERE id=$1 FOR UPDATE",
+          [id],
+        );
+        if (current.status === "complete" && !current.resource_id) return;
+        if (
+          current.status !== "failed" ||
+          !current.resource_id ||
+          new Date(current.expires_at).valueOf() <= Date.now()
+        )
+          throw new HttpError(
+            409,
+            "Only a failed replacement can be recovered as a copy.",
+          );
+        if (input.parentId) {
+          const {
+            rows: [parent],
+          } = await client.query(
+            "SELECT * FROM resources WHERE id=$1 AND space_id=$2 AND deleted_at IS NULL AND kind<>'file' FOR SHARE",
+            [input.parentId, upload.space_id],
+          );
+          if (!parent)
+            throw new HttpError(404, "Destination folder unavailable.");
+        }
+        await client.query(
+          "UPDATE upload_sessions SET resource_id=NULL,expected_version_id=NULL,expected_resource_version=NULL,parent_id=$2,name=$3,status='verifying',error=NULL,updated_at=now() WHERE id=$1",
+          [id, input.parentId, input.name],
+        );
+        await enqueueJob("complete-upload", "upload:" + id, { id }, client);
+      });
+      return json({ status: "verifying" }, 202);
     }
     if (action === "chunks" && method === "PUT") {
       const part = z.coerce
@@ -468,7 +542,25 @@ export async function finishUpload(id: string) {
         throw new Error(
           "The destination file moved or was deleted. Choose a new destination.",
         );
+      if (!uploadHeadMatches(current, target))
+        throw new HttpError(
+          409,
+          "This file changed during upload. Your prepared file is retained; save it as a copy instead.",
+        );
     } else {
+      if (current.parent_id) {
+        const {
+          rows: [parent],
+        } = await client.query(
+          "SELECT id FROM resources WHERE id=$1 AND space_id=$2 AND deleted_at IS NULL AND kind<>'file' FOR SHARE",
+          [current.parent_id, current.space_id],
+        );
+        if (!parent)
+          throw new HttpError(
+            409,
+            "The destination folder moved or was deleted. Your original is unchanged.",
+          );
+      }
       resourceId = randomUUID();
       await client.query(
         "INSERT INTO resources(id,space_id,parent_id,kind,name,owner_id) VALUES($1,$2,$3,'file',$4,$5)",
@@ -501,6 +593,84 @@ export async function finishUpload(id: string) {
       "UPDATE resources SET current_version_id=$2,version=version+1,updated_at=now() WHERE id=$1",
       [resourceId, versionId],
     );
+    if (current.provenance) {
+      const { file, resource: sourceResource } = await fileAccess(
+        current.owner_id,
+        current.provenance.sourceVersionId,
+      );
+      await requireScope(
+        client,
+        current.owner_id,
+        sourceResource.space_id,
+        "read",
+      );
+      const {
+        rows: [liveSource],
+      } = await client.query(
+        "SELECT id FROM resources WHERE id=$1 AND space_id=$2 AND deleted_at IS NULL FOR SHARE",
+        [sourceResource.id, sourceResource.space_id],
+      );
+      if (!liveSource)
+        throw new HttpError(
+          409,
+          "The source PDF moved or was deleted before saving.",
+        );
+      if (file.sha256 !== current.provenance.sourceSha256)
+        throw new HttpError(409, "Source PDF mismatch.");
+      await client.query(
+        "INSERT INTO file_provenance(version_id,source_version_id,operation,created_by) VALUES($1,$2,$3,$4)",
+        [versionId, file.id, current.provenance, current.owner_id],
+      );
+      let copied = 0;
+      for (const mark of current.provenance.annotations) {
+        const {
+          rows: [source],
+        } = await client.query<Annotation>(
+          'SELECT a.*,u.name AS author_name FROM paper_annotations a JOIN "user" u ON u.id=a.author_id WHERE a.id=$1 AND a.attachment_id=$2 AND NOT a.deleted AND (a.author_id=$3 OR a.shared) FOR SHARE OF a',
+          [mark.id, file.id, current.owner_id],
+        );
+        if (!source || source.version !== mark.version)
+          throw new HttpError(
+            409,
+            "An annotation changed while preparing the copy. Review the mapping again.",
+          );
+        const mapped = current.provenance.pages
+          ? mapPdfAnnotation(
+              source.data,
+              current.provenance.pages,
+              verified.sha256,
+            )
+          : { data: [{ ...source.data, sha256: verified.sha256 }], omitted: 0 };
+        if (mapped.omitted && !current.provenance.acknowledgeOmissions)
+          throw new HttpError(
+            409,
+            "Confirm omitted annotation pages before saving.",
+          );
+        for (const data of mapped.data) {
+          if (++copied > 2000)
+            throw new HttpError(
+              413,
+              "Mapping exceeds 2,000 annotations. Select fewer annotations or duplicate fewer pages.",
+            );
+          await client.query(
+            "INSERT INTO paper_annotations(id,attachment_id,author_id,data,shared,mutation_id) VALUES($1,$2,$3,$4,false,$5)",
+            [
+              randomUUID(),
+              versionId,
+              current.owner_id,
+              {
+                ...data,
+                imported: {
+                  sourceId: `axiom:${file.id}:${source.id}`,
+                  author: source.author_name ?? source.author_id,
+                },
+              },
+              randomUUID(),
+            ],
+          );
+        }
+      }
+    }
     await client.query(
       "UPDATE upload_sessions SET status='complete',completed_resource_id=$2,sha256=$3,error=NULL,updated_at=now() WHERE id=$1",
       [id, resourceId, verified.sha256],

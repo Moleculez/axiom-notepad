@@ -1,22 +1,7 @@
 import { claimEditorOverlay } from "./editor-popover";
-import {
-  actionIcon,
-  appendActionLabel,
-  type ActionIconName,
-} from "./icons/actions";
-export type ContextAction = {
-  id?: string;
-  label: string;
-  icon: ActionIconName;
-  action: () => void;
-  children?: ContextAction[];
-  disabled?: boolean;
-  checked?: boolean;
-  shortcut?: string;
-  group?: string;
-  tone?: "danger";
-  disabledReason?: string;
-};
+import { actionIcon, appendActionLabel } from "./icons/actions";
+import { compactMenu, type ContextAction, type MenuEntry } from "./menu-model";
+export type { ContextAction, MenuEntry } from "./menu-model";
 /** One overlay owns every submenu: opening a child must never dismiss its parent. */
 export function openContextMenu({
   owner,
@@ -101,7 +86,7 @@ export function openContextMenu({
       Math.max(12, Math.min(py, height - box.height - 12)) + "px";
   };
   const build = (
-    actions: ContextAction[],
+    actions: MenuEntry[],
     depth: number,
     trigger?: HTMLButtonElement,
   ) => {
@@ -119,21 +104,13 @@ export function openContextMenu({
           ":scope > button:not(:disabled)",
         ),
       );
-    let group = "";
     for (const item of actions) {
-      if (item.group && item.group !== group) {
-        if (menu.childElementCount) {
-          const divider = document.createElement("div");
-          divider.className = "action-menu-separator";
-          divider.setAttribute("role", "separator");
-          menu.append(divider);
-        }
-        const heading = document.createElement("div");
-        heading.className = "editor-menu-group";
-        heading.setAttribute("role", "presentation");
-        heading.textContent = item.group;
-        menu.append(heading);
-        group = item.group;
+      if (item.kind === "separator") {
+        const divider = document.createElement("div");
+        divider.className = "action-menu-separator";
+        divider.setAttribute("role", "separator");
+        menu.append(divider);
+        continue;
       }
       const button = document.createElement("button");
       button.type = "button";
@@ -152,7 +129,11 @@ export function openContextMenu({
         button.setAttribute("aria-description", item.disabledReason);
       }
       appendActionLabel(button, item.icon, item.label);
-      if (item.shortcut || item.checked !== undefined || item.children) {
+      if (
+        item.shortcut ||
+        item.checked !== undefined ||
+        item.kind === "submenu"
+      ) {
         const trailing = document.createElement("span");
         trailing.className = "action-trailing";
         if (item.shortcut) {
@@ -161,7 +142,7 @@ export function openContextMenu({
           trailing.append(hint);
         }
         if (item.checked) trailing.append(actionIcon("check"));
-        if (item.children) {
+        if (item.kind === "submenu") {
           trailing.append(actionIcon("chevronRight"));
           button.setAttribute("aria-haspopup", "menu");
           button.setAttribute("aria-expanded", "false");
@@ -169,7 +150,7 @@ export function openContextMenu({
         button.append(trailing);
       }
       const child = (focus = false) => {
-        if (!item.children || button.disabled) return;
+        if (item.kind !== "submenu" || button.disabled) return;
         if (panels[depth + 1]?.trigger !== button)
           build(item.children, depth + 1, button);
         if (focus)
@@ -179,18 +160,18 @@ export function openContextMenu({
       };
       button.addEventListener("pointerenter", () => {
         clearTimeout(hover);
-        if (item.children) hover = setTimeout(() => child(), 160);
+        if (item.kind === "submenu") hover = setTimeout(() => child(), 180);
         else hover = setTimeout(() => removeAfter(depth + 1), 220);
       });
       button.addEventListener("keydown", (e) => {
-        if (e.key === "ArrowRight" && item.children) {
+        if (e.key === "ArrowRight" && item.kind === "submenu") {
           e.preventDefault();
           e.stopPropagation();
           child(true);
         }
       });
       button.addEventListener("click", () => {
-        if (item.children) child(true);
+        if (item.kind === "submenu") child(true);
         else {
           close(true);
           if (owner.isConnected) item.action();
@@ -218,6 +199,7 @@ export function openContextMenu({
       }
       const buttons = enabled(),
         current = buttons.indexOf(document.activeElement as HTMLButtonElement);
+      if (!buttons.length) return;
       let index = current;
       if (event.key === "ArrowDown") index = (current + 1) % buttons.length;
       else if (event.key === "ArrowUp")
@@ -250,7 +232,7 @@ export function openContextMenu({
     if (menu.hasAttribute("popover")) menu.showPopover();
     place(depth);
   };
-  build(items, 0);
+  build(compactMenu(items), 0);
   panels[0]?.element
     .querySelector<HTMLButtonElement>("button:not(:disabled)")
     ?.focus({ preventScroll: true });

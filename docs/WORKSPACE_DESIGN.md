@@ -35,9 +35,9 @@ competing with the research document.
   fallbacks for every language. Logos supplement text, never determine behavior;
   use neutral backing for contrast and semantic glyphs in forced-colors mode.
 
-- One application tab strip, one location toolbar, one contextual sidebar.
+- One contextual application toolbar with breadcrumbs and recent work, one sidebar.
   Browser-reserved Command/Ctrl T and W remain browser commands.
-- Tab metadata does not imply a running editor. Only visible document panes
+- Recent-work metadata does not imply a running editor. Only visible document panes
   mount editing surfaces; at most two panes are active. Settings shares one draft.
 - Explorer uses click to select, Shift for ranges, Command/Ctrl for additive
   selection, double-click/Enter to open and Space for quick preview.

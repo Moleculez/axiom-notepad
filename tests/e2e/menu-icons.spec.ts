@@ -6,7 +6,7 @@ test("file, folder, workspace and Trash menus have semantic icons and separated 
   browser,
 }, info) => {
   // This acceptance creates disposable resources; never use the live dev data.
-  expect(new URL(origin).port).toBe("3002");
+  expect(new URL(origin).port).toBe("3004");
   const f = await fixture(browser, "Menu presentation must not change notes.");
   const { page } = f;
   const api = async (path: string, data?: unknown) => {
@@ -22,6 +22,8 @@ test("file, folder, workspace and Trash menus have semantic icons and separated 
     await expect(menu).toBeVisible();
     const items = menu.locator('button[role^="menuitem"]');
     expect(await items.count()).toBeGreaterThan(0);
+    expect(await items.count()).toBeLessThanOrEqual(8);
+    await expect(menu.locator(".editor-menu-group")).toHaveCount(0);
     for (const item of await items.all()) {
       await expect(item.locator(":scope > svg.action-icon")).toHaveAttribute(
         "aria-hidden",
@@ -77,33 +79,38 @@ test("file, folder, workspace and Trash menus have semantic icons and separated 
     await expect(folderRow).toBeFocused();
     const fileRow = page.locator(`[data-resource-id="${file!.id}"]`);
     await fileRow.click({ button: "right" });
+    const rootMenu = page.getByRole("menu");
+    await rootMenu
+      .getByRole("menuitem", { name: "Details", exact: true })
+      .focus();
+    await page.keyboard.press("ArrowRight");
     await expect(
       page
         .getByRole("menuitem", { name: "Version history…", exact: true })
         .locator("svg"),
     ).toHaveAttribute("data-icon", "history");
+    await expect(page.locator('[role="menu"][data-depth="1"]')).toBeVisible();
+    await expect(page.locator('[role="menu"][data-depth="2"]')).toHaveCount(0);
+    await page.keyboard.press("ArrowLeft");
     await check(page.getByRole("menu"), "file-icons-dividers");
     await expect(fileRow).toBeFocused();
     await page
-      .getByRole("list", { name: "Spaces and folders" })
-      .locator(`a[href$="/explorer?space=${team.id}"]`)
-      .click({ button: "right" });
+      .getByRole("button", {
+        name: `Workspace actions for ${team.name}`,
+        exact: true,
+      })
+      .click();
     const menu = page.getByRole("menu");
-    const sections = await menu.evaluate((element) => {
-      const result: Record<string, string> = {};
-      let section = "";
-      for (const child of element.children) {
-        if (child.classList.contains("editor-menu-group"))
-          section = child.textContent ?? "";
-        else if (child.matches("button"))
-          result[child.querySelector(".action-label")!.textContent!] = section;
-      }
-      return result;
-    });
-    expect(sections["New project…"]).toBe("Create");
-    expect(sections.Paste).toBe("Clipboard");
-    expect(sections["Storage settings…"]).toBe("Workspace");
-    expect(sections["Leave workspace…"]).toBe("Membership");
+    await menu.getByRole("menuitem", { name: "New", exact: true }).click();
+    await expect(
+      page
+        .locator('[role="menu"][data-depth="1"]')
+        .getByRole("menuitem", { name: "New note…", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.locator('[role="menu"][data-depth="1"] [aria-haspopup="menu"]'),
+    ).toHaveCount(0);
+    await page.keyboard.press("Escape");
     await check(menu, "team-workspace-icons-dividers");
 
     await api(`resources/${folder.id}/trash`, { version: folder.version });

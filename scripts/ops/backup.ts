@@ -137,6 +137,10 @@ if (operation === "create") {
     // workspace migration. Avatars and derivatives are part of the DB/storage pair.
     const extras = [
       [
+        "pdf_ocr_jobs",
+        "SELECT output_key::text AS storage_key,'application/pdf' AS mime,output_sha256 AS sha256,output_bytes AS bytes FROM pdf_ocr_jobs WHERE output_key IS NOT NULL",
+      ],
+      [
         "image_draft_assets",
         "SELECT storage_key::text,'image/png' AS mime,sha256,bytes FROM image_draft_assets",
       ],

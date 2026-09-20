@@ -435,6 +435,12 @@ export function ManagementProvider({
       icon: id === "favorite" && first.favorite ? "starOff" : resourceIcons[id],
       label,
       disabled,
+      hidden:
+        disabled ||
+        (!single &&
+          ["open", "split", "link", "properties", "versions", "purge"].includes(
+            id,
+          )),
       group,
       shortcut,
       disabledReason:
@@ -463,9 +469,10 @@ export function ManagementProvider({
           "Permanent removal",
         ),
       ];
-    return [
+    const actions: ContextAction[] = [
       item("open", "Open", !single || !live, "Open"),
       {
+        id: "offline",
         label: "Available offline",
         icon: "download",
         disabled: !live || !navigator.onLine,
@@ -507,8 +514,10 @@ export function ManagementProvider({
         ? [
             {
               label: "Create shortcut…",
+              id: "shortcut",
               icon: "shortcut" as const,
               disabled: !edit,
+              hidden: !edit,
               action: () => setModal({ kind: "shortcut", item: first }),
             },
           ]
@@ -517,6 +526,8 @@ export function ManagementProvider({
         ? [
             {
               label: "Folder color…",
+              id: "folder-color",
+              hidden: !edit,
               icon: "palette" as const,
               action: () => setModal({ kind: "color", items }),
             },
@@ -546,6 +557,54 @@ export function ManagementProvider({
         "Delete",
       ),
     ];
+    const category = (
+      label: string,
+      icon: ActionIconName,
+      ids: string[],
+    ): ContextAction => ({
+      id: `resource:${label}`,
+      label,
+      icon,
+      action: () => {},
+      children: actions.filter((action) => ids.includes(action.id ?? "")),
+    });
+    return [
+      ...actions.filter((action) =>
+        ["open", "split", "rename"].includes(action.id ?? ""),
+      ),
+      ...(single && first.kind === "folder"
+        ? [
+            {
+              id: "resource:new",
+              label: "New",
+              icon: "plus" as ActionIconName,
+              action: () => {},
+              children: newItems({
+                spaceId: first.space_id,
+                parentId: first.id,
+              }),
+            },
+          ]
+        : []),
+      category("Organize", "folder", [
+        "cut",
+        "move",
+        "transfer",
+        "duplicate",
+        "shortcut",
+        "folder-color",
+        "favorite",
+      ]),
+      category("Copy & export", "copy", [
+        "copy",
+        "copyTo",
+        "link",
+        "export",
+        "offline",
+      ]),
+      category("Details", "info", ["versions", "properties"]),
+      ...actions.filter((action) => action.id === "trash"),
+    ];
   };
   const newItems = (
     target: Target,
@@ -561,6 +620,7 @@ export function ManagementProvider({
           icon: type.icon as ActionIconName,
           group: "Create",
           disabled: !enabled,
+          hidden: !enabled,
           action: () => setModal({ kind: "newFile", type: type.id, target }),
         };
       }),
@@ -569,6 +629,7 @@ export function ManagementProvider({
         group: "Folders & uploads",
         icon: "newFolder",
         disabled: !enabled,
+        hidden: !enabled,
         action: () =>
           setModal({ kind: "create", resourceKind: "folder", target }),
       },
@@ -576,6 +637,7 @@ export function ManagementProvider({
         label: "Upload files…",
         icon: "upload",
         disabled: !enabled,
+        hidden: !enabled,
         action: () => {
           uploadTarget.current = target;
           fileInput.current?.click();
@@ -589,6 +651,7 @@ export function ManagementProvider({
             ? "file"
             : "source") as ActionIconName,
         disabled: !enabled,
+        hidden: !enabled,
         action: () => {},
         children: fileTypes
           .filter(
@@ -627,26 +690,21 @@ export function ManagementProvider({
       disabled: ["trashed", "purging"].includes(space.effective_status),
       action: () => navigate(`/workspaces/${space.id}`),
     },
-    ...newItems(
-      { spaceId: space.id, parentId: null },
-      space.kind === "team"
-        ? [
-            {
-              label: "New workspace in group…",
-              icon: "project",
-              disabled:
-                space.role !== "editor" || space.effective_status !== "active",
-              action: () => setModal({ kind: "newProject", space }),
-            },
-          ]
-        : [],
-    ),
+    {
+      id: "workspace:new",
+      label: "New",
+      icon: "newFolder",
+      action: () => {},
+      children: newItems({ spaceId: space.id, parentId: null }),
+      hidden: space.role !== "editor" || space.effective_status !== "active",
+    },
     ...(space.kind !== "personal"
       ? [
           {
             label: "Rename workspace…",
             icon: "rename" as const,
             disabled: !space.can_manage || space.effective_status !== "active",
+            hidden: !space.can_manage || space.effective_status !== "active",
             group: "Workspace",
             action: () => setModal({ kind: "renameSpace", space }),
           },

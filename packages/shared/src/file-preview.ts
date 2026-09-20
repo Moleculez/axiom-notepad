@@ -21,6 +21,12 @@ export type FilePreviewManifest = {
   status: "ready" | "unavailable" | "queued" | "failed";
   message?: string;
   jobId?: string;
+  office?: {
+    format: "docx" | "pptx";
+    originalSource: string;
+    pdfSource?: string;
+    converterAvailable: boolean;
+  };
 };
 export const officeMimes = {
   docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",

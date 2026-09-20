@@ -4,6 +4,7 @@ const { PDFDocument, StandardFonts, PDFName, PDFString } = createRequire(
   import.meta.url,
 )("pdf-lib") as typeof import("pdf-lib");
 import { randomUUID } from "node:crypto";
+import { readFile } from "node:fs/promises";
 import { signInOwner } from "./auth";
 const origin = process.env.TEST_APP_URL;
 test.beforeAll(() => {
@@ -90,6 +91,16 @@ test("research reader navigation, search, private notes, bookmarks, split view a
   connect([0, 1, 4], outlineRoot, outlineRef);
   connect([2, 3], nodes[1], refs[1]);
   doc.catalog.set(PDFName.of("Outlines"), outlineRef);
+  const embedded = doc.context.obj({
+    Type: "Annot",
+    Subtype: "Underline",
+    Rect: [40, 566, 82, 582],
+    QuadPoints: [40, 582, 82, 582, 40, 566, 82, 566],
+    C: [0.2, 0.5, 0.9],
+    Contents: PDFString.of("External calibration note"),
+    T: PDFString.of("External author"),
+  });
+  doc.getPage(0).node.addAnnot(doc.context.register(embedded));
   const bytes = await doc.save();
   const response = await context.request.post(
     `/api/v1/notes/${note.id}/attachments`,
@@ -112,6 +123,7 @@ test("research reader navigation, search, private notes, bookmarks, split view a
     meta = await metaResponse.json();
   const page = await context.newPage(),
     errors: string[] = [];
+  page.setDefaultTimeout(15000);
   page.on("pageerror", (e) => errors.push(e.message));
   try {
     await page.goto(
@@ -272,6 +284,9 @@ test("research reader navigation, search, private notes, bookmarks, split view a
       .getByLabel("Annotation note", { exact: true })
       .fill("Check the measurement assumptions.");
     await reader
+      .getByLabel("Annotation tags", { exact: true })
+      .fill("method, uncertainty");
+    await reader
       .getByRole("button", { name: "Save privately", exact: true })
       .click();
     await expect(
@@ -291,6 +306,128 @@ test("research reader navigation, search, private notes, bookmarks, split view a
           ).length,
       )
       .toBe(2);
+    await expect(reader.locator(".pdf-annotation-tags")).toContainText(
+      "uncertainty",
+    );
+    await selectWord();
+    await reader
+      .getByRole("button", { name: "Underline selected PDF text", exact: true })
+      .click();
+    await expect(reader.locator('[data-kind="underline"]')).toHaveCount(1);
+    await reader
+      .getByRole("button", {
+        name: "Import embedded annotations…",
+        exact: true,
+      })
+      .click();
+    const importer = page.getByRole("dialog", {
+      name: "Import PDF annotations",
+      exact: true,
+    });
+    await importer
+      .getByRole("button", {
+        name: "Inspect embedded annotations",
+        exact: true,
+      })
+      .click();
+    await expect(importer).toContainText("External calibration note");
+    await importer
+      .getByRole("button", { name: "Import 1 privately", exact: true })
+      .click();
+    await expect(importer).not.toBeVisible();
+    await expect
+      .poll(async () => {
+        const r = await context.request.get(
+          `/api/v1/attachments/${attachment.id}/annotations`,
+        );
+        return (await r.json()).length;
+      })
+      .toBe(4);
+    await reader
+      .getByRole("button", {
+        name: "Import embedded annotations…",
+        exact: true,
+      })
+      .click();
+    await importer
+      .getByRole("button", {
+        name: "Inspect embedded annotations",
+        exact: true,
+      })
+      .click();
+    await expect(importer).toContainText("0 new annotations");
+    await importer.getByRole("button", { name: "Close", exact: true }).click();
+    await reader
+      .getByRole("button", { name: "Export annotated PDF…", exact: true })
+      .click();
+    const exporter = page.getByRole("dialog", {
+      name: "Export annotated PDF",
+      exact: true,
+    });
+    await expect(
+      exporter.getByRole("button", {
+        name: "Download annotated copy",
+        exact: true,
+      }),
+    ).toBeDisabled();
+    await exporter
+      .getByRole("checkbox", {
+        name: "Include my private annotations in this downloaded copy",
+        exact: true,
+      })
+      .check();
+    const exportedDownload = page.waitForEvent("download");
+    await exporter
+      .getByRole("button", { name: "Download annotated copy", exact: true })
+      .click();
+    const annotatedDownload = await exportedDownload,
+      exportedDoc = await PDFDocument.load(
+        await readFile((await annotatedDownload.path())!),
+      );
+    expect(exportedDoc.getPageCount()).toBe(12);
+    expect(exportedDoc.getPage(0).node.Annots()?.size()).toBeGreaterThan(1);
+    await page.screenshot({
+      path: info.outputPath("pdf-portable-annotations.png"),
+    });
+    await exporter.getByRole("button", { name: "Close", exact: true }).click();
+    await expect(
+      reader.locator('[data-pdf-page="2"] .textLayer'),
+    ).toContainText("Page 2");
+    await reader
+      .locator(".pdf-pages")
+      .first()
+      .evaluate((viewport) => {
+        const text = (page: number) =>
+          [
+            ...viewport.querySelectorAll(
+              `[data-pdf-page="${page}"] .textLayer span`,
+            ),
+          ].find((node) => node.textContent?.startsWith("Energy"))!.firstChild!;
+        const range = document.createRange();
+        range.setStart(text(1), 0);
+        range.setEnd(text(2), 6);
+        const selection = window.getSelection()!;
+        selection.removeAllRanges();
+        selection.addRange(range);
+        viewport.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
+      });
+    await reader
+      .getByRole("button", {
+        name: "Strike through selected PDF text",
+        exact: true,
+      })
+      .click();
+    await expect
+      .poll(async () => {
+        const r = await context.request.get(
+          `/api/v1/attachments/${attachment.id}/annotations`,
+        );
+        return (await r.json()).some(
+          (a: { data: { kind: string; segments?: unknown[] } }) =>
+            a.data.kind === "strikeout" && a.data.segments?.length === 2,
+        );
+      })
+      .toBe(true);
     await reader.getByRole("button", { name: "Bookmark", exact: true }).click();
     const label = reader.getByLabel("Bookmark label for page 1", {
       exact: true,
@@ -364,6 +501,57 @@ test("research reader navigation, search, private notes, bookmarks, split view a
     const exported = await PDFDocument.load(Buffer.concat(chunks));
     expect(exported.getPageCount()).toBe(2);
     expect(exported.getPage(0).getRotation().angle).toBe(90);
+    await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+    await expect(
+      reader.getByRole("button", {
+        name: "Reader view and file actions",
+        exact: true,
+      }),
+    ).toBeFocused();
+    await reader
+      .getByRole("button", {
+        name: "Reader view and file actions",
+        exact: true,
+      })
+      .click();
+    await reader.getByLabel("PDF page layout").selectOption("continuous");
+    await reader.getByLabel("Go to PDF page", { exact: true }).fill("4");
+    await reader.getByLabel("Go to PDF page", { exact: true }).press("Enter");
+    const viewport = reader.getByLabel("PDF page viewport", { exact: true });
+    await expect(
+      reader.locator('[data-pdf-page="4"] .paper-page'),
+    ).toHaveAttribute("data-rendered", "true");
+    await viewport.evaluate((node) => {
+      node.dispatchEvent(new WheelEvent("wheel", { bubbles: true }));
+      const page = node.querySelector<HTMLElement>('[data-pdf-page="4"]')!;
+      node.scrollTop = page.offsetTop - 20 + page.offsetHeight * 0.3;
+    });
+    await expect
+      .poll(async () => {
+        const r = await context.request.get(
+          `/api/v1/me/reading?groupId=${group.id}`,
+        );
+        const records = await r.json();
+        return records.find(
+          (item: { target_id: string; kind: string }) =>
+            item.target_id === attachment.id && item.kind === "progress",
+        )?.data.pdfView?.offset;
+      })
+      .toBeGreaterThan(0.25);
+    await page.reload();
+    await expect(reader.locator(".pdf-statusbar")).toContainText(
+      "Page 4 of 12",
+    );
+    await expect
+      .poll(async () =>
+        viewport.evaluate((node) => {
+          const page = node.querySelector<HTMLElement>('[data-pdf-page="4"]');
+          return page
+            ? (node.scrollTop - page.offsetTop + 20) / page.offsetHeight
+            : 0;
+        }),
+      )
+      .toBeGreaterThan(0.25);
     expect(
       Buffer.from(
         await (

@@ -604,6 +604,12 @@ export function useResearch(userId?: string, groupId?: string) {
     if (channel) channel.onmessage = change;
     window.addEventListener("axiom-research", change);
     window.addEventListener("online", online);
+    let invalidation: ReturnType<typeof setTimeout> | undefined;
+    const invalidated = () => {
+      clearTimeout(invalidation);
+      invalidation = setTimeout(online, 200);
+    };
+    window.addEventListener("axiom:workspace-invalidated", invalidated);
     window.addEventListener("focus", online);
     window.addEventListener("storage", signedOut);
     window.addEventListener("pagehide", pageHide);
@@ -617,6 +623,8 @@ export function useResearch(userId?: string, groupId?: string) {
       clearInterval(timer);
       window.removeEventListener("axiom-research", change);
       window.removeEventListener("online", online);
+      clearTimeout(invalidation);
+      window.removeEventListener("axiom:workspace-invalidated", invalidated);
       window.removeEventListener("focus", online);
       window.removeEventListener("storage", signedOut);
       window.removeEventListener("pagehide", pageHide);

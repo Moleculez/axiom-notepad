@@ -3,6 +3,78 @@
 Updated September 20, 2026. Historical logs are [archived separately](archive/VERIFICATION-2026-09-11.md).
 Do not treat historical browser totals or local build IDs as current release evidence.
 
+## September 20 PDF roadmap stage
+
+- TypeScript, ESLint, **1,830 unit tests across 88 files**, documentation checks and
+  an isolated production build pass (**923 offline assets**). Unit coverage includes
+  drawing/schema bounds, native/stable export deduplication, page layout/alignment,
+  explicit annotation mapping, replacement fences and OCR configuration/contracts.
+- Four scenarios pass in **Chromium, Firefox and WebKit** on isolated **3004**:
+  existing reader/portable annotations; replacement races and recovery, thread
+  privacy/idempotency and atomic mapped copies; generated mixed-size 1,000-page
+  virtualization, arrow creation, reply CRUD, comparison navigation and saved copy;
+  and OCR review/equation preview/private-note creation with mocked OCR transport.
+- New checks jump through an internal PDF link to an unmounted page and deliberately
+  lose an accepted upload's completion response. Retrying uses one upload identity
+  and saves one copy. Fresh private evidence is in `test-results/pdf-stage-final-*`
+  and the updated legacy-reader reruns in `test-results/pdf-reader-final-*`.
+  Legacy-reader tests now reopen the deliberately dismissed options panel instead
+  of relying on it remaining open behind the organizer. OCR screenshots are
+  explicitly labeled as transport-mocked, not recognition proof.
+- The OCR interface scenario also exercises real browser text comparison against a
+  second file with an inserted page. It caught a reader-options dismissal issue;
+  modal actions now dismiss that panel and restore focus to its stable trigger.
+- `scripts/verify/rehearse-pdf-ocr.ts` passes against the real isolated PostgreSQL
+  database/storage with a local mock processing server: durable page checkpoints,
+  cancellation/resume, idempotency, searchable output retention, review conflicts,
+  requester-only access, clearing results and unchanged source bytes. Three Python
+  gateway contract tests pass. No real OCR model/provider was invoked.
+- Local migrations 26–27 were applied only after creating and verifying the local
+  development DB/storage backup (21 attachment checksums). Direct web **8080** and
+  sync **1234** health endpoints respond successfully. No production migration,
+  deployment, commit or push was performed.
+
+The CPU OCR images/models still require Docker provisioning, real recognition,
+resource-limit, cancellation and restore acceptance; Docker was unavailable here.
+See [OCR setup](SELF_HOSTED_OCR.md). Desktop-reader drawing appearance/Unicode free
+text, durable offline reply drafts, native-arrow import, generic text/area geometry
+editing and broader real-document/accessibility/revocation testing remain gated.
+Unified AI and advanced planning are subsequent roadmap stages, not claimed done.
+
+## September 20 compact menus, PDF portability and Office reading
+
+This increment implements part of the [productivity roadmap](PRODUCTIVITY_ROADMAP.md),
+not the entire assistant/planning expansion. Original files remain immutable.
+
+- TypeScript, ESLint, **1,813 unit tests across 84 files**, documentation-link checks
+  and an isolated production build pass. New unit tests cover menu action retention,
+  PDF geometry/schema/import/export/hash protection, safe OOXML extraction, slide
+  ordering, Excel cached values/styles/merges and clipboard range safeguards.
+- Five dedicated scenarios pass in **Chromium, Firefox and WebKit** on isolated
+  **3004**: file/folder/workspace/Trash menu icons, root limits, category keyboard
+  navigation and restored focus; Excel formulas/ranges/sort/filter/merges/virtual
+  scrolling; Word outlines/tables/inert text/comments/export; PowerPoint slide order,
+  hidden labels/notes/search; and the extended PDF reader workflow.
+- PDF acceptance now imports a generated native underline, verifies private
+  persistence and repeat-import skipping, reopens annotated downloads, verifies
+  private-export opt-in, tags, cross-page strikeouts, and intra-page resume after
+  reload. It still checks arranged-copy export and unchanged original bytes.
+  Resume testing caught and fixed asynchronous page sizing and Strict Mode frame
+  cleanup bugs. Workbook browser testing caught and fixed null sheet-view settings.
+- Three existing Chromium discovery regressions also pass. Fresh private evidence:
+  `test-results/productivity-{chromium,firefox,webkit}` and
+  `test-results/pdf-portability-{chromium,firefox,webkit}`. The Chromium workbook
+  scenario additionally reopens a version-pinned link into a merged cell.
+- Word/PPT reading does not require a provider. Actual private LibreOffice rendering
+  was not exercised, and no external AI/OCR call, production deployment, commit or
+  push was performed. Annotated-PDF compatibility was checked with PDF.js/pdf-lib,
+  not every desktop PDF application. Full screen-reader/physical clipboard, mixed
+  page-size/password/CJK, large-document and offline/revocation rehearsals remain.
+
+The later PDF stage above supersedes this increment's unfinished PDF implementation
+list. Unified workspace AI, critical path/capacity/baselines and advanced automations
+remain follow-up work. Office surfaces are **viewers**, not Office editing engines.
+
 ## September 20 search palette and sidebar refinement
 
 Search now uses a scoped, fixed-height command palette with retained query focus,
@@ -83,8 +155,9 @@ password/CJK/rotated-mixed-page fixtures, large-document virtualization budgets,
 physical clipboard/assistive-technology use, Quick Preview/canvas integration and
 complete offline/revocation rehearsal remain acceptance gates. Richer annotation
 tools, collaborative side notes, application-managed page-copy/version saving,
-native annotation import/export and whole-paper assistant batching are **not yet
-implemented**. The implementation is a substantial reader update, not full Zotero
+whole-paper assistant batching were not implemented at this checkpoint. Native
+annotation import/export and other subsequent work are recorded in the newer
+entry above. The implementation is a substantial reader update, not full Zotero
 parity or completion of every item in the larger plan.
 
 The Workspace → Files overflow regression is also fixed: its flex rule now targets

@@ -15,6 +15,7 @@ export default function PdfQuickPreview({
 }) {
   const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null),
     [page, setPage] = useState(initialPage),
+    [scale, setScale] = useState<number | "fit" | "page">("page"),
     [error, setError] = useState("");
   useEffect(() => {
     setPage(Math.max(1, initialPage));
@@ -72,6 +73,27 @@ export default function PdfQuickPreview({
           <span aria-live="polite">
             {pdf ? `${page} / ${pdf.numPages}` : "Loading PDF…"}
           </span>
+          {pdf && (
+            <label className="pdf-preview-page-input">
+              Go to page{" "}
+              <input
+                aria-label="Preview page"
+                type="number"
+                min={1}
+                max={pdf.numPages}
+                value={page}
+                onChange={(event) => {
+                  const value = Number(event.target.value);
+                  if (
+                    Number.isInteger(value) &&
+                    value >= 1 &&
+                    value <= pdf.numPages
+                  )
+                    setPage(value);
+                }}
+              />
+            </label>
+          )}
           <button
             className="button secondary"
             disabled={!pdf || page >= pdf.numPages}
@@ -79,6 +101,25 @@ export default function PdfQuickPreview({
           >
             Next page
           </button>
+          <select
+            aria-label="Preview zoom"
+            value={scale}
+            onChange={(event) =>
+              setScale(
+                ["page", "fit"].includes(event.target.value)
+                  ? (event.target.value as "page" | "fit")
+                  : Number(event.target.value),
+              )
+            }
+          >
+            <option value="page">Fit page</option>
+            <option value="fit">Fit width</option>
+            {[0.5, 0.75, 1, 1.25, 1.5, 2].map((value) => (
+              <option key={value} value={value}>
+                {value * 100}%
+              </option>
+            ))}
+          </select>
         </div>
       )}
       {pdf && (
@@ -86,7 +127,7 @@ export default function PdfQuickPreview({
           pdf={pdf}
           page={page}
           jump={page}
-          scale="page"
+          scale={scale}
           rotation={0}
           view="single"
           labels={[]}

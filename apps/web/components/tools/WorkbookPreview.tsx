@@ -1,19 +1,27 @@
 "use client";
 import { useEffect, useState } from "react";
 import type { FilePreviewManifest } from "@axiom/shared/file-preview";
-import { DataGrid, DownloadFallback } from "./FilePreviewSurface";
+import { DownloadFallback } from "./FilePreviewSurface";
+import WorkbookGrid from "./WorkbookGrid";
+import type { WorkbookSnapshot } from "@axiom/shared/workbook-preview";
 import { ErrorNotice, Loading } from "../workspace/ui";
-type Sheet = { name: string; rows: string[][]; truncated: boolean };
 export default function WorkbookPreview({
   file,
 }: {
   file: FilePreviewManifest;
 }) {
-  const [sheets, setSheets] = useState<Sheet[]>([]),
+  const [snapshot, setSnapshot] = useState<WorkbookSnapshot>({
+      sheets: [],
+      styles: [],
+      warnings: [],
+    }),
     [selected, setSelected] = useState(0),
     [error, setError] = useState(""),
-    [search, setSearch] = useState("");
+    [loaded, setLoaded] = useState(false);
+  const sheets = snapshot.sheets;
   useEffect(() => {
+    setLoaded(false);
+    setError("");
     if (file.bytes > 25_000_000) return;
     const c = new AbortController();
     const worker = new Worker(
@@ -23,8 +31,23 @@ export default function WorkbookPreview({
     let timeout: ReturnType<typeof setTimeout>;
     worker.onmessage = (e) => {
       clearTimeout(timeout);
+      setLoaded(true);
       if (e.data.error) setError(e.data.error);
-      else setSheets(e.data.sheets);
+      else {
+        setSnapshot(e.data);
+        const wanted = new URLSearchParams(location.hash.slice(1)).get("sheet");
+        const index = e.data.sheets.findIndex(
+          (s: { name: string }) => s.name === wanted,
+        );
+        setSelected(
+          index >= 0
+            ? index
+            : Math.max(
+                0,
+                e.data.sheets.findIndex((s: { hidden: boolean }) => !s.hidden),
+              ),
+        );
+      }
       worker.terminate();
     };
     worker.onerror = () => {
@@ -81,25 +104,41 @@ export default function WorkbookPreview({
             ))}
           </select>
         </label>
-        <input
-          aria-label="Search workbook sheet"
-          placeholder="Find in sheet…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
         <span className="tool-spacer" />
         <small>
           Read-only · cached formula values · no macros or links executed
         </small>
       </div>
       <ErrorNotice message={error} />
+      {!!snapshot.warnings.length && (
+        <details className="workbook-notice">
+          <summary>Preview information ({snapshot.warnings.length})</summary>
+          {snapshot.warnings.map((warning) => (
+            <p key={warning}>{warning}</p>
+          ))}
+        </details>
+      )}
       {sheets[selected] ? (
         <>
-          <DataGrid
+          <WorkbookGrid
             key={selected}
-            rows={sheets[selected].rows}
-            search={search}
+            sheet={sheets[selected]}
+            styles={snapshot.styles}
+            resourceId={file.resourceId}
+            versionId={file.versionId}
           />
+          <nav className="workbook-sheet-tabs" aria-label="Workbook worksheets">
+            {sheets.map((sheet, index) => (
+              <button
+                key={index}
+                aria-pressed={index === selected}
+                onClick={() => setSelected(index)}
+              >
+                {sheet.name}
+                {sheet.hidden ? " (hidden in original)" : ""}
+              </button>
+            ))}
+          </nav>
           {sheets[selected].truncated && (
             <p className="ws-note">
               This large sheet is limited to 50,000 rows and 256 columns in
@@ -108,7 +147,12 @@ export default function WorkbookPreview({
           )}
         </>
       ) : (
-        !error && <Loading label="Decoding workbook in an isolated worker…" />
+        !error &&
+        (loaded ? (
+          <p className="ws-note">This workbook has no worksheets.</p>
+        ) : (
+          <Loading label="Decoding workbook in an isolated worker…" />
+        ))
       )}
     </>
   );

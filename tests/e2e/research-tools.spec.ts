@@ -478,14 +478,14 @@ test("media, text, CSV, XLSX and private Office previews use one version-bound v
     f.page.getByLabel("Workbook sheet", { exact: true }),
   ).toContainText("Results");
   await expect(
-    f.page.getByRole("cell", { name: "6", exact: true }),
-  ).toBeVisible();
+    f.page.getByRole("gridcell", { name: "B2", exact: true }),
+  ).toHaveText("6");
   await expect(f.page.locator(".tool-controls label").first()).toHaveCSS(
     "flex-direction",
     "row",
   );
   const rowHeader = await f.page
-    .locator(".data-preview thead th")
+    .locator(".workbook-corner")
     .first()
     .boundingBox();
   expect(rowHeader!.width).toBeGreaterThanOrEqual(48);
@@ -536,6 +536,7 @@ test("media, text, CSV, XLSX and private Office previews use one version-bound v
   const manifest = await call(f.member.request, `files/${docx}/preview`);
   expect(manifest.kind).toBe("office");
   await f.page.goto(`/workbench/files/${docx}`);
+  await f.page.getByRole("button", { name: "Pages", exact: true }).click();
   await expect(
     f.page.getByRole("button", { name: "Generate private preview" }),
   ).toBeVisible();

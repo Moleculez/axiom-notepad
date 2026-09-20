@@ -57,7 +57,7 @@ export async function filePreviewApi(
   const kind = previewKind(mime, resource.name);
   const [derivative] = await query(
     "SELECT * FROM file_derivatives WHERE version_id=$1 AND kind=$2",
-    [file.id,kind==="image-project"?"image-project-v1":"office-pdf-v1"],
+    [file.id, kind === "image-project" ? "image-project-v1" : "office-pdf-v1"],
   );
   if (
     action === "preview-content" &&
@@ -66,8 +66,10 @@ export async function filePreviewApi(
     if (!derivative)
       throw new HttpError(404, "The converted preview is not ready.");
     return fileResponse(request, {
-      storage_key:derivative.storage_key,bytes:Number(derivative.bytes),mime:derivative.mime,
-      name: resource.name + (kind==="image-project"?".png":".pdf"),
+      storage_key: derivative.storage_key,
+      bytes: Number(derivative.bytes),
+      mime: derivative.mime,
+      name: resource.name + (kind === "image-project" ? ".png" : ".pdf"),
       sha256: file.sha256,
     });
   }
@@ -132,9 +134,17 @@ export async function filePreviewApi(
     status: "ready",
   };
   if (kind === "office") {
+    manifest.office = {
+      format: mime.includes("wordprocessing") ? "docx" : "pptx",
+      originalSource: manifest.source,
+      converterAvailable: !!(
+        process.env.OFFICE_CONVERTER_URL && process.env.OFFICE_CONVERTER_TOKEN
+      ),
+    };
     if (derivative) {
       manifest.kind = "pdf";
       manifest.source = `/api/v1/files/${id}/preview-content?version=${file.id}`;
+      manifest.office.pdfSource = manifest.source;
       manifest.message =
         "Private Office conversion · formatting may differ from the original.";
     } else {
@@ -158,7 +168,12 @@ export async function filePreviewApi(
               : "Office preview needs the private conversion service. Download the unchanged original in the meantime."));
     }
   }
-  if(kind==="image-project"&&derivative){manifest.kind="image";manifest.source=`/api/v1/files/${id}/preview-content?version=${file.id}`;manifest.message="Saved image project preview · open Image Studio to edit layers.";}
+  if (kind === "image-project" && derivative) {
+    manifest.kind = "image";
+    manifest.source = `/api/v1/files/${id}/preview-content?version=${file.id}`;
+    manifest.message =
+      "Saved image project preview · open Image Studio to edit layers.";
+  }
   if (kind === "download") {
     manifest.status = "unavailable";
     manifest.message =

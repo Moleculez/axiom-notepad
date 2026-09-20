@@ -1,8 +1,18 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  pdfPageLayout,
+  pdfPageAtOffset,
+  type PdfPageSize,
+} from "@axiom/shared/pdf-layout";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import type { PageViewport } from "pdfjs-dist/types/src/display/page_viewport";
 import type { Annotation, AnnotationData } from "@axiom/shared/research";
+import { annotationSegments } from "@axiom/shared/pdf-annotations";
+import PdfDrawingLayer, {
+  type PdfDrawingTool,
+  type PdfSelectionData,
+} from "./PdfDrawingLayer";
 import {
   pdfSafeLink,
   pdfTextMatches,
@@ -57,22 +67,115 @@ type Props = {
   wholeWord?: boolean;
   activeHit?: PdfMatch;
   area: boolean;
+  drawingTool?: PdfDrawingTool;
+  editableAnnotation?: string;
+  onUpdateAnnotation?: (annotation: Annotation, data: AnnotationData) => void;
+  resumeOffset?: number;
+  onPosition?: (offset: number) => void;
+  scrollFraction?: number;
+  onScrollFraction?: (fraction: number) => void;
   onPage: (page: number) => void;
-  onSelect: (
-    data: Pick<AnnotationData, "kind" | "page" | "rects" | "quote">,
-  ) => void;
+  onSelect: (data: PdfSelectionData) => void;
   onAnnotation: (annotation: Annotation) => void;
 };
 export default function PdfPages(props: Props) {
   const root = useRef<HTMLDivElement>(null),
     current = useRef(props),
-    layoutFrame = useRef(0);
+    layoutFrame = useRef(0),
+    jumpFrame = useRef(0),
+    measured = useRef(false),
+    pendingJump = useRef<{ page: number; offset: number } | null>({
+      page: props.page,
+      offset: props.resumeOffset ?? 0,
+    }),
+    viewports = useRef(new Map<number, PageViewport>());
   current.current = props;
   const [size, setSize] = useState({ width: 600, height: 800 }),
     [near, setNear] = useState(props.page);
+  const sizes = useMemo(
+    () => new Map<number, PdfPageSize>(),
+    [props.pdf, props.rotation],
+  );
+  const [measurement, setMeasurement] = useState(0),
+    [selectionStart, setSelectionStart] = useState<number | null>(null);
+  const layout = useMemo(
+    () =>
+      pdfPageLayout(
+        props.pdf.numPages,
+        sizes,
+        size.width,
+        size.height,
+        props.scale,
+        props.view,
+      ),
+    [props.pdf, sizes, size, props.scale, props.view, measurement],
+  );
+  const layoutRef = useRef(layout);
+  layoutRef.current = layout;
+  useEffect(() => {
+    const clear = () => {
+      if (window.getSelection()?.isCollapsed) setSelectionStart(null);
+    };
+    document.addEventListener("selectionchange", clear);
+    return () => document.removeEventListener("selectionchange", clear);
+  }, []);
+  // Page sizes arrive asynchronously. Keep the logical jump anchor until every
+  // nearby rendered page agrees with its measured shell; otherwise a resize can
+  // turn a saved page-four position into a page-three scroll event.
+  const restoreJump = () => {
+    if (jumpFrame.current || !pendingJump.current) return;
+    jumpFrame.current = requestAnimationFrame(() => {
+      jumpFrame.current = 0;
+      const target = pendingJump.current,
+        scroller = root.current;
+      if (!target || !scroller) return;
+      const node = scroller.querySelector<HTMLElement>(
+        `[data-pdf-page="${target.page}"]`,
+      );
+      if (!node) return;
+      scroller.scrollTop =
+        node.offsetTop - 20 + target.offset * node.offsetHeight;
+      const needed =
+        current.current.view === "single"
+          ? [target.page]
+          : Array.from(
+              {
+                length:
+                  Math.min(current.current.pdf.numPages, target.page + 2) -
+                  Math.max(1, target.page - 2) +
+                  1,
+              },
+              (_, i) => Math.max(1, target.page - 2) + i,
+            );
+      const stable =
+        measured.current &&
+        needed.every((page) => {
+          const viewport = viewports.current.get(page),
+            shell = scroller.querySelector<HTMLElement>(
+              `[data-pdf-page="${page}"]`,
+            );
+          return (
+            viewport &&
+            shell &&
+            Math.abs(viewport.width - shell.offsetWidth) < 2 &&
+            Math.abs(viewport.height - shell.offsetHeight) < 2
+          );
+        });
+      if (stable) pendingJump.current = null;
+    });
+  };
+  const cancelJump = () => {
+    pendingJump.current = null;
+    cancelAnimationFrame(jumpFrame.current);
+    jumpFrame.current = 0;
+  };
   // Preserve the visible anchor when an estimated neighboring page acquires its
   // real (possibly mixed-size) dimensions. Never counteract intervening scrolling.
   const preserveLayout = () => {
+    if (pendingJump.current) {
+      restoreJump();
+      return;
+    }
     if (layoutFrame.current || current.current.view === "single") return;
     const scroller = root.current;
     const anchor = scroller?.querySelector<HTMLElement>(
@@ -87,53 +190,83 @@ export default function PdfPages(props: Props) {
         scroller.scrollTop = anchor.offsetTop - offset;
     });
   };
-  useEffect(() => () => cancelAnimationFrame(layoutFrame.current), []);
+  useEffect(
+    () => () => {
+      cancelAnimationFrame(layoutFrame.current);
+      cancelAnimationFrame(jumpFrame.current);
+      layoutFrame.current = 0;
+      jumpFrame.current = 0;
+    },
+    [],
+  );
   useEffect(() => {
     cancelAnimationFrame(layoutFrame.current);
     layoutFrame.current = 0;
     const node = root.current;
     if (!node) return;
-    const observer = new ResizeObserver(([entry]) =>
+    const observer = new ResizeObserver(([entry]) => {
+      measured.current = true;
       setSize({
         width: Math.max(160, entry.contentRect.width - 40),
         height: Math.max(200, entry.contentRect.height - 40),
-      }),
-    );
+      });
+      restoreJump();
+    });
     observer.observe(node);
     return () => observer.disconnect();
   }, []);
   useEffect(() => {
-    if (props.view === "single") return;
     cancelAnimationFrame(layoutFrame.current);
     layoutFrame.current = 0;
-    const node = root.current?.querySelector<HTMLElement>(
-      `[data-pdf-page="${props.page}"]`,
-    );
-    if (node && root.current)
-      root.current.scrollTo({ top: node.offsetTop - 20 });
+    pendingJump.current = { page: props.page, offset: props.resumeOffset ?? 0 };
+    restoreJump();
     setNear(props.page);
   }, [props.jump, props.view, props.pdf]);
   useEffect(() => {
     const node = root.current;
-    if (!node || props.view === "single") return;
+    if (node && props.scrollFraction !== undefined) {
+      const top =
+        props.scrollFraction *
+        Math.max(0, node.scrollHeight - node.clientHeight);
+      if (Math.abs(node.scrollTop - top) > 1) node.scrollTop = top;
+    }
+  }, [props.scrollFraction]);
+  useEffect(() => {
+    const node = root.current;
+    if (!node) return;
     let frame = 0;
     const scroll = () => {
       if (frame) return;
       frame = requestAnimationFrame(() => {
         frame = 0;
+        if (pendingJump.current) return;
+        current.current.onScrollFraction?.(
+          node.scrollTop / Math.max(1, node.scrollHeight - node.clientHeight),
+        );
         const middle = node.scrollTop + Math.min(180, node.clientHeight / 3);
-        const pages = [
-          ...node.querySelectorAll<HTMLElement>("[data-pdf-page]"),
-        ];
+        const slot =
+          current.current.view === "single"
+            ? null
+            : pdfPageAtOffset(layoutRef.current, middle);
         const active =
-          pages.find(
-            (p) =>
-              p.offsetTop <= middle && p.offsetTop + p.offsetHeight > middle,
-          ) ?? pages[0];
+          slot ?? node.querySelector<HTMLElement>("[data-pdf-page]");
         if (active) {
-          const n = Number(active.dataset.pdfPage);
+          const n =
+            "page" in active ? active.page : Number(active.dataset.pdfPage);
           setNear(n);
           if (n !== current.current.page) current.current.onPage(n);
+          current.current.onPosition?.(
+            Math.max(
+              0,
+              Math.min(
+                1,
+                (node.scrollTop -
+                  ("top" in active ? active.top : active.offsetTop) +
+                  20) /
+                  ("height" in active ? active.height : active.offsetHeight),
+              ),
+            ),
+          );
         }
       });
     };
@@ -146,24 +279,147 @@ export default function PdfPages(props: Props) {
   const pages =
     props.view === "single"
       ? [props.page]
-      : Array.from({ length: props.pdf.numPages }, (_, i) => i + 1);
+      : layout.pages
+          .filter((p) => {
+            const center = layout.pages[near - 1]?.top ?? 0;
+            const visible =
+              p.top + p.height >= center - size.height * 2 &&
+              p.top <= center + size.height * 3;
+            const selected =
+              selectionStart !== null &&
+              p.page >= Math.min(selectionStart, near) &&
+              p.page <= Math.max(selectionStart, near) &&
+              Math.abs(p.page - selectionStart) < 20;
+            return visible || Math.abs(p.page - near) <= 2 || selected;
+          })
+          .map((p) => p.page);
   return (
     <div
       ref={root}
       className={`pdf-canvas pdf-pages pdf-pages-${props.view}`}
       tabIndex={0}
       aria-label="PDF page viewport"
+      onWheelCapture={cancelJump}
+      onPointerDownCapture={(e) => {
+        cancelJump();
+        const target = e.target as HTMLElement;
+        setSelectionStart(
+          target.closest(".textLayer")
+            ? Number(
+                target.closest<HTMLElement>("[data-pdf-page]")?.dataset.pdfPage,
+              )
+            : null,
+        );
+      }}
+      onKeyDownCapture={cancelJump}
+      onMouseUp={() => {
+        const selection = window.getSelection();
+        if (
+          !selection?.rangeCount ||
+          selection.isCollapsed ||
+          props.area ||
+          props.drawingTool
+        )
+          return;
+        const range = selection.getRangeAt(0);
+        if (!root.current?.contains(range.commonAncestorContainer)) return;
+        const segments: NonNullable<AnnotationData["segments"]> = [];
+        for (const node of root.current.querySelectorAll<HTMLElement>(
+          "[data-pdf-page]",
+        )) {
+          const n = Number(node.dataset.pdfPage),
+            viewport = viewports.current.get(n),
+            layer = node.querySelector(".textLayer");
+          if (!viewport || !layer || !range.intersectsNode(layer)) continue;
+          const local = range.cloneRange();
+          if (!layer.contains(range.startContainer)) local.setStart(layer, 0);
+          if (!layer.contains(range.endContainer))
+            local.setEnd(layer, layer.childNodes.length);
+          const box = layer.getBoundingClientRect();
+          const rects = [...local.getClientRects()]
+            .filter(
+              (r) =>
+                r.width > 1 &&
+                r.height > 1 &&
+                r.left >= box.left - 1 &&
+                r.right <= box.right + 1,
+            )
+            .slice(0, 200)
+            .map((r) =>
+              toPdfRect(viewport, [
+                r.left - box.left,
+                r.top - box.top,
+                r.width,
+                r.height,
+              ]),
+            )
+            .filter((r) => r[2] > 0 && r[3] > 0);
+          if (rects.length) segments.push({ page: n, rects });
+        }
+        if (
+          segments.length > 1 &&
+          segments.length <= 20 &&
+          segments.reduce((n, s) => n + s.rects.length, 0) <= 200
+        )
+          props.onSelect({
+            kind: "highlight",
+            page: segments[0].page,
+            rects: segments[0].rects,
+            quote: selection.toString().slice(0, 12000),
+            segments,
+          });
+      }}
     >
+      {props.view !== "single" && (
+        <div
+          className="pdf-virtual-spacer"
+          aria-hidden="true"
+          style={{
+            height: layout.height - 40,
+            width: layout.width - 40,
+            pointerEvents: "none",
+          }}
+        />
+      )}
       {pages.map((page) => (
         <Page
           key={page}
           {...props}
+          onNavigate={(page) => {
+            if (
+              !Number.isInteger(page) ||
+              page < 1 ||
+              page > props.pdf.numPages
+            )
+              return;
+            pendingJump.current = { page, offset: 0 };
+            setNear(page);
+            props.onPage(page);
+            restoreJump();
+          }}
           page={page}
           container={root}
           width={props.view === "facing" ? (size.width - 16) / 2 : size.width}
           height={size.height}
-          active={props.view === "single" || Math.abs(page - near) <= 2}
+          active={true}
+          position={
+            props.view === "single" ? undefined : layout.pages[page - 1]
+          }
+          initialDimensions={sizes.get(page)}
+          onDimensions={(value) => {
+            const old = sizes.get(page);
+            if (old?.width !== value.width || old?.height !== value.height) {
+              preserveLayout();
+              sizes.set(page, value);
+              setMeasurement((n) => n + 1);
+            }
+          }}
           preserveLayout={preserveLayout}
+          onViewport={(viewport) => {
+            if (viewport) viewports.current.set(page, viewport);
+            else viewports.current.delete(page);
+            restoreJump();
+          }}
         />
       ))}
     </div>
@@ -174,15 +430,22 @@ function Page(
     width: number;
     height: number;
     active: boolean;
+    position?: { top: number; left: number };
+    initialDimensions?: PdfPageSize;
+    onDimensions: (value: PdfPageSize) => void;
     preserveLayout: () => void;
     container: React.RefObject<HTMLDivElement | null>;
+    onViewport: (viewport: PageViewport | null) => void;
+    onNavigate: (page: number) => void;
   },
 ) {
   const root = useRef<HTMLDivElement>(null),
     layer = useRef<HTMLDivElement>(null),
     image = useRef<HTMLCanvasElement>(null);
   const [viewport, setViewport] = useState<PageViewport | null>(null),
-    [dimensions, setDimensions] = useState({ width: 612, height: 792 });
+    [dimensions, setDimensions] = useState(
+      props.initialDimensions ?? { width: 612, height: 792 },
+    );
   const [rendered, setRendered] = useState(false),
     [renderRevision, setRenderRevision] = useState(0),
     [error, setError] = useState(""),
@@ -199,6 +462,10 @@ function Page(
   const latest = useRef(props);
   latest.current = props;
   useEffect(() => {
+    latest.current.onViewport(viewport);
+    return () => latest.current.onViewport(null);
+  }, [viewport]);
+  useEffect(() => {
     let alive = true;
     if (props.active)
       void props.pdf
@@ -209,6 +476,7 @@ function Page(
               scale: 1,
               rotation: (page.rotate + props.rotation) % 360,
             });
+            latest.current.onDimensions({ width: v.width, height: v.height });
             if (
               dimensions.width !== v.width ||
               dimensions.height !== v.height
@@ -384,7 +652,14 @@ function Page(
     renderRevision,
   ]);
   const capture = () => {
-    if (props.area || !viewport || !root.current || !layer.current) return;
+    if (
+      props.area ||
+      props.drawingTool ||
+      !viewport ||
+      !root.current ||
+      !layer.current
+    )
+      return;
     const selection = window.getSelection();
     if (!selection?.rangeCount || selection.isCollapsed) return;
     const range = selection.getRangeAt(0);
@@ -418,16 +693,20 @@ function Page(
       typeof target[0] === "number"
         ? target[0] + 1
         : (await props.pdf.getPageIndex(target[0])) + 1;
-    props.onPage(page);
-    props.container.current
-      ?.querySelector<HTMLElement>(`[data-pdf-page="${page}"]`)
-      ?.scrollIntoView({ block: "start" });
+    props.onNavigate(page);
   };
   return (
     <div
       className="pdf-page-slot"
       data-pdf-page={props.page}
       style={{
+        ...(props.position
+          ? {
+              position: "absolute",
+              top: props.position.top,
+              left: props.position.left,
+            }
+          : {}),
         width: dimensions.width * scale,
         height: dimensions.height * scale,
       }}
@@ -525,26 +804,46 @@ function Page(
         <div className="paper-highlights">
           {viewport &&
             props.annotations
-              .filter((a) => a.data.page === props.page)
+              .filter((a) => !["ink", "arrow", "textbox"].includes(a.data.kind))
               .flatMap((a) =>
-                a.data.rects.map((rect, i) => {
-                  const [left, top, width, height] = fromPdfRect(
-                    viewport,
-                    rect,
-                  );
-                  return (
-                    <button
-                      key={`${a.id}:${i}`}
-                      className={`pdf-highlight ${a.data.color} ${props.selected === a.id ? "selected" : ""}`}
-                      style={{ left, top, width, height }}
-                      title={a.data.body || a.data.quote || "Area annotation"}
-                      aria-label={`Open annotation: ${(a.data.body || a.data.quote || "Area annotation").slice(0, 100)}`}
-                      onClick={() => props.onAnnotation(a)}
-                    />
-                  );
-                }),
+                annotationSegments(a.data)
+                  .filter((segment) => segment.page === props.page)
+                  .flatMap((segment) =>
+                    segment.rects.map((rect, i) => {
+                      const [left, top, width, height] = fromPdfRect(
+                        viewport,
+                        rect,
+                      );
+                      return (
+                        <button
+                          key={`${a.id}:${i}`}
+                          className={`pdf-highlight ${a.data.color} ${props.selected === a.id ? "selected" : ""}`}
+                          data-kind={a.data.kind}
+                          style={{ left, top, width, height }}
+                          title={
+                            a.data.body || a.data.quote || "Area annotation"
+                          }
+                          aria-label={`Open annotation: ${(a.data.body || a.data.quote || "Area annotation").slice(0, 100)}`}
+                          onClick={() => props.onAnnotation(a)}
+                        />
+                      );
+                    }),
+                  ),
               )}
         </div>
+        {viewport && rendered && (
+          <PdfDrawingLayer
+            viewport={viewport}
+            page={props.page}
+            tool={props.drawingTool}
+            annotations={props.annotations}
+            selected={props.selected}
+            editable={props.editableAnnotation}
+            onSelect={props.onSelect}
+            onAnnotation={props.onAnnotation}
+            onUpdate={props.onUpdateAnnotation}
+          />
+        )}
         {props.area && viewport && (
           <div
             className="paper-area-capture"

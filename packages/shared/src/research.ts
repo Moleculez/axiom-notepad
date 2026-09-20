@@ -39,18 +39,75 @@ export const rectangleSchema = z
   );
 export const annotationDataSchema = z
   .object({
-    kind: z.enum(["highlight", "area", "note"]),
+    kind: z.enum([
+      "highlight",
+      "underline",
+      "strikeout",
+      "area",
+      "note",
+      "ink",
+      "arrow",
+      "textbox",
+    ]),
+    paths: z
+      .array(
+        z
+          .array(z.tuple([z.number().min(0).max(1), z.number().min(0).max(1)]))
+          .min(2)
+          .max(2048),
+      )
+      .min(1)
+      .max(20)
+      .optional(),
+    strokeWidth: z.number().min(0.5).max(12).optional(),
     page: z.number().int().min(1).max(100000),
     sha256: z.string().regex(/^[a-f0-9]{64}$/),
     rects: z.array(rectangleSchema).max(200).default([]),
     quote: z.string().max(12000).default(""),
     body: z.string().max(12000).default(""),
     color: z.enum(["yellow", "green", "blue", "pink"]).default("yellow"),
+    tags: markTagsSchema.optional(),
+    segments: z
+      .array(
+        z
+          .object({
+            page: z.number().int().min(1).max(100000),
+            rects: z.array(rectangleSchema).min(1).max(200),
+          })
+          .strict(),
+      )
+      .max(20)
+      .optional(),
+    imported: z
+      .object({ sourceId: z.string().max(300), author: z.string().max(300) })
+      .strict()
+      .optional(),
   })
   .strict()
   .refine(
     (d) => (d.kind === "note" ? !!d.body.trim() : d.rects.length > 0),
     "Select text or an area, or write a note.",
+  )
+  .refine(
+    (d) =>
+      !["ink", "arrow"].includes(d.kind) ||
+      (!!d.paths?.length &&
+        (d.kind !== "arrow" ||
+          (d.paths.length === 1 && d.paths[0].length === 2))),
+    "Draw a valid stroke or arrow.",
+  )
+  .refine(
+    (d) => d.kind !== "textbox" || !!d.body.trim(),
+    "Write text for the text box.",
+  )
+  .refine(
+    (d) =>
+      !d.segments ||
+      (d.segments.length > 0 &&
+        d.segments[0].page === d.page &&
+        new Set(d.segments.map((s) => s.page)).size === d.segments.length &&
+        d.segments.reduce((n, s) => n + s.rects.length, 0) <= 200),
+    "Multi-page annotations must start on their primary page, contain unique pages, and fit within 200 text rectangles.",
   );
 export type AnnotationData = z.infer<typeof annotationDataSchema>;
 export type Annotation = {
@@ -64,12 +121,33 @@ export type Annotation = {
   mutation_id: string;
   deleted: boolean;
   updated_at: string;
+  resolved?: boolean;
+  reply_count?: number;
+  unread_replies?: number;
 };
 export const readingDataSchema = z
   .object({
     label: z.string().max(300).default(""),
     page: z.number().int().min(1).max(100000).optional(),
     fraction: z.number().min(0).max(1).optional(),
+    pdfView: z
+      .object({
+        offset: z.number().min(0).max(1),
+        scale: z.union([
+          z.literal("fit"),
+          z.literal("page"),
+          z.number().min(0.25).max(4),
+        ]),
+        rotation: z.union([
+          z.literal(0),
+          z.literal(90),
+          z.literal(180),
+          z.literal(270),
+        ]),
+        layout: z.enum(["continuous", "single", "facing"]),
+      })
+      .strict()
+      .optional(),
     heading: z.string().max(300).optional(),
     anchor: markAnchorSchema.optional(),
     tags: markTagsSchema.optional(),

@@ -19,12 +19,19 @@ for the reference workflow.
 - Text search lists individual occurrences, with case and whole-word options.
   Next/previous moves to the exact highlighted occurrence. Search is bounded to
   2,000 results; refine the query when this limit is reached. Scanned pages need OCR.
-- Split view shows two locations in the **same** PDF. Comparing different files
-  is not implemented yet. Embedded page links and safe HTTP(S)/mailto links work;
+- Split view shows two locations in the **same** PDF. **Compare PDFs** opens another
+  authorized file/version beside it, with independent zoom, swapped panes, linked
+  pages/scrolling and manual page alignment when unlinked. Its bounded worker
+  compares extracted text, aligns inserted/deleted pages and navigates word-level
+  differences. Blank/scanned pages are marked unavailable, never silently identical.
+  Explicitly choose reviewed private OCR text for scanned pages; OCR never starts
+  automatically. Text comparison cannot detect image-only/layout changes.
+  Embedded page links and safe HTTP(S)/mailto links work;
   JavaScript/file/data actions are not executed.
-- Page bookmarks can be renamed, removed and restored with Undo. Page-level resume
-  and private research records use the existing reading-data synchronization.
-  Precise intra-page scroll/zoom restoration is not implemented yet.
+- Page bookmarks can be renamed, removed and restored with Undo. Resume stores the
+  page, normalized intra-page offset, zoom, rotation and layout in private reading
+  data. Explicit page links override the saved position. Restoration waits for
+  nearby page dimensions; user scrolling cancels a pending restoration.
 - Appearance → General adds PDF defaults: layout, navigator width/visibility,
   Original, Warm paper, Graphite surround and High contrast surround. Only Warm
   intentionally tints displayed page pixels; source/export colors stay unchanged.
@@ -34,22 +41,61 @@ for the reference workflow.
 
 Selecting a word or passage shows a compact floating action bar. **Selection alone
 does not open the annotation editor or change panel layout.** The bar offers four
-private highlight colors, copy, insert quotation with a page citation, and Add note.
+private highlight colors, underline, strikeout, copy, insert quotation with a page
+citation, and Add note.
 Only Add note opens the annotation editor. Escape, outside click or scrolling
 dismisses the bar. Mouse selection is not stolen when its actions are clicked.
 
-Text highlights, area highlights and page notes retain the existing normalized
+Text highlights, underlines, strikeouts, area highlights, page notes, pen strokes,
+arrows and text boxes retain normalized
 PDF geometry and private-first persistence. Edit an owned annotation, explicitly
 share it when authorized, remove it, or Undo its removal. Filter by author/scope,
-color and text; export the filtered annotations as Markdown or JSON. Quotes retain
+color and text (including tags); export filtered annotations as Markdown or JSON.
+Each annotation can carry up to 12 tags. Selections spanning up to 20 rendered pages
+and 200 rectangles remain one annotation with multiple page segments. Quotes retain
 immutable attachment/page links. Standalone reader insertion currently copies
 Markdown to the clipboard; the note-side reader inserts through its existing
 editor callback. Private-material warnings remain in place.
 
-Underline/strikeout/ink/text/arrow tools, annotation geometry editing, native PDF
-annotation import, multi-page highlights, tags, bulk operations and threaded
-annotation comments are still pending. The existing file Discussion panel is
-available, but is not an annotation-specific thread system.
+Use **Drawing tool** for pen/arrow/text-box creation. Selected owned drawings have
+drag/resize geometry controls that respect page rotation. Undo drawing is conditional
+on no intervening annotation mutation. Text-box content uses the regular annotation
+composer. Existing text-markup and area geometry does not yet have equivalent handles.
+
+**Discuss** opens a thread attached to one synced annotation. Replies can be edited
+by their author; authorized managers may remove shared replies. Resolve/reopen,
+unread reply counts, optimistic-version checks and idempotent reply submissions are
+included. Thread visibility follows the annotation: making it private immediately
+denies other readers. Unsaved replies remain in the open dialog after a network
+failure and closing warns before discarding them; durable offline reply drafts and
+OS notifications are not implemented. Workspace events invalidate annotation data,
+with polling as fallback.
+
+Bulk-select up to 100 owned, synced annotations to tag, recolor, change visibility or
+remove them. Sharing and removal require confirmation. Each result is
+reported independently; Undo uses returned versions and refuses intervening edits.
+
+**Import embedded annotations** previews native PDF highlights, underlines,
+strikeouts, rectangles, text notes, free-text boxes and ink before making private Axiom copies. Imported
+authors are labels, not account identities. Already-imported source identifiers
+are skipped for the current author/version. Import is bounded to 500 new marks;
+Cancel stops remaining work but retains already-saved copies. Concurrent imports
+in separate browser tabs use an atomic source-ID guard. Arbitrary native line/arrow
+imports remain unsupported because their full direction/ending semantics are not retained.
+
+**Export annotated PDF** adds portable standard PDF annotations to a downloaded
+copy. It uses the current annotation filter and excludes private Axiom annotations
+until explicitly included. Original embedded comments remain present and may
+already contain sensitive material; review before sharing. Explicitly included
+imported marks replace their matched native marks, and stable export IDs prevent
+repeat-export duplication. Unselected native marks remain. Unicode author
+labels, text and tags are retained. Export verifies source hashes, refuses forms
+and signatures, and is bounded to 100 MiB input / 200 MiB output, 2,000 annotations,
+10,000 rectangles and 60 seconds. This is not redaction or flattening.
+
+Ink, arrow and free-text dictionaries are exported alongside text/area annotations.
+Cross-application drawing appearance, especially Unicode free text, still needs
+desktop-reader acceptance. This is not a flattening or redaction tool.
 
 ## Page organization
 
@@ -63,9 +109,31 @@ supported; form-bearing sources are refused rather than silently stripped.
 **Download arranged copy** creates a separate file. The original bytes, annotations
 and citation targets remain unchanged. Document outlines, internal destinations
 and Axiom annotation overlays are not transferred to the copy. Review the copy
-before use. Saving directly as an application file/new version, mapped annotation
-transfer and embedded-annotation PDF export are not implemented yet. This is not
-a redaction or signature tool.
+before use. **Save to workspace** adds destination/name selection and defaults to a
+new file. Saving a new version requires both the version originally opened and the
+resource revision to match at upload initialization and final commit. A concurrent
+replacement cannot silently overwrite; a failed replacement can be recovered as a
+separate file. Network retries reuse the upload identity/chunks and prepared bytes
+can still be downloaded. Generic replacement uploads use the same safety contract.
+
+Annotation transfer is explicit, not automatic. Up to 500 visible synced marks are
+mapped for original-source page reorder/rotation/duplication and copied privately
+with original-author labels. Removed segments require acknowledgement; merged local
+sources do not implicitly import annotations. The file version, provenance and
+mapped annotations commit together. Source comments/discussions remain at their
+original immutable citations. Annotated download is separate and preserves page order.
+
+## Self-hosted batch OCR
+
+**Batch OCR** provides a private durable queue for selected pages, reviewable
+research text/LaTeX and an optional searchable PDF. Review corrections affect
+research text only, not the machine-recognized hidden PDF layer. Equation previews,
+reviewed Markdown exports, private-note creation, cancellation/retry and explicit
+copy/version saving are included. No external AI provider is required.
+
+Both service profiles are disabled by default. See [CPU OCR setup and acceptance
+gates](SELF_HOSTED_OCR.md) for engines, languages, model provisioning, limits,
+retention and deployment checks. Real container recognition has not yet been verified.
 
 ## Private paper assistant
 
@@ -81,8 +149,9 @@ enabled or contacted automatically. An authorized reader can:
    or delete private history. Cancellation cannot recall an already submitted call.
 
 Text requests are bounded to 20 pages / 30,000 characters; larger contexts are
-rejected, never silently truncated. OCR is one page at a time. Whole-document
-batching, retrieval, chat continuation, streaming and rendered math answers remain
+rejected, never silently truncated. Provider OCR is one page at a time; the separate
+self-hosted batch workflow is described above. Provider batching, retrieval,
+chat continuation, streaming and rendered math answers remain
 pending. Responses currently use plain text to avoid executing model-supplied
 markup, images or actions. Only `[p. N]` citations whose markers occur in submitted
 evidence become navigation buttons; this checks context membership, **not factual
@@ -104,8 +173,11 @@ deployment-specific acceptance. AI text is evidence to review, not verified proo
   original/page-copy export necessarily read full bytes. Passwords stay in the
   current opening session. Main-view raster/text work is limited to nearby pages,
   plus one split-reference page; canvases are capped at 8 million pixels each.
-  Continuous layout still retains lightweight page shells in the DOM, so full
-  1,000+ page DOM virtualization is a remaining performance gate.
+  Continuous/facing layouts virtualize page shells as well as raster/text layers.
+  Measured dimensions refine estimated slots while retaining the visible anchor;
+  bounded overscan and selection anchoring keep the DOM independent of total page
+  count. A generated mixed-size 1,000-page fixture is covered; broader real papers,
+  physical cross-page selection, CJK/password and accessibility remain release gates.
 - Rendering uses an offscreen buffer before swapping, cancelable jobs and
   normalized PDF geometry. Unused canvases are cleared. CMaps, fallback fonts and
   decoders are self-hosted: `npm run tools:assets` prepares development assets;
@@ -113,7 +185,7 @@ deployment-specific acceptance. AI text is evidence to review, not verified proo
   not source-controlled or linted; third-party notices are retained.
 - Multiple mounted readers register independent research subscriptions. Existing
   outbox conflicts and permission-revocation behavior are preserved. Changes poll
-  periodically; immediate SSE invalidation is not implemented.
+  periodically and react to existing workspace SSE invalidation events.
 - Full peer-collaborative side notes, reference/assistant context unification,
   annotation-to-task workflows, durable per-file reader sessions and richer MCP
   operations are follow-up work, not hidden completed features.

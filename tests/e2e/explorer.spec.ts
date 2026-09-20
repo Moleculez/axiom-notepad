@@ -519,12 +519,17 @@ test("manual cleanup protects pinned revisions and restoration creates an immuta
     const upload = async (contents: string, resourceId?: string) => {
       const id = randomUUID(),
         data = Buffer.from(contents);
+      const target = resourceId
+        ? await api(owner.request, `resources/${resourceId}`)
+        : null;
       await api(owner.request, "uploads", {
         id,
         spaceId: space.id,
         name: "version-test.txt",
         bytes: data.length,
         resourceId,
+        expectedVersionId: target?.current_version_id,
+        expectedResourceVersion: target?.version,
       });
       expect(
         (

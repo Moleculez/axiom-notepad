@@ -13,12 +13,14 @@ not installation instructions or proof of today's test results.
 - [Version history and review](VERSION_REVIEW.md) — comparisons, suggestions, milestones, assigned reviews and cloud drafts
 - [Reading and references](READING.md) — paper reading, bibliography and appearance
 - [PDF research workbench](PDF_READER.md) — reader, selection actions, contents, page copies and opt-in assistance
+- [Self-hosted CPU OCR](SELF_HOSTED_OCR.md) — private queue, reviewed text, searchable copies and operator acceptance
 - [Reading marks](READING_MARKS.md) — bookmarks, private notes and shared annotation cards
 - [Document minimap](MINIMAP.md) — navigation, markers, folding and appearance
 - [Image and Mermaid viewer](VISUAL_VIEWER.md) — inspection, comparison and annotations
 - [Settings](SETTINGS.md) — previews, preferences and account/device boundaries
 - [Management console](MANAGEMENT_CONSOLE.md) — workspaces, groups, Audit and Trash
 - [Research file views](RESEARCH_TOOLS.md) — Math/Image/Text Studio, viewers and limits
+- [Productivity expansion status](PRODUCTIVITY_ROADMAP.md) — completed increments and remaining stages
 - [Canvas, Explorer, MCP and offline work](PRODUCTIVITY_PLATFORM.md)
 
 ## For operators

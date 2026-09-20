@@ -20,6 +20,9 @@ x-app-environment: &app-environment
   TOOL_PROVIDER_ALLOWED_ORIGINS: ${TOOL_PROVIDER_ALLOWED_ORIGINS:-}
   OFFICE_CONVERTER_URL: ${OFFICE_CONVERTER_URL:-}
   OFFICE_CONVERTER_TOKEN: ${OFFICE_CONVERTER_TOKEN:-}
+  PDF_OCR_URL: ${PDF_OCR_URL:-}
+  PDF_OCR_TOKEN: ${PDF_OCR_TOKEN:-}
+  PDF_RESEARCH_OCR_URL: ${PDF_RESEARCH_OCR_URL:-}
 
 x-app: &app
   image: ${AXIOM_IMAGE:-axiom:local}
@@ -148,7 +151,50 @@ services:
     mem_limit: 1536m
     cpus: 1
     restart: unless-stopped
+  pdf-ocr-worker:
+    <<: *app
+    profiles: [pdf-ocr]
+    volumes: [attachments:/app/data/attachments]
+    command: [node, --import, tsx, scripts/ops/pdf-ocr-worker.ts]
+    networks: [default, ocr-private]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+    stop_grace_period: 5m
+    restart: unless-stopped
+  pdf-ocr:
+    profiles: [pdf-ocr]
+    image: ${AXIOM_OCR_IMAGE:-axiom-pdf-ocr:local}
+    build: { context: ./deploy/pdf-ocr, target: standard }
+    environment:
+      PDF_OCR_TOKEN: ${PDF_OCR_TOKEN:-}
+    networks: [ocr-private]
+    read_only: true
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=1g,uid=10001,gid=10001,mode=700"]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 128
+    mem_limit: 2g
+    cpus: 1
+    restart: unless-stopped
+  pdf-research-ocr:
+    profiles: [pdf-research-ocr]
+    image: ${AXIOM_RESEARCH_OCR_IMAGE:-axiom-pdf-research-ocr:local}
+    build: { context: ./deploy/pdf-ocr, target: research }
+    environment:
+      PDF_OCR_TOKEN: ${PDF_OCR_TOKEN:-}
+    volumes: ["pdf-ocr-models:/home/ocr:ro"]
+    networks: [ocr-private]
+    read_only: true
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=1g,uid=10001,gid=10001,mode=700"]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 128
+    mem_limit: 6g
+    cpus: 2
+    restart: unless-stopped
 networks:
+  ocr-private:
+    internal: true
   office-private:
     internal: true
 volumes:
@@ -157,3 +203,4 @@ volumes:
   caddy-data:
   caddy-config:
   restore:
+  pdf-ocr-models:

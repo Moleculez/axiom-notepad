@@ -19,17 +19,26 @@ import {
 } from "@axiom/shared/pdf-reader";
 import Dialog from "../Dialog";
 import { pdfRuntimeOptions } from "../../lib/pdf-runtime";
+import PdfSaveCopy from "./PdfSaveCopy";
+import type { PaperMeta } from "../../lib/research-store";
+import type { Annotation } from "@axiom/shared/research";
 type Choice = PdfPageChoice & { id: string };
 export default function PdfOrganizer({
   pdf,
   name,
   bytes,
   onClose,
+  meta,
+  annotations = [],
+  returnFocus,
 }: {
   pdf: PDFDocumentProxy;
   name: string;
   bytes: number;
   onClose: () => void;
+  meta?: PaperMeta;
+  annotations?: Annotation[];
+  returnFocus?: () => HTMLElement | null;
 }) {
   const [pages, setPages] = useState<Choice[]>(() =>
     Array.from(
@@ -48,6 +57,7 @@ export default function PdfOrganizer({
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
     [names, setNames] = useState([name]);
+  const [prepared, setPrepared] = useState<Uint8Array | null>(null);
   const sources = useRef<Uint8Array[]>([]),
     worker = useRef<Worker | null>(null),
     exportTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined),
@@ -131,7 +141,7 @@ export default function PdfOrganizer({
       if (mounted.current) setBusy(false);
     }
   };
-  const exportCopy = async () => {
+  const exportCopy = async (save = false) => {
     setBusy(true);
     setError("");
     try {
@@ -168,6 +178,10 @@ export default function PdfOrganizer({
         );
       });
       if (!mounted.current) return;
+      if (save) {
+        setPrepared(bytes);
+        return;
+      }
       const url = URL.createObjectURL(
           new Blob([new Uint8Array(bytes)], { type: "application/pdf" }),
         ),
@@ -184,8 +198,23 @@ export default function PdfOrganizer({
       if (mounted.current) setBusy(false);
     }
   };
+  if (prepared && meta)
+    return (
+      <PdfSaveCopy
+        bytes={prepared}
+        meta={meta}
+        pages={pages}
+        annotations={annotations}
+        onClose={() => setPrepared(null)}
+      />
+    );
   return (
-    <Dialog title="Organize PDF pages" onClose={onClose} wide>
+    <Dialog
+      title="Organize PDF pages"
+      onClose={onClose}
+      returnFocus={returnFocus}
+      wide
+    >
       <p className="muted">
         Arrange a new copy. The original, its annotations, and existing
         citations stay unchanged. Document outlines, internal destinations and
@@ -378,6 +407,15 @@ export default function PdfOrganizer({
         <button className="button secondary" onClick={onClose}>
           Cancel
         </button>
+        {meta?.resource_id && (
+          <button
+            className="button secondary"
+            disabled={busy || disabled}
+            onClick={() => void exportCopy(true)}
+          >
+            Save to workspace…
+          </button>
+        )}
         <button
           className="button primary"
           disabled={busy || disabled}

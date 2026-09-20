@@ -199,6 +199,20 @@ vNext's active ordinary prose unit reveals its inline source. Headings retain H1
 
 Workspace and file context menus use the editor's portal, spacing, typography, focus treatment and danger tokens. Pointer and keyboard actions share the same registry as item inspectors. F2, copy/cut/paste, Delete and Shift-F10 are scoped to Explorer focus; they never steal text-editing shortcuts. A right-click on a selected row targets the whole selection; another row becomes the sole target. Partial failures retain failed targets and offer an explicit retry. Archived workspaces move out of the navigation tree into Manage workspaces; Trash never expires automatically.
 
+Shared context menus are normalized by `lib/menu-model.ts`: at most eight root
+rows, one submenu level, and no section headings repeating the action labels.
+Use explicit categories for long menus; nested legacy categories flatten with a
+short parent label. `hidden` removes inapplicable actions; temporary constraints
+use `disabled` plus `disabledReason`. Preserve all authorized actions and existing
+mutation handlers. Danger actions stay last and separated. Arrow Right/Left opens
+and leaves a submenu; Escape steps back before dismissing and restoring focus.
+
+Document viewers use semantic app colors for chrome. An XLSX cell grid preserves
+basic document colors on a light canvas, like PDF pages; document-provided colors
+are not new application theme tokens. Toolbar labels and compact inputs explicitly
+override general form stacking/width rules. Reading panes scroll independently;
+formula/status bars and sheet navigation remain outside the viewport.
+
 Each document pane owns its scroll area and a footer outside that area. Statistics open in a viewport-contained panel, not a card clipped by the document. At narrow widths the inspector starts closed and opens only on request. Presence colors supplement collaborator names; another device for the same account remains a distinct session. Share describes actual inherited permissions and never implies that copying a link grants access.
 
 ## Review checklist

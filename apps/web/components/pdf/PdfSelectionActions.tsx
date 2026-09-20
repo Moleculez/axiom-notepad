@@ -1,6 +1,13 @@
 "use client";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Copy, Quote, StickyNote, X } from "lucide-react";
+import {
+  Copy,
+  Quote,
+  StickyNote,
+  X,
+  Underline,
+  Strikethrough,
+} from "lucide-react";
 import type { AnnotationData } from "@axiom/shared/research";
 export type PdfSelection = {
   data: AnnotationData;
@@ -10,6 +17,7 @@ export default function PdfSelectionActions({
   selection,
   busy,
   onHighlight,
+  onMarkup,
   onNote,
   onCopy,
   onQuote,
@@ -18,6 +26,7 @@ export default function PdfSelectionActions({
   selection: PdfSelection;
   busy: boolean;
   onHighlight: (color: AnnotationData["color"]) => void;
+  onMarkup: (kind: "underline" | "strikeout") => void;
   onNote: () => void;
   onCopy: () => void;
   onQuote: () => void;
@@ -98,6 +107,29 @@ export default function PdfSelectionActions({
         />
       ))}
       <span className="pdf-tool-divider" />
+      {(["underline", "strikeout"] as const).map((kind) => {
+        const Icon = kind === "underline" ? Underline : Strikethrough;
+        return (
+          <button
+            key={kind}
+            className="icon-button"
+            disabled={busy}
+            title={
+              kind === "underline"
+                ? "Underline privately"
+                : "Strike through privately"
+            }
+            aria-label={
+              kind === "underline"
+                ? "Underline selected PDF text"
+                : "Strike through selected PDF text"
+            }
+            onClick={() => onMarkup(kind)}
+          >
+            <Icon size={15} />
+          </button>
+        );
+      })}
       <button
         className="icon-button"
         disabled={busy}

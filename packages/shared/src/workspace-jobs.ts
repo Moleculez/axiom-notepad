@@ -20,6 +20,7 @@ import { processFileOperation } from "./file-workflows-api";
 import { withAuditContext } from "./audit-context";
 import { activeConnection } from "./integration-security";
 import { pruneImageDraftAssets } from "./image-cloud-api";
+import { HttpError } from "./access";
 
 export async function processRecurrences() {
   const rules = await query(
@@ -275,7 +276,11 @@ export async function processWorkspaceJob() {
     const message = (
       error instanceof Error ? error.message : "Background processing failed."
     ).slice(0, 500);
-    const exhausted = job.attempts >= 5;
+    const exhausted =
+      job.attempts >= 5 ||
+      (job.kind === "complete-upload" &&
+        error instanceof HttpError &&
+        [400, 403, 404, 409, 413].includes(error.status));
     const updated = await query(
       "UPDATE workspace_jobs SET status=$2,error=$3,available_at=now()+($4::int*interval '1 second'),leased_until=NULL,updated_at=now() WHERE id=$1 AND lease_id=$5 RETURNING id",
       [
@@ -316,6 +321,7 @@ export async function processWorkspaceJob() {
   return true;
 }
 export async function workspaceMaintenance() {
+  await query("DELETE FROM pdf_ocr_jobs WHERE expires_at<now()");
   await pruneImageDraftAssets();
   await processRecurrences();
   const expired = await query(

@@ -34,6 +34,10 @@ const WorkbookPreview = dynamic(() => import("./WorkbookPreview"), {
   ssr: false,
   loading: () => <Loading label="Opening workbook…" />,
 });
+const OfficePreview = dynamic(() => import("./OfficePreview"), {
+  ssr: false,
+  loading: () => <Loading label="Opening document…" />,
+});
 
 export default function FilePreviewSurface({
   resourceId,
@@ -75,11 +79,31 @@ export default function FilePreviewSurface({
       className={`tool-preview ${compact ? "is-compact" : ""}`}
       aria-label={`${file.name} preview`}
     >
-      {file.message && file.source.includes("preview-content") && (
-        <p className="ws-note">{file.message}</p>
-      )}
+      {file.message &&
+        !file.office &&
+        file.source.includes("preview-content") && (
+          <p className="ws-note">{file.message}</p>
+        )}
       <ErrorNotice message={conversionError} />
-      {file.kind === "image" ? (
+      {file.office ? (
+        <OfficePreview
+          key={file.versionId}
+          file={file}
+          onConvert={async () => {
+            try {
+              await post(
+                `files/${file.resourceId}/preview-convert?version=${file.versionId}`,
+                {},
+              );
+              setConversionError("");
+              reload();
+            } catch (error) {
+              setConversionError((error as Error).message);
+              throw error;
+            }
+          }}
+        />
+      ) : file.kind === "image" ? (
         <ImagePreview
           key={file.versionId}
           file={file}

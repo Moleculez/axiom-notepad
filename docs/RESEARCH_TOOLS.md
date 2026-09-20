@@ -100,13 +100,30 @@ Typora parity.
   Native audio/video playback has speed, loop, local WebVTT
   captions and timestamp links; images have zoom/pan and Edit a copy. Text has
   encoding detection/selection, search, wrapping and bounded incremental loading.
-  CSV/TSV and XLSX use a virtualized data grid with cell addresses. XLSX parsing is
-  isolated in a worker and uses saved formula values; it never runs formulas,
-  macros or external links. The original full PDF reader/annotations stay intact.
+  CSV/TSV and XLSX use virtualized data grids with cell addresses. XLSX adds
+  basic saved formatting, merged cells, frozen panes, resizable columns, row
+  filtering and numeric/text sorting. Cell addresses remain original worksheet
+  addresses after sorting; cell links are pinned to the immutable file version.
+  Shift/arrows or dragging selects a range for TSV copying and count/sum/average.
+  The formula bar inspects formulas and their cached results; nothing is calculated.
+  Parsing runs in a worker. Macros, embedded objects and external links never run.
+  Sorting is disabled for merged sheets; filtering shows their underlying cells.
+  Hidden sheets/rows/columns are included, with labels/warnings. Charts, conditional
+  formatting, exact Excel number formats and full theme/pivot fidelity are not supported.
+  The original full PDF reader/annotations stay intact.
 - Modern DOCX/PPTX detection and queued private PDF conversion, with immutable
-  derivative caching and original-file download fallback. Legacy Office formats
-  are download-only. Comments can be tied to a file version and a timestamp,
-  page, line, cell or image region; anchors are currently metadata, not jump links.
+  derivative caching and original-file download fallback. A worker-based **Reading**
+  view works without conversion: Word headings, text, tables, original comment
+  labels and footnotes; PowerPoint slide order, hidden-slide labels and speaker notes.
+  The navigator searches extracted body/slide text and slide notes; Word comment and
+  footnote panels are separate. Reading links are version-pinned; text copying and
+  text-file export are explicit. **Pages/Slides** uses the optional private PDF
+  converter, with fit/zoom and page navigation. Text view is deliberately not a
+  visual reproduction: images, charts, equations, numbering and exact layout require
+  conversion or the original application. Original comment identities/threads are
+  not imported into workspace accounts. Legacy Office formats remain download-only.
+  Workspace file discussions can also carry version/timestamp/page/line/cell/region
+  metadata; those discussion anchors are not automatically jump links.
 - Group administration → **Providers**: encrypted credentials, private compatible
   API origins allowlisted by the server, OpenRouter, capability controls, explicit
   connection tests and daily UTC request quotas. Math assistance supports
@@ -146,13 +163,24 @@ Typora parity.
 - Text preview starts at 2 MB and can load up to 20 MB; huge lines/CSV cells are
   bounded. XLSX: 25 MB input, 100 MB expanded, 2 million preview cells across
   sheets, 100 sheets, 50,000 rows and 256 columns per sheet, 20-second timeout.
+- Workbook selections are bounded to 10,000 cells / 2 MB of copied text. Formula-like
+  literal strings are escaped in TSV exports. Up to 2,048 basic styles and 10,000
+  merged ranges are retained; original files are never rewritten by viewer controls.
+- DOCX/PPTX reading: 50 MB input, 200 MB expanded, 20,000 ZIP entries, 12 MB per XML
+  part, 5 million extracted characters, 20,000 blocks, 1,000 slides and a 30-second
+  worker deadline. DTDs/entities, unsafe archive paths, macro-bearing archives and
+  embedded objects are rejected. No remote relationship is fetched. Text remains
+  inert React content, not document-provided HTML. Word reading mounts 100 blocks
+  initially and can reveal more; this is bounded loading, not full virtualization.
 - Browser codec support determines which audio/video files play. Unsupported
   codecs and formats retain a protected original-file download.
-- OCR/AI requires a configured provider; no provider is enabled by default. A
+- Provider-backed OCR/AI requires a configured provider; no provider is enabled by default. A
   consented request may leave the private deployment when OpenRouter is chosen.
   Source/images are not written into administration activity logs. Group request
   limits include cancelled/failed requests; do not assume an uncertain external
   request was unbilled. At most five pending AI jobs per account are accepted.
+  PDF batch OCR has a separate opt-in [self-hosted CPU service](SELF_HOSTED_OCR.md),
+  with private reviewed research text/searchable outputs and separate limits.
 - Live text recovery uses the same access-epoch quarantine protocol as notes.
   Never resolve a stale anchor or lost image lease by silently replacing newer
   work. Save a copy or export retained source instead.

@@ -49,9 +49,16 @@ and [offline/MCP behavior](docs/PRODUCTIVITY_PLATFORM.md).
 
 The [PDF research workbench](docs/PDF_READER.md) adds continuous/facing pages,
 collapsible contents, selection popups, exact text search, editable bookmarks,
-private annotations, split reading and reversible page-copy organization.
+tagged multi-page annotations, drawing tools, annotation discussions/bulk actions,
+virtualized pages, file/version comparison, reading-position resume and guarded
+workspace copies with annotation mapping. Optional [self-hosted CPU OCR](docs/SELF_HOSTED_OCR.md)
+adds reviewed research text and searchable PDF copies; real-container acceptance
+remains gated. Read-only Office viewers add
+styled worksheet grids, Word reading outlines and PowerPoint speaker notes.
 Paper assistance is explicitly opt-in; the guide lists current limits and
 remaining Zotero-style features.
+The [productivity roadmap](docs/PRODUCTIVITY_ROADMAP.md) separates this increment
+from the remaining unified-assistant and advanced-planning work.
 
 ## One document, two editing surfaces
 

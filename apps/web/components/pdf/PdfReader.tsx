@@ -56,6 +56,12 @@ import {
 import PdfPages from "./PdfPages";
 import PdfOrganizer from "./PdfOrganizer";
 import PdfOutline from "./PdfOutline";
+import PdfAnnotationTransfer from "./PdfAnnotationTransfer";
+import PdfAnnotationThread from "./PdfAnnotationThread";
+import PdfCompare from "./PdfCompare";
+import PdfOcrPanel from "./PdfOcrPanel";
+import PdfBulkActions from "./PdfBulkActions";
+import type { PdfDrawingTool, PdfSelectionData } from "./PdfDrawingLayer";
 import PaperAssistant from "./PaperAssistant";
 import PdfSelectionActions, { type PdfSelection } from "./PdfSelectionActions";
 import Dialog from "../Dialog";
@@ -88,6 +94,8 @@ export default function PdfReader({
   const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null),
     [meta, setMeta] = useState<PaperMeta | null>(null);
   const [page, setPage] = useState(1),
+    [offset, setOffset] = useState(0),
+    [resumeOffset, setResumeOffset] = useState(0),
     [jump, setJump] = useState(0),
     [pageInput, setPageInput] = useState("1"),
     [labels, setLabels] = useState<string[]>([]);
@@ -115,6 +123,7 @@ export default function PdfReader({
     [selection, setSelection] = useState<PdfSelection | null>(null),
     [editing, setEditing] = useState<Annotation | undefined>(),
     [body, setBody] = useState(""),
+    [tags, setTags] = useState(""),
     [color, setColor] = useState<AnnotationData["color"]>("yellow"),
     [selectedId, setSelectedId] = useState(attachment.annotation ?? ""),
     [area, setArea] = useState(false);
@@ -125,9 +134,19 @@ export default function PdfReader({
     [assistant, setAssistant] = useState(false),
     [help, setHelp] = useState(false),
     [options, setOptions] = useState(false);
+  const [transfer, setTransfer] = useState<"import" | "export" | null>(null);
+  const [thread, setThread] = useState<Annotation | null>(null);
+  const [compare, setCompare] = useState(false);
+  const [ocr, setOcr] = useState(false);
+  const [checked, setChecked] = useState<Set<string>>(new Set());
+  const [drawingTool, setDrawingTool] = useState<PdfDrawingTool | undefined>();
   const [undo, setUndo] = useState<ResearchEntry | null>(null),
     [history, setHistory] = useState<number[]>([]),
     [future, setFuture] = useState<number[]>([]);
+  const [drawingUndo, setDrawingUndo] = useState<{
+    before?: Annotation;
+    after: Annotation;
+  } | null>(null);
   const [password, setPassword] = useState(""),
     [passwordRequest, setPasswordRequest] = useState<{
       retry: boolean;
@@ -152,6 +171,8 @@ export default function PdfReader({
       setFuture([]);
     }
     setPage(n);
+    setOffset(0);
+    setResumeOffset(0);
     setJump((n) => n + 1);
   };
   const entries = useMemo(
@@ -180,7 +201,7 @@ export default function PdfReader({
       (scope !== "mine" || a.author_id === userId) &&
       (scope !== "shared" || a.shared) &&
       (!colorFilter || a.data.color === colorFilter) &&
-      `${a.data.quote} ${a.data.body} ${a.author_name ?? ""}`
+      `${a.data.quote} ${a.data.body} ${a.author_name ?? ""} ${a.data.tags?.join(" ") ?? ""}`
         .toLowerCase()
         .includes(filter.toLowerCase()),
   );
@@ -203,7 +224,11 @@ export default function PdfReader({
     defaults.navigator,
     defaults.navigatorWidth,
   ]);
-  const dirty = !!selected && body !== (editing?.data.body ?? "");
+  const dirty =
+    !!selected &&
+    (body !== (editing?.data.body ?? "") ||
+      tags !== (editing?.data.tags ?? []).join(", ") ||
+      color !== (editing?.data.color ?? "yellow"));
   const abandon = async () =>
     !dirty ||
     (await confirmAction("Your unsaved annotation text will be discarded.", {
@@ -216,15 +241,23 @@ export default function PdfReader({
     setSelected(data);
     setEditing(existing);
     setBody(data.body);
+    setTags((data.tags ?? []).join(", "));
     setColor(data.color);
     setArea(false);
     setSelectedId(existing?.id ?? "");
   };
-  const capture = (
-    data: Pick<AnnotationData, "kind" | "page" | "rects" | "quote">,
-  ) => {
+  const capture = (data: PdfSelectionData) => {
     if (!meta) return;
     const value = { ...data, sha256: meta.sha256, body: "", color };
+    if (data.kind === "ink" || data.kind === "arrow") {
+      void work(async () => {
+        const mark = await research.saveAnnotation(attachment.id, value, false);
+        setDrawingUndo({ after: mark });
+        setUndo(null);
+        setSelectedId(mark.id);
+      });
+      return;
+    }
     if (data.kind === "highlight") {
       const selection = window.getSelection();
       if (!selection?.rangeCount) return;
@@ -300,6 +333,14 @@ export default function PdfReader({
           }
         if (!alive) return;
         progressRef.current = progress;
+        const savedView = progress?.data.pdfView;
+        setOffset(attachment.page ? 0 : (savedView?.offset ?? 0));
+        setResumeOffset(attachment.page ? 0 : (savedView?.offset ?? 0));
+        if (savedView) {
+          setScale(savedView.scale);
+          setRotation(savedView.rotation);
+          setView(savedView.layout);
+        }
         setPage(
           Math.max(
             1,
@@ -366,7 +407,17 @@ export default function PdfReader({
           "progress",
           "attachment",
           meta.id,
-          { label: meta.name, page, fraction: page / pdf.numPages },
+          {
+            label: meta.name,
+            page,
+            fraction: page / pdf.numPages,
+            pdfView: {
+              offset,
+              scale,
+              rotation: rotation as 0 | 90 | 180 | 270,
+              layout: view,
+            },
+          },
           progressRef.current,
         )
         .then((value) => {
@@ -375,7 +426,7 @@ export default function PdfReader({
         .catch((e) => setMessage(e.message));
     }, 800);
     return () => clearTimeout(timer);
-  }, [pdf, meta, page]);
+  }, [pdf, meta, page, offset, scale, rotation, view]);
   useEffect(() => {
     const warn = (e: BeforeUnloadEvent) => {
       if (dirty) e.preventDefault();
@@ -436,12 +487,26 @@ export default function PdfReader({
   const save = async (insert = false) => {
     if (!selected) return;
     await work(async () => {
+      const parsedTags = [
+        ...new Set(
+          tags
+            .split(",")
+            .map((tag) => tag.trim())
+            .filter(Boolean),
+        ),
+      ];
+      if (parsedTags.length > 12 || parsedTags.some((tag) => tag.length > 40))
+        throw new Error("Use up to 12 tags, with at most 40 characters each.");
       const saved = await research.saveAnnotation(
         attachment.id,
-        { ...selected, body, color },
+        { ...selected, body, color, tags: parsedTags },
         editing?.shared ?? false,
         editing,
       );
+      if (["ink", "arrow", "textbox"].includes(saved.data.kind)) {
+        setDrawingUndo({ before: editing, after: saved });
+        setUndo(null);
+      }
       setSelectedId(saved.id);
       setSelected(null);
       setEditing(undefined);
@@ -494,6 +559,7 @@ export default function PdfReader({
     });
   const remove = (entry: ResearchEntry) =>
     work(async () => {
+      setDrawingUndo(null);
       await research.remove(entry);
       setUndo(
         entry.kind === "annotation" &&
@@ -508,6 +574,32 @@ export default function PdfReader({
     });
   const restore = () =>
     work(async () => {
+      if (drawingUndo) {
+        const latest = current.current.entries.find(
+          (e) => e.kind === "annotation" && e.value.id === drawingUndo.after.id,
+        );
+        if (
+          !latest ||
+          latest.conflict ||
+          latest.error ||
+          latest.value.deleted ||
+          latest.value.mutation_id !== drawingUndo.after.mutation_id
+        )
+          throw new Error(
+            "This annotation changed since your drawing action. Undo was not applied.",
+          );
+        if (drawingUndo.before) {
+          const before = drawingUndo.before;
+          await research.saveAnnotation(
+            before.attachment_id,
+            before.data,
+            before.shared,
+            latest.value as Annotation,
+          );
+        } else await research.remove(latest);
+        setDrawingUndo(null);
+        return;
+      }
       if (!undo) return;
       const latest = current.current.entries.find(
         (e) => e.value.id === undo.value.id,
@@ -565,6 +657,7 @@ export default function PdfReader({
           return;
         if (e.key === "Escape") {
           setArea(false);
+          setDrawingTool(undefined);
           setOptions(false);
         }
         if (e.key === "ArrowRight" || e.key === "PageDown") {
@@ -575,7 +668,11 @@ export default function PdfReader({
           e.preventDefault();
           go(page - 1);
         }
-        if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "z" && undo) {
+        if (
+          (e.metaKey || e.ctrlKey) &&
+          e.key.toLowerCase() === "z" &&
+          (undo || drawingUndo)
+        ) {
           e.preventDefault();
           void restore();
         }
@@ -608,6 +705,21 @@ export default function PdfReader({
               setSelection(null);
               window.getSelection()?.removeAllRanges();
               setMessage("Highlight saved privately.");
+            })
+          }
+          onMarkup={(kind) =>
+            void work(async () => {
+              const saved = await research.saveAnnotation(
+                attachment.id,
+                { ...selection.data, kind },
+                false,
+              );
+              setSelectedId(saved.id);
+              setSelection(null);
+              window.getSelection()?.removeAllRanges();
+              setMessage(
+                `${kind === "underline" ? "Underline" : "Strikeout"} saved privately.`,
+              );
             })
           }
           onQuote={() => {
@@ -769,10 +881,29 @@ export default function PdfReader({
           label="Area annotation"
           disabled={!pdf}
           pressed={area}
-          onClick={() => setArea(!area)}
+          onClick={() => {
+            setArea(!area);
+            setDrawingTool(undefined);
+          }}
         >
           <SquareDashed size={17} />
         </Tool>
+        <select
+          aria-label="Drawing tool"
+          value={drawingTool ?? ""}
+          disabled={!pdf}
+          onChange={(e) => {
+            setDrawingTool(
+              (e.target.value || undefined) as PdfDrawingTool | undefined,
+            );
+            setArea(false);
+          }}
+        >
+          <option value="">Select text</option>
+          <option value="ink">Pen</option>
+          <option value="arrow">Arrow</option>
+          <option value="textbox">Text box</option>
+        </select>
         <Tool
           label="Page note"
           disabled={!meta}
@@ -899,9 +1030,35 @@ export default function PdfReader({
             <Download size={15} />
             Download PDF
           </button>
-          <button disabled={!pdf} onClick={() => setOrganizer(true)}>
+          <button
+            disabled={!pdf}
+            onClick={() => {
+              setOptions(false);
+              setOrganizer(true);
+            }}
+          >
             <Grid2X2 size={15} />
             Organize pages
+          </button>
+          <button
+            disabled={!pdf || !meta?.resource_id}
+            onClick={() => {
+              setOptions(false);
+              setCompare(true);
+            }}
+          >
+            <Columns2 size={15} />
+            Compare PDFs…
+          </button>
+          <button
+            disabled={!pdf || !meta?.resource_id}
+            onClick={() => {
+              setOptions(false);
+              setOcr(true);
+            }}
+          >
+            <FileText size={15} />
+            Batch OCR…
           </button>
           <button
             disabled={!pdf}
@@ -1182,6 +1339,42 @@ export default function PdfReader({
                         </p>
                       </div>
                     )}
+                    {!!visibleAnnotations.length && (
+                      <label className="pdf-bulk-select">
+                        <input
+                          type="checkbox"
+                          aria-label="Select visible annotations"
+                          checked={
+                            visibleAnnotations.length > 0 &&
+                            visibleAnnotations.every((a) => checked.has(a.id))
+                          }
+                          onChange={(e) =>
+                            setChecked(
+                              e.target.checked
+                                ? new Set(
+                                    visibleAnnotations
+                                      .filter(
+                                        (a) =>
+                                          a.author_id === userId &&
+                                          !entries.find(
+                                            (e) => e.value.id === a.id,
+                                          )?.pending,
+                                      )
+                                      .slice(0, 100)
+                                      .map((a) => a.id),
+                                  )
+                                : new Set(),
+                            )
+                          }
+                        />
+                        Select up to 100
+                      </label>
+                    )}
+                    <PdfBulkActions
+                      marks={annotations.filter((a) => checked.has(a.id))}
+                      onClear={() => setChecked(new Set())}
+                      onRefresh={() => void research.sync()}
+                    />
                     {visibleAnnotations.map((a) => {
                       const entry = entries.find((e) => e.value.id === a.id)!;
                       return (
@@ -1190,6 +1383,24 @@ export default function PdfReader({
                           data-color={a.data.color}
                           key={a.id}
                         >
+                          <label className="pdf-bulk-select">
+                            <input
+                              type="checkbox"
+                              aria-label={`Select annotation on page ${a.data.page}`}
+                              disabled={entry.pending || a.author_id !== userId}
+                              checked={checked.has(a.id)}
+                              onChange={(e) =>
+                                setChecked((old) => {
+                                  const next = new Set(old);
+                                  if (e.target.checked && next.size < 100)
+                                    next.add(a.id);
+                                  else next.delete(a.id);
+                                  return next;
+                                })
+                              }
+                            />
+                            Select
+                          </label>
                           <button
                             className="pdf-annotation-location"
                             onClick={() => {
@@ -1213,6 +1424,13 @@ export default function PdfReader({
                           {a.data.body && (
                             <p className="pdf-annotation-body">{a.data.body}</p>
                           )}
+                          {!!a.data.tags?.length && (
+                            <div className="pdf-annotation-tags">
+                              {a.data.tags.map((tag) => (
+                                <span key={tag}>{tag}</span>
+                              ))}
+                            </div>
+                          )}
                           <small
                             className={entry.error ? "danger-text" : "muted"}
                           >
@@ -1222,6 +1440,15 @@ export default function PdfReader({
                                 : "Synced")}
                           </small>
                           <div className="pdf-annotation-actions">
+                            <button
+                              disabled={entry.pending}
+                              onClick={() => setThread(a)}
+                            >
+                              Discuss
+                              {a.reply_count ? ` (${a.reply_count})` : ""}
+                              {a.unread_replies ? " · New" : ""}
+                              {a.resolved ? " · Resolved" : ""}
+                            </button>
                             <Tool
                               label="Insert into note"
                               onClick={() =>
@@ -1297,6 +1524,18 @@ export default function PdfReader({
                       );
                     })}
                     <div className="pdf-export-actions">
+                      <button
+                        disabled={!pdf || busy}
+                        onClick={() => setTransfer("import")}
+                      >
+                        Import embedded annotations…
+                      </button>
+                      <button
+                        disabled={!pdf || !visibleAnnotations.length || busy}
+                        onClick={() => setTransfer("export")}
+                      >
+                        Export annotated PDF…
+                      </button>
                       <button
                         disabled={!annotations.length}
                         onClick={() =>
@@ -1393,11 +1632,31 @@ export default function PdfReader({
               pdf={pdf}
               page={page}
               jump={jump}
+              resumeOffset={resumeOffset}
+              onPosition={setOffset}
               scale={scale}
               rotation={rotation}
               view={view}
               labels={labels}
               annotations={annotations}
+              drawingTool={drawingTool}
+              editableAnnotation={
+                annotations.find(
+                  (a) => a.id === selectedId && a.author_id === userId,
+                )?.id
+              }
+              onUpdateAnnotation={(a, data) =>
+                void work(async () => {
+                  const after = await research.saveAnnotation(
+                    attachment.id,
+                    data,
+                    a.shared,
+                    a,
+                  );
+                  setDrawingUndo({ before: a, after });
+                  setUndo(null);
+                })
+              }
               selected={selectedId}
               query={query}
               matchCase={matchCase}
@@ -1538,6 +1797,22 @@ export default function PdfReader({
                 </button>
               ))}
             </div>
+            <label>
+              Tags
+              <input
+                aria-label="Annotation tags"
+                value={tags}
+                maxLength={500}
+                onChange={(e) => setTags(e.target.value)}
+                placeholder="method, limitation, follow-up"
+              />
+            </label>
+            {selected.imported && (
+              <small>
+                Imported author: {selected.imported.author || "Unspecified"}.
+                This private copy belongs to you.
+              </small>
+            )}
             <div className="button-row">
               <button
                 className="button primary small"
@@ -1566,10 +1841,10 @@ export default function PdfReader({
         <span>
           {annotations.length} annotations{pinned ? " · Available offline" : ""}
         </span>
-        {undo && (
+        {(undo || drawingUndo) && (
           <button disabled={busy} onClick={() => void restore()}>
             <Undo2 size={13} />
-            Undo removal
+            {drawingUndo ? "Undo drawing" : "Undo removal"}
           </button>
         )}
         <span className="toolbar-spacer" />
@@ -1636,7 +1911,85 @@ export default function PdfReader({
           pdf={pdf}
           name={attachment.name}
           bytes={meta?.bytes ?? 0}
+          meta={meta ?? undefined}
+          annotations={visibleAnnotations}
+          returnFocus={() =>
+            root.current?.querySelector<HTMLButtonElement>(
+              'button[aria-label="Reader view and file actions"]',
+            ) ?? null
+          }
           onClose={() => setOrganizer(false)}
+        />
+      )}
+      {thread && (
+        <PdfAnnotationThread
+          annotation={thread}
+          userId={userId}
+          canManage={meta?.role === "admin"}
+          canComment={meta?.content_role !== "viewer"}
+          onClose={() => setThread(null)}
+        />
+      )}
+      {compare && pdf && meta && (
+        <PdfCompare
+          pdf={pdf}
+          meta={meta}
+          userId={userId}
+          onClose={() => setCompare(false)}
+          returnFocus={() =>
+            root.current?.querySelector<HTMLButtonElement>(
+              'button[aria-label="Reader view and file actions"]',
+            ) ?? null
+          }
+        />
+      )}
+      {ocr && pdf && meta && (
+        <PdfOcrPanel
+          pdf={pdf}
+          meta={meta}
+          onClose={() => setOcr(false)}
+          returnFocus={() =>
+            root.current?.querySelector<HTMLButtonElement>(
+              'button[aria-label="Reader view and file actions"]',
+            ) ?? null
+          }
+          onInsert={onInsert}
+        />
+      )}
+      {transfer && pdf && meta && (
+        <PdfAnnotationTransfer
+          mode={transfer}
+          pdf={pdf}
+          annotations={
+            transfer === "export"
+              ? visibleAnnotations
+              : annotations.filter((a) => a.author_id === userId)
+          }
+          sha256={meta.sha256}
+          name={attachment.name}
+          onClose={() => setTransfer(null)}
+          onImport={async (items, signal) => {
+            for (const data of items) {
+              if (signal.aborted) return;
+              const known = current.current.entries.some(
+                (entry) =>
+                  entry.kind === "annotation" &&
+                  (entry.value as Annotation).attachment_id === attachment.id &&
+                  (entry.value as Annotation).author_id === userId &&
+                  (entry.value as Annotation).data.imported?.sourceId ===
+                    data.imported?.sourceId &&
+                  !entry.value.deleted,
+              );
+              if (!known)
+                await current.current.saveAnnotation(
+                  attachment.id,
+                  data,
+                  false,
+                );
+            }
+            setPanel("annotations");
+            setMessage("Embedded annotations imported as private copies.");
+          }}
         />
       )}
     </section>

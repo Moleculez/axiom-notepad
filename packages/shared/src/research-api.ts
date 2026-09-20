@@ -158,7 +158,10 @@ export async function researchApi(
     if (action === "annotations" && method === "GET")
       return json(
         await query(
-          'SELECT a.*,u.name AS author_name FROM paper_annotations a JOIN "user" u ON u.id=a.author_id WHERE a.attachment_id=$1 AND (a.author_id=$2 OR a.shared) ORDER BY a.created_at',
+          `SELECT a.*,u.name AS author_name,
+          (SELECT count(*)::int FROM paper_annotation_replies r WHERE r.annotation_id=a.id AND NOT r.deleted) AS reply_count,
+          (SELECT count(*)::int FROM paper_annotation_replies r WHERE r.annotation_id=a.id AND NOT r.deleted AND r.author_id<>$2 AND r.updated_at>coalesce((SELECT read_at FROM paper_annotation_reads WHERE annotation_id=a.id AND user_id=$2),'-infinity')) AS unread_replies
+          FROM paper_annotations a JOIN "user" u ON u.id=a.author_id WHERE a.attachment_id=$1 AND (a.author_id=$2 OR a.shared) ORDER BY a.created_at`,
           [id, userId],
         ),
       );
@@ -221,6 +224,22 @@ export async function researchApi(
           return { record: current };
         if ((current?.version ?? 0) !== input.version) return { current };
         if (!current) {
+          if (input.data.imported) {
+            await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [
+              `pdf-import:${id}:${userId}:${input.data.imported.sourceId}`,
+            ]);
+            const {
+              rows: [duplicate],
+            } = await client.query(
+              "SELECT * FROM paper_annotations WHERE attachment_id=$1 AND author_id=$2 AND NOT deleted AND data->'imported'->>'sourceId'=$3",
+              [id, userId, input.data.imported.sourceId],
+            );
+            if (duplicate)
+              throw new HttpError(
+                409,
+                "This embedded annotation has already been imported. Refresh the annotation list.",
+              );
+          }
           const {
             rows: [record],
           } = await client.query(
@@ -251,6 +270,7 @@ export async function researchApi(
         );
         return { record };
       });
+      if (result.record) await notifyWorkspace();
       return result.record ? json(result.record) : conflict(result.current);
     }
     return json({ error: "Method not allowed." }, 405);

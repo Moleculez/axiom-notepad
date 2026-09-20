@@ -29,6 +29,11 @@ describe("deployment configuration", () => {
     { OIDC_LOCAL_TEST: "1" },
     { OIDC_CLIENT_ID: "incomplete" },
     { OFFICE_CONVERTER_URL: "http://office-converter:8090" },
+    { PDF_OCR_URL: "http://pdf-ocr:8091" },
+    { PDF_OCR_URL: "file:///secret", PDF_OCR_TOKEN: "o".repeat(40) },
+    { PDF_OCR_URL: "http://pdf-ocr:8091/path", PDF_OCR_TOKEN: "o".repeat(40) },
+    { PDF_OCR_URL: "http://pdf-ocr:8091", PDF_OCR_TOKEN: "short" },
+    { PDF_RESEARCH_OCR_URL: "http://pdf-research-ocr:8091" },
     { TOOL_PROVIDER_KEY: "invalid" },
   ])("rejects unsafe or incomplete production configuration %j", (override) => {
     expect(environmentErrors({ ...valid, ...override }).length).toBeGreaterThan(
@@ -40,5 +45,15 @@ describe("deployment configuration", () => {
     expect(
       environmentErrors({ ...valid, SYNC_SECRET: secret }).join(),
     ).not.toContain(secret);
+  });
+  it("accepts a complete private OCR configuration", () => {
+    expect(
+      environmentErrors({
+        ...valid,
+        PDF_OCR_URL: "http://pdf-ocr:8091",
+        PDF_OCR_TOKEN: "o".repeat(40),
+        PDF_RESEARCH_OCR_URL: "http://pdf-research-ocr:8091",
+      }),
+    ).toEqual([]);
   });
 });

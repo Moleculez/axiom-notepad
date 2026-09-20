@@ -208,7 +208,7 @@ export async function authRequest(path: string, body: unknown = {}) {
     );
   return result;
 }
-export function download(name: string, body: string, mime = "text/markdown") {
+export function download(name: string, body: BlobPart, mime = "text/markdown") {
   const url = URL.createObjectURL(new Blob([body], { type: mime }));
   const a = document.createElement("a");
   a.href = url;

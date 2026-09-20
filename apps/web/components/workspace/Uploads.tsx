@@ -12,6 +12,8 @@ type Transfer = {
   space_id: string;
   parent_id: string | null;
   resource_id?: string;
+  expected_version_id?: string;
+  expected_resource_version?: number;
   name: string;
   bytes: number;
   status: string;
@@ -99,6 +101,15 @@ export function useUploads(userId: string | undefined, onComplete: () => void) {
           "Choose the original file with the same name and size.",
         );
       // Initialization is idempotent, including when the first response was lost.
+      if (item.resource_id && !item.expected_version_id) {
+        const target = await api(`resources/${item.resource_id}`, { signal });
+        item.expected_version_id = target.current_version_id;
+        item.expected_resource_version = target.version;
+        update(item.id, {
+          expected_version_id: item.expected_version_id,
+          expected_resource_version: item.expected_resource_version,
+        });
+      }
       await api("uploads", {
         method: "POST",
         signal,
@@ -109,6 +120,8 @@ export function useUploads(userId: string | undefined, onComplete: () => void) {
           spaceId: item.space_id,
           parentId: item.parent_id,
           resourceId: item.resource_id,
+          expectedVersionId: item.expected_version_id,
+          expectedResourceVersion: item.expected_resource_version,
         }),
       });
       const remote = await api(`uploads/${item.id}`, { signal });
@@ -375,6 +388,17 @@ export function useUploads(userId: string | undefined, onComplete: () => void) {
       await post(`uploads/${item.id}/complete`);
       update(item.id, { status: "verifying", error: "" });
     },
+    saveCopy: async (item: Transfer) => {
+      await post(`uploads/${item.id}/save-copy`, {
+        name: item.name,
+        parentId: item.parent_id,
+      });
+      update(item.id, {
+        status: "verifying",
+        resource_id: undefined,
+        error: "",
+      });
+    },
     hasFile: (id: string) => files.current.has(id),
     cancel: async (item: Transfer) => {
       running.current.get(item.id)?.abort();
@@ -540,16 +564,30 @@ export default function Uploads({
               </button>
             )}
             {item.status === "failed" && (
-              <button
-                className="button secondary"
-                onClick={() =>
-                  void controller
-                    .retryVerification(item)
-                    .catch((e) => setError(e.message))
-                }
-              >
-                Retry verification
-              </button>
+              <>
+                <button
+                  className="button secondary"
+                  onClick={() =>
+                    void controller
+                      .retryVerification(item)
+                      .catch((e) => setError(e.message))
+                  }
+                >
+                  Retry verification
+                </button>
+                {item.resource_id && (
+                  <button
+                    className="button secondary"
+                    onClick={() =>
+                      void controller
+                        .saveCopy(item)
+                        .catch((e) => setError(e.message))
+                    }
+                  >
+                    Save as a separate copy
+                  </button>
+                )}
+              </>
             )}
             {item.status === "complete" && item.completed_resource_id && (
               <button
