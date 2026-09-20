@@ -1,7 +1,22 @@
 # Current verification and beta release gates
 
-Updated September 20, 2026. Historical logs are [archived separately](archive/VERIFICATION-2026-09-11.md).
+Updated September 21, 2026. Historical logs are [archived separately](archive/VERIFICATION-2026-09-11.md).
 Do not treat historical browser totals or local build IDs as current release evidence.
+
+## September 21 sidebar refresh stability
+
+- Regressions reproduce empty-folder rows disappearing during periodic refreshes
+  and loaded branches being replaced by an incomplete offline list after a server
+  failure. Refreshes now retain loaded content and focus; authoritative access or
+  deletion errors still clear stale rows. Offline browsing remains available.
+- TypeScript, ESLint, **1,845 unit tests across 90 files**, theme validation,
+  documentation checks and the isolated production build pass.
+- **Eight Chromium scenarios and two each in Firefox and WebKit pass** against
+  isolated production port 3004. Coverage includes timed/focus/event refreshes,
+  stable row identity and layout, retries, new data, access loss, existing tree
+  navigation and discovery controls. Evidence is under
+  `test-results/sidebar-production-{chromium,firefox,webkit}`; earlier failed
+  regressions remain separately retained. Working research data was not modified.
 
 ## September 20 unified workspace assistant
 

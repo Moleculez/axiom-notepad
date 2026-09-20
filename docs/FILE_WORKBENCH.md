@@ -72,6 +72,11 @@ keyboard focus. Up/Down and Home/End move between loaded rows, Left/Right traver
 branches, Enter opens the row and Shift-F10 opens its context menu. Resource loading,
 permission checks, drag/drop and the full-folder handoff remain unchanged.
 
+Background refreshes retain loaded rows and empty-folder messages so polling and
+sync events do not shift the tree or interrupt keyboard focus. Temporary network,
+server and rate-limit failures retain the current account/location's loaded data
+with a retry action. Access-denied and deleted-resource responses clear stale rows.
+
 Use the shared native `Dialog`, `DialogBody` and `DialogFooter`. Header and actions
 stay outside the scrolling body. A submitting form must own both body and footer;
 never move its submit button into an unrelated wrapper. Align checkbox rows with

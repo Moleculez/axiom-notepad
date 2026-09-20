@@ -184,7 +184,16 @@ export async function api<T = any>(
       ["GET", "HEAD"].includes(options.method ?? "GET")
     ) {
       const cached = await (await import("./offline-files")).offlineRead(path);
-      if (cached !== undefined) return cached as T;
+      // Offline resource lists contain only explicitly downloaded files, not a
+      // cached server listing. Substituting one during an online refresh makes
+      // loaded folders disappear (often the downloaded subset is empty).
+      const partialListing =
+        cached &&
+        typeof cached === "object" &&
+        "offline" in cached &&
+        cached.offline === true;
+      if (cached !== undefined && (!navigator.onLine || !partialListing))
+        return cached as T;
     }
     throw error;
   } finally {

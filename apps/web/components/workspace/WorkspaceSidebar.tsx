@@ -444,7 +444,9 @@ function ResourceBranches({
       {data.error && (
         <li className="ws-tree-message">
           <button type="button" onClick={data.reload}>
-            Could not load items. Retry
+            {data.data
+              ? "Could not refresh items. Retry"
+              : "Could not load items. Retry"}
           </button>
         </li>
       )}
@@ -460,7 +462,7 @@ function ResourceBranches({
           ancestors={ancestors}
         />
       ))}
-      {showEmpty && !data.loading && data.data?.items.length === 0 && (
+      {showEmpty && data.data?.items.length === 0 && (
         <li className="ws-tree-message">No items yet</li>
       )}
       {data.data?.nextCursor && (

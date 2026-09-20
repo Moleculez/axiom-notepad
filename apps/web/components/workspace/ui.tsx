@@ -24,7 +24,7 @@ import {
 import type { Resource, Space } from "@axiom/shared/workspace";
 import type { useAppearance } from "../../lib/appearance";
 import type { useEditorPreferences } from "../../lib/editor-preferences";
-import { api, errorMessage } from "../../lib/client";
+import { api, ApiError, errorMessage } from "../../lib/client";
 import { sharedRequest } from "../../lib/shared-request";
 
 export type Session = {
@@ -163,37 +163,70 @@ export function useData<T = any>(path: string | null, revision = 0) {
     error: string;
     loading: boolean;
     path: string | null;
-  }>({ data: null, error: "", loading: !!path, path });
+    account: string;
+  }>({ data: null, error: "", loading: !!path, path, account });
   const [retry, setRetry] = useState(0);
   const reload = useCallback(() => setRetry((v) => v + 1), []);
   useEffect(() => {
     const controller = new AbortController();
     if (!path) {
-      setState({ data: null, error: "", loading: false, path });
+      setState({ data: null, error: "", loading: false, path, account });
       return;
     }
     setState((previous) => ({
-      data: previous.path === path ? previous.data : null,
+      data:
+        previous.path === path && previous.account === account
+          ? previous.data
+          : null,
       loading: true,
-      error: "",
+      error:
+        previous.path === path && previous.account === account
+          ? previous.error
+          : "",
       path,
+      account,
     }));
     const request = sharedRequest<T>(account, path, revision, retry);
     void request.promise
       .then((data) => {
         if (!controller.signal.aborted)
-          setState({ data, loading: false, error: "", path });
+          setState({ data, loading: false, error: "", path, account });
       })
       .catch((error) => {
-        if (!controller.signal.aborted && error?.name !== "AbortError")
-          setState({ data: null, loading: false, error: error.message, path });
+        if (!controller.signal.aborted && error?.name !== "AbortError") {
+          // Background outages must not unmount a loaded tree. Retain only this
+          // account/path's data; authoritative access/deletion errors clear it.
+          const transient =
+            error instanceof TypeError ||
+            (error instanceof ApiError &&
+              (error.status >= 500 || error.status === 429));
+          setState((previous) => ({
+            data:
+              transient &&
+              previous.path === path &&
+              previous.account === account
+                ? previous.data
+                : null,
+            loading: false,
+            error: error.message,
+            path,
+            account,
+          }));
+        }
       });
     return () => {
       controller.abort();
       request.release();
     };
   }, [path, revision, retry, account]);
-  return { ...state, data: state.path === path ? state.data : null, reload };
+  const current = state.path === path && state.account === account;
+  return {
+    data: current ? state.data : null,
+    error: current ? state.error : "",
+    loading: current ? state.loading : !!path,
+    path,
+    reload,
+  };
 }
 export function useAction() {
   const [busy, setBusy] = useState(false),
