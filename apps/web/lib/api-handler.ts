@@ -1,4 +1,5 @@
 import { randomBytes, createHash, randomUUID } from "node:crypto";
+import { assistantApi } from "@axiom/shared/assistant-api";
 import {
   initializeDocument,
   documentExtension,
@@ -228,6 +229,8 @@ async function handleRequest(
       const space = await spaceAccess(user.id, project.space_id);
       return json({ ...space, space_id: space.id }, created.status);
     }
+    const assistantResponse = await assistantApi(request, path, user.id);
+    if (assistantResponse) return assistantResponse;
     const planningResponse = await planningApi(request, path, user.id);
     if (planningResponse) return planningResponse;
     const lifecycleResponse = await spaceLifecycleApi(request, path, user.id);

@@ -1,4 +1,5 @@
 "use client";
+import { openAssistant } from "../../lib/assistant";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
@@ -18,6 +19,7 @@ import {
   List,
   LoaderCircle,
   Minus,
+  MessageSquare,
   PanelLeft,
   Plus,
   RotateCw,
@@ -943,6 +945,40 @@ export default function PdfReader({
           <BookmarkPlus size={17} />
         </Tool>
         <span className="toolbar-spacer" />
+        <Tool
+          label="Ask workspace assistant"
+          disabled={!pdf || !meta?.resource_id}
+          onClick={() =>
+            void (async () => {
+              if (!pdf || !meta?.resource_id) return;
+              const text = (
+                await (await pdf.getPage(page)).getTextContent()
+              ).items
+                .map((item) => ("str" in item ? item.str : ""))
+                .join(" ");
+              if (!text.trim())
+                throw new Error(
+                  "This page has no extractable text. Review OCR text before attaching it.",
+                );
+              if (text.length > 30000)
+                throw new Error(
+                  "This page exceeds the assistant evidence limit. Use a smaller reviewed excerpt.",
+                );
+              openAssistant({
+                spaceId: meta.space_id,
+                selection: {
+                  kind: "pdf",
+                  id: meta.resource_id,
+                  versionId: meta.id,
+                  page,
+                  text,
+                },
+              });
+            })().catch((e) => setError(e.message))
+          }
+        >
+          <MessageSquare size={17} />
+        </Tool>
         <Tool
           label="Paper assistant"
           pressed={assistant}

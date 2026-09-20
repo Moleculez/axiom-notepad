@@ -142,6 +142,18 @@ Cached worker scripts use synthetic responses to retain their original bootstrap
 
 ## Scope and operations
 
+The optional [workspace assistant](WORKSPACE_ASSISTANT.md) separates private
+conversation/context capture (`assistant-api`/`assistant-service`), durable provider
+execution (`assistant-worker` via the existing tool queue), and reviewed actions
+(`assistant-proposals`). Provider output cannot directly author accepted documents.
+Document drafts hand off to the existing suggestion projection after the server's
+CRDT state vector is present locally. Task receipts use the same transaction-level
+planning mutation service as ordinary edits; preview identity, version checks and
+guarded inverses apply. Schema 28 keeps private evidence, proposals and operation
+receipts separate from shared research content. Deletion/retention and response
+publication serialize on conversation locks. Polling batches normal evidence
+authorization, with per-turn dependency checks when access is lost.
+
 The design targets small research groups (roughly 50 members and up to 10 simultaneous editors on a note). Ten-client convergence is an acceptance test, not a public-internet load/SLA guarantee. Text is limited to one million characters per note. Code blocks are displayed, never executed. Bibliography metadata is group-shared; there is no automatic external AI-provider upload or paper scraping.
 
 There is no billing, checkout, public signup/sharing or arbitrary user-defined database system. Workspaces have bounded List/Board/Calendar/Gantt/Workload planning, recurrences, dependencies, snapshot-bound reviews and discussions. PostgreSQL DATE values remain calendar strings to prevent time-zone shifts during JSON round trips. Email requires explicit preferences and SMTP configuration.

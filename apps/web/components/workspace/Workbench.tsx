@@ -1,5 +1,7 @@
 "use client";
 import FilePreviewSurface from "../tools/FilePreviewSurface";
+import AssistantSuggestion from "../assistant/AssistantSuggestion";
+import { openAssistant } from "../../lib/assistant";
 import ResourceDiscussion from "../tools/ResourceDiscussion";
 import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
@@ -1004,6 +1006,20 @@ function DocumentPane({
           ))}
         </div>
         <ResourceSharing resourceId={note.id} />
+        <button
+          className="icon-button"
+          aria-label="Ask about this note"
+          title="Ask workspace assistant"
+          onClick={() =>
+            openAssistant({
+              spaceId: context.data?.space.id,
+              selection: { kind: "document", id: note.id, editable: false },
+              selectionLabel: note.title,
+            })
+          }
+        >
+          <MessageSquare size={17} />
+        </button>
         {canComment && (
           <button
             className="icon-button"
@@ -1791,6 +1807,16 @@ function DocumentPane({
           onClose={() => setProposal(null)}
         />
       )}
+      {active &&
+        reviewLocation.params.has("assistantDraft") &&
+        editor.current?.reviewBinding() && (
+          <AssistantSuggestion
+            noteId={note.id}
+            generation={note.generation}
+            title={note.title}
+            accepted={editor.current.reviewBinding()!}
+          />
+        )}
     </section>
   );
 }

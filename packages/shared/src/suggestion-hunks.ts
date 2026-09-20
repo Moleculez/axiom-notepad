@@ -5,6 +5,21 @@ const encode = (p: Y.RelativePosition) =>
   btoa(String.fromCharCode(...Y.encodeRelativePosition(p)));
 const decode = (s: string) =>
   Y.decodeRelativePosition(Uint8Array.from(atob(s), (c) => c.charCodeAt(0)));
+/** A source string can arrive before its CRDT identities. Never resolve a
+ * server-seeded proposal against a cold or only partially synchronized document. */
+export function hasSuggestionBase(doc: Y.Doc, stateVector: string): boolean {
+  try {
+    const required = Y.decodeStateVector(
+      Uint8Array.from(atob(stateVector), (c) => c.charCodeAt(0)),
+    );
+    const current = Y.decodeStateVector(Y.encodeStateVector(doc));
+    return [...required].every(
+      ([client, clock]) => (current.get(client) ?? 0) >= clock,
+    );
+  } catch {
+    return false;
+  }
+}
 export function captureHunks(
   doc: Y.Doc,
   changes: TextChange[],

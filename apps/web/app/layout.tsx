@@ -60,6 +60,7 @@ import "./workspace-planning.css";
 import "./pdf-reader.css";
 import "./workspace-discovery.css";
 import "./office-viewer.css";
+import "./assistant.css";
 import "../themes/paper-research.css";
 import "../themes/technical-slate.css";
 import "../../../packages/shared/assets/document-decorations.css";

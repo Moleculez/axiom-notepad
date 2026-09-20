@@ -83,7 +83,7 @@ function date(value: unknown): string | null {
       ? value.slice(0, 10)
       : null;
 }
-async function lockPlanning(
+export async function lockPlanning(
   client: PoolClient,
   userId: string,
   spaceId: string,
@@ -557,177 +557,8 @@ export async function planningApi(
         );
         return { ok: true, undoId: preview.id, count: changes.length };
       }
-      if (section === "tasks") {
-        const [existing] = child
-          ? (
-              await client.query<PlanningTask>(
-                `SELECT ${taskFields(true)} FROM tasks t LEFT JOIN "user" u ON u.id=t.assignee_id WHERE t.id=$1 AND t.space_id=$2 FOR UPDATE OF t`,
-                [uuid.parse(child), id],
-              )
-            ).rows
-          : [];
-        if (child && !existing) throw new HttpError(404, "Task unavailable.");
-        if (existing)
-          assertRevision(existing.version, z.number().int().parse(raw.version));
-        if (raw.deleted === true || raw.deleted === false) {
-          if (!existing) throw new HttpError(400, "Choose a task first.");
-          if (
-            raw.deleted === true &&
-            (
-              await client.query(
-                "SELECT 1 FROM tasks WHERE parent_id=$1 AND deleted_at IS NULL",
-                [child],
-              )
-            ).rowCount
-          )
-            throw new HttpError(409, "Move or delete the subtasks first.");
-          if (
-            raw.deleted === false &&
-            existing.parent_id &&
-            !(
-              await client.query(
-                "SELECT 1 FROM tasks WHERE id=$1 AND space_id=$2 AND deleted_at IS NULL",
-                [existing.parent_id, id],
-              )
-            ).rowCount
-          )
-            throw new HttpError(409, "Restore the parent task first.");
-          const [task] = (
-            await client.query(
-              "UPDATE tasks SET deleted_at=CASE WHEN $2 THEN now() ELSE NULL END,version=version+1,updated_at=now() WHERE id=$1 RETURNING *",
-              [child, raw.deleted],
-            )
-          ).rows;
-          if (!raw.deleted) dependencyOrder(await planningTasks(client, id));
-          await event(
-            client,
-            userId,
-            id,
-            `${raw.deleted ? "Deleted" : "Restored"} task: ${task.title}`,
-            child,
-          );
-          return task;
-        }
-        if (existing?.deleted_at)
-          throw new HttpError(409, "Restore this task before editing it.");
-        const old = existing ? normalizeTask(existing) : null;
-        const input = taskInput.parse({
-          ...(old
-            ? {
-                title: old.title,
-                body: old.body,
-                status: old.status,
-                priority: old.priority,
-                assigneeId: old.assignee_id,
-                parentId: old.parent_id,
-                startOn: old.start_on,
-                dueOn: old.due_on,
-                estimateHours:
-                  old.estimate_hours == null
-                    ? null
-                    : Number(old.estimate_hours),
-                labels: old.labels,
-                milestoneId: old.milestone_id,
-                noteId: old.note_id,
-                resourceIds: old.resource_ids,
-                dependencies: old.dependencies,
-                position: old.position,
-              }
-            : {}),
-          ...raw,
-        });
-        // The modern evidence set and the legacy single-note field describe the
-        // same links. Removing a migrated note must not silently re-add it.
-        if (
-          old?.note_id &&
-          Object.hasOwn(raw, "resourceIds") &&
-          !Object.hasOwn(raw, "noteId") &&
-          !input.resourceIds.includes(old.note_id)
-        )
-          input.noteId = null;
-        if (
-          old?.note_id &&
-          Object.hasOwn(raw, "noteId") &&
-          input.noteId !== old.note_id &&
-          !Object.hasOwn(raw, "resourceIds")
-        )
-          input.resourceIds = input.resourceIds.filter(
-            (resourceId) => resourceId !== old.note_id,
-          );
-        const taskId = child ?? randomUUID();
-        const resources = await validateTask(client, id, input, taskId);
-        const fields = [
-          input.title,
-          input.body,
-          input.status,
-          input.priority,
-          input.assigneeId,
-          input.parentId,
-          input.startOn,
-          input.dueOn,
-          input.estimateHours,
-          input.labels,
-          input.milestoneId,
-          input.noteId,
-          input.position,
-        ];
-        const [task] = existing
-          ? (
-              await client.query(
-                "UPDATE tasks SET title=$2,body=$3,status=$4,priority=$5,assignee_id=$6,parent_id=$7,start_on=$8,due_on=$9,estimate_hours=$10,labels=$11,milestone_id=$12,note_id=$13,position=$14,version=version+1,updated_at=now() WHERE id=$1 RETURNING *",
-                [taskId, ...fields],
-              )
-            ).rows
-          : (
-              await client.query(
-                "INSERT INTO tasks(id,title,body,status,priority,assignee_id,parent_id,start_on,due_on,estimate_hours,labels,milestone_id,note_id,position,space_id,project_id,created_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) RETURNING *",
-                [taskId, ...fields, id, space.project_id, userId],
-              )
-            ).rows;
-        // Reconcile changed links only: unchanged dependencies/evidence must not
-        // produce deletion/recreation audit events or per-link round trips.
-        await client.query(
-          "DELETE FROM task_dependencies WHERE task_id=$1 AND NOT(depends_on=ANY($2::uuid[]))",
-          [taskId, input.dependencies],
-        );
-        await client.query(
-          "INSERT INTO task_dependencies(task_id,depends_on) SELECT $1,unnest($2::uuid[]) ON CONFLICT DO NOTHING",
-          [taskId, [...new Set(input.dependencies)]],
-        );
-        await client.query(
-          "DELETE FROM task_resources WHERE task_id=$1 AND NOT(resource_id=ANY($2::uuid[]))",
-          [taskId, resources],
-        );
-        await client.query(
-          "INSERT INTO task_resources(task_id,resource_id) SELECT $1,unnest($2::uuid[]) ON CONFLICT DO NOTHING",
-          [taskId, resources],
-        );
-        await event(
-          client,
-          userId,
-          id,
-          `${existing ? "Updated" : "Created"} task: ${input.title}`,
-          taskId,
-        );
-        if (
-          input.assigneeId &&
-          input.assigneeId !== userId &&
-          input.assigneeId !== existing?.assignee_id
-        )
-          await deliverEvent(client, {
-            userId: input.assigneeId,
-            spaceId: id,
-            kind: "assignments",
-            title: `Assigned to you: ${input.title}`,
-            taskId,
-            dedupe: `assigned:${taskId}:${task.version}`,
-          });
-        return normalizeTask({
-          ...task,
-          dependencies: input.dependencies,
-          resource_ids: resources,
-        });
-      }
+      if (section === "tasks")
+        return mutatePlanningTask(client, userId, id, space, child, raw);
       if (section === "milestones") {
         const input = z
           .object({
@@ -853,4 +684,182 @@ export async function planningApi(
   );
   await notifyWorkspace();
   return json(result, method === "POST" && !child ? 201 : 200);
+}
+
+/** Shared transaction-level task service; caller holds lockPlanning. */
+export async function mutatePlanningTask(
+  client: PoolClient,
+  userId: string,
+  id: string,
+  space: { project_id: string | null },
+  child: string | undefined,
+  raw: Record<string, any>,
+) {
+  const [existing] = child
+    ? (
+        await client.query<PlanningTask>(
+          `SELECT ${taskFields(true)} FROM tasks t LEFT JOIN "user" u ON u.id=t.assignee_id WHERE t.id=$1 AND t.space_id=$2 FOR UPDATE OF t`,
+          [uuid.parse(child), id],
+        )
+      ).rows
+    : [];
+  if (child && !existing) throw new HttpError(404, "Task unavailable.");
+  if (existing)
+    assertRevision(existing.version, z.number().int().parse(raw.version));
+  if (raw.deleted === true || raw.deleted === false) {
+    if (!existing) throw new HttpError(400, "Choose a task first.");
+    if (
+      raw.deleted === true &&
+      (
+        await client.query(
+          "SELECT 1 FROM tasks WHERE parent_id=$1 AND deleted_at IS NULL",
+          [child],
+        )
+      ).rowCount
+    )
+      throw new HttpError(409, "Move or delete the subtasks first.");
+    if (
+      raw.deleted === false &&
+      existing.parent_id &&
+      !(
+        await client.query(
+          "SELECT 1 FROM tasks WHERE id=$1 AND space_id=$2 AND deleted_at IS NULL",
+          [existing.parent_id, id],
+        )
+      ).rowCount
+    )
+      throw new HttpError(409, "Restore the parent task first.");
+    const [task] = (
+      await client.query(
+        "UPDATE tasks SET deleted_at=CASE WHEN $2 THEN now() ELSE NULL END,version=version+1,updated_at=now() WHERE id=$1 RETURNING *",
+        [child, raw.deleted],
+      )
+    ).rows;
+    if (!raw.deleted) dependencyOrder(await planningTasks(client, id));
+    await event(
+      client,
+      userId,
+      id,
+      `${raw.deleted ? "Deleted" : "Restored"} task: ${task.title}`,
+      child,
+    );
+    return task;
+  }
+  if (existing?.deleted_at)
+    throw new HttpError(409, "Restore this task before editing it.");
+  const old = existing ? normalizeTask(existing) : null;
+  const input = taskInput.parse({
+    ...(old
+      ? {
+          title: old.title,
+          body: old.body,
+          status: old.status,
+          priority: old.priority,
+          assigneeId: old.assignee_id,
+          parentId: old.parent_id,
+          startOn: old.start_on,
+          dueOn: old.due_on,
+          estimateHours:
+            old.estimate_hours == null ? null : Number(old.estimate_hours),
+          labels: old.labels,
+          milestoneId: old.milestone_id,
+          noteId: old.note_id,
+          resourceIds: old.resource_ids,
+          dependencies: old.dependencies,
+          position: old.position,
+        }
+      : {}),
+    ...raw,
+  });
+  // The modern evidence set and the legacy single-note field describe the
+  // same links. Removing a migrated note must not silently re-add it.
+  if (
+    old?.note_id &&
+    Object.hasOwn(raw, "resourceIds") &&
+    !Object.hasOwn(raw, "noteId") &&
+    !input.resourceIds.includes(old.note_id)
+  )
+    input.noteId = null;
+  if (
+    old?.note_id &&
+    Object.hasOwn(raw, "noteId") &&
+    input.noteId !== old.note_id &&
+    !Object.hasOwn(raw, "resourceIds")
+  )
+    input.resourceIds = input.resourceIds.filter(
+      (resourceId) => resourceId !== old.note_id,
+    );
+  const taskId = child ?? randomUUID();
+  const resources = await validateTask(client, id, input, taskId);
+  const fields = [
+    input.title,
+    input.body,
+    input.status,
+    input.priority,
+    input.assigneeId,
+    input.parentId,
+    input.startOn,
+    input.dueOn,
+    input.estimateHours,
+    input.labels,
+    input.milestoneId,
+    input.noteId,
+    input.position,
+  ];
+  const [task] = existing
+    ? (
+        await client.query(
+          "UPDATE tasks SET title=$2,body=$3,status=$4,priority=$5,assignee_id=$6,parent_id=$7,start_on=$8,due_on=$9,estimate_hours=$10,labels=$11,milestone_id=$12,note_id=$13,position=$14,version=version+1,updated_at=now() WHERE id=$1 RETURNING *",
+          [taskId, ...fields],
+        )
+      ).rows
+    : (
+        await client.query(
+          "INSERT INTO tasks(id,title,body,status,priority,assignee_id,parent_id,start_on,due_on,estimate_hours,labels,milestone_id,note_id,position,space_id,project_id,created_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) RETURNING *",
+          [taskId, ...fields, id, space.project_id, userId],
+        )
+      ).rows;
+  // Reconcile changed links only: unchanged dependencies/evidence must not
+  // produce deletion/recreation audit events or per-link round trips.
+  await client.query(
+    "DELETE FROM task_dependencies WHERE task_id=$1 AND NOT(depends_on=ANY($2::uuid[]))",
+    [taskId, input.dependencies],
+  );
+  await client.query(
+    "INSERT INTO task_dependencies(task_id,depends_on) SELECT $1,unnest($2::uuid[]) ON CONFLICT DO NOTHING",
+    [taskId, [...new Set(input.dependencies)]],
+  );
+  await client.query(
+    "DELETE FROM task_resources WHERE task_id=$1 AND NOT(resource_id=ANY($2::uuid[]))",
+    [taskId, resources],
+  );
+  await client.query(
+    "INSERT INTO task_resources(task_id,resource_id) SELECT $1,unnest($2::uuid[]) ON CONFLICT DO NOTHING",
+    [taskId, resources],
+  );
+  await event(
+    client,
+    userId,
+    id,
+    `${existing ? "Updated" : "Created"} task: ${input.title}`,
+    taskId,
+  );
+  if (
+    input.assigneeId &&
+    input.assigneeId !== userId &&
+    input.assigneeId !== existing?.assignee_id
+  )
+    await deliverEvent(client, {
+      userId: input.assigneeId,
+      spaceId: id,
+      kind: "assignments",
+      title: `Assigned to you: ${input.title}`,
+      taskId,
+      dedupe: `assigned:${taskId}:${task.version}`,
+    });
+  return normalizeTask({
+    ...task,
+    dependencies: input.dependencies,
+    resource_ids: resources,
+  });
 }

@@ -23,7 +23,7 @@ administrator.pathname = "/postgres";
 const admin = new pg.Client({ connectionString: administrator.href });
 await admin.connect();
 try {
-  for (const mode of ["fresh", "upgrade"] as const) {
+  for (const mode of ["fresh", "upgrade", "assistant_upgrade"] as const) {
     const name = `axiom_${mode}_test_${stamp}`;
     assert(configured.pathname !== `/${name}`);
     await admin.query(`CREATE DATABASE "${name}"`);
@@ -43,12 +43,14 @@ try {
       const state = Buffer.from(Y.encodeStateAsUpdate(document));
       document.destroy();
       let before: unknown;
-      if (mode === "upgrade") {
+      if (mode !== "fresh") {
         await db.query(migration);
         await db.query(
           "CREATE TABLE schema_migrations(version integer PRIMARY KEY,name text NOT NULL,applied_at timestamptz NOT NULL DEFAULT now())",
         );
-        for (const item of forwardMigrations.filter((m) => m.version <= 18)) {
+        for (const item of forwardMigrations.filter(
+          (m) => m.version <= (mode === "assistant_upgrade" ? 27 : 18),
+        )) {
           await db.query(item.sql);
           await db.query(
             "INSERT INTO schema_migrations(version,name) VALUES($1,$2)",
@@ -105,7 +107,15 @@ try {
         ).rows[0].name,
         "visual_annotations",
       );
-      if (mode === "upgrade") {
+      assert.equal(
+        (
+          await db.query(
+            "SELECT to_regclass('public.assistant_contexts')::text AS name",
+          )
+        ).rows[0].name,
+        "assistant_contexts",
+      );
+      if (mode !== "fresh") {
         assert.deepEqual(
           (
             await db.query(

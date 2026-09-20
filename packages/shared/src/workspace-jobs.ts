@@ -12,6 +12,7 @@ import {
 import { deliverEvent, recordActivity, enqueueJob } from "./workspace-service";
 import { sendMail, appUrl } from "./auth";
 import { notifyWorkspace } from "./documents";
+import { assistantMaintenance } from "./assistant-service";
 import { deleteUnusedBlob } from "./resource-operations";
 import { buildWorkspaceExport } from "./workspace-exports";
 import { purgeSpace } from "./space-lifecycle";
@@ -321,6 +322,7 @@ export async function processWorkspaceJob() {
   return true;
 }
 export async function workspaceMaintenance() {
+  await assistantMaintenance();
   await query("DELETE FROM pdf_ocr_jobs WHERE expires_at<now()");
   await pruneImageDraftAssets();
   await processRecurrences();

@@ -1,4 +1,5 @@
 "use client";
+import { openAssistant } from "../../lib/assistant";
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import {
@@ -1143,6 +1144,19 @@ function TaskForm({
           <small>{space.name}</small>
           <h2>{task ? "Task details" : "New task"}</h2>
         </div>
+        {task && (
+          <button
+            className="button ghost"
+            onClick={() =>
+              openAssistant({
+                spaceId: space.id,
+                selection: { kind: "task", id: task.id, editable: false },
+              })
+            }
+          >
+            Ask assistant
+          </button>
+        )}
         <button
           className="icon-button"
           aria-label="Close task details"

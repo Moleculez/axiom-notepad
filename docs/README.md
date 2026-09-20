@@ -11,6 +11,7 @@ not installation instructions or proof of today's test results.
 - [Workspace planning](WORKSPACE_PLANNING.md) — unified navigation, tasks, Gantt, calendars, drafts and migration
 - [Editor and shortcuts](EDITOR.md) — visual/source editing and research blocks
 - [Version history and review](VERSION_REVIEW.md) — comparisons, suggestions, milestones, assigned reviews and cloud drafts
+- [Workspace research assistant](WORKSPACE_ASSISTANT.md) — consented context, citations, private suggestions, task proposals and provider setup
 - [Reading and references](READING.md) — paper reading, bibliography and appearance
 - [PDF research workbench](PDF_READER.md) — reader, selection actions, contents, page copies and opt-in assistance
 - [Self-hosted CPU OCR](SELF_HOSTED_OCR.md) — private queue, reviewed text, searchable copies and operator acceptance

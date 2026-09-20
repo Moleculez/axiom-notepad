@@ -14,6 +14,7 @@ import { fileRouteId } from "@axiom/shared/file-routes";
 import { timeAgo } from "../../lib/client";
 import { useWorkSessions } from "../../lib/workspace-sessions";
 import Dialog, { DialogFooter } from "../Dialog";
+import { openAssistant } from "../../lib/assistant";
 import { ErrorNotice, ResourceIcon, useData, useWorkspace } from "./ui";
 import { destinations, locationIcon } from "./WorkspaceToolbar";
 
@@ -127,6 +128,17 @@ export default function WorkspaceSearch({ onClose }: { onClose: () => void }) {
         }),
       ),
     });
+    if (!term || /assistant|research|ask/i.test(term))
+      groups
+        .at(-1)!
+        .entries.unshift({
+          id: "command:assistant",
+          title: "Research assistant",
+          detail: "Cited answers and reviewed proposals",
+          kind: "Open",
+          icon: <FileSearch size={18} />,
+          action: () => openAssistant(),
+        });
   }
   if (endpoint && !pending && !data.error)
     groups.push({

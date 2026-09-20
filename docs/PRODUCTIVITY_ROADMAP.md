@@ -27,6 +27,11 @@ group-admin features remain in place. No new Office editing engine is introduced
 - Word reading with headings/tables/comments/footnotes; PowerPoint text/slides
   navigator and speaker notes; search, versioned reading links, text export and
   optional privately converted page views. See [viewer limits](RESEARCH_TOOLS.md).
+- [Unified research assistant](WORKSPACE_ASSISTANT.md): private workspace conversations,
+  local source search and exact excerpts, reviewed outgoing context, citations,
+  explicit Markdown/math suggestion publication, version-fenced task operations and
+  guarded Undo, cancellation and retention. Provider-backed production acceptance
+  remains gated; local fixtures do not establish model quality.
 
 ## Remaining implementation stages
 
@@ -34,10 +39,10 @@ group-admin features remain in place. No new Office editing engine is introduced
    verify drawing export in desktop readers, expand real mixed/CJK/password/large
    fixtures and offline/revocation/accessibility acceptance. Durable offline thread
    drafts, generic text/area geometry handles and richer native-arrow import remain.
-2. **Unified assistant:** extend the existing opt-in math/paper assistance to
-   permission-scoped workspace context, reviewed proposed changes, operation
-   receipts, cancellations and source citations. Group-managed providers and
-   explicit context consent remain mandatory. No automatic AI writes.
+2. **Assistant acceptance and refinements:** verify a deliberately configured real
+   provider's limits, output quality, billing/retention and cancellation behavior;
+   broader long-conversation/accessibility acceptance. Office/Canvas context, web
+   retrieval and autonomous operations are not included in the initial assistant.
 3. **Advanced planning:** workspace portfolios, schedule baselines and comparisons,
    critical-path/slack calculations, real capacity planning and conflict previews.
    Existing task/List/Board/Calendar/Gantt/Workload workflows are not replaced.

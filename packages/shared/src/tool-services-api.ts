@@ -77,9 +77,9 @@ export async function toolServicesApi(
           model: z.string().trim().min(1).max(160),
           credential: z.string().max(2000).optional(),
           capabilities: z
-            .array(z.enum(["math", "ocr", "paper"]))
+            .array(z.enum(["math", "ocr", "paper", "assistant"]))
             .min(1)
-            .max(3),
+            .max(4),
           enabled: z.boolean(),
           dailyLimit: z.number().int().min(1).max(10000),
           version: z.number().int().positive().optional(),
@@ -315,6 +315,11 @@ export async function toolServicesApi(
         [uuid.parse(id), userId],
       );
       if (!job) throw new HttpError(404, "Job unavailable.");
+      if (job.kind === "assistant")
+        throw new HttpError(
+          404,
+          "Use the permission-scoped assistant conversation endpoint.",
+        );
       if (job.result?.deleted) throw new HttpError(404, "Job unavailable.");
       if (job.resource_id) await resourceAccess(userId, job.resource_id);
       if (job.version_id) await fileAccess(userId, job.version_id);

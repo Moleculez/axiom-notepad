@@ -44,6 +44,7 @@ export const suggestionWriteSchema = z
     mutationId: z.uuid(),
     version: z.number().int().nonnegative(),
     generation: z.number().int().positive(),
+    assistantContextId: z.uuid().optional(),
     hunks: z.array(suggestionHunkSchema).max(500),
     message: z.string().max(10000).default(""),
   })

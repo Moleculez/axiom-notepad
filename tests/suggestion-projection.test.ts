@@ -6,6 +6,7 @@ import {
   captureHunks,
   resolveHunks,
   applyHunks,
+  hasSuggestionBase,
 } from "../packages/shared/src/suggestion-hunks";
 
 function setup(source = "Alpha result\n\nBeta result\n") {
@@ -27,6 +28,28 @@ function setup(source = "Alpha result\n\nBeta result\n") {
   };
 }
 describe("separate suggestion projection", () => {
+  it("waits for complete CRDT identities before resolving a server-seeded draft", () => {
+    const server = new Y.Doc(),
+      client = new Y.Doc(),
+      sameText = new Y.Doc();
+    server.getText("markdown").insert(0, "x^2");
+    const partial = Y.encodeStateAsUpdate(server);
+    server.getText("markdown").insert(3, " + y");
+    const vector = Buffer.from(Y.encodeStateVector(server)).toString("base64");
+    expect(hasSuggestionBase(client, vector)).toBe(false);
+    Y.applyUpdate(client, partial);
+    expect(hasSuggestionBase(client, vector)).toBe(false);
+    sameText
+      .getText("markdown")
+      .insert(0, server.getText("markdown").toString());
+    expect(hasSuggestionBase(sameText, vector)).toBe(false);
+    Y.applyUpdate(client, Y.encodeStateAsUpdate(server));
+    expect(hasSuggestionBase(client, vector)).toBe(true);
+    expect(hasSuggestionBase(client, "invalid-base64!")).toBe(false);
+    server.destroy();
+    client.destroy();
+    sameText.destroy();
+  });
   for (const kind of [
     "typing",
     "delete",

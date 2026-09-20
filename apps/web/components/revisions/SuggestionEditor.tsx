@@ -38,6 +38,7 @@ import StudioSource from "../tools/StudioSource";
 const MathVisual = dynamic(() => import("../tools/MathVisual"), { ssr: false });
 
 type Props = {
+  seed?: ProposalDraft;
   noteId: string;
   generation: number;
   title: string;
@@ -91,22 +92,25 @@ export default function SuggestionEditor(props: Props) {
     void (async () => {
       const p = live.current.props;
       const drafts = await proposalDrafts(session.user.id, p.noteId);
-      const local = p.proposal
-        ? drafts.find(
-            (d) =>
-              d.id === p.proposal!.id &&
-              (d.revision > d.confirmed ||
-                d.pending ||
-                d.version >= p.proposal!.version),
-          )
-        : drafts.find(
-            (d) =>
-              d.generation === p.generation &&
-              (d.revision > d.confirmed || d.version === 0),
-          );
+      const local = p.seed
+        ? drafts.find((d) => d.id === p.seed!.id)
+        : p.proposal
+          ? drafts.find(
+              (d) =>
+                d.id === p.proposal!.id &&
+                (d.revision > d.confirmed ||
+                  d.pending ||
+                  d.version >= p.proposal!.version),
+            )
+          : drafts.find(
+              (d) =>
+                d.generation === p.generation &&
+                (d.revision > d.confirmed || d.version === 0),
+            );
       if (!alive) return;
       const initial =
         local ??
+        p.seed ??
         (p.proposal
           ? { hunks: p.proposal.hunks, source: p.accepted.source }
           : undefined);
@@ -127,18 +131,19 @@ export default function SuggestionEditor(props: Props) {
           });
       };
       projected = new SuggestionProjection(p.accepted, changed, initial);
-      const draft: ProposalDraft = local ?? {
-        id: p.proposal?.id ?? crypto.randomUUID(),
-        noteId: p.noteId,
-        generation: p.proposal?.generation ?? p.generation,
-        source: projected.source,
-        hunks: projected.hunks,
-        message: p.proposal?.message ?? "",
-        version: p.proposal?.version ?? 0,
-        revision: 0,
-        confirmed: 0,
-        updatedAt: new Date().toISOString(),
-      };
+      const draft: ProposalDraft = local ??
+        p.seed ?? {
+          id: p.proposal?.id ?? crypto.randomUUID(),
+          noteId: p.noteId,
+          generation: p.proposal?.generation ?? p.generation,
+          source: projected.source,
+          hunks: projected.hunks,
+          message: p.proposal?.message ?? "",
+          version: p.proposal?.version ?? 0,
+          revision: 0,
+          confirmed: 0,
+          updatedAt: new Date().toISOString(),
+        };
       if (draft.generation !== p.generation)
         projected.conflict =
           "This proposal belongs to an earlier restored document.";
@@ -184,6 +189,7 @@ export default function SuggestionEditor(props: Props) {
     props.noteId,
     props.generation,
     props.proposal?.id,
+    props.seed?.id,
     session.user.id,
   ]);
   useEffect(() => {

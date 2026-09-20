@@ -3,6 +3,11 @@ import { api, ApiError, SIGN_OUT_PENDING } from "./client";
 import { SaveCoordinator } from "./save-coordinator";
 import { LatestCheckpoint } from "./latest-checkpoint";
 export type ProposalDraft = {
+  /** AI-generated recovery must never publish without an explicit user action. */
+  manualPublish?: boolean;
+  /** Retain provenance through local recovery, even after a private chat expires. */
+  assistantContextId?: string;
+  assistantStateVector?: string;
   id: string;
   noteId: string;
   generation: number;
@@ -132,7 +137,12 @@ export class SuggestionOutbox {
       writeDraft(this.account, value),
     );
     this.saves = new SaveCoordinator(() => this.publish(), 1500, 5000);
-    if (draft.revision > draft.confirmed || draft.pending) this.saves.changed();
+    if (
+      !draft.manualPublish &&
+      (draft.revision > draft.confirmed || draft.pending)
+    )
+      this.saves.changed();
+    if (draft.manualPublish) void this.persist();
     window.addEventListener("online", this.reconnect);
     window.addEventListener("storage", this.accountChanged);
     window.addEventListener("axiom:close-documents", this.lock);
@@ -148,7 +158,7 @@ export class SuggestionOutbox {
       updatedAt: new Date().toISOString(),
     };
     this.persist();
-    if (changed) this.saves.changed();
+    if (changed && !this.draft.manualPublish) this.saves.changed();
   }
   private persist() {
     const value = structuredClone(this.draft);
@@ -157,9 +167,11 @@ export class SuggestionOutbox {
       .then(() => {
         if (!this.closed && !this.paused)
           this.status(
-            navigator.onLine
-              ? "Proposal saved on device · publishing…"
-              : "Proposal saved on device · offline",
+            this.draft.manualPublish
+              ? "Private AI-assisted draft · click Publish to share"
+              : navigator.onLine
+                ? "Proposal saved on device · publishing…"
+                : "Proposal saved on device · offline",
           );
       })
       .catch((e) => {
@@ -193,6 +205,9 @@ export class SuggestionOutbox {
         id: this.draft.id,
         mutationId: crypto.randomUUID(),
         generation: this.draft.generation,
+        ...(this.draft.assistantContextId
+          ? { assistantContextId: this.draft.assistantContextId }
+          : {}),
         version: this.draft.version,
         hunks: this.draft.hunks,
         message: this.draft.message,
@@ -227,7 +242,8 @@ export class SuggestionOutbox {
               : "Proposal cleared · no pending changes"
             : "Newer proposal edits saved on device",
         );
-      if (this.draft.revision > localRevision) this.saves.changed();
+      if (this.draft.revision > localRevision && !this.draft.manualPublish)
+        this.saves.changed();
     } catch (e) {
       if (e instanceof ApiError && [400, 401, 403, 404, 409].includes(e.status))
         this.paused = true;
@@ -242,13 +258,14 @@ export class SuggestionOutbox {
   }
   async flush() {
     await this.local;
+    if (this.draft.manualPublish) this.saves.changed();
     await this.saves.flush();
   }
   async localFlush() {
     await this.local;
   }
   private reconnect = () => {
-    if (!this.closed && !this.paused) {
+    if (!this.closed && !this.paused && !this.draft.manualPublish) {
       this.saves.reconnect();
       void this.saves.confirm().catch(() => {});
     }

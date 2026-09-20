@@ -1,11 +1,14 @@
 "use client";
 import BrandMark from "../BrandMark";
+import AssistantHost from "../assistant/AssistantHost";
+import { openAssistant } from "../../lib/assistant";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ChevronDown,
   Bell,
   LogOut,
   Menu,
+  MessageSquare,
   Palette,
   Search,
   Upload,
@@ -551,6 +554,14 @@ export default function WorkspaceApp() {
                 <kbd>⌘/Ctrl K</kbd>
               </button>
               <div className="ws-app-tools">
+                <button
+                  className="icon-button"
+                  aria-label="Open research assistant"
+                  title="Research assistant"
+                  onClick={() => openAssistant()}
+                >
+                  <MessageSquare size={18} />
+                </button>
                 <WorkspaceStatus offline={offline} />
                 <WorkspaceLink
                   className="icon-button"
@@ -733,6 +744,7 @@ export default function WorkspaceApp() {
                   <HomePage />
                 )}
               </div>
+              <AssistantHost />
             </div>
             {notice && (
               <div className="ws-notice" role="status">

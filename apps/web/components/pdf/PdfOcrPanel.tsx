@@ -1,4 +1,5 @@
 "use client";
+import { openAssistant } from "../../lib/assistant";
 import { useEffect, useRef, useState } from "react";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import { pdfPageRange } from "@axiom/shared/pdf-reader";
@@ -378,6 +379,25 @@ export default function PdfOcrPanel({
               />
               {selected && (
                 <div className="pdf-thread-status">
+                  <button
+                    disabled={
+                      busy || dirty || !selected.reviewed || !meta.resource_id
+                    }
+                    onClick={() => {
+                      openAssistant({
+                        spaceId: meta.space_id,
+                        selection: {
+                          kind: "ocr",
+                          id: meta.resource_id!,
+                          jobId: id,
+                          page,
+                        },
+                      });
+                      onClose();
+                    }}
+                  >
+                    Ask workspace assistant
+                  </button>
                   <button
                     disabled={busy}
                     onClick={() => {

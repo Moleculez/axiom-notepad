@@ -3,6 +3,42 @@
 Updated September 20, 2026. Historical logs are [archived separately](archive/VERIFICATION-2026-09-11.md).
 Do not treat historical browser totals or local build IDs as current release evidence.
 
+## September 20 unified workspace assistant
+
+- TypeScript, ESLint, **1,840 unit tests across 89 files**, theme validation and
+  documentation-link checks pass. The isolated production build prepares **925
+  offline assets**. No build worker receives live database/provider credentials.
+- Fresh schema installation, upgrades from schema 18 and the specifically isolated
+  **27 → 28** path, plus repeated migration application, pass. The rehearsal compares
+  existing note rows and collaborative-state bytes and retains its disposable
+  databases for inspection. Local working schema 28 was applied only after a verified
+  database/attachment backup (21 attachment checksums).
+- Browser scenarios use isolated **3004/1236** and a deterministic loopback provider,
+  not external AI. They cover exact consent, owner-private history, source revocation,
+  idempotent task creation/update, preview supersession, guarded Undo, provider
+  configuration changes, cancellation, malformed/uncertain outcomes, excerpt bounds,
+  stale async previews, manual-only publication/reload recovery, deleted/dismissed
+  draft rejection, running-conversation deletion, preview limits and viewer roles.
+- The final **ten scenarios pass in Chromium, Firefox and WebKit** (30 browser
+  cases). Fresh screenshots/traces are under
+  `test-results/assistant-verified-{chromium,firefox,webkit}`. Earlier runs caught
+  an unsupported Trash test route, the app's intentional 404 access-denial contract,
+  and the math cold-load bug described below; their failures remain separate.
+- All six existing Markdown/math revision/suggestion scenarios pass in Chromium,
+  including single-tab ownership, acceptance/Undo, insertion, sign-out and offline
+  recovery. Ordinary manual suggestions retain their previous outbox behavior.
+- Cross-browser testing exposed a real cold-load math handoff race: server-proposed
+  anchors could be resolved before collaborative state arrived, reporting a false
+  insertion conflict. Handoff now waits for the captured CRDT state vector. A unit
+  test rejects empty, partial and text-identical-but-different-identity documents;
+  the browser regression deliberately holds the sync-token request before release.
+  Earlier failed traces remain private and are not relabeled as passing evidence.
+
+Provider quality, real billing/retention/cancellation behavior, dense long-history
+workloads and physical assistive-technology acceptance remain gated. No real AI
+credentials were configured, no external AI request was sent, and no production
+deployment was performed. See [assistant setup and limits](WORKSPACE_ASSISTANT.md).
+
 ## September 20 PDF roadmap stage
 
 - TypeScript, ESLint, **1,830 unit tests across 88 files**, documentation checks and
@@ -39,7 +75,8 @@ resource-limit, cancellation and restore acceptance; Docker was unavailable here
 See [OCR setup](SELF_HOSTED_OCR.md). Desktop-reader drawing appearance/Unicode free
 text, durable offline reply drafts, native-arrow import, generic text/area geometry
 editing and broader real-document/accessibility/revocation testing remain gated.
-Unified AI and advanced planning are subsequent roadmap stages, not claimed done.
+The subsequent assistant increment is recorded above; advanced planning remains a
+later roadmap stage.
 
 ## September 20 compact menus, PDF portability and Office reading
 

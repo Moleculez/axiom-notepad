@@ -30,6 +30,9 @@ tested workflows from remaining device, accessibility and provider checks.
   See [version history and review](docs/VERSION_REVIEW.md).
 - **Connect the evidence.** Collaborative Canvas with rich text and file cards,
   labeled connections, embedded previews, layout controls and portable exports.
+- **Ask with evidence.** An opt-in [workspace research assistant](docs/WORKSPACE_ASSISTANT.md)
+  with selected excerpts, exact outgoing-context review, source citations, private
+  Markdown/math suggestions and reviewed task changes with guarded Undo.
 - **Plan in your workspace.** Files, tasks, milestones, discussions and reviews in
   one place. Switch between List, Board, Calendar, Gantt and Workload; preview
   dependency-aware schedule changes before applying them, with guarded Undo.
@@ -58,7 +61,7 @@ styled worksheet grids, Word reading outlines and PowerPoint speaker notes.
 Paper assistance is explicitly opt-in; the guide lists current limits and
 remaining Zotero-style features.
 The [productivity roadmap](docs/PRODUCTIVITY_ROADMAP.md) separates this increment
-from the remaining unified-assistant and advanced-planning work.
+from remaining provider acceptance, advanced planning and team-operation stages.
 
 ## One document, two editing surfaces
 

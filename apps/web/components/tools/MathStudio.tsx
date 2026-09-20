@@ -3,6 +3,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useRevisionVisit } from "../../lib/revision-visit";
 import type { Suggestion } from "@axiom/shared/revisions";
+import AssistantSuggestion from "../assistant/AssistantSuggestion";
+import { openAssistant } from "../../lib/assistant";
 const SuggestionEditor = dynamic(
   () => import("../revisions/SuggestionEditor"),
   { ssr: false },
@@ -329,6 +331,23 @@ export default function MathStudio({ project }: { project: ToolProject }) {
             </span>
           ))}
         </div>
+        <button
+          className="icon-button"
+          aria-label="Ask about this equation"
+          title="Ask workspace assistant"
+          onClick={() =>
+            openAssistant({
+              selection: {
+                kind: "document",
+                id: project.resource_id,
+                editable: false,
+              },
+              prompt: "Explain this mathematics, including its assumptions.",
+            })
+          }
+        >
+          <MessageSquare size={17} />
+        </button>
         <button
           className="icon-button"
           title="Checkpoint history"
@@ -758,6 +777,15 @@ export default function MathStudio({ project }: { project: ToolProject }) {
           format="latex"
           proposal={proposal === "new" ? undefined : proposal}
           onClose={() => setProposal(null)}
+        />
+      )}
+      {reviewLocation.params.has("assistantDraft") && document.binding && (
+        <AssistantSuggestion
+          noteId={project.resource_id}
+          generation={project.generation ?? 1}
+          title={project.name}
+          accepted={document.binding}
+          format="latex"
         />
       )}
     </main>

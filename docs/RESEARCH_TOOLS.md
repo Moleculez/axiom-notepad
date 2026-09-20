@@ -193,6 +193,9 @@ keep it in a secret store and retain it separately with disaster-recovery materi
 Replacing it without migrating stored credentials makes those credentials unreadable.
 Set `TOOL_PROVIDER_ALLOWED_ORIGINS` for approved private inference origins. Group
 admins then add a model/credential and enable its capabilities in Providers.
+The separate **Workspace assistant** capability enables the
+[reviewed research workflow](WORKSPACE_ASSISTANT.md); existing math/paper grants
+do not implicitly enable it. Its answers and unpublished proposals stay private.
 
 Office conversion needs `OFFICE_CONVERTER_URL` and `OFFICE_CONVERTER_TOKEN` plus
 the optional `research-tools` Compose profile. The converter runs non-root with

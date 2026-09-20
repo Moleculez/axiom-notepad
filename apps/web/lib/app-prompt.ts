@@ -4,6 +4,7 @@ export type AppPrompt = {
   input: boolean;
   confirmLabel: string;
   destructive?: boolean;
+  defaultValue?: string;
   resolve: (value: string | null) => void;
 };
 function ask(options: Omit<AppPrompt, "resolve">) {
@@ -39,6 +40,18 @@ export function promptText(message: string) {
     title: "Save library filter",
     message,
     confirmLabel: "Save filter",
+    input: true,
+  });
+}
+export function promptValue(
+  message: string,
+  options: { title: string; defaultValue?: string },
+) {
+  return ask({
+    message,
+    title: options.title,
+    defaultValue: options.defaultValue,
+    confirmLabel: "Save",
     input: true,
   });
 }

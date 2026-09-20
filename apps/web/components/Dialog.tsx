@@ -148,6 +148,7 @@ function AppPromptHost() {
     };
   }, []);
   const request = pending[0];
+  useEffect(() => setText(request?.defaultValue ?? ""), [request]);
   const finish = (value: string | null) => {
     request?.resolve(value);
     setText("");

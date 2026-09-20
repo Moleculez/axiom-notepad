@@ -36,6 +36,7 @@ export default function ProviderSettings({ groupId }: { groupId: string }) {
     [credential, setCredential] = useState(""),
     [ocr, setOcr] = useState(false),
     [paper, setPaper] = useState(false),
+    [assistant, setAssistant] = useState(false),
     [enabled, setEnabled] = useState(false),
     [limit, setLimit] = useState(25),
     [busy, setBusy] = useState(false),
@@ -49,6 +50,7 @@ export default function ProviderSettings({ groupId }: { groupId: string }) {
     setCredential("");
     setOcr(p?.capabilities.includes("ocr") ?? false);
     setPaper(p?.capabilities.includes("paper") ?? false);
+    setAssistant(p?.capabilities.includes("assistant") ?? false);
     setEnabled(p?.enabled ?? false);
     setLimit(p?.daily_limit ?? 25);
     setError("");
@@ -165,6 +167,7 @@ export default function ProviderSettings({ groupId }: { groupId: string }) {
                       "math",
                       ...(ocr ? ["ocr"] : []),
                       ...(paper ? ["paper"] : []),
+                      ...(assistant ? ["assistant"] : []),
                     ],
                     enabled,
                     dailyLimit: limit,
@@ -272,6 +275,14 @@ export default function ProviderSettings({ groupId }: { groupId: string }) {
                 onChange={(e) => setEnabled(e.target.checked)}
               />
               Enable for this group
+            </label>
+            <label>
+              <input
+                type="checkbox"
+                checked={assistant}
+                onChange={(e) => setAssistant(e.target.checked)}
+              />
+              Enable workspace assistant (reviewed context and proposals)
             </label>
             <p className="ws-note">
               Enabling does not send any material. Each researcher chooses this

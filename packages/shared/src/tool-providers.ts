@@ -1,5 +1,6 @@
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 import { HttpError } from "./access";
+import type { AssistantMessage } from "./assistant";
 export function providerKey() {
   const value = process.env.TOOL_PROVIDER_KEY ?? "";
   const key = Buffer.from(value, "base64");
@@ -146,6 +147,80 @@ export async function callMathProvider(
     usage: {
       input: Number(data.usage?.prompt_tokens ?? 0),
       output: Number(data.usage?.completion_tokens ?? 0),
+    },
+  };
+}
+
+/** Assistant output remains untrusted text until its complete response is validated. */
+export async function callAssistantProvider(
+  provider: {
+    kind: "private" | "openrouter";
+    endpoint: string;
+    model: string;
+    credential: string;
+  },
+  messages: AssistantMessage[],
+  signal: AbortSignal,
+) {
+  const endpoint = providerEndpoint(provider.kind, provider.endpoint);
+  const response = await fetch(new URL("chat/completions", endpoint), {
+    method: "POST",
+    redirect: "error",
+    signal,
+    headers: {
+      "content-type": "application/json",
+      authorization: `Bearer ${openCredential(provider.credential)}`,
+    },
+    body: JSON.stringify({
+      model: provider.model,
+      messages,
+      max_tokens: 4096,
+      stream: false,
+    }),
+  });
+  if (!response.ok) {
+    await response.body?.cancel();
+    throw new Error(
+      `Provider request failed (HTTP ${response.status}). No automatic retry was attempted.`,
+    );
+  }
+  const reader = response.body?.getReader();
+  if (!reader) throw new Error("The provider returned an empty response.");
+  const chunks: Uint8Array[] = [];
+  let bytes = 0;
+  while (true) {
+    const c = await reader.read();
+    if (c.done) break;
+    bytes += c.value.length;
+    if (bytes > 1_000_000) {
+      await reader.cancel();
+      throw new Error("Provider response exceeds its size limit.");
+    }
+    chunks.push(c.value);
+  }
+  let data: Record<string, any>;
+  try {
+    data = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+  } catch {
+    throw new Error("The provider returned an invalid response envelope.");
+  }
+  const choice = data.choices?.[0],
+    text = choice?.message?.content;
+  if (
+    typeof text !== "string" ||
+    choice.finish_reason === "length" ||
+    text.length > 30000
+  )
+    throw new Error(
+      "The provider response was incomplete or too large. Narrow the request and submit again explicitly.",
+    );
+  const finite = (n: unknown) =>
+    typeof n === "number" && Number.isFinite(n) && n >= 0 ? n : 0;
+  return {
+    text,
+    usage: {
+      input: finite(data.usage?.prompt_tokens),
+      output: finite(data.usage?.completion_tokens),
     },
   };
 }

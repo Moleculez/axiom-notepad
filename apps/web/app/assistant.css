@@ -1,0 +1,504 @@
+/* A quiet research rail: the document stays mounted, the composer stays reachable. */
+.assistant-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+  min-width: 360px;
+  max-width: 640px;
+  min-height: 0;
+  height: 100%;
+  border-left: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--text);
+  font-size: var(--ui-font-size, 14px);
+  isolation: isolate;
+}
+.assistant-panel button,
+.assistant-panel input,
+.assistant-panel select,
+.assistant-panel textarea {
+  font: inherit;
+}
+.assistant-panel button:not(.button):not(.icon-button) {
+  border: 0;
+  border-radius: var(--control-radius-small);
+  background: transparent;
+  color: inherit;
+  padding: 5px 7px;
+}
+.assistant-panel button:hover {
+  background: var(--hover);
+}
+.assistant-panel button:focus-visible,
+.assistant-panel [role="separator"]:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--focus);
+}
+.assistant-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 14px 16px 10px;
+  flex-shrink: 0;
+}
+.assistant-header > div,
+.assistant-conversation-heading > div {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.assistant-header h2 {
+  font-size: 1em;
+  font-weight: 600;
+  margin: 0;
+}
+.assistant-scope {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+  padding: 0 16px 12px;
+  border-bottom: 1px solid var(--line);
+}
+.assistant-scope label,
+.assistant-proposal-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 0.82em;
+  min-width: 0;
+  margin: 0;
+}
+.assistant-scope select {
+  width: 100%;
+  min-width: 0;
+  min-height: 32px;
+  padding: 7px;
+}
+.assistant-scroll {
+  flex: 1 1 120px;
+  min-height: 100px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 12px 18px 22px;
+  scrollbar-width: thin;
+}
+.assistant-empty {
+  padding: 24px 4px;
+  color: var(--muted);
+}
+.assistant-empty > svg {
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+.assistant-empty h3 {
+  color: var(--text);
+  font-size: 1.25em;
+  line-height: 1.4;
+  letter-spacing: -0.02em;
+  font-weight: 500;
+}
+.assistant-empty p {
+  line-height: 1.7;
+}
+.assistant-empty > div {
+  display: grid;
+  gap: 8px;
+  margin-top: 24px;
+}
+.assistant-empty > div > button {
+  text-align: left;
+  padding: 10px !important;
+  border: 1px solid var(--line) !important;
+}
+.assistant-conversation-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.82em;
+  padding: 0 0 12px;
+}
+.assistant-conversation-heading > span {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.assistant-question {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: var(--hover);
+  padding: 12px 14px;
+  border-radius: var(--control-radius);
+  margin: 12px 0 20px;
+  line-height: 1.6;
+}
+.assistant-turn + .assistant-turn {
+  border-top: 1px solid var(--line);
+  margin-top: 24px;
+  padding-top: 12px;
+}
+.assistant-answer {
+  font-family: inherit;
+  font-size: 0.95em;
+  line-height: 1.75;
+  overflow-wrap: anywhere;
+}
+.assistant-answer h1,
+.assistant-answer h2,
+.assistant-answer h3 {
+  font-size: 1.08em;
+  line-height: 1.5;
+  margin: 20px 0 8px;
+}
+.assistant-answer p {
+  margin: 10px 0;
+}
+.assistant-answer pre,
+.assistant-excerpt,
+.assistant-outgoing pre,
+.assistant-diff {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.85em;
+  line-height: 1.65;
+  padding: 14px;
+  border-radius: var(--control-radius);
+  background: var(--hover);
+  max-height: 380px;
+  overflow: auto;
+}
+.assistant-answer table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.assistant-answer td,
+.assistant-answer th {
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+}
+.assistant-answer blockquote {
+  margin: 10px 0;
+  border-left: 2px solid var(--line);
+  padding-left: 14px;
+  color: var(--muted);
+}
+.assistant-citations {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 0;
+}
+.assistant-citations button {
+  font-size: 0.78em !important;
+  color: var(--accent) !important;
+  background: var(--accent-bg) !important;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.assistant-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.76em !important;
+  color: var(--muted) !important;
+}
+.assistant-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  padding: 8px 0;
+  font-size: 0.85em;
+}
+.assistant-progress > span {
+  flex: 1;
+}
+.assistant-progress button {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.assistant-proposal {
+  margin-top: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--control-radius);
+  padding: 12px;
+}
+.assistant-proposal header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.85em;
+}
+.assistant-proposal header span {
+  color: var(--muted);
+  font-size: 0.85em;
+}
+.assistant-proposal p {
+  font-size: 0.86em;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.assistant-proposal > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.assistant-composer {
+  flex: 0 1 auto;
+  overflow: auto;
+  max-height: 57%;
+  padding: 12px 16px 14px;
+  border-top: 1px solid var(--line);
+  background: var(--panel);
+}
+.assistant-context-heading,
+.assistant-compose-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.assistant-context-heading {
+  margin-bottom: 8px;
+}
+.assistant-context-heading button {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.assistant-panel small {
+  color: var(--muted);
+  font-size: 0.73em;
+}
+.assistant-composer textarea {
+  display: block;
+  resize: vertical;
+  width: 100%;
+  min-height: 85px;
+  max-height: 200px;
+  line-height: 1.55;
+  margin: 8px 0;
+}
+.assistant-picked {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 150px;
+  overflow: auto;
+}
+.assistant-picked li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--hover);
+  border-radius: var(--control-radius-small);
+  padding: 5px 7px;
+  font-size: 0.78em;
+}
+.assistant-picked li > span {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.assistant-picked label,
+.assistant-panel .assistant-task-consent,
+.assistant-consent {
+  display: flex;
+  flex-direction: row;
+  margin: 0;
+  align-items: center;
+  gap: 7px;
+}
+.assistant-panel .assistant-task-consent {
+  font-size: 0.78em;
+  color: var(--muted);
+}
+.assistant-consent {
+  align-items: flex-start;
+  line-height: 1.55;
+  margin: 18px 0 4px;
+}
+.assistant-consent input {
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+.assistant-search {
+  border: 1px solid var(--line);
+  border-radius: var(--control-radius);
+  margin: 8px 0;
+  padding: 8px;
+}
+.assistant-search > label {
+  display: flex;
+  flex-direction: row;
+  margin: 0;
+  gap: 7px;
+  align-items: center;
+}
+.assistant-search input {
+  flex: 1;
+  min-width: 0;
+}
+.assistant-search > div {
+  max-height: 180px;
+  overflow: auto;
+}
+.assistant-search > div > button {
+  display: flex;
+  align-items: center;
+  text-align: left;
+  width: 100%;
+  gap: 8px;
+  margin-top: 5px;
+}
+.assistant-search > div > button > span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+.assistant-search small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.assistant-search nav {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75em;
+}
+.assistant-history {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--line);
+  max-height: 240px;
+  overflow: auto;
+}
+.assistant-history p {
+  color: var(--muted);
+  font-size: 0.78em;
+  margin: 0 0 7px;
+}
+.assistant-history button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.assistant-outgoing {
+  border: 1px solid var(--line);
+  border-radius: var(--control-radius);
+  max-height: 380px;
+  overflow: auto;
+  padding: 8px 12px;
+}
+.assistant-outgoing summary {
+  padding: 8px 0;
+  cursor: pointer;
+  font-size: 0.88em;
+}
+.assistant-proposal-form {
+  display: grid;
+  gap: 12px;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.assistant-proposal-form input,
+.assistant-proposal-form textarea,
+.assistant-proposal-form select {
+  width: 100%;
+}
+.assistant-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.assistant-fields label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 0.85em;
+}
+.assistant-excerpt-source {
+  display: block;
+  width: 100%;
+  height: 280px;
+  margin: 12px 0;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.85em;
+  line-height: 1.65;
+  resize: vertical;
+}
+.assistant-diff del {
+  color: var(--danger, #ad3535);
+  background: color-mix(in srgb, var(--danger, #ad3535) 10%, transparent);
+}
+.assistant-diff ins {
+  color: var(--accent);
+  background: var(--accent-bg);
+  text-decoration: none;
+}
+.assistant-resize {
+  position: absolute;
+  left: -4px;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  cursor: col-resize;
+  touch-action: none;
+  z-index: 2;
+}
+.assistant-resize:hover {
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+.assistant-dialog {
+  width: min(720px, calc(100vw - 48px));
+  height: calc(100dvh - 64px);
+}
+.assistant-dialog > .dialog-surface > .dialog-body {
+  padding: 0;
+  overflow: hidden;
+}
+.assistant-dialog .assistant-panel {
+  width: 100%;
+  max-width: none;
+  border: 0;
+}
+.assistant-seed-error {
+  position: absolute;
+  inset: 60px 20px auto;
+  z-index: 20;
+  background: var(--panel);
+  padding: 16px;
+  border: 1px solid var(--line);
+}
+@media (forced-colors: active) {
+  .assistant-proposal,
+  .assistant-picked li,
+  .assistant-question {
+    border: 1px solid CanvasText;
+  }
+  .assistant-diff ins {
+    text-decoration: underline;
+  }
+  .assistant-panel {
+    border-color: CanvasText;
+  }
+}

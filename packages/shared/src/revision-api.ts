@@ -1,4 +1,5 @@
 import * as Y from "yjs";
+import type { PoolClient } from "pg";
 import { isDeepStrictEqual } from "node:util";
 import { lockRevisionResource, revisionAudit } from "./revision-audit";
 import { z } from "zod";
@@ -605,6 +606,48 @@ export async function revisionApi(
     }
     if (method === "POST" && !ref) {
       const input = suggestionWriteSchema.parse(await request.json());
+      const authorizeAssistant = async (client?: PoolClient) => {
+        const sql =
+          "SELECT p.state,p.data,j.assistant_context_id FROM assistant_proposals p JOIN tool_jobs j ON j.id=p.job_id WHERE p.id=$1 AND j.owner_id=$2 AND j.status='complete'";
+        const values = [input.id, userId];
+        const [assisted] = client
+          ? (await client.query(sql, values)).rows
+          : await query(sql, values);
+        if (!assisted && !input.assistantContextId) return;
+        if (
+          !assisted ||
+          assisted.state !== "draft" ||
+          (input.assistantContextId &&
+            input.assistantContextId !== assisted.assistant_context_id)
+        )
+          throw new HttpError(
+            403,
+            "This private assistant draft was dismissed, expired or is unavailable. It cannot be published.",
+          );
+        const { assistantContext, assertAssistantAccess } =
+          await import("./assistant-service");
+        const context = await assistantContext(
+          assisted.assistant_context_id,
+          userId,
+          client,
+        );
+        await assertAssistantAccess(context, client);
+        if (
+          assisted.data.kind !== "document" ||
+          !context.evidence.some(
+            (e) =>
+              e.id === noteId &&
+              e.editable &&
+              e.kind === "document" &&
+              e.key === assisted.data.evidenceKey,
+          )
+        )
+          throw new HttpError(
+            403,
+            "This assistant proposal belongs to a different target.",
+          );
+      };
+      await authorizeAssistant();
       const value = await workspaceMutation(
         userId,
         input.mutationId,
@@ -612,6 +655,7 @@ export async function revisionApi(
         { noteId, ...input },
         async (client) => {
           await requireScope(client, userId, resource.space_id, "comment");
+          await authorizeAssistant(client);
           await lockRevisionResource(client, id, resource.space_id);
           const {
             rows: [previous],

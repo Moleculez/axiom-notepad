@@ -5,6 +5,10 @@ import { requireScope } from "./workspace-service";
 import { callMathProvider } from "./tool-providers";
 import { getAttachment, putAttachment, removeAttachment } from "./storage";
 import { reserveCapacity } from "./uploads-api";
+import {
+  executeAssistantJob,
+  assistantJobStillAuthorized,
+} from "./assistant-worker";
 
 export async function processToolJob() {
   // Never replay an externally submitted request after a crash or unknown outcome.
@@ -35,13 +39,20 @@ export async function processToolJob() {
     );
   const cancelled = setInterval(() => {
     void query("SELECT status FROM tool_jobs WHERE id=$1", [job.id])
-      .then(([row]) => {
+      .then(async ([row]) => {
         if (row?.status !== "running") abort.abort();
+        else await assistantJobStillAuthorized(job);
       })
       .catch(() => abort.abort());
   }, 1500);
   let submitted = false;
   try {
+    if (job.kind === "assistant") {
+      await executeAssistantJob(job, abort.signal, () => {
+        submitted = true;
+      });
+      return true;
+    }
     const { resource, space } = await resourceAccess(
       job.owner_id,
       job.resource_id,

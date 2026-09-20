@@ -70,6 +70,12 @@ the proposed changes into the accepted document.
   Clearing site data removes device-only drafts. Reply text is retained in the open
   reply form on a failed send, but is not a durable offline reply outbox.
 
+[Assistant-generated drafts](WORKSPACE_ASSISTANT.md) use the same editor but require
+an explicit **Publish proposal**; edits, reload and reconnect never auto-publish them.
+They retain private-context provenance for access checks and wait for the captured
+CRDT state before resolving anchors on a fresh page load. Ordinary manual suggestions
+retain their existing automatic outbox behavior.
+
 Proposals are shared with permitted collaborators, not private notes. The private
 part is their separate editing projection before publication. Review cards display
 insertions/deletions; accepted pages do not yet show a Google Docs-style inline
