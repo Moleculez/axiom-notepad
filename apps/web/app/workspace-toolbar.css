@@ -1,8 +1,87 @@
 /* One quiet navigation surface; page-specific tools stay with their content. */
 .ws-appbar {
+  position: relative;
   gap: 12px;
   min-height: 54px;
   padding: 6px 16px 6px 10px;
+}
+.workspace-progress {
+  position: absolute;
+  inset: auto 0 -1px;
+  height: 3px;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 1;
+  background: color-mix(in srgb, var(--accent) 9%, transparent);
+  transition: opacity 160ms ease;
+}
+.workspace-progress[data-phase="idle"] {
+  opacity: 0;
+}
+.workspace-progress-fill {
+  display: block;
+  width: 36%;
+  height: 100%;
+  border-radius: 0 2px 2px 0;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--accent) 35%, transparent),
+    var(--accent) 75%
+  );
+  transform: translateX(-105%);
+}
+.workspace-progress[data-phase="loading"] .workspace-progress-fill {
+  animation: workspace-loading-sweep 1.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+.workspace-progress[data-phase="complete"] .workspace-progress-fill {
+  width: 100%;
+  transform: none;
+  background: var(--accent);
+}
+.workspace-loading-announcement {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+@keyframes workspace-loading-sweep {
+  from {
+    transform: translateX(-105%);
+  }
+  to {
+    transform: translateX(380%);
+  }
+}
+html[data-motion="reduced"] .workspace-progress,
+html[data-motion="reduced"] .workspace-progress-fill,
+html[data-motion="none"] .workspace-progress,
+html[data-motion="none"] .workspace-progress-fill {
+  animation: none !important;
+  transition: none;
+}
+html[data-motion="reduced"] .workspace-progress-fill,
+html[data-motion="none"] .workspace-progress-fill {
+  transform: none;
+  width: 100%;
+}
+@media (prefers-reduced-motion: reduce) {
+  .workspace-progress,
+  .workspace-progress-fill {
+    animation: none !important;
+    transition: none;
+  }
+  .workspace-progress-fill {
+    transform: none;
+    width: 100%;
+  }
+}
+@media (forced-colors: active) {
+  .workspace-progress-fill {
+    background: Highlight;
+  }
 }
 .ws-appbar .ws-brand-area {
   flex: 0 0 auto;

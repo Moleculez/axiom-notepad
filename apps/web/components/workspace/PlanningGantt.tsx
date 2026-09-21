@@ -1,5 +1,6 @@
 "use client";
 import { useMemo, useRef, useState } from "react";
+import type { PlanningAnalysis } from "@axiom/shared/planning-analysis";
 import {
   CalendarDays,
   ChevronDown,
@@ -71,6 +72,8 @@ export default function PlanningGantt({
   onZoom,
   initialScroll = 0,
   onScrollPosition,
+  analysis,
+  baseline = [],
 }: {
   tasks: PlanningTask[];
   milestones: Milestone[];
@@ -82,6 +85,8 @@ export default function PlanningGantt({
   onZoom: (value: string) => void;
   initialScroll?: number;
   onScrollPosition?: (value: number) => void;
+  analysis?: PlanningAnalysis | null;
+  baseline?: PlanningTask[];
 }) {
   const root = useRef<HTMLDivElement>(null),
     [scroll, setScroll] = useState({
@@ -114,6 +119,7 @@ export default function PlanningGantt({
     [tasks, collapsed, milestones],
   );
   const dates = [
+    ...baseline.flatMap((t) => [t.start_on, t.due_on]),
     ...tasks.flatMap((t) => [t.start_on, t.due_on]),
     ...milestones.map((m) => m.due_on),
   ].filter((d): d is string => !!d);
@@ -412,6 +418,7 @@ export default function PlanningGantt({
             }
             const hasChildren =
               task && tasks.some((t) => t.parent_id === task.id);
+            const original = task && baseline.find((t) => t.id === task.id);
             return (
               <div
                 className="gantt-row"
@@ -464,9 +471,25 @@ export default function PlanningGantt({
                     <small title="Waiting for dependencies">Blocked</small>
                   )}
                 </div>
+                {original?.start_on && original.due_on && (
+                  <div
+                    className="gantt-baseline"
+                    title={`Baseline: ${original.start_on} → ${original.due_on}`}
+                    style={{
+                      left: tableWidth + x(original.start_on),
+                      width: Math.max(
+                        dayWidth,
+                        (dayNumber(original.due_on) -
+                          dayNumber(original.start_on) +
+                          1) *
+                          dayWidth,
+                      ),
+                    }}
+                  />
+                )}
                 {task && left !== null && width > 0 ? (
                   <div
-                    className={`gantt-bar ${task.status} ${width < 70 ? "compact" : ""} ${drag?.id === task.id ? "dragging" : ""}`}
+                    className={`gantt-bar ${task.status} ${analysis?.tasks.find((t) => t.id === task.id)?.critical ? "critical" : ""} ${width < 70 ? "compact" : ""} ${drag?.id === task.id ? "dragging" : ""}`}
                     style={{ left: tableWidth + left, width }}
                     onPointerDown={(e) => move(e, task, "move")}
                     onPointerMove={(e) => {

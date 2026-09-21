@@ -7,6 +7,9 @@ import { requireScope } from "./workspace-service";
 import { currentRevisionDoc } from "./revision-api";
 import { documentSource } from "./document-format";
 import { sourceHash } from "./document-commands";
+import { planningTasks } from "./planning-api";
+import { analyzeSchedule, compareBaseline } from "./planning-analysis";
+import { calendarSchema } from "./planning";
 import {
   assistantTaskSchema,
   type AssistantEvidence,
@@ -34,6 +37,7 @@ export type AssistantContext = {
   created_at: string;
   owner_id: string;
   space_id: string;
+  space_ids?: string[];
 };
 export const assistantHash = (value: unknown): string => {
   const stable = (v: unknown): string =>
@@ -56,6 +60,34 @@ export async function assistantConversation(id: string, userId: string) {
   await spaceAccess(userId, c.space_id);
   return c;
 }
+export async function assistantScopes(
+  user: string,
+  anchor: string,
+  requested: string[] = [anchor],
+  client?: PoolClient,
+) {
+  const ids = [...new Set([anchor, ...requested])].sort();
+  if (ids.length > 20)
+    throw new HttpError(413, "Choose at most 20 workspaces in one group.");
+  const run = async (db: PoolClient) => {
+    for (const id of ids) await requireScope(db, user, id);
+    const { rows } = await db.query(
+      "SELECT id,group_id FROM spaces WHERE id=ANY($1::uuid[]) ORDER BY id",
+      [ids],
+    );
+    const group = rows.find((s) => s.id === anchor)?.group_id;
+    if (
+      rows.length !== ids.length ||
+      (ids.length > 1 && (!group || rows.some((s) => s.group_id !== group)))
+    )
+      throw new HttpError(
+        403,
+        "Choose accessible workspaces in the same group. Personal workspaces cannot be mixed.",
+      );
+    return ids;
+  };
+  return client ? run(client) : transaction(run);
+}
 export async function assistantContext(
   id: string,
   userId?: string,
@@ -66,7 +98,7 @@ export async function assistantContext(
       ? client.query<AssistantContext>(sql, params).then((r) => r.rows)
       : query<AssistantContext>(sql, params);
   const [c] = await run(
-    "SELECT x.*,c.owner_id,c.space_id FROM assistant_contexts x JOIN assistant_conversations c ON c.id=x.conversation_id WHERE x.id=$1 AND ($2::text IS NULL OR c.owner_id=$2) AND c.deleted_at IS NULL AND x.cleared_at IS NULL AND x.created_at>now()-interval '30 days'",
+    "SELECT x.*,c.owner_id,c.space_id,c.space_ids FROM assistant_contexts x JOIN assistant_conversations c ON c.id=x.conversation_id WHERE x.id=$1 AND ($2::text IS NULL OR c.owner_id=$2) AND c.deleted_at IS NULL AND x.cleared_at IS NULL AND x.created_at>now()-interval '30 days'",
     [id, userId ?? null],
   );
   if (!c)
@@ -114,6 +146,7 @@ export async function captureAssistantEvidence(
   user: string,
   spaceId: string,
   selections: AssistantSelection[],
+  allowedSpaces: string[] = [spaceId],
 ) {
   const evidence: AssistantEvidence[] = [],
     bases: Record<string, string> = {};
@@ -129,18 +162,95 @@ export async function captureAssistantEvidence(
       capturedAt: new Date().toISOString(),
       editable: false,
     };
-    if (s.kind === "task") {
-      await spaceAccess(user, spaceId, s.editable ? "edit" : "read");
+    if (s.kind === "planning") {
+      if (!allowedSpaces.includes(s.id))
+        throw new HttpError(
+          403,
+          "Planning evidence is outside this conversation.",
+        );
+      await spaceAccess(user, s.id);
+      const value = await transaction(async (db) => {
+        await requireScope(db, user, s.id);
+        const {
+          rows: [space],
+        } = await db.query("SELECT * FROM spaces WHERE id=$1 FOR SHARE", [
+          s.id,
+        ]);
+        const tasks = await planningTasks(db, s.id),
+          calendar = calendarSchema.parse({
+            ...space.planning_calendar,
+            timezone: space.timezone,
+          }),
+          analysis = analyzeSchedule(tasks, calendar);
+        const selected = tasks.filter((t) => s.taskIds.includes(t.id));
+        if (selected.length !== new Set(s.taskIds).size)
+          throw new HttpError(409, "A selected planning task is unavailable.");
+        let comparison;
+        if (s.baselineId) {
+          const {
+            rows: [b],
+          } = await db.query(
+            "SELECT snapshot FROM planning_baselines WHERE id=$1 AND space_id=$2",
+            [s.baselineId, s.id],
+          );
+          if (!b) throw new HttpError(404, "Baseline unavailable.");
+          comparison = compareBaseline(b.snapshot, {
+            tasks,
+            calendar,
+            milestones: [],
+            planningVersion: space.planning_version,
+          }).items.filter((t) => s.taskIds.includes(t.id));
+        }
+        return {
+          title: space.name,
+          version: space.planning_version,
+          source: JSON.stringify({
+            calendar,
+            tasks: selected,
+            analysis: {
+              ...analysis,
+              tasks: analysis.tasks.filter((t) => s.taskIds.includes(t.id)),
+              incompleteIds: analysis.incompleteIds.filter((id) =>
+                s.taskIds.includes(id),
+              ),
+            },
+            comparison,
+          }),
+        };
+      });
+      e = {
+        ...e,
+        spaceId: s.id,
+        title: `${value.title} · selected plan`,
+        planningVersion: value.version,
+        taskIds: s.taskIds,
+        source: value.source,
+      };
+    } else if (s.kind === "task") {
       const [t] = await query(
-        "SELECT * FROM tasks WHERE id=$1 AND space_id=$2 AND deleted_at IS NULL",
-        [s.id, spaceId],
+        "SELECT * FROM tasks WHERE id=$1 AND space_id=ANY($2::uuid[]) AND deleted_at IS NULL",
+        [s.id, allowedSpaces],
       );
       if (!t) throw new HttpError(404, "Task unavailable in this workspace.");
+      await spaceAccess(user, t.space_id, s.editable ? "edit" : "read");
       const task = taskAssistantFields(t);
       e = {
         ...e,
         title: t.title,
-        source: JSON.stringify(task, null, 2),
+        spaceId: t.space_id,
+        startOn:
+          t.start_on instanceof Date
+            ? t.start_on.toISOString().slice(0, 10)
+            : t.start_on,
+        dueOn:
+          t.due_on instanceof Date
+            ? t.due_on.toISOString().slice(0, 10)
+            : t.due_on,
+        source: JSON.stringify(
+          { ...task, startOn: t.start_on, dueOn: t.due_on },
+          null,
+          2,
+        ),
         task,
         version: t.version,
         editable: s.editable,
@@ -151,10 +261,83 @@ export async function captureAssistantEvidence(
         s.id,
         s.kind === "document" && s.editable ? "comment" : "read",
       );
-      if (resource.space_id !== spaceId)
+      if (!allowedSpaces.includes(resource.space_id))
         throw new HttpError(403, "Select evidence from this workspace only.");
       e.title = resource.name;
-      if (s.kind === "document") {
+      e.spaceId = resource.space_id;
+      if (s.kind === "office") {
+        const [job] = await query(
+          "SELECT result,input FROM tool_jobs WHERE id=$1 AND owner_id=$2 AND resource_id=$3 AND version_id=$4 AND kind='assistant-evidence' AND status='complete' AND created_at>now()-interval '1 day'",
+          [s.extractionId, user, s.id, s.versionId],
+        );
+        if (
+          !job?.result?.source ||
+          job.input.spaceId !== resource.space_id ||
+          s.to > job.result.source.length
+        )
+          throw new HttpError(
+            409,
+            "Extract this version again before selecting its evidence.",
+          );
+        const location = job.result.locators.find(
+          (l: { from: number; to: number }) =>
+            s.from >= l.from && s.from < l.to,
+        );
+        e = {
+          ...e,
+          versionId: s.versionId,
+          format: job.result.format,
+          from: s.from,
+          to: s.to,
+          locator: location?.target,
+          source: job.result.source.slice(s.from, s.to),
+        };
+      } else if (s.kind === "canvas") {
+        if (!resource.note_id)
+          throw new HttpError(400, "Choose a native canvas.");
+        const current = await currentRevisionDoc(resource.note_id);
+        try {
+          if (current.format !== "canvas")
+            throw new HttpError(400, "Choose a native canvas.");
+          const source = documentSource(current.doc, current.format);
+          if (sourceHash(source) !== s.hash)
+            throw new HttpError(
+              409,
+              "The canvas changed. Select its cards again.",
+            );
+          const canvas = JSON.parse(source),
+            nodes = canvas.nodes.filter((n: any) => s.nodeIds.includes(n.id));
+          if (nodes.length !== new Set(s.nodeIds).size)
+            throw new HttpError(409, "A selected card is unavailable.");
+          e = {
+            ...e,
+            format: "canvas",
+            generation: current.generation,
+            locator: s.nodeIds.join(","),
+            source: JSON.stringify({
+              nodes: nodes.map((n: any) => ({
+                id: n.id,
+                type: n.type,
+                label: n.title ?? n.label ?? n.name,
+                text: n.type === "text" ? n.text : undefined,
+              })),
+              edges: canvas.edges
+                .filter(
+                  (edge: any) =>
+                    s.nodeIds.includes(edge.fromNode) &&
+                    s.nodeIds.includes(edge.toNode),
+                )
+                .map((edge: any) => ({
+                  from: edge.fromNode,
+                  to: edge.toNode,
+                  label: edge.label,
+                })),
+            }),
+          };
+        } finally {
+          current.doc.destroy();
+        }
+      } else if (s.kind === "document") {
         if (!resource.note_id)
           throw new HttpError(400, "Select a native text document.");
         const current = await currentRevisionDoc(resource.note_id);
@@ -214,7 +397,7 @@ export async function captureAssistantEvidence(
             "Select a PDF version belonging to this file.",
           );
         e = { ...e, source: s.text, versionId: s.versionId, page: s.page };
-      } else {
+      } else if (s.kind === "ocr") {
         const [p] = await query(
           "SELECT p.*,j.version_id FROM pdf_ocr_pages p JOIN pdf_ocr_jobs j ON j.id=p.job_id JOIN file_versions v ON v.id=j.version_id WHERE j.id=$1 AND j.owner_id=$2 AND v.resource_id=$3 AND p.page=$4 AND p.reviewed AND j.cleared_at IS NULL AND j.expires_at>now()",
           [s.jobId, user, s.id, s.page],
@@ -249,7 +432,8 @@ export async function assertAssistantAccess(
   client?: PoolClient,
 ) {
   const check = async (db: PoolClient) => {
-    await requireScope(db, c.owner_id, c.space_id);
+    const scope = [...new Set(c.space_ids ?? [c.space_id])].sort();
+    for (const sid of scope) await requireScope(db, c.owner_id, sid);
     // Deletion and retention take the exclusive side of these locks before
     // redacting jobs. A completed provider response cannot resurrect deleted data.
     const { rowCount: live } = await db.query(
@@ -268,28 +452,64 @@ export async function assertAssistantAccess(
       );
     const evidence = contexts.flatMap((x) => x.evidence);
     const resources = [
-      ...new Set(evidence.filter((e) => e.kind !== "task").map((e) => e.id)),
+      ...new Set(
+        evidence
+          .filter((e) => e.kind !== "task" && e.kind !== "planning")
+          .map((e) => e.id),
+      ),
     ].sort();
     if (resources.length) {
       const { rows } = await db.query(
-        "SELECT id FROM resources WHERE id=ANY($1::uuid[]) AND space_id=$2 AND deleted_at IS NULL ORDER BY id FOR SHARE",
-        [resources, c.space_id],
+        "SELECT id,space_id FROM resources WHERE id=ANY($1::uuid[]) AND space_id=ANY($2::uuid[]) AND deleted_at IS NULL ORDER BY id FOR SHARE",
+        [resources, scope],
       );
-      if (rows.length !== resources.length)
+      if (
+        rows.length !== resources.length ||
+        evidence.some(
+          (e) =>
+            resources.includes(e.id) &&
+            !rows.some(
+              (r) => r.id === e.id && r.space_id === (e.spaceId ?? c.space_id),
+            ),
+        )
+      )
         throw new HttpError(
           403,
           "A source was moved, trashed, or is no longer accessible. This answer is withheld.",
         );
     }
     const tasks = [
-      ...new Set(evidence.filter((e) => e.kind === "task").map((e) => e.id)),
+      ...new Set(
+        evidence.flatMap((e) =>
+          e.kind === "task"
+            ? [e.id]
+            : e.kind === "planning"
+              ? (e.taskIds ?? [])
+              : [],
+        ),
+      ),
     ].sort();
     if (tasks.length) {
       const { rows } = await db.query(
-        "SELECT id FROM tasks WHERE id=ANY($1::uuid[]) AND space_id=$2 AND deleted_at IS NULL ORDER BY id FOR SHARE",
-        [tasks, c.space_id],
+        "SELECT id,space_id FROM tasks WHERE id=ANY($1::uuid[]) AND space_id=ANY($2::uuid[]) AND deleted_at IS NULL ORDER BY id FOR SHARE",
+        [tasks, scope],
       );
-      if (rows.length !== tasks.length)
+      if (
+        rows.length !== tasks.length ||
+        evidence.some((e) =>
+          (e.kind === "task"
+            ? [e.id]
+            : e.kind === "planning"
+              ? (e.taskIds ?? [])
+              : []
+          ).some(
+            (id) =>
+              !rows.some(
+                (r) => r.id === id && r.space_id === (e.spaceId ?? c.space_id),
+              ),
+          ),
+        )
+      )
         throw new HttpError(
           403,
           "A task source is unavailable. Start a new conversation with accessible evidence.",
@@ -339,6 +559,9 @@ export function publicAssistantContext(
   };
 }
 export async function assistantMaintenance() {
+  await query(
+    "UPDATE tool_jobs SET result=NULL,input='{}',status=CASE WHEN status IN ('queued','running') THEN 'cancelled' ELSE status END WHERE kind='assistant-evidence' AND created_at<now()-interval '1 day' AND (result IS NOT NULL OR input<>'{}'::jsonb)",
+  );
   await transaction(async (client) => {
     // Same conversation -> context/job lock order as provider result publication.
     await client.query(

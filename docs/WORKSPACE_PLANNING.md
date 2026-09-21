@@ -112,11 +112,51 @@ validation is capped at 50,000 active tasks per workspace; oversized graphs fail
 explicitly. Timeline queries omit description bodies at the database boundary.
 This is bounded research planning, not a claim of unlimited portfolio scale.
 
-Finish-to-start is the only dependency type. Critical path, baselines, holiday
+Finish-to-start is the only dependency type. Holiday
 providers, automatic resource leveling, simultaneous task-description co-editing
 and an all-account planning export are not delivered here. Parent/dependency
 pickers use tasks in the current filtered view (up to 150 matching choices); clear
-filters to find another task. Custom per-user weekly utilization is not calculated.
+filters to find another task. Capacity uses estimates, not tracked time.
+
+## Group coordination and schedule analysis
+
+- Open **Planning** on a group card, **Group portfolio** from a workspace, or use
+  Search & commands. Named portfolios are saved sets of workspaces in one group.
+  Overview/timeline show progress, dates, overdue/blocked work and milestones.
+  Readers see only accessible active workspaces; administration never grants
+  restricted-workspace contents implicitly. Group planning is bounded to 100
+  workspaces and 100,000 tasks. Administrators manage portfolio membership.
+- **Insights & baselines** captures immutable tasks/calendar/milestones at a
+  planning revision. Compare current or earlier baselines, inspect field/date
+  differences and export JSON. Managers can rename/archive snapshots; archiving
+  does not erase evidence. Maximum 100 baselines per workspace.
+- Critical path/slack uses the full dependency graph and working-day calendar.
+  Current starts are lower bounds; completed predecessors are satisfied. Missing
+  dates or cancelled/incomplete predecessors exclude dependent chains and mark
+  the forecast partial. Gantt overlays do not change saved dates automatically.
+- **Capacity** distributes each open task's own estimate across its scheduled
+  working days; parent rollups are not counted again. Unassigned, unestimated and
+  undated tasks are listed separately. Weeks start Monday; range is 1–52 weeks.
+  Availability is explicit per group/member, with weekday and date exceptions.
+  Blank means unknown, zero means unavailable. Members edit themselves; group
+  administrators can edit others. No timers/timesheets are introduced.
+- Manual and assistant schedule previews show changed member-weeks. Their capacity
+  impact is deliberately **workspace-only** against group availability; consult
+  the group capacity view for combined commitments. Previews show at most 52 weeks
+  and 200 changed member-weeks, with a partial-coverage notice. They do not level
+  resources. Availability changes invalidate previously reviewed schedules.
+- PDF annotations can link to an existing or new task in the paper's workspace.
+  Links preserve PDF version/page/annotation identity without copying private
+  text. Visibility follows current paper and annotation permissions. Deleted or
+  pruned source versions do not silently redirect to the latest version.
+- MCP adds scoped portfolio/capacity/analysis/baseline reads and approved baseline,
+  portfolio-create and availability writes. Integration workspace grants still
+  bound aggregate results; provider administration is not exposed.
+
+Migrations **29–30** are additive metadata; existing task IDs, documents and CRDT
+bytes are unchanged. Migration 29 backfills each existing assistant conversation
+with its original single-workspace boundary. Back up, stop old writers, migrate,
+then restart matching web/sync/worker builds; do not run mixed schema versions.
 
 ## Upgrade and verification
 

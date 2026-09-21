@@ -1,6 +1,8 @@
 "use client";
+import TaskPaperLinks from "./TaskPaperLinks";
+import ScheduleCapacityPreview from "./ScheduleCapacityPreview";
 import { openAssistant } from "../../lib/assistant";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import {
   CalendarDays,
@@ -34,6 +36,11 @@ import {
   type SchedulePlan,
 } from "@axiom/shared/planning";
 import PlanningGantt, { type Milestone } from "./PlanningGantt";
+import type { PlanningAnalysis } from "@axiom/shared/planning-analysis";
+const PlanningInsights = dynamic(() => import("./PlanningInsights"));
+const GroupCapacity = dynamic(() =>
+  import("./GroupPlanning").then((m) => m.GroupCapacity),
+);
 import { useWorkSessions } from "../../lib/workspace-sessions";
 import { confirmAction } from "../../lib/app-prompt";
 import { timeAgo } from "../../lib/client";
@@ -126,6 +133,7 @@ export default function WorkspacePlanning({ space }: { space: Space }) {
     "priority",
     "assignee",
     "milestone",
+    "risk",
     "sort",
     "deleted",
   ])
@@ -141,6 +149,16 @@ export default function WorkspacePlanning({ space }: { space: Space }) {
     [manage, setManage] = useState<"milestones" | "recurrences" | null>(null),
     [search, setSearch] = useState(params.get("q") ?? ""),
     [exporting, setExporting] = useState(false);
+  const [insights, setInsights] = useState(false),
+    [analysis, setAnalysis] = useState<PlanningAnalysis | null>(null),
+    [baseline, setBaseline] = useState<PlanningTask[]>([]);
+  const updateLayers = useCallback(
+    (analysis: PlanningAnalysis | null, tasks: PlanningTask[]) => {
+      setAnalysis(analysis);
+      setBaseline(tasks);
+    },
+    [],
+  );
   const routeRef = useRef({ path, params });
   routeRef.current = { path, params };
   const tabsRef = useRef(tabs),
@@ -214,6 +232,37 @@ export default function WorkspacePlanning({ space }: { space: Space }) {
   return (
     <div className="workspace-planning">
       <div className="planning-toolbar">
+        <button
+          className="button ghost"
+          disabled={!tasks.length || tasks.length > 100}
+          title={
+            tasks.length > 100
+              ? "Filter to at most 100 tasks to select exact planning evidence"
+              : "Review selected planning evidence before sending"
+          }
+          onClick={() =>
+            openAssistant({
+              spaceId: space.id,
+              selection: {
+                kind: "planning",
+                id: space.id,
+                taskIds: tasks.map((t) => t.id),
+              },
+              selectionLabel: `${space.name} · ${tasks.length} tasks`,
+              prompt:
+                "Explain schedule risks and missing information in these selected tasks. Distinguish the deterministic forecast from your interpretation.",
+            })
+          }
+        >
+          Ask about this plan
+        </button>
+        <button
+          className="button ghost"
+          aria-pressed={insights}
+          onClick={() => setInsights(!insights)}
+        >
+          Insights & baselines
+        </button>
         <nav className="planning-view-switch" aria-label="Planning views">
           {views.map(([key, Icon, label]) => (
             <button
@@ -316,6 +365,15 @@ export default function WorkspacePlanning({ space }: { space: Space }) {
             </option>
           ))}
         </select>
+        <select
+          aria-label="Filter planning risk"
+          value={params.get("risk") ?? ""}
+          onChange={(e) => change({ risk: e.target.value || null })}
+        >
+          <option value="">All risks</option>
+          <option value="overdue">Overdue</option>
+          <option value="blocked">Blocked</option>
+        </select>
         <button
           className={`icon-button ${deleted ? "active" : ""}`}
           aria-pressed={deleted}
@@ -377,12 +435,20 @@ export default function WorkspacePlanning({ space }: { space: Space }) {
           workspace dependency graph.
         </p>
       )}
+      {insights && data.data && (
+        <PlanningInsights
+          space={space}
+          version={data.data.version}
+          onClose={() => setInsights(false)}
+          onLayers={updateLayers}
+        />
+      )}
       {data.loading && !data.data ? (
         <Loading />
       ) : (
         data.data && (
           <div className="planning-content">
-            {!tasks.length && view !== "gantt" ? (
+            {!tasks.length && view !== "gantt" && view !== "workload" ? (
               <Empty
                 title={
                   deleted ? "No deleted tasks" : "A clear plan starts here"
@@ -394,6 +460,8 @@ export default function WorkspacePlanning({ space }: { space: Space }) {
               </Empty>
             ) : view === "gantt" ? (
               <PlanningGantt
+                analysis={analysis}
+                baseline={baseline}
                 tasks={tasks}
                 milestones={milestones}
                 calendar={data.data.calendar}
@@ -421,7 +489,11 @@ export default function WorkspacePlanning({ space }: { space: Space }) {
                 onOpen={(id) => change({ task: id })}
               />
             ) : view === "workload" ? (
-              <TaskWorkload tasks={tasks} people={people.data ?? []} />
+              space.group_id ? (
+                <GroupCapacity groupId={space.group_id} />
+              ) : (
+                <TaskWorkload tasks={tasks} people={people.data ?? []} />
+              )
             ) : (
               <TaskList
                 tasks={tasks}
@@ -489,6 +561,13 @@ export default function WorkspacePlanning({ space }: { space: Space }) {
               </tbody>
             </table>
           </div>
+          <ScheduleCapacityPreview capacity={preview.capacity} />
+          {!!preview.conflicts.length && (
+            <ScheduleCapacityPreview
+              capacity={preview.capacity}
+              mode="direct"
+            />
+          )}
           {!!preview.warnings.length && (
             <ul className="planning-warnings">
               {preview.warnings.map((w, i) => (
@@ -1386,6 +1465,7 @@ function TaskForm({
             </div>
             <ErrorNotice message={evidence.error} />
           </details>
+          {task && <TaskPaperLinks taskId={task.id} readOnly={readOnly} />}
           {!task && (
             <div className="planning-field-grid">
               <label>

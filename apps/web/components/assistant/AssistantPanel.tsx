@@ -33,6 +33,7 @@ import Dialog from "../Dialog";
 import AssistantAnswer from "./AssistantAnswer";
 import AssistantProposalReview from "./AssistantProposalReview";
 import AssistantExcerpt from "./AssistantExcerpt";
+import AssistantOfficeExcerpt from "./AssistantOfficeExcerpt";
 type Provider = {
   id: string;
   name: string;
@@ -43,7 +44,7 @@ type Provider = {
 type SearchResult = {
   id: string;
   title: string;
-  kind: "document" | "task" | "pdf";
+  kind: "document" | "task" | "pdf" | "office";
   excerpt: string;
   format?: string;
   version_id?: string;
@@ -53,6 +54,7 @@ type Conversation = {
   title: string;
   version: number;
   spaceId: string;
+  spaceIds: string[];
   turns: AssistantTurn[];
 };
 type Picked = AssistantSelection & { label?: string };
@@ -79,6 +81,11 @@ export default function AssistantPanel({
   const [providerId, setProviderId] = useState(""),
     [conversationId, setConversationId] = useState(""),
     [conversation, setConversation] = useState<Conversation | null>(null);
+  const [scopeIds, setScopeIds] = useState<string[]>(
+    intent.spaceIds ?? [spaceId],
+  );
+  const [office, setOffice] = useState<SearchResult | null>(null);
+  const scope = conversation?.spaceIds ?? scopeIds;
   const [prompt, setPrompt] = useState(""),
     [picked, setPicked] = useState<Picked[]>([]),
     [allowTasks, setAllowTasks] = useState(false),
@@ -120,6 +127,7 @@ export default function AssistantPanel({
     picked,
     providerId,
     allowTasks,
+    scope,
     providers.data?.find((p) => p.id === providerId)?.version,
   ]);
   const composition = useRef(compositionKey);
@@ -129,7 +137,7 @@ export default function AssistantPanel({
     nextOffset: number | null;
   }>(
     searchOpen
-      ? `spaces/${spaceId}/assistant/search?q=${encodeURIComponent(query)}&offset=${offset}`
+      ? `spaces/${spaceId}/assistant/search?q=${encodeURIComponent(query)}&offset=${offset}&spaceIds=${scope.join(",")}`
       : null,
   );
   const selectedProvider = providers.data?.find((p) => p.id === providerId),
@@ -178,6 +186,23 @@ export default function AssistantPanel({
         setConversationId(
           typeof d.conversationId === "string" ? d.conversationId : "",
         );
+        if (Array.isArray(d.spaceIds)) {
+          const groupId = spaces.find((s) => s.id === spaceId)?.group_id;
+          setScopeIds(
+            [
+              ...new Set([
+                spaceId,
+                ...d.spaceIds.filter(
+                  (id: unknown) =>
+                    typeof id === "string" &&
+                    spaces.some(
+                      (s) => s.id === id && !!groupId && s.group_id === groupId,
+                    ),
+                ),
+              ]),
+            ].slice(0, 20),
+          );
+        }
         setRecovered(true);
       }
     } catch {
@@ -207,6 +232,12 @@ export default function AssistantPanel({
   useEffect(() => {
     if (lastIntent.current === intent.serial) return;
     lastIntent.current = intent.serial;
+    if (intent.spaceIds) {
+      setConversationId("");
+      setConversation(null);
+      setPicked([]);
+      setScopeIds([...new Set([spaceId, ...intent.spaceIds])].slice(0, 20));
+    }
     if (intent.selection)
       setPicked((old) =>
         [
@@ -232,6 +263,7 @@ export default function AssistantPanel({
         JSON.stringify({
           prompt,
           conversationId,
+          spaceIds: scopeIds,
           selections: picked.filter((s) => s.kind !== "pdf"),
         }),
       );
@@ -240,12 +272,19 @@ export default function AssistantPanel({
         "The prompt could not be saved on this device. Export it before closing.",
       );
     }
-  }, [prompt, picked, conversationId, draftKey, draftLoaded]);
+  }, [prompt, picked, conversationId, draftKey, draftLoaded, scopeIds]);
   useEffect(() => {
     setPrepared(null);
     setConsent(false);
     submission.current = crypto.randomUUID();
-  }, [prompt, picked, providerId, allowTasks, selectedProvider?.version]);
+  }, [
+    prompt,
+    picked,
+    providerId,
+    allowTasks,
+    selectedProvider?.version,
+    scopeIds,
+  ]);
   useEffect(() => {
     if (!conversationId) {
       setConversation(null);
@@ -342,6 +381,7 @@ export default function AssistantPanel({
         id = creating.current;
         await post(`spaces/${spaceId}/assistant/conversations`, {
           id,
+          spaceIds: scope,
           title:
             prompt.replace(/\s+/g, " ").slice(0, 80) || "Research conversation",
         });
@@ -370,6 +410,11 @@ export default function AssistantPanel({
       submission.current = crypto.randomUUID();
     });
   const add = async (item: SearchResult) => {
+    if (item.kind === "office") {
+      setOffice(item);
+      setSearchOpen(false);
+      return;
+    }
     if (picked.length >= 20)
       throw new Error("Select at most 20 evidence items.");
     if (item.kind === "pdf") {
@@ -461,6 +506,47 @@ export default function AssistantPanel({
           </select>
         </label>
       </div>
+      {spaces.find((s) => s.id === spaceId)?.group_id && (
+        <details className="assistant-group-scope">
+          <summary>
+            {scope.length === 1
+              ? "One workspace"
+              : `${scope.length} selected group workspaces`}
+          </summary>
+          <p className="ws-note">
+            Only selected evidence is sent. Start a new conversation to change
+            this boundary. New tasks are created in the primary workspace above.
+          </p>
+          {spaces
+            .filter(
+              (s) =>
+                s.group_id === spaces.find((s) => s.id === spaceId)?.group_id,
+            )
+            .map((s) => (
+              <label className="productivity-check" key={s.id}>
+                <input
+                  type="checkbox"
+                  disabled={
+                    !!conversationId ||
+                    busy ||
+                    s.id === spaceId ||
+                    (!scope.includes(s.id) && scope.length >= 20)
+                  }
+                  checked={scope.includes(s.id)}
+                  onChange={(e) => {
+                    if (!e.target.checked) setPicked([]);
+                    setScopeIds(
+                      e.target.checked
+                        ? [...scopeIds, s.id]
+                        : scopeIds.filter((id) => id !== s.id),
+                    );
+                  }}
+                />
+                {s.name}
+              </label>
+            ))}
+        </details>
+      )}
       {historyOpen && (
         <section
           className="assistant-history"
@@ -670,11 +756,13 @@ export default function AssistantPanel({
               <section key={item.id} className="assistant-proposal">
                 <header>
                   <strong>
-                    {item.data.kind === "document"
-                      ? "Document suggestion"
-                      : item.data.kind === "task-create"
-                        ? "New task"
-                        : "Task update"}
+                    {item.data.kind === "schedule"
+                      ? "Schedule proposal"
+                      : item.data.kind === "document"
+                        ? "Document suggestion"
+                        : item.data.kind === "task-create"
+                          ? "New task"
+                          : "Task update"}
                   </strong>
                   <span>{item.state}</span>
                 </header>
@@ -751,7 +839,7 @@ export default function AssistantPanel({
                 aria-label="Search assistant evidence"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search this workspace…"
+                placeholder="Search selected workspaces…"
               />
             </label>
             <ErrorNotice message={searchData.error} />
@@ -971,6 +1059,20 @@ export default function AssistantPanel({
           spaceId={spaceId}
           onChange={reload}
           onClose={() => setReview(null)}
+        />
+      )}
+      {office && (
+        <AssistantOfficeExcerpt
+          id={office.id}
+          versionId={office.version_id!}
+          format={office.format as "docx" | "pptx" | "xlsx"}
+          onClose={() => setOffice(null)}
+          onPick={(selection) =>
+            setPicked((old) => [
+              ...old.filter((s) => s.id !== selection.id),
+              { ...selection, label: office.title },
+            ])
+          }
         />
       )}
       {excerpt && (

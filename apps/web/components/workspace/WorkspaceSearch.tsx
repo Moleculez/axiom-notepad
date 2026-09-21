@@ -42,7 +42,7 @@ function Match({ text, query }: { text: string; query: string }) {
 }
 
 export default function WorkspaceSearch({ onClose }: { onClose: () => void }) {
-  const { revision, open, navigate, spaces } = useWorkspace(),
+  const { revision, open, navigate, spaces, session } = useWorkspace(),
     sessions = useWorkSessions();
   const [query, setQuery] = useState(""),
     [debounced, setDebounced] = useState(""),
@@ -129,16 +129,14 @@ export default function WorkspaceSearch({ onClose }: { onClose: () => void }) {
       ),
     });
     if (!term || /assistant|research|ask/i.test(term))
-      groups
-        .at(-1)!
-        .entries.unshift({
-          id: "command:assistant",
-          title: "Research assistant",
-          detail: "Cited answers and reviewed proposals",
-          kind: "Open",
-          icon: <FileSearch size={18} />,
-          action: () => openAssistant(),
-        });
+      groups.at(-1)!.entries.unshift({
+        id: "command:assistant",
+        title: "Research assistant",
+        detail: "Cited answers and reviewed proposals",
+        kind: "Open",
+        icon: <FileSearch size={18} />,
+        action: () => openAssistant(),
+      });
   }
   if (endpoint && !pending && !data.error)
     groups.push({
@@ -162,6 +160,18 @@ export default function WorkspaceSearch({ onClose }: { onClose: () => void }) {
           item.kind === "folder"
             ? navigate(`/workspaces/${item.space_id}/files?folder=${item.id}`)
             : open(item),
+      })),
+    });
+  if (scope !== "files" && (!term || /planning|portfolio|capacity/i.test(term)))
+    groups.push({
+      name: "Group planning",
+      entries: session.groups.map((g) => ({
+        id: `portfolio:${g.id}`,
+        title: `${g.name} · Planning`,
+        detail: "Portfolios, timeline and weekly capacity",
+        kind: "Go to",
+        icon: <FileSearch size={18} />,
+        action: () => navigate(`/groups/${g.id}/planning`),
       })),
     });
   const entries = groups.flatMap((group) => group.entries),

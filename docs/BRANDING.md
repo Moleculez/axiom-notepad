@@ -54,11 +54,15 @@ their cached icon on their own schedule.
 
 ## Demonstration assets
 
-README banners show real editor and Canvas views populated with fictional research
-content. Light and dark captures are taken separately; no interface controls or
+README banners pair the research editor with baseline-aware workspace planning.
+The gallery also shows Canvas, portfolios, capacity, scoped assistant context and
+toolbar loading, all populated with fictional research content. Light and dark
+captures are taken separately; no interface controls or
 capabilities are drawn into screenshots. Keep the small “demonstration workspace”
 caption when reusing them. Do not publish user names, private notes, authentication
-tokens, or test traces.
+tokens, or test traces. Keep the assistant's no-send and loading's delayed-response
+disclosures with their demonstrations; screenshots do not certify provider quality
+or performance.
 
 See the [documentation asset workflow](SHOWCASE.md) for capture and composition.
 The curated assets are intentional repository files; raw browser evidence stays in

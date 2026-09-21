@@ -91,7 +91,7 @@ export default function ResourceDiscussion({
           : "Shared with everyone who can read this project."}
       </p>
       <ErrorNotice message={error || data.error} />
-      {data.loading ? (
+      {data.loading && !data.data ? (
         <Loading />
       ) : (
         <div className="resource-comment-list">

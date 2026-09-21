@@ -1,7 +1,8 @@
 import { z } from "zod";
+import { assistantOfficeApi } from "./assistant-office";
 import { query, transaction } from "./db";
 import { HttpError, spaceAccess } from "./access";
-import { workspaceJson as json, requireScope } from "./workspace-service";
+import { workspaceJson as json } from "./workspace-service";
 import {
   assistantLimits,
   assistantInstruction,
@@ -13,6 +14,7 @@ import {
 } from "./assistant";
 import {
   assistantContext,
+  assistantScopes,
   assistantConversation,
   assistantHash,
   assistantProvider,
@@ -29,6 +31,8 @@ export async function assistantApi(
   path: string[],
   user: string,
 ): Promise<Response | null> {
+  const extraction = await assistantOfficeApi(request, path, user);
+  if (extraction) return extraction;
   const url = new URL(request.url),
     method = request.method;
   if (path[0] === "spaces" && path[2] === "assistant") {
@@ -43,6 +47,14 @@ export async function assistantApi(
         ),
       );
     if (action === "search" && method === "GET") {
+      const scope = await assistantScopes(
+        user,
+        spaceId,
+        z
+          .array(z.uuid())
+          .max(20)
+          .parse(url.searchParams.get("spaceIds")?.split(",") ?? [spaceId]),
+      );
       const q = z
           .string()
           .max(200)
@@ -55,14 +67,14 @@ export async function assistantApi(
           .parse(url.searchParams.get("offset") ?? 0);
       const items = await query(
         `SELECT * FROM (
-        SELECT r.id,r.name AS title,CASE WHEN n.source_format IN ('markdown','latex','text') THEN 'document' ELSE 'pdf' END AS kind,
-        left(coalesce(n.plain_text,r.description,''),220) AS excerpt,n.source_format AS format,r.current_version_id AS version_id,r.updated_at
+        SELECT r.id,r.name AS title,CASE WHEN n.source_format IN ('markdown','latex','text') THEN 'document' WHEN lower(a.name) ~ '[.](docx|pptx|xlsx)$' THEN 'office' ELSE 'pdf' END AS kind,
+        left(coalesce(n.plain_text,r.description,''),220) AS excerpt,coalesce(n.source_format,substring(lower(a.name) from '[.]([^.]+)$')) AS format,r.current_version_id AS version_id,r.updated_at
         FROM resources r LEFT JOIN notes n ON n.id=r.note_id LEFT JOIN attachments a ON a.id=r.current_version_id
-        WHERE r.space_id=$1 AND r.deleted_at IS NULL AND (n.source_format IN ('markdown','latex','text') OR a.mime='application/pdf')
+        WHERE r.space_id=ANY($1::uuid[]) AND r.deleted_at IS NULL AND (n.source_format IN ('markdown','latex','text') OR a.mime='application/pdf' OR lower(a.name) ~ '[.](docx|pptx|xlsx)$')
         AND (r.name ILIKE '%'||$2||'%' OR n.plain_text ILIKE '%'||$2||'%' OR r.description ILIKE '%'||$2||'%')
-        UNION ALL SELECT id,title,'task',left(body,220),NULL,NULL,updated_at FROM tasks WHERE space_id=$1 AND deleted_at IS NULL AND (title ILIKE '%'||$2||'%' OR body ILIKE '%'||$2||'%')
+        UNION ALL SELECT id,title,'task',left(body,220),NULL,NULL,updated_at FROM tasks WHERE space_id=ANY($1::uuid[]) AND deleted_at IS NULL AND (title ILIKE '%'||$2||'%' OR body ILIKE '%'||$2||'%')
       ) s ORDER BY updated_at DESC,id LIMIT 31 OFFSET $3`,
-        [spaceId, q, offset],
+        [scope, q, offset],
       );
       return json({
         items: items.slice(0, 30),
@@ -81,6 +93,7 @@ export async function assistantApi(
         const input = z
           .object({
             id: z.uuid(),
+            spaceIds: z.array(z.uuid()).min(1).max(20).optional(),
             title: z
               .string()
               .trim()
@@ -91,7 +104,12 @@ export async function assistantApi(
           .strict()
           .parse(await request.json());
         await transaction(async (client) => {
-          await requireScope(client, user, spaceId);
+          const scope = await assistantScopes(
+            user,
+            spaceId,
+            input.spaceIds ?? [spaceId],
+            client,
+          );
           await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [
             "assistant-previews:" + user,
           ]);
@@ -107,12 +125,18 @@ export async function assistantApi(
               "Delete an older private conversation before starting another. This workspace retains at most 100 conversations per person.",
             );
           await client.query(
-            "INSERT INTO assistant_conversations(id,owner_id,space_id,title) VALUES($1,$2,$3,$4) ON CONFLICT DO NOTHING",
-            [input.id, user, spaceId, input.title],
+            "INSERT INTO assistant_conversations(id,owner_id,space_id,title,space_ids) VALUES($1,$2,$3,$4,$5) ON CONFLICT DO NOTHING",
+            [input.id, user, spaceId, input.title, scope],
           );
         });
         const c = await assistantConversation(input.id, user);
-        if (c.space_id !== spaceId)
+        if (
+          c.space_id !== spaceId ||
+          JSON.stringify(c.space_ids) !==
+            JSON.stringify(
+              [...new Set([spaceId, ...(input.spaceIds ?? [])])].sort(),
+            )
+        )
           throw new HttpError(
             409,
             "This conversation identifier belongs to a different workspace.",
@@ -182,6 +206,7 @@ export async function assistantApi(
         user,
         spaceId,
         input.selections,
+        c.space_ids,
       );
       messages.push({
         role: "user",
@@ -203,7 +228,7 @@ export async function assistantApi(
         conversationVersion: c.version,
       });
       const created = await transaction(async (client) => {
-        await requireScope(client, user, spaceId);
+        await assistantScopes(user, spaceId, c.space_ids, client);
         await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [
           "assistant-previews:" + user,
         ]);
@@ -301,7 +326,7 @@ export async function assistantApi(
     const contexts = new Map(
       (
         await query<AssistantContext>(
-          "SELECT x.*,c.owner_id,c.space_id FROM assistant_contexts x JOIN assistant_conversations c ON c.id=x.conversation_id WHERE x.id=ANY($1::uuid[]) AND c.owner_id=$2 AND c.deleted_at IS NULL AND x.cleared_at IS NULL AND x.created_at>now()-interval '30 days'",
+          "SELECT x.*,c.owner_id,c.space_id,c.space_ids FROM assistant_contexts x JOIN assistant_conversations c ON c.id=x.conversation_id WHERE x.id=ANY($1::uuid[]) AND c.owner_id=$2 AND c.deleted_at IS NULL AND x.cleared_at IS NULL AND x.created_at>now()-interval '30 days'",
           [contextIds, user],
         )
       ).map((x) => [x.id, x]),
@@ -406,6 +431,7 @@ export async function assistantApi(
       title: c.title,
       version: c.version,
       spaceId: c.space_id,
+      spaceIds: c.space_ids,
       turns,
     });
   }
@@ -424,7 +450,7 @@ export async function assistantApi(
       throw new HttpError(409, "Consent does not match the prepared request.");
     return json(
       await transaction(async (client) => {
-        await requireScope(client, user, c.space_id);
+        await assistantScopes(user, c.space_id, c.space_ids, client);
         await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [
           "tool-queue:" + user,
         ]);

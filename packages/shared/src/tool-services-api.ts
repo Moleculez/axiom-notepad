@@ -182,7 +182,7 @@ export async function toolServicesApi(
       await resourceAccess(userId, resourceId);
       return json(
         await query(
-          "SELECT id,kind,status,result,error,created_at,updated_at,provider_id,version_id FROM tool_jobs WHERE resource_id=$1 AND owner_id=$2 AND coalesce(result->>'deleted','false') <> 'true' ORDER BY created_at DESC LIMIT 50",
+          "SELECT id,kind,status,result,error,created_at,updated_at,provider_id,version_id FROM tool_jobs WHERE resource_id=$1 AND owner_id=$2 AND kind NOT IN ('assistant','assistant-evidence') AND coalesce(result->>'deleted','false') <> 'true' ORDER BY created_at DESC LIMIT 50",
           [resourceId, userId],
         ),
       );
@@ -315,7 +315,7 @@ export async function toolServicesApi(
         [uuid.parse(id), userId],
       );
       if (!job) throw new HttpError(404, "Job unavailable.");
-      if (job.kind === "assistant")
+      if (job.kind === "assistant" || job.kind === "assistant-evidence")
         throw new HttpError(
           404,
           "Use the permission-scoped assistant conversation endpoint.",

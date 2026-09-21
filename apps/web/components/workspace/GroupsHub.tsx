@@ -165,6 +165,12 @@ export default function GroupsHub({
               <div className="group-card-actions">
                 <WorkspaceLink
                   className="button secondary"
+                  to={`/groups/${group.id}/planning`}
+                >
+                  Planning
+                </WorkspaceLink>
+                <WorkspaceLink
+                  className="button secondary"
                   to={`/people?groupId=${group.id}`}
                 >
                   Members

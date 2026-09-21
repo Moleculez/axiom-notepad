@@ -80,6 +80,8 @@ import { noteCommentsApi } from "@axiom/shared/note-comments-api";
 import { visualAnnotationsApi } from "@axiom/shared/visual-annotations-api";
 import { projectsApi } from "@axiom/shared/projects-api";
 import { planningApi } from "@axiom/shared/planning-api";
+import { planningExpansionApi } from "@axiom/shared/planning-expansion-api";
+import { paperTaskApi } from "@axiom/shared/paper-task-api";
 import { accountsApi } from "@axiom/shared/accounts-api";
 import { groupAdministrationApi } from "@axiom/shared/group-administration";
 import { trashApi } from "@axiom/shared/trash-api";
@@ -231,6 +233,10 @@ async function handleRequest(
     }
     const assistantResponse = await assistantApi(request, path, user.id);
     if (assistantResponse) return assistantResponse;
+    const paperLinks = await paperTaskApi(request, path, user.id);
+    if (paperLinks) return paperLinks;
+    const expandedPlanning = await planningExpansionApi(request, path, user.id);
+    if (expandedPlanning) return expandedPlanning;
     const planningResponse = await planningApi(request, path, user.id);
     if (planningResponse) return planningResponse;
     const lifecycleResponse = await spaceLifecycleApi(request, path, user.id);

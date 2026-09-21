@@ -449,7 +449,7 @@ export function GroupContent({
                   )}
                 </div>
               )}
-              {data.loading ? (
+              {data.loading && !data.data ? (
                 <Loading />
               ) : !data.data?.items.length ? (
                 <Empty title={`No matching ${section}`}>

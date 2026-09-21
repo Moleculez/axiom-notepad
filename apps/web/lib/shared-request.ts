@@ -1,4 +1,5 @@
 import { api } from "./client";
+import { beginWorkspaceActivity } from "./workspace-activity";
 
 type Pending = {
   promise: Promise<unknown>;
@@ -17,12 +18,16 @@ export function sharedRequest<T>(
   let entry = pending.get(key);
   if (!entry || entry.controller.signal.aborted) {
     const controller = new AbortController();
+    const finish = beginWorkspaceActivity();
+    controller.signal.addEventListener("abort", finish, { once: true });
     const next: Pending = {
       controller,
       readers: 0,
       promise: Promise.resolve(),
     };
     next.promise = api<T>(path, { signal: controller.signal }).finally(() => {
+      controller.signal.removeEventListener("abort", finish);
+      finish();
       if (pending.get(key) === next) pending.delete(key);
     });
     pending.set(key, next);

@@ -39,16 +39,27 @@ const server = createServer(async (req, res) => {
           explanation: "Make the verification boundary explicit.",
         });
       if (item.kind === "task")
-        proposals.push({
-          kind: "task-update",
-          evidenceKey: item.key,
-          fields: {
-            ...item.task,
-            title: item.task.title + " — reviewed",
-            priority: "high",
-          },
-          explanation: "Prioritize the reviewed experiment.",
-        });
+        proposals.push(
+          /schedule/i.test(last.request)
+            ? {
+                kind: "schedule",
+                evidenceKey: item.key,
+                startOn: "2026-10-05",
+                dueOn: "2026-10-06",
+                explanation:
+                  "A reviewed date change for the selected task only.",
+              }
+            : {
+                kind: "task-update",
+                evidenceKey: item.key,
+                fields: {
+                  ...item.task,
+                  title: item.task.title + " — reviewed",
+                  priority: "high",
+                },
+                explanation: "Prioritize the reviewed experiment.",
+              },
+        );
     }
     if (last.allowTaskCreate)
       proposals.push({

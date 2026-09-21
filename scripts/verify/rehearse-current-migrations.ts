@@ -23,7 +23,12 @@ administrator.pathname = "/postgres";
 const admin = new pg.Client({ connectionString: administrator.href });
 await admin.connect();
 try {
-  for (const mode of ["fresh", "upgrade", "assistant_upgrade"] as const) {
+  for (const mode of [
+    "fresh",
+    "upgrade",
+    "assistant_upgrade",
+    "planning_upgrade",
+  ] as const) {
     const name = `axiom_${mode}_test_${stamp}`;
     assert(configured.pathname !== `/${name}`);
     await admin.query(`CREATE DATABASE "${name}"`);
@@ -49,7 +54,13 @@ try {
           "CREATE TABLE schema_migrations(version integer PRIMARY KEY,name text NOT NULL,applied_at timestamptz NOT NULL DEFAULT now())",
         );
         for (const item of forwardMigrations.filter(
-          (m) => m.version <= (mode === "assistant_upgrade" ? 27 : 18),
+          (m) =>
+            m.version <=
+            (mode === "planning_upgrade"
+              ? 28
+              : mode === "assistant_upgrade"
+                ? 27
+                : 18),
         )) {
           await db.query(item.sql);
           await db.query(
@@ -88,6 +99,12 @@ try {
             [noteId],
           )
         ).rows;
+        if (mode === "planning_upgrade") {
+          await db.query(
+            "INSERT INTO assistant_conversations(id,owner_id,space_id,title) SELECT $1,'rehearsal',id,'Preserved assistant' FROM spaces WHERE group_id=$2 AND kind='team'",
+            [commentId, groupId],
+          );
+        }
       }
       await migrateDatabase(db);
       await migrateDatabase(db); // Idempotent rerun must not change retained data.
@@ -139,6 +156,15 @@ try {
           version: 1,
           deleted: false,
         });
+        if (mode === "planning_upgrade") {
+          const row = (
+            await db.query(
+              "SELECT space_id,space_ids FROM assistant_conversations WHERE id=$1",
+              [commentId],
+            )
+          ).rows[0];
+          assert.deepEqual(row.space_ids, [row.space_id]);
+        }
       }
       await db.query("COMMIT");
       console.log(

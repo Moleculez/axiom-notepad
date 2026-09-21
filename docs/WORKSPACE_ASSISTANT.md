@@ -10,8 +10,10 @@ execute code, browse the web or certify proofs.
 1. Open **Research assistant** in the app toolbar or Search & commands. Notes,
    Math Studio, saved tasks, the current PDF page and reviewed OCR pages also have
    contextual assistant actions. The document remains mounted beside the panel.
-2. Choose one workspace and an administrator-enabled provider. **Add evidence**
-   searches permitted workspace files and tasks locally, without contacting AI.
+2. Choose a primary workspace and an administrator-enabled provider. Optionally
+   select up to 20 accessible workspaces in the same group before starting a
+   conversation. **Add evidence** searches only this selected scope locally.
+   Personal workspaces cannot be mixed with group workspaces.
 3. Use the pencil beside a document to select exact text or a line range. Native
    evidence comes from saved server content, including acknowledged collaborative
    updates. An excerpt carries a full-document hash: if that document changes before
@@ -42,11 +44,15 @@ in this local draft. Private conversation history can be renamed, exported or de
   before resolving anchors; source text alone is not a sufficient synchronization
   signal.
 - **Tasks:** edit the proposed title, description, status, priority, assignee, labels
-  and effort, preview, then explicitly apply. Schedules and dependencies are not
-  proposed or rewritten. New tasks are unscheduled. A receipt binds the exact preview
+  and effort, preview, then explicitly apply. New tasks are unscheduled. A receipt binds the exact preview
   to its operation; repeated requests do not create duplicate tasks. Undo refuses
   newer task revisions or new dependent work. A new preview supersedes an older,
   unapplied receipt.
+- **Schedules:** an explicitly editable task can receive a separate date proposal.
+  Review the affected tasks and capacity impact before applying to its workspace.
+  This uses the same preview/apply/Undo service as manual Gantt changes. It never
+  creates dependency edges, changes other workspaces or levels resources. New task,
+  calendar or group availability revisions invalidate unapplied receipts.
 - Dismissed, expired or deleted private drafts cannot be published from normal local
   recovery. Publishing and task application recheck evidence access inside the
   mutation transaction. Losing an evidence source also withholds derived follow-up
@@ -61,21 +67,35 @@ supported. PDF text is explicitly browser-extracted evidence, not a server-verif
 quotation. OCR evidence stops being available when its private result expires or
 is cleared. Native plain text is read-only context, not a suggestion target.
 
-Office, Canvas, media, arbitrary web pages, whole-workspace crawling and automatic
-embedding/vector search are not assistant context sources in this stage.
+DOCX/PPTX/XLSX evidence is locally extracted by the regular server worker from an
+immutable file version. Select exact characters, document blocks, slides or saved
+worksheet values/formulas; external relationships are never fetched and formulas
+are not recalculated. Hidden cells and speaker notes may be present: review the
+excerpt. Extraction is limited to 500,000 characters, with smaller outgoing limits
+below. Oversized input fails explicitly. Private extraction results expire after
+one day; submitted excerpts follow conversation retention.
 
-| Boundary | Limit |
-| --- | --- |
-| Evidence per request | 20 items / 30,000 source characters |
-| Complete outgoing messages | 60,000 characters; history is included |
-| Response / proposed actions | 30,000 characters / 5 proposals |
-| Task description | 12,000 characters |
-| Editable CRDT snapshots | 2 MB each / 8 MB aggregate encoded snapshots |
-| Conversation history | 100 turns, retained 30 days |
-| Active private conversations | 100 per person per workspace |
-| Pending context previews | 20 per account; expire after 15 minutes |
-| Proposal preview receipt | 15 minutes; newest unsubmitted preview wins |
-| Queued/running provider requests | 5 per account, shared with existing AI jobs |
+Canvas selection submits only chosen card text/titles and edges between them,
+fenced by the saved canvas hash. Linked files, URLs and nested canvases are not
+recursively fetched. Planning evidence includes selected task metadata and
+working-day analysis; task deletion/access loss also withholds historical answers.
+
+Media, arbitrary web pages, whole-workspace crawling and automatic embedding/vector
+search remain outside this stage. Office and Canvas are read-only evidence, not
+proposal targets.
+
+| Boundary                         | Limit                                        |
+| -------------------------------- | -------------------------------------------- |
+| Evidence per request             | 20 items / 30,000 source characters          |
+| Complete outgoing messages       | 60,000 characters; history is included       |
+| Response / proposed actions      | 30,000 characters / 5 proposals              |
+| Task description                 | 12,000 characters                            |
+| Editable CRDT snapshots          | 2 MB each / 8 MB aggregate encoded snapshots |
+| Conversation history             | 100 turns, retained 30 days                  |
+| Active private conversations     | 100 per person per workspace                 |
+| Pending context previews         | 20 per account; expire after 15 minutes      |
+| Proposal preview receipt         | 15 minutes; newest unsubmitted preview wins  |
+| Queued/running provider requests | 5 per account, shared with existing AI jobs  |
 
 Provider daily limits include failed, cancelled and uncertain jobs. A completed
 response is schema-validated before proposed actions are shown. Malformed output
@@ -85,7 +105,8 @@ execution are disabled; equations use the existing bounded math-rendering worker
 ## Privacy, cancellation and recovery
 
 Conversation rows, evidence snapshots, answers and unpublished proposals are
-owner-private, not group-visible. Each conversation is confined to one workspace.
+owner-private, not group-visible. A conversation has an immutable, explicitly
+selected same-group workspace boundary (one workspace by default).
 Provider access and source access are checked before dispatch and before publishing
 the result; reads, exports and proposed writes revalidate source access. Assistant
 responses use private/no-store HTTP headers. Reading the panel does not send content
@@ -101,7 +122,7 @@ drafts on other devices. Provider and backup retention are separate policies.
 
 ## Operator setup
 
-Apply migration **28** after a verified database/blob backup, then run the web,
+Apply migrations through **30** after a verified database/blob backup, then run the web,
 sync and regular workspace worker services. Existing provider grants stay unchanged:
 an administrator must explicitly enable **Workspace assistant** in group processing
 provider settings. It is disabled by default.
@@ -113,8 +134,7 @@ See [provider configuration](RESEARCH_TOOLS.md#optional-service-configuration).
 
 ## Isolated acceptance
 
-Use an isolated database/storage on **3004/1236**, never the working instance on
-8080. For local acceptance only, run the deterministic loopback provider:
+Use an isolated database/storage on **3004/1236**, never the working instance on 8080. For local acceptance only, run the deterministic loopback provider:
 
 ```sh
 npx tsx scripts/verify/assistant-provider-fixture.ts

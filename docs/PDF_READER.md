@@ -1,5 +1,15 @@
 # PDF research workbench
 
+Unsent annotation replies now persist on the current device/account, including
+their edit revision and retry identity. Reopening requires a fresh permission
+check before recovery; drafts never send automatically. Send, discard or sign out
+to clear them. Storage failures are reported instead of silently discarding work.
+
+**Link task** connects an annotation to an existing or new task in the paper's
+workspace, preserving file version/page/annotation identity. Private text is not
+copied into the task; link visibility follows current paper/annotation access.
+Deleted or pruned source versions never redirect to a different version.
+
 The PDF reader is a research-oriented workbench, inspired by Zotero's reading
 workflow, not a claim of feature parity. It opens immutable file versions inside
 the existing workbench and beside Markdown notes. Your source PDF is never edited
@@ -66,10 +76,11 @@ composer. Existing text-markup and area geometry does not yet have equivalent ha
 by their author; authorized managers may remove shared replies. Resolve/reopen,
 unread reply counts, optimistic-version checks and idempotent reply submissions are
 included. Thread visibility follows the annotation: making it private immediately
-denies other readers. Unsaved replies remain in the open dialog after a network
-failure and closing warns before discarding them; durable offline reply drafts and
-OS notifications are not implemented. Workspace events invalidate annotation data,
-with polling as fallback.
+denies other readers. Unsaved replies persist on the current device/account,
+including after a network failure or closing the dialog. Recovery requires a fresh
+permission check, so offline drafts are not an automatic-send outbox. Send or
+discard explicitly; storage failures are reported. OS notifications are not
+implemented. Workspace events invalidate annotation data, with polling as fallback.
 
 Bulk-select up to 100 owned, synced annotations to tag, recolor, change visibility or
 remove them. Sharing and removal require confirmation. Each result is
@@ -186,9 +197,9 @@ deployment-specific acceptance. AI text is evidence to review, not verified proo
 - Multiple mounted readers register independent research subscriptions. Existing
   outbox conflicts and permission-revocation behavior are preserved. Changes poll
   periodically and react to existing workspace SSE invalidation events.
-- Full peer-collaborative side notes, reference/assistant context unification,
-  annotation-to-task workflows, durable per-file reader sessions and richer MCP
-  operations are follow-up work, not hidden completed features.
+- Annotation-to-task links and local unsent-reply recovery are implemented. Full
+  peer-collaborative side notes, broader reference/assistant context unification,
+  durable multi-pane reader sessions and richer MCP operations remain follow-up work.
 
 See [verification](VERIFICATION.md) for the executed test scope and outstanding
 release gates. Existing files/data and prior Workspace/Gantt work are preserved.

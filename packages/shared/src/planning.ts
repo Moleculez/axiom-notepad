@@ -76,12 +76,28 @@ export type SchedulePlan = {
   proposed: ScheduleChange[];
   conflicts: ScheduleConflict[];
   warnings: string[];
+  capacity?: {
+    coverage: string;
+    start: string;
+    end: string;
+    truncated: boolean;
+    direct: CapacityChange[];
+    proposed: CapacityChange[];
+  };
   before: {
     id: string;
     title: string;
     startOn: string | null;
     dueOn: string | null;
   }[];
+};
+export type CapacityChange = {
+  userId: string;
+  name: string;
+  week: string;
+  before: number;
+  after: number;
+  available: number | null;
 };
 export const dayNumber = (date: string) =>
   Math.floor(Date.parse(date + "T00:00:00Z") / 86400000);

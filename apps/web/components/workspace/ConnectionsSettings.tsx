@@ -92,7 +92,7 @@ export default function ConnectionsSettings() {
         </p>
       </section>
       <ErrorNotice message={error || data.error} />
-      {data.loading ? (
+      {data.loading && !data.data ? (
         <Loading />
       ) : (
         <>

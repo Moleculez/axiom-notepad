@@ -108,12 +108,33 @@ export default function AssistantAnswer({
               onClick={() => {
                 const e = selected;
                 setSelected(null);
-                if (e.versionId)
+                if (e.kind === "office") {
+                  const query = new URLSearchParams({ version: e.versionId! });
+                  const anchor = new URLSearchParams();
+                  if (e.format === "xlsx" && e.locator) {
+                    const at = e.locator.lastIndexOf("!");
+                    anchor.set("sheet", e.locator.slice(0, at));
+                    anchor.set("cell", e.locator.slice(at + 1));
+                  } else if (e.locator)
+                    anchor.set(
+                      e.format === "pptx" ? "slide" : "block",
+                      e.locator,
+                    );
+                  navigate(`/files/${e.id}?${query}#${anchor}`);
+                } else if (e.versionId)
                   navigate(
                     `/pdf/${e.id}?version=${e.versionId}&page=${e.page ?? 1}`,
                   );
                 else if (e.kind === "task")
-                  navigate(`/workspaces/${spaceId}/planning?task=${e.id}`);
+                  navigate(
+                    `/workspaces/${e.spaceId ?? spaceId}/planning?task=${e.id}`,
+                  );
+                else if (e.kind === "planning")
+                  navigate(`/workspaces/${e.id}/planning`);
+                else if (e.kind === "canvas")
+                  navigate(
+                    `/notes/${e.id}#card=${encodeURIComponent(e.locator?.split(",")[0] ?? "")}`,
+                  );
                 else
                   navigate(
                     `/${e.format === "latex" ? "math" : e.format === "text" ? "text" : "notes"}/${e.id}`,

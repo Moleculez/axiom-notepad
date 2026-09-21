@@ -26,6 +26,7 @@ import type { useAppearance } from "../../lib/appearance";
 import type { useEditorPreferences } from "../../lib/editor-preferences";
 import { api, ApiError, errorMessage } from "../../lib/client";
 import { sharedRequest } from "../../lib/shared-request";
+import { beginWorkspaceActivity } from "../../lib/workspace-activity";
 
 export type Session = {
   user: { id: string; name: string; email: string; image?: string | null };
@@ -244,11 +245,13 @@ export function useAction() {
     pending.current = true;
     setBusy(true);
     setError("");
+    const finish = beginWorkspaceActivity();
     try {
       await action();
     } catch (error) {
       if (alive.current) setError(errorMessage(error));
     } finally {
+      finish();
       pending.current = false;
       if (alive.current) setBusy(false);
     }
@@ -289,6 +292,14 @@ export function ErrorNotice({
   );
 }
 export function Loading({ label = "Loading workspace…" }: { label?: string }) {
+  const inWorkspace = !!useContext(WorkspaceContext);
+  useEffect(() => {
+    if (inWorkspace) return beginWorkspaceActivity();
+  }, [inWorkspace]);
+  // The toolbar owns workspace loading feedback, including lazy page chunks.
+  // Keep the standalone sign-in/bootstrap indicator outside that shell.
+  if (inWorkspace)
+    return <span className="workspace-loading-announcement">{label}</span>;
   return (
     <div className="ws-loading" role="status">
       <LoaderCircle className="spin" size={20} />

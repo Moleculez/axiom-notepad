@@ -13,9 +13,13 @@ import {
 import { captureHunks, resolveHunks } from "./suggestion-hunks";
 import { diffChanges } from "./version-diff";
 import { currentRevisionDoc } from "./revision-api";
-import { lockPlanning, mutatePlanningTask } from "./planning-api";
+import { mutatePlanningTask } from "./planning-api";
 import { notifyWorkspace } from "./documents";
 import { applyChanges } from "@axiom/editor/transactions";
+import {
+  assistantScheduleProposal,
+  lockAssistantPlanning,
+} from "./assistant-schedule";
 
 async function loadProposal(id: string, user: string) {
   const [p] = await query(
@@ -43,6 +47,9 @@ export async function assistantProposalApi(
         : c.evidence.find((e) => e.key === original.evidenceKey);
   if (original.kind !== "task-create" && !evidence?.editable)
     throw new HttpError(403, "This target was not approved for proposals.");
+  if (original.kind === "schedule")
+    return assistantScheduleProposal(request, user, p, c, evidence!, action);
+  const targetSpaceId = evidence?.spaceId ?? c.space_id;
   if (action === "preview" && method === "POST") {
     if (p.state !== "draft")
       throw new HttpError(
@@ -50,6 +57,8 @@ export async function assistantProposalApi(
         "This proposal was already applied or dismissed.",
       );
     const data = assistantProposalSchema.parse(await request.json());
+    if (data.kind === "schedule")
+      throw new HttpError(403, "Cannot change the proposal type.");
     if (
       data.kind !== original.kind ||
       (data.kind !== "task-create" &&
@@ -100,7 +109,7 @@ export async function assistantProposalApi(
         current.doc.destroy();
       }
     } else {
-      await spaceAccess(user, c.space_id, "edit");
+      await spaceAccess(user, targetSpaceId, "edit");
       if (data.kind === "task-create" && !c.allow_task_create)
         throw new HttpError(
           403,
@@ -109,7 +118,7 @@ export async function assistantProposalApi(
       if (data.kind === "task-update") {
         const [task] = await query(
           "SELECT * FROM tasks WHERE id=$1 AND space_id=$2 AND deleted_at IS NULL",
-          [evidence!.id, c.space_id],
+          [evidence!.id, targetSpaceId],
         );
         if (!task || task.version !== evidence!.version)
           throw new HttpError(
@@ -122,7 +131,7 @@ export async function assistantProposalApi(
       if (data.fields.assigneeId) {
         const [allowed] = await query(
           "SELECT axiom_space_role($1,$2) AS role",
-          [data.fields.assigneeId, c.space_id],
+          [data.fields.assigneeId, targetSpaceId],
         );
         if (!allowed?.role)
           throw new HttpError(400, "The assignee must have workspace access.");
@@ -246,7 +255,7 @@ export async function assistantProposalApi(
         "Publish document proposals through the suggestion editor. Accepted content is not directly editable by the assistant.",
       );
     const result = await transaction(async (client) => {
-      const space = await lockPlanning(client, user, c.space_id);
+      const space = await lockAssistantPlanning(client, user, c, targetSpaceId);
       await assertAssistantAccess(c, client);
       const {
         rows: [proposal],
@@ -283,7 +292,7 @@ export async function assistantProposalApi(
         const restored = await mutatePlanningTask(
           client,
           user,
-          c.space_id,
+          targetSpaceId,
           space,
           r.result.id,
           { ...r.inverse, version: r.result.version },
@@ -309,12 +318,12 @@ export async function assistantProposalApi(
         );
       const data = assistantProposalSchema.parse(r.data.proposal) as Exclude<
         AssistantProposal,
-        { kind: "document" }
+        { kind: "document" | "schedule" }
       >;
       const task = await mutatePlanningTask(
         client,
         user,
-        c.space_id,
+        targetSpaceId,
         space,
         r.data.taskId,
         {
@@ -325,7 +334,7 @@ export async function assistantProposalApi(
       const saved = {
         id: task.id,
         version: task.version,
-        spaceId: c.space_id,
+        spaceId: targetSpaceId,
         receiptId: r.id,
         fingerprint: r.fingerprint,
       };

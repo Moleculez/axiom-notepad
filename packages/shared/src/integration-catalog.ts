@@ -48,6 +48,55 @@ const write = (
  * credentials. Payloads are validated again by the same application services. */
 export const integrationActions: Action[] = [
   read(
+    "workspace_schedule_analysis",
+    "spaces/:id/planning-analysis",
+    "workspace",
+    "Read working-day critical path, slack, forecast and incomplete chains. No schedule is modified.",
+  ),
+  read(
+    "workspace_baselines",
+    "spaces/:id/baselines",
+    "workspace",
+    "List immutable baseline metadata. Use query.baseline and optional query.compare=current or another baseline ID for comparison.",
+  ),
+  read(
+    "group_portfolio",
+    "groups/:id/portfolio",
+    "group",
+    "Read portfolio summaries restricted to accessible workspaces granted to this connection. Optional query.portfolio selects a named portfolio.",
+  ),
+  read(
+    "group_capacity",
+    "groups/:id/capacity",
+    "group",
+    "Read weekly estimated demand against availability. query.start is YYYY-MM-DD; query.weeks is 1-52. Unknown capacity is not zero. Only granted accessible workspaces contribute.",
+  ),
+  write(
+    "workspace_baseline_capture",
+    "spaces/:id/baselines",
+    "workspace",
+    "Capture an immutable baseline with payload.name and current planning version. Requires in-app approval.",
+    "POST",
+    true,
+  ),
+  write(
+    "group_portfolio_create",
+    "groups/:id/portfolios",
+    "group",
+    "Create a named portfolio with payload.name, spaceIds, version=0. All workspaces must belong to this group and be granted. Requires in-app approval.",
+    "POST",
+    true,
+    true,
+  ),
+  write(
+    "group_availability_update",
+    "groups/:id/capacity",
+    "group",
+    "Update explicit group availability with payload.userId, version, settings {weeklyHours:number|null, workingDays:0-6[], exceptions:[{date,hours}]}. Requires in-app approval; changing another member requires group administration.",
+    "PATCH",
+    true,
+  ),
+  read(
     "workspace_planning",
     "spaces/:id/planning",
     "workspace",

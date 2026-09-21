@@ -1,4 +1,5 @@
 "use client";
+import { openAssistant } from "../../lib/assistant";
 import {
   useEffect,
   useMemo,
@@ -1733,6 +1734,36 @@ export default function CanvasStudio({ project }: { project: ToolProject }) {
               role="toolbar"
               aria-label="Selected card actions"
             >
+              <button
+                className="button ghost"
+                disabled={!selected.length || selected.length > 50}
+                onClick={() =>
+                  void (async () => {
+                    try {
+                      const snapshot = await api<{
+                        source: string;
+                        hash: string;
+                      }>(`resources/${project.resource_id}/history/current`);
+                      openAssistant({
+                        spaceId: project.space_id,
+                        selection: {
+                          kind: "canvas",
+                          id: project.resource_id,
+                          nodeIds: selected.map((n) => n.id),
+                          hash: snapshot.hash,
+                        },
+                        selectionLabel: `${selected.length} canvas cards`,
+                        prompt:
+                          "Summarize the selected cards and connections. Identify open questions without treating linked files as included evidence.",
+                      });
+                    } catch (e) {
+                      notify((e as Error).message);
+                    }
+                  })()
+                }
+              >
+                Ask assistant
+              </button>
               {Object.entries(canvasColors).map(([key, color]) => (
                 <button
                   key={key}

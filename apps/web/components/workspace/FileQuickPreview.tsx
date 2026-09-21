@@ -39,7 +39,7 @@ export default function FileQuickPreview({
       <ErrorNotice message={note.error} />
       <div className="file-quick-preview">
         {resource.kind === "note" ? (
-          note.loading ? (
+          note.loading && !note.data ? (
             <Loading />
           ) : (
             <ReadingView

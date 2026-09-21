@@ -78,7 +78,7 @@ export default function ProviderSettings({ groupId }: { groupId: string }) {
         </button>
       </div>
       <ErrorNotice message={error || data.error} />
-      {data.loading ? (
+      {data.loading && !data.data ? (
         <Loading />
       ) : !data.data?.configured ? (
         <p className="ws-note">

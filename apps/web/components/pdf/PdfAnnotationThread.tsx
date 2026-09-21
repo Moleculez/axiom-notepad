@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import type { Annotation } from "@axiom/shared/research";
-import { api, post } from "../../lib/client";
+import { api, post, SIGN_OUT_PENDING } from "../../lib/client";
 import Dialog from "../Dialog";
 import { confirmAction } from "../../lib/app-prompt";
 type Reply = {
@@ -36,11 +36,80 @@ export default function PdfAnnotationThread({
     [editing, setEditing] = useState<Reply | null>(null);
   const [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
+  const [draftLoaded, setDraftLoaded] = useState(false),
+    [draftNotice, setDraftNotice] = useState("");
+  const draftKey = `axiom:${userId}:pdf-reply:${annotation.id}`;
+  const restored = useRef(false);
   const identity = useRef({
     key: "",
     id: crypto.randomUUID(),
     mutationId: crypto.randomUUID(),
   });
+  // Recover only after a fresh annotation/thread permission check. Reconnection
+  // never publishes a draft automatically; the original edit fence is retained.
+  useEffect(() => {
+    if (!thread || restored.current) return;
+    restored.current = true;
+    try {
+      const raw = localStorage.getItem(draftKey);
+      const saved = raw ? JSON.parse(raw) : null;
+      if (
+        saved?.body &&
+        typeof saved.body === "string" &&
+        saved.body.length <= 12000
+      ) {
+        setBody(saved.body);
+        if (
+          saved.editing &&
+          saved.editing.author_id === userId &&
+          typeof saved.editing.id === "string" &&
+          Number.isInteger(saved.editing.version)
+        )
+          setEditing(saved.editing);
+        if (
+          saved.identity &&
+          typeof saved.identity.key === "string" &&
+          /^[\da-f-]{36}$/i.test(saved.identity.id) &&
+          /^[\da-f-]{36}$/i.test(saved.identity.mutationId)
+        )
+          identity.current = saved.identity;
+        setDraftNotice(
+          "Recovered an unsent reply from this device. Review it before sending.",
+        );
+      }
+    } catch {
+      setDraftNotice(
+        "Draft recovery is unavailable. Keep this discussion open to preserve your reply.",
+      );
+    }
+    setDraftLoaded(true);
+  }, [thread, draftKey, userId]);
+  useEffect(() => {
+    if (!draftLoaded || localStorage.getItem(SIGN_OUT_PENDING)) return;
+    try {
+      const key = JSON.stringify({
+        body,
+        edit: editing?.id,
+        version: editing?.version,
+      });
+      if (key !== identity.current.key)
+        identity.current = {
+          key,
+          id: editing?.id ?? crypto.randomUUID(),
+          mutationId: crypto.randomUUID(),
+        };
+      if (body)
+        localStorage.setItem(
+          draftKey,
+          JSON.stringify({ body, editing, identity: identity.current }),
+        );
+      else localStorage.removeItem(draftKey);
+    } catch {
+      setDraftNotice(
+        "This device could not save your draft. Keep the discussion open or copy the reply before leaving.",
+      );
+    }
+  }, [body, editing, draftLoaded, draftKey]);
   useEffect(() => {
     const controller = new AbortController();
     let loading = false;
@@ -52,6 +121,7 @@ export default function PdfAnnotationThread({
           signal: controller.signal,
         });
         setThread(value);
+        setError("");
         await api(`paper-threads/${annotation.id}`, {
           method: "POST",
           signal: controller.signal,
@@ -81,6 +151,7 @@ export default function PdfAnnotationThread({
       if (clear) {
         setBody("");
         setEditing(null);
+        setDraftNotice("");
         identity.current.key = "";
       }
     } catch (e) {
@@ -94,14 +165,28 @@ export default function PdfAnnotationThread({
       title="Annotation discussion"
       subtitle={`Page ${annotation.data.page} · ${thread?.shared ? "Shared with paper readers" : "Private"}`}
       onClose={() => {
-        if (!body || body === editing?.body) onClose();
-        else
+        if (!body) {
+          onClose();
+          return;
+        }
+        try {
+          if (!localStorage.getItem(SIGN_OUT_PENDING))
+            localStorage.setItem(
+              draftKey,
+              JSON.stringify({ body, editing, identity: identity.current }),
+            );
+          onClose();
+        } catch {
           void confirmAction(
-            "Your unsent reply will be discarded. Leave this discussion open to keep working offline.",
-            { title: "Discard reply draft?", confirmLabel: "Discard" },
-          ).then((confirmed) => {
-            if (confirmed) onClose();
+            "This device could not save your reply. Copy it before closing, or discard it.",
+            {
+              title: "Draft could not be saved",
+              confirmLabel: "Discard and close",
+            },
+          ).then((ok) => {
+            if (ok) onClose();
           });
+        }
       }}
     >
       {annotation.data.quote && (
@@ -111,6 +196,17 @@ export default function PdfAnnotationThread({
       {error && (
         <p className="form-error" role="alert">
           {error}
+        </p>
+      )}
+      {draftNotice && (
+        <p className="ws-note" role="status">
+          {draftNotice}
+        </p>
+      )}
+      {!thread && body && (
+        <p className="ws-note">
+          Your unsent draft is kept on this device. Reconnect with access to
+          this annotation to continue; nothing will be sent automatically.
         </p>
       )}
       {thread && (
@@ -209,6 +305,8 @@ export default function PdfAnnotationThread({
               <label>
                 {editing ? "Edit reply" : "Reply"}
                 <textarea
+                  aria-label={editing ? "Edit reply" : "Reply"}
+                  disabled={busy}
                   value={body}
                   maxLength={12000}
                   onChange={(e) => setBody(e.target.value)}
@@ -216,6 +314,19 @@ export default function PdfAnnotationThread({
                 />
               </label>
               <div className="pdf-thread-status">
+                {body && (
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => {
+                      setBody("");
+                      setEditing(null);
+                      setDraftNotice("");
+                    }}
+                  >
+                    Discard draft
+                  </button>
+                )}
                 {editing && (
                   <button
                     type="button"
@@ -234,6 +345,10 @@ export default function PdfAnnotationThread({
                   {editing ? "Save changes" : "Add reply"}
                 </button>
               </div>
+              <p className="ws-note">
+                Unsent replies stay on this device until sent, discarded, or you
+                sign out. Sending always requires current access.
+              </p>
             </form>
           )}
         </>

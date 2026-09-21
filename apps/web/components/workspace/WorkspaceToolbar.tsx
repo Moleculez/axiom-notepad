@@ -88,7 +88,7 @@ export const locationIcon = (path: string) => {
 export function WorkspaceLocation() {
   const sessions = useWorkSessions()!,
     { path, params } = useLocation(),
-    { spaces, navigate, revision } = useWorkspace();
+    { spaces, navigate, revision, session } = useWorkspace();
   const route = path + (params.size ? `?${params}` : ""),
     resourceId = locationResourceId(route),
     resourcePath = resourceId ? `resources/${resourceId}/location` : null;
@@ -122,6 +122,9 @@ export function WorkspaceLocation() {
       : sessions.active?.title,
     location: data.data,
     space,
+    group: path.startsWith("/groups/")
+      ? session.groups.find((g) => g.id === path.split("/")[2])
+      : undefined,
   });
   const loading = !!resourceId && (data.loading || data.path !== resourcePath),
     trail = useRef<HTMLElement>(null),
@@ -252,6 +255,7 @@ function RecentWork() {
     <details
       ref={root}
       className="workspace-recent"
+      name="workspace-toolbar-popover"
       onToggle={() => {
         const open = !!root.current?.open;
         setShown(open);

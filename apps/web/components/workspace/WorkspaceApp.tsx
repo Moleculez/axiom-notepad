@@ -36,6 +36,8 @@ import {
 import Dialog, { DialogFocusBoundary } from "../Dialog";
 import WorkspaceSidebar from "./WorkspaceSidebar";
 import WorkspaceSearch from "./WorkspaceSearch";
+import WorkspaceProgress from "./WorkspaceProgress";
+import { beginWorkspaceActivity } from "../../lib/workspace-activity";
 import Avatar from "./Avatar";
 import { pendingInvitation } from "../../lib/pending-invitation";
 import {
@@ -55,31 +57,53 @@ import dynamic from "next/dynamic";
 const Workbench = dynamic(() => import("./Workbench"), {
   loading: () => <Loading label="Opening file…" />,
 });
-const Explorer = dynamic(() => import("./Explorer"));
-const ResearchCollection = dynamic(() => import("./Research"));
-const HomePage = dynamic(() =>
-  import("./Pages").then((module) => module.HomePage),
+const pageLoading = () => <Loading label="Opening page…" />;
+const Explorer = dynamic(() => import("./Explorer"), { loading: pageLoading });
+const ResearchCollection = dynamic(() => import("./Research"), {
+  loading: pageLoading,
+});
+const HomePage = dynamic(
+  () => import("./Pages").then((module) => module.HomePage),
+  { loading: pageLoading },
 );
-const InboxPage = dynamic(() =>
-  import("./Pages").then((module) => module.InboxPage),
+const InboxPage = dynamic(
+  () => import("./Pages").then((module) => module.InboxPage),
+  { loading: pageLoading },
 );
-const PeoplePage = dynamic(() =>
-  import("./Pages").then((module) => module.PeoplePage),
+const PeoplePage = dynamic(
+  () => import("./Pages").then((module) => module.PeoplePage),
+  { loading: pageLoading },
 );
-const ResearchPage = dynamic(() =>
-  import("./Pages").then((module) => module.ResearchPage),
+const ResearchPage = dynamic(
+  () => import("./Pages").then((module) => module.ResearchPage),
+  { loading: pageLoading },
 );
-const ProjectsPage = dynamic(() =>
-  import("./UnifiedWorkspace").then((m) => m.LegacyProjectRedirect),
+const ProjectsPage = dynamic(
+  () => import("./UnifiedWorkspace").then((m) => m.LegacyProjectRedirect),
+  { loading: pageLoading },
 );
-const SettingsPage = dynamic(() => import("./Settings"));
-const WorkspacesPage = dynamic(() => import("./UnifiedWorkspace"));
+const SettingsPage = dynamic(() => import("./Settings"), {
+  loading: pageLoading,
+});
+const WorkspacesPage = dynamic(() => import("./UnifiedWorkspace"), {
+  loading: pageLoading,
+});
 const LegacyAdministrationRedirect = dynamic(
   () => import("./GroupAdministration"),
+  { loading: pageLoading },
 );
-const AuditPage = dynamic(() => import("./AuditPage"));
-const TrashPage = dynamic(() => import("./TrashPage"));
-const GroupsHub = dynamic(() => import("./GroupsHub"));
+const AuditPage = dynamic(() => import("./AuditPage"), {
+  loading: pageLoading,
+});
+const TrashPage = dynamic(() => import("./TrashPage"), {
+  loading: pageLoading,
+});
+const GroupsHub = dynamic(() => import("./GroupsHub"), {
+  loading: pageLoading,
+});
+const GroupPlanning = dynamic(() => import("./GroupPlanning"), {
+  loading: pageLoading,
+});
 import {
   BASE,
   ErrorNotice,
@@ -423,6 +447,7 @@ export default function WorkspaceApp() {
       resource.kind === "shortcut" ||
       (resource.kind === "folder" && !resource.space_id)
     ) {
+      const finish = beginWorkspaceActivity();
       void api<Resource>(
         `resources/${resource.id}${resource.kind === "shortcut" ? "/resolve" : ""}`,
       )
@@ -430,7 +455,8 @@ export default function WorkspaceApp() {
         .catch((error) => {
           if (sequence === opening.current && location.href === origin)
             setError(error.message);
-        });
+        })
+        .finally(finish);
     } else show(resource);
   }, []);
   useEffect(() => {
@@ -522,6 +548,7 @@ export default function WorkspaceApp() {
               Skip to workspace content
             </a>
             <header className="ws-appbar">
+              <WorkspaceProgress />
               <div className="ws-brand-area">
                 <button
                   className="icon-button"
@@ -581,7 +608,11 @@ export default function WorkspaceApp() {
                     ["uploading", "queued", "verifying"].includes(item.status),
                   ) && <span className="ws-notification-dot" />}
                 </button>
-                <details ref={accountMenu} className="ws-menu ws-account-menu">
+                <details
+                  ref={accountMenu}
+                  className="ws-menu ws-account-menu"
+                  name="workspace-toolbar-popover"
+                >
                   <summary aria-label="Account menu">
                     <Avatar
                       person={session.user}
@@ -724,7 +755,11 @@ export default function WorkspaceApp() {
                 ) : page === "people" ? (
                   <PeoplePage />
                 ) : page === "groups" ? (
-                  <GroupsHub />
+                  parts[1] && parts[2] === "planning" ? (
+                    <GroupPlanning id={parts[1]} />
+                  ) : (
+                    <GroupsHub />
+                  )
                 ) : page === "workspaces" ? (
                   <WorkspacesPage
                     id={parts[1]}

@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { executeOfficeEvidence } from "./assistant-office";
 import { query, transaction } from "./db";
 import { resourceAccess, fileAccess, HttpError } from "./access";
 import { requireScope } from "./workspace-service";
@@ -13,7 +14,7 @@ import {
 export async function processToolJob() {
   // Never replay an externally submitted request after a crash or unknown outcome.
   await query(
-    "UPDATE tool_jobs SET status=CASE WHEN kind='office-preview' THEN 'failed' ELSE 'uncertain' END,error='Processing stopped before its outcome was confirmed. Review before explicitly submitting again.',input='{}',updated_at=now() WHERE status='running' AND lease_until<now()",
+    "UPDATE tool_jobs SET status=CASE WHEN kind IN ('office-preview','assistant-evidence') THEN 'failed' ELSE 'uncertain' END,error='Processing stopped before its outcome was confirmed. Review before explicitly submitting again.',input='{}',updated_at=now() WHERE status='running' AND lease_until<now()",
   );
   const job = await transaction(async (client) => {
     const {
@@ -47,6 +48,10 @@ export async function processToolJob() {
   }, 1500);
   let submitted = false;
   try {
+    if (job.kind === "assistant-evidence") {
+      await executeOfficeEvidence(job, abort.signal);
+      return true;
+    }
     if (job.kind === "assistant") {
       await executeAssistantJob(job, abort.signal, () => {
         submitted = true;

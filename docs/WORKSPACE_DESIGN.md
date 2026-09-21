@@ -37,6 +37,25 @@ competing with the research document.
 
 - One contextual application toolbar with breadcrumbs and recent work, one sidebar.
   Browser-reserved Command/Ctrl T and W remain browser commands.
+- Planning tables, capacity grids and assistant reviews use the same semantic
+  palette and control geometry as the workspace. Virtualized row heights and
+  sticky headings scale with the configured UI font size; do not truncate data
+  silently to achieve a compact layout. Unknown availability is distinct from zero.
+- The assistant temporarily takes the right inspector rail. Keep the underlying
+  task/file inspector mounted so unsaved edits survive, then restore keyboard focus
+  only after that inspector becomes visible again. Account and recent-work
+  popovers are mutually exclusive; opening one closes the other.
+- Loading belongs to the thin, theme-colored progress bar attached to the app
+  toolbar, not a replacement of the whole workspace. Shared data requests, guarded
+  actions and lazy-page fallbacks report their actual lifetimes. Quick requests
+  skip the indicator; overlapping requests settle together, including errors and
+  cancellation. Never invent a completion percentage for unknown work. Keep
+  loaded content mounted on same-account/same-resource refreshes; changed targets
+  and authoritative permission errors still clear content. Reduced motion uses a
+  static accent line, and the bar never captures pointer events or shifts layout.
+  Custom asynchronous surfaces can use `beginWorkspaceActivity()` with its returned
+  idempotent cleanup in `finally` and cancellation; do not register continuous
+  collaboration connections or replace their durable save-status indicators.
 - Recent-work metadata does not imply a running editor. Only visible document panes
   mount editing surfaces; at most two panes are active. Settings shares one draft.
 - Explorer uses click to select, Shift for ranges, Command/Ctrl for additive

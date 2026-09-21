@@ -17,7 +17,16 @@ export default function AssistantHost() {
   const current = useRef({ path, params, spaces, notify });
   current.current = { path, params, spaces, notify };
   const opener = useRef<HTMLElement | null>(null),
+    restoreFocus = useRef(false),
     sequence = useRef(0);
+  useEffect(() => {
+    // Inspectors become visible again only after the assistant unmounts.
+    if (!intent && restoreFocus.current) {
+      restoreFocus.current = false;
+      if (opener.current?.isConnected)
+        opener.current.focus({ preventScroll: true });
+    }
+  }, [intent]);
   useEffect(() => {
     const open = (event: Event) => {
       const value = (event as CustomEvent<AssistantIntent>).detail ?? {},
@@ -56,8 +65,8 @@ export default function AssistantHost() {
         setIntent({ spaceId, serial: ++sequence.current })
       }
       onClose={() => {
+        restoreFocus.current = true;
         setIntent(null);
-        opener.current?.focus({ preventScroll: true });
       }}
     />
   ) : null;

@@ -26,6 +26,21 @@ const location: ResourceLocation = {
   },
 };
 describe("workspace breadcrumb routes", () => {
+  it("names the group planning route without exposing internal identifiers", () => {
+    expect(
+      workspaceLocation({
+        route: `/groups/${space}/planning`,
+        group: { id: space, name: "Physics group" },
+      }),
+    ).toEqual({
+      crumbs: [
+        { label: "Groups", to: "/groups" },
+        { label: "Physics group", to: "/groups" },
+        { label: "Planning" },
+      ],
+      up: "/groups",
+    });
+  });
   it.each(["/notes", "/notes/", "/workbench/notes"])(
     "maps legacy %s to the real notes collection",
     (path) => {

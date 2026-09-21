@@ -60,6 +60,7 @@ import PdfOrganizer from "./PdfOrganizer";
 import PdfOutline from "./PdfOutline";
 import PdfAnnotationTransfer from "./PdfAnnotationTransfer";
 import PdfAnnotationThread from "./PdfAnnotationThread";
+import PdfTaskLink from "./PdfTaskLink";
 import PdfCompare from "./PdfCompare";
 import PdfOcrPanel from "./PdfOcrPanel";
 import PdfBulkActions from "./PdfBulkActions";
@@ -138,6 +139,7 @@ export default function PdfReader({
     [options, setOptions] = useState(false);
   const [transfer, setTransfer] = useState<"import" | "export" | null>(null);
   const [thread, setThread] = useState<Annotation | null>(null);
+  const [taskLink, setTaskLink] = useState<Annotation | null>(null);
   const [compare, setCompare] = useState(false);
   const [ocr, setOcr] = useState(false);
   const [checked, setChecked] = useState<Set<string>>(new Set());
@@ -1476,6 +1478,15 @@ export default function PdfReader({
                                 : "Synced")}
                           </small>
                           <div className="pdf-annotation-actions">
+                            {meta?.space_id &&
+                              meta.content_role === "editor" && (
+                                <button
+                                  disabled={entry.pending}
+                                  onClick={() => setTaskLink(a)}
+                                >
+                                  Link task
+                                </button>
+                              )}
                             <button
                               disabled={entry.pending}
                               onClick={() => setThread(a)}
@@ -1957,8 +1968,16 @@ export default function PdfReader({
           onClose={() => setOrganizer(false)}
         />
       )}
+      {taskLink && meta?.space_id && (
+        <PdfTaskLink
+          annotation={taskLink}
+          spaceId={meta.space_id}
+          onClose={() => setTaskLink(null)}
+        />
+      )}
       {thread && (
         <PdfAnnotationThread
+          key={thread.id}
           annotation={thread}
           userId={userId}
           canManage={meta?.role === "admin"}

@@ -212,6 +212,11 @@ export default function UnifiedWorkspace({
         </button>
       </header>
       <nav className="unified-workspace-nav" aria-label="Workspace sections">
+        {space.group_id && (
+          <WorkspaceLink to={`/groups/${space.group_id}/planning`}>
+            Group portfolio
+          </WorkspaceLink>
+        )}
         {sections.map(([key, label, Icon]) => (
           <WorkspaceLink
             key={key}

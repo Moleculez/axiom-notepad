@@ -28,11 +28,13 @@ export function workspaceLocation({
   title,
   location,
   space,
+  group,
 }: {
   route: string;
   title?: string;
   location?: ResourceLocation | null;
   space?: Pick<Space, "id" | "name">;
+  group?: { id: string; name: string };
 }): { crumbs: LocationCrumb[]; up: string | null } {
   const url = new URL(route, "http://workspace.local"),
     parts = url.pathname.split("/").filter(Boolean),
@@ -44,6 +46,16 @@ export function workspaceLocation({
         ? "/explorer?view=all"
         : tabRoute(`/${section}`);
   const first: LocationCrumb = { label: tabTitle(root), to: root };
+  if (section === "groups" && parts[1] && parts[2] === "planning") {
+    return {
+      crumbs: [
+        first,
+        { label: group?.name ?? "Group", to: "/groups" },
+        { label: "Planning" },
+      ],
+      up: "/groups",
+    };
+  }
   if (section === "workspaces" && parts[1]) {
     const workspaceId = parts[1],
       base = `/workspaces/${workspaceId}`,

@@ -98,7 +98,14 @@ test("palette remains contained with dark colors and large interface typography"
   await expect(input).toHaveCSS("font-size", "22px");
   const before = await input.boundingBox();
   await input.fill("> planning");
-  await expect(dialog.getByRole("option")).toHaveCount(1);
+  // The workspace destination and the accessible group's planning destination
+  // both match since portfolios were added to Search & commands.
+  await expect(dialog.getByRole("option")).toHaveCount(2);
+  await expect(
+    dialog
+      .getByRole("group", { name: "Group planning", exact: true })
+      .getByRole("option"),
+  ).toHaveCount(1);
   expect(Math.abs((await input.boundingBox())!.y - before!.y)).toBeLessThan(1);
   expect(
     await dialog.evaluate((node) => node.scrollWidth <= node.clientWidth + 1),

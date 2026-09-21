@@ -10,6 +10,7 @@ import type {
 import { api, post } from "../../lib/client";
 import Dialog from "../Dialog";
 import { ErrorNotice, useData, useWorkspace } from "../workspace/ui";
+import AssistantScheduleReview from "./AssistantScheduleReview";
 type Preview = {
   id: string;
   fingerprint: string;
@@ -17,7 +18,20 @@ type Preview = {
   after: unknown;
   kind: string;
 };
-export default function AssistantProposalReview({
+export default function AssistantProposalReview(props: {
+  item: AssistantProposalItem;
+  spaceId: string;
+  evidence: AssistantEvidence[];
+  onClose: () => void;
+  onChange: () => void;
+}) {
+  return props.item.data.kind === "schedule" ? (
+    <AssistantScheduleReview {...props} />
+  ) : (
+    <TaskDocumentReview {...props} />
+  );
+}
+function TaskDocumentReview({
   item,
   spaceId,
   evidence,
@@ -31,15 +45,19 @@ export default function AssistantProposalReview({
   onChange: () => void;
 }) {
   const { navigate, refresh, notify } = useWorkspace();
-  const [data, setData] = useState<AssistantProposal>(item.data),
+  const [data, setData] = useState<
+      Exclude<AssistantProposal, { kind: "schedule" }>
+    >(item.data as Exclude<AssistantProposal, { kind: "schedule" }>),
     [preview, setPreview] = useState<Preview | null>(null),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
   const [labels, setLabels] = useState(
-    item.data.kind === "document" ? "" : item.data.fields.labels.join(", "),
+    data.kind === "document" ? "" : data.fields.labels.join(", "),
   );
   const members = useData<{ id: string; name: string }[]>(
-    data.kind !== "document" ? `spaces/${spaceId}/planning-members` : null,
+    data.kind !== "document"
+      ? `spaces/${data.kind === "task-update" ? (evidence.find((e) => e.key === data.evidenceKey)?.spaceId ?? spaceId) : spaceId}/planning-members`
+      : null,
   );
   const text = (v: unknown) =>
     typeof v === "string" ? v : JSON.stringify(v, null, 2);
@@ -61,7 +79,7 @@ export default function AssistantProposalReview({
       setBusy(false);
     }
   };
-  const update = (next: AssistantProposal) => {
+  const update = (next: Exclude<AssistantProposal, { kind: "schedule" }>) => {
     setData(next);
     setPreview(null);
   };

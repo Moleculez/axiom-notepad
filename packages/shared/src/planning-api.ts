@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { previewSchedule, applySchedule } from "./schedule-service";
 import { z } from "zod";
 import type { PoolClient } from "pg";
 import { query } from "./db";
@@ -19,14 +20,7 @@ import {
   taskPrioritySchema,
   recurrenceSchema,
 } from "./workspace";
-import {
-  calendarSchema,
-  dependencyOrder,
-  planSchedule,
-  type PlanningTask,
-  type SchedulePlan,
-  type ScheduleChange,
-} from "./planning";
+import { calendarSchema, dependencyOrder, type PlanningTask } from "./planning";
 
 const uuid = z.uuid(),
   mutationId = uuid.default(() => randomUUID());
@@ -297,7 +291,17 @@ export async function planningApi(
         url.searchParams.get("deleted") === "1",
       ];
       if (args[4]) uuid.parse(args[4]);
-      const where = `t.space_id=$1 AND (t.deleted_at IS NOT NULL)=$7 AND ($2::text IS NULL OR t.status=$2) AND ($3::text IS NULL OR t.priority=$3) AND ($4::text IS NULL OR t.assignee_id=$4) AND ($5::uuid IS NULL OR t.milestone_id=$5) AND (t.title ILIKE $6 OR array_to_string(t.labels,' ') ILIKE $6)`;
+      const risk = z
+        .enum(["overdue", "blocked"])
+        .nullable()
+        .parse(url.searchParams.get("risk"));
+      const riskWhere =
+        risk === "overdue"
+          ? " AND t.status NOT IN ('done','cancelled') AND t.due_on < (now() AT TIME ZONE (SELECT timezone FROM spaces WHERE id=$1))::date"
+          : risk === "blocked"
+            ? " AND t.status NOT IN ('done','cancelled') AND EXISTS(SELECT 1 FROM task_dependencies d JOIN tasks b ON b.id=d.depends_on WHERE d.task_id=t.id AND b.deleted_at IS NULL AND b.status NOT IN ('done','cancelled'))"
+            : "";
+      const where = `t.space_id=$1 AND (t.deleted_at IS NOT NULL)=$7 AND ($2::text IS NULL OR t.status=$2) AND ($3::text IS NULL OR t.priority=$3) AND ($4::text IS NULL OR t.assignee_id=$4) AND ($5::uuid IS NULL OR t.milestone_id=$5) AND (t.title ILIKE $6 OR array_to_string(t.labels,' ') ILIKE $6)${riskWhere}`;
       const sort =
         {
           title: "lower(t.title)",
@@ -449,113 +453,24 @@ export async function planningApi(
           const input = z
             .object({ changes: z.array(changeSchema).min(1).max(1000) })
             .parse(raw);
-          let plan: SchedulePlan;
-          try {
-            plan = planSchedule(
-              await planningTasks(client, id),
-              input.changes,
-              calendarSchema.parse({
-                ...settings.planning_calendar,
-                timezone: settings.timezone,
-              }),
-            );
-          } catch (error) {
-            throw new HttpError(409, (error as Error).message);
-          }
-          const [preview] = (
-            await client.query(
-              "INSERT INTO schedule_previews(space_id,user_id,planning_version,plan) VALUES($1,$2,$3,$4) RETURNING id,expires_at",
-              [id, userId, settings.planning_version, plan],
-            )
-          ).rows;
-          await client.query(
-            "DELETE FROM schedule_previews WHERE space_id=$1 AND applied_at IS NULL AND expires_at<now()",
-            [id],
-          );
-          return { ...preview, ...plan };
+          return previewSchedule(client, userId, settings, input.changes);
         }
+        if (child !== "apply" && child !== "undo")
+          throw new HttpError(404, "Unknown scheduling action.");
         const input = z
           .object({
             previewId: uuid,
             mode: z.enum(["direct", "proposed"]).default("proposed"),
           })
           .parse(raw);
-        const [preview] = (
-          await client.query(
-            "SELECT * FROM schedule_previews WHERE id=$1 AND space_id=$2 AND user_id=$3 FOR UPDATE",
-            [input.previewId, id, userId],
-          )
-        ).rows;
-        if (!preview) throw new HttpError(404, "Schedule preview unavailable.");
-        if (child === "undo") {
-          if (!preview.applied_at || preview.undone_at)
-            throw new HttpError(409, "This schedule cannot be undone again.");
-          for (const row of preview.inverse as (ScheduleChange & {
-            startOn: string | null;
-            dueOn: string | null;
-          })[]) {
-            const update = await client.query(
-              "UPDATE tasks SET start_on=$3,due_on=$4,version=version+1,updated_at=now() WHERE id=$1 AND space_id=$2 AND version=$5 AND deleted_at IS NULL",
-              [row.id, id, row.startOn, row.dueOn, row.version],
-            );
-            if (!update.rowCount)
-              throw new HttpError(
-                409,
-                "A scheduled task changed; Undo would overwrite newer work.",
-              );
-          }
-          await client.query(
-            "UPDATE schedule_previews SET undone_at=now() WHERE id=$1",
-            [preview.id],
-          );
-          await event(client, userId, id, "Undid schedule change");
-          return { ok: true };
-        }
-        if (child !== "apply")
-          throw new HttpError(404, "Unknown scheduling action.");
-        if (
-          preview.applied_at ||
-          new Date(preview.expires_at).valueOf() <= Date.now()
-        )
-          throw new HttpError(
-            409,
-            "This preview was applied or expired. Preview again.",
-          );
-        assertRevision(settings.planning_version, preview.planning_version);
-        const changes = (preview.plan as SchedulePlan)[input.mode];
-        const inverse = [];
-        for (const row of changes) {
-          const [before] = (
-            await client.query(
-              "SELECT * FROM tasks WHERE id=$1 AND space_id=$2 AND deleted_at IS NULL FOR UPDATE",
-              [row.id, id],
-            )
-          ).rows;
-          if (!before)
-            throw new HttpError(409, "A scheduled task is unavailable.");
-          assertRevision(before.version, row.version);
-          inverse.push({
-            id: row.id,
-            version: row.version + 1,
-            startOn: date(before.start_on),
-            dueOn: date(before.due_on),
-          });
-          await client.query(
-            "UPDATE tasks SET start_on=$2,due_on=$3,version=version+1,updated_at=now() WHERE id=$1",
-            [row.id, row.startOn, row.dueOn],
-          );
-        }
-        await client.query(
-          "UPDATE schedule_previews SET applied_at=now(),inverse=$2 WHERE id=$1",
-          [preview.id, JSON.stringify(inverse)],
-        );
-        await event(
+        return applySchedule(
           client,
           userId,
-          id,
-          `Rescheduled ${changes.length} task${changes.length === 1 ? "" : "s"}`,
+          settings,
+          input.previewId,
+          input.mode,
+          child === "undo",
         );
-        return { ok: true, undoId: preview.id, count: changes.length };
       }
       if (section === "tasks")
         return mutatePlanningTask(client, userId, id, space, child, raw);

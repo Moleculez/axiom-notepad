@@ -13,6 +13,7 @@ import { revisionMigration } from "./revision-migration";
 import { pdfWorkbenchMigration } from "./pdf-workbench-migration";
 import { pdfOcrMigration } from "./pdf-ocr-migration";
 import { assistantMigration } from "./assistant-migration";
+import { planningExpansionMigration } from "./planning-expansion-migration";
 export const migration = `
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 CREATE TABLE IF NOT EXISTS "user" (id text PRIMARY KEY, name text NOT NULL, email text NOT NULL UNIQUE, email_verified boolean NOT NULL DEFAULT false, image text, created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now());
@@ -244,7 +245,18 @@ INSERT INTO app_instance(singleton,setup_completed_at) SELECT true,CASE WHEN EXI
   },
   { version: 27, name: "private-durable-pdf-ocr", sql: pdfOcrMigration },
   { version: 28, name: "private-workspace-assistant", sql: assistantMigration },
+  {
+    version: 29,
+    name: "planning-baselines-portfolios-capacity",
+    sql: planningExpansionMigration,
+  },
+  {
+    version: 30,
+    name: "permission-aware-paper-task-links",
+    sql: paperTaskMigration,
+  },
 ];
+import { paperTaskMigration } from "./paper-task-migration";
 import { unifiedWorkspacesMigration } from "./unified-workspaces-migration";
 import { revisionUndoRetentionMigration } from "./revision-undo-retention-migration";
 import { revisionPerformanceMigration } from "./revision-performance-migration";

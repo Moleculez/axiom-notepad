@@ -5,6 +5,7 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { chromium, expect, type APIRequestContext } from "@playwright/test";
 import { APPEARANCE_SCHEMA } from "../../packages/shared/src/appearance";
+import { productivityShowcase } from "./showcase-productivity";
 
 const origin = process.env.DOCS_APP_URL ?? "http://localhost:3004";
 if (origin !== "http://localhost:3004" || process.env.NODE_ENV === "production")
@@ -53,14 +54,18 @@ try {
     throw new Error(
       "Sign in to the isolated staging owner failed. Configure TEST_OWNER_EMAIL/TEST_OWNER_PASSWORD; do not seed the working instance.",
     );
-  const group = await api(owner.request, "groups", {
-    name: "Spectral Lab",
+  const onboarding = await api(owner.request, "groups", {
+    name: "Documentation onboarding",
     description:
       "Fictional demonstration workspace for the Axiom documentation.",
   });
-  async function researcher(name: string) {
-    const invitation = await api(owner.request, "invitations", {
-      groupId: group.id,
+  async function researcher(
+    name: string,
+    inviter: APIRequestContext,
+    groupId: string,
+  ) {
+    const invitation = await api(inviter, "invitations", {
+      groupId,
       email: `${randomUUID()}@axiom.test`,
     });
     const context = await browser.newContext(contextOptions);
@@ -71,8 +76,14 @@ try {
     });
     return context;
   }
-  const member = await researcher("Mira Chen"),
-    colleague = await researcher("Elias Ray");
+  const member = await researcher("Mira Chen", owner.request, onboarding.id);
+  const group = await api(member.request, "groups", {
+    name: "Spectral Lab",
+    description:
+      "Fictional research programme · graph learning, reproducible experiments and shared evidence.",
+  });
+  await api(member.request, `group-admin/${onboarding.id}/leave`, {});
+  const colleague = await researcher("Elias Ray", member.request, group.id);
   const space = (await api(member.request, "spaces")).find(
     (s: { kind: string; group_id: string }) =>
       s.kind === "team" && s.group_id === group.id,
@@ -140,8 +151,8 @@ Compare the assumptions before comparing the metrics. These values and people ar
           title: "The question",
           x: 20,
           y: 20,
-          width: 310,
-          height: 210,
+          width: 400,
+          height: 330,
           color: "#216c78",
           text: "## What should transfer?\n\nPreserve the structure that matters, even when observations change.\n\n**Hypothesis** · local geometry is the signal.",
         },
@@ -149,20 +160,20 @@ Compare the assumptions before comparing the metrics. These values and people ar
           id: "operator",
           type: "text",
           title: "Mathematical model",
-          x: 440,
+          x: 540,
           y: 20,
-          width: 340,
-          height: 210,
+          width: 400,
+          height: 330,
           text: "## A common language\n\n$$\nL = I - D^{-1/2} A D^{-1/2}\n$$\n\nConnect the model to explicit assumptions.",
         },
         {
           id: "experiment",
           type: "text",
           title: "Reproducible protocol",
-          x: 440,
-          y: 345,
-          width: 340,
-          height: 215,
+          x: 540,
+          y: 420,
+          width: 400,
+          height: 330,
           color: "#627c9f",
           text: "## Test the idea\n\n- Fix seeds and normalization\n- Compare diffusion scales\n- Record unsuccessful trials\n\n**Review together.** Keep the evidence attached.",
         },
@@ -171,9 +182,9 @@ Compare the assumptions before comparing the metrics. These values and people ar
           type: "file",
           title: "Shared evidence",
           x: 20,
-          y: 345,
-          width: 310,
-          height: 215,
+          y: 420,
+          width: 400,
+          height: 330,
           file: "Diffusion experiments",
           resourceId: evidence.id,
         },
@@ -217,6 +228,15 @@ Compare the assumptions before comparing the metrics. These values and people ar
   });
   const page = await member.newPage(),
     peer = await colleague.newPage();
+  const productivity = await productivityShowcase({
+    api,
+    member,
+    colleague,
+    groupId: group.id,
+    spaceId: space.id,
+    noteId: note.id,
+    output,
+  });
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await peer.goto(`/workbench/notes/${note.id}`);
@@ -314,6 +334,7 @@ Compare the assumptions before comparing the metrics. These values and people ar
       path: `${output}/canvas-${mode}.png`,
       animations: "disabled",
     });
+    await productivity.capture(page, mode);
   }
   expect((await api(member.request, `notes/${note.id}`)).body).toBe(body);
   expect(errors).toEqual([]);
@@ -325,6 +346,8 @@ Compare the assumptions before comparing the metrics. These values and people ar
         group: group.id,
         note: note.id,
         canvas: canvas.id,
+        ...productivity.receipt,
+        assistantRequestsSent: 0,
         origin,
       },
       null,
@@ -366,7 +389,7 @@ Compare the assumptions before comparing the metrics. These values and people ar
     await readFile(`${output}/social-preview.png`),
   );
   console.log(
-    "Captured fictional editor/Canvas views, light/dark banners and social preview. Private workspace receipt: data/documentation-showcase/latest.json",
+    "Captured fictional editor, Canvas, planning, portfolio, capacity, assistant and loading views; light/dark banners and social preview. No AI request sent. Private receipt: data/documentation-showcase/latest.json",
   );
 } finally {
   await browser.close();

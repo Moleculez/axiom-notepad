@@ -3,6 +3,100 @@
 Updated September 21, 2026. Historical logs are [archived separately](archive/VERIFICATION-2026-09-11.md).
 Do not treat historical browser totals or local build IDs as current release evidence.
 
+## September 21 documentation and demonstration refresh
+
+- Refreshed the README and [feature tour](SHOWCASE.md) for group portfolios,
+  baselines, critical-path analysis, capacity, selected assistant context,
+  PDF task links/reply recovery and toolbar loading feedback. Scope limits remain
+  explicit: schedule previews are workspace-only, Office views are read-only,
+  and external AI/OCR acceptance is separate.
+- Recaptured seven actual workbench views in light and dark against isolated
+  production port 3004, using only fictional Spectral Lab fixtures. The new
+  banners pair the editor with planning; the public social image matches its
+  documentation source. No working research data or real AI provider was used.
+- The successful capture checks note-source preservation, rendered math,
+  six baseline overlays, populated portfolio/capacity reports, selected assistant
+  scope, no submitted assistant turns, retained rows during a held background
+  refresh and no uncaught page errors. This is a documentation capture, not a new
+  full application regression run or a loading-speed benchmark.
+- An extended conversation-history/outgoing-review UI walkthrough did not
+  complete reliably during capture development. It is **not** counted as passed
+  acceptance: the curated assistant capture stops at evidence selection. That
+  interaction needs a dedicated regression investigation before extending the
+  demonstration to sending. No generated response is depicted.
+- TypeScript, ESLint and documentation reference checks pass. Raw private fixture
+  identifiers and failed capture output stay outside the public gallery.
+
+## September 21 toolbar loading feedback
+
+- Added a theme-aware, indeterminate progress line attached to the app toolbar.
+  Shared requests, guarded actions and lazy-page loading participate; short work
+  skips the line, overlapping work waits for its final participant, and cancellation
+  or errors release it. No fabricated percentages, layout shifts or pointer capture.
+  System and explicit reduced-motion preferences use a static line.
+- Connections, group administration, provider settings, file previews and resource
+  discussions retain their loaded content during same-target refreshes. Existing
+  request/account isolation and permission-error clearing remain unchanged.
+- TypeScript, ESLint, **1,870 unit tests across 93 files**, documentation checks and
+  the isolated production build pass (**929 offline assets**). Seven new unit
+  checks cover timing, concurrency, cleanup, overlapping completion and account reset.
+- Two dedicated scenarios pass in Chromium, Firefox and WebKit against isolated
+  production port 3004. They cover toolbar geometry, retained shell/card identity,
+  failures/retries, cancellation before the old response arrives, theme colors and
+  system/custom reduced motion. Screenshots are in
+  `test-results/progress-verified-{firefox,webkit}` and
+  `test-results/progress-final-chromium`. Sidebar and discovery regressions also
+  pass in the final Chromium run (ten scenarios total).
+- Earlier failed checks are retained separately. The custom-motion check now sets
+  its presentation override after the settings refresh; the app correctly reapplies
+  saved preferences while revalidating. Discovery's prior one-result expectation
+  was updated for the group-planning command introduced in the preceding increment.
+  The local development workbench on 8080 serves the current code successfully.
+
+## September 21 balanced productivity phase
+
+- Group portfolios, immutable planning baselines/comparisons, critical-path/slack
+  analysis, explicit weekly availability and capacity reporting are implemented.
+  Manual and reviewed assistant scheduling share revision-fenced preview/apply/Undo.
+  Schedule previews report **workspace-only demand**, not full cross-workspace
+  capacity conflicts. See [planning scope](WORKSPACE_PLANNING.md).
+- Assistant evidence can span explicitly selected, accessible workspaces within
+  one group. Office excerpts are extracted privately from immutable file versions;
+  selected Canvas cards and planning snapshots remain bounded, explicit evidence.
+  New PDF task links do not copy private annotation content, and unsent annotation
+  replies recover locally after a fresh permission check, never sending themselves.
+- TypeScript, ESLint, **1,863 unit tests across 92 files**, theme validation and
+  documentation checks pass. The isolated production build prepares **928 offline
+  assets**. These results do not certify real model quality or OCR recognition.
+- Fresh schema installation, upgrades from 18 and 27, and the isolated **28 → 30**
+  upgrade pass, including repeated migration application, original note/CRDT byte
+  comparisons and preservation of existing single-workspace assistant scopes.
+  Rehearsal databases with suffix `789809a99e11` are retained for inspection.
+  Migrations 29–30 were applied only to disposable test databases, not working data.
+- The combined planning, assistant and new productivity suite passes **15 Chromium
+  scenarios** against isolated production **3004/1236**, using a deterministic local
+  provider. Evidence: `test-results/productivity-release-chromium`. Checks include
+  restricted-workspace exclusion, baseline immutability, availability revision
+  conflicts, exact selected evidence, Office extraction, Canvas selection bounds,
+  schedule apply/retry/guarded Undo, source revocation, private PDF task links and
+  reply-draft reload recovery. Existing planning coverage includes 5,000 task rows.
+- The three new productivity scenarios also pass in Firefox and WebKit against
+  the isolated production build (`test-results/productivity-release-firefox` and
+  `test-results/productivity-release-webkit`), including Canvas-selection bounds
+  and keyboard focus/draft retention while the assistant takes the inspector rail.
+  Earlier failed regressions remain separate, not relabeled as passing evidence.
+  Browser checks exposed and fixed ambiguous baseline/recovered-reply labels and
+  planning-inspector focus restoration after closing the assistant. Visual review
+  also caught a false calendar-change warning caused by JSONB key ordering; baseline
+  comparison now ignores storage order and unordered dependency/calendar entries.
+  The capacity date picker and report use the same Monday-based week boundary.
+
+Working research data and the 8080 service were not modified. No real external AI
+provider, deployment, commit or push was performed. New MCP catalog operations
+still need a dedicated grant/revocation rehearsal; larger real portfolios, full
+cross-workspace schedule capacity, physical assistive technology and external
+provider acceptance remain gates. See the [remaining roadmap](PRODUCTIVITY_ROADMAP.md).
+
 ## September 21 sidebar refresh stability
 
 - Regressions reproduce empty-folder rows disappearing during periodic refreshes

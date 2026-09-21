@@ -1,13 +1,14 @@
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/showcase/banner-dark.png">
-  <img src="docs/assets/showcase/banner-light.png" alt="Axiom research workspace: collaborative Markdown with equations and annotation cards, alongside a connected Canvas. Fictional demonstration content." width="1600">
+  <img src="docs/assets/showcase/banner-light.png" alt="Axiom research workspace: Gantt planning with baseline comparison and a critical path, alongside collaborative Markdown with equations and annotations. Fictional demonstration content." width="1600">
 </picture>
 
 # Axiom
 
 A self-hosted research workspace for groups in AI, mathematics, physics and STEM.
-Write together, connect ideas, and keep the evidence close. Markdown, mathematics,
-Canvas and files share one collaborative workbench, without billing or commerce.
+Write together, plan the work, and keep the evidence close. Markdown, mathematics,
+Canvas, files and research planning share one collaborative workbench, without
+billing or commerce.
 
 [Quick start](#start-locally) · [Deployment](docs/DEPLOYMENT.md) ·
 [Documentation](docs/README.md) · [Showcase](docs/SHOWCASE.md) ·
@@ -32,14 +33,21 @@ tested workflows from remaining device, accessibility and provider checks.
   labeled connections, embedded previews, layout controls and portable exports.
 - **Ask with evidence.** An opt-in [workspace research assistant](docs/WORKSPACE_ASSISTANT.md)
   with selected excerpts, exact outgoing-context review, source citations, private
-  Markdown/math suggestions and reviewed task changes with guarded Undo.
+  Markdown/math suggestions and reviewed task/schedule changes with guarded Undo.
+  Select evidence across workspaces in one group, including Office excerpts,
+  Canvas cards and planning snapshots; nothing is sent without context review.
 - **Plan in your workspace.** Files, tasks, milestones, discussions and reviews in
   one place. Switch between List, Board, Calendar, Gantt and Workload; preview
   dependency-aware schedule changes before applying them, with guarded Undo.
+  Group portfolios, immutable baselines, critical-path/slack overlays and weekly
+  estimate-based capacity connect the individual workspace plans.
   See [workspace planning](docs/WORKSPACE_PLANNING.md).
 - **Work as a group.** Invitations, roles, personal and shared workspaces, a compact
-  context toolbar with pinned recent work, Explorer drag/move/copy, immutable file versions, Audit and independent
-  workspace Trash. Group administration stays separate from workspace settings.
+  context toolbar with pinned recent work, Explorer drag/move/copy, immutable file
+  versions, Audit and independent workspace Trash. Group administration stays
+  separate from workspace settings.
+  A theme-aware toolbar progress bar handles loading without replacing already
+  loaded panels; quick requests stay quiet and reduced motion uses a static line.
 - **Make it yours.** Semantic light/dark themes, Paper Research and Technical Slate
   packs, separate reading/interface/code typography, device overrides and a live
   settings scratchpad.
@@ -54,14 +62,44 @@ The [PDF research workbench](docs/PDF_READER.md) adds continuous/facing pages,
 collapsible contents, selection popups, exact text search, editable bookmarks,
 tagged multi-page annotations, drawing tools, annotation discussions/bulk actions,
 virtualized pages, file/version comparison, reading-position resume and guarded
-workspace copies with annotation mapping. Optional [self-hosted CPU OCR](docs/SELF_HOSTED_OCR.md)
+workspace copies with annotation mapping. Link an annotation to a task without
+copying private text, and recover unsent discussion replies on the current device.
+Optional [self-hosted CPU OCR](docs/SELF_HOSTED_OCR.md)
 adds reviewed research text and searchable PDF copies; real-container acceptance
 remains gated. Read-only Office viewers add
 styled worksheet grids, Word reading outlines and PowerPoint speaker notes.
 Paper assistance is explicitly opt-in; the guide lists current limits and
 remaining Zotero-style features.
 The [productivity roadmap](docs/PRODUCTIVITY_ROADMAP.md) separates this increment
-from remaining provider acceptance, advanced planning and team-operation stages.
+from remaining provider acceptance, planning refinements and team-operation stages.
+
+## From evidence to a reviewed plan
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/showcase/planning-dark.png">
+  <img src="docs/assets/showcase/planning-light.png" alt="Spectral Lab's fictional research schedule: critical-path Gantt bars, an immutable protocol baseline, and a reviewed change to the transfer-study deadline." width="1600" loading="lazy">
+</picture>
+
+1. **Plan a study.** Add tasks, dependencies and milestones in a workspace. Capture
+   a baseline, compare changes and inspect working-day critical paths and slack.
+2. **Coordinate the group.** Collect workspaces into a portfolio. Review combined
+   weekly effort against explicit availability; unknown capacity is never treated
+   as zero. Drill into overloads before changing a schedule.
+3. **Ask with a boundary.** Choose accessible workspaces in one group and select
+   evidence from notes, Office files, Canvas or planning. Review exact outgoing
+   context before sending. Suggested edits and schedule changes still require
+   explicit review and application, with version-checked Undo.
+4. **Keep the work in view.** Read and annotate papers, link evidence to tasks, and
+   switch views without losing the workspace shell. Background refreshes retain
+   content while the toolbar indicates activity.
+
+Explore the [illustrated feature tour](docs/SHOWCASE.md#feature-tour) for portfolio,
+capacity, assistant and loading views. All pictured people and research are
+fictional; the assistant demonstration stops before sending anything to a provider.
+
+Schedule previews currently show **workspace-only capacity impact**; use group
+Capacity for combined commitments. Office views remain read-only, and real AI/OCR
+provider acceptance is separate from the local demonstration.
 
 ## One document, two editing surfaces
 
@@ -129,6 +167,9 @@ docker compose --env-file .env.production exec web node --import tsx scripts/ops
 ```
 
 Read [deployment, backups and upgrades](docs/DEPLOYMENT.md) before using real data.
+The new planning/assistant features require database migrations through **30**.
+Back up database and stored files, stop old writers, migrate, and restart matching
+web/sync/worker versions; do not mix old services with the new schema.
 Production configuration never loads the development `.env` into containers.
 Only HTTPS/HTTP are public. Sync also binds to host loopback for an
 [existing host Nginx proxy](docs/DEPLOYMENT.md#existing-host-nginx); database and sync

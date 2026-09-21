@@ -2,6 +2,7 @@
 import type { AssistantSelection } from "@axiom/shared/assistant";
 export type AssistantIntent = {
   spaceId?: string;
+  spaceIds?: string[];
   selection?: AssistantSelection;
   selectionLabel?: string;
   prompt?: string;
