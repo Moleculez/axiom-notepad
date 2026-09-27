@@ -1,4 +1,6 @@
 "use client";
+import ResizablePanel from "../ResizablePanel";
+import { useManagement } from "./ManagementActions";
 import FilePreviewSurface from "../tools/FilePreviewSurface";
 import AssistantSuggestion from "../assistant/AssistantSuggestion";
 import { openAssistant } from "../../lib/assistant";
@@ -15,6 +17,9 @@ const SuggestionReview = dynamic(
   { ssr: false },
 );
 const ResourceHistory = dynamic(() => import("../revisions/ResourceHistory"), {
+  ssr: false,
+});
+const DocumentExportDialog = dynamic(() => import("../DocumentExportDialog"), {
   ssr: false,
 });
 import {
@@ -167,6 +172,17 @@ export default function Workbench({
     [active, setActive] = useState<"primary" | "secondary">("primary"),
     [ratio, setRatio] = useState(50);
   const panes = useRef<HTMLDivElement>(null);
+  const { registerSecondaryView } = useManagement();
+  useEffect(() => {
+    if (!secondary) return;
+    return registerSecondaryView({
+      id: secondary.id,
+      close: () => {
+        setSecondary(null);
+        setActive("primary");
+      },
+    });
+  }, [secondary, registerSecondaryView]);
   const primary = resource;
   useEffect(() => {
     if (!splitTarget) return;
@@ -491,7 +507,14 @@ function DocumentPane({
     [error, setError] = useState(""),
     [readingWarning, setReadingWarning] = useState(""),
     [modal, setModal] = useState<
-      "commands" | "insert" | "table" | "files" | "links" | "history" | null
+      | "commands"
+      | "insert"
+      | "table"
+      | "files"
+      | "links"
+      | "history"
+      | "export"
+      | null
     >(null),
     [review, setReview] = useState(false),
     [proposal, setProposal] = useState<Suggestion | "new" | null>(null),
@@ -505,6 +528,15 @@ function DocumentPane({
     [markOpen, setMarkOpen] = useState<string | null>(null),
     [unresolvedComments, setUnresolvedComments] = useState<string[]>([]),
     [activeDiscussion, setActiveDiscussion] = useState<string | null>(null);
+  const [readingSize, setReadingSize] = useState<number | null>(null);
+  const [readingWidth, setReadingWidth] = useState<number | null>(null);
+  useEffect(() => {
+    if (!active) return;
+    const exportDocument = () => setModal("export");
+    window.addEventListener("axiom:export-document", exportDocument);
+    return () =>
+      window.removeEventListener("axiom:export-document", exportDocument);
+  }, [active]);
   const reviewLocation = useLocation(),
     requestedReview = reviewLocation.params.get("review");
   const previousVisit = useRevisionVisit(session.user.id, note.id, active);
@@ -745,7 +777,9 @@ function DocumentPane({
   };
   commandRef.current = (id: EditorCommandId, insertionPrepared = false) => {
     if (id === "source") {
-      setMode((current) => (current === "source" ? "write" : "source"));
+      setMode((current) =>
+        current === "source" ? (readonly ? "read" : "write") : "source",
+      );
       requestAnimationFrame(() => editor.current?.focus());
     } else if (id === "comment") {
       if (!canComment) {
@@ -797,20 +831,29 @@ function DocumentPane({
       editor.current?.prepareInsert();
       setModal("commands");
     } else if (id === "attachment") {
-      if (!readonly) {
+      if (!readonly && mode !== "read") {
         // Engine commands already bookmarked the slash query, which need not
         // equal the visible selection. Toolbar commands still prepare here.
         if (!insertionPrepared) editor.current?.prepareInsert();
         setModal("files");
       }
     } else if (id === "table") {
-      if (!readonly) setModal("table");
+      if (!readonly && mode !== "read") setModal("table");
     } else {
+      if (mode === "read") {
+        if (id === "copyMarkdown")
+          void navigator.clipboard
+            .writeText(source)
+            .then(() => notify("Markdown copied."))
+            .catch(() => setError("Clipboard unavailable."));
+        else
+          notify("Switch to Write or Source mode to use this editing command.");
+        return;
+      }
       if (readonly && !["find", "copyMarkdown", "copyCode"].includes(id)) {
         setError("Editor access is required to change this note.");
         return;
       }
-      if (mode === "read") setMode("write");
       editor.current?.execute(id);
     }
   };
@@ -903,6 +946,16 @@ function DocumentPane({
       className={`ws-document ${appearance.effective.focusMode ? "focus-mode" : ""}`}
       aria-label={`Document ${note.title}`}
     >
+      {modal === "export" && (
+        <DocumentExportDialog
+          noteId={note.id}
+          spaceId={context.data?.space.id}
+          current={{ source, title: note.title, generation: note.generation }}
+          preferences={appearance.effective}
+          dark={appearance.dark}
+          onClose={() => setModal(null)}
+        />
+      )}
       {mathReturn && (
         <Dialog
           title="Review equation from Math Studio"
@@ -974,6 +1027,7 @@ function DocumentPane({
             <button
               key={value}
               aria-pressed={mode === value}
+              disabled={value === "write" && readonly}
               onClick={() => setMode(value as EditorMode)}
             >
               {label}
@@ -1006,6 +1060,14 @@ function DocumentPane({
           ))}
         </div>
         <ResourceSharing resourceId={note.id} />
+        <button
+          className="icon-button"
+          aria-label="Export document"
+          title="Export document"
+          onClick={() => setModal("export")}
+        >
+          <Download size={17} />
+        </button>
         <button
           className="icon-button"
           aria-label="Ask about this note"
@@ -1046,6 +1108,49 @@ function DocumentPane({
           {panel ? <PanelRightClose size={17} /> : <PanelRightOpen size={17} />}
         </button>
       </header>
+      {mode === "read" && (
+        <div
+          className="reading-controls"
+          role="group"
+          aria-label="Reading preferences"
+        >
+          <span>Read only</span>
+          <label>
+            Text{" "}
+            <input
+              aria-label="Reading text size"
+              type="range"
+              min={14}
+              max={30}
+              value={readingSize ?? appearance.effective.proseSize}
+              onChange={(e) => setReadingSize(Number(e.target.value))}
+            />
+            <output>{readingSize ?? appearance.effective.proseSize}px</output>
+          </label>
+          <label>
+            Width{" "}
+            <select
+              aria-label="Reading width"
+              value={readingWidth ?? 0}
+              onChange={(e) => setReadingWidth(Number(e.target.value) || null)}
+            >
+              <option value={0}>Document</option>
+              <option value={60}>Narrow</option>
+              <option value={72}>Balanced</option>
+              <option value={90}>Wide</option>
+            </select>
+          </label>
+          <button
+            className="button secondary"
+            onClick={() => {
+              setReadingSize(null);
+              setReadingWidth(null);
+            }}
+          >
+            Reset
+          </button>
+        </div>
+      )}
       {!readonly &&
         mode !== "read" &&
         editorSettings.effective.formattingBar && (
@@ -1189,7 +1294,21 @@ function DocumentPane({
                 touched.current = true;
               }}
             >
-              <div className="ws-paper document-content">
+              <div
+                className="ws-paper document-content"
+                style={
+                  mode === "read"
+                    ? ({
+                        ...(readingSize
+                          ? { "--size-prose": `${readingSize / 16}rem` }
+                          : {}),
+                        ...(readingWidth
+                          ? { "--reading-width": `${readingWidth}ch` }
+                          : {}),
+                      } as React.CSSProperties)
+                    : undefined
+                }
+              >
                 <div className="ws-note-meta">
                   <span>{context.data?.space.name}</span>
                   <Badge>
@@ -1197,7 +1316,7 @@ function DocumentPane({
                   </Badge>
                   <span>{parsed.outline.length} sections</span>
                 </div>
-                {readonly ? (
+                {readonly || mode === "read" ? (
                   <h1 className="document-title">{note.title}</h1>
                 ) : (
                   <NoteTitle
@@ -1232,7 +1351,12 @@ function DocumentPane({
                     appearance={appearance.effective}
                     preferences={editorSettings.effective}
                     readOnly={
-                      readonly || review || modal === "history" || !!proposal
+                      readonly ||
+                      mode === "read" ||
+                      review ||
+                      modal === "history" ||
+                      modal === "export" ||
+                      !!proposal
                     }
                     retainSession
                     renderContext={renderContext}
@@ -1284,7 +1408,8 @@ function DocumentPane({
                     onError={setError}
                     onLink={(target) => void openLink(target)}
                     onFiles={(files) => {
-                      if (!context.data?.space || readonly) return;
+                      if (!context.data?.space || readonly || mode === "read")
+                        return;
                       upload(files, context.data.space.id);
                       setModal("files");
                     }}
@@ -1297,6 +1422,14 @@ function DocumentPane({
                     blockMarks
                     active={mode === "read"}
                     parsed={parsed}
+                    source={source}
+                    visual={{
+                      resourceId: note.id,
+                      generation: note.generation,
+                    }}
+                    visualAnchor={(from, to) =>
+                      editor.current?.markAnchor(from, to, "block") ?? undefined
+                    }
                     context={renderContext}
                     onLink={(target) => void openLink(target)}
                     personalPrint={appearance.effective.exportTypography}
@@ -1336,350 +1469,371 @@ function DocumentPane({
           />
         </div>
         {panel && (
-          <aside className="ws-document-context">
-            <nav className="ws-context-tabs" aria-label="Document panel">
-              {[
-                ["outline", List],
-                ["comments", MessageSquare],
-                ["references", BookOpen],
-                ["equations", Sigma],
-                ["bookmarks", BookmarkPlus],
-              ].map(([value, Icon]) => (
+          <ResizablePanel
+            className="ws-document-context"
+            label="Document context"
+            account={session.user.id}
+            name="document-context"
+            edge="left"
+          >
+            <div className="ws-context-content">
+              <nav className="ws-context-tabs" aria-label="Document panel">
+                {[
+                  ["outline", List],
+                  ["comments", MessageSquare],
+                  ["references", BookOpen],
+                  ["equations", Sigma],
+                  ["bookmarks", BookmarkPlus],
+                ].map(([value, Icon]) => (
+                  <button
+                    key={value as string}
+                    className="icon-button"
+                    aria-label={`${value} panel`}
+                    aria-pressed={panel === value}
+                    onClick={() => setPanel(value as string)}
+                  >
+                    {typeof Icon !== "string" && <Icon size={16} />}
+                  </button>
+                ))}
                 <button
-                  key={value as string}
                   className="icon-button"
-                  aria-label={`${value} panel`}
-                  aria-pressed={panel === value}
-                  onClick={() => setPanel(value as string)}
+                  aria-label="Close document panel"
+                  onClick={() => setPanel(null)}
                 >
-                  {typeof Icon !== "string" && <Icon size={16} />}
+                  <X size={15} />
                 </button>
-              ))}
-              <button
-                className="icon-button"
-                aria-label="Close document panel"
-                onClick={() => setPanel(null)}
-              >
-                <X size={15} />
-              </button>
-            </nav>
-            {panel === "equations" && (
-              <EquationInspector
-                parsed={parsed}
-                openStudio={
-                  !readonly && context.data
-                    ? (equation) => {
-                        if (openingMath.current) return;
-                        const current = editor.current?.text();
-                        if (current === undefined || !editor.current) {
-                          setError(
-                            "Switch to Write or Source before opening an equation in Math Studio.",
-                          );
-                          return;
-                        }
-                        const node = nodeAt(current, equation.from, [
-                          "mathBlock",
-                        ]);
-                        if (
-                          !node ||
-                          node.from !== equation.from ||
-                          node.text !== equation.tex
-                        ) {
-                          setError(
-                            "The equation changed. Select it again from the updated equation list.",
-                          );
-                          return;
-                        }
-                        const body = literalBody(current, node),
-                          anchor = editor.current.captureSourceRange(
-                            node.from,
-                            node.to,
-                          );
-                        if (!anchor) return;
-                        openingMath.current = true;
-                        void post("tools", {
-                          kind: "math",
-                          spaceId: context.data!.space.id,
-                          name: `${note.title.slice(0, 100)} · Equation ${equation.number}`,
-                          source: body.text,
-                          mutationId: crypto.randomUUID(),
-                        })
-                          .then(async (created) => {
-                            const macros =
-                              documentIndex(parsed).macros.join("\n");
-                            if (macros && macros.length <= 15000)
-                              await api(`tools/${created.id}/settings`, {
-                                method: "PATCH",
-                                body: JSON.stringify({
-                                  version: 1,
-                                  settings: { macros },
-                                }),
-                              });
-                            storeMathBridge(session.user.id, {
-                              projectId: created.id,
-                              noteId: note.id,
-                              noteTitle: note.title,
-                              anchor,
-                              before: current.slice(node.from, body.offsets[0]),
-                              after: current.slice(
-                                body.offsets.at(-1)!,
-                                node.to,
-                              ),
-                              prefix: literalPrefix(current, node),
-                              ending: current.includes("\r\n") ? "\r\n" : "\n",
-                            });
-                            refresh();
-                            navigate(`/math/${created.id}`);
+              </nav>
+              {panel === "equations" && (
+                <EquationInspector
+                  parsed={parsed}
+                  openStudio={
+                    !readonly && mode !== "read" && context.data
+                      ? (equation) => {
+                          if (openingMath.current) return;
+                          const current = editor.current?.text();
+                          if (current === undefined || !editor.current) {
+                            setError(
+                              "Switch to Write or Source before opening an equation in Math Studio.",
+                            );
+                            return;
+                          }
+                          const node = nodeAt(current, equation.from, [
+                            "mathBlock",
+                          ]);
+                          if (
+                            !node ||
+                            node.from !== equation.from ||
+                            node.text !== equation.tex
+                          ) {
+                            setError(
+                              "The equation changed. Select it again from the updated equation list.",
+                            );
+                            return;
+                          }
+                          const body = literalBody(current, node),
+                            anchor = editor.current.captureSourceRange(
+                              node.from,
+                              node.to,
+                            );
+                          if (!anchor) return;
+                          openingMath.current = true;
+                          void post("tools", {
+                            kind: "math",
+                            spaceId: context.data!.space.id,
+                            name: `${note.title.slice(0, 100)} · Equation ${equation.number}`,
+                            source: body.text,
+                            mutationId: crypto.randomUUID(),
                           })
-                          .catch((e) => setError(e.message))
-                          .finally(() => {
-                            openingMath.current = false;
-                          });
-                      }
-                    : undefined
-                }
-                navigate={(position) => {
-                  if (mode === "read") setMode("write");
-                  requestAnimationFrame(() => editor.current?.focus(position));
-                }}
-              />
-            )}
-            {panel === "outline" && (
-              <>
-                <TableOfContents
-                  headings={parsed.outline}
-                  activeId={section}
-                  collapsed={collapsed}
-                  onCollapsedChange={setCollapsed}
-                  onNavigate={navigateSection}
-                  reveal={0}
-                />
-                {!parsed.outline.length && (
-                  <p className="muted ws-small">
-                    Add headings to build an outline. Nested sections follow
-                    your heading hierarchy.
-                  </p>
-                )}
-                <div className="ws-backlinks">
-                  <h3>Linked thinking</h3>
-                  {context.data?.links
-                    .filter((link) => link.target_id === note.id)
-                    .map((link) => (
-                      <button
-                        className="text-button"
-                        key={link.source_id + link.target}
-                        onClick={() =>
-                          open({ kind: "note", id: link.source_id })
+                            .then(async (created) => {
+                              const macros =
+                                documentIndex(parsed).macros.join("\n");
+                              if (macros && macros.length <= 15000)
+                                await api(`tools/${created.id}/settings`, {
+                                  method: "PATCH",
+                                  body: JSON.stringify({
+                                    version: 1,
+                                    settings: { macros },
+                                  }),
+                                });
+                              storeMathBridge(session.user.id, {
+                                projectId: created.id,
+                                noteId: note.id,
+                                noteTitle: note.title,
+                                anchor,
+                                before: current.slice(
+                                  node.from,
+                                  body.offsets[0],
+                                ),
+                                after: current.slice(
+                                  body.offsets.at(-1)!,
+                                  node.to,
+                                ),
+                                prefix: literalPrefix(current, node),
+                                ending: current.includes("\r\n")
+                                  ? "\r\n"
+                                  : "\n",
+                              });
+                              refresh();
+                              navigate(`/math/${created.id}`);
+                            })
+                            .catch((e) => setError(e.message))
+                            .finally(() => {
+                              openingMath.current = false;
+                            });
                         }
-                      >
-                        {link.source_title}
-                        <ArrowUpRight size={12} />
-                      </button>
-                    ))}
-                  {!context.data?.links.some(
-                    (link) => link.target_id === note.id,
-                  ) && (
+                      : undefined
+                  }
+                  navigate={(position) => {
+                    if (mode === "read") setMode("write");
+                    requestAnimationFrame(() =>
+                      editor.current?.focus(position),
+                    );
+                  }}
+                />
+              )}
+              {panel === "outline" && (
+                <>
+                  <TableOfContents
+                    headings={parsed.outline}
+                    activeId={section}
+                    collapsed={collapsed}
+                    onCollapsedChange={setCollapsed}
+                    onNavigate={navigateSection}
+                    reveal={0}
+                  />
+                  {!parsed.outline.length && (
                     <p className="muted ws-small">
-                      No incoming note links yet.
+                      Add headings to build an outline. Nested sections follow
+                      your heading hierarchy.
                     </p>
                   )}
-                </div>
-              </>
-            )}
-            {panel === "comments" && (
-              <>
-                <h2>Discussion</h2>
-                <ErrorNotice message={comments.error} retry={comments.reload} />
-                {comments.data
-                  ?.filter(
-                    (item) => !item.parent_id && item.visibility !== "private",
-                  )
-                  .map((item) => (
-                    <article
-                      className={`ws-note-comment ${item.resolved ? "resolved" : ""} ${activeDiscussion === item.id ? "active-discussion" : ""}`}
-                      key={item.id}
-                      data-discussion-thread={item.id}
-                    >
-                      <header>
-                        <strong>{item.author_name}</strong>
-                        <small>{timeAgo(item.created_at)}</small>
-                      </header>
-                      {item.anchor && (
+                  <div className="ws-backlinks">
+                    <h3>Linked thinking</h3>
+                    {context.data?.links
+                      .filter((link) => link.target_id === note.id)
+                      .map((link) => (
                         <button
-                          className="ws-comment-anchor"
-                          onClick={() => {
-                            if (mode === "read") setMode("write");
-                            setActiveDiscussion(item.id);
-                            if (!editor.current?.locate(item.anchor!))
-                              setError(
-                                "The original selection is no longer available in this revision.",
-                              );
-                          }}
+                          className="text-button"
+                          key={link.source_id + link.target}
+                          onClick={() =>
+                            open({ kind: "note", id: link.source_id })
+                          }
                         >
-                          {item.anchor.quote}
-                          {(unresolvedComments.includes(item.id) ||
-                            (editor.current &&
-                              !editor.current.resolveMark(item.anchor)) ||
-                            item.anchor.generation !== note.generation) && (
-                            <small>
-                              Original text unavailable · discussion retained
-                            </small>
-                          )}
+                          {link.source_title}
+                          <ArrowUpRight size={12} />
                         </button>
-                      )}
-                      {item.kind === "annotation" ? (
-                        <button
-                          className="annotation-list-card"
-                          onClick={() => setMarkOpen(item.id)}
-                        >
-                          <MessageSquare size={14} />
-                          <span>
-                            {item.deleted
-                              ? "Removed annotation · replies retained"
-                              : item.title || item.body.slice(0, 100)}
-                            <small>Open annotation card</small>
-                          </span>
-                        </button>
-                      ) : (
-                        <p>
-                          {item.deleted ? "This entry was removed." : item.body}
-                        </p>
-                      )}
-                      {comments.data
-                        ?.filter((reply) => reply.parent_id === item.id)
-                        .map((reply) => (
-                          <div className="ws-note-reply" key={reply.id}>
-                            <strong>{reply.author_name}</strong>
-                            <p>
-                              {reply.deleted ? "Reply removed." : reply.body}
-                            </p>
-                          </div>
-                        ))}
-                      {canComment && (
-                        <div className="ws-actions">
+                      ))}
+                    {!context.data?.links.some(
+                      (link) => link.target_id === note.id,
+                    ) && (
+                      <p className="muted ws-small">
+                        No incoming note links yet.
+                      </p>
+                    )}
+                  </div>
+                </>
+              )}
+              {panel === "comments" && (
+                <>
+                  <h2>Discussion</h2>
+                  <ErrorNotice
+                    message={comments.error}
+                    retry={comments.reload}
+                  />
+                  {comments.data
+                    ?.filter(
+                      (item) =>
+                        !item.parent_id && item.visibility !== "private",
+                    )
+                    .map((item) => (
+                      <article
+                        className={`ws-note-comment ${item.resolved ? "resolved" : ""} ${activeDiscussion === item.id ? "active-discussion" : ""}`}
+                        key={item.id}
+                        data-discussion-thread={item.id}
+                      >
+                        <header>
+                          <strong>{item.author_name}</strong>
+                          <small>{timeAgo(item.created_at)}</small>
+                        </header>
+                        {item.anchor && (
                           <button
-                            className="text-button"
+                            className="ws-comment-anchor"
                             onClick={() => {
-                              setReply(item.id);
-                              setAnchor(null);
+                              if (mode === "read") setMode("write");
+                              setActiveDiscussion(item.id);
+                              if (!editor.current?.locate(item.anchor!))
+                                setError(
+                                  "The original selection is no longer available in this revision.",
+                                );
                             }}
                           >
-                            Reply
+                            {item.anchor.quote}
+                            {(unresolvedComments.includes(item.id) ||
+                              (editor.current &&
+                                !editor.current.resolveMark(item.anchor)) ||
+                              item.anchor.generation !== note.generation) && (
+                              <small>
+                                Original text unavailable · discussion retained
+                              </small>
+                            )}
                           </button>
+                        )}
+                        {item.kind === "annotation" ? (
                           <button
-                            className="text-button"
-                            onClick={() =>
-                              void action.run(async () => {
-                                await mutate(
-                                  `comments/${item.id}`,
-                                  { resolved: !item.resolved },
-                                  "PATCH",
-                                );
-                                comments.reload();
-                              })
-                            }
+                            className="annotation-list-card"
+                            onClick={() => setMarkOpen(item.id)}
                           >
-                            {item.resolved ? "Reopen" : "Resolve"}
+                            <MessageSquare size={14} />
+                            <span>
+                              {item.deleted
+                                ? "Removed annotation · replies retained"
+                                : item.title || item.body.slice(0, 100)}
+                              <small>Open annotation card</small>
+                            </span>
                           </button>
-                        </div>
-                      )}
-                    </article>
-                  ))}
-                {canComment && (
-                  <form
-                    className="ws-comment-compose"
-                    onSubmit={(event) => {
-                      event.preventDefault();
-                      void action.run(async () => {
-                        await post(`notes/${note.id}/comments`, {
-                          body: comment,
-                          parentId: reply,
-                          anchor,
+                        ) : (
+                          <p>
+                            {item.deleted
+                              ? "This entry was removed."
+                              : item.body}
+                          </p>
+                        )}
+                        {comments.data
+                          ?.filter((reply) => reply.parent_id === item.id)
+                          .map((reply) => (
+                            <div className="ws-note-reply" key={reply.id}>
+                              <strong>{reply.author_name}</strong>
+                              <p>
+                                {reply.deleted ? "Reply removed." : reply.body}
+                              </p>
+                            </div>
+                          ))}
+                        {canComment && (
+                          <div className="ws-actions">
+                            <button
+                              className="text-button"
+                              onClick={() => {
+                                setReply(item.id);
+                                setAnchor(null);
+                              }}
+                            >
+                              Reply
+                            </button>
+                            <button
+                              className="text-button"
+                              onClick={() =>
+                                void action.run(async () => {
+                                  await mutate(
+                                    `comments/${item.id}`,
+                                    { resolved: !item.resolved },
+                                    "PATCH",
+                                  );
+                                  comments.reload();
+                                })
+                              }
+                            >
+                              {item.resolved ? "Reopen" : "Resolve"}
+                            </button>
+                          </div>
+                        )}
+                      </article>
+                    ))}
+                  {canComment && (
+                    <form
+                      className="ws-comment-compose"
+                      onSubmit={(event) => {
+                        event.preventDefault();
+                        void action.run(async () => {
+                          await post(`notes/${note.id}/comments`, {
+                            body: comment,
+                            parentId: reply,
+                            anchor,
+                          });
+                          setComment("");
+                          setReply(null);
+                          setAnchor(null);
+                          comments.reload();
+                          refresh();
                         });
-                        setComment("");
-                        setReply(null);
-                        setAnchor(null);
-                        comments.reload();
-                        refresh();
-                      });
-                    }}
-                  >
-                    {reply && (
-                      <button
-                        type="button"
-                        className="text-button"
-                        onClick={() => setReply(null)}
-                      >
-                        Cancel reply
-                      </button>
-                    )}
-                    {anchor && (
-                      <blockquote>
-                        {anchor.quote}
+                      }}
+                    >
+                      {reply && (
                         <button
                           type="button"
                           className="text-button"
-                          onClick={() => setAnchor(null)}
+                          onClick={() => setReply(null)}
                         >
-                          Remove anchor
+                          Cancel reply
                         </button>
-                      </blockquote>
-                    )}
-                    <label>
-                      {reply ? "Reply" : "Comment"}
-                      <textarea
-                        rows={3}
-                        required
-                        maxLength={10000}
-                        value={comment}
-                        onChange={(event) => setComment(event.target.value)}
-                        placeholder="Ask a question or share a thought…"
-                      />
-                    </label>
-                    <button
-                      className="button primary"
-                      disabled={action.busy || !comment.trim()}
-                    >
-                      Post comment
-                    </button>
-                  </form>
-                )}
-              </>
-            )}
-            {panel === "references" && (
-              <>
-                <h2>Citation context</h2>
-                <ErrorNotice message={context.error} retry={context.reload} />
-                {context.data?.references.map((reference) => (
-                  <div className="ws-citation" key={reference.cite_key}>
-                    <code>@{reference.cite_key}</code>
-                    <strong>{reference.title}</strong>
-                    <small>
-                      {reference.authors} · {reference.year}
-                    </small>
-                    {!readonly && (
+                      )}
+                      {anchor && (
+                        <blockquote>
+                          {anchor.quote}
+                          <button
+                            type="button"
+                            className="text-button"
+                            onClick={() => setAnchor(null)}
+                          >
+                            Remove anchor
+                          </button>
+                        </blockquote>
+                      )}
+                      <label>
+                        {reply ? "Reply" : "Comment"}
+                        <textarea
+                          rows={3}
+                          required
+                          maxLength={10000}
+                          value={comment}
+                          onChange={(event) => setComment(event.target.value)}
+                          placeholder="Ask a question or share a thought…"
+                        />
+                      </label>
                       <button
-                        className="text-button"
-                        onMouseDown={(event) => event.preventDefault()}
-                        onClick={() =>
-                          editor.current?.insert(`[@${reference.cite_key}]`)
-                        }
+                        className="button primary"
+                        disabled={action.busy || !comment.trim()}
                       >
-                        Insert citation
-                        <Plus size={12} />
+                        Post comment
                       </button>
-                    )}
-                  </div>
-                ))}
-                {!context.data?.references.length && (
-                  <p className="muted ws-small">
-                    No references in this note’s citation context yet.
-                  </p>
-                )}
-              </>
-            )}
-            {panel === "bookmarks" && <div ref={setMarksHost} />}
-          </aside>
+                    </form>
+                  )}
+                </>
+              )}
+              {panel === "references" && (
+                <>
+                  <h2>Citation context</h2>
+                  <ErrorNotice message={context.error} retry={context.reload} />
+                  {context.data?.references.map((reference) => (
+                    <div className="ws-citation" key={reference.cite_key}>
+                      <code>@{reference.cite_key}</code>
+                      <strong>{reference.title}</strong>
+                      <small>
+                        {reference.authors} · {reference.year}
+                      </small>
+                      {!readonly && mode !== "read" && (
+                        <button
+                          className="text-button"
+                          onMouseDown={(event) => event.preventDefault()}
+                          onClick={() =>
+                            editor.current?.insert(`[@${reference.cite_key}]`)
+                          }
+                        >
+                          Insert citation
+                          <Plus size={12} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  {!context.data?.references.length && (
+                    <p className="muted ws-small">
+                      No references in this note’s citation context yet.
+                    </p>
+                  )}
+                </>
+              )}
+              {panel === "bookmarks" && <div ref={setMarksHost} />}
+            </div>
+          </ResizablePanel>
         )}
       </div>
       {recovered && (
@@ -1766,7 +1920,7 @@ function DocumentPane({
         <ResourceHistory
           previousVisit={previousVisit}
           resourceId={note.id}
-          canEdit={!readonly}
+          canEdit={!readonly && mode !== "read"}
           capture={() => ({ body: editor.current?.text() ?? source })}
           flush={async () => {
             await editor.current?.flush();
@@ -1784,7 +1938,7 @@ function DocumentPane({
         <SuggestionReview
           noteId={note.id}
           generation={note.generation}
-          canEdit={!readonly}
+          canEdit={!readonly && mode !== "read"}
           onClose={() => setReview(false)}
           onCompose={(value) => {
             if (!editor.current?.reviewBinding()) {

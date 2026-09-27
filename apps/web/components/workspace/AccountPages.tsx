@@ -24,9 +24,9 @@ export function ExportsPage() {
     );
   useEffect(() => {
     if (!running) return;
-    const timer = setInterval(result.reload, 3000);
+    const timer = setInterval(result.revalidate, 3000);
     return () => clearInterval(timer);
-  }, [running, result.reload]);
+  }, [running, result.revalidate]);
   return (
     <section>
       <p className="ws-note">

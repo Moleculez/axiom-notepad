@@ -25,6 +25,9 @@ tested workflows from remaining device, accessibility and provider checks.
   citations, Mermaid and a hierarchical outline.
 - **Keep the context.** Linked notes, private-first annotation cards, discussions,
   editable reading bookmarks, a configurable minimap and an image/diagram viewer.
+- **Read and share cleanly.** Focused Read mode and snapshot-based exports to
+  styled HTML, Print / Save PDF, Markdown and Markdown-with-assets ZIP, with
+  embedded fonts, equations and diagrams. See [document export](docs/DOCUMENT_EXPORT.md).
 - **Review deliberately.** Rendered/source version comparisons, named milestones,
   guarded restores, separate Markdown/math suggestions, assigned reviews and changes
   since your last visit. Image Studio adds shared cloud drafts and recovery heads.

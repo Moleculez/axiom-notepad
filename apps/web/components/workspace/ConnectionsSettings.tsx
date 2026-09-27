@@ -36,9 +36,9 @@ export default function ConnectionsSettings() {
     [error, setError] = useState(""),
     [busy, setBusy] = useState("");
   useEffect(() => {
-    const timer = setInterval(data.reload, 10000);
+    const timer = setInterval(data.revalidate, 10000);
     return () => clearInterval(timer);
-  }, []);
+  }, [data.revalidate]);
   const run = async (id: string, work: () => Promise<unknown>) => {
     setBusy(id);
     setError("");

@@ -370,6 +370,7 @@ export async function offlineRead(path: string): Promise<unknown | undefined> {
       parent = url.searchParams.get("parentId"),
       view = url.searchParams.get("view") ?? "folder",
       q = (url.searchParams.get("q") ?? "").toLowerCase(),
+      name = (url.searchParams.get("name") ?? "").trim().toLowerCase(),
       kind = url.searchParams.get("kind"),
       folder = parent
         ? await getEntry(id, `resources/${parent}/location`)
@@ -382,6 +383,7 @@ export async function offlineRead(path: string): Promise<unknown | undefined> {
         (view !== "folder" || r.parent_id === parent) &&
         (!kind || r.kind === kind) &&
         (!q || r.name.toLowerCase().includes(q)) &&
+        (!name || r.name.toLowerCase().includes(name)) &&
         (view !== "favorites" || r.favorite),
     );
     const sort = url.searchParams.get("sort") ?? "name",

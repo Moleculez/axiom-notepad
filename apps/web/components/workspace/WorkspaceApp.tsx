@@ -35,6 +35,7 @@ import {
 } from "../../lib/offline-files";
 import Dialog, { DialogFocusBoundary } from "../Dialog";
 import WorkspaceSidebar from "./WorkspaceSidebar";
+import ResizablePanel from "../ResizablePanel";
 import WorkspaceSearch from "./WorkspaceSearch";
 import WorkspaceProgress from "./WorkspaceProgress";
 import { beginWorkspaceActivity } from "../../lib/workspace-activity";
@@ -675,9 +676,12 @@ export default function WorkspaceApp() {
                     aria-label="Close navigation"
                     onClick={() => setSidebar(false)}
                   />
-                  <aside
+                  <ResizablePanel
                     className="ws-sidebar"
-                    aria-label="Workspace navigation"
+                    label="Workspace navigation"
+                    account={session.user.id}
+                    name="sidebar"
+                    edge="right"
                   >
                     <div className="ws-sidebar-heading">
                       <span>Workspace</span>
@@ -692,7 +696,7 @@ export default function WorkspaceApp() {
                     <div className="ws-sidebar-scroll">
                       <WorkspaceSidebar key={session.user.id} />
                     </div>
-                  </aside>
+                  </ResizablePanel>
                 </>
               )}
               <div id="workspace-content" className="ws-content" tabIndex={-1}>

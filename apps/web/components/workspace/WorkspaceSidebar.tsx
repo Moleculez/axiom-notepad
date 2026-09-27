@@ -1,36 +1,28 @@
 "use client";
+import { useEffect, useRef, useState } from "react";
 import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
-import {
-  ClipboardCheck,
+  ArrowUp,
+  ChevronLeft,
   ChevronRight,
+  ClipboardCheck,
   Clock3,
+  Ellipsis,
   Folder,
   FolderOpen,
-  ChevronsDownUp,
-  Ellipsis,
-  X,
   History,
+  House,
   LockKeyhole,
   Search,
   Star,
   Trash2,
-  Users,
+  X,
 } from "lucide-react";
 import type {
   Resource,
   ResourcePage,
   ResourceLocation,
-  Space,
 } from "@axiom/shared/workspace";
 import { fileRouteId } from "@axiom/shared/file-routes";
-import { workspaceDestination } from "../../lib/workspace-navigation";
 import { useManagement } from "./ManagementActions";
 import {
   ResourceIcon,
@@ -39,475 +31,451 @@ import {
   useWorkspace,
   WorkspaceLink,
 } from "./ui";
-const ActiveAncestors = createContext<readonly string[]>([]);
-const TreeExpansion = createContext<{
-  expanded: Set<string>;
-  toggle: (id: string, value: boolean) => void;
-}>({ expanded: new Set(), toggle: () => {} });
-function useBranchExpansion(id: string, reveal: boolean) {
-  const { expanded, toggle } = useContext(TreeExpansion);
-  useEffect(() => {
-    if (reveal) toggle(id, true);
-  }, [id, reveal, toggle]);
-  return [expanded.has(id), (value: boolean) => toggle(id, value)] as const;
-}
 
 function folderLocation(spaceId: string, parentId?: string | null) {
   return `/workspaces/${spaceId}/files${parentId ? "?folder=" + parentId : ""}`;
 }
-function isPlainClick(event: React.MouseEvent<HTMLElement>) {
-  return (
-    !event.defaultPrevented &&
-    event.button === 0 &&
-    !event.metaKey &&
-    !event.ctrlKey &&
-    !event.shiftKey &&
-    !event.altKey
-  );
-}
-function treeKey(
-  event: React.KeyboardEvent<HTMLElement>,
-  expanded: boolean,
-  expand: (value: boolean) => void,
-  expandable = true,
-) {
-  if (event.altKey || event.metaKey || event.ctrlKey) return false;
+
+/** A directory, not a nested tree: keyboard navigation stays in this level. */
+function directoryKey(event: React.KeyboardEvent<HTMLElement>, up: () => void) {
+  if (event.key === "ArrowLeft" || (event.altKey && event.key === "ArrowUp")) {
+    event.preventDefault();
+    up();
+    return true;
+  }
+  if (event.altKey || event.metaKey || event.ctrlKey || event.shiftKey)
+    return false;
   const row = event.currentTarget;
   if (["ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) {
     const rows = Array.from(
-      row.closest(".ws-tree")?.querySelectorAll<HTMLElement>(".ws-tree-row") ??
-        [],
+      row
+        .closest(".sidebar-directory-list")
+        ?.querySelectorAll<HTMLElement>(".sidebar-directory-row") ?? [],
     );
+    const index = rows.indexOf(row);
     const next =
       event.key === "Home"
         ? rows[0]
         : event.key === "End"
           ? rows.at(-1)
-          : rows[rows.indexOf(row) + (event.key === "ArrowUp" ? -1 : 1)];
+          : rows[
+              Math.max(
+                0,
+                Math.min(
+                  rows.length - 1,
+                  index + (event.key === "ArrowUp" ? -1 : 1),
+                ),
+              )
+            ];
     next?.focus();
-  } else if (event.key === "ArrowRight") {
-    if (!expanded && expandable) expand(true);
-    else
-      row.parentElement
-        ?.querySelector<HTMLElement>(":scope > ul .ws-tree-row")
-        ?.focus();
-  } else if (event.key === "ArrowLeft") {
-    if (expanded) expand(false);
-    else
-      row.parentElement?.parentElement
-        ?.closest("li")
-        ?.querySelector<HTMLElement>(":scope > .ws-tree-row")
-        ?.focus();
-  } else if (event.key === "Enter" && event.target === row)
-    row.querySelector<HTMLElement>("a, .ws-tree-resource")?.click();
-  else return false;
+  } else if (event.key === "Enter" && event.target === row) {
+    row.querySelector<HTMLElement>(".sidebar-directory-open")?.click();
+  } else if (event.key === "ArrowRight" && event.target === row) {
+    row.querySelector<HTMLElement>("[data-enter-directory]")?.click();
+  } else return false;
   event.preventDefault();
   event.stopPropagation();
   return true;
 }
+
 export default function WorkspaceSidebar() {
-  const management = useManagement();
-  const { spaces, revision, session } = useWorkspace(),
-    { params, path } = useLocation();
-  const [filter, setFilter] = useState("");
-  const filterInput = useRef<HTMLInputElement>(null);
-  const [expanded, setExpanded] = useState<Set<string>>(() => {
-    try {
-      const stored: unknown = JSON.parse(
-        localStorage.getItem(`axiom:sidebar-expanded:${session.user.id}`) ??
-          "[]",
-      );
-      return new Set(
-        Array.isArray(stored)
-          ? stored
-              .filter(
-                (id): id is string =>
-                  typeof id === "string" && /^[sr]:[\da-f-]{36}$/i.test(id),
-              )
-              .slice(-300)
-          : [],
-      );
-    } catch {
-      return new Set();
-    }
-  });
-  const toggle = useCallback(
-    (id: string, value: boolean) =>
-      setExpanded((previous) => {
-        if (previous.has(id) === value) return previous;
-        const next = new Set(previous);
-        if (value) next.add(id);
-        else next.delete(id);
-        return next;
-      }),
-    [],
-  );
-  useEffect(() => {
-    try {
-      localStorage.setItem(
-        `axiom:sidebar-expanded:${session.user.id}`,
-        JSON.stringify([...expanded].slice(-300)),
-      );
-    } catch {
-      /* Presentation only; navigation remains usable without storage. */
-    }
-  }, [expanded, session.user.id]);
-  const visibleSpaces = spaces.filter(
-    (space) =>
-      space.effective_status === "active" &&
-      `${space.name} ${space.group_name ?? ""}`
-        .toLocaleLowerCase()
-        .includes(filter.trim().toLocaleLowerCase()),
-  );
-  const resourceId = fileRouteId(path) ?? params.get("folder");
-  useEffect(() => {
-    setFilter("");
-  }, [path, params.get("folder"), params.get("space")]);
+  const { revision } = useWorkspace();
+  const { params, path } = useLocation();
+  const resourceId = fileRouteId(path);
   const location = useData<ResourceLocation>(
     resourceId ? `resources/${resourceId}/location` : null,
     revision,
   );
-  const selected =
-      (path.startsWith("/workspaces/") ? path.split("/")[2] : null) ??
-      params.get("space") ??
-      location.data?.space.id ??
-      null,
-    parent = params.get("folder") ?? location.data?.resource.parent_id ?? null;
+  const spaceId =
+    (path.startsWith("/workspaces/") ? path.split("/")[2] : null) ??
+    params.get("space") ??
+    location.data?.space.id ??
+    null;
+  const parentId =
+    params.get("folder") ?? location.data?.resource.parent_id ?? null;
   const views = [
-    ["recent", Clock3, "Recent"],
-    ["favorites", Star, "Favorites"],
+    ["/explorer?view=recent", Clock3, "Recent"],
+    ["/explorer?view=favorites", Star, "Favorites"],
+    ["/inbox?view=reviews", ClipboardCheck, "Review inbox"],
+    ["/audit", History, "Audit"],
+    ["/trash", Trash2, "Trash"],
   ] as const;
   return (
-    <TreeExpansion.Provider value={{ expanded, toggle }}>
-      <ActiveAncestors.Provider
-        value={location.data?.ancestors.map((item) => item.id) ?? []}
+    <>
+      <nav
+        className="ws-tree-section sidebar-quick-access"
+        aria-label="Quick access"
       >
-        <div className="ws-tree-section">
-          <span className="ws-section-label">Quick access</span>
-          {views.map(([view, Icon, label]) => (
-            <WorkspaceLink
-              className={`ws-side-link ${path === "/explorer" && params.get("view") === view ? "active" : ""}`}
-              key={view}
-              to={`/explorer?view=${view}`}
-            >
-              <Icon size={17} />
-              {label}
-            </WorkspaceLink>
-          ))}
-        </div>
-        <SavedViews />
-        <WorkspaceLink
-          className={"ws-side-link " + (path === "/inbox" ? "active" : "")}
-          to="/inbox?view=reviews"
-        >
-          <ClipboardCheck size={17} />
-          Review inbox
-        </WorkspaceLink>
-        <div
-          className="ws-tree-section ws-explorer-tree-section"
-          onContextMenu={(event) => {
-            if (!(event.target as Element).closest(".ws-tree-row"))
-              management.backgroundMenu(event);
-          }}
-        >
-          <div className="ws-tree-section-heading">
-            <WorkspaceLink to="/workspaces" className="ws-section-label">
-              Your workspaces
-            </WorkspaceLink>
-            <button
-              type="button"
-              className="icon-button"
-              aria-label="Collapse all folders"
-              title="Collapse all folders"
-              disabled={!expanded.size}
-              onClick={() => setExpanded(new Set())}
-            >
-              <ChevronsDownUp size={14} />
-            </button>
-          </div>
-          <div className="sidebar-tree-filter">
-            <Search size={14} />
-            <input
-              ref={filterInput}
-              aria-label="Filter workspaces"
-              placeholder="Filter workspaces…"
-              value={filter}
-              onChange={(event) => setFilter(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Escape" && filter) {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  setFilter("");
-                }
-              }}
-            />
-            {filter && (
-              <button
-                type="button"
-                className="icon-button"
-                aria-label="Clear workspace filter"
-                onClick={() => {
-                  setFilter("");
-                  filterInput.current?.focus();
-                }}
-              >
-                <X size={13} />
-              </button>
-            )}
-          </div>
-          <ul className="ws-tree" aria-label="Spaces and folders">
-            {[
-              ...new Set(visibleSpaces.map((s) => s.group_id ?? "personal")),
-            ].map((groupId) => (
-              <li key={groupId} className="workspace-tree-group">
-                <span className="workspace-tree-group-label">
-                  {groupId === "personal"
-                    ? "Your account"
-                    : (spaces.find((s) => s.group_id === groupId)?.group_name ??
-                      "Shared work")}
-                </span>
-                <ul>
-                  {visibleSpaces
-                    .filter(
-                      (s) =>
-                        (s.group_id ?? "personal") === groupId &&
-                        s.effective_status === "active",
-                    )
-                    .map((space) => (
-                      <SpaceBranch
-                        key={space.id}
-                        space={space}
-                        selected={selected}
-                        parent={parent}
-                        revision={revision}
-                      />
-                    ))}
-                </ul>
-              </li>
-            ))}
-          </ul>
-          {!visibleSpaces.length && (
-            <p className="sidebar-tree-empty" role="status">
-              {filter
-                ? "No matching workspaces."
-                : "Your workspaces will appear here."}
-            </p>
-          )}
-        </div>
-        <nav
-          className="ws-tree-section ws-administration"
-          aria-label="Administration"
-        >
-          <span className="ws-section-label">Administration</span>
-          {(
-            [
-              ["/groups", "Groups", Users],
-              ["/audit", "Audit", History],
-              ["/trash", "Trash", Trash2],
-            ] as const
-          ).map(([to, label, Icon]) => (
+        <span className="ws-section-label">Quick access</span>
+        {views.map(([to, Icon, label]) => {
+          const [target, query] = to.split("?");
+          const active =
+            path === target &&
+            (!query ||
+              params.get("view") === new URLSearchParams(query).get("view"));
+          return (
             <WorkspaceLink
               key={to}
               to={to}
-              className={`ws-side-link ${path === to || path.startsWith(to + "/") ? "active" : ""}`}
-              aria-current={
-                path === to || path.startsWith(to + "/") ? "page" : undefined
-              }
+              className={`ws-side-link ${active ? "active" : ""}`}
+              aria-current={active ? "page" : undefined}
             >
-              <Icon size={17} />
+              <Icon size={16} />
               <span>{label}</span>
             </WorkspaceLink>
-          ))}
-        </nav>
-      </ActiveAncestors.Provider>
-    </TreeExpansion.Provider>
-  );
-}
-function SpaceBranch({
-  space,
-  selected,
-  parent,
-  revision,
-}: {
-  space: Space;
-  selected: string | null;
-  parent: string | null;
-  revision: number;
-}) {
-  const management = useManagement();
-  const { session } = useWorkspace();
-  const { path } = useLocation();
-  const activeBranch = selected === space.id;
-  const [expanded, setExpanded] = useBranchExpansion(
-    `s:${space.id}`,
-    activeBranch,
-  );
-  const active = selected === space.id && !parent && !fileRouteId(path);
-  const Icon =
-    space.kind === "personal" ? LockKeyhole : expanded ? FolderOpen : Folder;
-  return (
-    <li>
-      <div
-        className={`ws-tree-row ws-tree-space ${active ? "active" : ""}`}
-        aria-label={space.name}
-        onDragOver={(event) =>
-          management.dragOver(
-            event,
-            { spaceId: space.id, parentId: null },
-            () => setExpanded(true),
-          )
-        }
-        onDragLeave={management.dragLeave}
-        onDrop={(event) =>
-          management.drop(event, { spaceId: space.id, parentId: null })
-        }
-        tabIndex={0}
-        onContextMenu={(event) => management.workspaceMenu(event, space)}
-        onKeyDown={(event) => {
-          if (
-            !treeKey(event, expanded, setExpanded) &&
-            (event.key === "ContextMenu" ||
-              (event.key === "F10" && event.shiftKey))
-          )
-            management.workspaceMenu(event, space);
-        }}
-      >
-        <button
-          type="button"
-          className="ws-tree-toggle"
-          tabIndex={-1}
-          aria-expanded={expanded}
-          aria-label={`${expanded ? "Collapse" : "Expand"} ${space.name}`}
-          onClick={() => setExpanded(!expanded)}
-        >
-          <ChevronRight size={13} />
-        </button>
-        <WorkspaceLink
-          to={workspaceDestination(session.user.id, space.id)}
-          title={space.name}
-          tabIndex={-1}
-          aria-current={active ? "page" : undefined}
-          onClick={(event) => {
-            if (isPlainClick(event)) setExpanded(true);
-          }}
-        >
-          <Icon size={16} />
-          <span>{space.name}</span>
-        </WorkspaceLink>
-        <button
-          type="button"
-          className="ws-tree-more icon-button"
-          tabIndex={-1}
-          aria-label={`Workspace actions for ${space.name}`}
-          title="Workspace actions"
-          onClick={(event) => management.workspaceMenu(event, space)}
-        >
-          <Ellipsis size={15} />
-        </button>
-      </div>
-      {expanded && (
-        <>
-          <ResourceBranches
-            space={space.id}
-            parentId={null}
-            selected={parent}
-            revision={revision}
-            ancestors={[]}
-            showEmpty
-          />
-        </>
+          );
+        })}
+      </nav>
+      <SavedViews />
+      {resourceId && !location.data ? (
+        <section className="sidebar-directory" aria-label="Files">
+          <WorkspaceLink className="ws-section-label" to="/workspaces">
+            All workspaces
+          </WorkspaceLink>
+          <p className="sidebar-directory-message">
+            {location.error ? (
+              <button onClick={location.reload}>
+                Could not locate this file. Retry
+              </button>
+            ) : (
+              "Locating file…"
+            )}
+          </p>
+        </section>
+      ) : (
+        <Directory
+          key={`${spaceId}:${parentId}`}
+          spaceId={spaceId}
+          parentId={parentId}
+          activeId={resourceId}
+        />
       )}
-    </li>
+    </>
   );
 }
-function ResourceBranches({
-  space,
+
+function Directory({
+  spaceId,
   parentId,
-  selected,
-  revision,
-  ancestors,
-  showEmpty = true,
+  activeId,
 }: {
-  space: string;
+  spaceId: string | null;
   parentId: string | null;
-  selected: string | null;
-  revision: number;
-  ancestors: string[];
-  showEmpty?: boolean;
+  activeId: string | null;
 }) {
+  const { spaces, revision, navigate } = useWorkspace();
+  const management = useManagement();
+  const space = spaces.find((s) => s.id === spaceId);
+  const [filter, setFilter] = useState("");
+  const [debounced, setDebounced] = useState("");
+  const [cursors, setCursors] = useState<string[]>([]);
+  const input = useRef<HTMLInputElement>(null);
+  const list = useRef<HTMLUListElement>(null);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebounced(filter.trim());
+      setCursors([]);
+    }, 180);
+    return () => clearTimeout(timer);
+  }, [filter]);
+  const query = new URLSearchParams({
+    spaceId: spaceId ?? "",
+    limit: "40",
+    ...(parentId ? { parentId } : {}),
+    ...(debounced ? { name: debounced } : {}),
+    ...(cursors.length ? { cursor: cursors.at(-1)! } : {}),
+  });
   const data = useData<ResourcePage>(
-    `resources?spaceId=${space}&limit=40${parentId ? "&parentId=" + parentId : ""}`,
+    spaceId ? `resources?${query}` : null,
     revision,
   );
+  const [retainedTrail, setRetainedTrail] = useState<
+    ResourcePage["breadcrumbs"]
+  >([]);
+  useEffect(() => {
+    if (data.data) setRetainedTrail(data.data.breadcrumbs);
+    else if (data.error) setRetainedTrail([]);
+  }, [data.data, data.error]);
+  // Filtering/paging does not change the physical location. Keep its path and
+  // Up target stable, but clear it if an authoritative response denies access.
+  const trail = data.data?.breadcrumbs ?? (data.error ? [] : retainedTrail);
+  const parent = parentId ? trail.at(-2)?.id : null;
+  const upTo = parentId ? folderLocation(spaceId!, parent) : "/workspaces";
+  const up = () => {
+    if (spaceId && (!parentId || trail.length)) navigate(upTo);
+  };
+  const title = trail.at(-1)?.name ?? space?.name ?? "All workspaces";
+  const visibleSpaces = spaces.filter(
+    (s) =>
+      s.effective_status === "active" &&
+      `${s.name} ${s.group_name ?? ""}`
+        .toLocaleLowerCase()
+        .includes(filter.trim().toLocaleLowerCase()),
+  );
+  const target = spaceId ? { spaceId, parentId } : undefined;
+  const breadcrumbs = [
+    { to: "/workspaces", name: "All workspaces" },
+    ...(spaceId
+      ? [{ to: folderLocation(spaceId), name: space?.name ?? "Workspace" }]
+      : []),
+    ...trail.map((item) => ({
+      to: folderLocation(spaceId!, item.id),
+      name: item.name,
+    })),
+  ];
   return (
-    <ul>
-      {data.error && (
-        <li className="ws-tree-message">
+    <section
+      className="sidebar-directory"
+      aria-label="Files"
+      onContextMenu={(event) => {
+        if (
+          !(event.target as Element).closest(
+            ".sidebar-directory-row, .sidebar-directory-breadcrumbs",
+          )
+        )
+          management.backgroundMenu(event, target);
+      }}
+      onDragOver={(event) => {
+        if (target) management.dragOver(event, target);
+      }}
+      onDragLeave={management.dragLeave}
+      onDrop={(event) => {
+        if (target) management.drop(event, target);
+      }}
+    >
+      <div className="sidebar-directory-heading">
+        <span className="ws-section-label">Files</span>
+        <div>
+          <WorkspaceLink
+            className="icon-button"
+            to="/workspaces"
+            aria-label="All workspaces"
+            title="All workspaces"
+          >
+            <House size={15} />
+          </WorkspaceLink>
+          <button
+            className="icon-button"
+            type="button"
+            disabled={!spaceId || (!!parentId && !trail.length)}
+            aria-label="Up one level"
+            title="Up one level · Alt+↑"
+            onClick={up}
+          >
+            <ArrowUp size={16} />
+          </button>
+        </div>
+      </div>
+      <nav
+        className="sidebar-directory-breadcrumbs"
+        aria-label="Sidebar directory path"
+      >
+        {breadcrumbs.map((crumb, index) => (
+          <span key={crumb.to}>
+            {index > 0 && <ChevronRight size={11} aria-hidden="true" />}
+            <WorkspaceLink
+              to={crumb.to}
+              title={crumb.name}
+              aria-current={
+                index === breadcrumbs.length - 1 ? "location" : undefined
+              }
+            >
+              {crumb.name}
+            </WorkspaceLink>
+          </span>
+        ))}
+      </nav>
+      <div className="sidebar-directory-filter">
+        <Search size={14} />
+        <input
+          ref={input}
+          aria-label={
+            spaceId ? "Filter files in this folder" : "Filter workspaces"
+          }
+          placeholder={spaceId ? "Filter this folder…" : "Find a workspace…"}
+          value={filter}
+          maxLength={200}
+          onChange={(event) => setFilter(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Escape" && filter) {
+              event.preventDefault();
+              event.stopPropagation();
+              setFilter("");
+            } else if (event.key === "ArrowDown") {
+              event.preventDefault();
+              list.current
+                ?.querySelector<HTMLElement>(".sidebar-directory-row")
+                ?.focus();
+            }
+          }}
+        />
+        {filter && (
+          <button
+            type="button"
+            className="icon-button"
+            aria-label="Clear sidebar filter"
+            onClick={() => {
+              setFilter("");
+              input.current?.focus();
+            }}
+          >
+            <X size={13} />
+          </button>
+        )}
+      </div>
+      <ul
+        ref={list}
+        className="sidebar-directory-list"
+        aria-label={spaceId ? `Files in ${title}` : "Workspaces"}
+      >
+        {!spaceId
+          ? visibleSpaces.map((item) => (
+              <li key={item.id}>
+                <div
+                  className="sidebar-directory-row sidebar-workspace-row"
+                  tabIndex={0}
+                  aria-label={item.name}
+                  onKeyDown={(event) => {
+                    if (
+                      !directoryKey(event, up) &&
+                      (event.key === "ContextMenu" ||
+                        (event.shiftKey && event.key === "F10"))
+                    )
+                      management.workspaceMenu(event, item);
+                  }}
+                  onContextMenu={(event) =>
+                    management.workspaceMenu(event, item)
+                  }
+                  onDragOver={(event) =>
+                    management.dragOver(event, {
+                      spaceId: item.id,
+                      parentId: null,
+                    })
+                  }
+                  onDragLeave={management.dragLeave}
+                  onDrop={(event) =>
+                    management.drop(event, { spaceId: item.id, parentId: null })
+                  }
+                >
+                  <WorkspaceLink
+                    className="sidebar-directory-open"
+                    data-enter-directory
+                    to={folderLocation(item.id)}
+                    tabIndex={-1}
+                    title={item.name}
+                  >
+                    {item.kind === "personal" ? (
+                      <LockKeyhole size={17} />
+                    ) : (
+                      <FolderOpen size={17} />
+                    )}
+                    <span>
+                      <span>{item.name}</span>
+                      <small>
+                        {item.kind === "personal"
+                          ? "Personal"
+                          : (item.group_name ?? "Shared workspace")}
+                      </small>
+                    </span>
+                    <ChevronRight className="sidebar-enter-hint" size={13} />
+                  </WorkspaceLink>
+                  <button
+                    type="button"
+                    className="icon-button sidebar-row-more"
+                    aria-label={`Workspace actions for ${item.name}`}
+                    onClick={(event) => management.workspaceMenu(event, item)}
+                  >
+                    <Ellipsis size={15} />
+                  </button>
+                </div>
+              </li>
+            ))
+          : data.data?.items.map((item) => (
+              <DirectoryRow
+                key={item.id}
+                item={item}
+                active={item.id === activeId}
+                up={up}
+              />
+            ))}
+      </ul>
+      {spaceId && data.error && (
+        <p className="sidebar-directory-message">
           <button type="button" onClick={data.reload}>
             {data.data
               ? "Could not refresh items. Retry"
               : "Could not load items. Retry"}
           </button>
-        </li>
+        </p>
       )}
-      {data.loading && !data.data && (
-        <li className="ws-tree-message">Loading…</li>
+      {spaceId && data.loading && !data.data && (
+        <p className="sidebar-directory-message" role="status">
+          Loading files…
+        </p>
       )}
-      {data.data?.items.map((item) => (
-        <ResourceBranch
-          key={item.id}
-          item={item}
-          selected={selected}
-          revision={revision}
-          ancestors={ancestors}
-        />
-      ))}
-      {showEmpty && data.data?.items.length === 0 && (
-        <li className="ws-tree-message">No items yet</li>
+      {((!spaceId && !visibleSpaces.length) ||
+        (spaceId && data.data?.items.length === 0)) && (
+        <p className="sidebar-directory-message" role="status">
+          {filter
+            ? `No matching ${spaceId ? "files" : "workspaces"}.`
+            : spaceId
+              ? "No items yet"
+              : "Your workspaces will appear here."}
+        </p>
       )}
-      {data.data?.nextCursor && (
-        <li>
-          <WorkspaceLink
-            className="ws-side-link"
-            to={folderLocation(space, parentId)}
+      {spaceId && (cursors.length > 0 || data.data?.nextCursor) && (
+        <nav
+          className="sidebar-directory-pagination"
+          aria-label="Directory pages"
+        >
+          <button
+            type="button"
+            className="icon-button"
+            aria-label="Previous files"
+            disabled={!cursors.length || data.loading}
+            onClick={() => setCursors((value) => value.slice(0, -1))}
           >
-            Browse all items…
-          </WorkspaceLink>
-        </li>
+            <ChevronLeft size={15} />
+          </button>
+          <span>Page {cursors.length + 1}</span>
+          <button
+            type="button"
+            className="icon-button"
+            aria-label="Next files"
+            disabled={!data.data?.nextCursor || data.loading}
+            onClick={() =>
+              setCursors((value) => [...value, data.data!.nextCursor!])
+            }
+          >
+            <ChevronRight size={15} />
+          </button>
+        </nav>
       )}
-    </ul>
+    </section>
   );
 }
-function ResourceBranch({
+
+function DirectoryRow({
   item,
-  selected,
-  revision,
-  ancestors,
+  active,
+  up,
 }: {
   item: Resource;
-  selected: string | null;
-  revision: number;
-  ancestors: string[];
+  active: boolean;
+  up: () => void;
 }) {
   const management = useManagement();
   const { open } = useWorkspace();
-  const { parts } = useLocation();
   const folder = item.kind === "folder";
-  const expandable = folder || (item.kind === "note" && !!item.has_children);
-  const activeAncestors = useContext(ActiveAncestors);
-  const active = folder
-    ? selected === item.id
-    : fileRouteId("/" + parts.join("/")) === item.id;
-  const reveal = expandable && (active || activeAncestors.includes(item.id));
-  const [expanded, setExpanded] = useBranchExpansion(`r:${item.id}`, reveal);
-  if (ancestors.includes(item.id) || ancestors.length > 40) return null;
+  const destination = folderLocation(item.space_id, item.id);
   return (
     <li>
       <div
-        className={`ws-tree-row ${active ? "active" : ""}`}
-        aria-label={item.name}
-        data-tree-resource={item.id}
+        className={`sidebar-directory-row ${active ? "active" : ""}`}
+        data-directory-resource={item.id}
         data-folder-color={item.folder_color || undefined}
+        tabIndex={0}
+        aria-label={item.name}
         draggable={!item.deleted_at}
         onDragStart={(event) => {
           event.stopPropagation();
@@ -515,11 +483,10 @@ function ResourceBranch({
         }}
         onDragOver={(event) => {
           if (folder)
-            management.dragOver(
-              event,
-              { spaceId: item.space_id, parentId: item.id },
-              () => setExpanded(true),
-            );
+            management.dragOver(event, {
+              spaceId: item.space_id,
+              parentId: item.id,
+            });
         }}
         onDragLeave={management.dragLeave}
         onDrop={(event) => {
@@ -529,10 +496,9 @@ function ResourceBranch({
               parentId: item.id,
             });
         }}
-        tabIndex={0}
         onContextMenu={(event) => management.resourceMenu(event, [item])}
         onKeyDown={(event) => {
-          if (!treeKey(event, expanded, setExpanded, expandable))
+          if (!directoryKey(event, up))
             management.resourceKey(
               event,
               [item],
@@ -544,50 +510,45 @@ function ResourceBranch({
             );
         }}
       >
-        {expandable ? (
-          <button
-            type="button"
-            className="ws-tree-toggle"
-            tabIndex={-1}
-            aria-expanded={expanded}
-            aria-label={`${expanded ? "Collapse" : "Expand"} ${item.name}`}
-            onClick={() => setExpanded(!expanded)}
-          >
-            <ChevronRight size={13} />
-          </button>
-        ) : (
-          <span className="ws-tree-spacer" aria-hidden="true" />
-        )}
         {folder ? (
           <WorkspaceLink
-            to={folderLocation(item.space_id, item.id)}
+            className="sidebar-directory-open"
+            data-enter-directory
+            to={destination}
             title={item.name}
             tabIndex={-1}
-            aria-current={active ? "page" : undefined}
-            onClick={(event) => {
-              if (isPlainClick(event)) setExpanded(true);
-            }}
           >
-            {expanded ? <FolderOpen size={15} /> : <Folder size={15} />}
+            <Folder size={16} />
             <span>{item.name}</span>
+            <ChevronRight className="sidebar-enter-hint" size={13} />
           </WorkspaceLink>
         ) : (
           <button
             type="button"
-            className="ws-tree-resource"
+            className="sidebar-directory-open"
             title={item.name}
             tabIndex={-1}
             aria-current={active ? "page" : undefined}
             onClick={() => open(item)}
           >
-            <ResourceIcon resource={item} size={15} />
+            <ResourceIcon resource={item} size={16} />
             <span>{item.name}</span>
           </button>
         )}
+        {!folder && item.has_children && (
+          <WorkspaceLink
+            className="icon-button sidebar-row-children"
+            data-enter-directory
+            to={destination}
+            aria-label={`Browse contents of ${item.name}`}
+            title="Browse attached files and child notes"
+          >
+            <FolderOpen size={14} />
+          </WorkspaceLink>
+        )}
         <button
           type="button"
-          className="ws-tree-more icon-button"
-          tabIndex={-1}
+          className="icon-button sidebar-row-more"
           aria-label={`Actions for ${item.name}`}
           title="File actions"
           onClick={(event) => management.resourceMenu(event, [item])}
@@ -595,21 +556,15 @@ function ResourceBranch({
           <Ellipsis size={15} />
         </button>
       </div>
-      {expandable && expanded && (
-        <ResourceBranches
-          space={item.space_id}
-          parentId={item.id}
-          selected={selected}
-          revision={revision}
-          ancestors={[...ancestors, item.id]}
-        />
-      )}
     </li>
   );
 }
+
 function SavedViews() {
   const { revision } = useWorkspace(),
-    data = useData<any[]>("saved-views", revision);
+    data = useData<
+      { id: string; name: string; filters: Record<string, string> }[]
+    >("saved-views", revision);
   if (!data.data?.length) return null;
   return (
     <div className="ws-tree-section">

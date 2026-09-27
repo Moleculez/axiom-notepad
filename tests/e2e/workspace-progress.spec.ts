@@ -118,7 +118,7 @@ test("toolbar loading preserves the shell and settles after success, failure and
   }
 });
 
-test("background settings refresh keeps cards mounted and custom reduced motion uses a static bar", async ({
+test("background settings refresh keeps cards mounted without global progress", async ({
   browser,
 }) => {
   const f = await fixture(browser, "# Settings loading evidence\n");
@@ -145,7 +145,9 @@ test("background settings refresh keeps cards mounted and custom reduced motion 
     });
     await expect.poll(() => refreshes, { timeout: 15000 }).toBeGreaterThan(0);
     const bar = page.getByRole("progressbar", { name: "Workspace loading" });
-    await expect(bar).toBeVisible();
+    // This held request is an automatic ten-second poll, not user navigation.
+    await page.waitForTimeout(500);
+    await expect(bar).toBeHidden();
     expect(await existing!.evaluate((node) => node.isConnected)).toBe(true);
     await expect(heading).toBeVisible();
     expect(await heading.boundingBox()).toEqual(before);
@@ -153,10 +155,7 @@ test("background settings refresh keeps cards mounted and custom reduced motion 
       document.documentElement.dataset.motion = "none";
     });
     await expect(page.locator("html")).toHaveAttribute("data-motion", "none");
-    await expect(page.locator(".workspace-progress-fill")).toHaveCSS(
-      "animation-name",
-      "none",
-    );
+    await expect(bar).toBeHidden();
     await expect(page.locator(".workspace-progress")).toHaveCSS(
       "pointer-events",
       "none",

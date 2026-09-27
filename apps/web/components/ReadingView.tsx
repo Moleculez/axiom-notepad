@@ -3,6 +3,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { footnoteTooltips } from "../lib/footnote-tooltips";
 import { DiagramPreviews } from "../lib/editor-vnext/diagrams";
+import { openContextMenu } from "../lib/context-menu";
+import {
+  hasReadingSelection,
+  reconcileReadingBlocks,
+} from "../lib/reading-dom";
 import {
   installMarkdownVisuals,
   type VisualContext,
@@ -34,8 +39,19 @@ export default function ReadingView({
   visualAnchor?: VisualContext["anchor"];
 }) {
   const [printing, setPrinting] = useState(false);
+  const [pending, setPending] = useState(false);
   const latest = useRef({ parsed, context, source, visual, visualAnchor });
   latest.current = { parsed, context, source, visual, visualAnchor };
+  const displayed = useRef(latest.current);
+  const originals = useRef(new WeakMap<Element, string>());
+  const diagrams = useRef<DiagramPreviews | null>(null);
+  const headingMenu = useRef<(() => void) | null>(null);
+  useEffect(
+    () => () => {
+      headingMenu.current?.();
+    },
+    [],
+  );
   const footnotes = useRef<ReturnType<typeof footnoteTooltips> | null>(null);
   const root = useRef<HTMLDivElement>(null),
     html = useMemo(
@@ -54,8 +70,8 @@ export default function ReadingView({
     if (!active || !root.current) return;
     const previews = footnoteTooltips({
       root: root.current,
-      document: () => latest.current.parsed,
-      context: () => latest.current.context,
+      document: () => displayed.current.parsed,
+      context: () => displayed.current.context,
     });
     footnotes.current = previews;
     return () => {
@@ -63,9 +79,6 @@ export default function ReadingView({
       footnotes.current = null;
     };
   }, [active]);
-  useEffect(() => {
-    footnotes.current?.refresh();
-  }, [parsed, context]);
   useEffect(() => {
     const prepare = () => flushSync(() => setPrinting(true)),
       done = () => setPrinting(false);
@@ -80,44 +93,136 @@ export default function ReadingView({
   }, []);
   useEffect(() => {
     if ((!active && !printing) || !root.current) return;
-    const diagrams = new DiagramPreviews();
-    diagrams.render(root.current);
+    diagrams.current = new DiagramPreviews();
     const visuals = !printing
       ? installMarkdownVisuals(root.current, {
-          parsed: () => latest.current.parsed,
-          source: () => latest.current.source,
-          context: () => latest.current.visual,
+          parsed: () => displayed.current.parsed,
+          source: () => displayed.current.source,
+          context: () => displayed.current.visual,
           anchor: (from, to) =>
-            latest.current.visualAnchor?.(from, to) ??
-            latest.current.visual?.anchor?.(from, to),
+            displayed.current.visualAnchor?.(from, to) ??
+            displayed.current.visual?.anchor?.(from, to),
         })
       : undefined;
     return () => {
       visuals?.();
-      diagrams.destroy();
+      diagrams.current?.destroy();
+      diagrams.current = null;
     };
+  }, [active, printing]);
+  useEffect(() => {
+    const element = root.current;
+    if (!element) return;
+    let applied = false;
+    const apply = () => {
+      if (applied) return;
+      if (active && !printing && hasReadingSelection(element)) {
+        setPending(true);
+        return;
+      }
+      displayed.current = latest.current;
+      reconcileReadingBlocks(element, html, originals.current);
+      applied = true;
+      diagrams.current?.render(element);
+      footnotes.current?.refresh();
+      for (const pre of element.querySelectorAll("pre")) {
+        if (
+          !active ||
+          printing ||
+          !pre.querySelector("code") ||
+          pre.querySelector(".reading-code-copy")
+        )
+          continue;
+        const copy = document.createElement("button");
+        copy.type = "button";
+        copy.className = "reading-code-copy";
+        copy.textContent = "Copy";
+        copy.setAttribute("aria-label", "Copy code");
+        pre.append(copy);
+      }
+      setPending(false);
+    };
+    apply();
+    document.addEventListener("selectionchange", apply);
+    return () => document.removeEventListener("selectionchange", apply);
   }, [html, active, printing, context.theme]);
   return (
-    <div
-      className={`reading-view prose ${personalPrint ? "print-personal" : ""}`}
-      ref={root}
-      dangerouslySetInnerHTML={{ __html: html }}
-      onClick={(event) => {
-        const link = (event.target as Element).closest<HTMLElement>(
-          '[data-note-target], a[href^="/api/v1/attachments/"], a[href^="#"]',
-        );
-        if (link) {
-          const target = link.dataset.noteTarget ?? link.getAttribute("href")!;
-          // Equation references and footnotes retain native in-document anchors.
-          if (
-            target.startsWith("#") &&
-            !parsed.outline.some((h) => "#" + h.id === target)
-          )
-            return;
+    <>
+      {pending && (
+        <p className="muted reading-update-status" role="status">
+          Updates are waiting while you select text.
+        </p>
+      )}
+      <div
+        className={`reading-view prose document-presentation ${personalPrint ? "print-personal" : ""}`}
+        ref={root}
+        onContextMenu={(event) => {
+          const heading = (event.target as Element).closest<HTMLElement>(
+            "h1[id],h2[id],h3[id],h4[id],h5[id],h6[id]",
+          );
+          if (!heading) return;
           event.preventDefault();
-          onLink(target);
-        }
-      }}
-    />
+          headingMenu.current?.();
+          headingMenu.current = openContextMenu({
+            owner: heading,
+            x: event.clientX,
+            y: event.clientY,
+            label: "Section actions",
+            items: [
+              {
+                label: "Copy section link",
+                icon: "link",
+                action: () => {
+                  const url = new URL(
+                    visual?.resourceId
+                      ? `/workbench/notes/${visual.resourceId}`
+                      : location.href,
+                    location.origin,
+                  );
+                  url.hash = heading.id;
+                  void navigator.clipboard.writeText(url.href).catch(() => {});
+                },
+              },
+            ],
+          });
+        }}
+        onClick={(event) => {
+          const copy = (event.target as Element).closest<HTMLButtonElement>(
+            ".reading-code-copy",
+          );
+          if (copy) {
+            const code =
+              copy.closest("pre")?.querySelector("code")?.textContent ?? "";
+            void navigator.clipboard
+              .writeText(code)
+              .then(() => {
+                copy.textContent = "Copied";
+                setTimeout(() => {
+                  copy.textContent = "Copy";
+                }, 1500);
+              })
+              .catch(() => {
+                copy.textContent = "Select to copy";
+              });
+            return;
+          }
+          const link = (event.target as Element).closest<HTMLElement>(
+            '[data-note-target], a[href^="/api/v1/attachments/"], a[href^="#"]',
+          );
+          if (link) {
+            const target =
+              link.dataset.noteTarget ?? link.getAttribute("href")!;
+            // Equation references and footnotes retain native in-document anchors.
+            if (
+              target.startsWith("#") &&
+              !parsed.outline.some((h) => "#" + h.id === target)
+            )
+              return;
+            event.preventDefault();
+            onLink(target);
+          }
+        }}
+      />
+    </>
   );
 }

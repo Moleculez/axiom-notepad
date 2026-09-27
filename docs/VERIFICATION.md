@@ -1,7 +1,99 @@
 # Current verification and beta release gates
 
-Updated September 21, 2026. Historical logs are [archived separately](archive/VERIFICATION-2026-09-11.md).
+Updated September 28, 2026. Historical logs are [archived separately](archive/VERIFICATION-2026-09-11.md).
 Do not treat historical browser totals or local build IDs as current release evidence.
+
+## September 28 deletion navigation
+
+- Successful local trash operations return an affected open file/folder to its
+  surviving parent, replacing its URL without reloading the shell. Unaffected
+  listings stay put; deleting only the secondary split pane retains the primary.
+- The shared operation flow now observes per-item success, preserves selection
+  callbacks and captures ancestry before deletion. Failed/cancelled receipts,
+  transient errors, account changes and navigation-away races cannot trigger an
+  inappropriate redirect. Accepted offline changes use the same navigation logic.
+  Existing image-draft leave guards remain active and operation polling is quiet.
+- **1,916 unit tests across 95 files**, TypeScript, ESLint, formatting, documentation
+  checks, theme validation and the isolated production build pass (**930 offline
+  assets**). No API or database migration was required.
+- **10 Chromium, 9 Firefox and 9 WebKit checks** pass against isolated production
+  ports 3004/1236, covering nested/root notes, studio files and image uploads,
+  success-only redirects, history replacement, unchanged listings, delayed jobs,
+  split panes, offline replay, retained image drafts and existing confirmed moves.
+  Evidence: `test-results/deletion-navigation-final-{chromium,firefox}` and
+  `test-results/deletion-navigation-verified-webkit`; the
+  deterministic unsaved-draft check was also rerun in Chromium under
+  `test-results/deletion-navigation-verified-guard`.
+- The initial nested-note test used a link selector for a button; it was corrected.
+  The initial WebKit draft-guard assertion raced a legitimate cloud autosave; the
+  test now deliberately rejects that draft write to exercise genuinely unsaved work.
+  Working data, port 8080 and its development configuration were not reset. No
+  commit, push or deployment was performed.
+
+## September 27 directory navigation and quiet loading
+
+- Replaced the sidebar tree with root/workspace/folder directory navigation,
+  physical breadcrumbs, Up, scoped literal-name filtering and pagination. Trash
+  and Audit now belong to Quick access; the Administration section is removed.
+  Workspace/file menus, child-note attachments and guarded drag/drop remain usable.
+- Added bounded, account-local width resizers to the sidebar and Markdown context
+  panel, including keyboard steps, reset and drag cancellation. Fixed Recent work
+  search-field alignment at normal and larger type sizes.
+- Progress now follows foreground readers/actions rather than every shared
+  network request. Same-location refreshes and automatic job/connection polls are
+  quiet; retained rows still clear on authoritative access denial.
+- **1,887 unit tests across 94 files**, TypeScript, ESLint, theme validation and
+  documentation checks pass. The isolated production build prepares **930 offline
+  assets**. No schema migration was required.
+- **20 Chromium checks** and **8 focused checks each in Firefox and WebKit** pass
+  against isolated production ports 3004/1236. Coverage includes nested navigation,
+  search scoping, pagination, menus, confirmed file moves, unchanged note source,
+  persistence/reset/cancellation of both widths, retained rows, background polling,
+  foreground cancellation, and Recent work input/icon geometry. Light/dark layouts
+  and the search popover were visually inspected. Final evidence is under
+  `test-results/sidebar-release-verified-{chromium,firefox,webkit}`.
+- Earlier failed runs remain separate: legacy tests expected retired navigation
+  controls/ungrouped menus, the drag test initially omitted move confirmation, and
+  a development hot reload interrupted a held-refresh test. A transient WebKit
+  navigation/access-control warning did not recur in the final focused suite.
+
+The working development service on 8080 was started for interactive testing. Test
+fixtures remained in the dedicated staging database; no working-note reset,
+commit, push or deployment was performed.
+
+## September 27 document export and Read mode
+
+- Added snapshot-based HTML, Print / Save PDF, Markdown and Markdown-with-assets
+  exports. Preview preparation is read-authorized and non-persisting; archive
+  dependencies are reauthorized at preparation and download. Concurrent equation
+  exports use a bounded busy response and cancellable client retries.
+- Read mode keeps titles/body non-editable, retains the collaboration session,
+  preserves unchanged top-level DOM blocks, defers updates during text selection
+  and exposes compact session-local reading controls. Images and Mermaid use the
+  existing viewer, code has Copy controls and headings offer section-link copying.
+- TypeScript, ESLint, **1,876 unit tests across 93 files**, documentation references
+  and theme validation pass. The isolated production build prepares **930 offline
+  assets**. No migration or working-note reset was needed.
+- Three export/reading scenarios pass in **Chromium, Firefox and WebKit** against
+  isolated production ports 3004/1236: rendered math/diagrams/images, immutable
+  snapshots and explicit refresh, viewer-only Source, unchanged authoritative
+  Markdown, portable archive contents, revoked downloads, selection preservation,
+  retained nodes and image/diagram inspection. The preview keeps external links
+  non-interactive without removing exported link targets. Final evidence is in
+  `test-results/document-export-{chromium,firefox,webkit}-final`.
+- Four companion Chromium regressions pass for table collaboration/undo, LaTeX
+  typography/Read/HTML fonts and legacy preference compatibility/offline outbox
+  preservation (`test-results/document-export-chromium`). Two stale test assertions
+  now use the current appearance schema constant rather than hard-coded 4/5.
+- A real two-page Chromium PDF was rasterized with PDF.js, checked for selectable
+  text and visually inspected. Fresh export/read screenshots are in the
+  [export guide](DOCUMENT_EXPORT.md). These are disposable fixture documents.
+
+Working research data and port 8080 were not changed. No commit, push or deployment
+was performed. Native print dialogs, physical printers, additional accessibility
+devices and comprehensive international-font coverage remain manual acceptance
+boundaries. PDF is browser printing, not a server conversion service; DOCX/LaTeX
+conversion is not included.
 
 ## September 21 documentation and demonstration refresh
 

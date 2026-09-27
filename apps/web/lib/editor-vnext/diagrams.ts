@@ -43,9 +43,11 @@ export function renderDiagram(
           "themeCSS",
           "themeVariables",
           "flowchart",
+          "htmlLabels",
           "fontFamily",
         ],
         flowchart: { htmlLabels: false },
+        htmlLabels: false,
         theme: "base",
         themeVariables: {
           background: colors[0],

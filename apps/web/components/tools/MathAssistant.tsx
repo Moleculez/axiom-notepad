@@ -60,9 +60,9 @@ export default function MathAssistant({
       !jobs.data?.some((j) => j.status === "queued" || j.status === "running")
     )
       return;
-    const timer = setInterval(jobs.reload, 2000);
+    const timer = setInterval(jobs.revalidate, 2000);
     return () => clearInterval(timer);
-  }, [jobs.data, jobs.reload]);
+  }, [jobs.data, jobs.revalidate]);
   const load = async (file: File) => {
     setError("");
     setCrop(null);

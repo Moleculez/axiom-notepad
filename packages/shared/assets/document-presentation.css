@@ -1,0 +1,77 @@
+/* Shared reading/export block treatment. App chrome never enters this surface. */
+.document-presentation :is(p, li, td, th) {
+  overflow-wrap: anywhere;
+}
+.document-presentation :is(h1, h2, h3, h4, h5, h6) {
+  break-after: avoid;
+  scroll-margin-top: 1.5rem;
+}
+.document-presentation :is(p, li) {
+  orphans: 3;
+  widows: 3;
+}
+.document-presentation img {
+  max-width: 100%;
+  height: auto;
+}
+.document-presentation pre {
+  background: var(--code, #f3f3f0);
+  color: var(--code-text, #30322f);
+}
+.document-presentation .table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+}
+.document-presentation table {
+  border-collapse: collapse;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+.document-presentation th {
+  text-align: start;
+}
+.document-presentation blockquote {
+  border-inline-start-color: var(--line, #cccec7);
+}
+.document-presentation a {
+  color: var(--accent, #335a70);
+  text-underline-offset: 0.18em;
+}
+.document-presentation .diagram-preview svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin-inline: auto;
+}
+.document-presentation .export-missing-image {
+  padding: 1em;
+  border: 1px dashed var(--line, #cccec7);
+  color: var(--muted, #59615c);
+  font-size: 0.85em;
+}
+@media print {
+  .document-presentation pre {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  .document-presentation pre code {
+    white-space: inherit;
+  }
+  .document-presentation :is(.table-scroll, .math-block, mjx-container) {
+    overflow: visible;
+  }
+  .document-presentation :is(img, .diagram-preview, .math-block) {
+    break-inside: avoid;
+  }
+  .document-presentation table {
+    break-inside: auto;
+  }
+  .document-presentation thead {
+    display: table-header-group;
+  }
+  .document-presentation tr {
+    break-inside: avoid;
+  }
+  .document-presentation a {
+    color: inherit;
+  }
+}

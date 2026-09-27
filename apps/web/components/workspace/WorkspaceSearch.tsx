@@ -3,6 +3,7 @@ import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import {
   ArrowUpRight,
   Command,
+  Download,
   FileSearch,
   History,
   Search,
@@ -136,6 +137,19 @@ export default function WorkspaceSearch({ onClose }: { onClose: () => void }) {
         kind: "Open",
         icon: <FileSearch size={18} />,
         action: () => openAssistant(),
+      });
+    if (
+      (!term || /export|print|pdf|html|markdown/i.test(term)) &&
+      typeof document !== "undefined" &&
+      document.querySelector(".ws-document")
+    )
+      groups.at(-1)!.entries.unshift({
+        id: "command:export-document",
+        title: "Export document",
+        detail: "HTML, Print / Save PDF, Markdown and assets",
+        kind: "Open",
+        icon: <Download size={18} />,
+        action: () => window.dispatchEvent(new Event("axiom:export-document")),
       });
   }
   if (endpoint && !pending && !data.error)

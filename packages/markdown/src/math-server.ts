@@ -5,6 +5,14 @@ import { pathToFileURL } from "node:url";
 import type { MathRequest, MathResult } from "./math-contract";
 
 let active = 0;
+export class MathExportLimitError extends Error {
+  constructor(
+    message: string,
+    public status: 413 | 429,
+  ) {
+    super(message);
+  }
+}
 const unavailable = (message: string): MathResult => ({
   html: '<span class="math-error">Equation preview unavailable. Refer to the preserved TeX source.</span>',
   css: "",
@@ -17,10 +25,14 @@ export async function renderMathBatch(
 ): Promise<MathResult[]> {
   if (!requests.length) return [];
   if (requests.length > 500)
-    throw new Error("Export up to 500 distinct equations per document.");
+    throw new MathExportLimitError(
+      "Export up to 500 distinct equations per document.",
+      413,
+    );
   if (active >= 2)
-    throw new Error(
+    throw new MathExportLimitError(
       "Two equation exports are already running. Please retry shortly.",
+      429,
     );
   active++;
   try {

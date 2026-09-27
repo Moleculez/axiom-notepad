@@ -5,10 +5,41 @@ import {
   clearSharedRequests,
   sharedRequest,
 } from "../apps/web/lib/shared-request";
+import { workspaceActivity } from "../apps/web/lib/workspace-activity";
 
 afterEach(() => {
   clearSharedRequests();
   api.mockReset();
+  workspaceActivity.reset();
+  vi.useRealTimers();
+});
+
+test("slow background refreshes never show global progress", async () => {
+  vi.useFakeTimers();
+  api.mockReturnValue(new Promise(() => {}));
+  const request = sharedRequest("alice", "spaces", 1, 0, false);
+  vi.advanceTimersByTime(30000);
+  expect(workspaceActivity.getSnapshot()).toBe("idle");
+  request.release();
+  await Promise.resolve();
+  expect(workspaceActivity.getSnapshot()).toBe("idle");
+});
+
+test("foreground navigation can join a background request without inheriting its lifetime", async () => {
+  vi.useFakeTimers();
+  api.mockReturnValue(new Promise(() => {}));
+  const poll = sharedRequest("alice", "spaces", 0, 0, false);
+  const navigation = sharedRequest("alice", "spaces");
+  expect(poll.promise).toBe(navigation.promise);
+  vi.advanceTimersByTime(500);
+  expect(workspaceActivity.getSnapshot()).toBe("loading");
+  navigation.release();
+  vi.advanceTimersByTime(1000);
+  expect(workspaceActivity.getSnapshot()).toBe("idle");
+  expect(api.mock.calls[0][1].signal.aborted).toBe(false);
+  poll.release();
+  await Promise.resolve();
+  expect(api.mock.calls[0][1].signal.aborted).toBe(true);
 });
 
 test("concurrent readers share a request without aborting another reader", async () => {

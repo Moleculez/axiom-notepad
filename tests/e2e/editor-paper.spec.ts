@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import { fixture, origin, caret } from "./native-editor-helpers";
+import { APPEARANCE_SCHEMA } from "../../packages/shared/src/appearance";
 
 test.beforeAll(() => {
   if (
@@ -212,7 +213,9 @@ test("legacy appearance clients cannot overwrite new fonts or lose their setting
     const current = await (
       await f.member.request.get("/api/v1/me/preferences-bundle")
     ).json();
-    expect(current.appearance.preferences.schemaVersion).toBe(5);
+    expect(current.appearance.preferences.schemaVersion).toBe(
+      APPEARANCE_SCHEMA,
+    );
     expect(current.editor.preferences.schemaVersion).toBe(2);
     const saved = await f.member.request.patch(
       "/api/v1/me/preferences-bundle",
@@ -313,7 +316,7 @@ test("a pending v2 appearance outbox upgrades without discarding offline writing
           saved.editor.preferences.defaultCodeLanguage,
         ];
       })
-      .toEqual([4, 26, "julia"]);
+      .toEqual([APPEARANCE_SCHEMA, 26, "julia"]);
     expect(await f.source()).toBe("Keep this note.");
   } finally {
     await f.close();

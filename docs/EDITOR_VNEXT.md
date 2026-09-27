@@ -45,6 +45,9 @@ source and embedded editing, and the legacy engine uses the same document contra
 
 ## Retained researcher workflows
 
+- [Document export and Read mode](DOCUMENT_EXPORT.md): immutable source snapshots,
+  script-free HTML, isolated browser printing, Markdown-with-assets bundles and
+  stable reading blocks that defer disruptive updates during text selection.
 - [Version history and review](VERSION_REVIEW.md): in-file rendered/source diffs,
   guarded milestones/restores, an isolated suggestion projection over the same
   editor, assigned reviews and previous-visit comparisons. Proposal edits never

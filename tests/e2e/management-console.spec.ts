@@ -486,7 +486,7 @@ test("unified console redirects, guards drafts, renders Audit and Trash with fre
       version: folder.version,
     });
     await page
-      .getByRole("navigation", { name: "Administration" })
+      .getByRole("navigation", { name: "Quick access" })
       .getByRole("link", { name: "Trash", exact: true })
       .click();
     await page

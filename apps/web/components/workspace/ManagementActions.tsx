@@ -1,5 +1,12 @@
 "use client";
-import { createContext, useContext, useEffect, useRef, useState } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import dynamic from "next/dynamic";
 import { Folder } from "lucide-react";
 import type {
@@ -10,7 +17,11 @@ import type {
 import { shortcutLabel, shortcutPlatform } from "@axiom/shared/editor";
 import { openContextMenu, type ContextAction } from "../../lib/context-menu";
 import type { ActionIconName } from "../../lib/icons/actions";
-import { post } from "../../lib/client";
+import { api, post } from "../../lib/client";
+import {
+  FileDeletionNavigation,
+  observeFileOperation,
+} from "../../lib/file-deletion-navigation";
 import { droppedFiles } from "../../lib/folder-drop";
 import Dialog from "../Dialog";
 import NewFileDialog from "./NewFileDialog";
@@ -29,6 +40,7 @@ const ShortcutDialog = dynamic(() =>
 );
 import {
   folderColors,
+  type FileOperation,
   type FileOperationInput,
 } from "@axiom/shared/file-workflows";
 const CreateResource = dynamic(() =>
@@ -52,6 +64,7 @@ const ResourceInspector = dynamic(() =>
 import {
   bytes,
   ErrorNotice,
+  go,
   mutate,
   useAction,
   useData,
@@ -121,6 +134,7 @@ type Modal =
       command: FileOperationInput["command"];
       items: Resource[];
       target?: FolderTarget;
+      options?: SelectionOptions;
     }
   | { kind: "shortcut"; item: Resource }
   | { kind: "color"; items: Resource[] }
@@ -133,6 +147,10 @@ type Modal =
   | { kind: "lifecycle"; space: Space; action: SpaceLifecycleAction }
   | { kind: "leave"; space: Space };
 type Management = {
+  registerSecondaryView: (view: {
+    id: string;
+    close: () => void;
+  }) => () => void;
   execute: (
     command: ResourceCommand,
     items: Resource[],
@@ -199,6 +217,37 @@ export function ManagementProvider({
     useWorkspace();
   const liveSpaces = useRef(spaces);
   liveSpaces.current = spaces;
+  const deletion = useMemo(() => {
+    const guarded = (
+      destination: string,
+      current: () => boolean,
+      leave: () => void,
+    ) => {
+      const proceed = () => {
+        if (current()) leave();
+      };
+      if (
+        window.dispatchEvent(
+          new CustomEvent("axiom:before-navigate", {
+            cancelable: true,
+            detail: { destination, proceed },
+          }),
+        )
+      )
+        proceed();
+    };
+    return new FileDeletionNavigation({
+      read: api,
+      route: () => location.pathname + location.search + location.hash,
+      navigate: (destination, current) =>
+        guarded("/workbench" + destination, current, () =>
+          go(destination, true, true),
+        ),
+      close: (view, current) =>
+        guarded(location.pathname + location.search, current, view.close),
+    });
+  }, [session.user.id]);
+  useEffect(() => deletion.listen(window), [deletion]);
   const [modal, setModal] = useState<Modal | null>(null);
   const dragged = useRef<Resource[]>([]),
     hoverDrop = useRef<{
@@ -295,6 +344,7 @@ export function ManagementProvider({
               ? "move"
               : (command as FileOperationInput["command"]),
         items: items.map((r) => ({ ...r })),
+        options,
         ...(command === "duplicate"
           ? { target: { spaceId: first.space_id, parentId: first.parent_id } }
           : {}),
@@ -777,6 +827,7 @@ export function ManagementProvider({
     },
   ];
   const management: Management = {
+    registerSecondaryView: deletion.registerSecondary,
     execute,
     fileActivity: () => navigate("/audit?view=operations"),
     beginDrag: (event, items) => {
@@ -944,13 +995,35 @@ export function ManagementProvider({
           items={modal.items}
           target={modal.target}
           onClose={closed}
-          onQueued={(id) => {
+          onSubmit={async (input) => {
+            const signal = deletion.signal;
+            const afterTrash = await deletion.prepare(
+              input.command === "trash" ? modal.items : [],
+            );
+            if (signal.aborted) return;
+            const operation: FileOperation = await post(
+              "file-operations",
+              input,
+            );
+            if (signal.aborted) return;
             closed();
             notify(
-              `File operation queued. Follow progress or undo unchanged items in Audit → Operations. Reference: ${id.slice(0, 8)}.`,
+              `File operation queued. Follow progress or undo unchanged items in Audit → Operations. Reference: ${operation.id.slice(0, 8)}.`,
             );
             if (clipboard?.cut) setClipboard(null);
             refresh();
+            void observeFileOperation(operation, api, signal, async (ids) => {
+              modal.options?.completed?.(ids);
+              await afterTrash(ids);
+              if (!signal.aborted) refresh();
+            }).catch((error) => {
+              if (!signal.aborted)
+                notify(
+                  error instanceof Error
+                    ? error.message
+                    : "Could not refresh file operation progress.",
+                );
+            });
           }}
         />
       )}
@@ -1159,6 +1232,8 @@ export function ManagementProvider({
             operation={resourceModal}
             onClose={closed}
             onDone={closed}
+            prepareTrash={(items) => deletion.prepare(items)}
+            operationSignal={() => deletion.signal}
           />
         )}
       {modal?.kind === "paste" && clipboard && (
@@ -1231,10 +1306,16 @@ function BulkResourceAction({
   operation,
   onClose,
   onDone,
+  prepareTrash,
+  operationSignal,
 }: {
   operation: ResourceOperation;
   onClose: () => void;
   onDone: () => void;
+  prepareTrash: (
+    items: Resource[],
+  ) => Promise<(ids: string[]) => Promise<void>>;
+  operationSignal: () => AbortSignal;
 }) {
   const { refresh, notify } = useWorkspace();
   const [remaining, setRemaining] = useState(operation.items),
@@ -1269,15 +1350,20 @@ function BulkResourceAction({
           disabled={action.busy}
           onClick={() =>
             void action.run(async () => {
+              const signal = operationSignal();
+              const afterTrash = await prepareTrash(restoring ? [] : remaining);
+              if (signal.aborted) return;
               const done: string[] = [],
                 failed: Resource[] = [],
                 errors: string[] = [];
               for (const item of remaining)
                 try {
+                  if (signal.aborted) return;
                   await mutate(
                     `resources/${item.id}/${restoring ? "restore" : "trash"}`,
                     { version: item.version },
                   );
+                  if (signal.aborted) return;
                   done.push(item.id);
                 } catch (error) {
                   failed.push(item);
@@ -1291,6 +1377,8 @@ function BulkResourceAction({
               notify(
                 `${done.length} item${done.length === 1 ? "" : "s"} ${restoring ? "restored" : "moved to trash"}.`,
               );
+              await afterTrash(done);
+              if (signal.aborted) return;
               if (errors.length) throw new Error(errors.join(" · "));
               onDone();
             })

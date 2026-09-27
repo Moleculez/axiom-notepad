@@ -14,6 +14,44 @@ test.afterAll(async () => {
   await f?.close();
 });
 
+test("recent switcher search icon aligns with its input at standard and large type sizes", async ({}, info) => {
+  const page = f.page;
+  await page.goto("/workbench/home");
+  await page.getByRole("button", { name: "Recent work", exact: true }).click();
+  const popover = page.getByRole("region", { name: "Recent work switcher" });
+  const input = popover.getByRole("textbox", { name: "Filter recent work" });
+  await expect(input).toBeFocused();
+  for (const size of [15, 20]) {
+    await popover.evaluate((element, size) => {
+      element.style.fontSize = `${size}px`;
+    }, size);
+    const iconBox = (await popover
+      .locator(".workspace-recent-search > svg")
+      .boundingBox())!;
+    const inputBox = (await input.boundingBox())!;
+    expect(
+      Math.abs(
+        iconBox.y + iconBox.height / 2 - inputBox.y - inputBox.height / 2,
+      ),
+    ).toBeLessThan(1);
+    expect(iconBox.x + iconBox.width).toBeLessThan(inputBox.x);
+    expect(inputBox.width).toBeGreaterThan(250);
+    await expect(popover.locator(".workspace-recent-search")).toHaveCSS(
+      "flex-direction",
+      "row",
+    );
+  }
+  await input.fill("no-matching-recent-work");
+  await expect(popover.locator(".workspace-recent-row")).toHaveCount(0);
+  await input.fill("");
+  await page.screenshot({
+    path: info.outputPath("recent-search-aligned.png"),
+    animations: "disabled",
+  });
+  await page.keyboard.press("Escape");
+  await expect(popover).toBeHidden();
+});
+
 test("single toolbar, global history, pinned recent work and commands", async ({}, info) => {
   const page = f.page,
     errors: string[] = [];

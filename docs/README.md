@@ -10,6 +10,7 @@ not installation instructions or proof of today's test results.
 - [Workspace guide](WORKSPACE.md) — navigation, sharing, files and everyday limits
 - [Workspace planning](WORKSPACE_PLANNING.md) — tasks, Gantt, baselines, critical paths, group portfolios and capacity
 - [Editor and shortcuts](EDITOR.md) — visual/source editing and research blocks
+- [Document export and Read mode](DOCUMENT_EXPORT.md) — styled snapshots, portable HTML/PDF, Markdown bundles and focused reading
 - [Version history and review](VERSION_REVIEW.md) — comparisons, suggestions, milestones, assigned reviews and cloud drafts
 - [Workspace research assistant](WORKSPACE_ASSISTANT.md) — selected group-workspace evidence, Office/Canvas/planning context, reviewed suggestions and schedule changes
 - [Reading and references](READING.md) — paper reading, bibliography and appearance

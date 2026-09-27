@@ -2,6 +2,10 @@ import { test, expect, type APIRequestContext } from "@playwright/test";
 import { fixture, origin } from "./native-editor-helpers";
 import type { Space } from "@axiom/shared/workspace";
 
+test.beforeAll(() => {
+  if (origin !== "http://localhost:3004")
+    throw new Error("Sidebar acceptance requires isolated staging on 3004.");
+});
 async function create(request: APIRequestContext, path: string, data: unknown) {
   const response = await request.post("/api/v1/" + path, {
     headers: { origin },
@@ -10,85 +14,116 @@ async function create(request: APIRequestContext, path: string, data: unknown) {
   expect(response.ok(), await response.text()).toBeTruthy();
   return response.json();
 }
+async function team(f: Awaited<ReturnType<typeof fixture>>) {
+  const spaces: Space[] = await (
+    await f.member.request.get("/api/v1/spaces")
+  ).json();
+  return spaces.find((s) => s.group_id === f.group.id && s.kind === "team")!;
+}
 
-test("background refresh keeps empty branches, focus and sidebar geometry stable", async ({
+test("directory navigation replaces levels, supports breadcrumbs and keeps file menus", async ({
   browser,
 }) => {
-  const f = await fixture(browser, "Sidebar refresh fixture.");
-  let release = () => {};
+  const f = await fixture(browser, "# Unchanged research\n\nOriginal source.");
   try {
-    const spaces: Space[] = await (
-      await f.member.request.get("/api/v1/spaces")
-    ).json();
-    const space = spaces.find(
-      (s) => s.group_id === f.group.id && s.kind === "team",
-    )!;
+    const space = await team(f),
+      page = f.page;
     const folder = await create(f.member.request, "resources", {
       spaceId: space.id,
       kind: "folder",
-      name: "Empty experiments",
+      name: "Experiments",
     });
-    await f.page.clock.install();
-    await f.page.goto(
-      `/workbench/workspaces/${space.id}/files?folder=${folder.id}`,
+    const nested = await create(f.member.request, "resources", {
+      spaceId: space.id,
+      parentId: folder.id,
+      kind: "folder",
+      name: "Run one",
+    });
+    const note = await create(f.member.request, "resources", {
+      spaceId: space.id,
+      parentId: nested.id,
+      kind: "note",
+      name: "Observations",
+    });
+    await page.goto("/workbench/workspaces");
+    const sidebar = page.locator(".ws-sidebar"),
+      list = sidebar.locator(".sidebar-directory-list");
+    await expect(
+      sidebar.getByRole("navigation", { name: "Administration" }),
+    ).toHaveCount(0);
+    await expect(
+      sidebar
+        .getByRole("navigation", { name: "Quick access" })
+        .getByRole("link", { name: "Trash", exact: true }),
+    ).toBeVisible();
+    await expect(
+      sidebar
+        .getByRole("navigation", { name: "Quick access" })
+        .getByRole("link", { name: "Audit", exact: true }),
+    ).toBeVisible();
+    const workspaceLink = list.locator(
+      `a[href="/workbench/workspaces/${space.id}/files"]`,
     );
-    const sidebar = f.page.locator(".ws-sidebar");
-    const row = sidebar.locator(`[data-tree-resource="${folder.id}"]`);
-    const empty = row.locator("..").getByText("No items yet", { exact: true });
-    await expect(empty).toBeVisible();
-    const original = await empty.elementHandle();
+    await expect(workspaceLink).toBeVisible();
+    await workspaceLink.click();
+    await expect(
+      list.getByRole("link", { name: "Experiments", exact: true }),
+    ).toBeVisible();
+    await expect(workspaceLink).toHaveCount(0);
+    await list.getByRole("link", { name: "Experiments", exact: true }).click();
+    await expect(
+      list.getByRole("link", { name: "Experiments", exact: true }),
+    ).toHaveCount(0);
+    await list.getByRole("link", { name: "Run one", exact: true }).click();
+    const row = list.locator(`[data-directory-resource="${note.id}"]`);
+    await expect(row).toBeVisible();
+    await expect(list.locator("ul")).toHaveCount(0);
     await row.focus();
-    const before = await sidebar.locator(".ws-administration").boundingBox();
-    const endpoint = `/api/v1/resources?spaceId=${space.id}&limit=40&parentId=${folder.id}`;
-    const listing = await (await f.member.request.get(endpoint)).json();
-    const held = new Promise<void>((resolve) => {
-      release = resolve;
-    });
-    await f.page.route("**" + endpoint, async (route) => {
-      await held;
-      await route.fulfill({ json: listing });
-    });
-    // Exercise the real 15-second recovery timer as well as focus/sync refreshes.
-    const request = f.page.waitForRequest((r) => r.url().endsWith(endpoint));
-    await f.page.clock.fastForward(15000);
-    await request;
-    expect(await original!.evaluate((node) => node.isConnected)).toBe(true);
+    await page.keyboard.press("Shift+F10");
+    await expect(
+      page.getByRole("menuitem", { name: "Open", exact: true }),
+    ).toBeVisible();
+    await page.keyboard.press("Escape");
     await expect(row).toBeFocused();
-    expect((await sidebar.locator(".ws-administration").boundingBox())!.y).toBe(
-      before!.y,
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(new RegExp(`/notes/${note.id}$`));
+    await expect(row).toHaveClass(/active/);
+    await expect(page.locator(".ws-document-status")).toContainText(
+      "Saved on server",
     );
-    await expect(sidebar.getByText("Loading…", { exact: true })).toHaveCount(0);
-    release();
-    await f.page.unrouteAll({ behavior: "wait" });
-    for (const event of ["focus", "axiom:workspace-refresh"]) {
-      const response = f.page.waitForResponse((r) =>
-        r.url().endsWith(endpoint),
-      );
-      await f.page.evaluate(
-        (name) => window.dispatchEvent(new Event(name)),
-        event,
-      );
-      await response;
-      expect(await original!.evaluate((node) => node.isConnected)).toBe(true);
-      await expect(row).toBeFocused();
-    }
+    const path = sidebar.getByRole("navigation", {
+      name: "Sidebar directory path",
+    });
+    await expect(path).toContainText("Run one");
+    await sidebar.getByRole("button", { name: "Up one level" }).click();
+    await expect(page).toHaveURL(new RegExp(`folder=${folder.id}$`));
+    await expect(
+      list.getByRole("link", { name: "Run one", exact: true }),
+    ).toBeVisible();
+    await page.goBack();
+    await expect(row).toBeVisible();
+    await page.screenshot({
+      path: test.info().outputPath("sidebar-directory-light.png"),
+      animations: "disabled",
+    });
+    await path
+      .getByRole("link", { name: "All workspaces", exact: true })
+      .click();
+    await expect(workspaceLink).toBeVisible();
+    expect(await f.source()).toBe("# Unchanged research\n\nOriginal source.");
   } finally {
-    release();
     await f.close();
   }
 });
 
-test("temporary refresh failures retain expanded rows while denied access clears them", async ({
+test("background recovery stays quiet and retains rows until authoritative access denial", async ({
   browser,
 }) => {
-  const f = await fixture(browser, "Sidebar failure fixture.");
+  const f = await fixture(browser, "Refresh fixture.");
+  let release = () => {};
   try {
-    const spaces: Space[] = await (
-      await f.member.request.get("/api/v1/spaces")
-    ).json();
-    const space = spaces.find(
-      (s) => s.group_id === f.group.id && s.kind === "team",
-    )!;
+    const space = await team(f),
+      page = f.page;
     const folder = await create(f.member.request, "resources", {
       spaceId: space.id,
       kind: "folder",
@@ -100,199 +135,119 @@ test("temporary refresh failures retain expanded rows while denied access clears
       kind: "note",
       name: "Retained observation",
     });
-    await f.page.goto(
+    await page.goto(
       `/workbench/workspaces/${space.id}/files?folder=${folder.id}`,
     );
-    const tree = f.page.locator(".ws-tree");
-    const row = tree.locator(`[data-tree-resource="${child.id}"]`);
+    const sidebar = page.locator(".ws-sidebar"),
+      row = sidebar.locator(`[data-directory-resource="${child.id}"]`);
     await expect(row).toBeVisible();
     await row.focus();
     const original = await row.elementHandle();
-    const endpoint = `/api/v1/resources?spaceId=${space.id}&limit=40`;
-    let status = 503;
-    await f.page.route("**" + endpoint, (route) =>
-      route.fulfill({
+    const endpoint = `/api/v1/resources?spaceId=${space.id}&limit=40&parentId=${folder.id}`;
+    const listing = await (await f.member.request.get(endpoint)).json();
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let status = 200;
+    await page.route("**" + endpoint, async (route) => {
+      await held;
+      await route.fulfill({
         status,
-        json: { error: "Listing unavailable" },
-      }),
-    );
-    await f.page.evaluate(() =>
+        json: status === 200 ? listing : { error: "Listing unavailable" },
+      });
+    });
+    const bar = page.getByRole("progressbar", { name: "Workspace loading" });
+    await expect(bar).toBeHidden();
+    const request = page.waitForRequest((r) => r.url().endsWith(endpoint));
+    await page.evaluate(() =>
       window.dispatchEvent(new Event("axiom:workspace-refresh")),
     );
-    const retry = tree.getByRole("button", {
+    await request;
+    await page.waitForTimeout(600);
+    await expect(bar).toBeHidden();
+    expect(await original!.evaluate((node) => node.isConnected)).toBe(true);
+    await expect(row).toBeFocused();
+    status = 503;
+    release();
+    const retry = sidebar.getByRole("button", {
       name: "Could not refresh items. Retry",
+      exact: true,
     });
     await expect(retry).toBeVisible();
     expect(await original!.evaluate((node) => node.isConnected)).toBe(true);
-    await expect(row).toBeFocused();
-    await expect(
-      tree.getByRole("button", {
-        name: "Collapse Retained experiments",
-        exact: true,
-      }),
-    ).toHaveAttribute("aria-expanded", "true");
-    const added = await create(f.member.request, "resources", {
-      spaceId: space.id,
-      kind: "folder",
-      name: "Created during outage",
-    });
-    await f.page.unroute("**" + endpoint);
+    status = 200;
     await retry.click();
     await expect(retry).toHaveCount(0);
-    expect(await original!.evaluate((node) => node.isConnected)).toBe(true);
-    await expect(
-      tree.locator(`[data-tree-resource="${added.id}"]`),
-    ).toBeVisible();
-    // An authoritative access/deletion response must still remove stale content.
     status = 404;
-    await f.page.route("**" + endpoint, (route) =>
-      route.fulfill({
-        status,
-        json: { error: "Not found" },
-      }),
-    );
-    await f.page.evaluate(() =>
+    await page.evaluate(() =>
       window.dispatchEvent(new Event("axiom:workspace-refresh")),
     );
     await expect(
-      tree.getByRole("button", { name: "Could not load items. Retry" }),
+      sidebar.getByRole("button", {
+        name: "Could not load items. Retry",
+        exact: true,
+      }),
     ).toBeVisible();
     await expect(row).toHaveCount(0);
   } finally {
+    release();
     await f.close();
   }
 });
 
-test("clicking the selected workspace name reopens its tree and shows notes", async ({
+test("directory filter is literal and folder-scoped, pagination and attached files remain reachable", async ({
   browser,
 }) => {
-  const f = await fixture(browser, "Sidebar source stays unchanged.");
+  const f = await fixture(browser, "Directory filter fixture.");
   try {
-    const spaces: Space[] = await (
-      await f.member.request.get("/api/v1/spaces")
-    ).json();
-    const space = spaces.find(
-      (s) => s.kind === "team" && s.group_id === f.group.id,
-    )!;
-    await f.page.goto(`/workbench/explorer?space=${space.id}`);
-    const tree = f.page.locator(".ws-tree");
-    await tree
-      .getByRole("button", { name: `Collapse ${space.name}`, exact: true })
-      .click();
-    await tree.getByRole("link", { name: space.name, exact: true }).click();
-    await expect(
-      tree.getByRole("button", { name: `Collapse ${space.name}`, exact: true }),
-    ).toHaveAttribute("aria-expanded", "true");
-    await tree
-      .getByRole("button", { name: "Native editor study", exact: true })
-      .click();
-    await expect(f.page).toHaveURL(new RegExp(`/notes/${f.note.id}$`));
-    await expect(f.page.getByTestId("note-editor")).toContainText(
-      "Sidebar source stays unchanged.",
-    );
-    await expect(
-      tree.getByRole("button", { name: "Native editor study", exact: true }),
-    ).toBeVisible();
-    expect(await f.source()).toBe("Sidebar source stays unchanged.");
-  } finally {
-    await f.close();
-  }
-});
-
-test("nested folder label clicks expand children while chevrons and keyboard navigation remain independent", async ({
-  browser,
-}) => {
-  const f = await fixture(browser, "Unchanged root note.");
-  try {
-    const spaces: Space[] = await (
-      await f.member.request.get("/api/v1/spaces")
-    ).json();
-    const space = spaces.find(
-      (s) => s.kind === "team" && s.group_id === f.group.id,
-    )!;
-    const parent = await create(f.member.request, "resources", {
+    const space = await team(f),
+      page = f.page;
+    const folder = await create(f.member.request, "resources", {
       spaceId: space.id,
       kind: "folder",
       name: "Experiments",
     });
-    const child = await create(f.member.request, "resources", {
+    await create(f.member.request, "resources", {
       spaceId: space.id,
-      parentId: parent.id,
-      kind: "folder",
-      name: "Run one",
-    });
-    const note = await create(f.member.request, "resources", {
-      spaceId: space.id,
-      parentId: child.id,
+      parentId: folder.id,
       kind: "note",
-      name: "Observations",
+      name: "Needle nested",
     });
-    await f.page.goto(`/workbench/explorer?space=${space.id}`);
-    const tree = f.page.locator(".ws-tree");
-    await tree.getByRole("link", { name: "Experiments", exact: true }).click();
-    await expect(f.page).toHaveURL(new RegExp(`folder=${parent.id}$`));
-    await expect(
-      tree.getByRole("link", { name: "Run one", exact: true }),
-    ).toBeVisible();
-    await tree.getByRole("link", { name: "Run one", exact: true }).click();
-    await expect(
-      tree.getByRole("button", { name: "Observations", exact: true }),
-    ).toBeVisible();
-    await tree
-      .getByRole("button", { name: "Collapse Run one", exact: true })
-      .click();
-    await expect(
-      tree.getByRole("button", { name: "Observations", exact: true }),
-    ).toHaveCount(0);
-    await expect(f.page).toHaveURL(new RegExp(`folder=${child.id}$`));
-    // Reopening the already-selected location must not rely on a URL change.
-    await tree.getByRole("link", { name: "Run one", exact: true }).click();
-    const row = tree.locator(".ws-tree-row").filter({
-      has: f.page.getByRole("link", { name: "Run one", exact: true }),
+    const matched = await create(f.member.request, "resources", {
+      spaceId: space.id,
+      kind: "note",
+      name: "Needle 100%",
     });
-    await row.focus();
-    await f.page.keyboard.press("ArrowLeft");
-    await expect(
-      tree.getByRole("button", { name: "Observations", exact: true }),
-    ).toHaveCount(0);
-    await f.page.keyboard.press("ArrowRight");
-    await expect(
-      tree.getByRole("button", { name: "Observations", exact: true }),
-    ).toBeVisible();
-    await f.page.keyboard.press("ArrowRight");
-    const noteRow = tree.locator(".ws-tree-row").filter({
-      has: f.page.getByRole("button", { name: "Observations", exact: true }),
+    // Pagination is checked with a second authorized result page, not a generated tree.
+    for (let i = 0; i < 40; i++)
+      await create(f.member.request, "resources", {
+        spaceId: space.id,
+        kind: "folder",
+        name: `Run ${String(i).padStart(2, "0")}`,
+      });
+    await page.goto(`/workbench/workspaces/${space.id}/files`);
+    const sidebar = page.locator(".ws-sidebar");
+    await sidebar.getByRole("button", { name: "Next files" }).click();
+    await expect(sidebar.getByText("Page 2", { exact: true })).toBeVisible();
+    const filter = sidebar.getByRole("textbox", {
+      name: "Filter files in this folder",
     });
-    await expect(noteRow).toBeFocused();
-    await f.page.keyboard.press("Shift+F10");
+    await filter.fill("Needle");
+    await expect(sidebar.locator(".sidebar-directory-row")).toHaveCount(1);
     await expect(
-      f.page.getByRole("menuitem", { name: "Open", exact: true }),
+      sidebar.locator(`[data-directory-resource="${matched.id}"]`),
     ).toBeVisible();
-    await f.page.keyboard.press("Escape");
-    await expect(noteRow).toBeFocused();
-    await f.page.keyboard.press("Enter");
-    await expect(f.page).toHaveURL(new RegExp(`/notes/${note.note_id}$`));
-    await expect(f.page.getByLabel("Note title", { exact: true })).toHaveValue(
-      "Observations",
-    );
-    expect(await f.source()).toBe("Unchanged root note.");
-  } finally {
-    await f.close();
-  }
-});
-
-test("workspace branches show uploaded files, empty projects and retryable load errors", async ({
-  browser,
-}) => {
-  const f = await fixture(browser, "Files are listed without rewriting notes.");
-  try {
-    const spaces: Space[] = await (
-      await f.member.request.get("/api/v1/spaces")
-    ).json();
-    const space = spaces.find(
-      (s) => s.kind === "team" && s.group_id === f.group.id,
-    )!;
-    const response = await f.member.request.post(
+    await filter.fill("%");
+    await expect(sidebar.locator(".sidebar-directory-row")).toHaveCount(1);
+    await filter.press("Escape");
+    await expect(
+      sidebar.getByRole("link", { name: "Experiments", exact: true }),
+    ).toBeVisible();
+    await filter.press("ArrowDown");
+    await expect(
+      sidebar.locator(".sidebar-directory-row").first(),
+    ).toBeFocused();
+    const uploaded = await f.member.request.post(
       `/api/v1/notes/${f.note.id}/attachments`,
       {
         headers: { origin },
@@ -305,82 +260,175 @@ test("workspace branches show uploaded files, empty projects and retryable load 
         },
       },
     );
-    expect(response.ok(), await response.text()).toBeTruthy();
-    const version = await response.json();
-    const listing = await (
-      await f.member.request.get(
-        `/api/v1/resources?spaceId=${space.id}&parentId=${f.note.id}`,
-      )
-    ).json();
-    const file = listing.items.find(
-      (item: any) => item.current_version_id === version.id,
+    expect(uploaded.ok()).toBeTruthy();
+    await page.evaluate(() =>
+      window.dispatchEvent(new Event("axiom:workspace-refresh")),
     );
-    expect(file).toBeTruthy();
-    const project = await create(f.owner.request, "projects", {
-      groupId: f.group.id,
-      name: "Empty research project",
-      audience: "group",
-    });
-    const updatedSpaces: Space[] = await (
-      await f.member.request.get("/api/v1/spaces")
-    ).json();
-    const projectSpace = updatedSpaces.find(
-      (s) => s.project_id === project.id,
-    )!;
-    await f.page.goto(`/workbench/explorer?space=${space.id}`);
-    const tree = f.page.locator(".ws-tree");
-    await tree
-      .getByRole("button", { name: "Expand Native editor study", exact: true })
-      .click();
-    await expect(f.page).toHaveURL(new RegExp(`space=${space.id}$`));
-    await tree
-      .getByRole("button", { name: "measurements.txt", exact: true })
-      .click();
-    await expect(f.page).toHaveURL(new RegExp(`/files/${file.id}$`));
-    await expect(
-      f.page.getByRole("heading", { name: "measurements.txt", exact: true }),
-    ).toBeVisible();
-    await tree
-      .getByRole("link", { name: projectSpace.name, exact: true })
-      .click();
-    const branch = tree
-      .getByRole("link", { name: projectSpace.name, exact: true })
-      .locator("..")
-      .locator("..");
-    await expect(
-      branch.getByText("No items yet", { exact: true }),
-    ).toBeVisible();
-    await tree
-      .getByRole("button", {
-        name: `Collapse ${projectSpace.name}`,
+    await sidebar
+      .getByRole("link", {
+        name: "Browse contents of Native editor study",
         exact: true,
       })
       .click();
-    await f.member.route(
-      `**/api/v1/resources?spaceId=${projectSpace.id}&limit=40`,
-      (route) =>
-        route.fulfill({
-          status: 503,
-          contentType: "application/json",
-          body: JSON.stringify({ error: "Temporary listing outage" }),
-        }),
-    );
-    await tree
-      .getByRole("link", { name: projectSpace.name, exact: true })
+    await expect(
+      sidebar.getByRole("button", { name: "measurements.txt", exact: true }),
+    ).toBeVisible();
+    await sidebar
+      .getByRole("button", { name: "measurements.txt", exact: true })
       .click();
     await expect(
-      branch.getByRole("button", { name: "Could not load items. Retry" }),
+      page.getByRole("heading", { name: "measurements.txt", exact: true }),
     ).toBeVisible();
-    await f.member.unroute(
-      `**/api/v1/resources?spaceId=${projectSpace.id}&limit=40`,
+    expect(await f.source()).toBe("Directory filter fixture.");
+  } finally {
+    await f.close();
+  }
+});
+
+test("both panel widths support drag, keyboard, cancel, reset and reload without altering the note", async ({
+  browser,
+}) => {
+  const source =
+    "# Resizable research\n\n## Evidence\n\n" +
+    "Reading material.\n\n".repeat(45);
+  const f = await fixture(browser, source);
+  try {
+    const page = f.page;
+    const sidebar = page.locator(".ws-sidebar"),
+      context = page.locator(".ws-document-context");
+    const left = page.getByRole("separator", {
+        name: "Resize workspace navigation",
+      }),
+      right = page.getByRole("separator", { name: "Resize document context" });
+    await expect(left).toBeVisible();
+    await expect(right).toBeVisible();
+    const original = (await sidebar.boundingBox())!.width;
+    let box = (await left.boundingBox())!;
+    await page.mouse.move(box.x + box.width / 2, box.y + 100);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width / 2 + 70, box.y + 100, {
+      steps: 8,
+    });
+    await page.mouse.up();
+    await expect
+      .poll(async () => (await sidebar.boundingBox())!.width)
+      .toBe(original + 70);
+    const initialContext = (await context.boundingBox())!.width;
+    await right.focus();
+    await page.keyboard.press("ArrowLeft");
+    await expect
+      .poll(async () => (await context.boundingBox())!.width)
+      .toBe(initialContext + 10);
+    box = (await right.boundingBox())!;
+    await page.mouse.move(box.x + 3, box.y + 100);
+    await page.mouse.down();
+    await page.mouse.move(box.x - 45, box.y + 100);
+    await page.keyboard.press("Escape");
+    await page.mouse.up();
+    await expect
+      .poll(async () => (await context.boundingBox())!.width)
+      .toBe(initialContext + 10);
+    await expect(page.locator("html")).not.toHaveClass(
+      /resizing-workspace-panel/,
     );
-    await branch
-      .getByRole("button", { name: "Could not load items. Retry" })
+    await page.reload();
+    await expect
+      .poll(async () => (await sidebar.boundingBox())?.width)
+      .toBe(original + 70);
+    await expect
+      .poll(async () => (await context.boundingBox())?.width)
+      .toBe(initialContext + 10);
+    await page.emulateMedia({ colorScheme: "dark" });
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+    await expect(page.locator(".ws-document-status")).toContainText(
+      "Saved on server",
+    );
+    await page.screenshot({
+      path: test.info().outputPath("sidebar-resizers-dark.png"),
+      animations: "disabled",
+    });
+    await left.dblclick();
+    await right.focus();
+    await page.keyboard.press("Enter");
+    await expect
+      .poll(async () => (await sidebar.boundingBox())!.width)
+      .toBe(248);
+    await expect
+      .poll(async () => (await context.boundingBox())!.width)
+      .toBe(270);
+    expect(await f.source()).toBe(source);
+  } finally {
+    await f.close();
+  }
+});
+
+test("directory rows preserve workspace actions, blank-space creation and file drops", async ({
+  browser,
+}) => {
+  const f = await fixture(browser, "Drag fixture remains unchanged.");
+  try {
+    const page = f.page,
+      space = await team(f);
+    const folder = await create(f.member.request, "resources", {
+      spaceId: space.id,
+      kind: "folder",
+      name: "Drop destination",
+    });
+    const note = await create(f.member.request, "resources", {
+      spaceId: space.id,
+      kind: "note",
+      name: "Move this observation",
+    });
+    await page.goto("/workbench/workspaces");
+    const sidebar = page.locator(".ws-sidebar");
+    await sidebar
+      .getByRole("button", {
+        name: `Workspace actions for ${space.name}`,
+        exact: true,
+      })
       .click();
     await expect(
-      branch.getByText("No items yet", { exact: true }),
+      page.getByRole("menuitem", { name: "Manage workspace", exact: true }),
     ).toBeVisible();
-    expect(await f.source()).toBe("Files are listed without rewriting notes.");
+    await page.keyboard.press("Escape");
+    await sidebar
+      .locator(
+        `.sidebar-directory-open[href="/workbench/workspaces/${space.id}/files"]`,
+      )
+      .click();
+    const directory = sidebar.locator(".sidebar-directory");
+    await directory
+      .locator(".sidebar-directory-heading .ws-section-label")
+      .click({ button: "right" });
+    await expect(
+      page.getByRole("menu", { name: "Explorer actions", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("menuitem", { name: /New note/ }),
+    ).toBeVisible();
+    await page.keyboard.press("Escape");
+    const source = sidebar.locator(`[data-directory-resource="${note.id}"]`),
+      target = sidebar.locator(`[data-directory-resource="${folder.id}"]`);
+    await source.dragTo(target);
+    const move = page.getByRole("dialog", { name: "Move 1 item", exact: true });
+    await expect(move).toContainText("Drop destination");
+    await move.getByRole("button", { name: "Move here", exact: true }).click();
+    await expect
+      .poll(
+        async () =>
+          (
+            await (
+              await f.member.request.get(`/api/v1/resources/${note.id}`)
+            ).json()
+          ).parent_id,
+      )
+      .toBe(folder.id);
+    await expect(source).toHaveCount(0);
+    await target
+      .getByRole("link", { name: "Drop destination", exact: true })
+      .click();
+    await expect(source).toBeVisible();
+    expect(await f.source()).toBe("Drag fixture remains unchanged.");
   } finally {
     await f.close();
   }

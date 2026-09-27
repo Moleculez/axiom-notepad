@@ -153,13 +153,13 @@ export function FileOperationDialog({
   items,
   target,
   onClose,
-  onQueued,
+  onSubmit,
 }: {
   command: FileOperationInput["command"];
   items: Resource[];
   target?: FolderTarget;
   onClose: () => void;
-  onQueued: (id: string) => void;
+  onSubmit: (input: FileOperationInput) => Promise<void>;
 }) {
   const { spaces } = useWorkspace(),
     action = useAction();
@@ -332,11 +332,10 @@ export function FileOperationDialog({
               const value = JSON.stringify(input);
               if (value !== identity.current.value)
                 identity.current = { value, id: crypto.randomUUID() };
-              const result = await post("file-operations", {
+              await onSubmit({
                 ...input,
                 id: identity.current.id,
               });
-              onQueued(result.id);
             })
           }
         >

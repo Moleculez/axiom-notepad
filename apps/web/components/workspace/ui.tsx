@@ -166,11 +166,24 @@ export function useData<T = any>(path: string | null, revision = 0) {
     path: string | null;
     account: string;
   }>({ data: null, error: "", loading: !!path, path, account });
-  const [retry, setRetry] = useState(0);
-  const reload = useCallback(() => setRetry((v) => v + 1), []);
+  const [retry, setRetry] = useState({ id: 0, foreground: false });
+  const reload = useCallback(
+    () => setRetry((v) => ({ id: v.id + 1, foreground: true })),
+    [],
+  );
+  const revalidate = useCallback(
+    () => setRetry((v) => ({ id: v.id + 1, foreground: false })),
+    [],
+  );
+  const previousRequest = useRef({
+    account: "",
+    path: null as string | null,
+    retry: -1,
+  });
   useEffect(() => {
     const controller = new AbortController();
     if (!path) {
+      previousRequest.current = { account, path, retry: retry.id };
       setState({ data: null, error: "", loading: false, path, account });
       return;
     }
@@ -187,7 +200,19 @@ export function useData<T = any>(path: string | null, revision = 0) {
       path,
       account,
     }));
-    const request = sharedRequest<T>(account, path, revision, retry);
+    const previous = previousRequest.current;
+    const foreground =
+      previous.account !== account ||
+      previous.path !== path ||
+      (previous.retry !== retry.id && retry.foreground);
+    previousRequest.current = { account, path, retry: retry.id };
+    const request = sharedRequest<T>(
+      account,
+      path,
+      revision,
+      retry.id,
+      foreground,
+    );
     void request.promise
       .then((data) => {
         if (!controller.signal.aborted)
@@ -227,6 +252,7 @@ export function useData<T = any>(path: string | null, revision = 0) {
     loading: current ? state.loading : !!path,
     path,
     reload,
+    revalidate,
   };
 }
 export function useAction() {

@@ -74,7 +74,7 @@ test("legacy studio links open typed file views with hierarchy, sharing, and no 
     const crumbs = f.page.getByRole("navigation", { name: "Location" });
     await expect(crumbs).toContainText("File-first experiments");
     await expect(
-      f.page.locator(`[data-tree-resource="${file.id}"]`),
+      f.page.locator(`[data-directory-resource="${file.id}"]`),
     ).toHaveClass(/active/);
   }
   expect(requests.filter((path) => path === "/api/v1/tools")).toEqual([]);
@@ -88,8 +88,9 @@ test("creation menus offer peer file types and replace legacy creation pages wit
   const page = f.page;
   await page.goto(`/workbench/explorer?space=${spaceId}&folder=${folderId}`);
   await page.getByRole("button", { name: "New", exact: true }).click();
+  await expect(page.getByRole("menuitem", { name: /New note/ })).toBeVisible();
+  await page.getByRole("menuitem", { name: "Insert", exact: true }).hover();
   for (const name of [
-    /New note/,
     /New canvas/,
     /New math project/,
     /New drawing/,
@@ -133,26 +134,29 @@ test("one sidebar remains mounted across Settings and administration without los
     name: "Workspace navigation",
   });
   await expect(
-    sidebar.getByRole("navigation", { name: "Administration" }),
+    sidebar.getByRole("navigation", { name: "Quick access" }),
   ).toBeVisible();
   await sidebar.evaluate((element) => {
     (element as HTMLElement).dataset.acceptanceIdentity = "retained";
   });
   await page.evaluate(() => document.dispatchEvent(new Event("noop")));
-  await page.getByRole("button", { name: "Workspace pages" }).click();
+  await page.getByLabel("Account menu", { exact: true }).click();
   await page
-    .getByRole("button", { name: /Settings Make the workspace yours/ })
+    .getByRole("link", { name: "Account settings", exact: true })
     .click();
   await expect(sidebar).toHaveAttribute("data-acceptance-identity", "retained");
   const nav = page.getByRole("navigation", { name: "Settings categories" });
-  await nav.getByRole("link", { name: "Account", exact: true }).click();
-  await nav.getByRole("link", { name: "Profile", exact: true }).click();
   await page
     .getByLabel("Full name", { exact: true })
     .fill("Retained file-first draft");
-  await sidebar.getByRole("link", { name: "Workspaces", exact: true }).click();
+  await sidebar
+    .getByRole("link", { name: "All workspaces", exact: true })
+    .first()
+    .click();
   await expect(sidebar).toHaveAttribute("data-acceptance-identity", "retained");
-  await expect(sidebar.getByText("Your spaces", { exact: true })).toBeVisible();
+  await expect(
+    sidebar.getByRole("list", { name: "Workspaces", exact: true }),
+  ).toBeVisible();
   await expect(
     sidebar.getByText("Create workspace", { exact: true }),
   ).toHaveCount(0);

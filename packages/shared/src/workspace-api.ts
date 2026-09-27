@@ -148,6 +148,14 @@ export async function workspaceApi(
     ];
     if (spaceId) where.push("r.space_id=" + bind(spaceId));
     if (kind) where.push("r.kind=" + bind(resourceKindSchema.parse(kind)));
+    // Directory filtering must not turn into the recursive full-text search
+    // used by Explorer's q parameter. Match literal names at this level only.
+    const name = z
+      .string()
+      .max(200)
+      .parse(url.searchParams.get("name") ?? "")
+      .trim();
+    if (name) where.push(`strpos(lower(r.name),lower(${bind(name)})) > 0`);
     const mime = url.searchParams.get("mime"),
       tag = url.searchParams.get("tag");
     if (mime)

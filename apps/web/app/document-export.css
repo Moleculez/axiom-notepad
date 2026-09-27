@@ -1,0 +1,209 @@
+.dialog.document-export-dialog[data-size="visual"] {
+  width: min(1160px, calc(100vw - 64px));
+  height: min(850px, calc(100dvh - 64px));
+  resize: both;
+  overflow: hidden;
+}
+.document-export-dialog > .dialog-body {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  gap: 0;
+}
+.document-export-layout {
+  display: grid;
+  grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
+  flex: 1;
+  min-height: 0;
+}
+.document-export-settings {
+  overflow: auto;
+  padding: 24px;
+  border-inline-end: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.document-export-settings label {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 0.85rem;
+}
+.reading-update-status {
+  position: absolute;
+  bottom: 52px;
+  right: 24px;
+  z-index: 2;
+  margin: 0;
+  padding: 8px 12px;
+  background: var(--paper);
+  box-shadow: 0 2px 12px #0001;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 0.8rem;
+}
+.document-export-settings fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.document-export-settings legend {
+  font-weight: 600;
+  padding: 0 0 12px;
+}
+.document-export-settings fieldset:disabled {
+  opacity: 0.5;
+}
+.document-export-settings .document-export-check {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+.document-export-check input {
+  margin: 0;
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+}
+.document-export-settings
+  :is(select, input:not([type="checkbox"], [type="range"])) {
+  width: 100%;
+  min-width: 0;
+}
+.document-export-settings .muted {
+  font-size: 0.78rem;
+  line-height: 1.6;
+  margin: 0;
+}
+.document-export-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.document-export-preview {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+}
+.document-export-preview-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 18px;
+  font-size: 0.8rem;
+  color: var(--muted);
+  border-bottom: 1px solid var(--line);
+}
+.document-export-preview iframe {
+  flex: 1;
+  width: 100%;
+  min-height: 180px;
+  border: 0;
+  background: var(--paper);
+}
+.document-export-preview progress {
+  width: 100%;
+  height: 3px;
+  border: 0;
+  accent-color: var(--accent);
+}
+.document-export-notice {
+  font-size: 0.8rem;
+  padding: 10px 18px;
+  margin: 0;
+  color: var(--accent);
+  background: var(--accent-bg);
+}
+.document-export-warnings {
+  padding: 10px 24px;
+  border-top: 1px solid var(--line);
+  max-height: 120px;
+  overflow: auto;
+  font-size: 0.8rem;
+  color: var(--warning);
+}
+.document-export-warnings p {
+  margin: 4px 0;
+}
+.document-export-dialog .dialog-footer > .muted {
+  margin-inline-end: auto;
+  font-size: 0.8rem;
+}
+.ws-document .reading-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 22px;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+.ws-document .reading-controls label {
+  display: flex;
+  flex-direction: row;
+  margin: 0;
+  align-items: center;
+  gap: 8px;
+}
+.ws-document .reading-controls input[type="range"] {
+  width: 100px;
+  accent-color: var(--accent);
+  margin: 0;
+  padding: 0;
+  min-height: 0;
+  height: 18px;
+}
+.ws-document .reading-controls select {
+  width: 120px;
+  min-height: 28px;
+  padding-block: 4px;
+  font-size: 0.8rem;
+}
+.ws-document .reading-controls output {
+  min-width: 35px;
+  font-variant-numeric: tabular-nums;
+}
+.ws-document .reading-controls > span {
+  margin-inline-end: 12px;
+}
+.ws-document .reading-controls button {
+  margin-inline-start: 6px;
+}
+.reading-controls button {
+  font-size: 0.8rem;
+}
+.reading-view.document-presentation pre {
+  position: relative;
+}
+.reading-view.document-presentation .reading-code-copy {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  font: 12px/1.4 var(--font-ui);
+  padding: 4px 8px;
+  background: var(--paper);
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.reading-view pre:is(:hover, :focus-within) .reading-code-copy {
+  opacity: 1;
+}
+@media print {
+  .reading-controls,
+  .reading-code-copy {
+    display: none;
+  }
+}

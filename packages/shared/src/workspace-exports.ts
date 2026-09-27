@@ -22,6 +22,10 @@ import { rewriteLinks } from "./archive";
 import { documentExtension } from "./document-format";
 import { canvasSchema, parseCanvas } from "./canvas";
 import { buildCanvasBundle } from "./canvas-bundle";
+import {
+  markdownExportAssetIds,
+  markdownExportSnapshotSchema,
+} from "./document-export";
 
 const uuid = z.uuid();
 const safeName = (name: string) =>
@@ -62,6 +66,7 @@ export async function workspaceExportsApi(
         spaceId: uuid,
         resourceIds: z.array(uuid).min(1).max(1000),
         canvasSnapshot: canvasSchema.optional(),
+        markdownSnapshot: markdownExportSnapshotSchema.optional(),
       })
       .parse(await request.json());
     const result = await workspaceMutation(
@@ -92,6 +97,22 @@ export async function workspaceExportsApi(
         );
         if (roots.length !== new Set(input.resourceIds).size)
           throw new HttpError(404, "Choose available items from one space.");
+        if (input.markdownSnapshot) {
+          if (
+            input.canvasSnapshot ||
+            input.resourceIds.length !== 1 ||
+            !(
+              await client.query(
+                "SELECT 1 FROM notes WHERE id=$1 AND coalesce(source_format,'markdown')='markdown' AND generation=$2",
+                [input.resourceIds[0], input.markdownSnapshot.generation],
+              )
+            ).rowCount
+          )
+            throw new HttpError(
+              409,
+              "Choose one current Markdown document. Reopen the export if it was restored.",
+            );
+        }
         if (input.canvasSnapshot) {
           parseCanvas(JSON.stringify(input.canvasSnapshot));
           if (
@@ -124,13 +145,15 @@ export async function workspaceExportsApi(
           [
             userId,
             input.spaceId,
-            input.canvasSnapshot
+            input.canvasSnapshot || input.markdownSnapshot
               ? input.resourceIds
               : resources.map((r) => r.id),
             JSON.stringify(
               input.canvasSnapshot
                 ? { canvasSnapshot: input.canvasSnapshot }
-                : {},
+                : input.markdownSnapshot
+                  ? { markdownSnapshot: input.markdownSnapshot }
+                  : {},
             ),
           ],
         );
@@ -215,7 +238,8 @@ export async function buildWorkspaceExport(id: string) {
       "SELECT id,generation FROM notes WHERE id=ANY($1::uuid[])",
       [record.resource_ids],
     );
-    for (const note of notesToFlush) await flushNote(note);
+    if (!record.options?.markdownSnapshot)
+      for (const note of notesToFlush) await flushNote(note);
     await client.query(
       "SELECT pg_advisory_lock_shared(hashtext('axiom:blob-backup'))",
     );
@@ -258,11 +282,26 @@ export async function buildWorkspaceExport(id: string) {
       throw new Error(
         "The selection changed or its access was revoked. Start a new export.",
       );
+    const snapshot = record.options?.markdownSnapshot
+      ? markdownExportSnapshotSchema.parse(record.options.markdownSnapshot)
+      : undefined;
+    if (snapshot) {
+      if (
+        resources.length !== 1 ||
+        resources[0].generation !== snapshot.generation
+      )
+        throw new Error("The document was restored. Create a new export.");
+      resources[0].body = snapshot.source;
+      resources[0].name = snapshot.title;
+    }
+    const snapshotFiles = snapshot
+      ? markdownExportAssetIds(snapshot.source)
+      : [];
     // Include exact file versions referenced by current exported notes. No
     // private dependency is pulled into a shared archive without read access.
     const { rows: files } = await client.query(
-      "SELECT DISTINCT a.*,v.resource_id FROM attachments a JOIN file_versions v ON v.id=a.id JOIN resources r ON r.id=v.resource_id WHERE axiom_space_role($2,r.space_id) IS NOT NULL AND (r.id=ANY($1::uuid[]) AND r.current_version_id=a.id OR a.id IN (SELECT version_id FROM resource_references WHERE source_id=ANY($1::uuid[]) AND snapshot_id IS NULL))",
-      [record.resource_ids, record.user_id],
+      "SELECT DISTINCT a.*,v.resource_id FROM attachments a JOIN file_versions v ON v.id=a.id JOIN resources r ON r.id=v.resource_id WHERE r.deleted_at IS NULL AND axiom_space_role($2,r.space_id) IS NOT NULL AND (CASE WHEN $3::boolean THEN a.id=ANY($4::uuid[]) ELSE (r.id=ANY($1::uuid[]) AND r.current_version_id=a.id OR a.id IN (SELECT version_id FROM resource_references WHERE source_id=ANY($1::uuid[]) AND snapshot_id IS NULL)) END)",
+      [record.resource_ids, record.user_id, !!snapshot, snapshotFiles],
     );
     const requiredIds = [
       ...new Set([...record.resource_ids, ...files.map((f) => f.resource_id)]),
@@ -311,8 +350,8 @@ export async function buildWorkspaceExport(id: string) {
       ]),
     );
     const { rows: citations } = await client.query(
-      "SELECT n.id,c.cite_key,c.data->>'bibtex' AS bibtex FROM personal_citations c JOIN notes n ON n.id=c.note_id WHERE n.id=ANY($1::uuid[]) UNION SELECT n.id,b.cite_key,b.bibtex FROM notes n JOIN bibliography b ON b.group_id=n.group_id WHERE n.id=ANY($1::uuid[]) AND n.body LIKE '%@'||b.cite_key||'%'",
-      [record.resource_ids],
+      "SELECT n.id,c.cite_key,c.data->>'bibtex' AS bibtex FROM personal_citations c JOIN notes n ON n.id=c.note_id WHERE n.id=ANY($1::uuid[]) AND coalesce($2::text,n.body) LIKE '%@'||c.cite_key||'%' UNION SELECT n.id,b.cite_key,b.bibtex FROM notes n JOIN bibliography b ON b.group_id=n.group_id WHERE n.id=ANY($1::uuid[]) AND coalesce($2::text,n.body) LIKE '%@'||b.cite_key||'%'",
+      [record.resource_ids, snapshot?.source ?? null],
     );
     const zip = new ZipFile();
     const output = zip.outputStream as Readable;
@@ -407,6 +446,14 @@ export async function buildWorkspaceExport(id: string) {
           {
             format: "axiom-workspace-export",
             version: 1,
+            snapshot: !!snapshot,
+            warnings: snapshotFiles.some(
+              (id) => !files.some((f) => f.id === id),
+            )
+              ? [
+                  "Some referenced files are unavailable or no longer authorized; their links were preserved.",
+                ]
+              : [],
             createdAt: new Date().toISOString(),
             scope:
               "Selected current notes and exact linked file versions; not an account backup",

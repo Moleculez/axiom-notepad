@@ -71,9 +71,9 @@ export default function CanvasExportDialog({
     currentJob = jobs.data?.find((j) => j.id === job);
   useEffect(() => {
     if (!job || ["ready", "failed"].includes(currentJob?.status ?? "")) return;
-    const timer = setInterval(jobs.reload, 1800);
+    const timer = setInterval(jobs.revalidate, 1800);
     return () => clearInterval(timer);
-  }, [job, currentJob?.status, jobs.reload]);
+  }, [job, currentJob?.status, jobs.revalidate]);
   useEffect(() => () => controller.current?.abort(), []);
   const data =
     scope === "all"

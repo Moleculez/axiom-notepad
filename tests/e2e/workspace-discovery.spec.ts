@@ -120,7 +120,7 @@ test("palette remains contained with dark colors and large interface typography"
   await page.setViewportSize({ width: 1440, height: 1000 });
 });
 
-test("sidebar filtering, direct-folder reveal, row menus and collapse/keyboard expansion", async ({}, info) => {
+test("sidebar filtering, direct-folder location and level navigation", async ({}, info) => {
   const page = f.page;
   await page.goto(
     `/workbench/workspaces/${space.id}/files?folder=${nested.id}`,
@@ -128,44 +128,44 @@ test("sidebar filtering, direct-folder reveal, row menus and collapse/keyboard e
   const sidebar = page.getByRole("complementary", {
     name: "Workspace navigation",
   });
-  const row = sidebar.locator(`[data-tree-resource="${nested.id}"]`);
+  const row = sidebar
+    .locator(".sidebar-directory-row")
+    .filter({ hasText: "Quantum derivation" });
   await expect(row).toBeVisible();
-  await expect(row).toHaveClass(/active/);
+  await expect(
+    sidebar.getByRole("navigation", { name: "Sidebar directory path" }),
+  ).toContainText("02 Evidence");
   await row.hover();
   await row
-    .getByRole("button", { name: "Actions for 02 Evidence", exact: true })
+    .getByRole("button", {
+      name: "Actions for Quantum derivation",
+      exact: true,
+    })
     .click();
   await expect(page.getByRole("menu")).toBeVisible();
   await page.keyboard.press("Escape");
-  const filter = sidebar.getByRole("textbox", { name: "Filter workspaces" });
-  await filter.fill("no matching workspace");
-  await expect(sidebar.getByRole("status")).toHaveText(
-    "No matching workspaces.",
-  );
+  const filter = sidebar.getByRole("textbox", {
+    name: "Filter files in this folder",
+  });
+  await filter.fill("no matching file");
+  await expect(sidebar.getByRole("status")).toHaveText("No matching files.");
   await filter.press("Escape");
   await expect(row).toBeVisible();
   await sidebar
-    .getByRole("button", { name: "Collapse all folders", exact: true })
+    .getByRole("button", { name: "Up one level", exact: true })
     .click();
   await expect(row).toHaveCount(0);
-  const root = sidebar
-    .getByRole("link", { name: space.name, exact: true })
-    .locator("..");
-  await root.focus();
-  await page.keyboard.press("ArrowRight");
-  await expect(
-    sidebar.locator(`[data-tree-resource="${folder.id}"]`),
-  ).toBeVisible();
-  await expect(row).toBeVisible();
-  await row.focus();
+  const next = sidebar.locator(`[data-directory-resource="${nested.id}"]`);
+  await expect(next).toBeVisible();
+  await next.focus();
   await page.keyboard.press("Home");
-  await expect(sidebar.locator(".ws-tree-row").first()).toBeFocused();
+  await expect(sidebar.locator(".sidebar-directory-row").first()).toBeFocused();
+  await page.keyboard.press("ArrowRight");
+  await expect(row).toBeVisible();
   await page.screenshot({
     path: info.outputPath("sidebar-explorer.png"),
     animations: "disabled",
   });
   await page.reload();
-  await expect(
-    sidebar.locator(`[data-tree-resource="${nested.id}"]`),
-  ).toBeVisible();
+  await expect(row).toBeVisible();
 });

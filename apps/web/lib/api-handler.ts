@@ -40,6 +40,7 @@ import {
   attachmentMime,
 } from "@axiom/shared/storage";
 import { htmlExport } from "@axiom/shared/html-export";
+import { documentExportPreview } from "@axiom/shared/document-export-api";
 import { preferencesApi } from "@axiom/shared/preferences-api";
 import { editorPreferencesApi } from "@axiom/shared/editor-preferences-api";
 import { preferencesBundleApi } from "@axiom/shared/preferences-bundle-api";
@@ -589,8 +590,13 @@ async function handleRequest(
         id,
         action === "restore-trash" || method === "DELETE",
       );
-      if (method !== "GET" && !["sync-token", "favorite"].includes(action))
+      if (
+        method !== "GET" &&
+        !["sync-token", "favorite", "export-preview"].includes(action)
+      )
         requireNoteCapability(note, action === "comments" ? "comment" : "edit");
+      if (action === "export-preview" && method === "POST")
+        return await documentExportPreview(request, user.id, id);
       if (!action && method === "GET") return json(note);
       if (!action && method === "PATCH") {
         const input = z
@@ -947,7 +953,7 @@ async function handleRequest(
                   );
                   return linked
                     ? {
-                        href: `${appUrl}/?note=${linked.id}${heading ? "#" + encodeURIComponent(heading) : ""}`,
+                        href: `${appUrl}/workbench/notes/${linked.id}${heading ? "#" + encodeURIComponent(heading) : ""}`,
                         title: linked.title,
                       }
                     : undefined;
@@ -982,6 +988,8 @@ async function handleRequest(
                     )[0]?.preferences ?? {},
                   )
                 : undefined,
+              undefined,
+              appUrl,
             ),
             {
               headers: {

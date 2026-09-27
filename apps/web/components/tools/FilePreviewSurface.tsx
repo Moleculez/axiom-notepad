@@ -65,7 +65,7 @@ export default function FilePreviewSurface({
   );
   const file = initialManifest ?? manifest.data;
   const [conversionError, setConversionError] = useState("");
-  const reload = onReload ?? manifest.reload;
+  const reload = onReload ?? manifest.revalidate;
   useEffect(() => {
     if (file?.status !== "queued") return;
     const timer = setInterval(reload, 2500);

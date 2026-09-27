@@ -247,6 +247,7 @@
 }
 [data-folder-color] .ws-resource-glyph.folder,
 [data-folder-color].ws-tree-row > a > svg,
+.sidebar-directory-row[data-folder-color] .sidebar-directory-open > svg,
 .folder-color-choices [data-folder-color] svg {
   color: var(--folder-color);
   fill: color-mix(in srgb, var(--folder-color) 18%, transparent);
