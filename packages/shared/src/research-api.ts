@@ -343,7 +343,16 @@ export async function researchApi(
       const groupId = uuid.parse(url.searchParams.get("groupId"));
       return json(
         await query(
-          `SELECT r.* FROM reading_items r LEFT JOIN file_versions v ON r.target_type='attachment' AND v.id=r.target_id LEFT JOIN resources target ON target.id=CASE WHEN r.target_type='note' THEN r.target_id WHEN r.target_type='attachment' THEN v.resource_id END WHERE r.user_id=$1 AND (r.group_id=$2 OR target.space_id=$2 OR (r.target_type='reference' AND EXISTS(SELECT 1 FROM bibliography b JOIN spaces s ON s.id=b.space_id WHERE b.id=r.target_id AND s.kind='team' AND s.group_id=$2))) AND ((r.target_type='group' AND r.target_id=$2 AND (EXISTS(SELECT 1 FROM members WHERE user_id=$1 AND group_id=$2) OR axiom_space_role($1,$2) IS NOT NULL)) OR (r.target_type='reference' AND EXISTS(SELECT 1 FROM bibliography b WHERE b.id=r.target_id AND axiom_space_role($1,b.space_id) IS NOT NULL AND axiom_space_state(b.space_id) NOT IN ('trashed','purging'))) OR (target.deleted_at IS NULL AND axiom_space_role($1,target.space_id) IS NOT NULL)) ORDER BY r.updated_at`,
+          `SELECT r.* FROM reading_items r
+           LEFT JOIN file_versions v ON r.target_type='attachment' AND v.id=r.target_id
+           LEFT JOIN resources target ON target.id=CASE WHEN r.target_type='note' THEN r.target_id WHEN r.target_type='attachment' THEN v.resource_id END
+           WHERE r.user_id=$1 AND (r.group_id=$2 OR target.space_id=$2 OR (r.target_type='reference' AND EXISTS(SELECT 1 FROM bibliography b JOIN spaces s ON s.id=b.space_id WHERE b.id=r.target_id AND s.kind='team' AND s.group_id=$2)))
+           AND (
+             (r.deleted AND (axiom_space_role($1,target.space_id) IS NOT NULL OR axiom_space_role($1,r.group_id) IS NOT NULL OR EXISTS(SELECT 1 FROM members WHERE user_id=$1 AND group_id=r.group_id)))
+             OR (r.target_type='group' AND r.target_id=$2 AND (EXISTS(SELECT 1 FROM members WHERE user_id=$1 AND group_id=$2) OR axiom_space_role($1,$2) IS NOT NULL))
+             OR (r.target_type='reference' AND EXISTS(SELECT 1 FROM bibliography b WHERE b.id=r.target_id AND axiom_space_role($1,b.space_id) IS NOT NULL AND axiom_space_state(b.space_id) NOT IN ('trashed','purging')))
+             OR (target.deleted_at IS NULL AND axiom_space_role($1,target.space_id) IS NOT NULL)
+           ) ORDER BY r.updated_at`,
           [userId, groupId],
         ),
       );
@@ -387,6 +396,22 @@ export async function researchApi(
         throw new HttpError(400, "The item belongs to a different group.");
       const group = input.group_id;
       const result = await transaction(async (client) => {
+        if (input.target_type === "attachment") {
+          // Reading targets have no attachment FK. Fence new records and edits
+          // against purge, then recheck access inside the same transaction.
+          await client.query(
+            "SELECT pg_advisory_xact_lock_shared(hashtext('axiom:file-references'))",
+          );
+          const {
+            rows: [target],
+          } = await client.query(
+            "SELECT r.space_id,r.deleted_at FROM resources r JOIN file_versions v ON v.resource_id=r.id WHERE v.id=$1 FOR SHARE OF r",
+            [input.target_id],
+          );
+          if (!target || target.deleted_at)
+            throw new HttpError(404, "Reading source unavailable.");
+          await requireScope(client, userId, target.space_id);
+        }
         await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [
           userId + input.kind + input.target_id,
         ]);

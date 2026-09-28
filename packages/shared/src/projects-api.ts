@@ -750,6 +750,9 @@ export async function projectsApi(
           "request-review:" + id,
           input,
           async (client) => {
+            await client.query(
+              "SELECT pg_advisory_xact_lock_shared(hashtext('axiom:file-references'))",
+            );
             await requireScope(client, userId, space.id, "edit");
             const {
               rows: [reviewer],

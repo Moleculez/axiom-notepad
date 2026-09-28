@@ -8,6 +8,7 @@ import {
   History,
   MoreHorizontal,
   RotateCcw,
+  Search,
   SlidersHorizontal,
   Trash2,
 } from "lucide-react";
@@ -55,10 +56,10 @@ export default function TrashConsole() {
   const { params } = useLocation(),
     workspaces = params.get("view") === "workspaces";
   return (
-    <main className="ws-page console-page">
+    <main className="ws-page console-page trash-page">
       <PageHeading eyebrow="RECOVERY & CLEANUP" title="Trash">
-        Recover work you still need. Review the exact scope before removing
-        anything permanently.
+        Restore files you still need, or review what is safe to delete.
+        Protected items stay here until you resolve their links or reading data.
       </PageHeading>
       <nav className="productivity-tabs" aria-label="Trash views">
         <WorkspaceLink
@@ -117,7 +118,8 @@ function FileTrash() {
     [selection, setSelection] = useState<string[]>([]),
     [allMatching, setAllMatching] = useState(false),
     [operation, setOperation] = useState<string | null>(null),
-    [restorePolicy, setRestorePolicy] = useState<"retain" | "root">("retain"),
+    [quickPurge, setQuickPurge] = useState<string | null>(null),
+    [restorePolicy, setRestorePolicy] = useState<"retain" | "root">("root"),
     [conflict, setConflict] = useState<"keep-both" | "skip">("keep-both"),
     [destination, setDestination] = useState<string | null>(null),
     [chooseDestination, setChooseDestination] = useState(false),
@@ -166,6 +168,7 @@ function FileTrash() {
     command: "restore" | "purge",
     all = allMatching,
     ids = selection,
+    quick = false,
   ) =>
     void action.run(async () => {
       const result = await post("trash/preview", {
@@ -183,6 +186,7 @@ function FileTrash() {
         destinationId: chooseDestination ? destination : null,
         conflictPolicy: conflict,
       });
+      setQuickPurge(quick ? ids[0] : null);
       setOperation(result.operation.id);
     });
   const select = (item: TrashRow, shift = false, toggle = false) => {
@@ -240,6 +244,18 @@ function FileTrash() {
           disabled: !canPurge || action.busy,
           action: () => preview("purge", false, ids),
         },
+        ...(item.kind === "file" && ids.length === 1
+          ? [
+              {
+                label: "Remove protection & purge…",
+                icon: "purge" as const,
+                group: "Permanent removal",
+                tone: "danger" as const,
+                disabled: !canPurge || action.busy,
+                action: () => preview("purge", false, ids, true),
+              },
+            ]
+          : []),
       ],
     });
   };
@@ -248,16 +264,19 @@ function FileTrash() {
     : selection.length;
   return (
     <>
-      <div className="console-toolbar">
+      <div className="console-toolbar trash-toolbar">
         <label className="console-search">
           Search Trash
-          <input
-            aria-label="Search Trash"
-            type="search"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Note, folder or filename…"
-          />
+          <span className="trash-search-field">
+            <Search size={16} aria-hidden="true" />
+            <input
+              aria-label="Search Trash"
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Note, folder or filename…"
+            />
+          </span>
         </label>
         <label>
           Workspace
@@ -277,50 +296,73 @@ function FileTrash() {
             <option value="managed">All managed workspaces</option>
           </select>
         </label>
-        <label>
-          Kind
-          <select
-            aria-label="Trash item kind"
-            value={kind}
-            onChange={(e) => setKind(e.target.value)}
-          >
-            <option value="">All items</option>
-            {["note", "folder", "file", "shortcut"].map((v) => (
-              <option key={v}>{v}</option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Sort
-          <select
-            value={`${sort}:${direction}`}
-            onChange={(e) => {
-              const [s, d] = e.target.value.split(":");
-              setSort(s);
-              setDirection(d);
-            }}
-          >
-            <option value="deleted:desc">Newest deleted</option>
-            <option value="deleted:asc">Oldest deleted</option>
-            <option value="name:asc">Name A–Z</option>
-            <option value="size:desc">Largest first</option>
-          </select>
-        </label>
         <button
           className="button secondary"
           aria-expanded={options}
           onClick={() => setOptions((v) => !v)}
         >
           <SlidersHorizontal size={16} />
-          Options
+          Filters & restore options
+          {!!(kind || after || before) && (
+            <span className="trash-filter-count">
+              {[kind, after, before].filter(Boolean).length}
+            </span>
+          )}
         </button>
       </div>
       {options && (
         <section
-          className="console-options"
+          className="console-options trash-options"
           aria-label="Trash filters and restore options"
         >
-          <div className="console-toolbar">
+          <div className="trash-options-heading">
+            <h3>Filter deleted items</h3>
+            {!!(kind || after || before || search) && (
+              <button
+                className="text-button"
+                onClick={() => {
+                  setKind("");
+                  setAfter("");
+                  setBefore("");
+                  setSearch("");
+                }}
+              >
+                Clear filters
+              </button>
+            )}
+          </div>
+          <div className="console-toolbar trash-filter-fields">
+            <label>
+              Kind
+              <select
+                aria-label="Trash item kind"
+                value={kind}
+                onChange={(e) => setKind(e.target.value)}
+              >
+                <option value="">All items</option>
+                <option value="note">Notes</option>
+                <option value="folder">Folders</option>
+                <option value="file">Files</option>
+                <option value="shortcut">Shortcuts</option>
+              </select>
+            </label>
+            <label>
+              Sort
+              <select
+                aria-label="Sort Trash"
+                value={`${sort}:${direction}`}
+                onChange={(e) => {
+                  const [s, d] = e.target.value.split(":");
+                  setSort(s);
+                  setDirection(d);
+                }}
+              >
+                <option value="deleted:desc">Newest deleted</option>
+                <option value="deleted:asc">Oldest deleted</option>
+                <option value="name:asc">Name A–Z</option>
+                <option value="size:desc">Largest first</option>
+              </select>
+            </label>
             <label>
               Deleted from
               <input
@@ -337,6 +379,12 @@ function FileTrash() {
                 onChange={(e) => setBefore(e.target.value)}
               />
             </label>
+          </div>
+          <div className="trash-options-heading">
+            <h3>Restore behavior</h3>
+            <span>Existing files are never overwritten</span>
+          </div>
+          <div className="console-toolbar trash-restore-fields">
             <label>
               If the original folder is unavailable
               <select
@@ -477,9 +525,18 @@ function FileTrash() {
       {data.loading && !data.data ? (
         <Loading />
       ) : !rows.length ? (
-        <Empty title="No matching items in Trash" icon={Trash2}>
-          Try another workspace or clear your filters. Workspaces have a
-          separate Trash view.
+        <Empty
+          title={
+            search || kind || after || before
+              ? "No matching items in Trash"
+              : "Trash is empty"
+          }
+          icon={Trash2}
+        >
+          {search || kind || after || before
+            ? "Try another workspace or clear your filters."
+            : "Deleted files and folders appear here until you restore or permanently remove them."}{" "}
+          Workspaces have a separate Trash view.
         </Empty>
       ) : (
         <div className="productivity-table-wrap">
@@ -554,13 +611,15 @@ function FileTrash() {
         </button>
       </div>
       <p className="ws-note">
-        No automatic expiry. A preview shows unique targets, protected items and
-        total stored size before you confirm.
+        Nothing expires automatically. Choose Delete to review what is ready,
+        see why other items are kept, and resolve your own reading data before
+        confirming permanent removal.
       </p>
       {operation && (
         <TrashOperationDialog
           key={operation}
           id={operation}
+          initialQuickPurge={quickPurge}
           onClose={() => {
             setOperation(null);
             refresh();
@@ -698,7 +757,7 @@ function TrashTreeRow({
               <span className="console-tree-spacer" />
             )}
             <ResourceIcon resource={item} />
-            <strong>{item.name}</strong>
+            <strong title={item.name}>{item.name}</strong>
           </span>
           {item.has_children && <small>Includes trashed descendants</small>}
         </td>

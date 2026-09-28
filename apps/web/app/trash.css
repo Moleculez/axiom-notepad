@@ -1,0 +1,441 @@
+.trash-review {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+.trash-review-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.3fr;
+  border: 1px solid var(--line);
+  border-radius: var(--panel-radius);
+  padding: 1rem 0;
+  background: var(--paper);
+}
+.trash-review-summary > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding-inline: 0.8rem;
+}
+.trash-review-summary > div + div {
+  border-inline-start: 1px solid var(--line);
+}
+.trash-review-summary strong,
+.trash-review-size {
+  font-size: 1.25rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.trash-review-summary svg {
+  color: var(--muted);
+}
+.trash-review-summary > div > span:last-child {
+  width: 100%;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+.trash-review p {
+  margin: 0;
+  line-height: 1.55;
+}
+.trash-review-intro {
+  font-size: 0.88rem;
+}
+.trash-review-toolbar,
+.trash-review-filters {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.trash-review-toolbar {
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.trash-review-filters {
+  flex-wrap: wrap;
+}
+.trash-review-filters button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.6rem;
+  font: inherit;
+  font-size: 0.78rem;
+  border: 0;
+  border-radius: var(--control-radius-small);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.trash-review-filters button[aria-pressed="true"] {
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+.trash-review-filters button:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+.trash-review-filters button span {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.8;
+}
+.trash-review-items {
+  border-block: 1px solid var(--line);
+}
+.trash-review-item {
+  padding: 1rem 0;
+}
+.trash-review-item + .trash-review-item {
+  border-top: 1px solid var(--line);
+}
+.trash-review-item-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 1rem;
+}
+.trash-review-item-heading > div {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+.trash-review-item-heading strong {
+  font-size: 0.87rem;
+  font-weight: 550;
+  overflow-wrap: anywhere;
+}
+.trash-review-item-heading small,
+.trash-item-reason,
+.trash-guidance {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+.trash-item-state {
+  flex-shrink: 0;
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--control-radius-small);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+.trash-item-state[data-status="pending"],
+.trash-item-state[data-status="done"] {
+  color: var(--accent);
+  background: var(--accent-bg);
+}
+.trash-review .trash-item-reason {
+  margin-top: 0.6rem;
+}
+.trash-review .trash-protection-toggle {
+  margin-top: 0.5rem;
+}
+.trash-protection {
+  margin-top: 0.8rem;
+  padding: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--panel-radius);
+  font-size: 0.8rem;
+}
+.trash-protection-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.trash-protection-heading > strong {
+  flex: 1;
+}
+.trash-protection-section {
+  padding-block: 1rem;
+}
+.trash-protection-section + .trash-protection-section {
+  border-top: 1px solid var(--line);
+}
+.trash-protection-section h4 {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0 0 0.5rem;
+  font-size: 0.82rem;
+}
+.trash-protection-section p {
+  color: var(--muted);
+}
+.trash-reading-records,
+.trash-source-list {
+  list-style: none;
+  padding: 0;
+  margin: 0.65rem 0;
+}
+.trash-reading-records {
+  max-height: 10rem;
+  overflow: auto;
+}
+.trash-reading-records li,
+.trash-source-list li {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  justify-content: space-between;
+  padding-block: 0.5rem;
+  border-bottom: 1px solid var(--line);
+}
+.trash-reading-records li:last-child,
+.trash-source-list li:last-child {
+  border: 0;
+}
+.trash-reading-records span,
+.trash-source-list strong {
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.trash-source-list li > div {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+.trash-source-list button,
+.trash-reading-records small {
+  flex-shrink: 0;
+}
+.trash-source-list small,
+.trash-reading-records small {
+  color: var(--muted);
+}
+.trash-reading-confirm {
+  display: grid;
+  justify-items: start;
+  gap: 0.7rem;
+  margin-top: 0.85rem;
+}
+.trash-protection-recovery {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  border-top: 1px solid var(--line);
+  padding-top: 1rem;
+}
+.trash-protection-recovery p {
+  flex: 1;
+  color: var(--muted);
+}
+.trash-review-policy {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+.trash-review-policy summary {
+  cursor: pointer;
+  width: fit-content;
+}
+.trash-review-policy p {
+  margin-top: 0.6rem;
+}
+.trash-review .trash-delete-confirm {
+  display: block;
+  font-size: 0.82rem;
+  line-height: 1.6;
+}
+.trash-review .trash-delete-confirm input {
+  display: block;
+  margin-top: 0.5rem;
+  max-width: 24rem;
+}
+.trash-review-progress progress {
+  width: 100%;
+  accent-color: var(--accent);
+}
+.trash-review-progress p {
+  color: var(--muted);
+  font-size: 0.8rem;
+  margin-top: 0.3rem;
+}
+.trash-review .trash-review-empty {
+  color: var(--muted);
+  text-align: center;
+  padding: 1.8rem;
+  font-size: 0.85rem;
+}
+.trash-review-dialog .dialog-body {
+  padding-top: 1rem;
+}
+.trash-review :is(button, summary):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.ws-app .trash-toolbar > label:not(.console-search) {
+  flex: 0 1 19rem;
+  min-width: 12rem;
+}
+.ws-app .trash-toolbar > .console-search {
+  flex: 1 1 18rem;
+}
+.trash-search-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.trash-search-field > svg {
+  position: absolute;
+  inset-inline-start: 0.75rem;
+  color: var(--muted);
+  pointer-events: none;
+}
+.ws-app .trash-search-field > input {
+  padding-inline-start: 2.25rem;
+}
+.ws-app .trash-toolbar :is(input, select),
+.ws-app .trash-toolbar > button {
+  min-height: 2.6rem;
+  height: 2.6rem;
+}
+.trash-filter-count {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  min-width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 50%;
+  background: var(--accent-bg);
+  color: var(--accent);
+  font-size: 0.7rem;
+}
+.trash-options-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.trash-options-heading h3 {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.trash-options-heading > span {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.trash-options .trash-filter-fields {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  padding-bottom: 1.1rem;
+  border-bottom: 1px solid var(--line);
+}
+.trash-options .trash-restore-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+.ws-app .trash-options .console-toolbar > label {
+  min-width: 0;
+}
+.trash-page .console-scope-actions {
+  gap: 0.85rem;
+}
+.trash-page .console-trash-table td {
+  vertical-align: middle;
+}
+.trash-page .console-trash-table .resource-cell {
+  min-width: 0;
+}
+.trash-page .console-trash-table .resource-cell strong {
+  max-width: 28rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.trash-quick-review {
+  display: grid;
+  gap: 1.1rem;
+  min-width: 0;
+}
+.trash-quick-review p {
+  margin: 0;
+  line-height: 1.55;
+  font-size: 0.83rem;
+}
+.trash-quick-file {
+  display: flex;
+  gap: 0.8rem;
+  align-items: center;
+  padding: 0.9rem 1rem;
+  background: var(--surface);
+  border-radius: var(--panel-radius);
+}
+.trash-quick-file > svg {
+  flex-shrink: 0;
+  color: var(--muted);
+}
+.trash-quick-file > div {
+  display: grid;
+  gap: 0.3rem;
+  min-width: 0;
+}
+.trash-quick-file strong {
+  overflow-wrap: anywhere;
+  font-size: 0.9rem;
+}
+.trash-quick-file small {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+.trash-quick-review h3 {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin: 0 0 0.65rem;
+  font-size: 0.85rem;
+}
+.trash-quick-impact {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.trash-quick-impact li {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.8rem;
+}
+.trash-quick-impact strong {
+  font-variant-numeric: tabular-nums;
+}
+.trash-quick-warning {
+  border-inline-start: 2px solid var(--danger);
+  padding-inline-start: 0.8rem;
+}
+.trash-quick-review .trash-delete-confirm {
+  display: block;
+  font-size: 0.82rem;
+  line-height: 1.6;
+}
+.trash-quick-review .trash-delete-confirm input {
+  display: block;
+  margin-top: 0.5rem;
+}
+.trash-quick-blockers {
+  padding: 1rem;
+  background: var(--surface);
+  border-radius: var(--panel-radius);
+}
+.trash-quick-blockers ul {
+  font-size: 0.82rem;
+  padding-inline-start: 1.2rem;
+  line-height: 1.5;
+}
+.trash-quick-blockers li + li {
+  margin-top: 0.5rem;
+}
+.trash-quick-blockers p {
+  color: var(--muted);
+}
+.trash-review-item .trash-quick-trigger {
+  margin: 0.5rem 0.8rem 0 0;
+}

@@ -17,14 +17,22 @@ import {
   recordActivity,
   enqueueJob,
 } from "./workspace-service";
-import { cleanupLock, deleteVersions } from "./resource-operations";
+import {
+  cleanupLock,
+  deleteVersions,
+  releaseUploadTargets,
+} from "./resource-operations";
 import { notifyWorkspace, flushPendingReferenceIndex } from "./documents";
 import {
   trashComponents,
   trashSelectionSchema,
+  trashResultFilterSchema,
+  type TrashResultFilter,
   type TrashItem,
   type TrashOperation,
 } from "./trash";
+import { clearTrashReading, trashProtection } from "./trash-protection";
+import { previewQuickPurge, quickPurge } from "./trash-quick-purge";
 
 const summary = `count(i.resource_id)::int AS total, count(*) FILTER(WHERE i.status='done')::int AS done,
  count(*) FILTER(WHERE i.status='pending')::int AS pending,count(*) FILTER(WHERE i.status='blocked')::int AS blocked,
@@ -222,12 +230,13 @@ async function checkItems(
   }
   const { rows: protectedItems } = await client.query(
     `SELECT r.id, CASE
-    WHEN EXISTS(SELECT 1 FROM review_requests WHERE note_id=r.note_id OR resource_id=r.id) THEN 'Formal review evidence must be retained.'
+    WHEN EXISTS(SELECT 1 FROM review_requests WHERE note_id=r.note_id OR resource_id=r.id OR file_version_id IN (SELECT id FROM file_versions WHERE resource_id=r.id)) THEN 'Formal review evidence must be retained.'
     WHEN EXISTS(SELECT 1 FROM task_resources WHERE resource_id=r.id) THEN 'Linked task evidence must be retained. Unlink it from the task first.'
     WHEN EXISTS(SELECT 1 FROM upload_sessions WHERE (resource_id=r.id OR parent_id=r.id) AND status IN ('uploading','verifying','failed')) THEN 'Finish or cancel transfers targeting this item.'
     WHEN EXISTS(SELECT 1 FROM file_versions v JOIN paper_annotations a ON a.attachment_id=v.id WHERE v.resource_id=r.id AND NOT a.deleted) THEN 'This file has annotations.'
-    WHEN EXISTS(SELECT 1 FROM file_versions v JOIN reading_items a ON a.target_id=v.id AND a.target_type='attachment' WHERE v.resource_id=r.id AND NOT a.deleted) THEN 'This file is in a reading list or bookmark.'
+    WHEN EXISTS(SELECT 1 FROM file_versions v JOIN reading_items a ON a.target_id=v.id AND a.target_type='attachment' WHERE v.resource_id=r.id AND NOT a.deleted) THEN 'Reading data retains this file. Review bookmarks, reading-list entries and saved positions.'
     WHEN EXISTS(SELECT 1 FROM file_versions v JOIN reference_attachments a ON a.attachment_id=v.id WHERE v.resource_id=r.id) THEN 'This file is attached to a research reference.'
+    WHEN EXISTS(SELECT 1 FROM file_versions v JOIN snippet_asset_references a ON a.version_id=v.id WHERE v.resource_id=r.id) THEN 'A reusable editor snippet embeds this file.'
     END AS reason FROM resources r WHERE r.id=ANY($1::uuid[])`,
     [ids],
   );
@@ -241,6 +250,7 @@ async function checkItems(
       `SELECT r.id,CASE
       WHEN EXISTS(SELECT 1 FROM resources child WHERE child.parent_id=r.id AND NOT(child.id=ANY($1::uuid[]))) THEN 'A descendant is protected, restored or outside the frozen selection.'
       WHEN EXISTS(SELECT 1 FROM file_versions v JOIN resource_references rr ON rr.version_id=v.id WHERE v.resource_id=r.id AND NOT(rr.source_id=ANY($1::uuid[]))) THEN 'Referenced by a retained note or saved revision.'
+      WHEN EXISTS(SELECT 1 FROM file_versions v JOIN image_cloud_drafts d ON d.base_version=v.id OR d.previous_base_version=v.id WHERE v.resource_id=r.id AND NOT(d.resource_id=ANY($1::uuid[]))) THEN 'An image editing draft retains this file.'
       END AS reason FROM resources r WHERE r.id=ANY($1::uuid[])`,
       [eligible],
     );
@@ -251,25 +261,47 @@ async function checkItems(
   return reasons;
 }
 
-async function report(userId: string, id: string, offset = 0) {
+async function report(
+  userId: string,
+  id: string,
+  offset = 0,
+  filter: TrashResultFilter = "all",
+) {
   const [operation] = await query<TrashOperation>(
     `SELECT o.*,${summary} FROM trash_operations o LEFT JOIN trash_operation_items i ON i.operation_id=o.id WHERE o.id=$1 AND o.user_id=$2 GROUP BY o.id`,
     [id, userId],
   );
   if (!operation) throw new HttpError(404, "Trash operation unavailable.");
+  const states =
+    filter === "attention"
+      ? ["blocked", "skipped", "cancelled"]
+      : filter === "ready"
+        ? ["pending"]
+        : filter === "done"
+          ? ["done"]
+          : ["pending", "done", "blocked", "skipped", "cancelled"];
+  const filteredTotal =
+    filter === "attention"
+      ? operation.blocked + operation.skipped + operation.cancelled
+      : filter === "ready"
+        ? operation.pending
+        : filter === "done"
+          ? operation.done
+          : operation.total;
   const items = await query(
     `SELECT i.*,i.bytes::float8 AS bytes,
     CASE WHEN ${visibleItem} THEN i.name ELSE 'Unavailable item' END AS name,
     CASE WHEN ${visibleItem} THEN i.original_path ELSE '' END AS original_path,
     CASE WHEN ${visibleItem} THEN i.reason ELSE 'Workspace access changed.' END AS reason
-    FROM trash_operation_items i WHERE i.operation_id=$1 ORDER BY i.resource_id LIMIT 50 OFFSET $3`,
-    [id, userId, offset],
+    FROM trash_operation_items i WHERE i.operation_id=$1 AND i.status=ANY($4::text[]) ORDER BY i.resource_id LIMIT 50 OFFSET $3`,
+    [id, userId, offset, states],
   );
   return {
     operation,
     items,
+    filteredTotal,
     nextOffset:
-      offset + items.length < operation.total ? offset + items.length : null,
+      offset + items.length < filteredTotal ? offset + items.length : null,
   };
 }
 
@@ -546,6 +578,22 @@ export async function trashApi(
     return json(await report(userId, result.id), 201);
   }
   z.uuid().parse(id);
+  if (action === "items") {
+    const resourceId = z.uuid().parse(path[3]);
+    if (path[4] === "quick-purge" && method === "GET")
+      return json(await previewQuickPurge(userId, id, resourceId));
+    if (path[4] === "quick-purge" && method === "POST")
+      return json(
+        await quickPurge(userId, id, resourceId, await request.json()),
+      );
+    if (path[4] === "protection" && method === "GET")
+      return json(await trashProtection(userId, id, resourceId));
+    if (path[4] === "clear-reading" && method === "POST")
+      return json(
+        await clearTrashReading(userId, id, resourceId, await request.json()),
+      );
+    throw new HttpError(405, "Unsupported Trash item operation.");
+  }
   if (method === "GET")
     return json(
       await report(
@@ -556,6 +604,7 @@ export async function trashApi(
           .int()
           .min(0)
           .parse(url.searchParams.get("offset") ?? 0),
+        trashResultFilterSchema.parse(url.searchParams.get("filter") ?? "all"),
       ),
     );
   if (
@@ -596,13 +645,13 @@ export async function trashApi(
       );
       if (!op) throw new HttpError(404, "Trash operation unavailable.");
       if (action === "recheck") {
-        if (op.status !== "preview")
+        if (!["preview", "completed", "cancelled"].includes(op.status))
           throw new HttpError(
             409,
-            "Only an unused preview can be rechecked. Retry retained items after an operation finishes.",
+            "Wait for the operation to finish before rechecking.",
           );
         const { rows: items } = await client.query<TrashItem>(
-          "SELECT * FROM trash_operation_items WHERE operation_id=$1",
+          "SELECT * FROM trash_operation_items WHERE operation_id=$1 AND status<>'done'",
           [id],
         );
         const reasons = await checkItems(client, op, items, false);
@@ -618,6 +667,10 @@ export async function trashApi(
             ],
           );
         }
+        await client.query(
+          "UPDATE trash_operations SET status='preview',updated_at=now() WHERE id=$1",
+          [id],
+        );
         return { ok: true };
       }
       if (action === "cancel") {
@@ -805,10 +858,7 @@ export async function processTrashOperation(
             client,
             versions.map((v) => v.id),
           );
-          await client.query(
-            "UPDATE upload_sessions SET parent_id=CASE WHEN parent_id=ANY($1::uuid[]) THEN NULL ELSE parent_id END,resource_id=CASE WHEN resource_id=ANY($1::uuid[]) THEN NULL ELSE resource_id END,completed_resource_id=CASE WHEN completed_resource_id=ANY($1::uuid[]) THEN NULL ELSE completed_resource_id END WHERE parent_id=ANY($1::uuid[]) OR resource_id=ANY($1::uuid[]) OR completed_resource_id=ANY($1::uuid[])",
-            [ids],
-          );
+          await releaseUploadTargets(client, ids);
           await client.query(
             "DELETE FROM reading_items WHERE target_type='note' AND target_id=ANY($1::uuid[])",
             [notes],

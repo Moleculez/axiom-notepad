@@ -111,6 +111,54 @@ Markdown commands. Shared annotations are visible only to readers of their
 source; private annotations are only available to their author. The server, not
 the browser's selection, supplies the authoritative evidence text.
 
+## Resolve protected items in Trash
+
+Trash distinguishes **Ready** items from those that **Need attention**. An empty
+Trash preview does not delete anything.
+
+For a quick, explicit cleanup of a stored file, choose **Remove protection &
+purge…** in its Trash menu or beside it in the deletion preview. One compact
+confirmation shows the affected protections and stored versions. It can remove
+your reading data, release attachment retention from notes and saved history in
+workspaces you manage and edit, and detach library file associations you can edit.
+References, notes and revision text are kept. If notes or history link to the
+file, acknowledge that those links will stop working. Type **DELETE FOREVER**
+and confirm: protection removal and file deletion happen together, or neither
+happens if the file, access or protection changed. This shortcut affects one
+stored file at a time and cannot be undone.
+
+It cannot override other readers' private records, inaccessible sources, PDF
+annotations, task or formal-review evidence, reusable snippets, active image
+drafts, unfinished uploads or saved edits awaiting indexing. The preview explains
+any remaining blocker; no protection is silently removed.
+
+For selective recovery instead, open **Review protection** to see what is keeping
+a file:
+
+- **Your reading data:** review your bookmarks, reading-list entries and saved
+  page positions, acknowledge their removal, then choose **Remove my reading
+  data & recheck**. This removes only the displayed versions of your own records;
+  it does not delete the file, someone else's records or PDF annotations.
+- **Notes & saved history:** open the retaining note. Removing a current link
+  does not erase saved revisions, suggestions or undo history. Restore the file
+  if those revisions still need it. When a retaining note is itself in Trash,
+  selecting it and its attachments together permits cleanup only if nothing
+  outside that selection retains them.
+- **Reference library / research evidence:** open the source to review its file
+  association. Formal review evidence remains protected even from quick purge.
+  Restricted sources and other readers' private data are not exposed.
+
+Use **Restore file** when you want to keep the evidence. Ordinary restore returns
+items to their original folder, falling back to workspace root if that folder is
+unavailable; Options can retain them instead. Name conflicts keep both by default.
+
+**Recheck** refreshes protection using saved server edits. It does not synchronize
+unsaved notes on other devices. After resolving protection, the confirmation
+for ordinary cleanup appears only when there are ready items. Type DELETE FOREVER to remove those items;
+everything else stays in Trash. Completed operations can be rechecked without
+repeating completed deletions or adding newly trashed files. There is no automatic
+expiry, and total stored size is not guaranteed reclaimed space (blobs may be shared).
+
 ## Contributor contracts
 
 - `packages/shared/src/documentation.ts` is the lightweight route/search catalogue;

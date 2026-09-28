@@ -86,6 +86,16 @@ export async function deleteVersions(
     );
 }
 
+export async function releaseUploadTargets(
+  client: pg.PoolClient,
+  ids: string[],
+) {
+  await client.query(
+    "UPDATE upload_sessions SET parent_id=CASE WHEN parent_id=ANY($1::uuid[]) THEN NULL ELSE parent_id END,resource_id=CASE WHEN resource_id=ANY($1::uuid[]) THEN NULL ELSE resource_id END,completed_resource_id=CASE WHEN completed_resource_id=ANY($1::uuid[]) THEN NULL ELSE completed_resource_id END WHERE parent_id=ANY($1::uuid[]) OR resource_id=ANY($1::uuid[]) OR completed_resource_id=ANY($1::uuid[])",
+    [ids],
+  );
+}
+
 /** Destruction is explicit, reference-aware, and separate from recoverable trash. */
 export async function resourceOperationsApi(
   request: Request,
@@ -396,10 +406,7 @@ export async function resourceOperationsApi(
           client,
           versions.map((v) => v.id),
         );
-        await client.query(
-          "UPDATE upload_sessions SET parent_id=CASE WHEN parent_id=ANY($1::uuid[]) THEN NULL ELSE parent_id END,resource_id=CASE WHEN resource_id=ANY($1::uuid[]) THEN NULL ELSE resource_id END,completed_resource_id=CASE WHEN completed_resource_id=ANY($1::uuid[]) THEN NULL ELSE completed_resource_id END WHERE parent_id=ANY($1::uuid[]) OR resource_id=ANY($1::uuid[]) OR completed_resource_id=ANY($1::uuid[])",
-          [ids],
-        );
+        await releaseUploadTargets(client, ids);
         await client.query(
           "DELETE FROM reading_items WHERE target_type='note' AND target_id=ANY($1::uuid[])",
           [notes],

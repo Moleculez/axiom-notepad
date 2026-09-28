@@ -143,6 +143,10 @@ export async function resourceReviewApi(
       "resource-review-request",
       { id, ...input },
       async (client) => {
+        // A review of a retaining note must not race attachment cleanup.
+        await client.query(
+          "SELECT pg_advisory_xact_lock_shared(hashtext('axiom:file-references'))",
+        );
         await requireScope(client, userId, space.id, "edit");
         await lockRevisionResource(client, id, space.id);
         const reviewer = await client.query(

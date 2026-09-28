@@ -58,7 +58,90 @@ export type TrashOperationPage = {
   operation: TrashOperation;
   items: TrashItem[];
   nextOffset: number | null;
+  filteredTotal: number;
 };
+
+export const trashResultFilterSchema = z.enum([
+  "all",
+  "attention",
+  "ready",
+  "done",
+]);
+export type TrashResultFilter = z.infer<typeof trashResultFilterSchema>;
+export const trashReadingCleanupSchema = z
+  .object({
+    mutationId: z.uuid(),
+    confirmation: z.literal("REMOVE MY READING DATA"),
+    records: z
+      .array(z.object({ id: z.uuid(), version: z.number().int().positive() }))
+      .min(1)
+      .max(500),
+  })
+  .strict()
+  .refine(
+    (v) => new Set(v.records.map((r) => r.id)).size === v.records.length,
+    "Choose each reading record only once.",
+  );
+
+export type TrashProtection = {
+  resourceId: string;
+  name: string;
+  version: number;
+  canRestore: boolean;
+  canClearReading: boolean;
+  reading: { id: string; version: number; kind: string; label: string }[];
+  moreReading: boolean;
+  otherReading: boolean;
+  sources: {
+    id: string;
+    name: string;
+    href: string;
+    current: boolean;
+    history: boolean;
+    deleted: boolean;
+  }[];
+  moreSources: boolean;
+  restrictedSources: boolean;
+  references: { id: string; name: string; href: string }[];
+  moreReferences: boolean;
+  safeguards: {
+    label: string;
+    description: string;
+    href?: string;
+    action?: string;
+  }[];
+};
+
+export const trashQuickPurgeSchema = z
+  .object({
+    mutationId: z.uuid(),
+    fingerprint: z.string().regex(/^[a-f0-9]{64}$/),
+    confirmation: z.literal("DELETE FOREVER"),
+    acknowledgeBrokenLinks: z.boolean(),
+  })
+  .strict();
+export type TrashQuickPurgePlan = {
+  resourceId: string;
+  name: string;
+  bytes: number;
+  fingerprint: string;
+  canPurge: boolean;
+  breaksLinks: boolean;
+  impacts: { label: string; count: number }[];
+  blockers: string[];
+};
+
+export function trashItemStatus(item: TrashItem, operation: TrashOperation) {
+  if (item.status === "pending")
+    return operation.status === "preview" ? "Ready" : "Waiting";
+  if (item.status === "done")
+    return operation.action === "restore" ? "Restored" : "Removed";
+  return {
+    blocked: "Needs attention",
+    skipped: "Changed",
+    cancelled: "Cancelled",
+  }[item.status];
+}
 /** Hierarchy and existing reference edges form atomic units. Independent units
  * can finish, resume or be cancelled without breaking internal references. */
 export function trashComponents(

@@ -5,6 +5,69 @@ Do not treat historical browser totals or local build IDs as current release evi
 
 ## September 28 in-app guide and evidence workbench
 
+### Direct protection removal and quick purge
+
+- Added **Remove protection & purge…** directly to a stored file's Trash menu
+  and protected preview row. A single compact confirmation lists the affected
+  reading records, note/history attachment protections, library file associations
+  and stored versions. It keeps notes, saved revision text and bibliography
+  entries; releasing note/history retention requires an explicit broken-link
+  acknowledgment. Ordinary cleanup remains protection-preserving.
+- Protection removal and file deletion share one transaction. Execution rechecks
+  the frozen target, current permissions and a fingerprint of the exact dependency
+  state. Changed previews fail without partial cleanup; mutation-key retries are
+  idempotent. Reading writes and formal-review creation share the file-reference
+  lock, and attachment rows fence concurrent linked-record insertion. Completed
+  upload-session pointers are released before resource removal using the same
+  helper as ordinary purge.
+- Another reader's private data, inaccessible sources, annotations, task/formal
+  review evidence, snippets, image drafts, active uploads and unindexed edits
+  remain blockers. Personal reading removals synchronize as tombstones. The UI
+  does not expose other readers' private record labels or inaccessible note IDs.
+- **2,045 unit tests / 106 files**, TypeScript, ESLint, documentation checks,
+  theme validation and an isolated optimized production build passed. All ten
+  Trash workflows passed against that build in Chromium, Firefox and WebKit
+  (**30 runs**), including direct-menu access, cancel/back, one-confirmation purge,
+  current/saved-history retention release, stale preview rejection, broken-link
+  acknowledgment, retry idempotency, preserved library metadata, private-source
+  restrictions and formal-review protection. The production confirmation capture
+  was visually reviewed. Artifacts: ignored
+  `test-results/trash-quick-production-{chromium,firefox,webkit}/`.
+- Tests used isolated staging only; no working Trash data was deleted. Port 8080
+  remained healthy. No migration, commit, push or deployment was performed.
+
+### Actionable Trash recovery and tidy cleanup UI
+
+- Replaced the technical deletion preview with Ready / Needs attention filters,
+  per-file protection details, and a fixed dialog footer. No deletion field or
+  destructive action is shown when nothing is ready. The main toolbar keeps
+  search and workspace controls aligned; advanced filters and restore behavior
+  are grouped in a collapsible panel. Light/dark visual captures and 1,280px
+  desktop overflow/alignment checks accompany the tests.
+- File protection identifies accessible retaining notes and saved history,
+  reference-library associations, private reading data and research safeguards.
+  Explicit personal reading cleanup checks the operation owner, current workspace
+  permission, frozen file revision and each selected record's owner/version.
+  It preserves other readers' data, annotations and history, returns tombstones
+  for reading synchronization, and does not itself delete the file. Recheck is
+  accurately labelled: it indexes saved server edits, not unsaved device edits.
+- Added preview guards for snippet assets, review file versions and image drafts.
+  Completed operations can be reviewed again without repeating completed targets
+  or pulling newly trashed files into the selection. Ordinary restore defaults
+  to the workspace root when the original folder is unavailable, keeping both
+  names on conflict.
+- **2,044 unit tests / 106 files**, TypeScript, ESLint, documentation checks,
+  theme validation and an isolated optimized production build passed. Five focused
+  workflows passed on that build in Chromium, Firefox and WebKit (**15 runs**):
+  explicit personal cleanup/deletion, note/history links and private-reader
+  redaction, stale/unrelated record and permission rejection, restored-target
+  rejection, mixed-selection recheck, snippet protection and inaccessible-source
+  redaction. Production artifacts are in ignored
+  `test-results/trash-production-{chromium,firefox,webkit}/`.
+- Tests used isolated staging only. No working Trash items or reading records
+  were removed, no database migration is required, and no commit/push/deployment
+  was performed for this increment.
+
 ### Workspace Research integration and layout polish
 
 - Research now sits between Overview and Files in every workspace, with Summary,

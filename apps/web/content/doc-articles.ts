@@ -419,7 +419,7 @@ export const guideBodies: Record<string, GuideBody> = {
     ],
     [
       "Audit and Trash",
-      "Quick access exposes Audit and Trash. Audit records authorized changes and operation progress. Trash supports file and workspace lifecycle operations with role checks and retention rules. Permanent deletion is not ordinary archiving; read confirmations and version-retention warnings.",
+      "Quick access exposes Audit and Trash. Audit records authorized changes and operation progress. Trash separates Ready items from Needs attention. For a stored file, Remove protection & purge is available directly in its Trash menu and deletion preview. One confirmation can remove your reading data, release attachment retention from notes/history you manage and edit, detach editable library file associations and delete the file. Notes, revisions and library references remain; you must acknowledge broken attachment links. The action is atomic and rejects changed protection or access. Other readers' records, inaccessible sources, annotations and formal research evidence remain protected. Review protection offers selective reading cleanup and links to sources instead. Restore file keeps the evidence and its links. Recheck examines saved server edits, not unsynchronized device changes. Ordinary cleanup only deletes ready items.",
     ],
   ]),
   "workspace/groups": guide([
