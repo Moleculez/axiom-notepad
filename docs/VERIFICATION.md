@@ -5,6 +5,128 @@ Do not treat historical browser totals or local build IDs as current release evi
 
 ## September 28 in-app guide and evidence workbench
 
+### Workspace Research integration and layout polish
+
+- Research now sits between Overview and Files in every workspace, with Summary,
+  Library, Reading queue, Evidence and Knowledge graph. Removed the Quick access
+  destination and redundant group/workspace selectors. Old Research URLs resolve
+  through permission-checked workspace redirects; commands inherit an open file's
+  workspace or offer the workspace chooser. Workspace navigation restores the
+  last Research view. Offline reading settings now select a workspace as well.
+- Reworked the embedded layout after visual review: consistent content insets,
+  quieter icon-labelled secondary navigation, aligned search/action rows,
+  collapsible advanced filters with active-state indicators, a named Library
+  results header, and inset, independently scrolling source inspectors. Desktop
+  checks cover 1,280px and 1,440px widths; the gallery uses 1,600px light/dark views.
+  Compact split panes prioritize title/year/status instead of fragmenting venue
+  text, and compress bulk controls while full metadata remains in the inspector.
+  This increment does not add mobile layouts.
+- Migration **38** was first rehearsed transactionally on isolated schema 37.
+  Assertions covered usage-based copies, retained original identities, merge
+  aliases, trashed-note citations, standalone PDFs, collection ancestors, private
+  reading states, independent edits, invalid cross-workspace membership and purge
+  cleanup. Fixture and DDL changes were rolled back before the official migration.
+  The rehearsal is retained in `scripts/verify/workspace-research-migration.ts`;
+  it requires a separate schema-37 test database and never resets one for you.
+- The working development database was migrated only after a fresh full backup
+  and verification of the database plus **1,016 attachment checksums**. No working
+  notes were rewritten or reset. Main/personal libraries retain original IDs;
+  other workspaces own independent copies of sources already used there. Citation
+  snapshots remain authoritative. Old pending local reading edits are resolved
+  with source permissions before replay; unavailable edits are kept for export.
+- **2,042 unit tests / 106 files**, TypeScript, ESLint, documentation-link and
+  theme validation, and an isolated optimized production build passed.
+  Eight end-to-end workflows passed in Chromium, Firefox and WebKit (24 runs),
+  covering independent sibling libraries, restricted and revoked access, viewer
+  behavior, source-link/collection boundaries, citations, archive/trash/restore/
+  purge, private state, old pending reading edits, imports/copy/merge, graph pointer
+  interactions, detail panels, collapsed filters, export and desktop overflow.
+  The final matrix additionally checks workspace tab order, restored Research
+  navigation and the Offline settings workspace selector.
+  The first extended selector check exposed an ambiguous wrapping-label name;
+  the selector now has an explicit accessible label before the final rerun.
+  A final compact-toolbar sizing check also passed in all three engines against
+  the rebuilt application, asserting that bulk actions remain on one row at
+  1,280px. Those three runs are under `test-results/workspace-research-compact-*`.
+- Artifacts: ignored `test-results/workspace-research-final-{chromium,firefox,webkit}/`.
+  Fresh production screenshots are in `docs/assets/showcase/`. Port 8080's health
+  check passed after migration. No commit, push or deployment was performed.
+- Existing beta limitations still apply: physical IME/clipboard and assistive
+  technology acceptance, production-scale library load, external providers and
+  deployment-specific backup recovery are not certified by these checks.
+
+### Knowledge graph pointer interaction follow-up
+
+- Reproduced a click on a painted SVG node opening no inspector. Canvas-wide
+  pointer capture retargeted the click away from the node's handler; the earlier
+  library/graph workflow selected nodes through the alternate accessible list
+  and did not cover this path.
+- Nodes now retain their own pointer capture while drag events bubble to the
+  canvas. Sub-threshold movement stays a click, dragging does not select/open,
+  and cancellation/lost capture clears the gesture. Pointer selection also
+  focuses the node and exposes its pressed state to assistive technology.
+- Removed the size-dependent SVG viewBox: graph coordinates remain CSS pixels
+  while the inspector opens, avoiding a transient target shift that swallowed
+  double-clicks. Explicit graph pan/zoom and exported dimensions are unchanged.
+- Typecheck, ESLint, **2,041 unit tests** and an isolated optimized build passed.
+  Two browser workflows passed in Chromium, Firefox and WebKit against that
+  build: painted-node click/selection, background clearing, node drag, canvas
+  pan, small pointer movement, keyboard selection, note/reference double-click,
+  opening the actual editor, tab preservation and SVG/PNG/JSON exports.
+  The test now uses in-app history and waits for the opened editor's saved state;
+  an initial WebKit run exposed aborted requests from prematurely unloading it.
+- Current artifacts: ignored `test-results/graph-node-production-chromium-final/`,
+  `test-results/graph-node-production-firefox-final/` and
+  `test-results/graph-node-production-webkit-history/`. This is a frontend fix;
+  no database migration or data reset is required.
+
+### Unified Research library and graph follow-up
+
+- Research now owns Overview, Library, Reading queue, Evidence and Knowledge
+  graph in one scoped shell. Legacy library/graph routes normalize to tabs.
+  Filter/selection state survives tab switches; changing context resets it.
+  The shared search control fixes the icon/input alignment in graph and evidence.
+- Added private/group libraries, paged reference tables and a resizable inspector,
+  nested collections, tags, saved-search rename/update/delete, bulk organization,
+  private statuses, reversible reference trash, same-scope standalone PDF/note
+  associations, reviewed BibTeX/RIS import/export and metadata-only library copies.
+  Duplicate merge retains citation aliases and each reader's own latest status.
+- Forward migrations **35–37** passed on an existing isolated database and were
+  applied to development only after a full database/files backup was verified
+  (1,017 attachment checksums). No development data was reset. Applied migrations
+  were not rewritten. A transactional check confirmed group deletion with merge
+  aliases still cascades correctly; the check's fixture changes were rolled back.
+- Production gallery review caught missing citations for Markdown created with
+  `files/new`, which bypasses interactive editor saving. Migration 37 adds derived
+  index invalidation for note creation/body replacement. A regression test now
+  verifies those notes connect without an editor visit. Backfill locks current
+  notes, is resumable and emits a refresh when complete. Old citation keys resolve
+  in editor context and styled HTML export after merging.
+- **2,041 unit tests / 106 files**, typecheck, ESLint, documentation links, theme
+  validation and an isolated optimized production build passed. Unit coverage
+  includes BibTeX field retention, RIS round trips, stable routes, bounded
+  neighborhoods and deterministic 1,000-node layout with retained positions.
+- **11 production-build browser workflows** passed: five in Chromium and three
+  each in Firefox/WebKit. They cover private/group boundaries, viewer/revoked
+  access, collection cycles, standalone PDF linking, preview/apply retries,
+  stale versions, citation aliases, file-menu citation indexing, trash/restore,
+  private reading status, saved-search rename/delete, tab state, aligned search,
+  SVG/PNG/JSON downloads and fullscreen where the browser advertises support.
+  The existing Docs/synthesis workflows also passed in all three engines during
+  development and were repeated in Chromium against production.
+- Current browser artifacts: ignored `test-results/research-production-{chromium,
+firefox,webkit}/`. Fresh light/dark production captures in `docs/assets/showcase/`
+  use fictional Spectral Lab content and include the Library and connected graph.
+  The working port-8080 health check passed; no commit or push was performed.
+- Limits remain explicit: graphs cap at 1,000 nodes/5,000 edges; local search and
+  neighborhoods cover that loaded subset. Imports cap at 1,000 records / 2 MB;
+  bulk import into libraries over 50,000 entries is rejected. Cross-format
+  conversion is not lossless, though original records remain available. These
+  checks do not certify production-scale database load, assistive-technology
+  acceptance or external metadata-provider availability.
+
+### Initial guide and evidence increment
+
 - Added 30 bundled guides, canonical chapter/heading routes, guide search,
   preference-aware command keys, and real in-memory editor/Canvas examples.
   Reference library is in Quick access; Research offers overview, private reading

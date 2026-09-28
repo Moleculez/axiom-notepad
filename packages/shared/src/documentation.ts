@@ -139,9 +139,10 @@ export const docArticles: readonly DocArticle[] = [
     id: "research/references",
     section: "research",
     title: "Reference library",
-    summary: "Build a shared bibliography and a private reading queue.",
+    summary:
+      "Manage personal/group libraries, collections and citation-safe merges.",
     keywords:
-      "reference bibliography bibtex doi arxiv cite reading status library",
+      "reference bibliography bibtex ris doi arxiv cite reading status library collections duplicates merge trash graph",
   },
   {
     id: "research/pdf",

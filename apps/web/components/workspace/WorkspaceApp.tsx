@@ -61,9 +61,6 @@ const Workbench = dynamic(() => import("./Workbench"), {
 });
 const pageLoading = () => <Loading label="Opening page…" />;
 const Explorer = dynamic(() => import("./Explorer"), { loading: pageLoading });
-const ResearchCollection = dynamic(() => import("./Research"), {
-  loading: pageLoading,
-});
 const HomePage = dynamic(
   () => import("./Pages").then((module) => module.HomePage),
   { loading: pageLoading },
@@ -76,9 +73,12 @@ const PeoplePage = dynamic(
   () => import("./Pages").then((module) => module.PeoplePage),
   { loading: pageLoading },
 );
-const ResearchPage = dynamic(() => import("./ResearchWorkbench"), {
-  loading: pageLoading,
-});
+const ResearchPage = dynamic(
+  () => import("./ResearchWorkspace").then((m) => m.LegacyResearchRedirect),
+  {
+    loading: pageLoading,
+  },
+);
 const Documentation = dynamic(() => import("./Documentation"), {
   loading: pageLoading,
 });
@@ -468,8 +468,11 @@ export default function WorkspaceApp() {
     } else show(resource);
   }, []);
   useEffect(() => {
-    if (page === "tools")
-      go(tabRoute(location.pathname + location.search), true);
+    if (page === "tools" || page === "research") {
+      const path = location.pathname + location.search;
+      const normalized = tabRoute(path);
+      if (normalized !== path.replace(/^\/workbench/, "")) go(normalized, true);
+    }
   }, [page]);
   const finishSignout = async () => {
     if (!session) return;
@@ -789,11 +792,7 @@ export default function WorkspaceApp() {
                 ) : page === "docs" ? (
                   <Documentation />
                 ) : page === "research" ? (
-                  parts[1] === "references" || parts[1] === "graph" ? (
-                    <ResearchCollection view={parts[1]} />
-                  ) : (
-                    <ResearchPage />
-                  )
+                  <ResearchPage />
                 ) : page === "inbox" ? (
                   <InboxPage />
                 ) : page === "people" ? (

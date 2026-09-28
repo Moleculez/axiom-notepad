@@ -85,6 +85,16 @@ const sections = new Set([
   "new",
 ]);
 const queries = new Set([
+  "research",
+  "reference",
+  "focus",
+  "hops",
+  "collection",
+  "filter",
+  "year",
+  "types",
+  "labels",
+  "orphans",
   "create",
   "space",
   "folder",
@@ -131,6 +141,10 @@ export function tabRoute(input: string): string {
       const group = url.searchParams.get("group");
       if (group && group.length <= 500) params.set("groupId", group);
     }
+    if (path === "/research/references" || path === "/research/graph") {
+      params.set("view", path.endsWith("/graph") ? "graph" : "library");
+      path = "/research";
+    }
     if (/^\/(notes|files)\/?$/.test(path)) {
       params.set("kind", path.startsWith("/notes") ? "note" : "file");
       params.set("view", "all");
@@ -159,7 +173,21 @@ export function tabTitle(path: string) {
       docArticle(new URL(route, "http://workspace.local").pathname.slice(6))
         ?.title ?? "Docs"
     );
-  if (route.startsWith("/research/references")) return "Reference library";
+  if (section === "research") {
+    const view = new URL(route, "http://workspace.local").searchParams.get(
+      "view",
+    );
+    return (
+      (
+        {
+          library: "Reference library",
+          graph: "Knowledge graph",
+          queue: "Reading queue",
+          evidence: "Evidence",
+        } as Record<string, string>
+      )[view ?? ""] ?? "Research"
+    );
+  }
   if (section === "explorer") {
     const params = new URL(route, "http://workspace.local").searchParams,
       view = params.get("view");

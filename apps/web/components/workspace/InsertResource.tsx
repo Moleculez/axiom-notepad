@@ -42,6 +42,7 @@ export default function InsertResource({
   note,
   space,
   initialFilter = "all",
+  selection,
   onClose,
   onInsert,
 }: {
@@ -49,6 +50,7 @@ export default function InsertResource({
   note: Pick<Note, "id" | "visibility"> & { parent_id?: string | null };
   space?: Space;
   initialFilter?: MediaFilter;
+  selection?: { spaceIds: string[]; onChoose: (resource: Resource) => void };
   onClose: () => void;
   onInsert: (value: string) => boolean | void;
 }) {
@@ -62,7 +64,7 @@ export default function InsertResource({
   const [tab, setTab] = useState<"library" | "upload" | "url">("library");
   const [search, setSearch] = useState(""),
     [query, setQuery] = useState("");
-  const [scope, setScope] = useState(space?.id ?? ""),
+  const [scope, setScope] = useState(space?.id ?? selection?.spaceIds[0] ?? ""),
     [folder, setFolder] = useState<string | null>(null);
   const [view, setView] = useState("all"),
     [filter, setFilter] = useState<MediaFilter>(initialFilter),
@@ -122,7 +124,7 @@ export default function InsertResource({
   if (mime) params.set("mime", mime);
   if (pageCursor) params.set("cursor", pageCursor);
   const data = useData<ResourcePage>(
-    tab === "library" ? "resources?" + params : null,
+    tab === "library" && (!selection || !!scope) ? "resources?" + params : null,
     revision,
   );
   useEffect(() => {
@@ -151,11 +153,13 @@ export default function InsertResource({
       label: "fig-" + crypto.randomUUID().slice(0, 8),
     });
     setSelected((items) =>
-      items.length <= 1
+      selection
         ? [item]
-        : items.some((entry) => entry.id === item.id)
-          ? items
-          : [...items, item],
+        : items.length <= 1
+          ? [item]
+          : items.some((entry) => entry.id === item.id)
+            ? items
+            : [...items, item],
     );
   };
   const scopeSpace = spaces.find((entry) => entry.id === scope);
@@ -213,6 +217,10 @@ export default function InsertResource({
     }
   };
   const insert = () => {
+    if (selection) {
+      if (active) selection.onChoose(active);
+      return;
+    }
     if (tab === "url") {
       try {
         const parsed = new URL(url);
@@ -279,18 +287,20 @@ export default function InsertResource({
     setSearch("");
   };
   const tabs: readonly ("library" | "upload" | "url")[] =
-    kind === "file"
+    kind === "file" && !selection
       ? (["library", "upload", "url"] as const)
       : (["library"] as const);
   const icons = { library: Library, upload: Upload, url: Link2 };
   return (
     <Dialog
       title={
-        kind === "note"
-          ? "Link a research note"
-          : filter === "image"
-            ? "Insert an image"
-            : "Insert an attachment"
+        selection
+          ? "Link a source from your workspace"
+          : kind === "note"
+            ? "Link a research note"
+            : filter === "image"
+              ? "Insert an image"
+              : "Insert an attachment"
       }
       subtitle="Preview first · references retain their selected version"
       onClose={onClose}
@@ -364,7 +374,7 @@ export default function InsertResource({
               <select
                 aria-label="Workspace"
                 value={scope}
-                disabled={note.visibility === "shared"}
+                disabled={!selection && note.visibility === "shared"}
                 onChange={(e) => {
                   setScope(e.target.value);
                   setFolder(null);
@@ -373,8 +383,10 @@ export default function InsertResource({
                 }}
               >
                 {spaces
-                  .filter(
-                    (s) => note.visibility !== "shared" || s.id === space?.id,
+                  .filter((s) =>
+                    selection
+                      ? selection.spaceIds.includes(s.id)
+                      : note.visibility !== "shared" || s.id === space?.id,
                   )
                   .map((s) => (
                     <option key={s.id} value={s.id}>
@@ -386,6 +398,7 @@ export default function InsertResource({
                 <select
                   aria-label="File type"
                   value={filter}
+                  disabled={!!selection}
                   onChange={(e) => {
                     setFilter(e.target.value as MediaFilter);
                     setActive(null);
@@ -468,7 +481,7 @@ export default function InsertResource({
                       }
                       role="listitem"
                     >
-                      {item.kind !== "folder" && (
+                      {item.kind !== "folder" && !selection && (
                         <input
                           type="checkbox"
                           aria-label={"Select " + item.name}
@@ -749,16 +762,20 @@ export default function InsertResource({
                       );
                     }}
                   />
-                  <MediaOptions
-                    value={options}
-                    onChange={setOptions}
-                    mime={active.mime ?? ""}
-                  />
-                  <ResearchInsert
-                    resource={active}
-                    onInsert={finish}
-                    shared={note.visibility === "shared"}
-                  />
+                  {!selection && (
+                    <>
+                      <MediaOptions
+                        value={options}
+                        onChange={setOptions}
+                        mime={active.mime ?? ""}
+                      />
+                      <ResearchInsert
+                        resource={active}
+                        onInsert={finish}
+                        shared={note.visibility === "shared"}
+                      />
+                    </>
+                  )}
                 </>
               ) : (
                 <NotePreview id={active.id} />
@@ -801,7 +818,7 @@ export default function InsertResource({
             disabled={busy || (tab === "url" ? !url.trim() : !selected.length)}
             onClick={insert}
           >
-            Insert
+            {selection ? "Link selected source" : "Insert"}
             {selected.length > 1 && tab !== "url"
               ? " " + selected.length + " files"
               : ""}

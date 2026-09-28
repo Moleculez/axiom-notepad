@@ -30,6 +30,7 @@ import {
   CloudOff,
 } from "lucide-react";
 import { tabTitle } from "@axiom/shared/application-tabs";
+import { researchCommandRoute } from "@axiom/shared/research-navigation";
 import {
   locationResourceId,
   workspaceLocation,
@@ -51,7 +52,18 @@ export const destinations = [
   ["/home", "Home", "Recent work and your day", Home],
   ["/explorer", "Explorer", "Notes, folders and files", FolderOpen],
   ["/research", "Research", "Reading queue, evidence and synthesis", BookOpen],
-  ["/research/references", "Reference library", "Shared bibliography and citations", BookOpen],
+  [
+    "/research?view=library",
+    "Reference library",
+    "References in this workspace",
+    BookOpen,
+  ],
+  [
+    "/research?view=graph",
+    "Knowledge graph",
+    "Notes, references and PDFs",
+    BookOpen,
+  ],
   ["/docs", "Docs", "Product guides and safe interactive examples", BookOpen],
   ["/groups", "Groups", "Create, join and manage your groups", Users],
   [
@@ -86,6 +98,22 @@ export const locationIcon = (path: string) => {
     LayoutGrid
   );
 };
+
+/** Commands inherit the current workspace, including when a file is open. */
+export function useDestinationRoute() {
+  const { path, params } = useLocation(),
+    { revision } = useWorkspace();
+  const resourceId = locationResourceId(path + "?" + params),
+    resource = useData<ResourceLocation>(
+      resourceId ? `resources/${resourceId}/location` : null,
+      revision,
+    );
+  const spaceId = path.startsWith("/workspaces/")
+    ? path.split("/")[2]
+    : (resource.data?.space.id ??
+      (path === "/explorer" ? (params.get("space") ?? undefined) : undefined));
+  return (destination: string) => researchCommandRoute(destination, spaceId);
+}
 
 export function WorkspaceLocation() {
   const sessions = useWorkSessions()!,
@@ -449,6 +477,7 @@ export function WorkspaceStatus({ offline }: { offline: boolean }) {
 /** Existing /new bookmarks remain useful, without reviving a tab lifecycle. */
 export function WorkspaceLauncher() {
   const { navigate } = useWorkspace();
+  const destinationRoute = useDestinationRoute();
   return (
     <main className="ws-page application-launcher">
       <span className="ws-eyebrow">YOUR WORKSPACE</span>
@@ -477,7 +506,7 @@ export function WorkspaceLauncher() {
       </section>
       <div className="application-destinations">
         {destinations.map(([path, title, description, Icon]) => (
-          <button key={path} onClick={() => navigate(path)}>
+          <button key={path} onClick={() => navigate(destinationRoute(path))}>
             <Icon size={23} />
             <strong>{title}</strong>
             <span>{description}</span>

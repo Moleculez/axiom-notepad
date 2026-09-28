@@ -2,7 +2,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
   ArrowUp,
-  BookOpen,
   ChevronLeft,
   ChevronRight,
   ClipboardCheck,
@@ -97,7 +96,6 @@ export default function WorkspaceSidebar() {
   const views = [
     ["/explorer?view=recent", Clock3, "Recent"],
     ["/explorer?view=favorites", Star, "Favorites"],
-    ["/research/references", BookOpen, "Reference library"],
     ["/inbox?view=reviews", ClipboardCheck, "Review inbox"],
     ["/audit", History, "Audit"],
     ["/trash", Trash2, "Trash"],

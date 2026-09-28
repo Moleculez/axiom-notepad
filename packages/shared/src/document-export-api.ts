@@ -27,12 +27,9 @@ export async function documentExportPreview(
   };
   const note = await check();
   const references = Object.fromEntries(
-    (
-      await query(
-        "SELECT cite_key,title,authors,year,url FROM bibliography WHERE group_id=$1 UNION ALL SELECT cite_key,data->>'title',data->>'authors',data->>'year',data->>'url' FROM personal_citations WHERE note_id=$2",
-        [note.group_id, id],
-      )
-    ).map((r) => [r.cite_key, r]),
+    (await query("SELECT * FROM axiom_note_bibliography($1)", [id])).map(
+      (r) => [r.cite_key, r],
+    ),
   );
   const targets = await query(
     "SELECT id,title FROM notes WHERE group_id=$1 AND deleted_at IS NULL AND axiom_can_read_note($2,id)",

@@ -21,7 +21,7 @@ export type EvidenceSelection = z.infer<typeof evidenceSelectionSchema>;
 export const synthesisInputSchema = z
   .object({
     selection: evidenceSelectionSchema,
-    groupId: z.uuid().nullable(),
+    groupId: z.uuid().nullable().default(null),
     spaceId: z.uuid().nullable(),
     destination: z.uuid(),
     name: resourceNameSchema,

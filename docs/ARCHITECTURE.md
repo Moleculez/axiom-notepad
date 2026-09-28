@@ -84,12 +84,36 @@ font URLs are not accepted. User overrides and high-contrast choices stay
 authoritative. Fonts are bundled local WOFF2 assets; personal HTML embeds the
 required fonts and licenses. See [settings](SETTINGS.md) and [theme authoring](THEME_AUTHORING.md).
 
-The database migration sequence currently ends at **25**. Migrations 19–20 add
+The database migration sequence currently ends at **37**. Migrations 19–20 add
 annotation threads and visual placement; 21–24 add resource revisions, review,
 draft retention, bounded visits and reversible decision evidence. Migration 25
 unifies workspace planning and separates group/workspace lifecycle. Fresh
 initialization, 18 → 25 and seeded 24 → 25 upgrades are rehearsed on disposable
 databases. These receipts are not a backup or a production rollout.
+
+Research is embedded in `UnifiedWorkspace`, between Overview and Files, with one
+secondary tabbed shell (`ResearchWorkspace`) and lazy library, details/import/merge
+and graph surfaces. All server reads are workspace-content scoped;
+reference collections and merge aliases cannot cross library ownership. Migration
+35 adds personal ownership, soft trash, canonical aliases and a derived citation
+index. Migration 36 adds normalized-identity indexes and collection membership
+integrity. Migration 37 queues citation invalidation for all note insert/body
+writers, including file-menu creation, imports and restores.
+Migration 38 introduces mandatory workspace ownership and usage-based independent
+copies. Original identities stay in the main/personal library; migration maps
+resolve old workspace-qualified links. Database triggers constrain aliases,
+collection membership and source links to one workspace. File moves detach old
+manual library links while transfer-time citation snapshots preserve attribution.
+Workspace purge removes its library and corresponding private reading records.
+Old pending reading identities are resolved with source ACL checks before local
+outbox replay; no pending authored data is discarded or copied to sibling spaces.
+`axiom_note_bibliography` resolves aliases consistently for editor
+context, HTML/export, transfers and publications; existing per-note snapshots win.
+New saves index citations in the note transaction. Backfill locks the current note
+before parsing, skips locked notes and deletes work only in that same transaction.
+Graph layout runs in a bounded worker; rendering is capped at 1,000 nodes/5,000
+edges and does not perform per-node HTTP requests. API mutations use scoped locks,
+revisions and idempotent receipts; import/copy/merge apply revalidates its preview.
 
 `space_id` is authoritative for tasks, milestones, routines, discussions and
 reviews. Legacy `project_id`/membership records remain an ACL and URL adapter;
@@ -154,7 +178,7 @@ receipts separate from shared research content. Deletion/retention and response
 publication serialize on conversation locks. Polling batches normal evidence
 authorization, with per-turn dependency checks when access is lost.
 
-The design targets small research groups (roughly 50 members and up to 10 simultaneous editors on a note). Ten-client convergence is an acceptance test, not a public-internet load/SLA guarantee. Text is limited to one million characters per note. Code blocks are displayed, never executed. Bibliography metadata is group-shared; there is no automatic external AI-provider upload or paper scraping.
+The design targets small research groups (roughly 50 members and up to 10 simultaneous editors on a note). Ten-client convergence is an acceptance test, not a public-internet load/SLA guarantee. Text is limited to one million characters per note. Code blocks are displayed, never executed. Bibliography metadata is workspace-scoped; there is no automatic external AI-provider upload or paper scraping.
 
 There is no billing, checkout, public signup/sharing or arbitrary user-defined database system. Workspaces have bounded List/Board/Calendar/Gantt/Workload planning, recurrences, dependencies, snapshot-bound reviews and discussions. PostgreSQL DATE values remain calendar strings to prevent time-zone shifts during JSON round trips. Email requires explicit preferences and SMTP configuration.
 

@@ -350,7 +350,7 @@ export async function buildWorkspaceExport(id: string) {
       ]),
     );
     const { rows: citations } = await client.query(
-      "SELECT n.id,c.cite_key,c.data->>'bibtex' AS bibtex FROM personal_citations c JOIN notes n ON n.id=c.note_id WHERE n.id=ANY($1::uuid[]) AND coalesce($2::text,n.body) LIKE '%@'||c.cite_key||'%' UNION SELECT n.id,b.cite_key,b.bibtex FROM notes n JOIN bibliography b ON b.group_id=n.group_id WHERE n.id=ANY($1::uuid[]) AND coalesce($2::text,n.body) LIKE '%@'||b.cite_key||'%'",
+      "SELECT n.id,b.cite_key,b.bibtex FROM notes n CROSS JOIN LATERAL axiom_note_bibliography(n.id) b WHERE n.id=ANY($1::uuid[]) AND coalesce($2::text,n.body) LIKE '%@'||b.cite_key||'%'",
       [record.resource_ids, snapshot?.source ?? null],
     );
     const zip = new ZipFile();

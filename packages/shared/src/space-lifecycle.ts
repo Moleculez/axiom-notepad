@@ -99,7 +99,7 @@ export async function spaceImpact(client: pg.PoolClient, space: Space) {
    (SELECT count(*)::int FROM note_links WHERE target_id=ANY($1::uuid[]) AND NOT(source_id=ANY($1::uuid[]))) AS external_notes,
    (SELECT count(*)::int FROM task_resources e JOIN tasks t ON t.id=e.task_id WHERE e.resource_id=ANY($3::uuid[]) AND NOT(t.space_id=ANY($5::uuid[]))) AS task_evidence,
    (SELECT count(*)::int FROM paper_annotations WHERE attachment_id=ANY($2::uuid[]) AND NOT deleted) AS annotations,
-   (SELECT count(*)::int FROM reference_attachments WHERE attachment_id=ANY($2::uuid[])) AS citations,
+   (SELECT count(*)::int FROM reference_attachments l JOIN bibliography b ON b.id=l.reference_id WHERE l.attachment_id=ANY($2::uuid[]) AND NOT(b.space_id=ANY($5::uuid[]))) AS citations,
    (SELECT count(*)::int FROM reading_items WHERE target_id=ANY($2::uuid[]) AND target_type='attachment' AND NOT deleted) AS reading,
    (SELECT count(*)::int FROM upload_sessions WHERE space_id=ANY($5::uuid[]) AND status IN ('uploading','verifying','failed')) AS transfers,
    (SELECT count(*)::int FROM workspace_exports WHERE space_id=ANY($5::uuid[]) AND status IN ('queued','running')) AS exports`,
@@ -424,6 +424,7 @@ export async function purgeSpace(id: string, userId: string, version: number) {
         impact.blockers.map((item) => item.label).join("; "),
       );
     const { scope, ids, notes, versions } = impact;
+    await client.query("DELETE FROM bibliography WHERE space_id=ANY($1::uuid[])", [scope.spaces]);
     await client.query(
       "DELETE FROM task_resources WHERE task_id IN (SELECT id FROM tasks WHERE space_id=$1)",
       [id],

@@ -241,7 +241,7 @@ function SettingsReady({
   const context =
       dataContext ||
       (spaces.find((space) => space.kind === "personal")?.id ??
-        session.groups[0]?.id ??
+        spaces.find((space) => space.role)?.id ??
         ""),
     research = useResearch(
       active && section === "data" ? session.user.id : undefined,
@@ -335,21 +335,22 @@ function SettingsReady({
             <InstallControls />
             <OfflineSettings />
             <label>
-              Reading context
+              Reading workspace
               <select
+                aria-label="Reading workspace"
                 value={context}
                 onChange={(event) => setDataContext(event.target.value)}
               >
-                <option
-                  value={spaces.find((space) => space.kind === "personal")?.id}
-                >
-                  Personal space
-                </option>
-                {session.groups.map((group) => (
-                  <option key={group.id} value={group.id}>
-                    {group.name}
-                  </option>
-                ))}
+                {spaces
+                  .filter((space) => space.role)
+                  .map((space) => (
+                    <option key={space.id} value={space.id}>
+                      {space.name}
+                      {space.group_name
+                        ? ` · ${space.group_name}`
+                        : " · Personal"}
+                    </option>
+                  ))}
               </select>
             </label>
             <ErrorNotice message={openAction.error} />

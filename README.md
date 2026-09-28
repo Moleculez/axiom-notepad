@@ -28,6 +28,13 @@ tested workflows from remaining device, accessibility and provider checks.
   annotations and bookmarks. Select evidence, preview a linked research note or
   Canvas, and explicitly approve creation. Private-to-shared copies require
   acknowledgement; source revisions and permissions are rechecked.
+- **Organize and connect sources.** Every workspace has a Research tab between
+  Overview and Files: Summary, Library, Reading queue, Evidence and Knowledge
+  graph. Independent workspace libraries support nested
+  collections, tags, private reading status, reviewed BibTeX/RIS imports, bulk
+  actions and reversible trash. Duplicate merges preserve citation keys. Explore
+  explicit note, reference and PDF connections with an interactive, exportable graph.
+  Restricted workspaces retain their own content permissions and bibliography.
 - **Write with structure.** Collaborative Markdown, visual/source/read modes,
   display and inline LaTeX, chemistry, nested lists, tables, code, footnotes,
   citations, Mermaid and a hierarchical outline.
@@ -97,6 +104,11 @@ The [productivity roadmap](docs/PRODUCTIVITY_ROADMAP.md) separates this incremen
 from remaining provider acceptance, planning refinements and team-operation stages.
 
 ## From evidence to a reviewed plan
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/showcase/research-library-dark.png">
+  <img src="docs/assets/showcase/research-library-light.png" alt="Research Library: collections and tags, a sortable bibliography, private reading statuses and linked source details." width="1600" loading="lazy">
+</picture>
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/showcase/research-dark.png">
@@ -200,8 +212,8 @@ docker compose --env-file .env.production exec web node --import tsx scripts/ops
 ```
 
 Read [deployment, backups and upgrades](docs/DEPLOYMENT.md) before using real data.
-The current assistant and workspace publishing features require database migrations
-through **34**.
+Current features require database migrations through **37**, including personal
+reference libraries, citation indexing and duplicate-detection indexes.
 Back up database and stored files, stop old writers, migrate, and restart matching
 web/sync/worker/publish versions; do not mix old services with the new schema.
 Production configuration never loads the development `.env` into containers.

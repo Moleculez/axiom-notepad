@@ -12,7 +12,7 @@ export default function ResizablePanel({
   children,
 }: {
   account: string;
-  name: "sidebar" | "document-context";
+  name: "sidebar" | "document-context" | "research-details";
   edge: "left" | "right";
   className: string;
   label: string;
@@ -20,7 +20,8 @@ export default function ResizablePanel({
 }) {
   const min = 220,
     max = name === "sidebar" ? 420 : 480;
-  const fallback = name === "sidebar" ? 248 : 270;
+  const fallback =
+    name === "sidebar" ? 248 : name === "research-details" ? 340 : 270;
   const key = `axiom:panel-width:${account}:${name}`;
   const id = useId();
   const panel = useRef<HTMLElement>(null);

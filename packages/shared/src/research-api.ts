@@ -1,13 +1,7 @@
 import { z } from "zod";
 import type pg from "pg";
 import { query, transaction } from "./db";
-import {
-  HttpError,
-  memberAccess,
-  noteAccess,
-  fileAccess,
-  spaceAccess,
-} from "./access";
+import { HttpError, noteAccess, fileAccess, spaceAccess } from "./access";
 import { notifyWorkspace } from "./documents";
 import { updateBibtexEntry, parseBibtex } from "./bibliography";
 import {
@@ -17,7 +11,13 @@ import {
   normalizeIdentifier,
 } from "./research";
 import { lookupReference } from "./reference-lookup";
-import { requireScope, assertGroupActive } from "./workspace-service";
+import { requireScope } from "./workspace-service";
+import {
+  referenceAccess,
+  checkLibraryScope,
+  resolveLibraryScope,
+  requireLibraryScope,
+} from "./research-library-service";
 const uuid = z.uuid();
 const json = (value: unknown, status = 200) =>
   Response.json(value, {
@@ -46,44 +46,36 @@ async function attachmentAccess(user: string, id: string, pdfOnly = true) {
     throw new HttpError(400, "Choose a PDF attachment.");
   return { file, note, space };
 }
-async function referenceAccess(user: string, id: string) {
-  const [reference] = await query("SELECT * FROM bibliography WHERE id=$1", [
-    uuid.parse(id),
-  ]);
-  if (!reference) throw new HttpError(404, "This reference is unavailable.");
-  await memberAccess(user, reference.group_id);
-  return reference;
-}
-export async function requireLibraryEditor(userId: string, groupId: string) {
-  const member = await memberAccess(userId, groupId);
-  if (member.content_role !== "editor")
-    throw new HttpError(
-      403,
-      "Editor access to the group library is required to change shared references.",
-    );
+export async function requireLibraryEditor(
+  userId: string,
+  groupId: string,
+  spaceId?: string,
+) {
+  const scope = await resolveLibraryScope(
+    userId,
+    spaceId ? { spaceId } : { groupId },
+  );
+  await checkLibraryScope(userId, scope, true);
 }
 export async function libraryMutation<T>(
   userId: string,
   groupId: string,
   work: (client: pg.PoolClient) => Promise<T>,
+  spaceId?: string,
 ): Promise<T> {
+  const scope = await resolveLibraryScope(
+    userId,
+    spaceId ? { spaceId } : { groupId },
+  );
   return transaction(async (client) => {
-    await assertGroupActive(client, groupId);
-    const {
-      rows: [member],
-    } = await client.query(
-      "SELECT content_role FROM members WHERE group_id=$1 AND user_id=$2",
-      [groupId, userId],
-    );
-    if (member?.content_role !== "editor")
-      throw new HttpError(
-        403,
-        "Editor access to the active group library is required.",
-      );
+    await requireLibraryScope(client, userId, scope, true);
     // Reference creation and removal serialize against file/workspace purges.
     await client.query(
       "SELECT pg_advisory_xact_lock_shared(hashtext('axiom:file-references'))",
     );
+    await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [
+      "library:" + scope.spaceId,
+    ]);
     return work(client);
   });
 }
@@ -92,21 +84,24 @@ export async function libraryQuery(
   groupId: string,
   sql: string,
   values: unknown[],
+  spaceId?: string,
 ) {
   return libraryMutation(
     userId,
     groupId,
     async (client) => (await client.query(sql, values)).rows,
+    spaceId,
   );
 }
 export async function referenceLibrary(userId: string, groupId: string) {
-  await memberAccess(userId, groupId);
+  const scope = await resolveLibraryScope(userId, { groupId });
+  await checkLibraryScope(userId, scope);
   const rows = await query(
     `SELECT b.*,
     COALESCE((SELECT jsonb_agg(jsonb_build_object('id',n.id,'title',n.title,'project_id',n.project_id,'tags',n.tags)) FROM reference_notes l JOIN notes n ON n.id=l.note_id WHERE l.reference_id=b.id AND n.group_id=b.group_id AND n.deleted_at IS NULL AND axiom_can_read_note($2,n.id)),'[]'::jsonb) AS linked_notes,
     COALESCE((SELECT jsonb_agg(jsonb_build_object('id',a.id,'name',r.name,'note_id',a.note_id)) FROM reference_attachments l JOIN attachments a ON a.id=l.attachment_id JOIN file_versions v ON v.id=a.id JOIN resources r ON r.id=v.resource_id JOIN spaces s ON s.id=r.space_id WHERE l.reference_id=b.id AND s.group_id=b.group_id AND r.deleted_at IS NULL AND axiom_space_role($2,s.id) IS NOT NULL),'[]'::jsonb) AS linked_papers
-    FROM bibliography b WHERE b.group_id=$1 ORDER BY b.cite_key`,
-    [groupId, userId],
+    FROM bibliography b WHERE b.space_id=$1 AND b.merged_into IS NULL AND b.deleted_at IS NULL ORDER BY b.cite_key`,
+    [scope.spaceId, userId],
   );
   return rows.map((r) => {
     let parsed;
@@ -276,11 +271,79 @@ export async function researchApi(
     return json({ error: "Method not allowed." }, 405);
   }
   if (resource === "me" && id === "reading") {
+    if (action === "contexts" && method === "POST") {
+      const input = z
+        .object({
+          items: z
+            .array(
+              z
+                .object({
+                  id: uuid,
+                  group_id: uuid,
+                  target_type: readingInputSchema.shape.target_type,
+                  target_id: uuid,
+                })
+                .strict(),
+            )
+            .max(100),
+        })
+        .strict()
+        .parse(await request.json());
+      const items = [];
+      for (const item of input.items) {
+        try {
+          let spaceId: string,
+            groupId: string | null,
+            targetId = item.target_id;
+          if (item.target_type === "reference") {
+            const ref = await referenceAccess(userId, item.target_id);
+            spaceId = ref.space_id;
+            groupId = ref.group_id;
+          } else if (item.target_type === "group") {
+            const [existing] = await query(
+              "SELECT id,group_id FROM spaces WHERE id=$1",
+              [item.target_id],
+            );
+            const scope = existing
+              ? { spaceId: existing.id }
+              : await resolveLibraryScope(userId, { groupId: item.target_id });
+            await checkLibraryScope(userId, scope);
+            spaceId = targetId = scope.spaceId;
+            groupId = existing?.group_id ?? item.target_id;
+          } else if (item.target_type === "note") {
+            const note = await noteAccess(userId, item.target_id);
+            if (!note.space_id)
+              throw new HttpError(404, "Reading context unavailable.");
+            spaceId = note.space_id;
+            groupId = note.group_id;
+          } else {
+            const { space } = await attachmentAccess(userId, item.target_id);
+            spaceId = space.id;
+            groupId = space.group_id;
+          }
+          if (![spaceId, groupId].includes(item.group_id))
+            throw new HttpError(404, "Reading context unavailable.");
+          items.push({ id: item.id, group_id: spaceId, target_id: targetId });
+        } catch (error) {
+          if (
+            !(error instanceof HttpError) ||
+            ![403, 404].includes(error.status)
+          )
+            throw error;
+          items.push({
+            id: item.id,
+            error:
+              "This source is unavailable. Your local changes are retained in Offline files & reading data.",
+          });
+        }
+      }
+      return json({ items });
+    }
     if (method === "GET") {
       const groupId = uuid.parse(url.searchParams.get("groupId"));
       return json(
         await query(
-          `SELECT r.* FROM reading_items r LEFT JOIN file_versions v ON r.target_type='attachment' AND v.id=r.target_id LEFT JOIN resources target ON target.id=CASE WHEN r.target_type='note' THEN r.target_id WHEN r.target_type='attachment' THEN v.resource_id END WHERE r.user_id=$1 AND (r.group_id=$2 OR target.space_id=$2) AND ((r.target_type='group' AND r.target_id=$2 AND (EXISTS(SELECT 1 FROM members WHERE user_id=$1 AND group_id=$2) OR axiom_space_role($1,$2) IS NOT NULL)) OR (r.target_type='reference' AND EXISTS(SELECT 1 FROM bibliography b JOIN members m ON m.group_id=b.group_id AND m.user_id=$1 WHERE b.id=r.target_id)) OR (target.deleted_at IS NULL AND axiom_space_role($1,target.space_id) IS NOT NULL)) ORDER BY r.updated_at`,
+          `SELECT r.* FROM reading_items r LEFT JOIN file_versions v ON r.target_type='attachment' AND v.id=r.target_id LEFT JOIN resources target ON target.id=CASE WHEN r.target_type='note' THEN r.target_id WHEN r.target_type='attachment' THEN v.resource_id END WHERE r.user_id=$1 AND (r.group_id=$2 OR target.space_id=$2 OR (r.target_type='reference' AND EXISTS(SELECT 1 FROM bibliography b JOIN spaces s ON s.id=b.space_id WHERE b.id=r.target_id AND s.kind='team' AND s.group_id=$2))) AND ((r.target_type='group' AND r.target_id=$2 AND (EXISTS(SELECT 1 FROM members WHERE user_id=$1 AND group_id=$2) OR axiom_space_role($1,$2) IS NOT NULL)) OR (r.target_type='reference' AND EXISTS(SELECT 1 FROM bibliography b WHERE b.id=r.target_id AND axiom_space_role($1,b.space_id) IS NOT NULL AND axiom_space_state(b.space_id) NOT IN ('trashed','purging'))) OR (target.deleted_at IS NULL AND axiom_space_role($1,target.space_id) IS NOT NULL)) ORDER BY r.updated_at`,
           [userId, groupId],
         ),
       );
@@ -298,9 +361,17 @@ export async function researchApi(
           contexts.push(
             (await noteAccess(userId, file.note_id, true)).group_id,
           );
-      } else if (input.target_type === "reference")
-        contexts = [(await referenceAccess(userId, input.target_id)).group_id];
-      else {
+      } else if (input.target_type === "reference") {
+        const ref = await referenceAccess(userId, input.target_id);
+        if (ref.merged_into || ref.deleted_at)
+          throw new HttpError(
+            409,
+            "This reference was merged or moved to trash. Reopen it in Library.",
+          );
+        // Old pending group-library edits still address the retained original.
+        if (input.group_id === ref.group_id) input.group_id = ref.space_id;
+        contexts = [ref.space_id];
+      } else {
         contexts = [input.target_id];
         if (
           !(
@@ -349,8 +420,8 @@ export async function researchApi(
           rows: [record],
         } = current
           ? await client.query(
-              "UPDATE reading_items SET data=$2,deleted=$3,version=version+1,mutation_id=$4,updated_at=now() WHERE id=$1 RETURNING *",
-              [input.id, input.data, input.deleted, input.mutation_id],
+              "UPDATE reading_items SET data=$2,deleted=$3,version=version+1,mutation_id=$4,group_id=$5,updated_at=now() WHERE id=$1 RETURNING *",
+              [input.id, input.data, input.deleted, input.mutation_id, group],
             )
           : await client.query(
               "INSERT INTO reading_items(id,user_id,group_id,kind,target_type,target_id,data,mutation_id,deleted) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *",
@@ -374,10 +445,22 @@ export async function researchApi(
   }
   if (resource === "references" && id === "lookup" && method === "POST") {
     const input = z
-      .object({ groupId: uuid, identifier: z.string().min(1).max(500) })
+      .object({
+        groupId: uuid.nullable().optional(),
+        spaceId: uuid.optional(),
+        identifier: z.string().min(1).max(500),
+      })
       .strict()
       .parse(await request.json());
-    await memberAccess(userId, input.groupId);
+    await checkLibraryScope(
+      userId,
+      await resolveLibraryScope(
+        userId,
+        input.spaceId
+          ? { spaceId: input.spaceId }
+          : { groupId: input.groupId ?? null },
+      ),
+    );
     let identifier: ReturnType<typeof normalizeIdentifier>;
     try {
       identifier = normalizeIdentifier(input.identifier);
@@ -430,8 +513,22 @@ export async function researchApi(
     (method === "PATCH" || action === "links")
   ) {
     const reference = await referenceAccess(userId, id);
+    if (
+      !reference.group_id ||
+      reference.owner_user_id ||
+      reference.merged_into ||
+      reference.deleted_at
+    )
+      throw new HttpError(
+        409,
+        "Open this reference in the unified Library to make changes.",
+      );
     if (method !== "GET")
-      await requireLibraryEditor(userId, reference.group_id);
+      await requireLibraryEditor(
+        userId,
+        reference.group_id,
+        reference.space_id,
+      );
     if (action === "links" && method === "GET") {
       const attachments = await query(
         "SELECT a.id,r.name,a.note_id,a.sha256,a.bytes,n.title AS note_title FROM reference_attachments l JOIN attachments a ON a.id=l.attachment_id JOIN file_versions v ON v.id=a.id JOIN resources r ON r.id=v.resource_id LEFT JOIN notes n ON n.id=a.note_id WHERE l.reference_id=$1 AND r.deleted_at IS NULL AND axiom_space_role($2,r.space_id) IS NOT NULL",
@@ -452,28 +549,48 @@ export async function researchApi(
         input.kind === "note"
           ? await noteAccess(userId, input.targetId)
           : (await attachmentAccess(userId, input.targetId)).note;
-      if (note.group_id !== reference.group_id)
-        throw new HttpError(400, "Choose an item from this group.");
+      if (note.space_id !== reference.space_id)
+        throw new HttpError(400, "Choose an item from this workspace.");
       const table =
           input.kind === "note" ? "reference_notes" : "reference_attachments",
         column = input.kind === "note" ? "note_id" : "attachment_id";
-      await libraryMutation(userId, reference.group_id, async (client) => {
-        if (method === "POST") {
-          await client.query(
-            `INSERT INTO ${table}(reference_id,${column}) VALUES($1,$2) ON CONFLICT DO NOTHING`,
-            [id, input.targetId],
+      await libraryMutation(
+        userId,
+        reference.group_id,
+        async (client) => {
+          const {
+            rows: [current],
+          } = await client.query(
+            "SELECT merged_into,deleted_at FROM bibliography WHERE id=$1 FOR UPDATE",
+            [id],
           );
-          if (input.kind === "attachment" && note.id)
-            await client.query(
-              "INSERT INTO reference_notes(reference_id,note_id) VALUES($1,$2) ON CONFLICT DO NOTHING",
-              [id, note.id],
+          if (!current || current.merged_into || current.deleted_at)
+            throw new HttpError(
+              409,
+              "This reference changed. Reopen it in Library.",
             );
-        } else
+          if (method === "POST") {
+            await client.query(
+              `INSERT INTO ${table}(reference_id,${column}) VALUES($1,$2) ON CONFLICT DO NOTHING`,
+              [id, input.targetId],
+            );
+            if (input.kind === "attachment" && note.id)
+              await client.query(
+                "INSERT INTO reference_notes(reference_id,note_id) VALUES($1,$2) ON CONFLICT DO NOTHING",
+                [id, note.id],
+              );
+          } else
+            await client.query(
+              `DELETE FROM ${table} WHERE reference_id=$1 AND ${column}=$2`,
+              [id, input.targetId],
+            );
           await client.query(
-            `DELETE FROM ${table} WHERE reference_id=$1 AND ${column}=$2`,
-            [id, input.targetId],
+            "UPDATE bibliography SET version=version+1,updated_at=now() WHERE id=$1",
+            [id],
           );
-      });
+        },
+        reference.space_id,
+      );
       await notifyWorkspace();
       return json({ ok: true });
     }
@@ -494,7 +611,9 @@ export async function researchApi(
       const changed = Object.fromEntries(
         Object.entries(mapping)
           .filter(
-            ([key]) => input[key as keyof typeof mapping] !== reference[key],
+            ([key]) =>
+              input[key as keyof typeof mapping] !==
+              reference[key as keyof typeof mapping],
           )
           .map(([key, field]) => [field, input[key as keyof typeof mapping]]),
       );
@@ -529,6 +648,7 @@ export async function researchApi(
           bibtex,
           input.version,
         ],
+        reference.space_id,
       );
       if (!updated)
         return conflict(

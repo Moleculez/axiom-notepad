@@ -283,7 +283,7 @@ export const guideBodies: Record<string, GuideBody> = {
   "research/workbench": guide([
     [
       "Choose your evidence context",
-      "Research opens an evidence workbench. Choose Personal or a group, then filter a group to a workspace when useful. Overview highlights reading progress, recent annotations and bookmarks. Search and dedicated Queue/Evidence views let you work through larger collections.",
+      "Open a workspace and choose Research between Overview and Files. Summary, Library, Reading queue, Evidence and Knowledge graph share that workspace’s content permissions. No second context selector is needed. Tabs retain filters and selection while you explore the workspace. Summary highlights reading progress, recent annotations and bookmarks.",
     ],
     [
       "Read deliberately",
@@ -301,15 +301,23 @@ export const guideBodies: Record<string, GuideBody> = {
   "research/references": guide([
     [
       "Open the library",
-      "Reference library lives in Quick access. Choose a research group to access its shared bibliography. Personal reading progress stays yours. A group is required for shared bibliography entries; private PDFs can still be used from Research.",
+      "Open Workspace → Research → Library. Each workspace owns an independent bibliography; your personal workspace is private and restricted workspaces retain their content permissions. Reading statuses and saved searches stay private. Use the sortable table and resizable details panel; filters and selections survive switching Research tabs within the same context.",
     ],
     [
       "Add and find references",
-      "Add a reference manually, import BibTeX, or look up a supported DOI/arXiv identifier. Check imported metadata before relying on it. Filter by title, citation key, author, year, linked project/tag or reading status.",
+      "Add a reference manually or explicitly look up a DOI/arXiv identifier. BibTeX/RIS imports preview metadata, duplicate matches and key renames before writing (1,000 entries / 2 MB per import). Organize nested collections and tags, filter title/key/author/year/status, and save personal searches. Drag selected references onto collections, or use the bulk organization controls.",
     ],
     [
       "Connect and export",
-      "Link references to notes and papers; open linked evidence or copy a citation. Export BibTeX when moving a bibliography to another writing environment. Editing shared metadata requires the group's library-editor permission; private reading statuses do not grant that permission.",
+      "Details links existing notes and standalone PDF versions from the same context and shows citation usage. Export filtered or selected entries as BibTeX/RIS. Move references to Library Trash and restore them; existing citations continue to resolve. Copying metadata/tags to a shared library requires audience confirmation and never copies files, annotations or reading history. Shared metadata requires group editor access.",
+    ],
+    [
+      "Review duplicates safely",
+      "Select 2–20 entries, choose the retained reference and review each field. Merge combines tags, collections and file associations; every old citation key and reference URL remains usable. Markdown is not rewritten. Each reader keeps their own latest status. If a source changes during review, refresh the preview.",
+    ],
+    [
+      "Explore the knowledge graph",
+      "Workspace → Research → Knowledge graph shows that workspace’s explicit note links, citations and reference/PDF associations. Search highlights sources; filter types, tags, collections or unconnected items. Click to inspect, double-click to open. Drag to pan/move nodes, Ctrl/⌘ + wheel to zoom, or use Fit/fullscreen/list view. Explore one/two-hop neighborhoods and export SVG/PNG/JSON. Views are bounded to 1,000 sources and 5,000 edges; narrow context if truncated. No AI-inferred edges are added.",
     ],
   ]),
   "research/pdf": guide([

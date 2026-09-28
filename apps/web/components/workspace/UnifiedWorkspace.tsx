@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import {
   ArrowUpRight,
   Blocks,
+  BookOpen,
   ChartGantt,
   CheckCheck,
   FileText,
@@ -21,6 +22,10 @@ import type { Space } from "@axiom/shared/workspace";
 import type { PlanningCalendar, PlanningTask } from "@axiom/shared/planning";
 import { calendarSchema } from "@axiom/shared/planning";
 import { tabRoute } from "@axiom/shared/application-tabs";
+import {
+  researchViews,
+  workspaceResearchRoute,
+} from "@axiom/shared/research-navigation";
 import { publishSessionTitle } from "../../lib/workspace-sessions";
 import Dialog from "../Dialog";
 import DraftGuard from "./DraftGuard";
@@ -40,6 +45,7 @@ import {
   WorkspaceLink,
 } from "./ui";
 const Explorer = dynamic(() => import("./Explorer"));
+const Research = dynamic(() => import("./ResearchWorkspace"));
 const Planning = dynamic(() => import("./WorkspacePlanning"));
 const Discussion = dynamic(() =>
   import("./WorkspacePlanning").then((m) => m.WorkspaceDiscussion),
@@ -59,6 +65,7 @@ const ProviderSettings = dynamic(() => import("../tools/ProviderSettings"));
 const WorkspaceWebsite = dynamic(() => import("../sites/WorkspaceWebsite"));
 const sections = [
   ["overview", "Overview", Blocks],
+  ["research", "Research", BookOpen],
   ["files", "Files", FolderOpen],
   ["planning", "Planning", ChartGantt],
   ["discussions", "Discussions", MessageSquare],
@@ -254,6 +261,8 @@ export default function UnifiedWorkspace({
             Administrative access does not grant permission to read this
             workspace. Use Settings to manage its lifecycle and access.
           </Empty>
+        ) : current === "research" ? (
+          <Research key={space.id} space={space} />
         ) : current === "files" ? (
           <Explorer />
         ) : current === "planning" ? (
@@ -272,6 +281,10 @@ export default function UnifiedWorkspace({
   );
 }
 function WorkspaceDirectory() {
+  const { params } = useLocation();
+  const researchView = researchViews.find(
+    ([view]) => view === params.get("research"),
+  )?.[0];
   const { revision } = useWorkspace(),
     data = useData<Space[]>("spaces?manage=1&summary=1", revision),
     [search, setSearch] = useState(""),
@@ -280,7 +293,7 @@ function WorkspaceDirectory() {
   return (
     <main className="ws-page workspace-directory-page">
       <PageHeading
-        title="Workspaces"
+        title={researchView ? "Choose a research workspace" : "Workspaces"}
         eyebrow="RESEARCH, TOGETHER"
         actions={
           <button className="button primary" onClick={() => setCreating(true)}>
@@ -319,20 +332,31 @@ function WorkspaceDirectory() {
         {data.data
           ?.filter(
             (s) =>
+              (!researchView || !!s.role) &&
               (!state || s.effective_status === state) &&
               `${s.name} ${s.group_name ?? ""} ${s.description ?? ""}`
                 .toLowerCase()
                 .includes(search.toLowerCase()),
           )
           .map((space) => (
-            <WorkspaceDirectoryCard key={space.id} space={space} />
+            <WorkspaceDirectoryCard
+              key={space.id}
+              space={space}
+              researchView={researchView}
+            />
           ))}
       </div>
       {creating && <CreateWorkspace onClose={() => setCreating(false)} />}
     </main>
   );
 }
-function WorkspaceDirectoryCard({ space }: { space: Space }) {
+function WorkspaceDirectoryCard({
+  space,
+  researchView,
+}: {
+  space: Space;
+  researchView?: string;
+}) {
   const { session } = useWorkspace(),
     management = useManagement();
   return (
@@ -346,7 +370,9 @@ function WorkspaceDirectoryCard({ space }: { space: Space }) {
       <WorkspaceLink
         to={
           space.role
-            ? workspaceDestination(session.user.id, space.id)
+            ? researchView
+              ? workspaceResearchRoute(space.id, { view: researchView })
+              : workspaceDestination(session.user.id, space.id)
             : `/workspaces/${space.id}/settings/lifecycle`
         }
       >

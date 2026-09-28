@@ -6,9 +6,12 @@ import { PDFDocument, StandardFonts } from "pdf-lib";
 import { APPEARANCE_SCHEMA } from "../../packages/shared/src/appearance";
 
 const origin = process.env.DOCS_APP_URL ?? "http://localhost:3004";
-if (origin !== "http://localhost:3004" || process.env.NODE_ENV === "production")
+if (
+  !["http://localhost:3004", "http://localhost:3008"].includes(origin) ||
+  process.env.NODE_ENV === "production"
+)
   throw new Error(
-    "Capture only on isolated local staging port 3004, never a working instance.",
+    "Capture only on isolated local staging ports 3004/3008, never a working instance.",
   );
 const output = "docs/assets/showcase";
 await mkdir(output, { recursive: true });
@@ -77,7 +80,7 @@ try {
     spaceId: space.id,
     mutationId: randomUUID(),
     source:
-      "# Diffusion experiment notebook\n\n## Assumptions\n\nCompare spectral stability under small graph perturbations.\n\n## Next experiment\n\nTest a second topology before interpreting transfer.\n",
+      "# Diffusion experiment notebook\n\n## Assumptions\n\nCompare spectral stability under small graph perturbations [@chen2026stability].\n\n## Next experiment\n\nTest a second topology before interpreting transfer [@ray2026transfer].\n",
   });
   const ref = await api(member.request, "references", {
     groupId: group.id,
@@ -141,6 +144,44 @@ try {
     kind: "attachment",
     targetId: meta.id,
   });
+  const scope = { groupId: group.id };
+  const collection = await api(member.request, "research/library/collections", {
+    scope,
+    name: "Spectral methods",
+    mutationId: randomUUID(),
+  });
+  await api(member.request, "research/library/batch", {
+    scope,
+    ids: [ref.id],
+    versions: {
+      [ref.id]: (await api(member.request, "research/library/items/" + ref.id))
+        .version,
+    },
+    operation: "collection-add",
+    collectionId: collection.id,
+    mutationId: randomUUID(),
+  });
+  const currentRef = await api(
+    member.request,
+    "research/library/items/" + ref.id,
+  );
+  await api(member.request, "research/library/batch", {
+    scope,
+    ids: [ref.id],
+    versions: { [ref.id]: currentRef.version },
+    operation: "tag-add",
+    tags: ["stability", "graph methods"],
+    mutationId: randomUUID(),
+  });
+  await expect
+    .poll(async () => {
+      const graph = await api(
+        member.request,
+        `research/graph?groupId=${group.id}`,
+      );
+      return graph.edges.filter((e: any) => e.kind === "citation").length;
+    })
+    .toBe(2);
   const reading = async (
     kind: string,
     target_type: string,
@@ -250,7 +291,7 @@ try {
       path: `${output}/docs-playground-${mode}.png`,
       animations: "disabled",
     });
-    await page.goto(`/workbench/research?groupId=${group.id}`);
+    await page.goto(`/workbench/workspaces/${space.id}/research`);
     await expect(page.locator(".evidence-row")).toHaveCount(6);
     await page.screenshot({
       path: `${output}/research-${mode}.png`,
@@ -260,7 +301,10 @@ try {
       .getByRole("navigation", { name: "Research views" })
       .getByRole("button", { name: "Evidence", exact: true })
       .click();
-    await page.getByLabel(`Select ${resource.name}`, { exact: true }).check();
+    await page
+      .locator(".research-tab-panel:not([hidden])")
+      .getByLabel(`Select ${resource.name}`, { exact: true })
+      .check();
     await page
       .getByRole("button", { name: "Create from evidence", exact: true })
       .click();
@@ -282,6 +326,26 @@ try {
       animations: "disabled",
     });
     await page.getByRole("button", { name: "Cancel", exact: true }).click();
+    await page.goto(
+      `/workbench/workspaces/${space.id}/research?view=library&reference=${ref.id}`,
+    );
+    await expect(page.locator(".library-table tbody tr")).toHaveCount(2);
+    await expect(
+      page.getByRole("complementary", { name: "Reference details" }),
+    ).toContainText("Spectral stability under graph perturbations");
+    await page.screenshot({
+      path: `${output}/research-library-${mode}.png`,
+      animations: "disabled",
+    });
+    await page.goto(
+      `/workbench/workspaces/${space.id}/research?view=graph&focus=reference:${ref.id}`,
+    );
+    await expect(page.locator(".research-node")).toHaveCount(4);
+    await page.getByRole("button", { name: "Fit graph", exact: true }).click();
+    await page.screenshot({
+      path: `${output}/research-graph-${mode}.png`,
+      animations: "disabled",
+    });
   }
   expect(errors).toEqual([]);
   await writeFile(
@@ -301,7 +365,7 @@ try {
     ),
   );
   console.log(
-    "Captured light/dark Docs, Canvas example, Research and synthesis previews using fictional content. No synthesis file or AI request was submitted.",
+    "Captured light/dark Docs, Canvas example, Research, Library, graph and synthesis previews using fictional content. No synthesis file or AI request was submitted.",
   );
 } finally {
   await browser.close();

@@ -162,7 +162,7 @@ export async function resourceTransferApi(
         [noteIds, moving],
       );
       const { rows: citations } = await client.query(
-        "SELECT n.id,b.cite_key,jsonb_build_object('cite_key',b.cite_key,'title',b.title,'authors',b.authors,'year',b.year,'url',b.url,'bibtex',b.bibtex) AS data FROM notes n JOIN bibliography b ON b.group_id=n.group_id WHERE n.id=ANY($1::uuid[]) AND n.body LIKE '%@'||b.cite_key||'%' UNION SELECT note_id,cite_key,data FROM personal_citations WHERE note_id=ANY($1::uuid[])",
+        "SELECT n.id,b.cite_key,to_jsonb(b)-'reference_id' AS data FROM notes n CROSS JOIN LATERAL axiom_note_bibliography(n.id) b WHERE n.id=ANY($1::uuid[]) AND n.body LIKE '%@'||b.cite_key||'%'",
         [noteIds],
       );
       if (moving) {

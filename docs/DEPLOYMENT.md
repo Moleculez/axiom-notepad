@@ -116,6 +116,14 @@ in the running release. A `503` with `reason: database_upgrade_required` means t
 database must be backed up and migrated before the upgrade is ready. Schema-related
 API failures show an explicit upgrade message instead of a generic retry error.
 Health does not prove job progress, storage capacity or provider delivery.
+The workspace Research upgrade requires migration **38**. Back up the database
+and attachments first. Existing bibliography IDs remain in each group's main
+workspace (or their owner's personal workspace). References cited or linked in
+other workspaces receive independent copies, along with aliases and required
+collection ancestry. The migration preserves Markdown and citation snapshots;
+subsequent edits to one workspace's metadata do not change a sibling library.
+Keep web, sync and worker on the same release; do not downgrade the database by
+editing applied migrations. Rehearse on a restored backup for a large library.
 Monitor failed/queued jobs, expired leases, disk space, service
 restarts, HTTP failures and backup age. Web/sync get a graceful shutdown window and
 worker gets five minutes to drain its job. Protect logs; do not log cookies, invitation
@@ -164,11 +172,18 @@ and attachment volume; do not point the live stack at half of a recovered pair.
 
 ## Upgrade discipline
 
-Current features require migrations through **33** (31: reviewed assistant
+Current features require migrations through **37** (31: reviewed assistant
 productivity operations; 32: workspace websites; 33: publication reading metadata,
-stable publication dates and opt-in aggregate analytics). Publication files are included
+stable publication dates and opt-in aggregate analytics; 34: editor media;
+35–37: personal reference libraries, citation backfill, integrity/indexes and
+derived-index invalidation for file creation/import/restore). Publication files are included
 in storage quotas and the paired backup manifest. Upgrade the operations image
 too so backup/restore includes them. Run matching web/sync/worker/publish versions.
+
+Migrations 35–37 preserve existing reference IDs, citation keys, Markdown and Yjs
+state. The worker resumes the derived citation-index backfill in small locked
+batches. Keep the worker running; graph pages indicate when indexing is pending.
+Do not rewrite an applied migration to change its behavior—add a forward migration.
 
 Preserve the previous image by an explicit release tag/digest and rehearse forward
 migrations against a restored copy. Back up the current database/files, then stop web,

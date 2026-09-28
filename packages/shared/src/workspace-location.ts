@@ -2,6 +2,7 @@ import { tabRoute, tabTitle } from "./application-tabs";
 import { fileRouteId, isFileView } from "./file-routes";
 import type { ResourceLocation, Space } from "./workspace";
 import { docArticle, docSections } from "./documentation";
+import { researchViews } from "./research-navigation";
 
 export type LocationCrumb = { label: string; to?: string };
 export function folderRoute(spaceId: string, folderId?: string | null) {
@@ -47,6 +48,9 @@ export function workspaceLocation({
         ? "/explorer?view=all"
         : tabRoute(`/${section}`);
   const first: LocationCrumb = { label: tabTitle(root), to: root };
+  if (section === "research" && url.searchParams.get("view")) {
+    return { crumbs: [first, { label: tabTitle(route) }], up: root };
+  }
   if (section === "docs" && parts[1]) {
     const category = docSections.find(([id]) => id === parts[1]);
     const article = docArticle(parts.slice(1).join("/"));
@@ -77,6 +81,7 @@ export function workspaceLocation({
       base = `/workspaces/${workspaceId}`,
       names: Record<string, string> = {
         overview: "Overview",
+        research: "Research",
         files: "Files",
         planning: "Planning",
         discussions: "Discussions",
@@ -114,6 +119,13 @@ export function workspaceLocation({
       };
     }
     if (parts[3]) crumbs.push({ label: names[parts[3]] ?? parts[3] });
+    if (parts[2] === "research") {
+      const label = researchViews.find(
+        ([value]) => value === url.searchParams.get("view"),
+      )?.[1];
+      if (label) crumbs.push({ label });
+      return { crumbs, up: label ? base + "/research" : base };
+    }
     delete crumbs.at(-1)!.to;
     return {
       crumbs,

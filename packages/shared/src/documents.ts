@@ -147,6 +147,15 @@ export async function indexNote(
       ],
     );
     if (!result.rowCount) return;
+    await client.query("DELETE FROM note_citations WHERE note_id=$1", [id]);
+    if (previous.source_format === "markdown" && parsed.citations.length)
+      await client.query(
+        "INSERT INTO note_citations(note_id,cite_key) SELECT $1,unnest($2::text[]) ON CONFLICT DO NOTHING",
+        [id, parsed.citations],
+      );
+    await client.query("DELETE FROM research_index_queue WHERE note_id=$1", [
+      id,
+    ]);
     if (previous.body !== source)
       await client.query(
         "UPDATE resources SET updated_at=now() WHERE note_id=$1",
@@ -176,4 +185,40 @@ export async function indexNote(
   };
   if (existingClient) await index(existingClient);
   else await transaction(index);
+}
+/** Resumable derived-index backfill. Lock the current note before parsing so old
+ * backfill work cannot overwrite a newer collaborative edit. */
+export async function backfillResearchIndex() {
+  return transaction(async (client) => {
+    const { rows } = await client.query(
+      "SELECT n.id AS note_id,n.body,n.source_format FROM notes n JOIN research_index_queue q ON q.note_id=n.id ORDER BY n.id LIMIT 25 FOR NO KEY UPDATE OF n SKIP LOCKED",
+    );
+    for (const row of rows) {
+      const n = row;
+      if (n) {
+        await client.query("DELETE FROM note_citations WHERE note_id=$1", [
+          row.note_id,
+        ]);
+        const keys =
+          n.source_format === "markdown" ? parseMarkdown(n.body).citations : [];
+        if (keys.length)
+          await client.query(
+            "INSERT INTO note_citations(note_id,cite_key) SELECT $1,unnest($2::text[]) ON CONFLICT DO NOTHING",
+            [row.note_id, keys],
+          );
+      }
+      await client.query("DELETE FROM research_index_queue WHERE note_id=$1", [
+        row.note_id,
+      ]);
+    }
+    if (
+      rows.length &&
+      !(await client.query("SELECT 1 FROM research_index_queue LIMIT 1"))
+        .rowCount
+    )
+      await client.query(
+        "SELECT pg_notify('axiom_refresh','research-index-ready')",
+      );
+    return rows.length > 0;
+  });
 }

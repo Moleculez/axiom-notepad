@@ -1,16 +1,7 @@
 "use client";
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  BookOpen,
-  ExternalLink,
-  FileText,
-  Library,
-  Network,
-  Search,
-  StickyNote,
-  X,
-} from "lucide-react";
+import { BookOpen, ExternalLink, FileText, StickyNote } from "lucide-react";
 import { parseMarkdown } from "@axiom/markdown";
 import type {
   EvidenceItem,
@@ -18,43 +9,37 @@ import type {
   SynthesisPreview,
 } from "@axiom/shared/research-workbench";
 import { readingStatuses, type ReadingItem } from "@axiom/shared/research";
+import type { Space } from "@axiom/shared/workspace";
 import { api, errorMessage, timeAgo } from "../../lib/client";
 import { useResearch } from "../../lib/research-store";
 import Dialog, { DialogFooter } from "../Dialog";
+import ResearchSearch from "./ResearchSearch";
 import ReadingView from "../ReadingView";
-import {
-  Empty,
-  ErrorNotice,
-  Loading,
-  useData,
-  useLocation,
-  useWorkspace,
-  WorkspaceLink,
-} from "./ui";
+import { Empty, ErrorNotice, Loading, useData, useWorkspace } from "./ui";
 const CanvasPreview = dynamic(() => import("../tools/CanvasPlayground"), {
   ssr: false,
   loading: () => <Loading label="Opening Canvas preview…" />,
 });
 
-export default function ResearchWorkbench() {
-  const { session, spaces, navigate } = useWorkspace(),
-    { params } = useLocation();
-  const personal = spaces.find((s) => s.kind === "personal");
-  const groupId = params.get("groupId") ?? params.get("group") ?? "";
-  const spaceId = groupId ? (params.get("space") ?? "") : (personal?.id ?? "");
+export default function ResearchWorkbench({
+  space,
+  active = true,
+  embeddedParams,
+  onRoute,
+}: {
+  space: Space;
+  active?: boolean;
+  embeddedParams: URLSearchParams;
+  onRoute: (changes: Record<string, string>) => void;
+}) {
+  const params = embeddedParams;
+  const groupId = space.group_id ?? "";
+  const spaceId = space.id;
   const view = ["queue", "evidence"].includes(params.get("view") ?? "")
     ? params.get("view")!
     : "overview";
   const [search, setSearch] = useState(params.get("q") ?? "");
-  const route = (changes: Record<string, string>) => {
-    const p = new URLSearchParams(params);
-    p.delete("group");
-    for (const [k, v] of Object.entries(changes)) {
-      if (v) p.set(k, v);
-      else p.delete(k);
-    }
-    navigate(`/research${p.size ? `?${p}` : ""}`);
-  };
+  const route = onRoute;
   useEffect(() => setSearch(params.get("q") ?? ""), [params.toString()]);
   const endpoint = new URLSearchParams({
     view,
@@ -65,70 +50,7 @@ export default function ResearchWorkbench() {
     status: params.get("status") ?? "all",
   });
   return (
-    <main className="ws-page evidence-workbench">
-      <header className="evidence-heading">
-        <div>
-          <span className="docs-eyebrow">Research</span>
-          <h1>From reading to understanding.</h1>
-          <p>
-            Resume a source, gather evidence, and give your next idea a starting
-            point.
-          </p>
-        </div>
-        <WorkspaceLink className="button ghost" to="/docs/research/workbench">
-          <BookOpen size={16} />
-          Guide
-        </WorkspaceLink>
-      </header>
-      <div className="evidence-toolbar">
-        <nav className="ws-segmented" aria-label="Research views">
-          {[
-            ["overview", "Overview"],
-            ["queue", "Reading queue"],
-            ["evidence", "Evidence"],
-          ].map(([value, label]) => (
-            <button
-              key={value}
-              aria-current={view === value ? "page" : undefined}
-              onClick={() => route({ view: value, status: "" })}
-            >
-              {label}
-            </button>
-          ))}
-        </nav>
-        <span className="tool-spacer" />
-        <label>
-          <span className="sr-only">Research context</span>
-          <select
-            aria-label="Research context"
-            value={groupId}
-            onChange={(e) => route({ groupId: e.target.value, space: "" })}
-          >
-            <option value="">Personal</option>
-            {session.groups.map((g) => (
-              <option key={g.id} value={g.id}>
-                {g.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        {groupId && (
-          <select
-            aria-label="Research workspace"
-            value={spaceId}
-            onChange={(e) => route({ space: e.target.value })}
-          >
-            <option value="">All group workspaces</option>
-            {spaces
-              .filter((s) => s.group_id === groupId)
-              .map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-          </select>
-        )}
-      </div>
+    <div className="evidence-workbench embedded">
       <div className="evidence-discovery">
         {view === "evidence" && (
           <select
@@ -141,37 +63,16 @@ export default function ResearchWorkbench() {
             <option value="all">All accessible evidence</option>
           </select>
         )}
-        <form
-          className="docs-search"
-          onSubmit={(e) => {
-            e.preventDefault();
-            route({ q: search.trim() });
+        <ResearchSearch
+          label="Search research"
+          placeholder="Find a paper, passage or bookmark…"
+          value={search}
+          onChange={(value) => {
+            setSearch(value);
+            if (!value) route({ q: "" });
           }}
-        >
-          <Search size={16} />
-          <input
-            aria-label="Search research"
-            placeholder="Find a paper, passage or bookmark…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-          <button type="submit" className="button ghost">
-            Search
-          </button>
-          {search && (
-            <button
-              type="button"
-              className="icon-button"
-              aria-label="Clear research search"
-              onClick={() => {
-                setSearch("");
-                route({ q: "" });
-              }}
-            >
-              <X size={14} />
-            </button>
-          )}
-        </form>
+          onSubmit={() => route({ q: search.trim() })}
+        />
         {view === "queue" && (
           <select
             aria-label="Reading status filter"
@@ -186,20 +87,6 @@ export default function ResearchWorkbench() {
             ))}
           </select>
         )}
-        <WorkspaceLink
-          to={`/research/references${groupId ? `?groupId=${groupId}` : ""}`}
-          className="button ghost"
-        >
-          <Library size={16} />
-          Reference library
-        </WorkspaceLink>
-        <WorkspaceLink
-          to={`/research/graph${groupId ? `?groupId=${groupId}` : ""}`}
-          className="button ghost"
-        >
-          <Network size={16} />
-          Graph
-        </WorkspaceLink>
       </div>
       {view === "overview" && (
         <div className="evidence-introduction">
@@ -218,18 +105,21 @@ export default function ResearchWorkbench() {
           endpoint={endpoint.toString()}
           groupId={groupId || null}
           spaceId={spaceId || null}
+          active={active}
         />
       ) : (
         <Loading label="Opening your research context…" />
       )}
-    </main>
+    </div>
   );
 }
 function EvidenceList({
+  active,
   endpoint,
   groupId,
   spaceId,
 }: {
+  active: boolean;
   endpoint: string;
   groupId: string | null;
   spaceId: string | null;
@@ -241,11 +131,10 @@ function EvidenceList({
     [synthesizing, setSynthesizing] = useState(false),
     [error, setError] = useState("");
   const path = `research/workbench?${endpoint}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`;
-  const result = useData<EvidencePage>(path, revision);
-  const research = useResearch(
-    session.user.id,
-    groupId ?? spaceId ?? undefined,
-  );
+  const visibleRevision = useRef(revision);
+  if (active) visibleRevision.current = revision;
+  const result = useData<EvidencePage>(path, visibleRevision.current);
+  const research = useResearch(session.user.id, spaceId ?? undefined, active);
   useEffect(() => {
     if (result.data && result.path === path)
       setItems((old) =>
@@ -317,7 +206,7 @@ function EvidenceList({
         <Loading label="Gathering evidence…" />
       ) : !items.length ? (
         <Empty title="A little room for discovery">
-          Upload a PDF, bookmark a passage or add a reference to your group
+          Upload a PDF, bookmark a passage or add a reference to this workspace’s
           library. Try another filter if you expected to find something here.
         </Empty>
       ) : (

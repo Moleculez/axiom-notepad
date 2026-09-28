@@ -23,11 +23,12 @@ and workspace actions are disabled. Copy/download exports are explicit actions.
 
 ## Work with evidence
 
-**Reference library** is now in sidebar Quick access. Its existing shared
-bibliography, imports, lookups and citation links remain available. Research is
-an evidence workbench with **Overview**, **Reading queue** and **Evidence** views.
-Choose Personal or a group, optionally narrow a group to a workspace, search,
-and page through the results. Overview includes saved reading positions;
+Open a workspace and choose **Research**, between **Overview** and **Files**.
+Its five views are **Summary**, **Library**, **Reading queue**, **Evidence** and
+**Knowledge graph**. Research is no longer in Quick access. Old Research,
+library and graph links redirect to the appropriate workspace and view.
+The workspace is the scope: no second group/workspace selector is needed.
+Search and page through results. Summary includes saved reading positions;
 Evidence defaults to your PDF annotations and personal bookmarks; switch to
 Shared annotations or All accessible evidence when reviewing a team's sources.
 
@@ -37,6 +38,57 @@ existing device-local outbox and revision-conflict handling. The queue also
 includes accessible references and current PDF versions without a recorded
 status, shown as Want to read. Replaced PDF versions retain their own reading
 records; annotations and bookmarks still link to their exact versions.
+
+## Manage your reference library
+
+Each workspace owns a separate bibliography. Your personal workspace is private;
+team and restricted workspaces follow their own content access. Workspace viewers
+can read and maintain their own reading statuses; only workspace editors can
+change shared references. A group-management role alone does not grant content
+access. The Library table supports title/year/venue sorting,
+50-row pages, author/year/tag/status filters and personal saved searches. Select
+a title to open the resizable details panel. Fields, original import records,
+linked notes, actual citation usage and pinned PDF versions stay together.
+Advanced author/year/status fields are behind **Filters**; its indicator shows
+when filters are active. In compact desktop split panes, the table prioritizes
+title, year and reading status; venue and PDF details remain in the inspector.
+
+Create nested collections, collapse them, and drag selected references onto a
+collection. Collections group entries without copying them. Select references to
+apply reading statuses, tags and collection membership, copy citations, export
+BibTeX/RIS, copy metadata to another library, or move entries to Library Trash.
+Restoring a reference preserves its identity. Removing a collection does not
+delete its references. Library Trash deliberately has no permanent-purge action.
+
+Import accepts up to 1,000 entries / 2 MB and always previews parsed records,
+duplicate matches and renamed keys before writing. Existing references are not
+overwritten. DOI/arXiv lookup is explicit and sends only the identifier to its
+provider. RIS exports preserve original unmapped RIS fields; BibTeX exports retain
+original entry types and untouched fields. Cross-format conversion is not lossless;
+the original imported record remains available in Details.
+
+Use Duplicates or select 2–20 entries to review a merge, choosing the retained
+entry and each metadata field. Old citation keys and reference URLs redirect to
+the retained record; Markdown is not rewritten. Tags, file links and collections
+combine, while each reader retains their own latest status. Stale previews and
+edits report conflicts. Copying personal metadata into a group requires audience
+confirmation and never copies files, annotations, access permissions or history.
+
+## Explore actual connections
+
+The Knowledge graph shows Markdown notes, bibliography entries and PDF versions.
+Edges represent explicit note links, citations and linked sources—not AI-inferred
+similarity. Search highlights matches; filter by source type, tag or collection,
+show unconnected sources, or inspect one/two-hop neighborhoods. Click a node to
+inspect; double-click to open. Pan by dragging, zoom with Ctrl/⌘ + wheel, and use
+Fit, reset layout, fullscreen or the accessible list. Node positions are local
+presentation, not content changes. Export the visible graph as SVG, PNG or JSON.
+
+Graphs are bounded to 1,000 sources / 5,000 connections. Narrow the context when
+the truncation notice appears; local neighborhoods/search apply to that loaded
+graph. Citation backfill runs in resumable worker batches after upgrade and normal
+note saves update the index transactionally. Existing note citation snapshots take
+precedence, so moving/copying notes does not silently change their bibliography.
 
 ## Create a synthesis deliberately
 
@@ -74,8 +126,14 @@ the browser's selection, supplies the authoritative evidence text.
   Creation uses existing file idempotency, capacity, audit and collaboration
   initialization. A server-only creation guard locks evidence and rechecks its
   hash and permissions inside that transaction. Do not move this check to the UI.
-- Existing reading tables support PDF statuses; no new database migration is
-  required for this increment. Current migration level is **34**.
+- Migration **38** makes bibliography and collections workspace-owned. Original
+  IDs stay in the main/personal workspace; other workspaces receive independent
+  copies of references they already cite or link, including aliases and required
+  collection ancestors. Original Markdown and citation snapshots are unchanged.
+  Reading states remain private. Older pending local reading edits resolve their
+  owning workspace before syncing; inaccessible edits remain available for export.
+- Canonical APIs accept `spaceId`; compatibility group-only calls resolve only to
+  the group's main workspace. Never use a group role to authorize library content.
 
 Run `npm run typecheck`, `npm run lint`, `npm test`, `npm run docs:check`, and an
 isolated production build. The focused browser suite

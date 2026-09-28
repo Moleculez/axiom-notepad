@@ -9,6 +9,7 @@ import { processChangeSet } from "../../packages/shared/src/workspace-change-set
 import { processSiteRelease } from "../../packages/shared/src/site-worker";
 import { executeReviewedAction } from "../../apps/web/lib/reviewed-actions";
 import { analyticsMaintenance } from "../../packages/shared/src/site-analytics";
+import { backfillResearchIndex } from "../../packages/shared/src/documents";
 
 let stopping = false;
 process.on("SIGTERM", () => {
@@ -39,7 +40,13 @@ try {
     const toolsWorked = await processToolJob();
     const changesWorked = await processChangeSet(executeReviewedAction);
     const siteWorked = await processSiteRelease();
-    const worked = workspaceWorked || toolsWorked || changesWorked || siteWorked;
+    const researchWorked = await backfillResearchIndex();
+    const worked =
+      workspaceWorked ||
+      toolsWorked ||
+      changesWorked ||
+      siteWorked ||
+      researchWorked;
     if (once && !worked) break;
     if (!worked) await new Promise((resolve) => setTimeout(resolve, 1000));
   } while (!stopping);

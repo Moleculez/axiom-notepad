@@ -54,7 +54,7 @@ describe("bundled product documentation", () => {
       "Mathematics & research callouts",
     ]);
     expect(tabRoute("/research/references?group=123")).toBe(
-      "/research/references?groupId=123",
+      "/research?groupId=123&view=library",
     );
     expect(tabRoute("/research?group=123&groupId=456")).toBe(
       "/research?groupId=456",

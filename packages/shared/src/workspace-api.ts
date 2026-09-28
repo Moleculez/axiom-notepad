@@ -63,8 +63,8 @@ export async function workspaceApi(
         [userId, space.id],
       ),
       query(
-        "SELECT data.* FROM personal_citations c CROSS JOIN LATERAL jsonb_to_record(c.data) AS data(cite_key text,title text,authors text,year text,url text,bibtex text) WHERE c.note_id=$1 UNION ALL SELECT b.cite_key,b.title,b.authors,b.year,b.url,b.bibtex FROM bibliography b WHERE b.group_id=$2 AND NOT EXISTS(SELECT 1 FROM personal_citations c WHERE c.note_id=$1 AND c.cite_key=b.cite_key) LIMIT 2000",
-        [id, space.group_id],
+        "SELECT * FROM axiom_note_bibliography($1) b ORDER BY EXISTS(SELECT 1 FROM note_citations c WHERE c.note_id=$1 AND c.cite_key=b.cite_key) DESC,b.cite_key LIMIT 2000",
+        [id],
       ),
       space.group_id
         ? query(
@@ -151,7 +151,10 @@ export async function workspaceApi(
     if (spaceId) where.push("r.space_id=" + bind(spaceId));
     if (kind) where.push("r.kind=" + bind(resourceKindSchema.parse(kind)));
     const pickKind = url.searchParams.get("pickKind");
-    if (pickKind) where.push(`(r.kind=${bind(z.enum(["file", "note"]).parse(pickKind))}${view === "folder" ? " OR r.kind='folder'" : ""})`);
+    if (pickKind)
+      where.push(
+        `(r.kind=${bind(z.enum(["file", "note"]).parse(pickKind))}${view === "folder" ? " OR r.kind='folder'" : ""})`,
+      );
     // Directory filtering must not turn into the recursive full-text search
     // used by Explorer's q parameter. Match literal names at this level only.
     const name = z
@@ -165,7 +168,8 @@ export async function workspaceApi(
     if (mime)
       where.push(
         "(a.mime LIKE " +
-          bind(z.string().max(100).parse(mime).replace(/[%_]/g, "") + "%") + (pickKind && view === "folder" ? " OR r.kind='folder')" : ")"),
+          bind(z.string().max(100).parse(mime).replace(/[%_]/g, "") + "%") +
+          (pickKind && view === "folder" ? " OR r.kind='folder')" : ")"),
       );
     if (tag) where.push(bind(z.string().max(40).parse(tag)) + "=ANY(r.tags)");
     for (const key of ["after", "before"] as const) {

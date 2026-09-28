@@ -119,8 +119,7 @@ async function snapshot(
   // Only bibliography entries actually cited by selected content are retained.
   const texts = sources.map((s) => s.body ?? "").join("\n");
   const { rows: refs } = await client.query(
-    `SELECT b.cite_key,b.title,b.authors,b.year,b.url FROM bibliography b JOIN spaces s ON s.group_id=b.group_id WHERE s.id=$1
-    UNION ALL SELECT p.cite_key,p.data->>'title',p.data->>'authors',p.data->>'year',p.data->>'url' FROM personal_citations p WHERE p.note_id=ANY($2::uuid[])`,
+    `SELECT b.cite_key,b.title,b.authors,b.year,b.url FROM resources r CROSS JOIN LATERAL axiom_note_bibliography(r.note_id) b WHERE r.space_id=$1 AND r.note_id=ANY($2::uuid[])`,
     [spaceId, ids],
   );
   const references = Object.fromEntries(

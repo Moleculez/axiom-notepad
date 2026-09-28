@@ -40,6 +40,8 @@ export type ResearchEntry = {
   groupId: string;
   value: ReadingItem | Annotation;
   pending: boolean;
+  /** Version of the legacy group-to-workspace reading context migration. */
+  workspaceContext?: 1;
   error?: string;
   conflict?: ReadingItem | Annotation | null;
 };
@@ -290,7 +292,7 @@ export async function pinPaper(
     savedAt: new Date().toISOString(),
   });
 }
-export function useResearch(userId?: string, groupId?: string) {
+export function useResearch(userId?: string, groupId?: string, enabled = true) {
   const [entries, setEntries] = useState<ResearchEntry[]>([]),
     [papers, setPapers] = useState<CachedPaper[]>([]),
     [status, setStatus] = useState("");
@@ -314,6 +316,7 @@ export function useResearch(userId?: string, groupId?: string) {
     }
   }, [userId, groupId]);
   useEffect(() => {
+    if (!enabled) return;
     active.current = true;
     let alive = true,
       busy = false,
@@ -371,8 +374,69 @@ export function useResearch(userId?: string, groupId?: string) {
       const running = () => valid() && !signal.aborted;
       busy = true;
       try {
-        const all = await allResearch(userId!);
+        let all = await allResearch(userId!);
         if (!running()) return;
+        // Resolve identities on the server; never guess the destination from
+        // the open workspace, or copy private pending edits into sibling spaces.
+        const legacy = all.filter(
+          (entry): entry is ResearchEntry =>
+            entry.kind === "reading" &&
+            entry.pending &&
+            !entry.workspaceContext,
+        );
+        for (let offset = 0; offset < legacy.length; offset += 100) {
+          if (!running()) return;
+          const batch = legacy.slice(offset, offset + 100);
+          const resolved = await api<{
+            items: {
+              id: string;
+              group_id?: string;
+              target_id?: string;
+              error?: string;
+            }[];
+          }>("me/reading/contexts", {
+            method: "POST",
+            signal,
+            body: JSON.stringify({
+              items: batch.map(({ value }) => {
+                const reading = value as ReadingItem;
+                return {
+                  id: reading.id,
+                  group_id: reading.group_id,
+                  target_type: reading.target_type,
+                  target_id: reading.target_id,
+                };
+              }),
+            }),
+          });
+          if (!running()) return;
+          for (const result of resolved.items) {
+            const original = batch.find(
+              (entry) => entry.value.id === result.id,
+            )!;
+            await updateResearch(userId!, original.key, (local) => {
+              if (
+                !local ||
+                local.kind !== "reading" ||
+                local.value.mutation_id !== original.value.mutation_id
+              )
+                return local;
+              return result.error
+                ? { ...local, workspaceContext: 1, error: result.error }
+                : {
+                    ...local,
+                    groupId: result.group_id!,
+                    workspaceContext: 1,
+                    value: {
+                      ...(local.value as ReadingItem),
+                      group_id: result.group_id!,
+                      target_id: result.target_id!,
+                    },
+                  };
+            });
+          }
+        }
+        if (legacy.length) all = await allResearch(userId!);
         if (Date.now() - lastPaperCheck > 60000) {
           for (const paper of all.filter(
             (r): r is CachedPaper => r.kind === "pdf",
@@ -490,6 +554,7 @@ export function useResearch(userId?: string, groupId?: string) {
                 local.value.mutation_id === value.mutation_id
                   ? {
                       ...local,
+                      workspaceContext: undefined,
                       error: errorMessage(e),
                       ...(e instanceof ApiError && e.status === 409
                         ? { conflict: e.data?.current ?? null }
@@ -630,7 +695,7 @@ export function useResearch(userId?: string, groupId?: string) {
       window.removeEventListener("pagehide", pageHide);
       window.removeEventListener("pageshow", pageShow);
     };
-  }, [userId, groupId, refresh]);
+  }, [userId, groupId, refresh, enabled]);
   const saveReading = useCallback(
     async (
       kind: ReadingItem["kind"],
@@ -728,6 +793,7 @@ export function useResearch(userId?: string, groupId?: string) {
       pending: true,
       error: undefined,
       conflict: undefined,
+      workspaceContext: undefined,
     });
     await refresh();
     void syncRef.current();
@@ -761,6 +827,7 @@ export function useResearch(userId?: string, groupId?: string) {
         pending: true,
         error: undefined,
         conflict: undefined,
+        workspaceContext: undefined,
       });
       if (id !== entry.value.id) await removeResearch(userId, entry.key);
     }

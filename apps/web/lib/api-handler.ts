@@ -76,6 +76,9 @@ import { resourceReviewApi } from "@axiom/shared/resource-review-api";
 import { researchToolsApi } from "@axiom/shared/research-tools-api";
 import { fileCreateApi } from "@axiom/shared/file-create-api";
 import { researchWorkbenchApi } from "@axiom/shared/research-workbench-api";
+import { researchLibraryApi } from "@axiom/shared/research-library-api";
+import { referenceAccess } from "@axiom/shared/research-library-service";
+import { researchGraphApi } from "@axiom/shared/research-graph-api";
 import { integrationApi } from "@axiom/shared/integration-api";
 import { offlineApi } from "@axiom/shared/offline-api";
 import { assertDataset, instanceApi } from "@axiom/shared/instance";
@@ -305,7 +308,15 @@ async function handleRequest(
       return await editorPreferencesApi(request, user.id);
     if (resource === "me" && id === "preferences-bundle")
       return await preferencesBundleApi(request, user.id);
-    const workbenchResearch = await researchWorkbenchApi(request, path, user.id);
+    const libraryResearch = await researchLibraryApi(request, path, user.id);
+    if (libraryResearch) return libraryResearch;
+    const graphResearch = await researchGraphApi(request, path, user.id);
+    if (graphResearch) return graphResearch;
+    const workbenchResearch = await researchWorkbenchApi(
+      request,
+      path,
+      user.id,
+    );
     if (workbenchResearch) return workbenchResearch;
     const research = await researchApi(request, path, user.id);
     if (research) return research;
@@ -941,8 +952,8 @@ async function handleRequest(
         if (format === "html") {
           const references = Object.fromEntries(
             (
-              await query("SELECT * FROM bibliography WHERE group_id=$1", [
-                note.group_id,
+              await query("SELECT * FROM axiom_note_bibliography($1)", [
+                note.id,
               ])
             ).map((r) => [r.cite_key, r]),
           );
@@ -1140,12 +1151,15 @@ async function handleRequest(
         return json({ added, skipped: refs.length - added });
       }
       if (method === "DELETE" && id) {
-        await requireLibraryEditor(user.id, groupId);
+        const reference = await referenceAccess(user.id, uuid.parse(id));
+        if (reference.group_id !== groupId) throw new HttpError(404, "Reference unavailable.");
+        await requireLibraryEditor(user.id, groupId, reference.space_id);
         await libraryQuery(
           user.id,
           groupId,
-          "DELETE FROM bibliography WHERE id=$1 AND group_id=$2",
+          "UPDATE bibliography SET deleted_at=now(),version=version+1,updated_at=now() WHERE id=$1 AND group_id=$2",
           [uuid.parse(id), groupId],
+          reference.space_id,
         );
         return json({ ok: true });
       }
@@ -1244,7 +1258,11 @@ async function handleRequest(
       );
       zip.file(
         "references.bib",
-        (await query("SELECT * FROM bibliography WHERE group_id=$1", [groupId]))
+        (
+          await query("SELECT * FROM reference_catalog WHERE group_id=$1", [
+            groupId,
+          ])
+        )
           .map((r) => formatBibtex(r as any))
           .join("\n\n"),
       );

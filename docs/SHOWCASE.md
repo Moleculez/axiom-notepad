@@ -20,13 +20,30 @@ while introducing the editor, Canvas and the rest of Axiom. Thirty searchable
 chapters include real, disposable editor and Canvas examples. Keyboard shortcuts
 reflect the reader's effective preferences, not a second hardcoded list.
 
-Research now provides an evidence workbench instead of a collection of launchers.
-Overview, Reading queue and Evidence share group/personal and workspace filters.
-The Reference library is available directly in sidebar Quick access. Select
+Each workspace provides an integrated Research workbench with an independent library.
+Summary, Library, Reading queue, Evidence and Knowledge graph are scoped to the
+current workspace. Open Research between Overview and Files. Select
 papers, references or PDF annotations to preview a new research note or Canvas.
 This is a deterministic scaffold, not an AI-written result. Private-to-shared
 copying requires acknowledgement; linked originals keep their permissions.
 See [the guide and safety boundaries](PRODUCT_GUIDE.md).
+
+Library adds a compact table with a resizable source inspector, nested collections,
+tags, reviewed BibTeX/RIS imports, private reading status, bulk actions, reversible
+trash and citation-safe duplicate merges. The graph connects actual notes,
+references and PDF versions with pan/zoom, source inspection, neighborhoods,
+accessible list navigation and SVG/PNG/JSON export. The refreshed gallery below
+uses the actual production build and fictional sources.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/showcase/research-library-dark.png">
+  <img src="assets/showcase/research-library-light.png" alt="Unified Research Library with a source table, collections, private reading statuses and resizable reference details." width="1600" loading="lazy">
+</picture>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/showcase/research-graph-dark.png">
+  <img src="assets/showcase/research-graph-light.png" alt="Knowledge graph connecting a fictional research note, two references and a pinned PDF, with source details and navigation controls." width="1600" loading="lazy">
+</picture>
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/showcase/docs-dark.png">
@@ -294,6 +311,10 @@ sync and worker services, apply its migrations, then run
 environment variables as the full gallery and writes a private receipt to
 `data/documentation-showcase/research-latest.json`. It never accepts the working
 8080 service. Keep the worker running so the specimen PDF can finish verification.
+The same capture accepts isolated port 3008 with
+`DOCS_APP_URL=http://localhost:3008 npm run docs:research-assets`; the current
+Research screenshots use that profile. It waits for citation indexing as well as
+PDF verification and never sends an AI request.
 
 [The editable banner layout](assets/banner.html) composes the raw screenshots in
 HTML/CSS. It loads installed Inter fonts locally, uses the shared SVG logo and

@@ -74,3 +74,4 @@ import "./interface-styles.css";
 import "./websites.css";
 import "./documentation.css";
 import "./research-workbench.css";
+import "./research-workspace.css";

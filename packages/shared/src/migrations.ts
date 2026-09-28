@@ -1,3 +1,4 @@
+import { researchLibraryMigration } from "./research-library-migration";
 import { workspaceMigration } from "./workspace-migration";
 import { workspaceFilesMigration } from "./workspace-files-migration";
 import { spaceLifecycleMigration } from "./space-lifecycle-migration";
@@ -255,11 +256,46 @@ INSERT INTO app_instance(singleton,setup_completed_at) SELECT true,CASE WHEN EXI
     name: "permission-aware-paper-task-links",
     sql: paperTaskMigration,
   },
-  { version: 31, name: "reviewed-productivity-workflows", sql: assistantProductivityMigration },
+  {
+    version: 31,
+    name: "reviewed-productivity-workflows",
+    sql: assistantProductivityMigration,
+  },
   { version: 32, name: "workspace-publishing-sites", sql: sitesMigration },
-  { version: 33, name: "publication-reading-and-analytics", sql: siteInsightsMigration },
-  { version: 34, name: "editor-media-codes-and-snippets", sql: editorMediaMigration },
+  {
+    version: 33,
+    name: "publication-reading-and-analytics",
+    sql: siteInsightsMigration,
+  },
+  {
+    version: 34,
+    name: "editor-media-codes-and-snippets",
+    sql: editorMediaMigration,
+  },
+  {
+    version: 35,
+    name: "personal-libraries-and-research-graph",
+    sql: researchLibraryMigration,
+  },
+  {
+    version: 36,
+    name: "research-library-integrity-and-indexes",
+    sql: researchLibraryIntegrityMigration,
+  },
+  {
+    version: 37,
+    name: "derived-citations-for-all-note-writers",
+    sql: researchIndexInvalidationMigration,
+  },
+  {
+    version: 38,
+    name: "workspace-owned-research-libraries",
+    sql: workspaceResearchMigration,
+  },
 ];
+import { workspaceResearchMigration } from "./workspace-research-migration";
+import { researchIndexInvalidationMigration } from "./research-index-invalidation-migration";
+import { researchLibraryIntegrityMigration } from "./research-library-integrity-migration";
 import { editorMediaMigration } from "./editor-media-migration";
 import { siteInsightsMigration } from "./site-insights-migration";
 import { sitesMigration } from "./sites-migration";

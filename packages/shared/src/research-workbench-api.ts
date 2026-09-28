@@ -2,7 +2,11 @@ import { createHash } from "node:crypto";
 import type pg from "pg";
 import { z } from "zod";
 import { query } from "./db";
-import { HttpError, memberAccess, spaceAccess } from "./access";
+import { HttpError, spaceAccess } from "./access";
+import {
+  checkLibraryScope,
+  resolveLibraryScope,
+} from "./research-library-service";
 import { fileCreateApi } from "./file-create-api";
 import { requireScope, workspaceJson as json } from "./workspace-service";
 import {
@@ -18,8 +22,7 @@ const evidenceSQL = `WITH visible AS (
  SELECT r.id,r.name,r.space_id,r.current_version_id,r.updated_at,s.group_id,s.kind
  FROM resources r JOIN spaces s ON s.id=r.space_id
  WHERE r.deleted_at IS NULL AND axiom_space_role($1,s.id) IS NOT NULL
- AND (($2::uuid IS NOT NULL AND s.group_id=$2) OR ($2::uuid IS NULL AND s.id=$3::uuid))
- AND ($3::uuid IS NULL OR s.id=$3)
+ AND s.group_id IS NOT DISTINCT FROM $2::uuid AND s.id=$3::uuid
  AND NOT EXISTS(WITH RECURSIVE parents AS (SELECT id,parent_id,deleted_at FROM resources WHERE id=r.parent_id UNION SELECT p.id,p.parent_id,p.deleted_at FROM resources p JOIN parents x ON x.parent_id=p.id) SELECT 1 FROM parents WHERE deleted_at IS NOT NULL)
 ), evidence AS (
  SELECT 'paper'::text AS kind,v.id AS id,r.name AS title,''::text AS detail,''::text AS quote,''::text AS body,
@@ -28,11 +31,11 @@ const evidenceSQL = `WITH visible AS (
  FROM visible r JOIN file_versions v ON v.id=r.current_version_id JOIN attachments a ON a.id=v.id AND a.mime='application/pdf'
  LEFT JOIN reading_items ri ON ri.user_id=$1 AND ri.kind='reading' AND ri.target_type='attachment' AND ri.target_id=v.id AND NOT ri.deleted
  UNION ALL
- SELECT 'reference',b.id,b.title,concat_ws(' · ',nullif(b.authors,''),nullif(b.year,''),nullif(b.cite_key,'')),'','',b.version::text,coalesce(ri.updated_at,b.created_at),NULL::uuid,NULL::uuid,NULL::uuid,b.group_id,false,NULL::int,
- '/research/references?groupId='||b.group_id,ri.data->>'status',to_jsonb(ri)-'user_id',true
- FROM bibliography b JOIN members m ON m.group_id=b.group_id AND m.user_id=$1 JOIN groups g ON g.id=b.group_id AND g.lifecycle_status NOT IN ('trashed','purging')
+ SELECT 'reference',b.id,b.title,concat_ws(' · ',nullif(b.authors,''),nullif(b.year,''),nullif(b.cite_key,'')),'','',b.version::text,coalesce(ri.updated_at,b.updated_at),NULL::uuid,NULL::uuid,b.space_id,b.group_id,b.owner_user_id IS NOT NULL,NULL::int,
+ '/workspaces/'||b.space_id||'/research?view=library&reference='||b.id,ri.data->>'status',to_jsonb(ri)-'user_id',true
+ FROM bibliography b
  LEFT JOIN reading_items ri ON ri.user_id=$1 AND ri.kind='reading' AND ri.target_type='reference' AND ri.target_id=b.id AND NOT ri.deleted
- WHERE b.group_id=$2 AND ($3::uuid IS NULL OR EXISTS(SELECT 1 FROM reference_attachments l JOIN file_versions v ON v.id=l.attachment_id JOIN visible r ON r.id=v.resource_id WHERE l.reference_id=b.id) OR EXISTS(SELECT 1 FROM reference_notes l JOIN visible r ON r.id=l.note_id WHERE l.reference_id=b.id))
+ WHERE b.deleted_at IS NULL AND b.merged_into IS NULL AND b.space_id=$3::uuid AND axiom_space_role($1,b.space_id) IS NOT NULL
  UNION ALL
  SELECT 'annotation',a.id,r.name,u.name,a.data->>'quote',a.data->>'body',a.version::text,a.updated_at,r.id,v.id,r.space_id,r.group_id,NOT a.shared OR r.kind='personal',(a.data->>'page')::int,
  '/pdf/'||r.id||'?version='||v.id||'#page='||(a.data->>'page'),NULL::text,NULL::jsonb,a.author_id=$1
@@ -47,19 +50,15 @@ const evidenceSQL = `WITH visible AS (
  )`;
 type Scope = { groupId: string | null; spaceId: string | null };
 async function scopeAccess(user: string, scope: Scope) {
-  if (!scope.groupId && !scope.spaceId)
-    throw new HttpError(400, "Choose Personal or a research group.");
-  const member = scope.groupId ? await memberAccess(user, scope.groupId) : null;
-  if (scope.spaceId) {
-    const space = await spaceAccess(user, scope.spaceId);
-    if (
-      scope.groupId
-        ? space.group_id !== scope.groupId
-        : space.kind !== "personal"
-    )
-      throw new HttpError(400, "Choose a workspace in this research context.");
-  }
-  return member;
+  const canonical = await resolveLibraryScope(
+    user,
+    scope.spaceId ? { spaceId: scope.spaceId } : { groupId: scope.groupId },
+  );
+  const canEdit = await checkLibraryScope(user, canonical);
+  const space = await spaceAccess(user, canonical.spaceId);
+  scope.spaceId = space.id;
+  scope.groupId = space.group_id;
+  return canEdit;
 }
 const decorate = (row: EvidenceItem) => ({
   ...row,
@@ -149,7 +148,7 @@ export async function researchWorkbenchApi(
         groupId: url.searchParams.get("groupId"),
         spaceId: url.searchParams.get("spaceId"),
       });
-    const member = await scopeAccess(user, params);
+    const canEdit = await scopeAccess(user, params);
     let cursor: { at: string; key: string } | null = null;
     if (params.cursor) {
       try {
@@ -199,7 +198,7 @@ export async function researchWorkbenchApi(
       last = items.at(-1);
     return json({
       items,
-      canEditLibrary: member?.content_role === "editor",
+      canEditLibrary: canEdit,
       next:
         rows.length > params.limit && last
           ? Buffer.from(

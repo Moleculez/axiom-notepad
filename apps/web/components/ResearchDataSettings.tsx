@@ -135,7 +135,7 @@ export default function ResearchDataSettings({
           Personal bookmarks
         </h3>
         <p className="muted">
-          Bookmarks in the current research group. Reading positions resume
+          Bookmarks in the current reading context. Reading positions resume
           automatically.
         </p>
         <BookmarkManager
@@ -154,7 +154,7 @@ export default function ResearchDataSettings({
         <p role="status">{research.status}</p>
         <p>
           {research.entries.filter((e) => e.pending).length} pending changes in
-          this group.
+          this reading context.
         </p>
         <div className="button-row">
           <button
@@ -201,7 +201,7 @@ export default function ResearchDataSettings({
         </div>
         <p className="muted">
           Includes your cached bookmarks, reading state, owned annotations and
-          preferences across groups—not PDF files, other researchers’
+          preferences across workspaces—not PDF files, other researchers’
           annotations, account credentials, or history. Keep exports private.
           Full restoration uses an administrator backup.
         </p>

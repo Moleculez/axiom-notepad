@@ -19,7 +19,11 @@ import { useWorkSessions } from "../../lib/workspace-sessions";
 import Dialog, { DialogFooter } from "../Dialog";
 import { openAssistant } from "../../lib/assistant";
 import { ErrorNotice, ResourceIcon, useData, useWorkspace } from "./ui";
-import { destinations, locationIcon } from "./WorkspaceToolbar";
+import {
+  destinations,
+  locationIcon,
+  useDestinationRoute,
+} from "./WorkspaceToolbar";
 
 type Entry = {
   id: string;
@@ -46,7 +50,8 @@ function Match({ text, query }: { text: string; query: string }) {
 
 export default function WorkspaceSearch({ onClose }: { onClose: () => void }) {
   const { revision, open, navigate, spaces, session } = useWorkspace(),
-    sessions = useWorkSessions();
+    sessions = useWorkSessions(),
+    destinationRoute = useDestinationRoute();
   const [query, setQuery] = useState(""),
     [debounced, setDebounced] = useState(""),
     [scope, setScope] = useState<"all" | "files" | "commands">("all"),
@@ -141,7 +146,7 @@ export default function WorkspaceSearch({ onClose }: { onClose: () => void }) {
           detail,
           icon: <Icon size={18} />,
           kind: "Go to",
-          action: () => navigate(path),
+          action: () => navigate(destinationRoute(path)),
         }),
       ),
     });

@@ -124,11 +124,17 @@ test("Docs navigation, genuine disposable editor/Canvas, and no document request
         .getByRole("navigation", { name: "Documentation chapters" })
         .getByRole("link", { name: "Footnotes, metadata & link definitions" }),
     ).toBeVisible();
+    const team = (await call(f.member.request, "spaces")).find(
+      (s: any) => s.kind === "team" && s.group_id === f.group.id,
+    );
+    await f.page.goto(`/workbench/workspaces/${team.id}`);
+    await f.page.getByRole("link", { name: "Research", exact: true }).click();
+    await expect(f.page).toHaveURL(/\/research/);
     await f.page
-      .getByRole("link", { name: "Reference library", exact: true })
-      .first()
+      .getByRole("navigation", { name: "Research views" })
+      .getByRole("button", { name: "Library", exact: true })
       .click();
-    await expect(f.page).toHaveURL(/\/research\/references/);
+    await expect(f.page).toHaveURL(/view=library/);
   } finally {
     await f.close();
   }
