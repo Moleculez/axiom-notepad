@@ -127,6 +127,7 @@ export class MarkdownEngine {
       citations: [],
       footnotes: {},
       definitions: [],
+      ...(previous.figures ? { figures: { ...previous.figures } } : {}),
     };
     const slugs = new Map<string, number>(),
       citations = new Set<string>();

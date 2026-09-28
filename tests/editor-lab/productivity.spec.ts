@@ -72,9 +72,11 @@ test("dividers metadata and definitions have contextual editable views without n
   await expect(
     pane.locator('.axiom-footnote[data-footnote-definition="a"]'),
   ).toContainText("Qualification.");
-  await expect(pane.locator('[data-kind="referenceDefinition"]')).toContainText(
-    "https://example.org",
-  );
+  await expect(
+    pane
+      .locator('[data-kind="referenceDefinition"]')
+      .getByLabel("Destination", { exact: true }),
+  ).toHaveValue("https://example.org");
   await shared(page, original);
   expect(
     await page.evaluate(() =>

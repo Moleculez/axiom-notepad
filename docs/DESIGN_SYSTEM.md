@@ -187,11 +187,31 @@ Use the same mathematical renderer in editing, reading and exports. A stale equa
 
 Structural previews identify their source purpose without repeating labels:
 metadata uses a quiet property/value table, TOC uses a static section navigator,
-definitions show their key, and bibliography entries align with the document
+link definitions use the same property table, and bibliography entries align with the document
 column under one divider. TOC and divider blocks never reveal source on click.
 Context field dialogs preserve local drafts on conflicting peer edits or permission
 changes. Derived previews and display-only resizing must never write to the shared
 Markdown document. See [Editor vNext](EDITOR_VNEXT.md) for its current release gates.
+
+Property tables have one quiet caption, a shared key column, subtle horizontal
+rules and no surrounding card, shadow or filled key column. Fields stay text-like
+and transparent through hover/focus, remain native inputs throughout editing, and
+match ordinary document-table typography and padding. Only captions use UI type.
+The cell owns a square focus/error outline; no input fill, underline, rounded
+corner or shadow may appear. Long labels get more column space at enlarged text
+sizes; multiline values grow within a bounded cell. Caption actions appear on
+hover or keyboard focus in reserved space. Routine editing instructions are
+screen-reader descriptions, not a permanent footer. Validation remains inline
+beside the field until corrected or cancelled. Read mode uses the same metadata
+table typography; link definitions remain invisible in rendered reading output.
+
+Treat the editor as one continuous sheet. Embedded code and TeX source, gutters,
+equation previews and contextual toolbars inherit the host surface through
+transparent layers, including tinted canvas cards. Differentiate code with its
+font and syntax, not a second panel. Keep selection/search/peer highlights and
+optional active-line feedback. Document fields opt out of application form rules
+with `data-editor-field`; settings/dialog/search controls remain application chrome.
+`app/styles.ts` supplies the complete cascade to both app and editor lab.
 
 Native editing uses semantic list, quote, table and code elements with the same font and color roles as reading. Nesting must be visible without decorative guide-line clutter. Tables fill their available frame; wide cells and code scroll within the block. Revealing source markers or block controls must not create a second competing visual theme.
 

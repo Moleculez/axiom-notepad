@@ -121,11 +121,17 @@ describe("source while editing", () => {
     );
   });
   test.each(["[ref]: /paper 'Title'"])(
-    "other structural blocks remain source editable: %s",
+    "link definitions retain their structured field view at every caret position: %s",
     (source) => {
-      expect(sourceUnits(source, Math.floor(source.length / 2))).toEqual([
-        source,
-      ]);
+      for (let at = 0; at <= source.length; at++) {
+        const projection = project(source, at);
+        expect(sourceUnits(source, at)).toEqual([]);
+        expect(projection.doc.firstChild!.attrs.kind).toBe(
+          "referenceDefinition",
+        );
+        expect(projection.doc.firstChild!.textContent).toBe(source);
+        expect(projection.doc.check()).toBeUndefined();
+      }
     },
   );
   test.each(["---", "***", "___", "* * *", "> ***", "  ***\r\n"])(

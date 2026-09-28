@@ -12,6 +12,7 @@ const finite = (value: number | undefined, fallback: number) =>
 
 export async function readWorkbook(
   data: ArrayBuffer,
+  options: { publicPreview?: boolean } = {},
 ): Promise<WorkbookSnapshot> {
   if (data.byteLength > 25_000_000)
     throw new Error("Workbook exceeds the 25 MB preview limit.");
@@ -69,7 +70,7 @@ export async function readWorkbook(
       for (let c = 1; c <= columns; c++) {
         const cell = sheet.getCell(r, c),
           value =
-            cell.isMerged && cell.master.address !== cell.address
+            (options.publicPreview && (sheet.getRow(r).hidden || sheet.getColumn(c).hidden)) || (cell.isMerged && cell.master.address !== cell.address)
               ? undefined
               : cell.value;
         if (r === 1 && sheet.getColumn(c).hidden)

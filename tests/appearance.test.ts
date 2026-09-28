@@ -17,9 +17,31 @@ import {
 } from "../packages/shared/src/appearance";
 import { applyDocumentStyle } from "../packages/shared/src/editor-looks";
 describe("personal appearance", () => {
+  it("adds component styles without changing version 9 colors or typography", () => {
+    const { interfaceStyle: _style, ...base } = defaults;
+    const legacy = { ...base, schemaVersion: 9, proseSize: 23, radius: 0 };
+    const upgraded = preferencesSchema.parse(legacy);
+    expect(upgraded.interfaceStyle).toBe("axiom");
+    expect(upgraded.proseSize).toBe(23);
+    expect(upgraded.radius).toBe(0);
+    const fluent = { ...upgraded, interfaceStyle: "fluent" as const };
+    const response = appearanceForClient(
+      new Request("http://localhost", {
+        headers: { [APPEARANCE_SCHEMA_HEADER]: "9" },
+      }),
+      { preferences: fluent, previousPreferences: upgraded, version: 2 },
+    );
+    expect(response?.preferences).toEqual(legacy);
+    expect(response?.previousPreferences).toEqual(legacy);
+    expect(
+      preferencesSchema.safeParse({ ...upgraded, interfaceStyle: "remote-css" })
+        .success,
+    ).toBe(false);
+  });
   it("migrates range guides without restyling v5 and projects safe old-client reads", () => {
     const {
       pdfReader: _pdf,
+      interfaceStyle: _interface,
       minimap: _minimap,
       blockGuides: _guides,
       readingMarkMargin: _margin,
@@ -36,6 +58,7 @@ describe("personal appearance", () => {
       readingMarkOverview: true,
       minimap: defaults.minimap,
       pdfReader: defaults.pdfReader,
+      interfaceStyle: "axiom",
     });
     const record = {
       preferences: { ...current, blockGuides: false },
@@ -180,6 +203,7 @@ describe("personal appearance", () => {
   it("upgrades v2 values without restyling and safely negotiates the new font", () => {
     const {
       documentDecorations: _decoration,
+      interfaceStyle: _interface,
       themePack: _pack,
       blockGuides: _guides,
       readingMarkMargin: _margin,
@@ -204,6 +228,7 @@ describe("personal appearance", () => {
       readingMarkOverview: true,
       minimap: defaults.minimap,
       pdfReader: defaults.pdfReader,
+      interfaceStyle: "axiom",
       themePack: "default",
       documentDecorations: "none",
     });

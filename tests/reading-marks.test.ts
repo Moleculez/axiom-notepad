@@ -190,6 +190,7 @@ describe("reading marks", () => {
       readingMarkOverview: _b,
       minimap: _minimap,
       pdfReader: _pdf,
+      interfaceStyle: _interface,
       ...previous
     } = defaults;
     const old = { ...previous, schemaVersion: 6, blockGuides: false };

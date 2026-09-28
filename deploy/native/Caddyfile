@@ -1,4 +1,9 @@
 # Replace notes.example.org with your DNS name before installation.
+{
+    on_demand_tls {
+        ask http://127.0.0.1:3002/tls
+    }
+}
 notes.example.org {
     encode zstd gzip
     request_body {
@@ -11,7 +16,18 @@ notes.example.org {
     handle /sync {
         reverse_proxy 127.0.0.1:1234
     }
+    handle /sites/* {
+        reverse_proxy 127.0.0.1:3001
+    }
     handle {
         reverse_proxy 127.0.0.1:3000
     }
+}
+https:// {
+    tls {
+        on_demand
+    }
+    encode zstd gzip
+    header -Server
+    reverse_proxy 127.0.0.1:3001
 }

@@ -285,6 +285,49 @@ test("directory filter is literal and folder-scoped, pagination and attached fil
   }
 });
 
+test("appearance leaves panel sizing to the saved edge resizers", async ({
+  browser,
+}) => {
+  const f = await fixture(
+    browser,
+    "# Panel preferences\n\nUnchanged research.",
+  );
+  try {
+    await f.page.goto("/workbench/settings/layout");
+    await expect(
+      f.page.getByText("Resize the sidebar and document panel", {
+        exact: false,
+      }),
+    ).toBeVisible();
+    await expect(
+      f.page.getByLabel("Reading width", { exact: true }),
+    ).toBeVisible();
+    for (const label of ["Sidebar width", "Research panel width"]) {
+      await expect(f.page.getByText(label, { exact: true })).toHaveCount(0);
+    }
+    await f.page.screenshot({
+      path: test.info().outputPath("appearance-panel-resizing-current.png"),
+      animations: "disabled",
+    });
+    await f.page.goto("/workbench/settings/device");
+    await expect(
+      f.page.getByText("Only on this device", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      f.page.getByRole("checkbox", { name: "Override uiScale on this device" }),
+    ).toBeVisible();
+    await expect(
+      f.page.getByRole("checkbox", { name: "Override density on this device" }),
+    ).toBeVisible();
+    for (const label of ["Sidebar width", "Research panel width"]) {
+      await expect(f.page.getByText(label, { exact: true })).toHaveCount(0);
+    }
+    expect(await f.source()).toBe("# Panel preferences\n\nUnchanged research.");
+  } finally {
+    await f.close();
+  }
+});
+
 test("both panel widths support drag, keyboard, cancel, reset and reload without altering the note", async ({
   browser,
 }) => {

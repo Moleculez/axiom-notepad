@@ -38,6 +38,7 @@ export type AssistantContext = {
   owner_id: string;
   space_id: string;
   space_ids?: string[];
+  agent_config?: import("./productivity").AgentConfig | null;
 };
 export const assistantHash = (value: unknown): string => {
   const stable = (v: unknown): string =>
@@ -554,11 +555,13 @@ export function publicAssistantContext(
       group_name: p.group_name,
     },
     evidence: c.evidence,
+    agent: c.agent_config ?? undefined,
     messages: c.messages,
     characters: c.messages.reduce((n, m) => n + m.content.length, 0),
   };
 }
 export async function assistantMaintenance() {
+  const [productivity] = await query("SELECT to_regclass('public.assistant_runs') AS present");
   await query(
     "UPDATE tool_jobs SET result=NULL,input='{}',status=CASE WHEN status IN ('queued','running') THEN 'cancelled' ELSE status END WHERE kind='assistant-evidence' AND created_at<now()-interval '1 day' AND (result IS NOT NULL OR input<>'{}'::jsonb)",
   );
@@ -580,5 +583,10 @@ export async function assistantMaintenance() {
     await client.query(
       "UPDATE assistant_conversations SET title='Expired conversation',deleted_at=coalesce(deleted_at,now()) WHERE updated_at<now()-interval '30 days'",
     );
+    if (productivity?.present) {
+      await client.query("UPDATE assistant_runs r SET messages='[]',actions='[]',activity='[]' FROM assistant_contexts x WHERE r.context_id=x.id AND x.cleared_at IS NOT NULL");
+      // Accepted files/tasks remain; private drafts and their captured before-images are erased.
+      await client.query("DELETE FROM workspace_change_sets s WHERE s.created_at<now()-interval '30 days' OR EXISTS(SELECT 1 FROM assistant_contexts x WHERE x.id=s.context_id AND x.cleared_at IS NOT NULL)");
+    }
   });
 }

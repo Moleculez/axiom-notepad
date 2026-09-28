@@ -28,6 +28,7 @@ runuser -u axiom -- node_modules/.bin/dotenv -e /etc/axiom/axiom.env -- npm run 
 install -m 0644 deploy/native/axiom-web.service /etc/systemd/system/axiom-web.service
 install -m 0644 deploy/native/axiom-sync.service /etc/systemd/system/axiom-sync.service
 install -m 0644 deploy/native/axiom-worker.service /etc/systemd/system/axiom-worker.service
+install -m 0644 deploy/native/axiom-publish.service /etc/systemd/system/axiom-publish.service
 systemctl daemon-reload
-systemctl enable --now axiom-sync axiom-worker axiom-web
+systemctl enable --now axiom-sync axiom-worker axiom-web axiom-publish
 echo 'Axiom services installed. Create the owner account and configure Caddy using docs/DEPLOYMENT.md.'

@@ -13,3 +13,4 @@ export * from "./containers";
 export * from "./block-boundaries";
 export * from "./statistics";
 export * from "./footnotes";
+export * from "./media";

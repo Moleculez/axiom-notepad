@@ -6,6 +6,7 @@ import {
 } from "./assistant-service";
 import { parseAssistantResponse } from "./assistant";
 import { callAssistantProvider } from "./tool-providers";
+import { executeProductivityRound } from "./productivity-worker";
 
 /** The outer tool worker owns the durable lease, cancellation and deadline. */
 export async function executeAssistantJob(
@@ -17,6 +18,7 @@ export async function executeAssistantJob(
     job.assistant_context_id,
     job.owner_id,
   );
+  if (context.agent_config) return executeProductivityRound(job,signal,submitted);
   await assertAssistantAccess(context);
   const p = await assistantProvider(
     job.owner_id,

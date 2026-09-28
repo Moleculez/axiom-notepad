@@ -34,6 +34,8 @@ import AssistantAnswer from "./AssistantAnswer";
 import AssistantProposalReview from "./AssistantProposalReview";
 import AssistantExcerpt from "./AssistantExcerpt";
 import AssistantOfficeExcerpt from "./AssistantOfficeExcerpt";
+import ChangeSetReview from "./ChangeSetReview";
+import AssistantWorkflows from "./AssistantWorkflows";
 type Provider = {
   id: string;
   name: string;
@@ -85,6 +87,7 @@ export default function AssistantPanel({
     intent.spaceIds ?? [spaceId],
   );
   const [office, setOffice] = useState<SearchResult | null>(null);
+  const [assistantMode,setAssistantMode] = useState<"ask"|"prepare"|"suggest">("ask"), [discover,setDiscover] = useState(false), [changeSet,setChangeSet] = useState<string|null>(null);
   const scope = conversation?.spaceIds ?? scopeIds;
   const [prompt, setPrompt] = useState(""),
     [picked, setPicked] = useState<Picked[]>([]),
@@ -124,6 +127,8 @@ export default function AssistantPanel({
   // Only the exact still-current composition may open a consent dialog.
   const compositionKey = JSON.stringify([
     prompt,
+    assistantMode,
+    discover,
     picked,
     providerId,
     allowTasks,
@@ -162,6 +167,8 @@ export default function AssistantPanel({
       if (raw) {
         const d = JSON.parse(raw);
         setPrompt(typeof d.prompt === "string" ? d.prompt.slice(0, 10000) : "");
+        if (["ask","prepare","suggest"].includes(d.mode)) setAssistantMode(d.mode);
+        setDiscover(d.discover === true);
         setPicked(
           Array.isArray(d.selections)
             ? d.selections
@@ -262,6 +269,8 @@ export default function AssistantPanel({
         draftKey,
         JSON.stringify({
           prompt,
+          mode:assistantMode,
+          discover,
           conversationId,
           spaceIds: scopeIds,
           selections: picked.filter((s) => s.kind !== "pdf"),
@@ -272,13 +281,15 @@ export default function AssistantPanel({
         "The prompt could not be saved on this device. Export it before closing.",
       );
     }
-  }, [prompt, picked, conversationId, draftKey, draftLoaded, scopeIds]);
+  }, [prompt, picked, conversationId, draftKey, draftLoaded, scopeIds,assistantMode,discover]);
   useEffect(() => {
     setPrepared(null);
     setConsent(false);
     submission.current = crypto.randomUUID();
   }, [
     prompt,
+    assistantMode,
+    discover,
     picked,
     providerId,
     allowTasks,
@@ -397,6 +408,7 @@ export default function AssistantPanel({
           prompt,
           selections: picked.map(stripLabel),
           allowTaskCreate: allowTasks,
+          ...(assistantMode !== "suggest" ? {agent:{mode:assistantMode,discover}} : {}),
         },
       );
       if (
@@ -473,6 +485,10 @@ export default function AssistantPanel({
           </button>
         </div>
       </header>
+      <div className="assistant-mode-bar">
+        <label>Mode<select aria-label="Assistant mode" value={assistantMode} disabled={busy||!!active} onChange={e=>setAssistantMode(e.target.value as typeof assistantMode)}><option value="ask">Ask</option><option value="prepare">Prepare changes</option><option value="suggest">Suggest edits</option></select></label>
+        <AssistantWorkflows spaceId={spaceId} prompt={prompt} onPick={text=>{setPrompt(text);setAssistantMode("prepare");}} onReview={setChangeSet}/>
+      </div>
       <div className="assistant-scope">
         <label>
           Workspace
@@ -514,8 +530,7 @@ export default function AssistantPanel({
               : `${scope.length} selected group workspaces`}
           </summary>
           <p className="ws-note">
-            Only selected evidence is sent. Start a new conversation to change
-            this boundary. New tasks are created in the primary workspace above.
+            {discover ? "Relevant excerpts may be retrieved and sent from these workspaces after consent." : "Only selected evidence is sent."} Start a new conversation to change this boundary.
           </p>
           {spaces
             .filter(
@@ -724,6 +739,8 @@ export default function AssistantPanel({
               </>
             )}
             {turn.warning && <p className="ws-note">{turn.warning}</p>}
+            {!!turn.activity?.length && <details className="assistant-activity"><summary>{turn.activity.at(-1)?.message} · {turn.round}/8 rounds</summary><ol>{turn.activity.map((item,i)=><li key={i}>{item.message}</li>)}</ol></details>}
+            {turn.changeSetId && <section className="assistant-proposal"><header><strong>Workspace changes</strong><span>Review required</span></header><p>Review files, diffs, destinations and planning impact before applying.</p><button className="button secondary" onClick={()=>setChangeSet(turn.changeSetId!)}>Review changes</button></section>}
             {turn.error && <p className="form-error">{turn.error}</p>}
             {["queued", "running"].includes(turn.status) ? (
               <div className="assistant-progress" role="status">
@@ -901,13 +918,14 @@ export default function AssistantPanel({
                     <input
                       type="checkbox"
                       checked={s.editable}
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        if(e.target.checked) setAssistantMode("suggest");
                         setPicked((old) =>
                           old.map((v, j) =>
                             j === i ? { ...s, editable: e.target.checked } : v,
                           ),
-                        )
-                      }
+                        );
+                      }}
                     />
                     Allow proposal
                   </label>
@@ -940,14 +958,14 @@ export default function AssistantPanel({
             ))}
           </ul>
         )}
-        <label className="assistant-task-consent">
+        {assistantMode === "suggest" ? <label className="assistant-task-consent">
           <input
             type="checkbox"
             checked={allowTasks}
             onChange={(e) => setAllowTasks(e.target.checked)}
           />
           Allow private new-task drafts
-        </label>
+        </label> : <label className="assistant-task-consent"><input type="checkbox" checked={discover} onChange={e=>setDiscover(e.target.checked)}/>Search and read within selected workspaces</label>}
         <textarea
           ref={promptRef}
           aria-label="Assistant request"
@@ -992,6 +1010,7 @@ export default function AssistantPanel({
             {prepared.evidence.length} current excerpts · expires{" "}
             {new Date(prepared.expiresAt).toLocaleTimeString()}
           </p>
+          {prepared.agent?.discover && <p className="assistant-scope-consent">This run may search and send additional relevant excerpts from the {scope.length} selected workspace{scope.length===1?"":"s"} to this provider, for at most eight model rounds. Captured sources appear in the conversation. No workspace changes are applied without a separate review.</p>}
           <div className="assistant-outgoing">
             {prepared.messages.map((message, i) => (
               <details key={i} open={i === prepared.messages.length - 1}>
@@ -1012,8 +1031,7 @@ export default function AssistantPanel({
               checked={consent}
               onChange={(e) => setConsent(e.target.checked)}
             />
-            I approve sending this exact context to this provider. Its billing
-            and retention policies apply.
+            {prepared.agent?.discover ? "I approve this context and scoped retrieval of additional excerpts for this run. The provider's billing and retention policies apply." : "I approve sending this exact context to this provider. Its billing and retention policies apply."}
           </label>
           <ErrorNotice message={error} />
           <div className="dialog-footer">
@@ -1061,6 +1079,7 @@ export default function AssistantPanel({
           onClose={() => setReview(null)}
         />
       )}
+      {changeSet && <ChangeSetReview id={changeSet} onClose={()=>setChangeSet(null)} onChange={reload}/>}
       {office && (
         <AssistantOfficeExcerpt
           id={office.id}

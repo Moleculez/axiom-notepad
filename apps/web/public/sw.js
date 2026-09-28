@@ -50,6 +50,9 @@ self.addEventListener("fetch", (event) => {
     event.request.method !== "GET" ||
     url.origin !== self.location.origin ||
     url.pathname.startsWith("/api/") ||
+    // Public releases are independently revocable. Never replace the private
+    // offline shell with a website, or serve it after a site is unpublished.
+    url.pathname.startsWith("/sites/") ||
     url.pathname.startsWith("/sync")
   )
     return;

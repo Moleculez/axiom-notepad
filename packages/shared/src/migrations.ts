@@ -255,7 +255,15 @@ INSERT INTO app_instance(singleton,setup_completed_at) SELECT true,CASE WHEN EXI
     name: "permission-aware-paper-task-links",
     sql: paperTaskMigration,
   },
+  { version: 31, name: "reviewed-productivity-workflows", sql: assistantProductivityMigration },
+  { version: 32, name: "workspace-publishing-sites", sql: sitesMigration },
+  { version: 33, name: "publication-reading-and-analytics", sql: siteInsightsMigration },
+  { version: 34, name: "editor-media-codes-and-snippets", sql: editorMediaMigration },
 ];
+import { editorMediaMigration } from "./editor-media-migration";
+import { siteInsightsMigration } from "./site-insights-migration";
+import { sitesMigration } from "./sites-migration";
+import { assistantProductivityMigration } from "./assistant-productivity-migration";
 import { paperTaskMigration } from "./paper-task-migration";
 import { unifiedWorkspacesMigration } from "./unified-workspaces-migration";
 import { revisionUndoRetentionMigration } from "./revision-undo-retention-migration";

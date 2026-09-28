@@ -68,6 +68,14 @@ const catalogue = [
   ["footnote", "Footnote", "Research", "editor", []],
   ["noteLink", "Link a note", "Research", "editor", []],
   ["attachment", "Image or attachment", "Media", "editor", []],
+  ["image", "Image", "Media", "editor", []],
+  ["pdf", "PDF document", "Media", "editor", []],
+  ["audio", "Audio", "Media", "editor", []],
+  ["video", "Video", "Media", "editor", []],
+  ["snippets", "Research snippets", "Research", "editor", []],
+  ["saveSnippet", "Save selection as snippet", "Research", "workspace", []],
+  ["figureRef", "Figure reference", "Research", "editor", []],
+  ["checkAssets", "Check document attachments", "Research", "workspace", []],
   ["find", "Find in note", "Editing", "editor", ["Mod-f"]],
   ["replace", "Find and replace", "Editing", "editor", ["Mod-Shift-f"]],
   ["undo", "Undo", "Editing", "editor", ["Mod-z"]],
@@ -123,6 +131,16 @@ const catalogue = [
   ["clearCells", "Clear selected cells", "Table", "table", []],
 ] as const;
 export type EditorCommandId = (typeof catalogue)[number][0];
+/** Host dialogs retain the original slash range until an explicit insertion. */
+export const asyncInsertCommands: ReadonlySet<EditorCommandId> = new Set([
+  "attachment",
+  "image",
+  "pdf",
+  "audio",
+  "video",
+  "snippets",
+  "figureRef",
+]);
 export type CommandScope = "workspace" | "editor" | "table";
 export type EditorCommand = {
   id: EditorCommandId;
@@ -165,6 +183,12 @@ const insertIds = new Set<string>([
   "footnote",
   "noteLink",
   "attachment",
+  "image",
+  "pdf",
+  "audio",
+  "video",
+  "snippets",
+  "figureRef",
 ]);
 export const editorCommands: EditorCommand[] = catalogue.map(
   ([id, label, category, scope, keys]) => ({
@@ -193,7 +217,11 @@ export const editorCommands: EditorCommand[] = catalogue.map(
           task: "todo checklist",
           bullet: "unordered list",
           noteLink: "wiki backlink",
-          attachment: "image file upload media picture document pdf",
+          attachment: "file upload media document pdf",
+          image: "image picture photo figure upload",
+          pdf: "pdf paper document",
+          snippets: "snippet template reusable research",
+          figureRef: "figure reference cross-reference",
         } as Record<string, string>
       )[id] ?? "",
   }),

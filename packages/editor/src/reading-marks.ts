@@ -18,6 +18,7 @@ export const readingBlockTypes = new Set([
   "codeBlock",
   "mathBlock",
   "image",
+  "media",
   "table",
   "frontmatter",
   "footnoteDefinition",

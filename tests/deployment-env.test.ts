@@ -35,6 +35,9 @@ describe("deployment configuration", () => {
     { PDF_OCR_URL: "http://pdf-ocr:8091", PDF_OCR_TOKEN: "short" },
     { PDF_RESEARCH_OCR_URL: "http://pdf-research-ocr:8091" },
     { TOOL_PROVIDER_KEY: "invalid" },
+    { PUBLISH_DOMAIN_TARGET: "https://sites.example.org" },
+    { PUBLISH_DOMAIN_TARGET: "127.0.0.1" },
+    { PUBLISH_DOMAIN_TARGET: "sites.internal" },
   ])("rejects unsafe or incomplete production configuration %j", (override) => {
     expect(environmentErrors({ ...valid, ...override }).length).toBeGreaterThan(
       0,
@@ -53,6 +56,14 @@ describe("deployment configuration", () => {
         PDF_OCR_URL: "http://pdf-ocr:8091",
         PDF_OCR_TOKEN: "o".repeat(40),
         PDF_RESEARCH_OCR_URL: "http://pdf-research-ocr:8091",
+      }),
+    ).toEqual([]);
+  });
+  it("accepts a public custom-site routing target", () => {
+    expect(
+      environmentErrors({
+        ...valid,
+        PUBLISH_DOMAIN_TARGET: "sites.example.org",
       }),
     ).toEqual([]);
   });

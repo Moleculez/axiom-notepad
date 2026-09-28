@@ -15,6 +15,8 @@ import {
 import { withAuditContext } from "@axiom/shared/audit-context";
 import { appUrl } from "@axiom/shared/auth";
 import { handleAuthorized } from "./api-handler";
+import { isWorkspaceMutation } from "@axiom/shared/productivity";
+import { prepareIntegrationChange } from "@axiom/shared/integration-change-sets";
 const stable = (value: unknown): string =>
   value === null || typeof value !== "object"
     ? JSON.stringify(value)
@@ -31,6 +33,7 @@ export async function executeIntegrationAction(
 ) {
   const action = integrationActions.find((a) => a.name === name);
   if (!action) throw new HttpError(404, "Unknown workspace action.");
+  if (isWorkspaceMutation(name)) return prepareIntegrationChange(connection, name, raw);
   const input = integrationActionInput.parse(raw),
     live = await activeConnection(
       connection.id,

@@ -148,6 +148,8 @@ export async function workspaceApi(
     ];
     if (spaceId) where.push("r.space_id=" + bind(spaceId));
     if (kind) where.push("r.kind=" + bind(resourceKindSchema.parse(kind)));
+    const pickKind = url.searchParams.get("pickKind");
+    if (pickKind) where.push(`(r.kind=${bind(z.enum(["file", "note"]).parse(pickKind))}${view === "folder" ? " OR r.kind='folder'" : ""})`);
     // Directory filtering must not turn into the recursive full-text search
     // used by Explorer's q parameter. Match literal names at this level only.
     const name = z
@@ -160,8 +162,8 @@ export async function workspaceApi(
       tag = url.searchParams.get("tag");
     if (mime)
       where.push(
-        "a.mime LIKE " +
-          bind(z.string().max(100).parse(mime).replace(/[%_]/g, "") + "%"),
+        "(a.mime LIKE " +
+          bind(z.string().max(100).parse(mime).replace(/[%_]/g, "") + "%") + (pickKind && view === "folder" ? " OR r.kind='folder')" : ")"),
       );
     if (tag) where.push(bind(z.string().max(40).parse(tag)) + "=ANY(r.tags)");
     for (const key of ["after", "before"] as const) {
@@ -195,7 +197,7 @@ export async function workspaceApi(
     if (search) {
       const param = bind(search);
       where.push(
-        `(r.name ILIKE '%'||${param}||'%' OR r.description ILIKE '%'||${param}||'%' OR array_to_string(r.tags,' ') ILIKE '%'||${param}||'%' OR EXISTS(SELECT 1 FROM notes n WHERE n.id=r.note_id AND to_tsvector('simple',n.title||' '||n.plain_text) @@ plainto_tsquery('simple',${param})))`,
+        `(r.reference_code=upper(${param}) OR r.name ILIKE '%'||${param}||'%' OR r.description ILIKE '%'||${param}||'%' OR array_to_string(r.tags,' ') ILIKE '%'||${param}||'%' OR EXISTS(SELECT 1 FROM notes n WHERE n.id=r.note_id AND to_tsvector('simple',n.title||' '||n.plain_text) @@ plainto_tsquery('simple',${param})))`,
       );
     }
     const encoded = url.searchParams.get("cursor");

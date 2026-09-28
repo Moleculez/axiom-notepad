@@ -138,12 +138,12 @@ body {
 }
 :is(input, textarea, select):not([type="checkbox"]):not([type="range"]):not(
     [type="color"]
-  ) {
+  ):not(:where([data-editor-field])) {
   border-radius: var(--control-radius);
 }
-input:focus-visible,
-textarea:focus-visible,
-select:focus-visible {
+input:not(:where([data-editor-field])):focus-visible,
+textarea:not(:where([data-editor-field])):focus-visible,
+select:not(:where([data-editor-field])):focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
 }

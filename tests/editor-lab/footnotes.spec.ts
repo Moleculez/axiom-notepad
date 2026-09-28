@@ -475,13 +475,22 @@ test("React reading panes resolve identical footnote keys independently and clea
   await expect(tip(page)).toHaveCount(1);
   await expect(tip(page)).toHaveText("Second document.");
   await expect(first).not.toHaveAttribute("aria-describedby");
+  const reference = await second.elementHandle();
+  const tooltipId = await tip(page).getAttribute("id");
   await page.evaluate(() =>
     window.footnoteReadingLab.update(
       1,
       "Second[^a].\n\n[^a]: Changed definition.",
     ),
   );
-  await expect(tip(page)).toHaveCount(0);
+  // Reading reconciliation preserves the unchanged reference node, so its
+  // open tooltip refreshes in place rather than flashing closed and reopening.
+  await expect(tip(page)).toHaveCount(1);
+  await expect(tip(page)).toHaveText("Changed definition.");
+  await expect(tip(page)).toHaveAttribute("id", tooltipId!);
+  expect(await reference!.evaluate((element) => element.isConnected)).toBe(
+    true,
+  );
   await page.mouse.move(8, 8);
   await second.hover();
   await expect(tip(page)).toHaveText("Changed definition.");

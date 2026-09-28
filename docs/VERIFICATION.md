@@ -3,6 +3,240 @@
 Updated September 28, 2026. Historical logs are [archived separately](archive/VERIFICATION-2026-09-11.md).
 Do not treat historical browser totals or local build IDs as current release evidence.
 
+## September 28 single-sheet editor and full application cascade
+
+- Reproduced the reported regression **before the fix** with the complete app
+  styles: a destination field had a 1px border and 12px corners, despite the flat
+  wrapper. The earlier property-table fixture omitted `workbench.css` and
+  `workspace-design.css`; the earlier figures below did not certify actual
+  application input states.
+- Document fields now explicitly opt out of app-form rules. Metadata and link
+  values match ordinary document-table typography/padding, retain transparent
+  backgrounds through hover/focus/error/read-only states, and use square cell-level
+  focus/error indicators. Math/code source, nested editor layers, previews and
+  language controls share the host sheet, including tinted canvas cards. App
+  reading code follows the same surface; public-site/export profiles are unchanged.
+- The app root and browser lab now import the same ordered `app/styles.ts`,
+  including fonts and general forms. Contract and computed-style tests guard the
+  field boundary. Palette validation also checks syntax and focus against paper.
+- **2,026 unit tests in 103 files**, TypeScript, ESLint, docs/theme validation and
+  an isolated optimized production build passed. The production build used
+  `.next/verify-single-sheet-20260928`, leaving the running 8080 service intact.
+- **116 focused browser checks passed** across Chromium, Firefox and WebKit,
+  including all 24 pack/interface/light-dark combinations, custom conflicting
+  paper/control/code colors, tinted hosts, 80%/150% UI scale, large independent
+  document type, error/read-only states, source fidelity, undo and peer changes.
+  WebKit's unsupported forced-colors emulation was the one deliberate skip.
+- A new automated 8080 scratchpad check is present, but its seed-account login
+  returned HTTP 401 before assertions. Instead, the existing authenticated Chrome
+  session was used to review the real private Settings scratchpad: metadata/link
+  fields and focused equations/code were inspected in light and Night Paper themes.
+  The temporary preference preview was cancelled and its tab closed. No note or
+  saved preference was changed; credentials were not reset.
+- The broader lab audit refreshed two stale assertions, without changing editor
+  behavior: reading footnote tooltips update in place with their stable anchor, and
+  equation-label actions live in the Mathematics submenu. Initial cold dependency
+  reloads interrupted image-engine cases; focused reruns passed. Browser artifacts
+  are under ignored `data/editor-lab-results/single-sheet-*` directories.
+- The full 1,335-case sweep completed with **1,301 passes, 28 intentional skips
+  and six initial failures** (four stale assertions and two dependency reloads).
+  All **15 final cross-browser rechecks passed**, covering every affected scenario
+  plus read-mode surface parity after the assertion updates and dependency warm-up.
+  This is a sweep plus focused rechecks,
+  not a claim of a second uninterrupted full-suite run.
+- Physical OS IME/clipboard acceptance, deployment and external-provider checks
+  remain separate gates. No commit, push or deployment was performed.
+
+## Earlier September 28 paper-like editor properties and theme consistency
+
+- Link definitions and document metadata now share a presentation-only property
+  table: a quiet caption, aligned text-like fields, adaptive key columns, inline
+  validation, bounded multiline titles, and hover/keyboard-focus actions without
+  layout shifts. Their source models, collaborative anchors and undo paths remain
+  independent. No schema, preference or API migration was required.
+- Consolidated table/code/math presentation in `editor-paper.css`; editor field
+  dialogs, completions, media controls and link previews honor semantic typography,
+  shape, shadow and focus tokens. Removed duplicate field-dialog styling and
+  corrected WebKit select geometry and cross-browser table column sizing.
+- **2,017 unit tests in 102 files** pass. TypeScript, ESLint, documentation and theme
+  validation, and an isolated optimized production build pass. The main development
+  service on port 8080 remains available; its build output and data were not reset.
+- **428 browser checks pass across Chromium, Firefox and WebKit**, including the
+  24 combinations of three theme packs, four interface styles and light/dark mode
+  in every engine. Tests cover geometry, 80%/150% UI scaling, independent fonts,
+  no-radius/no-shadow preferences, read-only fields, native field identity,
+  validation/cancellation, Source/Write transitions, peer conflicts, undo/redo,
+  tables, code/math/Mermaid, images, nested quotes and footnotes. Seven deliberate
+  skips remain: six existing Chromium-only synthetic composition cases, and
+  WebKit's unsupported forced-colors emulation.
+- Fresh screenshots and traces are under ignored
+  `data/editor-lab-results/paper-properties-verified-behavior`; follow-up dialog
+  checks for all interface styles are under `paper-properties-dialog-verified` in
+  the same parent. Light/dark, enlarged-type, table-control and dialog screenshots
+  were inspected. These in-memory checks do not certify physical OS IME, clipboard
+  permissions, deployment or a full application end-to-end release. No user
+  document was edited, and no commit, push or deployment was performed.
+
+## September 28 rich link definitions
+
+- Top-level Markdown link definitions now use source-backed ID, destination and
+  title fields, with atomic reference renaming, use navigation, copy/open actions,
+  duplicate/unsafe-URL validation, and explicit Source mode access.
+- **2,017 unit tests in 102 files** pass, including 30 new lossless-field,
+  escaping, ID validation and semantic-rename tests. TypeScript, ESLint and documentation
+  validation pass.
+- **67 browser checks pass across Chromium, Firefox and WebKit** in the isolated,
+  in-memory editor lab. All 24 new link-definition checks pass: keyboard edits,
+  undo/redo, source switching, CRLF preservation, safe empty-block deletion,
+  collaborative rebasing/conflict recovery, permission loss, peer deletion and
+  composition-event guards. Two existing cross-block composition tests remain
+  explicitly Chromium-only and are skipped in Firefox/WebKit.
+- Evidence is under ignored `data/editor-lab-results/link-definition-final`.
+  Light/dark card screenshots sit beside that directory. Tests do not certify
+  physical OS IME, clipboard permissions or cloud deployment. No schema change,
+  data migration, commit or publication was performed for this refinement.
+
+## September 28 editor media and snippets
+
+- [Media workflows](EDITOR_MEDIA.md) cover the preview-first picker, smart uploads,
+  file cards and inline media, stable codes, figures, research excerpts, hover
+  inspection, attachment checks, and personal/workspace snippets.
+- Migration 34 passed fresh isolated initialization and the working database's
+  additive upgrade from 33. A full local backup was verified against **1,014 blob
+  checksums** first. All 22 existing note/file resources received codes; none lack
+  a code. No notes, files, or sites were reset or published.
+- **1,987 unit tests in 101 files**, TypeScript, ESLint, documentation validation,
+  and the optimized production build pass. The media suite adds source-map,
+  metadata, figure, preview-safety, and asynchronous insertion tests.
+- Three isolated Chromium workflows pass on port 3008. They verify upload/review,
+  figure rendering and caption focus, collaborative insertion and local undo/redo,
+  rename/prefix code stability, snippet versions and retained references, access
+  denial, source-mode cancellation, snippet-library insertion, attachment checks,
+  and unavailable linked-file hover previews. Screenshots are under the ignored
+  local `test-results/editor-media-final` directory.
+- Browser tests caught and fixed cold lazy-dialog loading that could remount the
+  editor and lose insertion intent. Every new lazy dialog has its own boundary;
+  expired insertion sessions fail visibly rather than using a different cursor.
+- These checks do not certify physical clipboard/IME behavior, every media codec,
+  WebKit/Firefox media acceptance, accessibility devices, or cloud deployment.
+  CSV/TSV excerpts are bounded snapshots; workbook excerpts and bulk automatic
+  attachment repair are not implemented. Other file formats retain existing viewers.
+
+## September 28 publication reading, themes and analytics
+
+- Migration 33 adds a compact public reading catalog, stable first-publication
+  dates, separately controlled analytics settings, ephemeral page-event deduplication,
+  daily aggregates and lifetime public counters. No analytics are enabled by upgrade.
+- A private database/blob backup was created and verified (676 blob checksums)
+  before upgrading the working development database. Note/CRDT/journal, resource,
+  attachment and existing website/release/manifest fingerprints were unchanged.
+  Schema 33 was applied twice to confirm idempotency; no working publication or
+  collection settings were changed. The existing Chrome session loads Analytics
+  on port 8080 with collection and public counters off.
+- Fresh initialization and retained-content upgrade rehearsals from schemas
+  18, 27 and 28 pass through 33. The already initialized isolated acceptance
+  database also upgraded from 32. Rehearsal databases are retained for inspection.
+- **1,979 unit tests across 100 files**, TypeScript, ESLint, documentation links
+  and optimized production build pass (**934 offline assets**). Added tests cover
+  legacy defaults, all theme IDs, hierarchy, publication dates, safe code tokens,
+  catalog visibility, reading controls, renderer-backed specimens, aggregate deltas,
+  privacy field validation, date ranges, referrer minimization and CSP isolation.
+- Four isolated browser workflows pass in Chromium and WebKit: the new complete
+  theme/discovery/analytics/export workflow and three existing website/settings/
+  research-reader regressions. Firefox passes the three existing regressions;
+  after stabilizing specimen document replacement, the new workflow passes twice
+  consecutively. Evidence: `test-results/site-insights-chromium-final`,
+  `test-results/site-insights-webkit`, `test-results/site-insights-firefox`, and
+  `test-results/site-insights-firefox-final` (the earlier Firefox directory retains
+  its initial specimen-switch failure, rather than hiding it).
+- The same four workflows pass against the final optimized production build on
+  isolated port 3004: `test-results/site-insights-production`. This verifies local
+  HTTP production-mode serving, not cloud/container or HTTPS deployment.
+- New browser assertions include live specimens for every theme, equation rendering,
+  code token colors in light/dark, active TOC, archive query filters, topic counts,
+  manager-only analytics configuration, engaged/completed views, concurrent event
+  deduplication, privacy signals, explicit Google consent/rejection, CSV, current
+  public counts and normal versus explicitly GA-enabled static ZIPs. Google requests
+  are intercepted locally; no real Google property receives test traffic.
+- `scripts/verify/rehearse-site-insights.ts` passes against the independent reader
+  on isolated ports 3005/3006: schema readiness, private-route/domain denial, origin
+  and payload limits, concurrent deduplication, counters, immediate collection disable,
+  seven-day visit expiry, thirteen-month aggregate expiry and retained fresh events.
+  It refuses the configured working database and non-local/non-test targets.
+
+Old frozen releases need an explicitly reviewed new publication to gain new reader
+styles and controls. Real Google reporting, custom DNS/TLS, containerized deployment,
+distributed rate limits and production traffic volumes remain deployment checks.
+
+## September 28 Storage and Website tab repair
+
+- Reproduced both generic-error screens on the working development service. The
+  code expected migrations 31/32 but its database was still at 30; missing
+  `site_release_files` and `workspace_sites` caused the failing reads.
+- Created and checksum-verified a private database/blob backup (24 stored blobs),
+  then applied the existing forward migrations to the working database. Notes,
+  CRDT state/journal, attachments, snapshots and preferences have identical
+  before/after fingerprints. No reset, seed, publication or file deletion ran.
+- Storage totals and the Website private-draft setup both load in the existing
+  authenticated Chrome session on port 8080. Both web health URLs return 200.
+- Web health now checks every required migration receipt and returns an explicit
+  upgrade-required 503 when one is missing. Schema-shaped API failures receive a
+  readable upgrade diagnostic only when migrations are actually pending. Normal
+  API calls have no additional schema query; permission/connection failures and
+  query bugs on an up-to-date database retain their original error handling.
+- **1,953 unit tests across 99 files**, TypeScript, targeted ESLint and documentation
+  links pass. The 14 new regression tests cover the version-30 failure, skipped
+  receipts, fresh databases, recovery after migration and safe public diagnostics.
+  This is local development acceptance, not a production deployment or a new
+  container/build rehearsal.
+
+## September 28 workspace publishing and settings
+
+- Migration 32 adds opt-in workspace websites, immutable review releases, public
+  file manifests and verified-domain mappings. Personal/team sites, selected assets,
+  section/template design, manager publication/rollback/unpublish, static ZIPs,
+  storage accounting and backup manifests are implemented. Only the isolated
+  staging database was migrated; working data and port 8080 were not reset.
+- Settings now uses a searchable grouped rail in place of the workspace sidebar
+  while open, with consistent full-width forms/preview frames. Four independent
+  component styles and the aligned, guarded processing-provider dialog are included.
+- **1,939 unit tests across 98 files**, TypeScript, ESLint, theme validation,
+  documentation links, Compose configuration and the isolated production build
+  pass (**934 offline assets**). Unit fixtures cover domain ownership/routing,
+  safe public links, inert SVG sanitization and hidden spreadsheet-content exclusion.
+- **Three workflow tests each in Chromium, Firefox and WebKit** pass against
+  isolated development ports 3004/1236. They cover draft/section design, member vs
+  manager authorization, private frozen preview, anonymous publication, source-edit
+  isolation, static export, rollback, retained content after private-source trash,
+  workspace suspension without automatic republication, failed-build isolation,
+  PDF search/ranges, Mermaid, Canvas, images and Office-preview exclusions.
+  Settings checks include rail geometry, component-style previews, consistent
+  appearance/profile widths and provider-draft dismissal. Fresh screenshots were
+  visually inspected, including designer/review, public PDF, settings and providers.
+  Evidence: `test-results/websites-final-{chromium,firefox,webkit}`.
+- The same **three Chromium workflows also pass against the optimized production
+  build** on isolated port 3004, including the final equal-width profile frame.
+  Evidence: `test-results/websites-production-chromium`. This is HTTP localhost
+  acceptance, not a deployed HTTPS/container rehearsal.
+- The standalone Node publication reader was checked separately on loopback ports
+  3005/3006: health, manifest serving, unknown/pending-domain denial, verified-host
+  routing, canonical redirect, private-route isolation and publication/TLS withdrawal
+  pass. Verified DNS state was simulated in the isolated database and removed
+  afterwards; **no real DNS change or certificate issuance was performed**.
+- Verification found and fixed the review sync-flush argument shape, stale
+  horizontal-settings CSS, provider checkbox spacing, old profile width caps and
+  inert-upload SVG detection. Initial reader test failures also included selectors
+  that did not match actual Mermaid/slide markup. The first standalone host probe
+  used Node fetch, which did not send the overridden Host as intended; rerunning
+  with an explicit HTTP request validated the actual host routes.
+- Docker's daemon is unavailable here, so container startup, backup/restore with
+  publications, Caddy certificate issuance/renewal and real public DNS remain
+  deployment gates. Local mocked DNS and browser fixtures do not establish them.
+  No production publishing, DNS edits, commit or push was performed.
+
+See [website scope and deployment](WORKSPACE_WEBSITES.md) for file-format limits,
+independent public-copy retention, static-host requirements and operator steps.
+
 ## September 28 deletion navigation
 
 - Successful local trash operations return an affected open file/folder to its

@@ -279,7 +279,7 @@ export async function toolServicesApi(
           const {
             rows: [usage],
           } = await client.query(
-            "SELECT count(*)::int AS count FROM tool_jobs WHERE provider_id=$1 AND created_at>=(date_trunc('day',now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC')",
+            "SELECT (SELECT count(*)::int FROM tool_jobs WHERE provider_id=$1 AND created_at>=(date_trunc('day',now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'))+(SELECT count(*)::int FROM assistant_run_steps WHERE provider_id=$1 AND ordinal>1 AND dispatched_at>=(date_trunc('day',now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC')) AS count",
             [input.providerId],
           );
           if (usage.count >= provider.daily_limit)

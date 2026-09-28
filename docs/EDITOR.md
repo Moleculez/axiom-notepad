@@ -74,6 +74,40 @@ Command-click (Control-click on Windows/Linux) follows links without entering th
 
 Type `/` at an empty paragraph (also inside list/quote prefixes), then search by name or alias. Arrow keys navigate; Enter inserts; Escape dismisses without changing the query. A successful insertion is one undo step. Slash completion is suppressed in code, mathematics, tables and link syntax. Typed `[[`, `[@` and `\eqref{` offer note, citation and equation-label completion.
 
+### Reusable link definitions
+
+Write `[paper]: https://example.org "Optional title"` in Source mode, then use
+`[read the paper][paper]` in your prose. These are reusable Markdown links, not
+academic citations. For citations, add papers in the Reference Library and type
+`[@` to choose a citation key, or use `/citation`.
+
+In Write mode, each top-level link definition has a compact **Reference ID /
+Destination / Title** property table, matching document metadata. Both use subtle
+horizontal rules and transparent fields with ordinary document-table typography
+rather than boxed form controls. The active cell has a square focus cue; inputs
+never gain a filled background, rounded underline or shadow. Actionable validation
+appears beside the field. Long titles
+wrap without replacing the focused input, and action icons appear on hover or
+keyboard focus without shifting the rows.
+
+Fields commit on Enter, Tab, leaving the field, or
+switching modes; Escape cancels the current draft. Enter advances through fields;
+Enter in Title or Mod-Enter continues in a separate paragraph. Shift-Enter in the
+title adds a title line. Backspace in an empty destination with no title returns
+to the `[id]:` opener. Hover and right-click never reveal Markdown.
+
+Renaming an ID updates its full, shortcut, collapsed, image and footnote-body
+references in one undo step, preserving their displayed labels. Duplicate IDs
+are flagged; unsafe destinations cannot be opened. The use count jumps through
+references. Hover/focus exposes open, copy-reference and more actions, including
+copying the source and explicitly switching to Source mode. Definitions remain
+absent from Read mode and rendered HTML/PDF exports; Markdown exports retain them.
+
+Untouched fields preserve their original whitespace, delimiters and line endings.
+Draft typing does not reparse or broadcast the note on every keystroke. Commits
+use relative collaborative anchors and reject changed/deleted definitions; drafts
+are retained in recovery on conflicts, permission loss or view destruction.
+
 ### Writing footnotes
 
 In Write mode, type `[^id]:` and press Enter to open a quiet, titled footnote

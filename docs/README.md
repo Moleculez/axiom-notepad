@@ -8,6 +8,7 @@ not installation instructions or proof of today's test results.
 ## For researchers
 
 - [Workspace guide](WORKSPACE.md) — navigation, sharing, files and everyday limits
+- [Workspace websites](WORKSPACE_WEBSITES.md) — LaTeX-first themes, reviewed publishing, reading/discovery tools, private author analytics, static export and custom domains
 - [Workspace planning](WORKSPACE_PLANNING.md) — tasks, Gantt, baselines, critical paths, group portfolios and capacity
 - [Editor and shortcuts](EDITOR.md) — visual/source editing and research blocks
 - [Document export and Read mode](DOCUMENT_EXPORT.md) — styled snapshots, portable HTML/PDF, Markdown bundles and focused reading
@@ -19,6 +20,7 @@ not installation instructions or proof of today's test results.
 - [Reading marks](READING_MARKS.md) — bookmarks, private notes and shared annotation cards
 - [Document minimap](MINIMAP.md) — navigation, markers, folding and appearance
 - [Image and Mermaid viewer](VISUAL_VIEWER.md) — inspection, comparison and annotations
+- [Research media and snippets](EDITOR_MEDIA.md) — insertion previews, file codes, figures, excerpts and reusable content
 - [Settings](SETTINGS.md) — previews, preferences and account/device boundaries
 - [Management console](MANAGEMENT_CONSOLE.md) — workspaces, groups, Audit and Trash
 - [Research file views](RESEARCH_TOOLS.md) — Math/Image/Text Studio, viewers and limits

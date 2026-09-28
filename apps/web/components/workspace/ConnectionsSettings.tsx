@@ -2,7 +2,8 @@
 import { useEffect, useState } from "react";
 import { Check, Copy, Network, ShieldCheck, Unplug, X } from "lucide-react";
 import { api, post } from "../../lib/client";
-import { ErrorNotice, Loading, useData, useWorkspace } from "./ui";
+import { ErrorNotice, Loading, useData, useWorkspace, useLocation } from "./ui";
+import ChangeSetReview from "../assistant/ChangeSetReview";
 type Connection = {
   id: string;
   name: string;
@@ -21,6 +22,9 @@ type Approval = {
   error?: string;
 };
 export default function ConnectionsSettings() {
+  const {params} = useLocation();
+  const [review,setReview] = useState<string|null>(params.get("review"));
+  const changes = useData<{id:string;title:string;status:string;connection_id?:string}[]>("assistant/change-sets");
   const { spaces, notify } = useWorkspace(),
     data = useData<{
       connections: Connection[];
@@ -36,9 +40,9 @@ export default function ConnectionsSettings() {
     [error, setError] = useState(""),
     [busy, setBusy] = useState("");
   useEffect(() => {
-    const timer = setInterval(data.revalidate, 10000);
+    const timer = setInterval(()=>{data.revalidate();changes.revalidate();}, 10000);
     return () => clearInterval(timer);
-  }, [data.revalidate]);
+  }, [data.revalidate,changes.revalidate]);
   const run = async (id: string, work: () => Promise<unknown>) => {
     setBusy(id);
     setError("");
@@ -101,9 +105,10 @@ export default function ConnectionsSettings() {
               <ShieldCheck size={19} />
               Requests for approval
             </h2>
-            {!data.data?.approvals.length && (
+            {!data.data?.approvals.length && !changes.data?.some(s=>s.connection_id) && (
               <p className="ws-note">No requests are waiting for review.</p>
             )}
+            {changes.data?.filter(s=>s.connection_id).map(s=><article className="connection-approval" key={s.id}><header><strong>{s.title}</strong><span>{data.data?.connections.find(c=>c.id===s.connection_id)?.name ?? "Connected app"}</span></header><p className="ws-note">{s.status} · all writes require review</p><button className="button secondary" onClick={()=>setReview(s.id)}>Review changes</button></article>)}
             {data.data?.approvals.map((a) => (
               <article className="connection-approval" key={a.id}>
                 <header>
@@ -213,6 +218,7 @@ export default function ConnectionsSettings() {
           </section>
         </>
       )}
+      {review&&<ChangeSetReview id={review} onClose={()=>setReview(null)} onChange={()=>{changes.revalidate();data.revalidate();}}/>}
     </div>
   );
 }

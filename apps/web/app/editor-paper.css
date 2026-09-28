@@ -1,5 +1,9 @@
 /* Document surfaces, not application chrome. Color and type remain personal. */
 :is(.axiom-prose, .prose) {
+  --editor-block-space: calc(var(--size-prose) * 1.4);
+  --editor-field-padding: 0.65em 0.85em;
+  --editor-rule: var(--line);
+  --editor-row-rule: color-mix(in srgb, var(--line) 65%, transparent);
   --editor-control-size: calc(var(--size-ui) * 2);
   --editor-toolbar-space: calc(var(--editor-control-size) + 6px);
   --editor-edge-size: calc(var(--size-ui) * 1.6);
@@ -124,6 +128,7 @@
 }
 
 :is(.axiom-prose, .prose) table {
+  width: 100%;
   border-collapse: separate;
   border-spacing: 0;
   border: 0;
@@ -138,7 +143,8 @@
   line-height: 1.5;
 }
 :is(.axiom-prose, .prose) :is(th, td) {
-  padding: 0.65em 0.85em;
+  min-width: 70px;
+  padding: var(--editor-field-padding);
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -148,16 +154,202 @@
   color: inherit;
   vertical-align: top;
   font-variant-numeric: lining-nums tabular-nums;
+  text-align: start;
 }
 :is(.axiom-prose, .prose) th {
   border-bottom: 1px solid var(--line);
   font-weight: 600;
+}
+/* Property tables are document furniture, not application forms or data grids.
+   Both editable node views and the reading renderer share these dimensions. */
+:is(.axiom-prose, .prose) :is(.editor-properties, .document-metadata) {
+  position: relative;
+  container-type: inline-size;
+  margin-block: var(--editor-block-space);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  letter-spacing: normal;
+  word-spacing: normal;
+  text-align: start;
+}
+:is(.axiom-prose, .prose) :is(.editor-properties, .document-metadata) table {
+  table-layout: fixed;
+  border-collapse: collapse;
+  margin: 0;
+  border: 0;
+  border-block: 1px solid var(--editor-rule);
+  background: transparent;
+}
+:is(.axiom-prose, .prose)
+  :is(.editor-properties, .document-metadata)
+  :is(th, td) {
+  min-width: 0;
+  border: 0;
+  border-bottom: 1px solid var(--editor-row-rule);
+  padding: var(--editor-field-padding);
+  font: inherit;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+  background: transparent;
+  color: var(--text);
+}
+:is(.axiom-prose, .prose) :is(.editor-properties, .document-metadata) th {
+  /* Resolve a length against the wrapper: percentage math inside fixed-layout
+     table cells is treated as auto by some engines (silently making 50/50). */
+  width: 28%;
+  width: clamp(28cqi, 9.5em, 44cqi);
+  color: var(--muted);
+  font-weight: 500;
+}
+.axiom-prose .editor-properties :is(th, td):has(.editor-property-input) {
+  padding: 0;
+}
+/* The cell, not a second rounded input box, owns hover/focus/error feedback.
+   Outlines do not change cell dimensions or cover the document with a fill. */
+.editor-properties
+  :is(th, td):has(.editor-property-input:hover:not(:read-only)) {
+  border-bottom-color: var(--muted);
+}
+.editor-properties :is(th, td):has(.editor-property-input:focus-visible) {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+.editor-properties
+  :is(th, td):has(.editor-property-input[aria-invalid="true"]) {
+  outline: 2px dashed var(--danger);
+  outline-offset: -2px;
+}
+.editor-properties-caption,
+.document-metadata caption {
+  padding: 0 0 0.6em;
+  color: var(--muted);
+  font: var(--weight-ui) var(--size-ui-small)/1.5 var(--font-ui);
+  text-align: start;
+}
+.editor-properties-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.8em;
+  min-height: var(--editor-control-size);
+}
+.document-metadata caption {
+  line-height: var(--editor-control-size);
+}
+.editor-properties-title {
+  font-weight: 500;
+}
+.editor-properties-detail {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+.editor-properties-actions {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  margin-inline-start: auto;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+.editor-properties:is(:hover, :focus-within) .editor-properties-actions {
+  opacity: 1;
+  pointer-events: auto;
+}
+.editor-property-detail-button {
+  padding: 0.15em 0.35em;
+  border: 0;
+  border-radius: var(--control-radius-small);
+  color: var(--muted);
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+.editor-property-detail-button:hover:not(:disabled) {
+  background: var(--hover);
+  color: var(--text);
+}
+.editor-property-detail-button:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.editor-property-detail-button:disabled {
+  cursor: default;
+}
+.axiom-prose .editor-property-input {
+  appearance: none;
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: var(--editor-field-padding);
+  border: 0;
+  border-radius: 0;
+  outline: none;
+  box-shadow: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  line-height: 1.5;
+  text-overflow: ellipsis;
+  transition: none;
+}
+.axiom-prose textarea.editor-property-input {
+  resize: none;
+  min-height: 2.8em;
+  max-height: 12em;
+  overflow: auto;
+  field-sizing: content;
+}
+.axiom-prose .editor-property-input:focus {
+  text-overflow: clip;
+}
+.axiom-prose .editor-property-input::placeholder {
+  color: var(--muted);
+  opacity: 1;
+  font-weight: var(--weight-ui);
+}
+.editor-property-status:not(.sr-only) {
+  display: block;
+  margin: 0.3em 0.8em 0.65em;
+  color: var(--danger);
+  font: var(--weight-ui) var(--size-ui-small)/1.5 var(--font-ui);
+  overflow-wrap: anywhere;
+}
+.editor-properties > .editor-property-status:not(.sr-only) {
+  margin-inline: 0;
+}
+:is(.axiom-prose, .prose) :is(.editor-properties, .document-metadata) pre {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: var(--weight-code) var(--size-code)/1.5 var(--font-code);
+}
+.axiom-prose .editor-properties[data-readonly="true"] .axiom-metadata-add {
+  display: none;
 }
 .axiom-table-shell {
   position: relative;
   overflow: visible;
   padding: 0 calc(var(--editor-edge-size) + 4px) 0 0;
   margin-block: var(--editor-toolbar-space) calc(var(--editor-edge-size) + 8px);
+}
+.axiom-table-scroll > table {
+  table-layout: fixed;
+}
+.axiom-table-shell.can-resize,
+.axiom-table-shell.can-resize * {
+  cursor: col-resize;
 }
 .axiom-table-scroll {
   overflow-x: auto;
@@ -437,17 +629,47 @@
 }
 
 .axiom-embedded {
+  position: relative;
+  white-space: normal;
+  color: var(--text);
   border-radius: 0;
   border: 0;
   overflow: visible;
   margin-block: var(--editor-toolbar-space) 1.4em;
   padding-block-start: 0;
-  background: var(--paper);
+  background: transparent;
 }
 .axiom-embedded:focus-within {
   border-color: transparent;
 }
+/* Paint the block boundary inside its existing box; never move the content or
+   introduce a separate panel fill when hovering or reaching it by keyboard. */
+.axiom-embedded:is([data-kind="codeBlock"], [data-kind="mathBlock"]):is(
+    :hover,
+    :focus-within
+  ) {
+  outline: 2px solid color-mix(in srgb, var(--text) 35%, var(--line));
+  outline-offset: -2px;
+}
+.axiom-embedded:is(
+    [data-kind="codeBlock"],
+    [data-kind="mathBlock"]
+  ):focus-within {
+  outline-color: var(--focus);
+}
+@media (forced-colors: active) {
+  .axiom-embedded:is([data-kind="codeBlock"], [data-kind="mathBlock"]):is(
+      :hover,
+      :focus-within
+    ) {
+    outline-color: Highlight;
+  }
+}
 .axiom-block-controls {
+  display: flex;
+  align-items: center;
+  font: var(--weight-ui) var(--size-ui-small)/1.4 var(--font-ui);
+  color: var(--muted);
   position: absolute;
   inset-block-start: calc(-1 * var(--editor-toolbar-space));
   inset-inline-end: 0;
@@ -455,7 +677,7 @@
   padding: 0;
   gap: 3px;
   z-index: 2;
-  background: var(--paper);
+  background: transparent;
   border-radius: var(--control-radius-small);
   opacity: 0;
   pointer-events: none;
@@ -482,24 +704,70 @@
 .axiom-block-controls .axiom-language-label {
   padding-inline: 7px;
 }
+.axiom-block-controls button {
+  border: 0;
+  border-radius: var(--control-radius-small);
+  padding: 0.4em 0.55em;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+}
+.axiom-block-controls button:hover:not(:disabled) {
+  background: var(--hover);
+  color: var(--text);
+}
+.axiom-block-controls button:disabled {
+  opacity: 1;
+  cursor: default;
+}
+.axiom-block-controls .axiom-language-input {
+  appearance: none;
+  width: 11em;
+  margin: 0;
+  padding: 0.4em 0.55em;
+  border: 0;
+  border-radius: 0;
+  outline: none;
+  box-shadow: none;
+  color: var(--text);
+  background: transparent;
+  font: inherit;
+  transition: none;
+}
+.axiom-block-controls .axiom-language-input:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
 .axiom-block-controls button:focus-visible {
   opacity: 1;
 }
 .axiom-block-source {
   overflow: hidden;
-  background: var(--code);
+  background: transparent;
+  color: var(--text);
 }
 .axiom-block-preview {
   padding: 0.8em 1.2em;
   overflow-x: auto;
+  text-align: center;
+  cursor: text;
+  background: transparent;
 }
 .axiom-embedded[data-kind="mathBlock"] {
-  background: var(--paper);
   border: 0;
 }
-.axiom-embedded[data-kind="mathBlock"] .axiom-block-source {
-  background: var(--code);
+.axiom-embedded:is([data-kind="mathBlock"], [data-preview="true"])
+  .axiom-block-source {
   border-top: 1px solid var(--line);
+}
+/* App reading mode follows the same sheet. Portable exports/sites retain their
+   own presentation profile; inline code and selection highlights are unchanged. */
+.reading-view.prose pre,
+.reading-view.prose pre code,
+.axiom-editor .prose pre,
+.axiom-editor .prose pre code {
+  background: transparent;
+  color: var(--text);
 }
 :is(.axiom-prose, .prose) pre {
   border-radius: 0;
@@ -553,7 +821,7 @@
 }
 .axiom-footnote-title {
   margin-block-end: 0.6em;
-  font: 500 0.75em/1.4 var(--font-code);
+  font: 500 var(--size-ui-small)/1.5 var(--font-ui);
   color: var(--muted);
   user-select: none;
   cursor: text;
@@ -565,15 +833,28 @@
   margin-block-end: 0;
 }
 @media (prefers-reduced-motion: reduce) {
-  .editor-icon-button {
+  .editor-icon-button,
+  .editor-properties-actions {
     transition: none;
   }
 }
 :root[data-motion="none"] .editor-icon-button,
-:root[data-motion="reduced"] .editor-icon-button {
+:root[data-motion="reduced"] .editor-icon-button,
+:root[data-motion="none"] .editor-properties-actions,
+:root[data-motion="reduced"] .editor-properties-actions {
   transition: none;
 }
 @media (forced-colors: active) {
+  .editor-properties :is(th, td):has(.editor-property-input:focus-visible),
+  .axiom-block-controls .axiom-language-input:focus-visible {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
+  .editor-properties
+    :is(th, td):has(.editor-property-input[aria-invalid="true"]) {
+    outline: 2px dashed CanvasText;
+    outline-offset: -2px;
+  }
   :is(.axiom-prose, .prose) table {
     border-color: CanvasText;
   }
@@ -596,6 +877,8 @@
 @media print {
   [data-editor-chrome],
   .axiom-block-controls,
+  .editor-properties-actions,
+  .editor-properties-detail,
   .editor-action-panel,
   .footnote-tooltip,
   .editor-icon-tooltip {

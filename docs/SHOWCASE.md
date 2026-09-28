@@ -13,6 +13,34 @@ a performance benchmark. Current test evidence and release gates live in
 
 ## Feature tour
 
+### Publish a reviewed research website
+
+Choose LaTeX Paper or Monograph for academic reading, Tufte for margin notes, or
+Material, Fluent and Minimal treatments. The live specimen shares the publication
+renderer. Readers get a floating hierarchical TOC, word/read-time statistics,
+syntax-highlighted code in light/dark modes, topics and a filterable archive timeline.
+Authors get a private analytics dashboard with comparisons and CSV; managers can
+opt into aggregate collection, public counters and consent-gated Google Analytics.
+Nothing starts tracking merely because a site is published.
+
+Open **Workspace → Website** to select papers, posts and supporting figures,
+arrange homepage sections and choose Scholar, Notebook, Research Lab or Journal.
+The live design specimen uses the same reading renderer; **Review & publish** builds the exact
+frozen public preview for a manager to approve. A later private edit never changes
+that approved website. Public PDF, equation, diagram, Canvas and Office readers
+run without the private workbench, and a static ZIP can be hosted independently.
+
+Workspace sites can use the built-in `/sites/…` address or a verified custom domain.
+See the [publishing workflow and limits](WORKSPACE_WEBSITES.md), including explicit
+asset selection, complete-PDF metadata warnings and retained published copies.
+Local browser fixtures are covered in [Verification](VERIFICATION.md); custom DNS
+and automatic certificate issuance still require deployment-specific acceptance.
+
+Settings now has a searchable grouped left rail and consistent page widths.
+Its Interface style picker previews Axiom, Material Tonal, Fluent Studio and
+Editorial controls independently of palette and reading fonts. These are real
+component treatments, not changes to research content or website templates.
+
 ### 1. Write and connect the evidence
 
 Open a Markdown note to work with equations, structured research blocks, linked

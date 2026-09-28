@@ -30,7 +30,7 @@ async function fileUsage(
     rows: [counts],
   } = await client.query(
     `SELECT
-    (SELECT count(*)::int FROM resource_references WHERE version_id=ANY($1::uuid[]) AND NOT(source_id=ANY($2::uuid[]))) AS references,
+    ((SELECT count(*)::int FROM resource_references WHERE version_id=ANY($1::uuid[]) AND NOT(source_id=ANY($2::uuid[]))) + (SELECT count(*)::int FROM snippet_asset_references WHERE version_id=ANY($1::uuid[]))) AS references,
     (SELECT count(*)::int FROM paper_annotations WHERE attachment_id=ANY($1::uuid[]) AND NOT deleted) AS annotations,
     (SELECT count(*)::int FROM reading_items WHERE target_type='attachment' AND target_id=ANY($1::uuid[]) AND NOT deleted) AS reading,
     (SELECT count(*)::int FROM reference_attachments WHERE attachment_id=ANY($1::uuid[])) AS citations,
@@ -435,7 +435,7 @@ export async function deleteUnusedBlob(key: string) {
     const {
       rows: [used],
     } = await client.query(
-      "SELECT EXISTS(SELECT 1 FROM attachments WHERE storage_key=$1) OR EXISTS(SELECT 1 FROM file_derivatives WHERE storage_key=$1::uuid) OR EXISTS(SELECT 1 FROM user_profiles WHERE avatar_key=$1::uuid) OR EXISTS(SELECT 1 FROM workspace_exports WHERE storage_key=$1::uuid) OR EXISTS(SELECT 1 FROM upload_sessions WHERE storage_key=$1::uuid AND (status IN ('uploading','verifying') OR (status='failed' AND expires_at>now()))) OR EXISTS(SELECT 1 FROM image_draft_assets WHERE storage_key=$1::uuid) OR EXISTS(SELECT 1 FROM pdf_ocr_jobs WHERE output_key=$1::uuid) AS present",
+      "SELECT EXISTS(SELECT 1 FROM attachments WHERE storage_key=$1) OR EXISTS(SELECT 1 FROM file_derivatives WHERE storage_key=$1::uuid) OR EXISTS(SELECT 1 FROM user_profiles WHERE avatar_key=$1::uuid) OR EXISTS(SELECT 1 FROM workspace_exports WHERE storage_key=$1::uuid) OR EXISTS(SELECT 1 FROM upload_sessions WHERE storage_key=$1::uuid AND (status IN ('uploading','verifying') OR (status='failed' AND expires_at>now()))) OR EXISTS(SELECT 1 FROM image_draft_assets WHERE storage_key=$1::uuid) OR EXISTS(SELECT 1 FROM pdf_ocr_jobs WHERE output_key=$1::uuid) OR EXISTS(SELECT 1 FROM site_release_files WHERE storage_key=$1::uuid) AS present",
       [key],
     );
     if (used.present) return;

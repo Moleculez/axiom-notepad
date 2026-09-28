@@ -24,7 +24,7 @@ import { calendarSchema, dependencyOrder, type PlanningTask } from "./planning";
 
 const uuid = z.uuid(),
   mutationId = uuid.default(() => randomUUID());
-const taskInput = z.object({
+export const taskInput = z.object({
   title: z.string().trim().min(1).max(300),
   body: z.string().max(100000).default(""),
   status: taskStatusSchema.default("todo"),
@@ -609,6 +609,7 @@ export async function mutatePlanningTask(
   space: { project_id: string | null },
   child: string | undefined,
   raw: Record<string, any>,
+  newId?: string,
 ) {
   const [existing] = child
     ? (
@@ -704,7 +705,7 @@ export async function mutatePlanningTask(
     input.resourceIds = input.resourceIds.filter(
       (resourceId) => resourceId !== old.note_id,
     );
-  const taskId = child ?? randomUUID();
+  const taskId = child ?? newId ?? randomUUID();
   const resources = await validateTask(client, id, input, taskId);
   const fields = [
     input.title,

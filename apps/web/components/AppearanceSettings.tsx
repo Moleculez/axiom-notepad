@@ -459,6 +459,57 @@ function AppearanceSettingsReady({
             ) && (
               <section className="settings-card">
                 <h4>Color & atmosphere</h4>
+                <fieldset className="interface-style-picker">
+                  <legend>Interface style</legend>
+                  <p>
+                    Shape, controls, navigation and surfaces. Your colors and
+                    reading typography stay independent.
+                  </p>
+                  <div>
+                    {(
+                      [
+                        [
+                          "axiom",
+                          "Axiom",
+                          "Quiet, familiar research workspace",
+                        ],
+                        [
+                          "material",
+                          "Material Tonal",
+                          "Rounded controls and tonal selection",
+                        ],
+                        [
+                          "fluent",
+                          "Fluent Studio",
+                          "Precise borders and layered chrome",
+                        ],
+                        [
+                          "editorial",
+                          "Editorial",
+                          "Flat surfaces and understated rules",
+                        ],
+                      ] as const
+                    ).map(([value, title, description]) => (
+                      <button
+                        type="button"
+                        key={value}
+                        aria-pressed={draft.interfaceStyle === value}
+                        onClick={() => change("interfaceStyle", value)}
+                      >
+                        <span
+                          className={`interface-style-sample style-${value}`}
+                          aria-hidden="true"
+                        >
+                          <i />
+                          <i />
+                          <i />
+                        </span>
+                        <strong>{title}</strong>
+                        <small>{description}</small>
+                      </button>
+                    ))}
+                  </div>
+                </fieldset>
                 <label className="setting-control">
                   <span>
                     Theme pack
@@ -1147,6 +1198,13 @@ function AppearanceSettingsReady({
             )}
             {(section === "Reading & layout" || !!query) && (
               <section className="settings-card settings-controls">
+                {!query && (
+                  <p className="settings-panel-resize-hint">
+                    Resize the sidebar and document panel at their edges. Widths
+                    save on this device; double-click to reset, or focus the
+                    edge and use arrow keys.
+                  </p>
+                )}
                 {number(
                   "Reading & layout",
                   "readingWidth",
@@ -1165,24 +1223,6 @@ function AppearanceSettingsReady({
                   ["comfortable", "Comfortable"],
                   ["compact", "Compact"],
                 ])}
-                {number(
-                  "Reading & layout",
-                  "sidebarWidth",
-                  "Sidebar width",
-                  200,
-                  360,
-                  8,
-                  " px",
-                )}
-                {number(
-                  "Reading & layout",
-                  "panelWidth",
-                  "Research panel width",
-                  240,
-                  420,
-                  10,
-                  " px",
-                )}
                 {number(
                   "Reading & layout",
                   "radius",
@@ -1227,16 +1267,14 @@ function AppearanceSettingsReady({
                 )}
               </section>
             )}
-            {show("Device", "scale overrides density widths") && (
+            {show("Device", "scale overrides density") && (
               <section className="settings-card">
                 <h4>Only on this device</h4>
                 <p className="muted">
                   Unchecked controls follow your account. Overrides are private
                   to this account and browser.
                 </p>
-                {(
-                  ["uiScale", "density", "sidebarWidth", "panelWidth"] as const
-                ).map((key) => (
+                {(["uiScale", "density"] as const).map((key) => (
                   <div className="device-override" key={key}>
                     <label className="setting-toggle">
                       <span>
@@ -1244,8 +1282,6 @@ function AppearanceSettingsReady({
                           {
                             uiScale: "Interface scale",
                             density: "Density",
-                            sidebarWidth: "Sidebar width",
-                            panelWidth: "Research panel width",
                           }[key]
                         }
                       </span>
@@ -1284,29 +1320,14 @@ function AppearanceSettingsReady({
                         <label className="setting-control">
                           <span>
                             Device value
-                            <output>
-                              {device[key]}
-                              {key === "uiScale" ? "×" : " px"}
-                            </output>
+                            <output>{device[key]}×</output>
                           </span>
                           <input
                             type="range"
                             aria-label={`Device ${key}`}
-                            min={
-                              key === "uiScale"
-                                ? 0.8
-                                : key === "sidebarWidth"
-                                  ? 200
-                                  : 240
-                            }
-                            max={
-                              key === "uiScale"
-                                ? 1.5
-                                : key === "sidebarWidth"
-                                  ? 360
-                                  : 420
-                            }
-                            step={key === "uiScale" ? 0.05 : 10}
+                            min={0.8}
+                            max={1.5}
+                            step={0.05}
                             value={device[key]}
                             onChange={(e) =>
                               setDevice((d) => ({

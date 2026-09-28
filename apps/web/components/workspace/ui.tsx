@@ -34,6 +34,9 @@ export type Session = {
   groups: { id: string; name: string; description: string; role: string }[];
 };
 export type WorkspaceContextValue = {
+  uploadBatch?: (files: File[], spaceId: string, parentId?: string | null) => import("@axiom/shared/editor-media").UploadBatch;
+  transfers?: import("./Uploads").Transfer[];
+  showUploads?: () => void;
   session: Session;
   spaces: Space[];
   revision: number;

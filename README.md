@@ -25,9 +25,19 @@ tested workflows from remaining device, accessibility and provider checks.
   citations, Mermaid and a hierarchical outline.
 - **Keep the context.** Linked notes, private-first annotation cards, discussions,
   editable reading bookmarks, a configurable minimap and an image/diagram viewer.
+- **Insert research evidence.** A preview-first file picker, smart uploads,
+  numbered figures and captions, PDF quotations, timestamped media, CSV excerpts,
+  stable workspace file codes, attachment checks, and reusable research snippets.
+  See [editor media workflows](docs/EDITOR_MEDIA.md).
 - **Read and share cleanly.** Focused Read mode and snapshot-based exports to
   styled HTML, Print / Save PDF, Markdown and Markdown-with-assets ZIP, with
   embedded fonts, equations and diagrams. See [document export](docs/DOCUMENT_EXPORT.md).
+- **Publish reviewed research.** Each workspace can create a personal or team
+  [website](docs/WORKSPACE_WEBSITES.md): four layouts, seven visual themes (including
+  LaTeX Paper), floating TOC, reading statistics, topics, timeline archives, private
+  author analytics, read-only research viewers and portable static ZIPs.
+  Editors prepare frozen previews; managers approve publication. Private edits
+  stay private. Optional verified custom domains use the supplied Caddy deployment.
 - **Review deliberately.** Rendered/source version comparisons, named milestones,
   guarded restores, separate Markdown/math suggestions, assigned reviews and changes
   since your last visit. Image Studio adds shared cloud drafts and recovery heads.
@@ -53,7 +63,9 @@ tested workflows from remaining device, accessibility and provider checks.
   loaded panels; quick requests stay quiet and reduced motion uses a static line.
 - **Make it yours.** Semantic light/dark themes, Paper Research and Technical Slate
   packs, separate reading/interface/code typography, device overrides and a live
-  settings scratchpad.
+  settings scratchpad. Axiom, Material Tonal, Fluent Studio and Editorial component
+  styles change controls and surfaces independently of your colors and reading fonts.
+  Settings has a searchable grouped rail and a consistent page frame.
 
 Math Studio, layered Image Studio, Text Studio and protected media/document viewers
 open files in the same workbench. Scoped OAuth/MCP integration and selected offline
@@ -157,7 +169,8 @@ See [file-first navigation](docs/FILE_WORKBENCH.md).
 ## Deployment
 
 The primary path is **Docker Compose on one Linux host**, with Caddy HTTPS,
-PostgreSQL 16, web, one sync service and a background worker.
+PostgreSQL 16, web, one sync service, a background worker and an independent public
+website reader.
 
 ```sh
 cp .env.production.example .env.production
@@ -170,9 +183,10 @@ docker compose --env-file .env.production exec web node --import tsx scripts/ops
 ```
 
 Read [deployment, backups and upgrades](docs/DEPLOYMENT.md) before using real data.
-The new planning/assistant features require database migrations through **30**.
+The current assistant and workspace publishing features require database migrations
+through **33**.
 Back up database and stored files, stop old writers, migrate, and restart matching
-web/sync/worker versions; do not mix old services with the new schema.
+web/sync/worker/publish versions; do not mix old services with the new schema.
 Production configuration never loads the development `.env` into containers.
 Only HTTPS/HTTP are public. Sync also binds to host loopback for an
 [existing host Nginx proxy](docs/DEPLOYMENT.md#existing-host-nginx); database and sync

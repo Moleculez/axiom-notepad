@@ -1,5 +1,7 @@
 import { randomBytes, createHash, randomUUID } from "node:crypto";
 import { assistantApi } from "@axiom/shared/assistant-api";
+import { productivityApi } from "@axiom/shared/productivity-api";
+import { sitesApi } from "@axiom/shared/sites-api";
 import {
   initializeDocument,
   documentExtension,
@@ -14,6 +16,8 @@ import {
   institutionalIdentity,
 } from "@axiom/shared/auth";
 import { query, transaction } from "@axiom/shared/db";
+import { isDatabaseUpgradeRequired } from "@axiom/shared/schema-readiness";
+import { webHealthResponse } from "./health-response";
 import { setAuditActor, withAuditContext } from "@axiom/shared/audit-context";
 import { auditApi } from "@axiom/shared/audit-api";
 import {
@@ -63,6 +67,7 @@ import { resourceTransferApi } from "@axiom/shared/resource-transfer";
 import { fileWorkflowsApi } from "@axiom/shared/file-workflows-api";
 import { workspaceEvents } from "@axiom/shared/workspace-events";
 import { uploadsApi } from "@axiom/shared/uploads-api";
+import { editorMediaApi } from "@axiom/shared/editor-media-api";
 import { filePreviewApi } from "@axiom/shared/file-preview-api";
 import { canvasPreviewApi } from "@axiom/shared/canvas-preview-api";
 import { revisionApi } from "@axiom/shared/revision-api";
@@ -146,10 +151,7 @@ async function handleRequest(
       throw new HttpError(403, "Request origin is not allowed.");
     if (Number(request.headers.get("content-length") ?? 0) > 55 * 1024 * 1024)
       throw new HttpError(413, "Upload exceeds the request limit.");
-    if (resource === "health") {
-      await query("SELECT 1");
-      return json({ status: "ok", service: "web" });
-    }
+    if (resource === "health") return webHealthResponse();
     const instance = await instanceApi(request, path);
     if (instance) return instance;
     await assertDataset(request);
@@ -206,6 +208,10 @@ async function handleRequest(
     );
     if (revisionResponse) return revisionResponse;
     if (!principal) {
+      const sites = await sitesApi(request, path, user.id);
+      if (sites) return sites;
+      const productivity = await productivityApi(request, path, user.id);
+      if (productivity) return productivity;
       const integration = await integrationApi(request, path, user.id);
       if (integration) return integration;
       const offline = await offlineApi(request, path, user.id);
@@ -282,6 +288,8 @@ async function handleRequest(
     if (cardPreviewResponse) return cardPreviewResponse;
     const previewResponse = await filePreviewApi(request, path, user.id);
     if (previewResponse) return previewResponse;
+    const mediaResponse = await editorMediaApi(request, path, user.id);
+    if (mediaResponse) return mediaResponse;
     const uploadResponse = await uploadsApi(request, path, user.id);
     if (uploadResponse) return uploadResponse;
     const trashResponse = await trashApi(request, path, user.id);
@@ -1343,6 +1351,19 @@ async function handleRequest(
       error.code === "22P02"
     )
       return json({ error: "Invalid identifier." }, 400);
+    if (await isDatabaseUpgradeRequired(error)) {
+      console.error(
+        "Database upgrade required. Back up the database and blobs, then run npm run db:migrate with the service environment before restarting services.",
+      );
+      return json(
+        {
+          error:
+            "The server needs a database upgrade. Ask the administrator to apply the pending migrations, then try again.",
+          code: "database_upgrade_required",
+        },
+        503,
+      );
+    }
     console.error(
       "API request failed:",
       error instanceof Error ? error.message : error,

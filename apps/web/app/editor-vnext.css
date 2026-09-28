@@ -86,7 +86,7 @@
   font: inherit;
 }
 .axiom-find input:focus {
-  box-shadow: inset 0 -2px var(--accent);
+  box-shadow: inset 0 -2px var(--focus);
 }
 .axiom-find button {
   border: 0;
@@ -346,7 +346,7 @@
   min-height: 0;
   padding: 0;
   border: 0;
-  border-radius: 3px;
+  border-radius: min(3px, var(--control-radius-small));
   background: var(--paper);
   color: var(--muted);
   box-shadow: none;
@@ -376,7 +376,7 @@
 }
 .axiom-fold-toggle:focus-visible,
 .axiom-fold-expand:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
 .axiom-folded-block {
@@ -407,7 +407,7 @@
   min-height: 0;
   padding: 0 0.4em;
   border: 1px solid var(--line);
-  border-radius: 3px;
+  border-radius: min(3px, var(--control-radius-small));
   background: transparent;
   color: var(--muted);
   font: 500 0.85em/1.15 var(--font-code);
@@ -417,114 +417,13 @@
   background: var(--surface);
   color: var(--text);
 }
-.axiom-metadata,
-.document-metadata {
-  position: relative;
-  margin-block: 1em 1.8em;
-  font-family: var(--font-ui);
-  font-size: 0.88em;
-  line-height: 1.6;
-}
-.axiom-metadata-heading,
-.document-metadata caption {
-  text-align: start;
-  color: var(--muted);
-  padding: 0.65em 2.5em 0.8em 0;
-  font-size: 0.84em;
-  font-weight: 500;
-  letter-spacing: 0.015em;
-}
-.axiom-prose .axiom-metadata table,
-.document-metadata table {
-  width: 100%;
-  border-collapse: collapse;
-  table-layout: fixed;
-  margin: 0;
-  border: 0;
-  border-block: 1px solid var(--line);
-  font-size: inherit;
-}
-.axiom-prose .axiom-metadata :is(th, td),
-.document-metadata :is(th, td) {
-  border: 0;
-  border-bottom: 1px solid color-mix(in srgb, var(--line) 65%, transparent);
-  padding: 0;
-  vertical-align: top;
-  font-weight: 400;
-  background: transparent;
-  text-align: start;
-}
-.axiom-prose .axiom-metadata th,
-.document-metadata th {
-  width: 28%;
-  color: var(--muted);
-}
-.axiom-prose .axiom-metadata input {
-  display: block;
-  box-sizing: border-box;
-  width: 100%;
-  min-width: 0;
-  margin: 0;
-  padding: 0.65em 0.75em;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  line-height: inherit;
-  box-shadow: none;
-}
-.axiom-prose .axiom-metadata input:focus {
-  outline: none;
-  box-shadow: inset 0 -2px var(--accent);
-  background: color-mix(in srgb, var(--accent) 5%, transparent);
-}
-.axiom-prose .axiom-metadata pre,
-.document-metadata pre {
-  margin: 0;
-  padding: 0.65em 0.75em;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  font-family: var(--font-code);
-  font-size: 0.92em;
-  line-height: 1.6;
-  border: 0;
-  box-shadow: none;
-  background: transparent;
-}
-.axiom-prose .axiom-metadata th input {
-  padding-inline-start: 0;
-}
-.document-metadata :is(th, td) {
-  padding: 0.65em 0.75em;
-}
-.document-metadata th {
-  padding-inline-start: 0;
-}
-.document-metadata pre {
-  padding: 0;
-}
-.axiom-metadata .axiom-metadata-add {
-  position: absolute;
-  right: 0;
-  top: 0;
-  opacity: 0;
-}
-.axiom-metadata:hover .axiom-metadata-add,
-.axiom-metadata:focus-within .axiom-metadata-add,
-.axiom-metadata-add:focus-visible {
-  opacity: 1;
-}
 .axiom-prose blockquote {
   margin-inline: 0;
   padding-inline: 1.1em 0.6em;
-  border-inline-start: 3px solid var(--line);
   color: var(--text);
 }
 .axiom-callout {
-  padding: 16px 20px;
-  background: var(--callout);
-  border-radius: var(--radius);
+  padding: 0.8em 1.1em;
   margin-block: 1em;
 }
 .axiom-callout::before {
@@ -558,7 +457,7 @@
   font-family: var(--font-code);
   font-size: 0.86em;
   padding: 0.12em 0.25em;
-  border-radius: 4px;
+  border-radius: min(4px, var(--control-radius-small));
   background: var(--code);
   color: var(--code-text);
 }
@@ -574,7 +473,7 @@
 .axiom-inline-preview img {
   max-width: 100%;
   max-height: 65vh;
-  border-radius: 6px;
+  border-radius: 0;
   vertical-align: middle;
 }
 .axiom-image {
@@ -583,7 +482,7 @@
   vertical-align: middle;
   cursor: default;
   line-height: 1.5;
-  border-radius: 2px;
+  border-radius: 0;
 }
 .axiom-image:is(.is-selected, :focus-visible) {
   outline: 2px solid color-mix(in srgb, var(--accent) 65%, transparent);
@@ -593,7 +492,7 @@
   display: block;
   width: auto;
   height: auto;
-  border-radius: 2px;
+  border-radius: 0;
 }
 .axiom-image [hidden] {
   display: none;
@@ -605,11 +504,11 @@
   border: 1px solid var(--line);
   background: var(--code);
   color: var(--muted);
-  font: 13px/1.5 var(--font-ui);
+  font: var(--size-ui)/1.5 var(--font-ui);
 }
 .axiom-image-status {
   color: var(--muted);
-  font: 12px/1.5 var(--font-ui);
+  font: var(--size-ui-small)/1.5 var(--font-ui);
 }
 .axiom-image-retry {
   margin-left: 12px;
@@ -649,122 +548,6 @@
 .axiom-inline-preview .math {
   display: inline-block;
   vertical-align: middle;
-}
-.axiom-prose table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  margin-block: 1.25em;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  overflow: hidden;
-  table-layout: fixed;
-}
-.axiom-table-shell {
-  overflow-x: auto;
-  margin-block: 1.25em;
-}
-.axiom-table-shell > table {
-  margin-block: 0;
-}
-.axiom-table-shell.can-resize,
-.axiom-table-shell.can-resize * {
-  cursor: col-resize;
-}
-.axiom-prose :is(td, th) {
-  min-width: 70px;
-  padding: 10px 14px;
-  border: 0;
-  border-bottom: 1px solid var(--line);
-  border-inline-end: 1px solid var(--line);
-  text-align: start;
-  font-weight: inherit;
-  vertical-align: top;
-}
-.axiom-prose th {
-  background: var(--surface);
-  font-weight: 600;
-}
-.axiom-prose tr:last-child td {
-  border-bottom: 0;
-}
-.axiom-prose tr > :last-child {
-  border-inline-end: 0;
-}
-.axiom-prose .axiom-cell-selected {
-  background: var(--selection);
-}
-.axiom-embedded {
-  position: relative;
-  margin-block: 1.3em;
-  border-radius: var(--radius);
-  background: var(--code);
-  color: var(--code-text);
-  border: 1px solid transparent;
-  white-space: normal;
-  overflow: hidden;
-}
-.axiom-embedded:focus-within {
-  border-color: color-mix(in srgb, var(--accent) 25%, transparent);
-}
-.axiom-block-controls {
-  display: flex;
-  gap: 4px;
-  align-items: center;
-  min-height: 34px;
-  padding: 4px 8px 0 14px;
-  font: var(--weight-ui) var(--size-ui-small)/1.4 var(--font-ui);
-  color: var(--muted);
-}
-.axiom-block-controls > span {
-  margin-inline-end: auto;
-}
-.axiom-block-controls .axiom-language-label {
-  margin-inline-end: auto;
-  opacity: 1;
-  pointer-events: auto;
-  padding-inline: 0;
-}
-.axiom-block-controls .axiom-language-label:disabled {
-  cursor: default;
-  color: var(--muted);
-  opacity: 1;
-}
-.axiom-block-controls .axiom-language-input {
-  width: 160px;
-  padding: 3px 6px;
-  border: 0;
-  border-radius: var(--control-radius-small);
-  background: var(--paper);
-  color: var(--text);
-  font: inherit;
-  outline: none;
-}
-.axiom-block-controls button {
-  opacity: 0;
-  pointer-events: none;
-  border: 0;
-  border-radius: var(--control-radius-small);
-  padding: 4px 7px;
-  background: transparent;
-  color: var(--muted);
-  font: inherit;
-  transition:
-    opacity 100ms ease,
-    background 100ms ease;
-}
-.axiom-embedded:is(:hover, :focus-within) .axiom-block-controls button {
-  opacity: 1;
-  pointer-events: auto;
-}
-.axiom-block-controls button:hover {
-  background: var(--paper);
-  color: var(--text);
-}
-.axiom-block-controls button:focus-visible {
-  opacity: 1;
-  outline: 2px solid var(--focus);
-  outline-offset: 1px;
 }
 .axiom-editor .cm-editor {
   background: transparent;
@@ -810,7 +593,7 @@
   background: var(--paper);
   color: var(--text);
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: var(--control-radius-small);
 }
 .axiom-editor[data-mode="source"] {
   overflow: hidden;
@@ -831,25 +614,11 @@
 :is(.document-scroll, .settings-scratchpad-scroll) .axiom-editor .cm-scroller {
   overscroll-behavior: auto;
 }
-.axiom-block-preview {
-  padding: 12px 20px 20px;
-  text-align: center;
-  cursor: text;
-  background: var(--paper);
-}
-.axiom-embedded[data-kind="mathBlock"] {
-  background: var(--paper);
-  border-color: var(--line);
-}
 .axiom-embedded[data-kind="mathBlock"]:not(.is-editing):has(
     .axiom-block-preview:not([hidden])
   )
   .axiom-block-source {
   display: none;
-}
-.axiom-embedded[data-kind="mathBlock"] .axiom-block-source {
-  background: var(--surface);
-  border-top: 1px solid var(--line);
 }
 .axiom-peer-range {
   background: color-mix(in srgb, var(--peer-color) 18%, transparent);
@@ -898,7 +667,7 @@
   overflow: auto;
   padding: 5px;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--panel-radius);
   background: var(--paper);
   box-shadow: var(--shadow);
 }
@@ -907,7 +676,7 @@
   width: 100%;
   padding: 9px 12px;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--control-radius-small);
   background: transparent;
   color: var(--text);
   text-align: start;
@@ -944,7 +713,7 @@
   padding: 0;
   background: none;
   color: var(--muted);
-  font: 11px/1.4 var(--font-code);
+  font: var(--size-ui-small)/1.4 var(--font-code);
 }
 .axiom-code-completions {
   width: 350px;
@@ -963,7 +732,7 @@
   padding: 8px 10px 4px;
   background: var(--paper);
   color: var(--muted);
-  font: 11px/1.5 var(--font-ui);
+  font: var(--size-ui-small)/1.5 var(--font-ui);
 }
 .axiom-editor[data-typewriter="true"] .axiom-prose {
   padding-bottom: 45vh;
@@ -1011,16 +780,17 @@
   margin: auto;
   width: min(480px, calc(100vw - 48px));
   max-height: calc(100vh - 48px);
-  padding: 24px;
+  padding: 1.5em;
+  overflow: auto;
   color: var(--text);
   background: var(--paper);
   border: 1px solid var(--line);
-  border-radius: var(--radius);
+  border-radius: var(--window-radius);
   box-shadow: var(--shadow);
   font: var(--size-ui)/1.6 var(--font-ui);
 }
 .axiom-field-dialog::backdrop {
-  background: #11182755;
+  background: color-mix(in srgb, var(--text) 24%, transparent);
 }
 .axiom-field-dialog form,
 .axiom-field-dialog label {
@@ -1032,36 +802,51 @@
 }
 .axiom-field-dialog h3 {
   margin: 0;
-  font: 600 19px/1.4 var(--font-ui);
+  font: 600 1.25em/1.4 var(--font-ui);
 }
-.axiom-field-dialog input {
+.axiom-field-dialog :is(input, select, textarea) {
   width: 100%;
-  padding: 10px 12px;
+  min-width: 0;
+  padding: 0.65em 0.8em;
   background: var(--surface);
   color: var(--text);
   border: 0;
-  border-radius: 7px;
+  border-radius: var(--control-radius-small);
   outline: none;
   font: inherit;
 }
-.axiom-field-dialog input:focus-visible {
+.axiom-field-dialog :is(input, select, textarea):focus-visible {
   box-shadow: inset 0 -2px var(--focus);
+}
+.axiom-field-dialog select {
+  /* Keep the native select semantics, but not WebKit's forced capsule geometry. */
+  appearance: none;
+  padding-inline-end: 2em;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+    linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position:
+    right 1em center,
+    right 0.7em center;
+  background-size: 0.3em 0.3em;
+  background-repeat: no-repeat;
+}
+@media (forced-colors: active) {
+  .axiom-field-dialog select {
+    appearance: auto;
+  }
+  .axiom-field-dialog :is(input, select, textarea):focus-visible {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
 }
 .axiom-field-actions {
   display: flex;
   gap: 8px;
   justify-content: flex-end;
 }
-.axiom-embedded[data-preview="true"] {
-  background: var(--paper);
-  border: 1px solid var(--line);
-}
 .axiom-embedded[data-preview="true"]:not(.is-editing) .axiom-block-source {
   display: none;
-}
-.axiom-embedded[data-preview="true"] .axiom-block-source {
-  background: var(--code);
-  border-top: 1px solid var(--line);
 }
 .axiom-block-preview svg {
   display: block;
@@ -1107,13 +892,13 @@
 }
 .axiom-preview-message {
   color: var(--muted);
-  font: 12px/1.6 var(--font-ui);
+  font: var(--size-ui-small)/1.6 var(--font-ui);
   margin: 10px 0 0;
 }
 .axiom-block-preview:focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 3px;
-  border-radius: var(--radius);
+  border-radius: var(--control-radius-small);
 }
 @media (prefers-reduced-motion: reduce) {
   .axiom-block-controls button {

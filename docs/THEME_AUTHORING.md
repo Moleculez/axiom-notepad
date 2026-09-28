@@ -12,6 +12,51 @@ Do not replace it with an upstream editor mark or add a remote font for letterin
 
 ## Authoring a pack
 
+### Interface styles and public website templates
+
+Appearance schema 10 separates `interfaceStyle` from `themePack`. The four trusted
+styles (Axiom, Material Tonal, Fluent Studio, Editorial) live in
+`apps/web/app/interface-styles.css`. They are component-level presentations,
+not uploaded CSS: rounded tonal controls, layered/bordered chrome or flat editorial
+rules. They reference semantic palette, radius and shadow tokens. A zero-radius,
+no-shadow, high-contrast or reduced-motion user choice must still win. UI, prose
+and equation fonts remain independent. Material/Fluent are design inspirations,
+not claims of shipping their libraries or exact conformance; see Fluent's
+[shape](https://fluent2.microsoft.design/shapes) and
+[elevation](https://fluent2.microsoft.design/elevation) guidance.
+
+Do not use an interface style to alter scrolling, dialog portals, toolbar hit
+areas, editor geometry or authorization. Review settings, menus, dialogs, file
+lists and the Interface specimen in every style; avoid specificity conflicts with
+old page-local styles. Settings navigation is a vertical rail, not a second row
+of pills, and scrollable content sits inside stationary panel frames.
+
+Public website templates are a third, separate layer under `apps/publish/client`.
+They must work without the private app shell or preference stores, use only
+selected public resources and locally bundled licensed assets, and preserve
+print/readability, keyboard navigation and light/dark behavior. Template choices
+are saved in a website draft and take effect publicly only after reviewed release.
+See [publication boundaries](WORKSPACE_WEBSITES.md).
+
+Publication theme IDs/defaults are defined in `packages/shared/src/site-design.ts`.
+Keep `design.theme` (component treatment) separate from `design.template` (homepage
+layout), reading preferences and palette mode. Old saved configurations default to
+`classic`; only newly created websites start at `latex-paper`. Public theme selectors
+are scoped to `data-site-theme`. Reading overrides use `--article-font-size`,
+`--article-leading` and `--article-measure`; color tokens remain semantic. A theme
+must not hide privacy settings, change publication permissions or load remote fonts.
+
+The designer specimen and releases both use `siteDocument`, `publicMarkdown` and
+the independently built `apps/publish/client/{site,experience}.css`. Do not implement
+a second mock renderer. LaTeX Paper/Monograph use pinned `latex.css` Latin Modern
+webfonts only, not its global stylesheet. The bundle carries its MIT notice, the
+GUST font license and LPPL text. Sources: [LaTeX.css](https://latex.vercel.app/) and
+[Tufte CSS](https://edwardtufte.github.io/tufte-css/). Preserve attribution when
+adding or redistributing font assets. Verify article, TOC, archive, table, math,
+footnotes, dark mode and print in each theme before adding an ID.
+
+### Palette pack workflow
+
 1. Add a typed manifest to `packages/shared/src/theme-packs.ts` and register its ID
    in `themePackIds`. Use `format: "axiom-theme-pack"`, `version: 1`, and
    `minimumAppearanceSchema: 5`. Include name, description, author, license,
@@ -99,10 +144,54 @@ They appear on hover/keyboard focus and stay visible for collapsed blocks. Retai
 their 20px hit area, visible keyboard focus, `aria-expanded` state and compact
 ellipsis summaries. Folding is local projection state, never another document or
 persisted theme setting; hiding guide lines must not strand a collapsed block.
-Metadata uses the same paper and line tokens
-as the document, aligned property rows and an accessible inset field-focus cue;
-avoid filled key columns, heavy outlines or a second table font system. Review
-guides both enabled and disabled, including deeply nested tasks and quotations.
+Metadata and link definitions share `PropertyTable` presentation, not a document
+model or transaction engine. Their node views retain independent source-backed
+drafts, collaborative anchors and undo behavior. `editor-paper.css` owns their
+caption, horizontal rules, adaptive key column, document-table typography, cell
+padding and square cell-level focus cue, including read-mode metadata. Values
+inherit the ordinary table's font/size/padding; captions keep quiet UI typography.
+Use `--paper`, `--line`,
+`--text`, `--muted`, `--focus` and `--danger`; no fixed colors, filled key columns,
+rounded cards or persistent instruction footers. Do not replace a focused input
+with a display node. Required errors are visible inline; routine status is announced
+without occupying a row. Hover/focus actions reserve their geometry and remain
+keyboard reachable. Review guides both enabled and disabled, including deeply
+nested tasks and quotations.
+
+**Single-sheet contract:** document-editing controls carry `data-editor-field`
+(`cell` for property fields, `inline` for the code-language field). General form
+rules in `globals.css`, `appearance.css`, `workspace-design.css` and `workbench.css`
+explicitly exclude these controls without increasing specificity for ordinary
+forms. Do not add a stronger competing reset or `!important` override. Inputs
+stay transparent, borderless, square and shadowless in idle, hover, focus, invalid
+and read-only states. The cell owns focus/error outlines; errors also have text.
+Hover may strengthen a straight table rule, but must not fill or reshape a field.
+
+Embedded code/TeX source, its content/gutters, preview and toolbar are transparent
+through to the nearest document host, including tinted canvas cards. Unhighlighted
+source uses `--text`; syntax keeps `--syntax`, `--accent` and `--muted`. Validate
+these against **paper**, not only the separate `--code` surface. `--code` and
+`--code-text` still serve inline code, portable exports and other tool surfaces.
+Code and equation blocks reveal a square 2px inset outline on hover, using a
+text/rule blend; keyboard focus uses `--focus` (system `Highlight` in forced
+colors). Idle blocks remain unboxed. Focus/hover must never change block padding,
+typography or geometry. Selection,
+search, collaborator and optional active-line highlights are intentional overlays;
+do not erase them with a blanket background reset. App Read mode follows the same
+sheet; public-site/export profiles remain independent.
+
+Keep shared document-block presentation in `editor-paper.css`; `editor-vnext.css`
+owns engine layout, source visibility and editor-specific overlays. Do not re-add
+conflicting table/metadata/code surface rules there. Completion panels, field
+dialogs and action controls use semantic radius, shadow and UI-size tokens;
+zero-radius/no-shadow preferences and forced-color focus cues must still work.
+`app/styles.ts` is the single ordered production stylesheet entrypoint, including
+fonts and application forms. Both the root layout and in-memory lab import it;
+do not replace the lab's import with a curated editor-only subset. A contract test
+guards this boundary. Browser tests inspect the fields themselves in every state,
+not merely their wrappers, and verify that ordinary application forms keep their
+own filled/rounded style. The lab exercises
+`docs/theme-fixtures/research.md` in all pack/style/light-dark combinations.
 
 The optional document minimap consumes the same paper, text, muted, accent and
 syntax tokens, with prose/code font roles for its canvas miniature and UI type for
@@ -115,7 +204,7 @@ The miniature never loads images, renders remote content, or adds equation fonts
 independently; equation/image shapes represent blocks without duplicating their
 rendering work. Print and exports exclude the column, labels and previews.
 
-The default validator checks eight named contrast pairs in each mode. This is
+The default validator checks ten named contrast pairs in each mode. This is
 not a substitute for reviewing every combination: muted/subtle text on a selected
 row, warning/danger on callouts, tooltips, disabled controls, rich content and
 exported pages need visual and accessibility review too. Required information

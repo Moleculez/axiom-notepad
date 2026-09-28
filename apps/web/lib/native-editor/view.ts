@@ -21,6 +21,7 @@ import {
 } from "@axiom/markdown";
 import {
   editorCommands,
+  asyncInsertCommands,
   commandById,
   eventBinding,
   keysFor,
@@ -89,7 +90,7 @@ export type NativeEditorOptions = {
   link: (target: string) => void;
   changed: (source: string, parsed: ParsedDocument) => void;
   notes: () => { id: string; title: string }[];
-  files?: (files: File[]) => void;
+  files?: (files: File[], range?: { from: number; to: number }) => void;
   /** Optional completion boundary for an embedded editor such as a Canvas card. */
   exit?: () => void;
   annotations?: () => import("@axiom/editor/annotations").SourceAnnotation[];
@@ -2203,7 +2204,10 @@ export class NativeEditorView {
       this.binding.history(id === "redo");
       return true;
     }
-    if (id === "attachment" || (id === "table" && args.rows === undefined)) {
+    if (
+      asyncInsertCommands.has(id) ||
+      (id === "table" && args.rows === undefined)
+    ) {
       this.options.prepare(
         args.from === undefined
           ? undefined

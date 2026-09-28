@@ -2,6 +2,8 @@ export type EditorField = {
   key: string;
   label: string;
   value: string;
+  options?: string[];
+  multiline?: boolean;
   validate?: (value: string) => string | undefined;
 };
 /** A small first-party modal; native dialog owns focus trapping and Escape. */
@@ -23,17 +25,30 @@ export function sourceFields(options: {
   message.role = "status";
   message.className = "axiom-preview-message";
   actions.className = "axiom-field-actions";
-  const inputs = new Map<string, HTMLInputElement>();
+  const inputs = new Map<
+    string,
+    HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+  >();
   form.append(heading);
   for (const field of options.fields) {
     const label = document.createElement("label"),
-      input = document.createElement("input"),
+      input = field.options
+        ? document.createElement("select")
+        : field.multiline
+          ? document.createElement("textarea")
+          : document.createElement("input"),
       name = document.createElement("span");
     name.textContent = field.label;
+    if (input instanceof HTMLSelectElement)
+      for (const value of field.options ?? [])
+        input.add(new Option(value[0].toUpperCase() + value.slice(1), value));
+    else {
+      input.maxLength = 4000;
+      input.autocomplete = "off";
+    }
+    if (input instanceof HTMLTextAreaElement) input.rows = 3;
     input.value = field.value;
-    input.maxLength = 4000;
     input.setAttribute("aria-label", field.label);
-    input.autocomplete = "off";
     input.addEventListener("input", () => input.setCustomValidity(""));
     label.append(name, input);
     form.append(label);

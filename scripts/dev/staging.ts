@@ -6,7 +6,7 @@ await runStaging(
     storage:
       process.env.AXIOM_STAGING_STORAGE ?? "data/release-test-attachments",
     dist: process.env.AXIOM_STAGING_DIST ?? ".next/release-test",
-    devDist: ".next/release-test-dev",
+    devDist: process.env.AXIOM_STAGING_DEV_DIST ?? ".next/release-test-dev",
     webPort: Number(process.env.AXIOM_STAGING_PORT ?? 3004),
     syncPort: Number(process.env.AXIOM_STAGING_SYNC_PORT ?? 1236),
   },

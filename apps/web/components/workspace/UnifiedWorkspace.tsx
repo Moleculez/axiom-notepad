@@ -1,4 +1,5 @@
 "use client";
+import ReferencePrefix from "../media/ReferencePrefix";
 import TimeZoneInput from "../TimeZoneInput";
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
@@ -9,6 +10,7 @@ import {
   CheckCheck,
   FileText,
   FolderOpen,
+  Globe2,
   History,
   MessageSquare,
   Plus,
@@ -54,12 +56,14 @@ const Lifecycle = dynamic(() =>
   import("./WorkspacesPage").then((m) => m.WorkspaceLifecycle),
 );
 const ProviderSettings = dynamic(() => import("../tools/ProviderSettings"));
+const WorkspaceWebsite = dynamic(() => import("../sites/WorkspaceWebsite"));
 const sections = [
   ["overview", "Overview", Blocks],
   ["files", "Files", FolderOpen],
   ["planning", "Planning", ChartGantt],
   ["discussions", "Discussions", MessageSquare],
   ["reviews", "Reviews", CheckCheck],
+  ["website", "Website", Globe2],
 ] as const;
 const settingsSections = [
   "general",
@@ -258,6 +262,8 @@ export default function UnifiedWorkspace({
           <Discussion key={space.id} space={space} />
         ) : current === "reviews" ? (
           <ReviewInbox spaceId={space.id} />
+        ) : current === "website" ? (
+          <WorkspaceWebsite key={space.id} space={space} />
         ) : (
           <WorkspaceOverview space={space} />
         )}
@@ -649,6 +655,7 @@ function WorkspaceSettings({
         {section === "general" ? (
           <>
             <WorkspaceMetadata key={space.id} space={space} />
+            <ReferencePrefix key={space.id + ":prefix"} space={space} />
             {space.role && <WorkspaceCalendar space={space} />}
           </>
         ) : section === "people" ? (

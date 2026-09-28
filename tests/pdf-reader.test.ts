@@ -16,7 +16,11 @@ import {
 } from "../packages/shared/src/appearance";
 describe("PDF research reader", () => {
   it("migrates v8 appearance without restyling and strips reader preferences for v8 clients", () => {
-    const { pdfReader: _reader, ...existing } = defaults;
+    const {
+      pdfReader: _reader,
+      interfaceStyle: _interface,
+      ...existing
+    } = defaults;
     const old = { ...existing, schemaVersion: 8, proseSize: 23 };
     const upgraded = preferencesSchema.parse(old);
     expect(upgraded.proseSize).toBe(23);

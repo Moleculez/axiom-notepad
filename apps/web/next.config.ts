@@ -12,6 +12,9 @@ export default function config(phase: string): NextConfig {
       : process.env.AXIOM_DIST_DIR || ".next",
     transpilePackages: ["@axiom/markdown", "@axiom/shared", "@axiom/editor"],
     poweredByHeader: false,
+    // Publication directories and private preview directories need real trailing
+    // slashes so their portable relative URLs resolve exactly as in static ZIPs.
+    skipTrailingSlashRedirect: true,
     env: {
       NEXT_PUBLIC_AXIOM_EDITOR_ENGINE:
         requestedEngine === "milkdown" || requestedEngine === "native"

@@ -6,8 +6,13 @@ import { api, post, SIGN_OUT_PENDING } from "../../lib/client";
 import { bytes, ErrorNotice, useWorkspace } from "./ui";
 import { uploadRelativePath } from "@axiom/shared/file-workflows";
 import Dialog from "../Dialog";
+import type {
+  UploadBatch,
+  UploadResult,
+  ResolvedAsset,
+} from "@axiom/shared/editor-media";
 
-type Transfer = {
+export type Transfer = {
   id: string;
   space_id: string;
   parent_id: string | null;
@@ -20,6 +25,7 @@ type Transfer = {
   received: number;
   error?: string;
   completed_resource_id?: string;
+  completed_version_id?: string;
   expires_at?: string;
 };
 export function useUploads(userId: string | undefined, onComplete: () => void) {
@@ -36,6 +42,21 @@ export function useUploads(userId: string | undefined, onComplete: () => void) {
     [folderBusy, setFolderBusy] = useState(false),
     [folderError, setFolderError] = useState("");
   const folderIdentity = useRef({ key: "", id: crypto.randomUUID() });
+  const batches = useRef(
+    new Map<
+      string,
+      {
+        ids: string[];
+        resolve: (items: UploadResult[]) => void;
+        reject: (error: Error) => void;
+        resolving?: boolean;
+      }
+    >(),
+  );
+  const snapshot = useRef(transfers);
+  snapshot.current = transfers;
+  const completed = useRef(new Set<string>());
+  const cancelled = useRef(new Set<string>());
   const files = useRef(new Map<string, File>()),
     running = useRef(new Map<string, AbortController>()),
     queue = useRef(Promise.resolve()),
@@ -50,6 +71,13 @@ export function useUploads(userId: string | undefined, onComplete: () => void) {
   useEffect(() => {
     let alive = true;
     setTransfers([]);
+    completed.current.clear();
+    cancelled.current.clear();
+    for (const batch of batches.current.values())
+      batch.reject(
+        new Error("The upload account changed. No files were inserted."),
+      );
+    batches.current.clear();
     setFolderBatch(null);
     files.current.clear();
     for (const controller of running.current.values()) controller.abort();
@@ -76,6 +104,11 @@ export function useUploads(userId: string | undefined, onComplete: () => void) {
     return () => {
       alive = false;
       for (const controller of running.current.values()) controller.abort();
+      for (const batch of batches.current.values())
+        batch.reject(
+          new Error("Upload session closed. No files were inserted."),
+        );
+      batches.current.clear();
     };
   }, [userId]);
   const start = async (item: Transfer, file: File) => {
@@ -83,6 +116,7 @@ export function useUploads(userId: string | undefined, onComplete: () => void) {
       !userId ||
       owner.current !== userId ||
       running.current.has(item.id) ||
+      cancelled.current.has(item.id) ||
       localStorage.getItem(SIGN_OUT_PENDING)
     )
       return;
@@ -130,9 +164,13 @@ export function useUploads(userId: string | undefined, onComplete: () => void) {
         update(item.id, {
           status: "complete",
           completed_resource_id: remote.resourceId,
+          completed_version_id: remote.versionId,
           received: file.size,
         });
-        onDone.current();
+        if (!completed.current.has(item.id)) {
+          completed.current.add(item.id);
+          onDone.current();
+        }
         return;
       }
       if (remote.status === "verifying") {
@@ -196,7 +234,7 @@ export function useUploads(userId: string | undefined, onComplete: () => void) {
     } catch (error) {
       if (owner.current === userId)
         update(item.id, {
-          status: "paused",
+          status: cancelled.current.has(item.id) ? "cancelled" : "paused",
           error: signal.aborted
             ? ""
             : error instanceof Error
@@ -214,6 +252,7 @@ export function useUploads(userId: string | undefined, onComplete: () => void) {
       parentId: string | null = null,
       resourceId?: string,
       flat = false,
+      quiet = false,
     ) => {
       if (
         !flat &&
@@ -223,9 +262,9 @@ export function useUploads(userId: string | undefined, onComplete: () => void) {
         setFolderBatch({ files: selected, spaceId, parentId });
         setFolderError("");
         folderIdentity.current = { key: "", id: crypto.randomUUID() };
-        return;
+        return [];
       }
-      setShown(true);
+      if (!quiet) setShown(true);
       const items = selected.map((file) => ({
         id: crypto.randomUUID(),
         name: file.name,
@@ -252,6 +291,7 @@ export function useUploads(userId: string | undefined, onComplete: () => void) {
             if (items[index].status === "queued")
               await start(items[index], selected[index]);
         });
+      return items.map((item) => item.id);
     },
     [userId],
   );
@@ -265,21 +305,23 @@ export function useUploads(userId: string | undefined, onComplete: () => void) {
       void api<Transfer[]>("uploads")
         .then((remote) => {
           if (!alive) return;
-          let completed = false;
+          let changed = false;
+          const byId = new Map(remote.map((item) => [item.id, item]));
           for (const current of remote)
             if (
               current.status === "complete" &&
-              files.current.has(current.id)
+              files.current.has(current.id) &&
+              !completed.current.has(current.id)
             ) {
               files.current.delete(current.id);
-              completed = true;
+              completed.current.add(current.id);
+              changed = true;
             }
-          if (completed || remote.some((item) => item.status === "complete"))
-            onDone.current();
+          if (changed) onDone.current();
           setTransfers((previous) =>
             previous.map((item) => {
               if (item.status !== "verifying") return item;
-              const current = remote.find((row) => row.id === item.id);
+              const current = byId.get(item.id);
               if (!current)
                 return {
                   ...item,
@@ -305,11 +347,119 @@ export function useUploads(userId: string | undefined, onComplete: () => void) {
       clearInterval(timer);
     };
   }, [transfers.some((item) => item.status === "verifying")]);
+  useEffect(() => {
+    const byId = new Map(transfers.map((item) => [item.id, item]));
+    for (const [key, batch] of batches.current) {
+      if (batch.resolving) continue;
+      const items = batch.ids.map((id) => byId.get(id));
+      if (
+        items.some(
+          (item) => item?.status === "invalid" || item?.status === "cancelled",
+        )
+      ) {
+        batch.reject(
+          new Error(
+            "Upload insertion cancelled. Completed files remain in the library.",
+          ),
+        );
+        batches.current.delete(key);
+      } else if (
+        items.every(
+          (item) => item?.status === "complete" && item.completed_version_id,
+        )
+      ) {
+        batch.resolving = true;
+        const account = userId;
+        void post<ResolvedAsset[]>("media-assets", {
+          versions: items.map((item) => item!.completed_version_id),
+        })
+          .then((assets) => {
+            if (owner.current !== account || !batches.current.has(key)) return;
+            if (assets.some((asset) => asset.unavailable))
+              throw new Error("File access changed before insertion.");
+            batch.resolve(
+              assets.map((asset, index) => ({
+                transferId: batch.ids[index],
+                resourceId: asset.resourceId!,
+                versionId: asset.versionId,
+                name: asset.name!,
+                mime: asset.mime!,
+                bytes: asset.bytes!,
+              })),
+            );
+            batches.current.delete(key);
+          })
+          .catch((error) => {
+            batch.reject(error);
+            batches.current.delete(key);
+          });
+      }
+    }
+  }, [transfers, userId]);
+  const addBatch = (
+    selected: File[],
+    spaceId: string,
+    parentId: string | null = null,
+  ): UploadBatch => {
+    if (!selected.length || selected.length > 60) {
+      const ready = Promise.reject<UploadResult[]>(
+        new Error("Choose between 1 and 60 files per insertion."),
+      );
+      void ready.catch(() => {});
+      return { ids: [], ready, cancel: async () => {} };
+    }
+    const ids = add(selected, spaceId, parentId, undefined, true, true),
+      key = crypto.randomUUID();
+    const ready = new Promise<UploadResult[]>((resolve, reject) =>
+      batches.current.set(key, { ids, resolve, reject }),
+    );
+    // Callers may attach after their UI mounts; prevent unhandled cancellations.
+    void ready.catch(() => {});
+    return {
+      ids,
+      ready,
+      cancel: async () => {
+        batches.current
+          .get(key)
+          ?.reject(
+            new Error(
+              "Insertion cancelled. Completed files remain in the library.",
+            ),
+          );
+        batches.current.delete(key);
+        for (const id of ids) {
+          cancelled.current.add(id);
+          running.current.get(id)?.abort();
+          const item = snapshot.current.find((entry) => entry.id === id);
+          if (
+            item &&
+            !["complete", "invalid", "cancelled"].includes(item.status)
+          ) {
+            try {
+              await post(`uploads/${id}/cancel`);
+            } catch (error) {
+              if (!(
+                error instanceof Error &&
+                "status" in error &&
+                error.status === 404
+              ))
+                update(id, {
+                  error:
+                    "Remote cancellation could not be confirmed. No insertion will occur.",
+                });
+            }
+          }
+          if (item?.status !== "complete") update(id, { status: "cancelled" });
+        }
+      },
+    };
+  };
   return {
     transfers,
     shown,
     setShown,
     add,
+    addBatch,
     folderBatch,
     folderConflict,
     setFolderConflict,
@@ -401,6 +551,7 @@ export function useUploads(userId: string | undefined, onComplete: () => void) {
     },
     hasFile: (id: string) => files.current.has(id),
     cancel: async (item: Transfer) => {
+      cancelled.current.add(item.id);
       running.current.get(item.id)?.abort();
       if (item.status !== "invalid") {
         try {

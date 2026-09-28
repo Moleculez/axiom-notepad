@@ -18,6 +18,8 @@ export async function requireScope(
   allowInactive = false,
 ) {
   const integration = currentAuditContext();
+  if (integration?.allowedSpaceIds && !integration.allowedSpaceIds.includes(spaceId))
+    throw new HttpError(403, "This workspace is outside the reviewed action's scope.");
   if (integration?.integrationId) {
     const {
       rows: [grant],

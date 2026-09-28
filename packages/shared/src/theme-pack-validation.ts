@@ -138,6 +138,8 @@ export function themePackContrast(pack: Pick<ThemePackManifest, "palettes">) {
         ["Links / paper", p.accent, p.paper, 4.5],
         ["Button label", p.onAccent, p.accent, 4.5],
         ["Code", p.codeText, p.code, 4.5],
+        ["Syntax / paper", p.syntax, p.paper, 4.5],
+        ["Focus / paper", p.focus, p.paper, 3],
         ["Focus / surface", p.focus, p.surface, 3],
       ] as const
     ).map(([label, foreground, background, minimum]) => ({

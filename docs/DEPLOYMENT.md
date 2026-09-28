@@ -36,8 +36,9 @@ The [native Linux/systemd path](NATIVE_DEPLOYMENT.md) remains available separate
 Never run development setup/seed/reset in production. The web-based one-time local
 setup flow is disabled in production. Public account creation remains invitation-only.
 
-Compose builds one runtime image shared by web/sync/worker/migrate. Migration must
-finish before those services start; the proxy waits for web readiness. Fresh-volume
+Compose builds one runtime image shared by web/sync/worker/publish/migrate. Migration must
+finish before those services start; the proxy waits for web and publication-reader
+readiness. Fresh-volume
 initialization creates a restricted `axiom` application role; PostgreSQL administrator
 credentials are never passed to the application. Existing volumes are not rewritten.
 Changing a password in the env file does not rotate an already-created database role.
@@ -50,6 +51,12 @@ a same-origin secure WebSocket URL; no localhost development URL is baked into p
 without proxy buffering. Do not horizontally scale sync without shared room coordination.
 
 ## Existing host Nginx
+
+For the optional website CMS, `/sites/` must also reach the loopback publication
+reader on port 3001 with its prefix and `Host` preserved. Custom-domain hosts must
+route only to this reader, never to private workspace/auth routes. The supplied
+Caddy configuration supports verified on-demand TLS; host Nginx requires separate
+certificate setup. See [website deployment and privacy](WORKSPACE_WEBSITES.md).
 
 If Nginx runs on the EC2/Linux host, Docker's internal `1234/tcp` exposure is not a
 host listener. The loopback publication above makes `http://127.0.0.1:1234/health`
@@ -104,8 +111,12 @@ docker compose --env-file .env.production exec web node -e "fetch('http://127.0.
 docker compose --env-file .env.production exec sync node -e "fetch('http://127.0.0.1:1234/health').then(async r=>{console.log(await r.text());process.exit(r.ok?0:1)})"
 ```
 
-Health endpoints prove database availability, not job progress, storage capacity or
-provider delivery. Monitor failed/queued jobs, expired leases, disk space, service
+Web health endpoints (`/health` and `/api/v1/health`) also require all migrations
+in the running release. A `503` with `reason: database_upgrade_required` means the
+database must be backed up and migrated before the upgrade is ready. Schema-related
+API failures show an explicit upgrade message instead of a generic retry error.
+Health does not prove job progress, storage capacity or provider delivery.
+Monitor failed/queued jobs, expired leases, disk space, service
 restarts, HTTP failures and backup age. Web/sync get a graceful shutdown window and
 worker gets five minutes to drain its job. Protect logs; do not log cookies, invitation
 tokens, request bodies or authentication payloads.
@@ -153,9 +164,15 @@ and attachment volume; do not point the live stack at half of a recovered pair.
 
 ## Upgrade discipline
 
+Current features require migrations through **33** (31: reviewed assistant
+productivity operations; 32: workspace websites; 33: publication reading metadata,
+stable publication dates and opt-in aggregate analytics). Publication files are included
+in storage quotas and the paired backup manifest. Upgrade the operations image
+too so backup/restore includes them. Run matching web/sync/worker/publish versions.
+
 Preserve the previous image by an explicit release tag/digest and rehearse forward
 migrations against a restored copy. Back up the current database/files, then stop web,
-drain worker/sync, leave PostgreSQL running, build the candidate and run migration
+drain worker/sync and stop publish, leave PostgreSQL running, build the candidate and run migration
 before restarting services. Never overwrite the only known-good image tag before
 acceptance. Preserve old client assets or coordinate a reload of old browser sessions.
 

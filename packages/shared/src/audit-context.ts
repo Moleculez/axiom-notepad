@@ -9,6 +9,9 @@ export type AuditContext = {
   integrationClient?: string;
   integrationScope?: string;
   integrationVersion?: string;
+  allowedSpaceIds?: string[];
+  assistantContextId?: string;
+  changeSetId?: string;
 };
 const context = new AsyncLocalStorage<AuditContext>();
 export const withAuditContext = <T>(value: AuditContext, work: () => T): T =>
@@ -23,6 +26,11 @@ export async function installAuditContext(
   value = context.getStore(),
 ) {
   if (!value) return;
+  if (value.assistantContextId) {
+    const { assistantContext, assertAssistantAccess } = await import("./assistant-service");
+    await assertAssistantAccess(await assistantContext(value.assistantContextId,value.actorId,client),client);
+  }
+  if (value.changeSetId) await client.query("SELECT set_config('axiom.change_set_id',$1,true)",[value.changeSetId]);
   if (value.integrationId) {
     const {
       rows: [grant],

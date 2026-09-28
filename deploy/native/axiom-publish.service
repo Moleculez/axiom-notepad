@@ -1,0 +1,28 @@
+[Unit]
+Description=Axiom read-only workspace websites
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=axiom
+Group=axiom
+WorkingDirectory=/opt/axiom
+EnvironmentFile=/etc/axiom/axiom.env
+Environment=NODE_ENV=production
+Environment=PUBLISH_HOST=127.0.0.1
+Environment=PUBLISH_PORT=3001
+Environment=PUBLISH_CONTROL_PORT=3002
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+ExecStart=/usr/bin/env node --import tsx apps/publish/src/server.ts
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

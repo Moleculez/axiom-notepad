@@ -5,12 +5,18 @@ import type { NodeView } from "@milkdown/kit/prose/view";
 import type { AxiomEditorView } from "./view";
 import { iconButton } from "./chrome";
 import { openContextMenu } from "../context-menu";
+import { PropertyTable } from "./property-table";
 
 /** A property table, not another source editor. Field commits are rebased and
  * checked against the source they began with before entering shared history. */
 export class MetadataView implements NodeView {
-  readonly dom = document.createElement("section");
-  private table = document.createElement("table");
+  private presentation = new PropertyTable(
+    "Document metadata",
+    "axiom-metadata",
+    "frontmatter",
+  );
+  readonly dom = this.presentation.dom;
+  private table = this.presentation.table;
   private last = "";
   private menu: (() => void) | null = null;
   private committing = false;
@@ -19,16 +25,9 @@ export class MetadataView implements NodeView {
     private owner: AxiomEditorView,
     private getPos: () => number | undefined,
   ) {
-    this.dom.className = "axiom-metadata";
-    this.dom.dataset.kind = "frontmatter";
-    this.dom.contentEditable = "false";
-    const title = document.createElement("div");
-    title.className = "axiom-metadata-heading";
-    title.textContent = "Document metadata";
-    this.table.setAttribute("aria-label", "Document metadata");
     const add = iconButton("Add metadata property", "plus", () => this.add());
     add.classList.add("axiom-metadata-add");
-    this.dom.append(title, this.table, add);
+    this.presentation.actions.append(add);
     this.dom.addEventListener("contextmenu", (event) => {
       event.preventDefault();
       event.stopPropagation();
@@ -180,7 +179,7 @@ export class MetadataView implements NodeView {
     input?.focus();
   }
   private input(property: MetadataProperty, field: "key" | "value") {
-    const input = document.createElement("input");
+    const input = this.presentation.field(document.createElement("input"));
     input.value = property[field];
     input.dataset.field = field;
     input.setAttribute(
@@ -250,7 +249,8 @@ export class MetadataView implements NodeView {
         input.setCustomValidity(
           "Use a unique property name with letters, numbers, dots, underscores or hyphens.",
         );
-        input.reportValidity();
+        input.setAttribute("aria-invalid", "true");
+        this.presentation.message(input.validationMessage, true, input);
         return false;
       }
       const range = this.owner.binding.absolute(draft.range);
@@ -263,6 +263,11 @@ export class MetadataView implements NodeView {
         this.recoverDraft = undefined;
         this.owner.options.message(
           "This property changed remotely. Your field draft was retained in recovery.",
+        );
+        this.presentation.message(
+          "This property changed remotely. Your draft was retained in recovery.",
+          true,
+          input,
         );
         return true;
       }
@@ -301,7 +306,11 @@ export class MetadataView implements NodeView {
       this.recoverDraft = undefined;
       return true;
     };
-    input.addEventListener("input", () => input.setCustomValidity(""));
+    input.addEventListener("input", () => {
+      input.setCustomValidity("");
+      input.removeAttribute("aria-invalid");
+      this.presentation.message("");
+    });
     input.addEventListener("blur", () => {
       if (!commit()) {
         queueMicrotask(() => input.isConnected && input.focus());
@@ -314,6 +323,9 @@ export class MetadataView implements NodeView {
       if (event.isComposing) return;
       if (event.key === "Escape") {
         input.value = draft?.original ?? property[field];
+        input.setCustomValidity("");
+        input.removeAttribute("aria-invalid");
+        this.presentation.message("");
         input.blur();
       }
       if (event.key === "Enter") {
@@ -339,6 +351,7 @@ export class MetadataView implements NodeView {
     return input;
   }
   render(force = false) {
+    this.presentation.readOnly(this.owner.options.readOnly());
     this.table.querySelectorAll("input").forEach((input) => {
       input.readOnly = this.owner.options.readOnly();
     });
@@ -358,22 +371,19 @@ export class MetadataView implements NodeView {
     this.last = raw;
     const body = document.createElement("tbody");
     model.properties.forEach((property, index) => {
-      const row = document.createElement("tr"),
-        key = document.createElement("th"),
-        value = document.createElement("td");
-      row.dataset.property = String(index);
-      key.scope = "row";
-      key.append(this.input(property, "key"));
+      const key = this.input(property, "key");
+      let value: HTMLElement;
       if (property.complex) {
         const content = document.createElement("pre");
         content.textContent = property.value.replace(/^\r?\n/, "");
         content.title = "Structured YAML is preserved. Edit it in Source mode.";
-        value.append(content);
-      } else value.append(this.input(property, "value"));
-      row.append(key, value);
+        value = content;
+      } else value = this.input(property, "value");
+      const row = this.presentation.row(key, value);
+      row.dataset.property = String(index);
       body.append(row);
     });
-    this.table.replaceChildren(body);
+    this.presentation.body(body);
     this.dom.querySelector<HTMLButtonElement>(".axiom-metadata-add")!.disabled =
       this.owner.options.readOnly();
   }
@@ -392,5 +402,6 @@ export class MetadataView implements NodeView {
   destroy() {
     if (!this.committing) this.recoverDraft?.();
     this.menu?.();
+    this.presentation.destroy();
   }
 }

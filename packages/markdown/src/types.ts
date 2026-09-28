@@ -23,6 +23,7 @@ export interface MarkdownNode {
   open?: boolean;
   close?: boolean;
   count?: number;
+  media?: import("./media").MediaMetadata;
 }
 export interface Diagnostic {
   from: number;
@@ -39,6 +40,7 @@ export interface ParsedDocument {
   footnotes: Record<string, MarkdownNode[]>;
   /** Source-only top-level definitions. Not rendered as ordinary AST blocks. */
   definitions?: MarkdownNode[];
+  figures?: Record<string, number>;
 }
 export interface RenderContext {
   /** Read-only revision decorations; never supplied to source/export serializers. */

@@ -7,6 +7,7 @@ import {
   useState,
 } from "react";
 import * as Y from "yjs";
+import { InsertionSessions } from "@axiom/editor/insertion-sessions";
 import {
   HocuspocusProvider,
   HocuspocusProviderWebsocket,
@@ -65,9 +66,9 @@ export interface EditorHandle {
   execute: (id: EditorCommandId, args?: CommandArguments) => boolean;
   jumpToCollaborator: (clientId: number) => boolean;
   tableActive: () => boolean;
-  prepareInsert: (range?: { from: number; to: number }) => void;
+  prepareInsert: (range?: { from: number; to: number }) => string | undefined;
   cancelInsert: () => void;
-  insert: (value: string) => void;
+  insert: (value: string, token?: string, preparedOnly?: boolean) => boolean;
   format: (command: FormatCommand) => void;
   focus: (position?: number) => void;
   anchor: () => CommentAnchor | null;
@@ -107,7 +108,10 @@ interface Props {
   onRefresh: () => void;
   onError: (error: string) => void;
   onLink: (target: string) => void;
-  onFiles?: (files: File[]) => void;
+  onFiles?: (
+    files: File[],
+    insertion: { insert: (value: string) => boolean; cancel: () => void },
+  ) => void;
 }
 
 const Editor = forwardRef<EditorHandle, Props>(function Editor(props, ref) {
@@ -122,11 +126,8 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(props, ref) {
     serverReadOnly = useRef(false),
     docRef = useRef<Y.Doc | null>(null),
     providerRef = useRef<HocuspocusProvider | null>(null),
-    pendingInsert = useRef<{
-      start: Y.RelativePosition;
-      end: Y.RelativePosition;
-      text: string;
-    } | null>(null),
+    pendingInsert = useRef<string | null>(null),
+    insertionSessions = useRef(new InsertionSessions()),
     propsRef = useRef(props),
     unresolvedAnnotations = useRef<string | null>(null),
     flushRef = useRef<() => Promise<void>>(async () => {}),
@@ -141,38 +142,33 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(props, ref) {
     const view = viewRef.current,
       doc = docRef.current;
     if (!view || !doc) return;
-    const { from, to } = range ?? selectionRange(view.selection),
-      text = doc.getText("markdown");
-    pendingInsert.current = {
-      start: Y.createRelativePositionFromTypeIndex(text, from),
-      end: Y.createRelativePositionFromTypeIndex(text, to, -1),
-      text: view.source.slice(from, to),
-    };
+    const { from, to } = range ?? selectionRange(view.selection);
+    if (pendingInsert.current)
+      insertionSessions.current.cancel(pendingInsert.current);
+    const token = insertionSessions.current.create(doc, from, to);
+    pendingInsert.current = token;
+    return token;
   };
-  const execute = (id: EditorCommandId, args: CommandArguments = {}) => {
+  const execute = (
+    id: EditorCommandId,
+    args: CommandArguments = {},
+    token?: string,
+  ) => {
     const view = viewRef.current,
       doc = docRef.current;
     if (!view || !doc) return false;
-    const pending = pendingInsert.current;
-    pendingInsert.current = null;
+    const pending = token ?? pendingInsert.current;
+    if (!token || token === pendingInsert.current) pendingInsert.current = null;
     if (pending) {
-      const a = Y.createAbsolutePositionFromRelativePosition(
-          pending.start,
-          doc,
-        ),
-        b = Y.createAbsolutePositionFromRelativePosition(pending.end, doc);
-      if (
-        !a ||
-        !b ||
-        a.index > b.index ||
-        view.source.slice(a.index, b.index) !== pending.text
-      ) {
+      const range = insertionSessions.current.resolve(pending, doc);
+      insertionSessions.current.cancel(pending);
+      if (!range) {
         propsRef.current.onError(
           "The insertion location changed. Choose a new location and try again.",
         );
         return false;
       }
-      args = { ...args, from: a.index, to: b.index };
+      args = { ...args, ...range };
     }
     return view.execute(id, args);
   };
@@ -186,10 +182,18 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(props, ref) {
       tableActive: () => viewRef.current?.tableActive() ?? false,
       prepareInsert,
       cancelInsert() {
+        if (pendingInsert.current)
+          insertionSessions.current.cancel(pendingInsert.current);
         pendingInsert.current = null;
       },
-      insert(value) {
-        execute("paragraph", { value });
+      insert(value, token, preparedOnly = false) {
+        if (preparedOnly && !token && !pendingInsert.current) {
+          propsRef.current.onError(
+            "The insertion session ended. Close the dialog and choose a new cursor location.",
+          );
+          return false;
+        }
+        return execute("paragraph", { value }, token);
       },
       format(command) {
         execute(
@@ -749,7 +753,21 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(props, ref) {
       notes: () =>
         propsRef.current.notes.filter((n) => n.id !== propsRef.current.note.id),
       files: propsRef.current.onFiles
-        ? (files) => propsRef.current.onFiles?.(files)
+        ? (files, range) => {
+            const view = viewRef.current,
+              doc = docRef.current;
+            if (!view || !doc) return;
+            const selection = range ?? selectionRange(view.selection);
+            const token = insertionSessions.current.create(
+              doc,
+              selection.from,
+              selection.to,
+            );
+            propsRef.current.onFiles?.(files, {
+              insert: (value) => execute("paragraph", { value }, token),
+              cancel: () => insertionSessions.current.cancel(token),
+            });
+          }
         : undefined,
       annotations: () => {
         const unavailable: string[] = [];
@@ -940,6 +958,7 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(props, ref) {
       alive = false;
       requests.abort();
       pendingInsert.current = null;
+      insertionSessions.current.clear();
       clearInterval(retry);
       saves.destroy();
       window.removeEventListener("online", online);

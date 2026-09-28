@@ -41,6 +41,7 @@ export function proseProjection(
     "hr",
     "toc",
     "frontmatter",
+    "referenceDefinition",
   ]);
   const hardBreakStart = (node: MarkdownNode): number | null => {
     if (node.type !== "paragraph") return null;
@@ -170,9 +171,15 @@ export function proseProjection(
       return node;
     }
     if (
-      ["list", "item", "blockquote", "callout", "theorem", "proof"].includes(
-        node.type,
-      )
+      [
+        "list",
+        "item",
+        "blockquote",
+        "callout",
+        "theorem",
+        "proof",
+        "media",
+      ].includes(node.type)
     ) {
       const quote = node.type === "blockquote" || node.type === "callout";
       const complete = quote && /^ {0,3}>[ \t]/.test(source.slice(node.from));

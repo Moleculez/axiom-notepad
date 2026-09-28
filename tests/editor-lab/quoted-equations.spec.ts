@@ -218,6 +218,9 @@ test("equation labels, author-local undo, and remote edits retain the quote", as
   await exact(page, source, at);
   await page.keyboard.press("Shift+F10");
   await page
+    .getByRole("menuitem", { name: "Mathematics", exact: true })
+    .click();
+  await page
     .getByRole("menuitem", { name: "Add or edit equation label", exact: true })
     .click();
   source = source.replace("E=mc^2", "E=mc^2\n> \\label{}");

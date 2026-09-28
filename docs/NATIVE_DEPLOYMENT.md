@@ -6,6 +6,14 @@ in the current release-preparation run.
 
 ## Native AWS installation
 
+Workspace websites additionally use the read-only `axiom-publish` service on
+loopback 3001 and its private certificate-authorization listener on 3002. The
+installer includes this unit and the build includes its static reader assets.
+Keep both ports private. See [workspace website hosting](WORKSPACE_WEBSITES.md)
+for the supplied Caddy routing, `PUBLISH_DOMAIN_TARGET` and DNS verification.
+During upgrades, stop/restart publish with the matching web/sync/worker release,
+apply migrations through 32, and include publication blobs in paired backups.
+
 Target: a single Ubuntu 24.04 LTS EC2 instance with Node.js 24 LTS installed system-wide, PostgreSQL 16, Caddy 2, npm, and rsync. Start with 2–4 vCPUs and 4–8 GB RAM, then measure your workload. Run a web process, **one** sync process and a workspace worker. Do not horizontally scale sync without shared room coordination. The worker completes uploads/exports, generates previews and schedules research notifications.
 
 1. Point a DNS name at the instance. Allow inbound HTTPS (443), HTTP (80 for certificate issuance/redirect), and SSH only from your administration network. Keep ports 3000, 1234, and 5432 private. Use encrypted EBS and an IAM instance role instead of long-lived AWS keys.
@@ -28,11 +36,18 @@ Target: a single Ubuntu 24.04 LTS EC2 instance with Node.js 24 LTS installed sys
 ```sh
 curl --fail http://127.0.0.1:3000/api/v1/health
 curl --fail http://127.0.0.1:1234/health
-sudo systemctl status axiom-web axiom-sync axiom-worker
-sudo journalctl -u axiom-web -u axiom-sync -u axiom-worker --since '10 minutes ago'
+sudo systemctl status axiom-web axiom-sync axiom-worker axiom-publish
+sudo journalctl -u axiom-web -u axiom-sync -u axiom-worker -u axiom-publish --since '10 minutes ago'
 ```
 
-Health endpoints check database connectivity, not every storage/SMTP dependency. Monitor disk space, PostgreSQL availability, HTTP failures, and backup freshness. Restrict access to logs, which can contain note IDs and account-related diagnostics. Do not configure proxy logs to capture invitation query strings, authentication payloads, or cookies.
+Web health (`/health` and `/api/v1/health`) checks database connectivity and every
+required migration receipt. `503` with `reason: database_upgrade_required` means
+the running code is ahead of the database: make a paired backup, run
+`npm run db:migrate` with the service environment, then restart the matching
+services. Health does not verify every storage/SMTP dependency. Monitor disk space,
+PostgreSQL availability, HTTP failures, and backup freshness. Restrict access to
+logs, which can contain note IDs and account-related diagnostics. Do not configure
+proxy logs to capture invitation query strings, authentication payloads, or cookies.
 
 Also monitor queued/failed `workspace_jobs` and expired leases. A healthy web server alone does not prove file verification/export processing is running. Worker shutdown drains its current job; systemd allows five minutes. Do not force-kill an in-progress export during an upgrade. Proxy `/api/v1/events` without response buffering; Caddy's [streaming behavior](https://caddyserver.com/docs/caddyfile/directives/reverse_proxy#streaming) flushes event-stream responses promptly.
 

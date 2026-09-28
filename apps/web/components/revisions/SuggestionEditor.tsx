@@ -203,7 +203,8 @@ export default function SuggestionEditor(props: Props) {
       workspace: (id) => {
         if (id === "source")
           setMode((m) => (m === "write" ? "source" : "write"));
-        else if (id === "attachment") setPicker("file");
+        else if (["attachment", "image", "pdf", "audio", "video"].includes(id))
+          setPicker("file");
         else if (id === "table") setPicker("table");
         else if (id === "searchNotes") {
           prepare();
@@ -269,7 +270,7 @@ export default function SuggestionEditor(props: Props) {
   };
   const insert = (value: string) => {
     const range = insertionRange();
-    if (!range || !projection) return;
+    if (!range || !projection) return false;
     projection.transact({
       kind: "command",
       changes: [{ ...range, insert: value }],
@@ -281,6 +282,7 @@ export default function SuggestionEditor(props: Props) {
     insertion.current = null;
     setPicker(null);
     requestAnimationFrame(() => view.current?.focus(range.from + value.length));
+    return true;
   };
   const close = async () => {
     try {

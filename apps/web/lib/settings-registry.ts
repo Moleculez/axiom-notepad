@@ -170,6 +170,8 @@ export const appearanceSettingGroups: Record<string, (keyof Preferences)[]> = {
     "minimap",
   ],
   Theme: [
+    "interfaceStyle",
+    "themePack",
     "mode",
     "lightPreset",
     "darkPreset",
@@ -203,8 +205,6 @@ export const appearanceSettingGroups: Record<string, (keyof Preferences)[]> = {
     "readingWidth",
     "fullWidth",
     "density",
-    "sidebarWidth",
-    "panelWidth",
     "radius",
     "shadows",
     "motion",

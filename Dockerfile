@@ -4,6 +4,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 COPY apps/web/package.json apps/web/package.json
 COPY apps/sync/package.json apps/sync/package.json
+COPY apps/publish/package.json apps/publish/package.json
 COPY packages/editor/package.json packages/editor/package.json
 COPY packages/markdown/package.json packages/markdown/package.json
 COPY packages/shared/package.json packages/shared/package.json
@@ -31,12 +32,13 @@ COPY --from=build --chown=node:node /app/apps/web/package.json /app/apps/web/nex
 COPY --from=build --chown=node:node /app/apps/web/.next ./apps/web/.next
 COPY --from=build --chown=node:node /app/apps/web/public ./apps/web/public
 COPY --from=build --chown=node:node /app/apps/sync ./apps/sync
+COPY --from=build --chown=node:node /app/apps/publish ./apps/publish
 COPY --from=build --chown=node:node /app/packages ./packages
 COPY --from=build --chown=node:node /app/scripts/ops/admin.ts /app/scripts/ops/backup.ts /app/scripts/ops/migrate.ts /app/scripts/ops/workspace-worker.ts /app/scripts/ops/environment.ts /app/scripts/ops/validate-env.ts ./scripts/ops/
 COPY --chmod=755 deploy/docker/entrypoint.sh /usr/local/bin/axiom-entrypoint
 RUN mkdir -p /app/data/attachments && chown -R node:node /app/data
 USER node
-EXPOSE 3000 1234
+EXPOSE 3000 1234 3001
 ENTRYPOINT ["axiom-entrypoint"]
 CMD ["node", "node_modules/next/dist/bin/next", "start", "apps/web", "--hostname", "0.0.0.0"]
 

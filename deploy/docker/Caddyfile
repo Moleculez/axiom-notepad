@@ -1,3 +1,8 @@
+{
+    on_demand_tls {
+        ask http://publish:3002/tls
+    }
+}
 {$APP_URL} {
     encode zstd gzip
     request_body {
@@ -11,9 +16,21 @@
     handle /sync {
         reverse_proxy sync:1234
     }
+    handle /sites/* {
+        reverse_proxy publish:3001
+    }
     handle {
         reverse_proxy web:3000 {
             flush_interval -1
         }
     }
+}
+# This catch-all can serve publications only, never workspace/auth routes.
+https:// {
+    tls {
+        on_demand
+    }
+    encode zstd gzip
+    header -Server
+    reverse_proxy publish:3001
 }

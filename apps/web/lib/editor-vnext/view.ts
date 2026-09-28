@@ -1,3 +1,4 @@
+import { mediaNodeView } from "./media-view";
 import {
   readingBlocks,
   readingBlockTypes,
@@ -20,6 +21,8 @@ import {
   escapeHtml,
   safeUrl,
   plainText,
+  mediaMarkdown,
+  type MediaMetadata,
   type MarkdownNode,
   type ParsedDocument,
   type SourceEdit,
@@ -34,6 +37,7 @@ import {
 import {
   commandById,
   editorCommands,
+  asyncInsertCommands,
   eventBinding,
   keysFor,
   shortcutPlatform,
@@ -112,6 +116,7 @@ import { ImageSourceSession } from "./image-source";
 import { tablePanel, type TablePanelState } from "./table-panel";
 import { paintMathPreview } from "./math-preview";
 import { MetadataView } from "./metadata-view";
+import { LinkDefinitionView } from "./link-definition-view";
 import { BlockFolds } from "@axiom/editor/folding";
 import { FoldingGutter } from "./folding-gutter";
 import {
@@ -174,6 +179,7 @@ export class AxiomEditorView {
   private sourceView: TextSurface | null = null;
   private embedded = new Set<EmbeddedView>();
   private metadata = new Set<MetadataView>();
+  private definitions = new Set<LinkDefinitionView>();
   private tables = new Set<TableView>();
   private tablePanel: ReturnType<typeof tablePanel> | null = null;
   private projection: Projection | null = null;
@@ -389,10 +395,7 @@ export class AxiomEditorView {
     installEditorLinkNavigation(
       this.dom,
       (event) => this.linkTarget(event),
-      (target) => {
-        if (!target.startsWith("#") || !this.followAnchor(target))
-          this.options.link(target);
-      },
+      (target) => this.openLink(target),
       signal,
     );
     this.dom.addEventListener(
@@ -785,6 +788,7 @@ export class AxiomEditorView {
     this.dom.dataset.typewriter = String(this.options.preferences().typewriter);
     if (mode !== this.mode) {
       if (this.composing || this.cmComposing) return;
+      this.definitions.forEach((view) => view.finish());
       this.binding.undo.stopCapturing();
       this.mode = mode;
       this.ready = this.mount();
@@ -904,11 +908,19 @@ export class AxiomEditorView {
                 this.deleteSelection();
               return true;
             },
-            drop: (_view, event) => {
+            drop: (dropView, event) => {
               const files = (event as DragEvent).dataTransfer?.files;
               if (files?.length && !this.options.readOnly()) {
                 event.preventDefault();
-                this.options.files?.(Array.from(files));
+                const point = dropView.posAtCoords({
+                  left: event.clientX,
+                  top: event.clientY,
+                });
+                const at = point && this.projection?.map.sourceAt(point.pos);
+                this.options.files?.(
+                  Array.from(files),
+                  typeof at === "number" ? { from: at, to: at } : undefined,
+                );
                 return true;
               }
               // Internal rich DOM drags need a source-range move transaction.
@@ -918,6 +930,7 @@ export class AxiomEditorView {
             },
           },
           nodeViews: {
+            media: mediaNodeView,
             folded_block: (node, _view, getPos) => {
               const dom = document.createElement("div");
               dom.className = "axiom-folded-block";
@@ -1052,6 +1065,23 @@ export class AxiomEditorView {
               new EmbeddedView(this, node, getPos),
             raw_block: (node, _view, getPos) => {
               if (node.attrs.kind === "hr") return dividerView(this, getPos);
+              if (node.attrs.kind === "referenceDefinition") {
+                const view = new LinkDefinitionView(this, getPos);
+                this.definitions.add(view);
+                const refresh = () => view.render();
+                this.inlineRefresh.add(refresh);
+                return {
+                  dom: view.dom,
+                  update: (next) => view.update(next),
+                  stopEvent: () => true,
+                  ignoreMutation: () => true,
+                  destroy: () => {
+                    this.inlineRefresh.delete(refresh);
+                    this.definitions.delete(view);
+                    view.destroy();
+                  },
+                };
+              }
               if (node.attrs.kind === "frontmatter") {
                 const view = new MetadataView(this, getPos);
                 this.metadata.add(view);
@@ -1268,6 +1298,11 @@ export class AxiomEditorView {
     this.footnoteDraft = null;
     return this.edit(edit, "command");
   }
+  openLink(target: string) {
+    if (!safeUrl(target)) return;
+    if (!target.startsWith("#") || !this.followAnchor(target))
+      this.options.link(target);
+  }
   private followAnchor(href: string) {
     const id = href.slice(1),
       heading = this.parsed.outline.find((h) => h.id === id);
@@ -1277,9 +1312,17 @@ export class AxiomEditorView {
     const footnote = this.parsed.definitions?.find(
       (n) => n.type === "footnoteDefinition" && "fn-" + n.key === id,
     );
+    const findFigure = (node: MarkdownNode): MarkdownNode | undefined =>
+      node.type === "media" && node.key === id
+        ? node
+        : node.children?.map(findFigure).find(Boolean);
+    const figure = id.startsWith("fig-")
+      ? findFigure(this.parsed.ast)
+      : undefined;
     const from =
       heading?.from ??
       equation?.from ??
+      figure?.children?.[0]?.from ??
       (footnote && this.mode === "write"
         ? footnoteBody(this.source, footnote).offsets[0]
         : footnote?.from);
@@ -1361,10 +1404,10 @@ export class AxiomEditorView {
     // An unchanged embedded editor keeps its DOM, native composition and focus.
     // A peer can insert a same-kind block above ours and ProseMirror can reuse
     // the focused node view for it. Follow our rebased source selection instead.
-    const metadataFocused = Array.from(this.metadata).some((view) =>
+    const fieldFocused = [...this.metadata, ...this.definitions].some((view) =>
       view.dom.contains(document.activeElement),
     );
-    if ((focus || (retainEmbedded && embedded)) && !metadataFocused)
+    if ((focus || (retainEmbedded && embedded)) && !fieldFocused)
       this.focusSurface(embedded?.dom.isConnected ? embedded : undefined);
     if (this.focused) this.completions();
   }
@@ -2499,7 +2542,9 @@ export class AxiomEditorView {
     const range = selectionRange(this.selection);
     if (
       range.from === range.to &&
-      Array.from(this.metadata).some((view) => view.focus(range.from))
+      [...this.metadata, ...this.definitions].some((view) =>
+        view.focus(range.from),
+      )
     )
       return;
     const contains = (view: EmbeddedView) => {
@@ -2800,7 +2845,10 @@ export class AxiomEditorView {
   }
   execute(id: EditorCommandId, args: CommandArguments = {}) {
     if (this.composing || this.cmComposing) return false;
-    if (id === "attachment" || (id === "table" && args.rows === undefined)) {
+    if (
+      asyncInsertCommands.has(id) ||
+      (id === "table" && args.rows === undefined)
+    ) {
       if (this.options.readOnly()) return false;
       // Bookmark an async insertion range without selecting it. Selecting the
       // slash query here leaves a stale rich selection after modal cancellation.
@@ -3522,6 +3570,98 @@ export class AxiomEditorView {
     };
     if (node.type === "image" || node.type === "link")
       return [
+        ...((): ContextAction[] => {
+          const wrapper = nodeAt(this.source, at, ["media"]);
+          if (!wrapper?.media) return [];
+          return [
+            {
+              id: "edit-media-presentation",
+              label: "Figure & presentation",
+              icon: "image",
+              group: "Details",
+              disabled: this.options.readOnly(),
+              action: () => {
+                const child = currentNode();
+                const current =
+                  child && nodeAt(this.source, child.from, ["media"]);
+                if (!current?.media) return;
+                const options = current.media;
+                const asset = current.children?.[0];
+                if (!asset) return;
+                const markdown = this.source.slice(asset.from, asset.to).trim();
+                const captionNodes = current.children?.slice(1) ?? [];
+                const caption = captionNodes.length
+                  ? this.source
+                      .slice(captionNodes[0].from, captionNodes.at(-1)!.to)
+                      .trim()
+                  : "";
+                this.editFields(
+                  current,
+                  "Figure & presentation",
+                  [
+                    {
+                      key: "display",
+                      label: "Presentation",
+                      value: options.display,
+                      options:
+                        node.type === "image"
+                          ? ["image", "figure", "preview"]
+                          : ["card", "preview"],
+                    },
+                    {
+                      key: "caption",
+                      label: "Caption (Markdown)",
+                      value: caption,
+                      multiline: true,
+                      validate: (value) =>
+                        /<!--\s*\/?axiom-media\b/i.test(value)
+                          ? "Nested media wrappers are not allowed."
+                          : undefined,
+                    },
+                    {
+                      key: "label",
+                      label: "Figure label (optional)",
+                      value: options.label ?? "",
+                      validate: (value) =>
+                        value && !/^fig-[a-zA-Z0-9_-]{1,80}$/.test(value)
+                          ? "Use fig- followed by letters, digits, dashes, or underscores."
+                          : undefined,
+                    },
+                    {
+                      key: "width",
+                      label: "Width (%)",
+                      value: String(options.width ?? 100),
+                      validate: (value) =>
+                        !Number.isFinite(Number(value)) ||
+                        Number(value) < 10 ||
+                        Number(value) > 100
+                          ? "Choose a width between 10 and 100."
+                          : undefined,
+                    },
+                    {
+                      key: "align",
+                      label: "Alignment",
+                      value: options.align ?? "center",
+                      options: ["left", "center", "right"],
+                    },
+                  ],
+                  (values) =>
+                    mediaMarkdown(
+                      markdown,
+                      {
+                        ...options,
+                        display: values.display as MediaMetadata["display"],
+                        label: values.label || undefined,
+                        width: Number(values.width),
+                        align: values.align as MediaMetadata["align"],
+                      },
+                      values.caption,
+                    ),
+                );
+              },
+            },
+          ];
+        })(),
         {
           id: "edit-link-fields",
           icon: node.type === "image" ? "image" : "link",
@@ -3820,7 +3960,7 @@ export class AxiomEditorView {
       return;
     }
     if (choice.command) {
-      if (choice.command === "attachment") {
+      if (asyncInsertCommands.has(choice.command)) {
         // File selection is an asynchronous host action, not a Markdown
         // formatting command. Bookmark the whole query until a file is chosen;
         // cancellation leaves it intact and insertion is a single undo step.
@@ -4859,6 +4999,7 @@ class EmbeddedView implements NodeView {
     input.maxLength = 40;
     input.setAttribute("aria-label", "Code language");
     input.className = "axiom-language-input";
+    input.dataset.editorField = "inline";
     this.label.hidden = true;
     this.controls.prepend(input);
     input.focus();

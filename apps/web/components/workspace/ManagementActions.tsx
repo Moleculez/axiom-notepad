@@ -1331,6 +1331,7 @@ function BulkResourceAction({
           ? "These items will return to their original folders where possible."
           : "Selected items and nested contents remain recoverable in Trash."}
       </p>
+      {!restoring && <p className="ws-note">Published website copies are independent. Trashing a private source does not remove it from a public website; unpublish or replace its website release separately.</p>}
       <ul className="ws-operation-items">
         {remaining.map((item) => (
           <li key={item.id}>{item.name}</li>

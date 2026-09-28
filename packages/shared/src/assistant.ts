@@ -175,6 +175,7 @@ export type AssistantMessage = {
   content: string;
 };
 export type AssistantPrepared = {
+  agent?: import("./productivity").AgentConfig;
   id: string;
   fingerprint: string;
   expiresAt: string;
@@ -198,6 +199,9 @@ export type AssistantProposalItem = {
   result?: Record<string, unknown>;
 };
 export type AssistantTurn = {
+  changeSetId?: string;
+  activity?: {kind:string;message:string;evidenceKey?:string;at:string}[];
+  round?: number;
   id: string;
   status: string;
   prompt?: string;

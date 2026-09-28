@@ -119,9 +119,9 @@ body {
 }
 button,
 a,
-input,
-select,
-textarea {
+input:not(:where([data-editor-field])),
+select:not(:where([data-editor-field])),
+textarea:not(:where([data-editor-field])) {
   transition:
     background-color 150ms,
     border-color 150ms,
@@ -129,9 +129,9 @@ textarea {
     box-shadow 150ms;
 }
 button,
-input,
-select,
-textarea,
+input:not(:where([data-editor-field])),
+select:not(:where([data-editor-field])),
+textarea:not(:where([data-editor-field])),
 .dialog,
 .note-card,
 .project-card {

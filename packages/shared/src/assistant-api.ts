@@ -25,6 +25,7 @@ import {
   type AssistantContext,
 } from "./assistant-service";
 import { assistantProposalApi } from "./assistant-proposals";
+import { agentConfigSchema, agentInstruction } from "./productivity";
 
 export async function assistantApi(
   request: Request,
@@ -155,6 +156,7 @@ export async function assistantApi(
             .array(assistantSelectionSchema)
             .max(assistantLimits.items),
           allowTaskCreate: z.boolean().default(false),
+          agent: agentConfigSchema.optional(),
         })
         .strict()
         .parse(await request.json());
@@ -183,7 +185,7 @@ export async function assistantApi(
           "Start a new conversation. This one reached its turn limit.",
         );
       const messages: AssistantMessage[] = [
-          { role: "system", content: assistantInstruction },
+          { role: "system", content: input.agent ? agentInstruction : assistantInstruction },
         ],
         historyIds: string[] = [];
       for (const turn of history.filter((t) => t.status === "complete")) {
@@ -210,7 +212,7 @@ export async function assistantApi(
       );
       messages.push({
         role: "user",
-        content: assistantUserMessage(
+        content: input.agent ? JSON.stringify({ request:input.prompt, ...input.agent, spaceIds:c.space_ids, primaryWorkspace:spaceId, evidence, today:new Date().toISOString().slice(0,10) }) : assistantUserMessage(
           input.prompt,
           evidence,
           input.allowTaskCreate,
@@ -257,7 +259,7 @@ export async function assistantApi(
         const {
           rows: [created],
         } = await client.query(
-          "INSERT INTO assistant_contexts(conversation_id,provider_id,provider_version,prompt,evidence,bases,messages,history_ids,allow_task_create,fingerprint,conversation_version) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id",
+          "INSERT INTO assistant_contexts(conversation_id,provider_id,provider_version,prompt,evidence,bases,messages,history_ids,allow_task_create,fingerprint,conversation_version,agent_config) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING id",
           [
             c.id,
             p.id,
@@ -270,6 +272,7 @@ export async function assistantApi(
             input.allowTaskCreate,
             fingerprint,
             c.version,
+            input.agent ? JSON.stringify(input.agent) : null,
           ],
         );
         const captured = await assistantContext(created.id, user, client);
@@ -379,6 +382,8 @@ export async function assistantApi(
         );
         turns.push({
           id: j.id,
+          changeSetId: j.result?.changeSetId,
+          ...(x.agent_config ? (await query("SELECT activity,round FROM assistant_runs WHERE id=$1",[j.id]))[0] : {}),
           status: j.status,
           prompt: x.prompt,
           answer: j.result?.answer,
@@ -506,7 +511,7 @@ export async function assistantApi(
         const {
           rows: [usage],
         } = await client.query(
-          "SELECT count(*) FILTER(WHERE owner_id=$1 AND status IN ('queued','running'))::int AS pending,count(*) FILTER(WHERE provider_id=$2 AND created_at>=(date_trunc('day',now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'))::int AS used FROM tool_jobs",
+          "SELECT count(*) FILTER(WHERE owner_id=$1 AND status IN ('queued','running'))::int AS pending,count(*) FILTER(WHERE provider_id=$2 AND created_at>=(date_trunc('day',now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'))::int+(SELECT count(*)::int FROM assistant_run_steps WHERE provider_id=$2 AND ordinal>1 AND dispatched_at>=(date_trunc('day',now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC')) AS used FROM tool_jobs",
           [user, provider.id],
         );
         if (usage.pending >= 5 || usage.used >= provider.daily_limit)
@@ -531,6 +536,7 @@ export async function assistantApi(
           "UPDATE assistant_contexts SET submitted_at=now() WHERE id=$1",
           [x.id],
         );
+        if (x.agent_config) await client.query("INSERT INTO assistant_runs(id,context_id) VALUES($1,$2)",[input.mutationId,x.id]);
         await client.query(
           "UPDATE assistant_conversations SET version=version+1,updated_at=now() WHERE id=$1",
           [id],

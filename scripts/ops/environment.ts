@@ -33,6 +33,18 @@ export function environmentErrors(env: NodeJS.ProcessEnv) {
   }
   if (env.BETTER_AUTH_URL && env.BETTER_AUTH_URL !== env.APP_URL)
     errors.push("BETTER_AUTH_URL must match APP_URL.");
+  if (
+    env.PUBLISH_DOMAIN_TARGET &&
+    (!/^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/i.test(
+      env.PUBLISH_DOMAIN_TARGET,
+    ) ||
+      /\.(?:localhost|local|internal|test|invalid)$/i.test(
+        env.PUBLISH_DOMAIN_TARGET,
+      ))
+  )
+    errors.push(
+      "PUBLISH_DOMAIN_TARGET must be a public DNS hostname, not a URL, IP address or internal host.",
+    );
   try {
     const database = new URL(env.DATABASE_URL ?? "");
     if (

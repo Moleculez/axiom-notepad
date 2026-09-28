@@ -201,8 +201,8 @@ export async function api<T = any>(
     options.signal?.removeEventListener("abort", abort);
   }
 }
-export const post = (path: string, data: unknown = {}) =>
-  api(path, { method: "POST", body: JSON.stringify(data) });
+export const post = <T = any>(path: string, data: unknown = {}) =>
+  api<T>(path, { method: "POST", body: JSON.stringify(data) });
 export async function authRequest(path: string, body: unknown = {}) {
   const response = await fetch("/api/auth/" + path, {
     method: "POST",

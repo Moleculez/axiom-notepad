@@ -83,9 +83,6 @@ import {
 export function SettingsNavigation() {
   const { parts, params } = useLocation();
   const selected = settingsCategory(parts[1], params.get("section"));
-  const selectedGroup =
-    settingsCategories.find((category) => category.id === selected)?.group ??
-    "Account";
   const [search, setSearch] = useState("");
   const icons: Record<SettingsCategory, typeof Monitor> = {
     connections: ShieldCheck,
@@ -120,23 +117,6 @@ export function SettingsNavigation() {
       className="settings-center-nav settings-page-navigation"
       aria-label="Settings categories"
     >
-      <div className="settings-navigation-groups" aria-label="Settings groups">
-        {["Account", "Appearance", "Writing", "Storage"].map((group) => {
-          const first = settingsCategories.find(
-            (category) => category.group === group,
-          )!;
-          return (
-            <WorkspaceLink
-              key={group}
-              to={`/settings/${first.id}`}
-              className={`page-section-link ${selectedGroup === group ? "active" : ""}`}
-              aria-current={selectedGroup === group ? "true" : undefined}
-            >
-              {group}
-            </WorkspaceLink>
-          );
-        })}
-      </div>
       <label className="settings-search">
         <Search size={16} />
         <input
@@ -162,7 +142,6 @@ export function SettingsNavigation() {
         </p>
       )}
       {["Account", "Appearance", "Writing", "Storage"].map((group) => {
-        if (!search.trim() && group !== selectedGroup) return null;
         const entries = matches.filter((category) => category.group === group);
         return entries.length ? (
           <section key={group}>
@@ -287,7 +266,6 @@ function SettingsReady({
         className={`ws-page ws-settings-page ${preference ? "ws-appearance-page" : ""}`}
         data-settings-section={section}
       >
-        <SettingsNavigation />
         <div className="settings-center-heading">
           <button
             className="text-button"
@@ -305,10 +283,7 @@ function SettingsReady({
           </span>
         </div>
         {!preference && (
-          <PageHeading
-            eyebrow="PERSONAL SETTINGS"
-            title={labels[section] ?? "Settings"}
-          >
+          <PageHeading title={labels[section] ?? "Settings"}>
             {
               settingsCategories.find((category) => category.id === section)
                 ?.description
@@ -1439,6 +1414,10 @@ export function StorageSettings({ scopeId }: { scopeId?: string } = {}) {
                 <div>
                   <dt>Generated previews</dt>
                   <dd>{bytes(storage.totals.previews ?? 0)}</dd>
+                </div>
+                <div>
+                  <dt>Website releases</dt>
+                  <dd>{bytes(storage.totals.publications ?? 0)}</dd>
                 </div>
                 <div>
                   <dt>In trash</dt>

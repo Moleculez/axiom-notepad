@@ -23,6 +23,7 @@ x-app-environment: &app-environment
   PDF_OCR_URL: ${PDF_OCR_URL:-}
   PDF_OCR_TOKEN: ${PDF_OCR_TOKEN:-}
   PDF_RESEARCH_OCR_URL: ${PDF_RESEARCH_OCR_URL:-}
+  PUBLISH_DOMAIN_TARGET: ${PUBLISH_DOMAIN_TARGET:-}
 
 x-app: &app
   image: ${AXIOM_IMAGE:-axiom:local}
@@ -112,6 +113,25 @@ services:
     stop_grace_period: 5m
     restart: unless-stopped
     networks: [default, office-private]
+  publish:
+    <<: *app
+    command: [node, --import, tsx, apps/publish/src/server.ts]
+    environment:
+      <<: *app-environment
+      PUBLISH_HOST: 0.0.0.0
+      PUBLISH_PORT: 3001
+      PUBLISH_CONTROL_PORT: 3002
+    # Read-only publication traffic never reaches workspace/auth routes.
+    volumes: [attachments:/app/data/attachments:ro]
+    ports: ["127.0.0.1:${AXIOM_PUBLISH_HOST_PORT:-3001}:3001"]
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:3001/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 8s
+      retries: 5
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+    restart: unless-stopped
   proxy:
     image: caddy:2-alpine
     environment:
@@ -125,6 +145,7 @@ services:
       - caddy-config:/config
     depends_on:
       web: { condition: service_healthy }
+      publish: { condition: service_healthy }
     restart: unless-stopped
   operations:
     <<: *app

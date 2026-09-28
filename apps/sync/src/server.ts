@@ -26,6 +26,7 @@ import {
 import { requireScope } from "@axiom/shared/workspace-service";
 import { HttpError } from "@axiom/shared/access";
 import { revisionCommandSchema } from "@axiom/shared/revisions";
+import { assertReviewedDocumentCommand } from "@axiom/shared/workspace-change-sets";
 import { executeRevisionCommand } from "@axiom/shared/revision-command";
 const committedCommand = Symbol("durably-committed-command");
 
@@ -421,11 +422,11 @@ const server = new Server<Context>({
         const input = JSON.parse(Buffer.concat(chunks).toString("utf8"));
         if (
           typeof input.actorId !== "string" ||
-          typeof input.connectionId !== "string"
+          typeof input.actionId !== "string"
         )
           throw new HttpError(
             400,
-            "A verified integration principal is required.",
+            "An approved change-set action is required.",
           );
         const command = documentCommandSchema.parse(input.command),
           room = `${command.noteId}:${command.generation}`;
@@ -435,25 +436,22 @@ const server = new Server<Context>({
           let update: Uint8Array | undefined;
           try {
             const result = await transaction(async (client) => {
-              if (typeof input.grantVersion !== "string")
-                throw new HttpError(
-                  403,
-                  "Reconnect this application before editing.",
-                );
-              const grant = await activeConnection(
-                input.connectionId,
+              const reviewed = await assertReviewedDocumentCommand(client, input, command);
+              const grant = reviewed.connection_id ? await activeConnection(
+                reviewed.connection_id,
                 input.actorId,
                 "workspace:write",
                 client,
-                input.grantVersion,
-              );
+                reviewed.grant_version,
+              ) : null;
               await installAuditContext(client, {
                 actorId: input.actorId,
                 operationId: command.mutationId,
-                integrationId: grant.id,
-                integrationClient: grant.client_id,
+                changeSetId: input.setId,
+                integrationId: grant?.id,
+                integrationClient: grant?.client_id,
                 integrationScope: "workspace:write",
-                integrationVersion: grant.grant_version,
+                integrationVersion: grant?.grant_version,
               });
               const {
                 rows: [resource],
@@ -462,7 +460,8 @@ const server = new Server<Context>({
                 [command.noteId],
               );
               if (!resource) throw new HttpError(404, "Document unavailable.");
-              connectionAllowsSpace(grant, resource.space_id);
+              if (grant) connectionAllowsSpace(grant, resource.space_id);
+              if (!reviewed.space_ids.includes(resource.space_id)) throw new HttpError(403, "Document moved outside the approved scope.");
               await requireScope(
                 client,
                 input.actorId,
@@ -494,7 +493,7 @@ const server = new Server<Context>({
               const hash = sourceHash(
                 JSON.stringify({
                   actorId: input.actorId,
-                  connectionId: input.connectionId,
+                  setId: input.setId,
                   command,
                 }),
               );

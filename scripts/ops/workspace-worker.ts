@@ -5,6 +5,10 @@ import {
   workspaceMaintenance,
 } from "../../packages/shared/src/workspace-jobs";
 import { processToolJob } from "../../packages/shared/src/tool-jobs";
+import { processChangeSet } from "../../packages/shared/src/workspace-change-sets";
+import { processSiteRelease } from "../../packages/shared/src/site-worker";
+import { executeReviewedAction } from "../../apps/web/lib/reviewed-actions";
+import { analyticsMaintenance } from "../../packages/shared/src/site-analytics";
 
 let stopping = false;
 process.on("SIGTERM", () => {
@@ -21,6 +25,7 @@ try {
     if (Date.now() - lastMaintenance > 60_000) {
       try {
         await workspaceMaintenance();
+        await analyticsMaintenance();
         lastMaintenance = Date.now();
       } catch (error) {
         console.error(
@@ -32,7 +37,9 @@ try {
     }
     const workspaceWorked = await processWorkspaceJob();
     const toolsWorked = await processToolJob();
-    const worked = workspaceWorked || toolsWorked;
+    const changesWorked = await processChangeSet(executeReviewedAction);
+    const siteWorked = await processSiteRelease();
+    const worked = workspaceWorked || toolsWorked || changesWorked || siteWorked;
     if (once && !worked) break;
     if (!worked) await new Promise((resolve) => setTimeout(resolve, 1000));
   } while (!stopping);

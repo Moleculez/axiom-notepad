@@ -35,6 +35,11 @@ export function nativeCompletions(
             .toLowerCase()
             .includes(slash.query.toLowerCase()),
       )
+      .sort(
+        (a, b) =>
+          Number(b.id === slash.query.toLowerCase()) -
+          Number(a.id === slash.query.toLowerCase()),
+      )
       .slice(0, 12)
       .map((c) => ({
         label: c.label,

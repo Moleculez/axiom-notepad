@@ -14,7 +14,10 @@
 .ws-app :is(button, a, summary) {
   -webkit-tap-highlight-color: transparent;
 }
-.ws-app :is(button, a, summary, input, select, textarea):focus-visible {
+.ws-app
+  :is(button, a, summary, input, select, textarea):not(
+    :where([data-editor-field])
+  ):focus-visible {
   outline: none;
   box-shadow: 0 0 0 2px var(--focus);
 }
@@ -36,9 +39,14 @@
   cursor: pointer;
 }
 .ws-app
-  input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"]),
-.ws-app select,
-.ws-app textarea {
+  input:not(
+    [type="checkbox"],
+    [type="radio"],
+    [type="range"],
+    [type="color"]
+  ):not(:where([data-editor-field])),
+.ws-app select:not(:where([data-editor-field])),
+.ws-app textarea:not(:where([data-editor-field])) {
   width: 100%;
   min-width: 0;
   padding: 0.7em 0.85em;
@@ -48,9 +56,9 @@
   color: var(--text);
   outline: none;
 }
-.ws-app input:focus-visible,
-.ws-app select:focus-visible,
-.ws-app textarea:focus-visible {
+.ws-app input:not(:where([data-editor-field])):focus-visible,
+.ws-app select:not(:where([data-editor-field])):focus-visible,
+.ws-app textarea:not(:where([data-editor-field])):focus-visible {
   box-shadow: inset 0 0 0 2px var(--focus);
 }
 .ws-app input[type="checkbox"],

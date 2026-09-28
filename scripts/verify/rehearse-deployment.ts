@@ -20,6 +20,7 @@ const values = {
   AXIOM_HTTPS_PORT: "127.0.0.1:8443",
   // Let Docker allocate a loopback port instead of competing with local dev sync.
   AXIOM_SYNC_HOST_PORT: "0",
+  AXIOM_PUBLISH_HOST_PORT: "0",
   AXIOM_IMAGE: process.env.AXIOM_REHEARSAL_IMAGE ?? "axiom:rehearsal",
   AXIOM_OPERATIONS_IMAGE:
     process.env.AXIOM_REHEARSAL_OPERATIONS_IMAGE ??
@@ -125,6 +126,25 @@ try {
   if (!syncHealth.ok || (await syncHealth.json()).service !== "sync")
     throw new Error("Published synchronization health check failed.");
   checks.push("loopback-only host synchronization health");
+  const { stdout: publicationPort } = await promisify(execFile)(
+    "docker",
+    [...compose, "port", "publish", "3001"],
+    { cwd: root, env: testEnv },
+  );
+  const publicationAddress = publicationPort.trim();
+  if (!/^127\.0\.0\.1:[1-9]\d{0,4}$/.test(publicationAddress))
+    throw new Error(
+      "Publication reader must publish only a host-loopback port.",
+    );
+  const publicationHealth = await fetch(`http://${publicationAddress}/health`, {
+    signal: AbortSignal.timeout(10000),
+  });
+  if (
+    !publicationHealth.ok ||
+    (await publicationHealth.json()).service !== "publish"
+  )
+    throw new Error("Publication reader health check failed.");
+  checks.push("loopback-only publication reader health");
   await docker([
     "exec",
     "-T",

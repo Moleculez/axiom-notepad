@@ -1,9 +1,4 @@
 import * as Y from "yjs";
-import "../../packages/shared/assets/latin-modern/fonts.css";
-import "@fontsource/inter/400.css";
-import "@fontsource/inter/600.css";
-import "@fontsource/source-sans-3/400.css";
-import "@fontsource/jetbrains-mono/400.css";
 import {
   Awareness,
   encodeAwarenessUpdate,
@@ -24,17 +19,8 @@ import {
   appearanceVariables,
   type Preferences,
 } from "../../packages/shared/src/appearance";
-import "../../apps/web/app/globals.css";
-import "../../apps/web/app/appearance.css";
-import "../../apps/web/app/native-editor.css";
-import "../../apps/web/app/editor-design.css";
-import "../../apps/web/app/refinement.css";
-import "../../apps/web/app/editor-vnext.css";
-import "../../apps/web/app/editor-paper.css";
-import "../../packages/shared/assets/document-decorations.css";
-import "../../packages/shared/assets/document-tasks.css";
+import "../../apps/web/app/styles";
 import "./lab.css";
-import "../../apps/web/app/menu-icons.css";
 
 for (const [key, value] of Object.entries(appearanceVariables(defaults, false)))
   document.documentElement.style.setProperty(key, value);

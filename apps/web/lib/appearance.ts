@@ -45,6 +45,7 @@ export function useAppearance(userId?: string) {
     if (userId && !snapshot.ready) return; // Keep the account-scoped boot theme until hydration completes.
     root.dataset.theme = resolved ? "dark" : "light";
     root.dataset.themePack = effective.themePack;
+    root.dataset.interfaceStyle = effective.interfaceStyle;
     root.dataset.motion = effective.motion;
     root.dataset.density = effective.density;
     root.dataset.focus = String(effective.focusMode);
@@ -68,6 +69,7 @@ export function useAppearance(userId?: string) {
             userId,
             mode: effective.mode,
             themePack: effective.themePack,
+            interfaceStyle: effective.interfaceStyle,
             light: appearanceVariables(effective, false),
             dark: appearanceVariables(effective, true),
             motion: effective.motion,

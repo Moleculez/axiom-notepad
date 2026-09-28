@@ -94,7 +94,20 @@ import TableOfContents from "../TableOfContents";
 import NoteTitle from "../NoteTitle";
 import DocumentStatistics from "../DocumentStatistics";
 import ResourceSharing from "./ResourceSharing";
-import InsertResource from "./InsertResource";
+import InsertResource, { type MediaFilter } from "./InsertResource";
+import {
+  defaultMediaOptions,
+  insertMediaMarkdown,
+} from "../../lib/media-insertion";
+const SnippetLibrary = dynamic(() => import("../media/SnippetLibrary"), {
+  ssr: false,
+});
+const AttachmentChecks = dynamic(() => import("../media/AttachmentChecks"), {
+  ssr: false,
+});
+const LinkedFileActions = dynamic(() => import("../media/LinkedFileActions"), {
+  ssr: false,
+});
 import { useRevisionVisit } from "../../lib/revision-visit";
 import ReadingView from "../ReadingView";
 import EquationInspector from "../EquationInspector";
@@ -473,7 +486,8 @@ function DocumentPane({
       navigate,
       open,
       notify,
-      upload,
+      uploadBatch,
+      showUploads,
     } = useWorkspace(),
     key = `${session.user.id}:${metadata.id}:${viewId ?? "default"}`,
     savedView =
@@ -512,10 +526,16 @@ function DocumentPane({
       | "table"
       | "files"
       | "links"
+      | "snippets"
+      | "saveSnippet"
+      | "figureRef"
+      | "checkAssets"
       | "history"
       | "export"
       | null
     >(null),
+    [mediaFilter, setMediaFilter] = useState<MediaFilter>("all"),
+    [snippetSelection, setSnippetSelection] = useState(""),
     [review, setReview] = useState(false),
     [proposal, setProposal] = useState<Suggestion | "new" | null>(null),
     [recovered, setRecovered] = useState(""),
@@ -830,13 +850,27 @@ function DocumentPane({
     } else if (id === "commands") {
       editor.current?.prepareInsert();
       setModal("commands");
-    } else if (id === "attachment") {
+    } else if (["attachment", "image", "pdf", "audio", "video"].includes(id)) {
       if (!readonly && mode !== "read") {
         // Engine commands already bookmarked the slash query, which need not
         // equal the visible selection. Toolbar commands still prepare here.
         if (!insertionPrepared) editor.current?.prepareInsert();
+        setMediaFilter(id === "attachment" ? "all" : (id as MediaFilter));
         setModal("files");
       }
+    } else if (
+      id === "snippets" ||
+      id === "saveSnippet" ||
+      id === "figureRef"
+    ) {
+      if (!readonly && mode !== "read") {
+        setSnippetSelection(editor.current?.anchor()?.quote ?? "");
+        if (!insertionPrepared || id === "saveSnippet")
+          editor.current?.prepareInsert();
+        setModal(id);
+      }
+    } else if (id === "checkAssets") {
+      setModal("checkAssets");
     } else if (id === "table") {
       if (!readonly && mode !== "read") setModal("table");
     } else {
@@ -1407,11 +1441,54 @@ function DocumentPane({
                     }}
                     onError={setError}
                     onLink={(target) => void openLink(target)}
-                    onFiles={(files) => {
-                      if (!context.data?.space || readonly || mode === "read")
+                    onFiles={(files, insertion) => {
+                      if (
+                        !context.data?.space ||
+                        readonly ||
+                        mode === "read" ||
+                        !uploadBatch
+                      ) {
+                        insertion.cancel();
                         return;
-                      upload(files, context.data.space.id);
-                      setModal("files");
+                      }
+                      notify(
+                        "Uploading files. They will be inserted at the saved cursor location.",
+                      );
+                      void api<Resource>("resources/" + note.id)
+                        .then((destination) => {
+                          const pending = uploadBatch(
+                            files,
+                            destination.space_id,
+                            destination.parent_id,
+                          );
+                          showUploads?.();
+                          return pending.ready;
+                        })
+                        .then((results) => {
+                          const markdown = results
+                            .map((result) =>
+                              insertMediaMarkdown(
+                                result.name,
+                                "/api/v1/attachments/" + result.versionId,
+                                result.mime,
+                                {
+                                  ...defaultMediaOptions,
+                                  display: result.mime.startsWith("image/")
+                                    ? "image"
+                                    : "card",
+                                },
+                              ),
+                            )
+                            .join("\n\n");
+                          if (!insertion.insert(markdown))
+                            setError(
+                              "Files were uploaded, but the insertion location changed. Insert them from the file library.",
+                            );
+                        })
+                        .catch((error: Error) => {
+                          insertion.cancel();
+                          setError(error.message);
+                        });
                     }}
                   />
                 </div>
@@ -1909,13 +1986,65 @@ function DocumentPane({
           kind={modal === "files" ? "file" : "note"}
           note={note}
           space={context.data?.space}
+          initialFilter={mediaFilter}
           onClose={closeModal}
-          onInsert={(value) => {
-            editor.current?.insert(value);
-            closeModal();
-          }}
+          onInsert={(value) =>
+            editor.current?.insert(value, undefined, true) ?? false
+          }
         />
       )}
+      {(modal === "snippets" || modal === "saveSnippet") && (
+        <SnippetLibrary
+          spaceId={context.data?.space?.id}
+          selection={snippetSelection}
+          creating={modal === "saveSnippet"}
+          onClose={closeModal}
+          onInsert={(value) =>
+            editor.current?.insert(value, undefined, true) ?? false
+          }
+        />
+      )}
+      {modal === "checkAssets" && (
+        <AttachmentChecks
+          source={source}
+          onClose={closeModal}
+          onJump={(position) => editor.current?.focus(position)}
+        />
+      )}
+      {modal === "figureRef" && (
+        <Dialog
+          title="Reference a figure"
+          subtitle="References follow figure numbering as the document changes"
+          onClose={closeModal}
+        >
+          <div className="attachment-check-list">
+            {Object.entries(parsed.figures ?? {}).map(([label, number]) => (
+              <button
+                key={label}
+                onClick={() => {
+                  if (
+                    editor.current?.insert(
+                      `[Figure](#${label})`,
+                      undefined,
+                      true,
+                    )
+                  )
+                    closeModal();
+                }}
+              >
+                Figure {number}
+                <small>{label}</small>
+              </button>
+            ))}
+            {!Object.keys(parsed.figures ?? {}).length && (
+              <p className="ws-note">
+                Insert an image as a numbered figure and give it a label first.
+              </p>
+            )}
+          </div>
+        </Dialog>
+      )}
+      {active && <LinkedFileActions root={scroller} />}
       {modal === "history" && (
         <ResourceHistory
           previousVisit={previousVisit}

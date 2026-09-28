@@ -6,6 +6,7 @@ const env = buildEnvironment(process.env);
 for (const args of [
   ["--import", "tsx", "scripts/build/brand.ts"],
   ["--import", "tsx", "scripts/build/vendor-tools.ts"],
+  ["--import", "tsx", "scripts/build/publish.ts"],
   ["node_modules/next/dist/bin/next", "build", "apps/web"],
   ["--import", "tsx", "scripts/build/build-offline.ts"],
 ]) {

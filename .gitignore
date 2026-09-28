@@ -17,3 +17,4 @@ __pycache__/
 .DS_Store
 apps/web/public/offline-assets.js
 apps/web/public/tool-assets/pdfjs/
+apps/publish/dist/

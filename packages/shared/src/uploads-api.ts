@@ -39,6 +39,7 @@ type Upload = {
   multipart_id: string | null;
   sha256: string | null;
   completed_resource_id: string | null;
+  completed_version_id: string | null;
   expires_at: Date;
   error?: string;
   expected_version_id: string | null;
@@ -79,7 +80,7 @@ export async function reserveCapacity(
     const {
       rows: [usage],
     } = await client.query(
-      `SELECT (SELECT coalesce(sum(a.bytes),0) FROM attachments a JOIN file_versions v ON v.id=a.id JOIN resources r ON r.id=v.resource_id JOIN spaces s ON s.id=r.space_id WHERE CASE WHEN $2::uuid IS NULL THEN s.id=$1::uuid ELSE s.group_id=$2 END)+(SELECT coalesce(sum(d.bytes),0) FROM file_derivatives d JOIN file_versions v ON v.id=d.version_id JOIN resources r ON r.id=v.resource_id JOIN spaces s ON s.id=r.space_id WHERE CASE WHEN $2::uuid IS NULL THEN s.id=$1::uuid ELSE s.group_id=$2 END)+(SELECT coalesce(sum(u.bytes),0) FROM upload_sessions u JOIN spaces s ON s.id=u.space_id WHERE u.status IN ('uploading','verifying','failed') AND u.expires_at>now() AND u.id IS DISTINCT FROM $3::uuid AND CASE WHEN $2::uuid IS NULL THEN s.id=$1::uuid ELSE s.group_id=$2 END)+(SELECT coalesce(sum(j.output_bytes+j.text_bytes),0) FROM pdf_ocr_jobs j JOIN file_versions v ON v.id=j.version_id JOIN resources r ON r.id=v.resource_id JOIN spaces s ON s.id=r.space_id WHERE CASE WHEN $2::uuid IS NULL THEN s.id=$1::uuid ELSE s.group_id=$2 END)+(SELECT coalesce(sum(a.bytes),0) FROM image_draft_assets a JOIN resources r ON r.id=a.resource_id JOIN spaces s ON s.id=r.space_id WHERE CASE WHEN $2::uuid IS NULL THEN s.id=$1::uuid ELSE s.group_id=$2 END) AS bytes`,
+      `SELECT (SELECT coalesce(sum(a.bytes),0) FROM attachments a JOIN file_versions v ON v.id=a.id JOIN resources r ON r.id=v.resource_id JOIN spaces s ON s.id=r.space_id WHERE CASE WHEN $2::uuid IS NULL THEN s.id=$1::uuid ELSE s.group_id=$2 END)+(SELECT coalesce(sum(d.bytes),0) FROM file_derivatives d JOIN file_versions v ON v.id=d.version_id JOIN resources r ON r.id=v.resource_id JOIN spaces s ON s.id=r.space_id WHERE CASE WHEN $2::uuid IS NULL THEN s.id=$1::uuid ELSE s.group_id=$2 END)+(SELECT coalesce(sum(u.bytes),0) FROM upload_sessions u JOIN spaces s ON s.id=u.space_id WHERE u.status IN ('uploading','verifying','failed') AND u.expires_at>now() AND u.id IS DISTINCT FROM $3::uuid AND CASE WHEN $2::uuid IS NULL THEN s.id=$1::uuid ELSE s.group_id=$2 END)+(SELECT coalesce(sum(j.output_bytes+j.text_bytes),0) FROM pdf_ocr_jobs j JOIN file_versions v ON v.id=j.version_id JOIN resources r ON r.id=v.resource_id JOIN spaces s ON s.id=r.space_id WHERE CASE WHEN $2::uuid IS NULL THEN s.id=$1::uuid ELSE s.group_id=$2 END)+(SELECT coalesce(sum(a.bytes),0) FROM image_draft_assets a JOIN resources r ON r.id=a.resource_id JOIN spaces s ON s.id=r.space_id WHERE CASE WHEN $2::uuid IS NULL THEN s.id=$1::uuid ELSE s.group_id=$2 END)+(SELECT coalesce(sum(f.bytes),0) FROM site_release_files f JOIN site_releases r ON r.id=f.release_id JOIN workspace_sites w ON w.id=r.site_id JOIN spaces s ON s.id=w.space_id WHERE CASE WHEN $2::uuid IS NULL THEN s.id=$1::uuid ELSE s.group_id=$2 END) AS bytes`,
       [spaceId, scope.group_id, excludeUploadId],
     );
     if (Number(usage.bytes) + newBytes > Number(budget.quota_bytes))
@@ -113,7 +114,7 @@ export async function uploadsApi(
   if (endpoint === "uploads" && !id && method === "GET")
     return json(
       await query(
-        "SELECT u.id,u.space_id,u.parent_id,u.resource_id,u.expected_version_id,u.expected_resource_version,u.name,u.bytes,u.status,u.error,u.completed_resource_id,u.created_at,u.expires_at,coalesce((SELECT sum(c.bytes) FROM upload_chunks c WHERE c.upload_id=u.id),0) AS received FROM upload_sessions u WHERE u.owner_id=$1 AND axiom_space_role($1,u.space_id)='editor' ORDER BY u.created_at DESC LIMIT 100",
+        "SELECT u.id,u.space_id,u.parent_id,u.resource_id,u.expected_version_id,u.expected_resource_version,u.name,u.bytes,u.status,u.error,u.completed_resource_id,u.completed_version_id,u.created_at,u.expires_at,coalesce((SELECT sum(c.bytes) FROM upload_chunks c WHERE c.upload_id=u.id),0) AS received FROM upload_sessions u WHERE u.owner_id=$1 AND axiom_space_role($1,u.space_id)='editor' ORDER BY u.created_at DESC LIMIT 100",
         [userId],
       ),
     );
@@ -248,6 +249,7 @@ export async function uploadsApi(
         status: upload.status,
         error: upload.error,
         resourceId: upload.completed_resource_id,
+        versionId: upload.completed_version_id,
         expiresAt: upload.expires_at,
         chunkBytes: UPLOAD_CHUNK_BYTES,
         chunks,
@@ -672,8 +674,8 @@ export async function finishUpload(id: string) {
       }
     }
     await client.query(
-      "UPDATE upload_sessions SET status='complete',completed_resource_id=$2,sha256=$3,error=NULL,updated_at=now() WHERE id=$1",
-      [id, resourceId, verified.sha256],
+      "UPDATE upload_sessions SET status='complete',completed_resource_id=$2,sha256=$3,completed_version_id=$4,error=NULL,updated_at=now() WHERE id=$1",
+      [id, resourceId, verified.sha256, versionId],
     );
     await recordActivity(client, {
       spaceId: upload.space_id,

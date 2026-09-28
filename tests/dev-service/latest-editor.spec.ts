@@ -10,6 +10,11 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { signInOwner } from "../e2e/auth";
 import { measureTaskLayout } from "../helpers/task-layout";
+import {
+  expectSheetBlock,
+  expectSheetField,
+  sheetSpecimen,
+} from "../helpers/editor-sheet";
 
 const origin = "http://localhost:8080";
 let cookies: Awaited<ReturnType<BrowserContext["cookies"]>>;
@@ -29,6 +34,12 @@ for (const file of [
   "packages/shared/src/editor.ts",
   "apps/web/app/editor-vnext.css",
   "apps/web/app/editor-paper.css",
+  "apps/web/app/styles.ts",
+  "apps/web/app/globals.css",
+  "apps/web/app/appearance.css",
+  "apps/web/app/workspace-design.css",
+  "apps/web/app/workbench.css",
+  "apps/web/lib/editor-vnext/property-table.ts",
   "apps/web/lib/editor-vnext/chrome.ts",
   "apps/web/lib/editor-vnext/table-panel.ts",
   "apps/web/lib/editor-popover.ts",
@@ -1124,6 +1135,76 @@ test("8080 supports TeX delimiters and rendered task toggles in the disposable s
       .replace("\\label{energy}\n", "\\label{energy}\n> \\text{for }m>0\n")
       .split("\n"),
   );
+  expect(errors).toEqual([]);
+});
+
+test("8080 keeps a single sheet for property fields and code/math editing", async ({
+  page,
+}, info) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  const preferences = async () =>
+    digest(
+      await (await page.request.get("/api/v1/me/preferences-bundle")).text(),
+    );
+  const before = await preferences();
+  await page.goto("/workbench/settings/theme");
+  const scratchpad = page.locator(".settings-scratchpad");
+  await scratchpad.getByRole("button", { name: "Source", exact: true }).click();
+  await scratchpad.locator(".cm-content").click();
+  await page.keyboard.press("ControlOrMeta+a");
+  await page.keyboard.insertText(sheetSpecimen);
+  await scratchpad.getByRole("button", { name: "Write", exact: true }).click();
+  for (const [theme, mode] of [
+    ["Paper Ink", "light"],
+    ["Night Paper", "dark"],
+  ]) {
+    await page
+      .getByRole("button", { name: "Use " + theme + " theme", exact: true })
+      .click();
+    for (const field of await scratchpad
+      .locator(".editor-property-input")
+      .all()) {
+      await expectSheetField(field);
+      await field.hover();
+      await expectSheetField(field);
+      await field.focus();
+      await expectSheetField(field);
+      await expect(field.locator("..")).toHaveCSS("outline-width", "2px");
+    }
+    await scratchpad.getByLabel("Destination", { exact: true }).focus();
+    await capture(page, info, "single-sheet-properties-" + mode);
+    const code = scratchpad.locator('.axiom-embedded[data-kind="codeBlock"]');
+    await code.locator(".cm-content").focus();
+    await expectSheetBlock(code);
+    await code.getByRole("button", { name: "Change code language" }).click();
+    await expectSheetField(code.getByLabel("Code language", { exact: true }));
+    await page.keyboard.press("Escape");
+    const math = scratchpad.locator('.axiom-embedded[data-kind="mathBlock"]');
+    await math
+      .getByRole("button", { name: "Edit display equation", exact: true })
+      .click();
+    await expectSheetBlock(math);
+    await capture(page, info, "single-sheet-math-code-" + mode);
+    await scratchpad.getByRole("button", { name: "Read", exact: true }).click();
+    await expect(scratchpad.locator("pre")).toHaveCSS(
+      "background-color",
+      "rgba(0, 0, 0, 0)",
+    );
+    await expect(scratchpad.locator("pre code")).toHaveCSS(
+      "background-color",
+      "rgba(0, 0, 0, 0)",
+    );
+    await scratchpad
+      .getByRole("button", { name: "Write", exact: true })
+      .click();
+  }
+  await scratchpad.getByRole("button", { name: "Source", exact: true }).click();
+  expect(
+    (await scratchpad.locator(".cm-line").allTextContents()).join("\n"),
+  ).toBe(sheetSpecimen);
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
+  expect(await preferences()).toBe(before);
   expect(errors).toEqual([]);
 });
 

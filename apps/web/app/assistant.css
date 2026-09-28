@@ -1,4 +1,69 @@
 /* A quiet research rail: the document stays mounted, the composer stays reachable. */
+.assistant-mode-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 16px 12px;
+}
+.assistant-mode-bar label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: .82em;
+}
+.assistant-mode-bar select { min-width: 0; padding: 6px 8px; }
+.assistant-scope-consent {
+  border-left: 2px solid var(--accent);
+  background: var(--accent-bg);
+  padding: 12px 16px;
+  line-height: 1.65;
+}
+.assistant-activity { font-size: .8em; color: var(--muted); margin: 12px 0; }
+.assistant-activity ol { padding-left: 20px; line-height: 1.8; }
+.dialog.change-set-dialog { width: min(1180px, 95vw); max-width: min(1180px, 95vw); }
+.change-set-dialog .dialog-body { overflow: hidden; display: flex; flex-direction: column; min-height: 0; }
+.change-set-summary { display: flex; align-items: center; gap: 10px; padding-bottom: 14px; color: var(--muted); font-size: .85em; }
+.change-set-summary > span { flex: 1; }
+.change-set-layout { display: grid; grid-template-columns: 250px minmax(0, 1fr); min-height: 350px; height: min(64vh, 700px); border-top: 1px solid var(--line); }
+.change-set-list { overflow: auto; padding: 12px 12px 12px 0; border-right: 1px solid var(--line); scrollbar-width: thin; }
+.change-set-list > div { display: flex; align-items: flex-start; gap: 8px; padding: 9px; border-radius: var(--control-radius-small); margin-bottom: 3px; }
+.change-set-list > div.is-active { background: var(--accent-bg); }
+.change-set-list input { margin: 4px 0 0; flex-shrink: 0; accent-color: var(--accent); }
+.change-set-list button { display: flex; align-items: flex-start; gap: 8px; border: 0; background: none; color: var(--text); text-align: left; font: inherit; padding: 0; min-width: 0; flex: 1; font-size: .84em; }
+.change-set-list button > svg { margin-top: 2px; flex-shrink: 0; color: var(--muted); }
+.change-set-list button > span { min-width: 0; overflow-wrap: anywhere; }
+.change-set-list small { display: block; color: var(--muted); font-size: .88em; margin-top: 4px; }
+.change-set-detail { overflow: auto; min-width: 0; padding: 18px 0 20px 22px; scrollbar-width: thin; }
+.change-set-detail h3 { margin-top: 0; font-size: 1.05em; }
+.change-set-fields { display: grid; gap: 12px; margin: 16px 0 22px; }
+.change-set-fields label { display: flex; flex-direction: column; gap: 6px; font-size: .84em; color: var(--muted); }
+.change-set-fields :is(input, select, textarea) { width: 100%; box-sizing: border-box; }
+.change-set-fields textarea { font-family: var(--code-font); font-size: .93em; line-height: 1.6; resize: vertical; min-height: 70px; }
+.change-set-dates { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.change-set-exact { margin-top: 18px; font-size: .8em; color: var(--muted); }
+.change-set-exact pre, .change-set-schedule pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 250px; overflow: auto; font-size: .9em; }
+.change-set-result { display: flex; align-items: center; gap: 8px; margin: 14px 0; }
+.change-set-dialog .dialog-footer { flex-wrap: wrap; }
+.change-set-dialog .dialog-footer > label { flex: 1 0 100%; font-size: .85em; margin: 0 0 8px; }
+.change-set-canvas { width: 100%; max-height: 380px; background: var(--bg); }
+.change-set-canvas rect { fill: var(--panel); stroke: var(--line); }
+.change-set-canvas line { stroke: var(--muted); stroke-width: 2; }
+.change-set-canvas text { fill: var(--text); font-family: var(--ui-font); font-size: 14px; }
+.change-set-gantt { height: 470px; display: flex; flex-direction: column; min-width: 0; }
+.change-set-gantt > :last-child { flex: 1; min-height: 0; }
+.assistant-workflow-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; }
+.assistant-workflow-grid button { text-align: left; padding: 16px; border: 1px solid var(--line); border-radius: var(--control-radius); background: var(--panel); color: var(--text); font: inherit; transition: background .15s; }
+.assistant-workflow-grid button:hover { background: var(--hover); }
+.assistant-workflow-grid strong { display: block; font-size: .9em; margin-bottom: 8px; }
+.assistant-workflow-grid span { display: block; font-size: .8em; color: var(--muted); line-height: 1.6; }
+.assistant-workflow-custom { margin: 22px 0; }
+.assistant-workflow-custom header, .assistant-workflow-custom > div { display: flex; align-items: center; gap: 8px; }
+.assistant-workflow-custom header { justify-content: space-between; }
+.assistant-workflow-custom > div > button:first-child { flex: 1; text-align: left; border: none; background: none; padding: 10px 0; color: var(--text); }
+.assistant-change-history { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 14px; border: none; border-bottom: 1px solid var(--line); background: none; color: var(--text); padding: 12px 0; text-align: left; }
+.assistant-change-history small { color: var(--muted); flex-shrink: 0; }
 .assistant-panel {
   position: relative;
   display: flex;

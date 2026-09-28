@@ -10,6 +10,7 @@ export default tseslint.config(
       ".local-db/**",
       "data/**", // Runtime storage and verified release/backup artifacts, not source.
       "apps/web/public/tool-assets/pdfjs/**", // Unmodified, generated PDF.js distribution assets.
+      "apps/publish/dist/**", // Generated, independently bundled public readers.
     ],
   },
   ...tseslint.configs.recommended,

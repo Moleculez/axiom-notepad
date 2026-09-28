@@ -98,9 +98,10 @@ a {
 button {
   text-align: inherit;
 }
-input,
-textarea,
-select {
+/* Document fields belong to their cell, not the application's form system. */
+input:not(:where([data-editor-field])),
+textarea:not(:where([data-editor-field])),
+select:not(:where([data-editor-field])) {
   border: 1px solid var(--line);
   background: var(--paper);
   border-radius: 6px;
@@ -109,9 +110,9 @@ select {
   outline: none;
   transition: border-color 0.15s;
 }
-input:focus,
-textarea:focus,
-select:focus {
+input:not(:where([data-editor-field])):focus,
+textarea:not(:where([data-editor-field])):focus,
+select:not(:where([data-editor-field])):focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 10%, transparent);
 }

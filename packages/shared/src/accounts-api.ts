@@ -367,9 +367,17 @@ export async function accountsApi(
         [id],
       );
       totals.drafts = drafts.bytes;
+      const [publications] = await query(
+        "SELECT coalesce(sum(f.bytes),0) AS bytes FROM site_release_files f JOIN site_releases r ON r.id=f.release_id JOIN workspace_sites w ON w.id=r.site_id WHERE w.space_id=$1",
+        [id],
+      );
+      totals.publications = publications.bytes;
       totals.previews = derivatives.bytes;
       totals.bytes = String(
-        BigInt(totals.bytes) + BigInt(drafts.bytes) + BigInt(derivatives.bytes),
+        BigInt(totals.bytes) +
+          BigInt(drafts.bytes) +
+          BigInt(derivatives.bytes) +
+          BigInt(publications.bytes),
       );
       const [budget] = space.group_id
         ? await query(

@@ -83,6 +83,9 @@ const ProjectsPage = dynamic(
   () => import("./UnifiedWorkspace").then((m) => m.LegacyProjectRedirect),
   { loading: pageLoading },
 );
+const SettingsRail = dynamic(() =>
+  import("./Settings").then((m) => m.SettingsNavigation),
+);
 const SettingsPage = dynamic(() => import("./Settings"), {
   loading: pageLoading,
 });
@@ -119,6 +122,7 @@ import {
 } from "./ui";
 
 export default function WorkspaceApp() {
+  const [settingsRail, setSettingsRail] = useState(true);
   const [session, setSession] = useState<Session | null>(null),
     [booting, setBooting] = useState(true),
     [error, setError] = useState(""),
@@ -533,6 +537,9 @@ export default function WorkspaceApp() {
         navigate,
         open,
         upload: transfers.add,
+        uploadBatch: transfers.addBatch,
+        transfers: transfers.transfers,
+        showUploads: () => transfers.setShown(true),
         appearance,
         editorSettings,
         notify: setNotice,
@@ -540,7 +547,7 @@ export default function WorkspaceApp() {
     >
       <WorkspaceSessionsContext.Provider value={workSessions}>
         <DialogFocusBoundary
-          className={`ws-app ${sidebar ? "sidebar-open" : ""}`}
+          className={`ws-app ${page === "settings" ? "settings-open" : ""} ${(page === "settings" ? settingsRail : sidebar) ? "sidebar-open" : ""}`}
         >
           <ManagementProvider>
             <VisualViewerHost />
@@ -553,9 +560,17 @@ export default function WorkspaceApp() {
               <div className="ws-brand-area">
                 <button
                   className="icon-button"
-                  aria-label="Toggle workspace sidebar"
-                  aria-expanded={sidebar}
-                  onClick={() => setSidebar(!sidebar)}
+                  aria-label={
+                    page === "settings"
+                      ? "Toggle settings navigation"
+                      : "Toggle workspace sidebar"
+                  }
+                  aria-expanded={page === "settings" ? settingsRail : sidebar}
+                  onClick={() =>
+                    page === "settings"
+                      ? setSettingsRail(!settingsRail)
+                      : setSidebar(!sidebar)
+                  }
                 >
                   <Menu size={19} />
                 </button>
@@ -668,7 +683,18 @@ export default function WorkspaceApp() {
               </div>
             )}
             <div className="ws-body">
-              {sidebar && (
+              {page === "settings" && settingsRail && (
+                <aside
+                  className="settings-rail"
+                  aria-label="Settings navigation"
+                >
+                  <div className="ws-sidebar-heading">
+                    <strong>Settings</strong>
+                  </div>
+                  <SettingsRail />
+                </aside>
+              )}
+              {sidebar && page !== "settings" && (
                 <>
                   <button
                     className="ws-sidebar-scrim"

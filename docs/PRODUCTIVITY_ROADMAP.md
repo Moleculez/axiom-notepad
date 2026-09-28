@@ -6,6 +6,20 @@ group-admin features remain in place. No new Office editing engine is introduced
 
 ## Implemented in this increment
 
+- [Workspace websites](WORKSPACE_WEBSITES.md): personal/team identities, selected
+  research content, template/section design, frozen private review, manager-approved
+  publication/rollback, static ZIP export and verified-domain routing. Real DNS/TLS,
+  container recovery and broad public-viewer acceptance remain deployment gates.
+- Publication reading and discovery: LaTeX-first theme gallery and live specimens,
+  hierarchical floating TOC, section sharing, word/read-time statistics, topic index,
+  related/adjacent articles and filterable timeline archives. Private editorial and
+  readership analytics include comparisons, CSV, manager-controlled public counters
+  and optional consent-gated GA4 embedding. Collection is disabled by default.
+- Settings uses a searchable replacement rail and one shared page frame.
+  Axiom, Material Tonal, Fluent Studio and Editorial presentations change component
+  styling independently of palette packs and reading typography. Processing-provider
+  dialogs have grouped aligned fields, a fixed footer and guarded draft dismissal.
+
 - Shared context-menu normalization: at most eight root actions, named categories,
   one submenu level, icons/dividers, hidden irrelevant actions and preserved
   keyboard dismissal/focus restoration. Explorer/file/workspace actions use quieter

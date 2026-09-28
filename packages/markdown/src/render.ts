@@ -2,6 +2,7 @@ import { documentIndex } from "./document-index";
 import { sectionNumberAttributes } from "./section-numbers";
 import { mathRequest } from "./math-contract";
 import { metadataModel } from "./metadata";
+import { mediaAsset } from "./media";
 import hljs from "highlight.js/lib/common";
 import julia from "highlight.js/lib/languages/julia";
 import latex from "highlight.js/lib/languages/latex";
@@ -269,7 +270,42 @@ export function renderDocument(
           })
           .join("")}</${tag}>\n`;
       }
+      case "media": {
+        const asset = mediaAsset(n),
+          options = n.media;
+        if (!asset || !options) return children(n);
+        const caption = (n.children ?? [])
+          .slice(1)
+          .map((child) => render(child))
+          .join("");
+        const alignment = options.align ?? "center";
+        const width = options.width ?? 100;
+        const label = n.key ? ` id="${attr(n.key)}"` : "";
+        const href = safeUrl(asset.href ?? "");
+        const inline =
+          context.visuals &&
+          !context.disableImages &&
+          options.display === "preview" &&
+          /^\/api\/v1\/attachments\/[a-f\d-]{36}(?:[?#]|$)/i.test(href);
+        const preview =
+          inline && options.mime === "application/pdf"
+            ? `<iframe loading="lazy" title="PDF attachment preview" src="${attr(href)}"></iframe>`
+            : inline && /^(audio|video)\//.test(options.mime ?? "")
+              ? `<${options.mime!.startsWith("audio/") ? "audio" : "video"} controls preload="none" src="${attr(href)}"></${options.mime!.startsWith("audio/") ? "audio" : "video"}>`
+              : "";
+        const body =
+          (preview
+            ? `<div class="document-inline-preview">${preview}</div>`
+            : "") + render(asset);
+        return `<figure class="document-media media-${options.display}"${label}${blockAttrs(n)} data-media-from="${n.from}" data-media-to="${n.to}" data-media-display="${options.display}" style="--media-width:${width}%;--media-align:${alignment}"><div class="document-media-content">${body}</div>${caption || n.count ? `<figcaption>${n.count ? `<span class="figure-number">Figure ${n.count}.</span> ` : ""}${caption}</figcaption>` : ""}</figure>\n`;
+      }
       case "link":
+        if (
+          n.href?.startsWith("#fig-") &&
+          plainText(n) === "Figure" &&
+          whole.figures?.[n.href.slice(1)]
+        )
+          return `<a class="figure-ref" href="${attr(n.href)}">Figure ${whole.figures[n.href.slice(1)]}</a>`;
         return `<a href="${attr(uri(exact ? (n.href ?? "") : safeUrl(n.href ?? "")))}"${n.title !== undefined ? ` title="${attr(n.title)}"` : ""}${!exact && /^https?:/.test(n.href ?? "") ? ' target="_blank" rel="noopener noreferrer"' : ""}>${children(n)}</a>`;
       case "image": {
         if (context.disableImages)

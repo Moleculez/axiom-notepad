@@ -1,0 +1,75 @@
+/* Server-rendered Highlight.js tokens; no runtime highlighting dependency.
+ * Palette follows color-scheme, including the visitor's system preference. */
+:root {
+  --code-keyword: light-dark(#762d91, #d9b0ed);
+  --code-string: light-dark(#236844, #a5d5a9);
+  --code-number: light-dark(#985114, #f1c18d);
+  --code-function: light-dark(#245d97, #9ac9f3);
+  --code-comment: light-dark(#637078, #9ba9b5);
+  --code-attribute: light-dark(#8a394d, #e7a8b7);
+  --code-meta: light-dark(#645099, #c9b8ee);
+}
+main pre > code {
+  color: var(--ink);
+  tab-size: 4;
+}
+main pre :is(.hljs-keyword, .hljs-selector-tag, .hljs-literal, .hljs-type) {
+  color: var(--code-keyword);
+}
+main pre :is(.hljs-string, .hljs-regexp, .hljs-addition, .hljs-template-tag) {
+  color: var(--code-string);
+}
+main pre :is(.hljs-number, .hljs-symbol, .hljs-bullet, .hljs-variable) {
+  color: var(--code-number);
+}
+main
+  pre
+  :is(
+    .hljs-title,
+    .hljs-section,
+    .hljs-built_in,
+    .hljs-selector-id,
+    .hljs-selector-class
+  ) {
+  color: var(--code-function);
+}
+main pre :is(.hljs-comment, .hljs-quote, .hljs-doctag) {
+  color: var(--code-comment);
+  font-style: italic;
+}
+main pre :is(.hljs-attr, .hljs-attribute, .hljs-name, .hljs-deletion) {
+  color: var(--code-attribute);
+}
+main pre :is(.hljs-meta, .hljs-meta .hljs-keyword, .hljs-template-variable) {
+  color: var(--code-meta);
+}
+main pre .hljs-meta .hljs-string {
+  color: var(--code-string);
+}
+main pre .hljs-emphasis {
+  font-style: italic;
+}
+main pre .hljs-strong {
+  font-weight: 700;
+}
+main pre .hljs-deletion {
+  text-decoration: line-through;
+}
+main pre .hljs-addition {
+  text-decoration: underline;
+  text-decoration-style: dotted;
+}
+@media print {
+  :root {
+    --code-keyword: #762d91;
+    --code-string: #236844;
+    --code-number: #985114;
+    --code-function: #245d97;
+    --code-comment: #637078;
+    --code-attribute: #8a394d;
+    --code-meta: #645099;
+  }
+  main pre > code {
+    color: #242424;
+  }
+}

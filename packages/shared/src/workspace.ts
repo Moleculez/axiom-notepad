@@ -99,6 +99,7 @@ export function spaceLifecycleActions(
   return actions;
 }
 export interface Resource {
+  reference_code?: string | null;
   document_type?: "markdown" | "math" | "text" | "canvas" | "image";
   id: string;
   space_id: string;

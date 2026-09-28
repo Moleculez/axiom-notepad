@@ -12,10 +12,18 @@ focus indicators; scrollbars never displace the other pane or shared actions.
 
 ## Preview and navigation
 
-- The workspace tree remains visible on every page. Account, Appearance, Writing
-  and Storage are grouped inside Settings, with the selected group's categories
-  below them. Restoring an inactive Settings tab does not load its editor preview
-  until first visited; after visiting, drafts survive navigation between pages.
+- A searchable grouped settings rail temporarily replaces the workspace sidebar.
+  Account, Appearance, Writing and Storage stay visible in one list. Back to
+  workspace restores the saved sidebar state/width; the settings rail does not
+  overwrite it. Every category uses the same full-width outer frame. Appearance
+  and Writing add the live split preview within that frame.
+- **Appearance → Theme → Interface style** offers Axiom, Material Tonal, Fluent
+  Studio and Editorial component treatments. These affect controls, selection,
+  navigation and surfaces—not just colors. Palette packs, custom colors, reading
+  fonts, explicit shape/effect preferences and website templates stay independent.
+  Public website reading preferences, six additional visual themes and privacy
+  controls live under **Workspace → Website → Design / Analytics**, not the private
+  application’s Appearance settings. See [website settings](WORKSPACE_WEBSITES.md).
 
 - **Appearance → General → Show block ranges** controls the quiet vertical
   guides in visual editors. Enabled by default; nested ranges step inward and
@@ -121,9 +129,11 @@ reload unless saved; closing a dirty Settings tab prompts before discarding them
 ## Implementation and verification
 
 `SettingsSplitPanel.tsx` owns pointer/keyboard resizing; `settings.css` scopes the
-layout and form treatment. Appearance schema 9 adds PDF-reader defaults, retaining
+layout and form treatment; `interface-styles.css` owns the common settings rail,
+frame and component presentations. Appearance schema 10 adds `interfaceStyle`,
+defaulting to Axiom, while schema 9 adds PDF-reader defaults, retaining
 nested minimap preferences from schema 8, the reading-mark toggles from schema 7
-and `blockGuides` from schema 6. Versions 1–8 migrate without dropping
+and `blockGuides` from schema 6. Versions 1–9 migrate without dropping
 saved choices; older readers receive a compatible shape, and stale writes are
 rejected with 426.
 Save, cancel, section reset, offline merging and previous preferences include it.
@@ -131,6 +141,13 @@ The appearance update needs no database migration, document format or new
 dependency; annotation threads separately require migration 19. Divider and
 control focus remain visible; reduced-motion and forced-color preferences are
 respected.
+
+Research processing provider configuration is grouped into Connection,
+Credentials & limits, and Capabilities & availability, with aligned fields and
+a fixed action footer. Closing a changed dialog offers Keep editing / Discard;
+discard clears an entered credential. The existing encrypted server-side storage
+and explicit-submission policy are unchanged. Credentials are never saved as
+browser drafts.
 
 `tests/e2e/settings-panels.spec.ts` checks independent scrolling, resizing,
 preview preservation, desktop overflow, search, shortcut focus, account form

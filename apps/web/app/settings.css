@@ -172,6 +172,13 @@
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr));
   gap: 22px 18px;
 }
+.settings-panel-resize-hint {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.83em;
+  line-height: 1.6;
+}
 .settings-stage .setting-control {
   margin-bottom: 14px;
   min-width: 0;

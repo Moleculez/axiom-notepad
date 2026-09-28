@@ -137,7 +137,7 @@ export function projectMarkdown(
       to = node.to;
     if (revealedImage(node)) return sourceText(from, to, inherited);
     if (
-      [
+      ([
         "mathInline",
         "image",
         "wikiLink",
@@ -145,7 +145,11 @@ export function projectMarkdown(
         "equationRef",
         "footnoteRef",
         "emoji",
-      ].includes(node.type) &&
+      ].includes(node.type) ||
+        (node.type === "link" &&
+          node.href?.startsWith("#fig-") &&
+          node.children?.map((child) => child.text ?? "").join("") ===
+            "Figure")) &&
       (node.type === "image" || !active(node))
     ) {
       const start = position++;
@@ -303,6 +307,16 @@ export function projectMarkdown(
     return result;
   };
   const block = (node: MarkdownNode): ProseNode => {
+    if (node.type === "media" && node.media)
+      return container(node, "media", {
+        display: node.media.display,
+        label: node.key ?? null,
+        width: node.media.width ?? 100,
+        align: node.media.align ?? "center",
+        number: node.count ?? null,
+        href: node.children?.[0]?.children?.[0]?.href ?? "",
+        mime: node.media.mime ?? "",
+      });
     if (
       options.folded?.some(
         (range) =>

@@ -1,4 +1,5 @@
 import { decodeHTMLStrict } from "entities";
+import { collectMedia } from "./media";
 import type { Dialect, MarkdownNode as N, ParsedDocument } from "./types";
 
 type Line = {
@@ -20,13 +21,14 @@ type Context = {
 const blank = (s: string) => /^[ \t]*$/.test(s);
 const punctuation = (s: string) => /[\p{P}\p{S}]/u.test(s);
 const whitespace = (s: string) => !s || /\s/u.test(s);
-const normalize = (s: string) =>
+export const normalizeReferenceLabel = (s: string) =>
   s
     .trim()
     .replace(/\s+/g, " ")
     .toLowerCase()
     .replace(/ß/g, "ss")
     .replace(/ς/g, "σ");
+const normalize = normalizeReferenceLabel;
 const unescape = (s: string) =>
   s.replace(
     /\\([!"#$%&'()*+,\-./:;<=>?@[\]\\^_`{|}~])|&(?:#[xX][a-fA-F0-9]{1,6}|#[0-9]{1,7}|[A-Za-z][A-Za-z0-9]{1,31});/g,
@@ -1449,6 +1451,7 @@ export function plainText(n: N): string {
         .join(
           [
             "document",
+            "media",
             "blockquote",
             "callout",
             "list",
@@ -1539,6 +1542,7 @@ export function parseMarkdown(
   };
   visit(ast);
   Object.values(ctx.footnotes).forEach((ns) => ns.forEach(visit));
+  if (dialect === "stem-v1") collectMedia(parsed);
   if (ctx.budget.limited)
     parsed.diagnostics.push({
       from: 0,

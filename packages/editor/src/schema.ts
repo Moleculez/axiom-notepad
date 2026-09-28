@@ -8,6 +8,34 @@ import {
 // every later node view. The projection owns offsets, not the rich document.
 export const nodes: Record<string, NodeSpec> = {
   doc: { content: "block+" },
+  media: {
+    group: "block",
+    content: "block+",
+    defining: true,
+    isolating: true,
+    attrs: {
+      display: { default: "card" },
+      label: { default: null },
+      width: { default: 100 },
+      align: { default: "center" },
+      number: { default: null },
+      href: { default: "" },
+      mime: { default: "" },
+    },
+    toDOM: (node) => [
+      "figure",
+      {
+        class: `document-media media-${node.attrs.display}`,
+        "data-media-display": node.attrs.display,
+        ...(node.attrs.label ? { id: node.attrs.label } : {}),
+        ...(node.attrs.number
+          ? { "data-figure-number": `Figure ${node.attrs.number}.` }
+          : {}),
+        style: `--media-width:${node.attrs.width}%;--media-align:${node.attrs.align}`,
+      },
+      ["div", { class: "document-media-content" }, 0],
+    ],
+  },
   folded_block: {
     group: "block",
     atom: true,
@@ -233,7 +261,12 @@ export const marks: Record<string, MarkSpec> = {
     inclusive: false,
     toDOM: (n) => [
       "span",
-      { class: "axiom-inline-link", "data-target": n.attrs.target },
+      {
+        class: "axiom-inline-link",
+        "data-target": n.attrs.target,
+        role: "link",
+        tabindex: "0",
+      },
       0,
     ],
   },
