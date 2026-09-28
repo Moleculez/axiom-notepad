@@ -1,4 +1,5 @@
 import { randomUUID, createHash } from "node:crypto";
+import type pg from "pg";
 import { z } from "zod";
 import { query, transaction } from "./db";
 import { resourceAccess, spaceAccess, HttpError } from "./access";
@@ -29,6 +30,7 @@ export async function researchToolsApi(
   request: Request,
   path: string[],
   userId: string,
+  beforeCreate?: (client: pg.PoolClient) => Promise<void>,
 ): Promise<Response | null> {
   const [endpoint, id, action] = path,
     method = request.method;
@@ -84,6 +86,7 @@ export async function researchToolsApi(
         input,
         async (client) => {
           await requireScope(client, userId, space.id, "edit");
+          await beforeCreate?.(client);
           const resourceId = input.id ?? randomUUID();
           if (input.parentId) {
             const {

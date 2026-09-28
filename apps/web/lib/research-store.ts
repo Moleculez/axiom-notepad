@@ -651,6 +651,7 @@ export function useResearch(userId?: string, groupId?: string) {
                 ? r.value.id === existing.id
                 : ["progress", "reading"].includes(kind) &&
                   (r.value as ReadingItem).kind === kind &&
+                  (r.value as ReadingItem).target_type === target_type &&
                   (r.value as ReadingItem).target_id === target_id),
           ) as ResearchEntry | undefined
         )?.value as ReadingItem | undefined) ?? existing;

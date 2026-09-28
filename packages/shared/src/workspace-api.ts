@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import type pg from "pg";
 import { z } from "zod";
 import { query } from "./db";
 import { fileRoute } from "./file-routes";
@@ -35,6 +36,7 @@ export async function workspaceApi(
   request: Request,
   path: string[],
   userId: string,
+  beforeCreate?: (client: pg.PoolClient) => Promise<void>,
 ): Promise<Response | null> {
   const [endpoint, id, action] = path,
     method = request.method,
@@ -272,6 +274,7 @@ export async function workspaceApi(
       input,
       async (client) => {
         await requireScope(client, userId, input.spaceId, "edit");
+        await beforeCreate?.(client);
         if (input.parentId) {
           const {
             rows: [parent],

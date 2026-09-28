@@ -1,6 +1,7 @@
 import { tabRoute, tabTitle } from "./application-tabs";
 import { fileRouteId, isFileView } from "./file-routes";
 import type { ResourceLocation, Space } from "./workspace";
+import { docArticle, docSections } from "./documentation";
 
 export type LocationCrumb = { label: string; to?: string };
 export function folderRoute(spaceId: string, folderId?: string | null) {
@@ -46,6 +47,21 @@ export function workspaceLocation({
         ? "/explorer?view=all"
         : tabRoute(`/${section}`);
   const first: LocationCrumb = { label: tabTitle(root), to: root };
+  if (section === "docs" && parts[1]) {
+    const category = docSections.find(([id]) => id === parts[1]);
+    const article = docArticle(parts.slice(1).join("/"));
+    return {
+      crumbs: [
+        first,
+        {
+          label: category?.[1] ?? "Guide",
+          ...(article ? { to: `/docs/${parts[1]}` } : {}),
+        },
+        ...(article ? [{ label: article.title }] : []),
+      ],
+      up: article ? `/docs/${parts[1]}` : "/docs",
+    };
+  }
   if (section === "groups" && parts[1] && parts[2] === "planning") {
     return {
       crumbs: [

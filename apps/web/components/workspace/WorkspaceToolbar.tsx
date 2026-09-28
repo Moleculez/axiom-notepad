@@ -50,7 +50,9 @@ import {
 export const destinations = [
   ["/home", "Home", "Recent work and your day", Home],
   ["/explorer", "Explorer", "Notes, folders and files", FolderOpen],
-  ["/research", "Research", "References and connections", BookOpen],
+  ["/research", "Research", "Reading queue, evidence and synthesis", BookOpen],
+  ["/research/references", "Reference library", "Shared bibliography and citations", BookOpen],
+  ["/docs", "Docs", "Product guides and safe interactive examples", BookOpen],
   ["/groups", "Groups", "Create, join and manage your groups", Users],
   [
     "/workspaces",

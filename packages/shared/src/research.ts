@@ -183,7 +183,7 @@ export const readingInputSchema = z
     (v) =>
       (v.kind === "filter" && v.target_type === "group") ||
       (v.kind === "reading" &&
-        v.target_type === "reference" &&
+        ["reference", "attachment"].includes(v.target_type) &&
         !!v.data.status) ||
       (["bookmark", "progress"].includes(v.kind) &&
         ["note", "attachment"].includes(v.target_type)),

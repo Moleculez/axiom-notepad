@@ -5,6 +5,7 @@ import { openAssistant } from "../../lib/assistant";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ChevronDown,
+  BookOpen,
   Bell,
   LogOut,
   Menu,
@@ -75,10 +76,12 @@ const PeoplePage = dynamic(
   () => import("./Pages").then((module) => module.PeoplePage),
   { loading: pageLoading },
 );
-const ResearchPage = dynamic(
-  () => import("./Pages").then((module) => module.ResearchPage),
-  { loading: pageLoading },
-);
+const ResearchPage = dynamic(() => import("./ResearchWorkbench"), {
+  loading: pageLoading,
+});
+const Documentation = dynamic(() => import("./Documentation"), {
+  loading: pageLoading,
+});
 const ProjectsPage = dynamic(
   () => import("./UnifiedWorkspace").then((m) => m.LegacyProjectRedirect),
   { loading: pageLoading },
@@ -586,6 +589,15 @@ export default function WorkspaceApp() {
                 </WorkspaceLink>
               </div>
               <WorkspaceLocation />
+              <WorkspaceLink
+                className="workspace-docs-trigger"
+                to="/docs"
+                title="Product guide"
+                aria-label="Open Docs"
+              >
+                <BookOpen size={16} />
+                <span>Docs</span>
+              </WorkspaceLink>
               <button
                 className="workspace-command-trigger"
                 aria-label="Search workspace"
@@ -774,6 +786,8 @@ export default function WorkspaceApp() {
                   <Explorer />
                 ) : page === "projects" ? (
                   <ProjectsPage id={parts[1]} section={parts[2]} />
+                ) : page === "docs" ? (
+                  <Documentation />
                 ) : page === "research" ? (
                   parts[1] === "references" || parts[1] === "graph" ? (
                     <ResearchCollection view={parts[1]} />

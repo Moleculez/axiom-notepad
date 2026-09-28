@@ -20,6 +20,7 @@
     "start:publish": "dotenv -e .env -- tsx apps/publish/src/server.ts",
     "brand:build": "tsx scripts/build/brand.ts",
     "docs:assets": "tsx scripts/build/docs-assets.ts",
+    "docs:research-assets": "tsx scripts/build/docs-research-assets.ts",
     "setup": "tsx scripts/dev/setup.ts",
     "backup": "tsx scripts/ops/backup.ts",
     "reset:development": "tsx scripts/ops/reset-development.ts",

@@ -13,6 +13,46 @@ a performance benchmark. Current test evidence and release gates live in
 
 ## Feature tour
 
+### Learn in place, then gather evidence
+
+**Docs**, immediately left of Search & commands, keeps the workspace visible
+while introducing the editor, Canvas and the rest of Axiom. Thirty searchable
+chapters include real, disposable editor and Canvas examples. Keyboard shortcuts
+reflect the reader's effective preferences, not a second hardcoded list.
+
+Research now provides an evidence workbench instead of a collection of launchers.
+Overview, Reading queue and Evidence share group/personal and workspace filters.
+The Reference library is available directly in sidebar Quick access. Select
+papers, references or PDF annotations to preview a new research note or Canvas.
+This is a deterministic scaffold, not an AI-written result. Private-to-shared
+copying requires acknowledgement; linked originals keep their permissions.
+See [the guide and safety boundaries](PRODUCT_GUIDE.md).
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/showcase/docs-dark.png">
+  <img src="assets/showcase/docs-light.png" alt="In-app Markdown guide with chapter search, mathematics syntax and a section index. The Docs button sits left of Search and commands." width="1600" loading="lazy">
+</picture>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/showcase/docs-playground-dark.png">
+  <img src="assets/showcase/docs-playground-light.png" alt="Disposable Canvas example with editable question and evidence cards, a labeled connection and local-only controls." width="1600" loading="lazy">
+</picture>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/showcase/research-dark.png">
+  <img src="assets/showcase/research-light.png" alt="Fictional Spectral Lab evidence workbench with a private annotation, a bookmarked assumption, PDF reading progress and a private reading status." width="1600" loading="lazy">
+</picture>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/showcase/synthesis-dark.png">
+  <img src="assets/showcase/synthesis-light.png" alt="Exact synthesis preview with quoted evidence, source provenance and an unchecked acknowledgement before copying private text into a shared workspace." width="1600" loading="lazy">
+</picture>
+
+These September 28 captures use the production build and new fictional fixtures.
+The synthesis dialog is cancelled: no generated file or AI request is submitted
+by the capture. Automated acceptance separately tests confirmed note/Canvas
+creation, stale evidence, revoked annotation access and idempotent retries.
+
 ### Publish a reviewed research website
 
 Choose LaTeX Paper or Monograph for academic reading, Tufte for margin notes, or
@@ -247,6 +287,13 @@ credentials must stay out of documentation and Git. Repeated captures add new
 staging content instead of resetting or deleting prior fixtures.
 
 ## Composition and review
+
+To refresh only the Docs/Research gallery, start the isolated port-3004 web,
+sync and worker services, apply its migrations, then run
+`npm run docs:research-assets`. This additive capture uses the same staging-owner
+environment variables as the full gallery and writes a private receipt to
+`data/documentation-showcase/research-latest.json`. It never accepts the working
+8080 service. Keep the worker running so the specimen PDF can finish verification.
 
 [The editable banner layout](assets/banner.html) composes the raw screenshots in
 HTML/CSS. It loads installed Inter fonts locally, uses the shared SVG logo and

@@ -75,6 +75,7 @@ import { imageCloudApi } from "@axiom/shared/image-cloud-api";
 import { resourceReviewApi } from "@axiom/shared/resource-review-api";
 import { researchToolsApi } from "@axiom/shared/research-tools-api";
 import { fileCreateApi } from "@axiom/shared/file-create-api";
+import { researchWorkbenchApi } from "@axiom/shared/research-workbench-api";
 import { integrationApi } from "@axiom/shared/integration-api";
 import { offlineApi } from "@axiom/shared/offline-api";
 import { assertDataset, instanceApi } from "@axiom/shared/instance";
@@ -304,6 +305,8 @@ async function handleRequest(
       return await editorPreferencesApi(request, user.id);
     if (resource === "me" && id === "preferences-bundle")
       return await preferencesBundleApi(request, user.id);
+    const workbenchResearch = await researchWorkbenchApi(request, path, user.id);
+    if (workbenchResearch) return workbenchResearch;
     const research = await researchApi(request, path, user.id);
     if (research) return research;
     if (resource === "me" && !id && method === "GET")
@@ -355,7 +358,7 @@ async function handleRequest(
     }
     if (resource === "workspace" && method === "GET") {
       const groupId = uuid.parse(url.searchParams.get("groupId"));
-      await memberAccess(user.id, groupId);
+      const libraryMember = await memberAccess(user.id, groupId);
       const [projects, notes, references, members, notifications, links] =
         await Promise.all([
           query(
@@ -382,6 +385,7 @@ async function handleRequest(
         ]);
       return json({
         projects,
+        canEditLibrary: libraryMember.content_role === "editor",
         notes,
         references,
         members,

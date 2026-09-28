@@ -20,6 +20,14 @@ tested workflows from remaining device, accessibility and provider checks.
 
 ## Built for research
 
+- **Learn in place.** Docs beside Search & commands provides 30 searchable guides,
+  your current keyboard shortcuts, and disposable examples using the real editor
+  and Canvas engine. No example creates or synchronizes a file.
+- **Turn reading into a draft.** The [evidence workbench](docs/PRODUCT_GUIDE.md)
+  combines reading positions, standalone-PDF reading statuses, references,
+  annotations and bookmarks. Select evidence, preview a linked research note or
+  Canvas, and explicitly approve creation. Private-to-shared copies require
+  acknowledgement; source revisions and permissions are rechecked.
 - **Write with structure.** Collaborative Markdown, visual/source/read modes,
   display and inline LaTeX, chemistry, nested lists, tables, code, footnotes,
   citations, Mermaid and a hierarchical outline.
@@ -89,6 +97,15 @@ The [productivity roadmap](docs/PRODUCTIVITY_ROADMAP.md) separates this incremen
 from remaining provider acceptance, planning refinements and team-operation stages.
 
 ## From evidence to a reviewed plan
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/showcase/research-dark.png">
+  <img src="docs/assets/showcase/research-light.png" alt="Fictional Spectral Lab evidence workbench: private annotations, bookmarks, saved PDF reading progress and a reading queue." width="1600" loading="lazy">
+</picture>
+
+Open **Docs** beside Search & commands to learn the workflow with safe interactive
+examples. **Research** turns selected sources into a previewed note or Canvas;
+the [showcase](docs/SHOWCASE.md) includes the privacy acknowledgement and exact draft.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/showcase/planning-dark.png">
@@ -184,7 +201,7 @@ docker compose --env-file .env.production exec web node --import tsx scripts/ops
 
 Read [deployment, backups and upgrades](docs/DEPLOYMENT.md) before using real data.
 The current assistant and workspace publishing features require database migrations
-through **33**.
+through **34**.
 Back up database and stored files, stop old writers, migrate, and restart matching
 web/sync/worker/publish versions; do not mix old services with the new schema.
 Production configuration never loads the development `.env` into containers.

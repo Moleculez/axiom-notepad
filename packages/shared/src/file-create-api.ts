@@ -1,4 +1,5 @@
 import { randomUUID, createHash } from "node:crypto";
+import type pg from "pg";
 import { z } from "zod";
 import { fileTypeIds, fileTypes, sourceForNewFile } from "./file-types";
 import { resourceNameSchema } from "./workspace";
@@ -19,6 +20,7 @@ export async function fileCreateApi(
   request: Request,
   path: string[],
   userId: string,
+  beforeCreate?: (client: pg.PoolClient) => Promise<void>,
 ): Promise<Response | null> {
   if (path.join("/") !== "files/new" || request.method !== "POST") return null;
   const input = z
@@ -56,6 +58,7 @@ export async function fileCreateApi(
       forward({ ...body, kind: "note", body: body.source }),
       ["resources"],
       userId,
+      beforeCreate,
     );
   if (!["docx", "xlsx", "pptx"].includes(input.type))
     return researchToolsApi(
@@ -67,6 +70,7 @@ export async function fileCreateApi(
       }),
       ["tools"],
       userId,
+      beforeCreate,
     );
   await spaceAccess(userId, input.spaceId, "edit");
   const template = await officeTemplate(input.type as "docx" | "xlsx" | "pptx"),

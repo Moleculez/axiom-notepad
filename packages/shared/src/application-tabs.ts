@@ -4,6 +4,7 @@ import {
   normalizeFileRoute,
   fileRouteId,
 } from "./file-routes";
+import { docArticle } from "./documentation";
 /** Device-local navigation metadata only. Never persist invitation/security tokens. */
 export type ApplicationTab = {
   id: string;
@@ -69,6 +70,7 @@ const sections = new Set([
   "explorer",
   "projects",
   "research",
+  "docs",
   "tools",
   "inbox",
   "people",
@@ -105,6 +107,7 @@ const queries = new Set([
   "maxSize",
   "operation",
   "actor",
+  "author",
   "action",
   "entity",
   "task",
@@ -124,6 +127,10 @@ export function tabRoute(input: string): string {
     for (const [key, value] of url.searchParams)
       if (queries.has(key) && value.length <= 500) params.set(key, value);
     path = normalizeFileRoute(path, params);
+    if (path.startsWith("/research") && !params.has("groupId")) {
+      const group = url.searchParams.get("group");
+      if (group && group.length <= 500) params.set("groupId", group);
+    }
     if (/^\/(notes|files)\/?$/.test(path)) {
       params.set("kind", path.startsWith("/notes") ? "note" : "file");
       params.set("view", "all");
@@ -135,7 +142,10 @@ export function tabRoute(input: string): string {
       path = "/explorer";
     params.sort();
     const anchor =
-      fileRouteId(path) && /^#[\w%:.-]{1,200}$/.test(url.hash) ? url.hash : "";
+      (fileRouteId(path) || path.startsWith("/docs/")) &&
+      /^#[\w%:.-]{1,200}$/.test(url.hash)
+        ? url.hash
+        : "";
     return path + (params.size ? `?${params}` : "") + anchor;
   } catch {
     return "/home";
@@ -144,6 +154,12 @@ export function tabRoute(input: string): string {
 export function tabTitle(path: string) {
   const route = tabRoute(path),
     section = route.split(/[/?]/)[1];
+  if (section === "docs")
+    return (
+      docArticle(new URL(route, "http://workspace.local").pathname.slice(6))
+        ?.title ?? "Docs"
+    );
+  if (route.startsWith("/research/references")) return "Reference library";
   if (section === "explorer") {
     const params = new URL(route, "http://workspace.local").searchParams,
       view = params.get("view");

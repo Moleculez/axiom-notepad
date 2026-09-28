@@ -14,6 +14,7 @@ import {
 } from "./CanvasPreviews";
 
 type Props = {
+  sandbox?: boolean;
   node: CanvasNode;
   active: boolean;
   readOnly: boolean;
@@ -172,6 +173,18 @@ export default function CanvasCardContents(props: Props) {
   return (
     <div
       className="canvas-card-shell"
+      onClickCapture={(event) => {
+        if (props.sandbox && (event.target as Element).closest("a")) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+      }}
+      onAuxClickCapture={(event) => {
+        if (props.sandbox && (event.target as Element).closest("a")) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+      }}
       data-visual-resource={props.parentId}
       data-visual-path={JSON.stringify([node.id])}
       ref={host}
@@ -187,6 +200,7 @@ export default function CanvasCardContents(props: Props) {
       >
         {node.type === "text" ? (
           <CanvasTextCard
+            sandbox={props.sandbox}
             source={node.text}
             text={props.text}
             active={props.active}
@@ -204,7 +218,11 @@ export default function CanvasCardContents(props: Props) {
               {heading}
               {actions}
             </header>
-            {node.type === "file" ? (
+            {props.sandbox && (node.type === "file" || node.type === "link") ? (
+              <p className="canvas-placeholder">
+                External previews are disabled in this example.
+              </p>
+            ) : node.type === "file" ? (
               <CanvasResourcePreview
                 node={node}
                 active={props.active}
@@ -229,7 +247,7 @@ export default function CanvasCardContents(props: Props) {
         props.sizingOwner &&
         !props.readOnly && (
           <div className="canvas-size-measure" aria-hidden="true" inert>
-            <CanvasMarkdownPreview source={node.text} />
+            <CanvasMarkdownPreview source={node.text} sandbox={props.sandbox} />
           </div>
         )}
     </div>

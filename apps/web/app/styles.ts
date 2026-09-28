@@ -72,3 +72,5 @@ import "../../../packages/shared/assets/document-decorations.css";
 import "../../../packages/shared/assets/document-tasks.css";
 import "./interface-styles.css";
 import "./websites.css";
+import "./documentation.css";
+import "./research-workbench.css";

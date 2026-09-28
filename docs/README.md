@@ -7,6 +7,7 @@ not installation instructions or proof of today's test results.
 
 ## For researchers
 
+- [In-app Docs and evidence workbench](PRODUCT_GUIDE.md) — 30 guides, safe editor/Canvas examples, reading queues and previewed synthesis
 - [Workspace guide](WORKSPACE.md) — navigation, sharing, files and everyday limits
 - [Workspace websites](WORKSPACE_WEBSITES.md) — LaTeX-first themes, reviewed publishing, reading/discovery tools, private author analytics, static export and custom domains
 - [Workspace planning](WORKSPACE_PLANNING.md) — tasks, Gantt, baselines, critical paths, group portfolios and capacity

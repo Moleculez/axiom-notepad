@@ -106,7 +106,7 @@ type Drag = {
 /** Native DOM cards + SVG edges. Pointer previews are local; completed gestures
  * produce atomic, property-level Yjs transactions rather than replacing JSON. */
 export default function CanvasStudio({ project }: { project: ToolProject }) {
-  const { session, notify } = useWorkspace();
+  const { session } = useWorkspace();
   const shared = useToolDocument(
     project.resource_id,
     project.generation ?? 1,
@@ -114,6 +114,31 @@ export default function CanvasStudio({ project }: { project: ToolProject }) {
     project.role === "editor",
     "canvas",
   );
+  return <CanvasSurface project={project} shared={shared} />;
+}
+
+export type CanvasSession = Pick<
+  ReturnType<typeof useToolDocument>,
+  | "document"
+  | "source"
+  | "awareness"
+  | "readOnly"
+  | "error"
+  | "recovery"
+  | "status"
+  | "reopen"
+  | "reconnect"
+>;
+export function CanvasSurface({
+  project,
+  shared,
+  sandbox = false,
+}: {
+  project: ToolProject;
+  shared: CanvasSession;
+  sandbox?: boolean;
+}) {
+  const { notify } = useWorkspace();
   const parsed = useMemo(() => {
     try {
       return { data: parseCanvas(shared.source), error: "" };
@@ -139,9 +164,9 @@ export default function CanvasStudio({ project }: { project: ToolProject }) {
       target?: { id: string; side: CanvasSide };
     } | null>(null),
     [hand, setHand] = useState(false),
-    [panel, setPanel] = useState<"discussion" | "cards" | "properties" | null>(
-      null,
-    ),
+    [panel, setPanelValue] = useState<
+      "discussion" | "cards" | "properties" | null
+    >(null),
     [renaming, setRenaming] = useState<string | null>(null),
     [replaceFile, setReplaceFile] = useState<string | null>(null),
     [snap, setSnap] = useState(false),
@@ -149,12 +174,18 @@ export default function CanvasStudio({ project }: { project: ToolProject }) {
     [exporting, setExporting] = useState(false),
     [commentCard, setCommentCard] = useState<string | null>(null),
     [boardSize, setBoardSize] = useState({ width: 1000, height: 800 }),
-    [picker, setPicker] = useState(false),
+    [picker, setPickerValue] = useState(false),
     [query, setQuery] = useState(""),
     [error, setError] = useState(""),
     [peers, setPeers] = useState<
       { id: number; name: string; color: string; x: number; y: number }[]
     >([]);
+  const setPanel = (value: typeof panel) => {
+    if (!sandbox || value !== "discussion") setPanelValue(value);
+  };
+  const setPicker = (value: boolean) => {
+    if (!sandbox) setPickerValue(value);
+  };
   const [, refreshPreviews] = useState(0);
   const board = useRef<HTMLDivElement>(null),
     drag = useRef<Drag | null>(null),
@@ -171,7 +202,7 @@ export default function CanvasStudio({ project }: { project: ToolProject }) {
     editing,
   );
   const resources = useData<ResourcePage>(
-    picker
+    picker && !sandbox
       ? `resources?view=all&spaceId=${project.space_id}&q=${encodeURIComponent(query)}`
       : null,
   );
@@ -566,7 +597,7 @@ export default function CanvasStudio({ project }: { project: ToolProject }) {
           {
             label: "Copy link to card",
             icon: "link",
-            disabled: !first,
+            disabled: sandbox || !first,
             action: () => {
               if (first) copyLink(first.id);
             },
@@ -574,7 +605,7 @@ export default function CanvasStudio({ project }: { project: ToolProject }) {
           {
             label: "Discuss card",
             icon: "comment",
-            disabled: !first,
+            disabled: sandbox || !first,
             action: () => {
               if (first) {
                 setCommentCard(first.id);
@@ -734,13 +765,13 @@ export default function CanvasStudio({ project }: { project: ToolProject }) {
           {
             label: "File card…",
             icon: "file",
-            disabled: shared.readOnly,
+            disabled: sandbox || shared.readOnly,
             action: () => setPicker(true),
           },
           {
             label: "Web link",
             icon: "link",
-            disabled: shared.readOnly,
+            disabled: sandbox || shared.readOnly,
             action: () => add("link", at),
           },
           {
@@ -1067,14 +1098,16 @@ export default function CanvasStudio({ project }: { project: ToolProject }) {
   return (
     <main className="canvas-studio">
       <header className="canvas-header">
-        <WorkspaceLink
-          className="button ghost"
-          to={`/explorer?space=${project.space_id}${project.parent_id ? `&folder=${project.parent_id}` : ""}`}
-        >
-          ← Explorer
-        </WorkspaceLink>
+        {!sandbox && (
+          <WorkspaceLink
+            className="button ghost"
+            to={`/explorer?space=${project.space_id}${project.parent_id ? `&folder=${project.parent_id}` : ""}`}
+          >
+            ← Explorer
+          </WorkspaceLink>
+        )}
         <h1>{project.name}</h1>
-        <ResourceSharing resourceId={project.resource_id} />
+        {!sandbox && <ResourceSharing resourceId={project.resource_id} />}
         <span className="tool-spacer" />
         <button
           className="icon-button"
@@ -1098,7 +1131,7 @@ export default function CanvasStudio({ project }: { project: ToolProject }) {
           className="icon-button"
           title="Import JSON Canvas"
           aria-label="Import JSON Canvas"
-          disabled={shared.readOnly}
+          disabled={sandbox || shared.readOnly}
           onClick={() => importInput.current?.click()}
         >
           <Upload size={17} />
@@ -1117,7 +1150,11 @@ export default function CanvasStudio({ project }: { project: ToolProject }) {
           className="icon-button"
           title="Export canvas"
           aria-label="Export canvas"
-          onClick={() => setExporting(true)}
+          onClick={() =>
+            sandbox
+              ? downloadText(JSON.stringify(data, null, 2), "example.canvas")
+              : setExporting(true)
+          }
         >
           <Download size={17} />
         </button>
@@ -1134,6 +1171,7 @@ export default function CanvasStudio({ project }: { project: ToolProject }) {
           className="icon-button"
           title="Discussion"
           aria-label="Discussion"
+          disabled={sandbox}
           aria-pressed={panel === "discussion"}
           onClick={() => setPanel(panel === "discussion" ? null : "discussion")}
         >
@@ -1238,6 +1276,10 @@ export default function CanvasStudio({ project }: { project: ToolProject }) {
               e.preventDefault();
           }}
           onDrop={async (e) => {
+            if (sandbox) {
+              e.preventDefault();
+              return;
+            }
             try {
               const ids = e.dataTransfer
                 .getData("application/x-axiom-resources")
@@ -1536,6 +1578,7 @@ export default function CanvasStudio({ project }: { project: ToolProject }) {
                 onContextMenu={(e) => menu(e, node)}
               >
                 <CanvasCardContents
+                  sandbox={sandbox}
                   node={node}
                   text={
                     (
@@ -1671,7 +1714,7 @@ export default function CanvasStudio({ project }: { project: ToolProject }) {
               className="icon-button"
               title="File card"
               aria-label="Add file card"
-              disabled={shared.readOnly}
+              disabled={sandbox || shared.readOnly}
               onClick={() => setPicker(true)}
             >
               <FilePlus2 size={20} />
@@ -1680,7 +1723,7 @@ export default function CanvasStudio({ project }: { project: ToolProject }) {
               className="icon-button"
               title="Web link"
               aria-label="Add web link"
-              disabled={shared.readOnly}
+              disabled={sandbox || shared.readOnly}
               onClick={() => add("link")}
             >
               <Link2 size={20} />
@@ -1736,7 +1779,7 @@ export default function CanvasStudio({ project }: { project: ToolProject }) {
             >
               <button
                 className="button ghost"
-                disabled={!selected.length || selected.length > 50}
+                disabled={sandbox || !selected.length || selected.length > 50}
                 onClick={() =>
                   void (async () => {
                     try {
@@ -2089,11 +2132,15 @@ export default function CanvasStudio({ project }: { project: ToolProject }) {
           {selection.length ? ` · ${selection.length} selected` : ""}
         </span>
         <span>
-          {shared.readOnly ? "Read only" : "Collaborative canvas"}
+          {sandbox
+            ? "Temporary example · never saved"
+            : shared.readOnly
+              ? "Read only"
+              : "Collaborative canvas"}
           {peers.length ? ` · ${peers.length + 1} here` : ""}
         </span>
       </footer>
-      {exporting && (
+      {exporting && !sandbox && (
         <CanvasExportDialog
           source={data}
           selection={selection}
@@ -2109,7 +2156,7 @@ export default function CanvasStudio({ project }: { project: ToolProject }) {
           onClose={() => setExporting(false)}
         />
       )}
-      {picker && (
+      {picker && !sandbox && (
         <Dialog
           title={replaceFile ? "Change linked file" : "Add a workspace file"}
           onClose={() => {

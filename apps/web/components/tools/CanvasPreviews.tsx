@@ -103,12 +103,21 @@ export class CanvasPreviewBoundary extends Component<
   }
 }
 
-export function CanvasMarkdownPreview({ source }: { source: string }) {
+export function CanvasMarkdownPreview({
+  source,
+  sandbox,
+}: {
+  source: string;
+  sandbox?: boolean;
+}) {
   const { appearance, open } = useWorkspace();
   const parsed = useMemo(() => parseMarkdown(source), [source]);
   const context = useMemo(
-    () => ({ theme: appearance.dark ? ("dark" as const) : ("light" as const) }),
-    [appearance.dark],
+    () => ({
+      disableImages: sandbox,
+      theme: appearance.dark ? ("dark" as const) : ("light" as const),
+    }),
+    [appearance.dark, sandbox],
   );
   return (
     <ReadingView
@@ -116,6 +125,7 @@ export function CanvasMarkdownPreview({ source }: { source: string }) {
       parsed={parsed}
       context={context}
       onLink={(target) => {
+        if (sandbox) return;
         if (/^[\da-f-]{36}$/i.test(target)) open({ id: target, kind: "note" });
       }}
     />

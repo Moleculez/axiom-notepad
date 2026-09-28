@@ -22,6 +22,7 @@ import { useWorkspace } from "../workspace/ui";
 
 type Mode = "write" | "source";
 type Props = {
+  sandbox?: boolean;
   text: Y.Text | undefined;
   source: string;
   active: boolean;
@@ -77,6 +78,7 @@ export default function CanvasTextCard(props: Props) {
       </header>
       {props.active && props.text && props.undo ? (
         <CardEditor
+          sandbox={props.sandbox}
           text={props.text}
           undo={props.undo}
           awareness={props.awareness}
@@ -90,7 +92,11 @@ export default function CanvasTextCard(props: Props) {
       ) : (
         <div className="canvas-card-body" title="Double-click to edit">
           {props.source ? (
-            <CardPreview source={props.source} text={props.text} />
+            <CardPreview
+              source={props.source}
+              text={props.text}
+              sandbox={props.sandbox}
+            />
           ) : (
             <p className="canvas-placeholder">
               Double-click to write a thought…
@@ -105,15 +111,20 @@ export default function CanvasTextCard(props: Props) {
 const CardPreview = memo(function CardPreview({
   source,
   text,
+  sandbox,
 }: {
   source: string;
   text?: Y.Text;
+  sandbox?: boolean;
 }) {
   const { appearance, open } = useWorkspace();
   const parsed = useMemo(() => parseMarkdown(source), [source]);
   const context = useMemo(
-    () => ({ theme: appearance.dark ? ("dark" as const) : ("light" as const) }),
-    [appearance.dark],
+    () => ({
+      disableImages: sandbox,
+      theme: appearance.dark ? ("dark" as const) : ("light" as const),
+    }),
+    [appearance.dark, sandbox],
   );
   return (
     <ReadingView
@@ -124,6 +135,7 @@ const CardPreview = memo(function CardPreview({
       parsed={parsed}
       context={context}
       onLink={(target) => {
+        if (sandbox) return;
         if (/^[\da-f-]{36}$/i.test(target)) open({ id: target, kind: "note" });
       }}
     />
@@ -131,6 +143,7 @@ const CardPreview = memo(function CardPreview({
 });
 
 function CardEditor({
+  sandbox,
   text,
   undo,
   awareness,
@@ -139,6 +152,7 @@ function CardEditor({
   toggle,
   done,
 }: {
+  sandbox?: boolean;
   text: Y.Text;
   undo: Y.UndoManager;
   awareness: Awareness | null;
@@ -183,6 +197,7 @@ function CardEditor({
       }),
       appearance: () => current.current.appearance.effective,
       context: () => ({
+        disableImages: sandbox,
         theme: current.current.appearance.dark ? "dark" : "light",
       }),
       readOnly: () => current.current.readOnly,
@@ -200,6 +215,7 @@ function CardEditor({
       prepare: () => {},
       navigate: () => {},
       link: (target) => {
+        if (sandbox) return;
         if (/^[\da-f-]{36}$/i.test(target))
           current.current.open({ id: target, kind: "note" });
       },
@@ -246,7 +262,7 @@ function CardEditor({
       closeVisuals();
       editor.destroy();
     };
-  }, [text, undo, awareness]);
+  }, [text, undo, awareness, sandbox]);
   useEffect(() => {
     view.current?.configure();
   }, [

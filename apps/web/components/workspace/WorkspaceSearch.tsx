@@ -3,6 +3,7 @@ import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import {
   ArrowUpRight,
   Command,
+  BookOpen,
   Download,
   FileSearch,
   History,
@@ -12,6 +13,7 @@ import {
 import type { ResourcePage } from "@axiom/shared/workspace";
 import { tabTitle } from "@axiom/shared/application-tabs";
 import { fileRouteId } from "@axiom/shared/file-routes";
+import { docRoute, searchDocumentation } from "@axiom/shared/documentation";
 import { timeAgo } from "../../lib/client";
 import { useWorkSessions } from "../../lib/workspace-sessions";
 import Dialog, { DialogFooter } from "../Dialog";
@@ -86,6 +88,20 @@ export default function WorkspaceSearch({ onClose }: { onClose: () => void }) {
     action();
   };
   const groups: { name: string; entries: Entry[] }[] = [];
+  if (term && scope !== "files")
+    groups.push({
+      name: "Documentation",
+      entries: searchDocumentation(term)
+        .slice(0, 5)
+        .map((article) => ({
+          id: `docs:${article.id}`,
+          title: article.title,
+          detail: article.summary,
+          icon: <BookOpen size={18} />,
+          kind: "Guide",
+          action: () => navigate(docRoute(article.id)),
+        })),
+    });
   if (!term && !commandsOnly && scope !== "files") {
     const recent = [...(sessions?.state.sessions ?? [])]
       .reverse()

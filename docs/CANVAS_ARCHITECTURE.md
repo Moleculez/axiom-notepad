@@ -1,5 +1,11 @@
 # Canvas platform · internal schema v1
 
+The connected `CanvasStudio` wrapper supplies its collaborative document to
+`CanvasSurface`. Docs and synthesis previews use that same interaction surface
+with an ephemeral Y.Doc and explicit sandbox restrictions: no sync provider,
+document persistence, resource lookup, uploads, sharing or AI actions. Text-card
+renderers suppress external media in this mode. See [product guide contracts](PRODUCT_GUIDE.md).
+
 ## Ownership and boundaries
 
 `packages/shared/src/canvas.ts` validates persisted cards, edges, commands and JSON

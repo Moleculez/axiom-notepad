@@ -3,6 +3,36 @@
 Updated September 28, 2026. Historical logs are [archived separately](archive/VERIFICATION-2026-09-11.md).
 Do not treat historical browser totals or local build IDs as current release evidence.
 
+## September 28 in-app guide and evidence workbench
+
+- Added 30 bundled guides, canonical chapter/heading routes, guide search,
+  preference-aware command keys, and real in-memory editor/Canvas examples.
+  Reference library is in Quick access; Research offers overview, private reading
+  statuses for standalone PDFs, bookmarks and own/shared evidence filters.
+- Preview/create synthesis endpoints use server-resolved evidence and explicit
+  private-to-shared acknowledgement. Existing creation transactions retain
+  idempotency, and lock/revalidate source permissions and revisions before commit.
+  Both research notes and source-linked Canvas files were created in staging.
+- TypeScript, ESLint, documentation-link checks and an isolated optimized
+  production build passed. **2,033 unit tests in 105 files** cover the full suite,
+  including guide completeness/anchors, literal math syntax, PDF reading targets,
+  deterministic escaped synthesis and Canvas provenance.
+- **Six focused end-to-end workflows** (two in Chromium, Firefox and WebKit)
+  cover Docs navigation, search-field alignment, real editor/card edits and reset,
+  playground isolation, bounded pagination, personal/group separation, private
+  annotation visibility, stale previews, duplicate-create retries, read-only
+  Canvas previews and revoked source access. Artifacts are under ignored
+  `data/docs-research-results/` directories. Initial setup runs found a stopped
+  upload worker and ambiguous select labels; the worker was started in isolated
+  staging and accessible control names were fixed before final rechecks.
+- The new light/dark Docs, playground, Research and synthesis gallery uses
+  fictional accounts and a production build on isolated port 3004. No AI requests
+  or synthesis-create requests are made by the capture. Its initial database was
+  migrated to level 34; no migration or reset was applied to working research data.
+- This increment does not certify physical IME/clipboard, screen-reader behavior,
+  large-library load testing or external provider acceptance. Existing beta gates
+  below still apply. No additional database migration is needed by these features.
+
 ## September 28 single-sheet editor and full application cascade
 
 - Reproduced the reported regression **before the fix** with the complete app

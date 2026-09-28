@@ -9,8 +9,6 @@ import {
   CheckCheck,
   FileText,
   FlaskConical,
-  FolderOpen,
-  LayoutTemplate,
   LockKeyhole,
   Plus,
   Search,
@@ -20,13 +18,11 @@ import type { Resource, Space } from "@axiom/shared/workspace";
 import { post, timeAgo } from "../../lib/client";
 import Avatar from "./Avatar";
 import { useManagement } from "./ManagementActions";
-import { templates } from "@axiom/shared/templates";
 import {
   Badge,
   Empty,
   ErrorNotice,
   Loading,
-  mutate,
   PageHeading,
   ResourceIcon,
   useAction,
@@ -475,175 +471,3 @@ export function PeoplePage() {
   );
 }
 export { default as Avatar } from "./Avatar";
-
-export function ResearchPage() {
-  const { spaces, navigate, open, refresh } = useWorkspace(),
-    [spaceId, setSpaceId] = useState(""),
-    [selected, setSelected] = useState<(typeof templates)[number] | null>(null),
-    [name, setName] = useState(""),
-    action = useAction();
-  return (
-    <main className="ws-page">
-      <PageHeading eyebrow="RESEARCH" title="Make room for deeper work">
-        Keep evidence close, make assumptions visible, and leave a trail others
-        can follow.
-      </PageHeading>
-      <div className="ws-launchers">
-        <button onClick={() => navigate("/explorer?view=all&kind=file&q=.pdf")}>
-          <span>
-            <BookOpen size={23} />
-          </span>
-          <div>
-            <strong>Papers & source files</strong>
-            <small>Read, annotate, and cite evidence</small>
-          </div>
-          <ArrowUpRight size={17} />
-        </button>
-        <WorkspaceLink to="/research/references">
-          <span>
-            <FolderOpen size={23} />
-          </span>
-          <div>
-            <strong>Reference library</strong>
-            <small>BibTeX and linked literature</small>
-          </div>
-          <ArrowUpRight size={17} />
-        </WorkspaceLink>
-        <WorkspaceLink to="/settings/data">
-          <span>
-            <FileText size={23} />
-          </span>
-          <div>
-            <strong>Offline research</strong>
-            <small>Manage locally pinned papers</small>
-          </div>
-          <ArrowUpRight size={17} />
-        </WorkspaceLink>
-      </div>
-      <section className="ws-section">
-        <div className="ws-section-heading">
-          <h2>Methods worth reusing</h2>
-          <Badge>Research templates</Badge>
-        </div>
-        <div className="ws-template-grid">
-          {templates
-            .filter((item) => item.id !== "blank")
-            .map((template) => (
-              <button
-                key={template.id}
-                className="ws-template-card"
-                onClick={() => {
-                  setSelected(template);
-                  setName(template.name);
-                  setSpaceId(
-                    spaces.find((space) => space.kind === "personal")?.id ?? "",
-                  );
-                }}
-              >
-                <LayoutTemplate size={24} strokeWidth={1.5} />
-                <h3>{template.name}</h3>
-                <p>{template.description}</p>
-                <span>
-                  Use template
-                  <ArrowUpRight size={14} />
-                </span>
-              </button>
-            ))}
-        </div>
-      </section>
-      <section className="ws-card ws-research-guide">
-        <WorkspaceLink className="button secondary" to="/research/graph">
-          Explore the knowledge graph <ArrowUpRight size={14} />
-        </WorkspaceLink>
-        <h2>A few useful research habits</h2>
-        <div>
-          <p>
-            <strong>Separate observation from interpretation.</strong> Keep
-            source data and immutable file versions beside your experiment
-            notes.
-          </p>
-          <p>
-            <strong>Record the assumptions.</strong> Use theorem, proof, and
-            definition callouts with labeled equations.
-          </p>
-          <p>
-            <strong>Review a specific revision.</strong> Workspace reviews pin a
-            note snapshot, so a later edit doesn’t change what someone approved.
-          </p>
-          <p>
-            <strong>Protect the thinking space.</strong> Personal notes stay
-            private. Share deliberately by working inside the right workspace.
-          </p>
-        </div>
-      </section>
-      {selected && (
-        <Dialog
-          title={`Use ${selected.name.toLowerCase()} template`}
-          onClose={() => !action.busy && setSelected(null)}
-        >
-          <form
-            onSubmit={(event) => {
-              event.preventDefault();
-              void action.run(async () => {
-                const note = await mutate<Resource>("resources", {
-                  kind: "note",
-                  name,
-                  body: selected.body,
-                  spaceId,
-                });
-                setSelected(null);
-                refresh();
-                open(note);
-              });
-            }}
-          >
-            <label>
-              Title
-              <input
-                autoFocus
-                required
-                maxLength={200}
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-              />
-            </label>
-            <label>
-              Destination
-              <select
-                value={spaceId}
-                required
-                onChange={(event) => setSpaceId(event.target.value)}
-              >
-                {spaces
-                  .filter((space) => space.role === "editor")
-                  .map((space) => (
-                    <option key={space.id} value={space.id}>
-                      {space.name}
-                      {space.kind === "personal" ? " · Only you" : " · Shared"}
-                    </option>
-                  ))}
-              </select>
-            </label>
-            <ErrorNotice message={action.error} />
-            <div className="dialog-footer">
-              <button
-                type="button"
-                className="button secondary"
-                onClick={() => setSelected(null)}
-                disabled={action.busy}
-              >
-                Cancel
-              </button>
-              <button
-                className="button primary"
-                disabled={action.busy || !spaceId}
-              >
-                Create note
-              </button>
-            </div>
-          </form>
-        </Dialog>
-      )}
-    </main>
-  );
-}
