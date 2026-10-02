@@ -158,3 +158,13 @@ The build copies only an explicit list of reviewed gallery/brand assets and
 licensed vendor fonts/decoders. `THIRD_PARTY_NOTICES.txt` accompanies the site.
 Change the shared engine once and run both showcase acceptance and the existing
 editor/Canvas regression suites; do not fork a second editor for this demo.
+
+The bundled math worker has a separate, bounded cold-load budget (60 seconds).
+A ready handshake starts the existing 1.5-second equation watchdog, so a slow
+download cannot be mistaken for runaway TeX. Writing remains usable during
+startup. Styled HTML waits for preview readiness instead of silently freezing
+still-loading equations. The first visit may be slower than later cached loads.
+
+Acceptance retains strict local/CI timing. An external `SHOWCASE_TEST_URL` uses
+one worker and explicit longer cold-network budgets; these do not enable retries
+or relax source, export, runtime-error or network-boundary assertions.

@@ -94,7 +94,7 @@ export async function renderedHtml(stage: HTMLElement, title: string) {
   await document.fonts.ready;
   window.dispatchEvent(new Event("axiom:prepare-print"));
   const start = Date.now();
-  while (Date.now() - start < 20000) {
+  while (Date.now() - start < 70000) {
     const math = stage.querySelector(
       '[data-math-request]:not([data-math-state="ready"]):not([data-math-state="error"])',
     );
@@ -106,6 +106,16 @@ export async function renderedHtml(stage: HTMLElement, title: string) {
     );
     if (!math && !diagrams && !images && Date.now() - start > 1000) break;
     await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  if (
+    stage.querySelector(
+      '[data-math-request]:not([data-math-state="ready"]):not([data-math-state="error"]), [data-preview-state="pending"], [data-preview-state="loading"]',
+    )
+  ) {
+    window.dispatchEvent(new Event("afterprint"));
+    throw new Error(
+      "Some previews are still loading. Wait for them to finish and retry, or export the original Markdown.",
+    );
   }
   const original = stage.querySelector<HTMLElement>(".reading-view") ?? stage,
     clone = original.cloneNode(true) as HTMLElement;

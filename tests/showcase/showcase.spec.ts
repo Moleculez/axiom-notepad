@@ -37,7 +37,9 @@ test.afterEach(async ({ page }) => {
   expect(requests.get(page)).toEqual([]);
 });
 async function start(page: Page, destination = "editor", id = paperId) {
-  await page.goto(`./#${destination}&note=${id}`);
+  await page.goto(`./#${destination}&note=${id}`, {
+    waitUntil: "domcontentloaded",
+  });
   await expect(
     page.locator(destination === "canvas" ? ".canvas-board" : ".axiom-editor"),
   ).toBeVisible();
@@ -77,7 +79,7 @@ async function setSource(page: Page, value: string) {
 test("tour, cold hash routes and shared appearance stay contained under the repository prefix", async ({
   page,
 }, info) => {
-  await page.goto("./");
+  await page.goto("./", { waitUntil: "domcontentloaded" });
   await expect(
     page.getByRole("heading", { name: "From a question to a clearer idea." }),
   ).toBeVisible();
@@ -102,13 +104,13 @@ test("tour, cold hash routes and shared appearance stay contained under the repo
     "data-engine",
     "milkdown",
   );
-  await page.reload();
+  await page.reload({ waitUntil: "domcontentloaded" });
   await expect(page.locator(".axiom-editor")).toBeVisible();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   await page.screenshot({ path: info.outputPath("editor-dark.png") });
   await page.getByRole("link", { name: "Canvas", exact: true }).click();
   await expect(page.locator(".canvas-board .canvas-card")).toHaveCount(4);
-  await page.reload();
+  await page.reload({ waitUntil: "domcontentloaded" });
   await expect(page.locator(".canvas-board .canvas-card")).toHaveCount(4);
 });
 
@@ -215,6 +217,35 @@ test("equations, images, Mermaid, footnotes and local note links render with no 
   await expect(page.locator(".demo-document-scroll h1")).toContainText(
     "Mathematical notebook",
   );
+});
+
+test("a slow math-worker download does not interrupt editing or consume the equation watchdog", async ({
+  page,
+}) => {
+  await page.route("**/math.worker-*.js", async (route) => {
+    // Deliberately exceed the former combined 15-second startup/job deadline.
+    await new Promise((resolve) => setTimeout(resolve, 16500));
+    await route.continue();
+  });
+  await start(page);
+  await page
+    .locator(".demo-document-scroll [data-math-request]")
+    .first()
+    .scrollIntoViewIfNeeded();
+  const source =
+    "# Startup acceptance\n\n$$\nE=mc^2\n$$\n\nStill writing while the renderer loads.";
+  await setSource(page, source);
+  await page.getByRole("button", { name: "Write", exact: true }).click();
+  await expect(page.locator(".demo-document-scroll")).toContainText(
+    "Still writing while the renderer loads.",
+  );
+  await expect(
+    page.locator('.demo-document-scroll [data-math-state="ready"]'),
+  ).toHaveCount(1, { timeout: 90000 });
+  await expect(page.locator(".demo-document-scroll .math-error")).toHaveCount(
+    0,
+  );
+  expect(await savedSource(page)).toBe(source);
 });
 
 test("table edge operations, folding and minimap work without changing modes unexpectedly", async ({
@@ -463,7 +494,7 @@ test("portable JSON Canvas and ZIP downloads contain stable asset paths and rest
 test("Canvas image and PDF exports contain the rendered board", async ({
   page,
 }) => {
-  test.setTimeout(120000);
+  test.setTimeout(Math.max(test.info().timeout, 120000));
   await start(page, "canvas", canvasId);
   await page
     .getByRole("button", { name: "Export canvas", exact: true })

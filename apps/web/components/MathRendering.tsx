@@ -2,6 +2,7 @@
 import { useEffect } from "react";
 import type { MathRequest, MathResult } from "@axiom/markdown";
 import { clearMarkdownCommandCache } from "@axiom/markdown";
+import type { MathWorkerMessage } from "../lib/math.worker";
 
 // The synchronous Markdown renderer emits safe source placeholders. This shared
 // host covers Write, Read, dialogs and settings without importing TeX on the UI
@@ -95,10 +96,15 @@ export default function MathRendering() {
             new URL("../lib/math.worker.ts", import.meta.url),
             { type: "module" },
           );
-          worker.onmessage = (
-            event: MessageEvent<{ id: number; result: MathResult }>,
-          ) => {
-            if (event.data.id === current?.id) finish(event.data.result);
+          worker.onmessage = (event: MessageEvent<MathWorkerMessage>) => {
+            if ("ready" in event.data) {
+              if (current) {
+                clearTimeout(deadline);
+                deadline = setTimeout(failed, 1500);
+              }
+            } else if (event.data.id === current?.id) {
+              finish(event.data.result);
+            }
           };
           worker.onerror = (event) => {
             event.preventDefault();
@@ -109,7 +115,9 @@ export default function MathRendering() {
           id: current.id,
           request: JSON.parse(key) as MathRequest,
         });
-        deadline = setTimeout(failed, starting ? 15000 : 1500);
+        // A bounded cold-network budget ends at the worker's ready handshake.
+        // Actual equation jobs still have the same 1.5-second watchdog.
+        deadline = setTimeout(failed, starting ? 60000 : 1500);
       } catch {
         failed();
       }

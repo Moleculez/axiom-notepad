@@ -26,11 +26,14 @@ Do not treat historical browser totals or local build IDs as current release evi
   Write, Source and Read use one production document scrollport at the pane edge;
   the toolbar, outline and word-count footer do not move with the document.
   Math uses a module worker in development as well as in optimized builds.
+  A ready handshake separates its bounded cold download/evaluation budget from
+  the unchanged 1.5-second equation watchdog. Slow-load acceptance exceeds the
+  former combined 15-second limit while proving editing stays responsive.
 - **2,046 unit tests / 106 files**, TypeScript, ESLint, documentation checks,
   theme validation and an isolated optimized workbench build passed. The editor
   laboratory passed **449 checks**, with one optional benchmark skipped.
-  Sixteen static acceptance workflows passed in Chromium, Firefox and WebKit
-  (**48 runs**) against the built repository-prefix artifact. Checks cover modes,
+  Seventeen static acceptance workflows passed in Chromium, Firefox and WebKit
+  (**51 runs**) against the built repository-prefix artifact. Checks cover modes,
   math/images/Mermaid and fullscreen, tables, outline/minimap, preference reload,
   pane scrolling, uploads, Canvas editing/connections, image/PDF/audio file cards,
   styled HTML, real image/PDF exports, portable ZIP restore, blocked remote images
@@ -43,6 +46,9 @@ Do not treat historical browser totals or local build IDs as current release evi
   Updated relevant fixtures to use current routes, grouped menus and guarded
   upload replacement. This is not a full recertification of older platform/MCP/
   offline acceptance suites or physical IME/clipboard/accessibility behavior.
+  After the startup-handshake change, a fresh optimized workbench build and an
+  additional authenticated math regression passed: rendered identity stays stable
+  while typing, rich equation edits update correctly and reload preserves source.
 - The Pages workflow uploads only `apps/showcase/dist/` after checks. The static
   build never loads `.env`, a database, private reports or user uploads. See
   [the showcase guide](STATIC_SHOWCASE.md) for privacy, local backup, export
@@ -50,6 +56,12 @@ Do not treat historical browser totals or local build IDs as current release evi
   Fresh light/dark editor, Canvas and settings captures use the built artifact
   with isolated guest contexts and bundled fictional samples. README, the gallery
   and the settings guide distinguish this device-only demo from account services.
+- The first Pages deployment passed its clean Node 24 install, TypeScript, lint,
+  unit tests, static build and Chromium acceptance. Initial public-URL checks
+  exposed cold asset-load timeouts that local checks could not reproduce. The
+  shared math startup handshake and separate remote acceptance budgets address
+  that finding; the static HTML exporter now refuses still-loading snapshots.
+  This is not a latency benchmark or a guarantee for every network.
 - Production security remains a separate release gate: the current dependency
   audit reports existing advisories in Next.js (critical), Nodemailer and
   brace-expansion (high), and DOMPurify (low). This increment does not upgrade
