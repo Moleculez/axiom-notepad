@@ -24,6 +24,7 @@ export class ImageView implements NodeView {
     private options: {
       source: () => MarkdownNode | undefined;
       disabled: () => boolean;
+      resolve?: (href: string) => string | undefined;
       readOnly: () => boolean;
       active: () => boolean;
       stale: () => boolean;
@@ -136,7 +137,11 @@ export class ImageView implements NodeView {
     this.dom.dataset.visualFrom = String(node.from);
     this.dom.dataset.visualTo = String(node.to);
     const disabled = this.options.disabled();
-    const url = disabled ? "" : safeUrl(node.href ?? "", true);
+    const url = disabled
+      ? ""
+      : this.options.resolve
+        ? (this.options.resolve(node.href ?? "") ?? "")
+        : safeUrl(node.href ?? "", true);
     if (url !== this.url) {
       this.cancel();
       this.failed = null;

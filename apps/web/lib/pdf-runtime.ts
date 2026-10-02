@@ -1,9 +1,10 @@
 /** Prepared by npm run tools:assets and production builds. Never uses a CDN. */
+import { runtimeAsset } from "./runtime-assets";
 export const pdfRuntimeOptions = {
-  cMapUrl: "/tool-assets/pdfjs/cmaps/",
+  cMapUrl: runtimeAsset("tool-assets/pdfjs/cmaps/"),
   cMapPacked: true,
-  standardFontDataUrl: "/tool-assets/pdfjs/standard_fonts/",
-  wasmUrl: "/tool-assets/pdfjs/wasm/",
+  standardFontDataUrl: runtimeAsset("tool-assets/pdfjs/standard_fonts/"),
+  wasmUrl: runtimeAsset("tool-assets/pdfjs/wasm/"),
   enableXfa: false,
   isEvalSupported: false,
 } as const;

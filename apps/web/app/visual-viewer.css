@@ -647,6 +647,10 @@
   width: 15px;
   height: 15px;
 }
+.axiom-block-preview[data-visual-kind] {
+  /* Hover controls must remain inside the preview's pointer hit region. */
+  position: relative;
+}
 [data-visual-kind]:is(:hover, :focus-within) > .visual-open-button,
 .visual-open-button:focus-visible,
 .visual-open-button.has-marks {

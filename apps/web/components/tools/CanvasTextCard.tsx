@@ -18,7 +18,7 @@ import {
   visualTextAnchor,
 } from "../../lib/visual-surface";
 import ReadingView from "../ReadingView";
-import { useWorkspace } from "../workspace/ui";
+import { useCanvasHost } from "./CanvasHost";
 
 type Mode = "write" | "source";
 type Props = {
@@ -117,14 +117,15 @@ const CardPreview = memo(function CardPreview({
   text?: Y.Text;
   sandbox?: boolean;
 }) {
-  const { appearance, open } = useWorkspace();
+  const { appearance, open, context: hostContext } = useCanvasHost();
   const parsed = useMemo(() => parseMarkdown(source), [source]);
   const context = useMemo(
     () => ({
+      ...hostContext?.(),
       disableImages: sandbox,
       theme: appearance.dark ? ("dark" as const) : ("light" as const),
     }),
-    [appearance.dark, sandbox],
+    [appearance.dark, sandbox, hostContext],
   );
   return (
     <ReadingView
@@ -161,7 +162,13 @@ function CardEditor({
   toggle: () => void;
   done: () => void;
 }) {
-  const { appearance, editorSettings, notify, open } = useWorkspace();
+  const {
+    appearance,
+    editorSettings,
+    notify,
+    open,
+    context: hostContext,
+  } = useCanvasHost();
   const mount = useRef<HTMLDivElement>(null),
     view = useRef<EditorView | null>(null);
   const current = useRef({
@@ -173,6 +180,7 @@ function CardEditor({
     notify,
     open,
     done,
+    hostContext,
   });
   current.current = {
     appearance,
@@ -183,6 +191,7 @@ function CardEditor({
     notify,
     open,
     done,
+    hostContext,
   };
   useEffect(() => {
     if (!mount.current || !text.doc) return;
@@ -197,6 +206,7 @@ function CardEditor({
       }),
       appearance: () => current.current.appearance.effective,
       context: () => ({
+        ...current.current.hostContext?.(),
         disableImages: sandbox,
         theme: current.current.appearance.dark ? "dark" : "light",
       }),

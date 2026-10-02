@@ -1,5 +1,34 @@
 # Product showcase and asset workflow
 
+[Try the live editor and Canvas](https://moleculez.github.io/axiom-notepad/) on
+GitHub Pages. The static demo uses the real Axiom surfaces, local autosave,
+device-only file cards, themes and portable exports—no account required.
+[Static showcase guide](STATIC_SHOWCASE.md) covers its storage/privacy boundary,
+supported workflows, development and deployment. The screenshot gallery below
+documents the larger self-hosted workbench, not active cloud services in the demo.
+
+### Live browser-local surfaces
+
+The static editor and Canvas are interactive, not screenshots: try the fictional
+notebooks, create a local draft, import files or export a portable copy. Seven
+settings categories share a stable dialog with a persistent document preview,
+category-only resets and separate local data controls. The October 3 captures
+below come from the built Pages artifact in fresh guest browser contexts.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/showcase/static-editor-dark.webp">
+  <img src="assets/showcase/static-editor-light.webp" alt="The actual browser-local Markdown editor with research mathematics, an outline and fixed document controls." width="1440" loading="lazy">
+</picture>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/showcase/static-canvas-dark.webp">
+  <img src="assets/showcase/static-canvas-light.webp" alt="The actual browser-local Canvas with connected research cards, rich mathematics and local file previews." width="1440" loading="lazy">
+</picture>
+
+Regenerate these guest-only captures with `npm run docs:showcase-assets` against
+a built local preview. Account, collaboration, research and planning workflows
+below belong to the larger self-hosted application.
+
 The README and this tour show Axiom's actual workbench, populated with fictional
 **Spectral Lab** research. Mira Chen, Elias Ray, their tasks, notes and annotations
 are demonstration content. The gallery covers collaborative writing, Canvas,

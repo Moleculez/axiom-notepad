@@ -4,6 +4,7 @@ import type { PDFDocumentProxy } from "pdfjs-dist";
 import { ErrorNotice } from "./ui";
 import PdfPages from "../pdf/PdfPages";
 import { pdfRuntimeOptions } from "../../lib/pdf-runtime";
+import { isStaticRuntime, runtimeAsset } from "../../lib/runtime-assets";
 export default function PdfQuickPreview({
   source,
   interactive = true,
@@ -29,10 +30,12 @@ export default function PdfQuickPreview({
     void import("pdfjs-dist")
       .then((lib) => {
         if (!active) return;
-        lib.GlobalWorkerOptions.workerSrc = new URL(
-          "pdfjs-dist/build/pdf.worker.min.mjs",
-          import.meta.url,
-        ).toString();
+        lib.GlobalWorkerOptions.workerSrc = isStaticRuntime
+          ? runtimeAsset("tool-assets/pdfjs/pdf.worker.min.mjs")
+          : new URL(
+              "pdfjs-dist/build/pdf.worker.min.mjs",
+              import.meta.url,
+            ).toString();
         loading = lib.getDocument({
           ...pdfRuntimeOptions,
           url: source,

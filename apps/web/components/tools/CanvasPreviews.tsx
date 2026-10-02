@@ -1,6 +1,8 @@
 "use client";
 import {
   Component,
+  lazy,
+  Suspense,
   useEffect,
   useId,
   useMemo,
@@ -8,7 +10,6 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import dynamic from "next/dynamic";
 import {
   ArrowUpRight,
   Globe,
@@ -36,7 +37,8 @@ import {
   type ResourceCardPreview,
 } from "@axiom/shared/canvas-preview";
 import { useCanvasPreview } from "../../lib/tools/canvas-preview";
-import { useWorkspace, ResourceIcon } from "../workspace/ui";
+import { ResourceIcon } from "../workspace/ui";
+import { useCanvasHost } from "./CanvasHost";
 import ReadingView from "../ReadingView";
 import {
   inheritedVisualContext,
@@ -45,13 +47,7 @@ import {
 } from "../../lib/visual-surface";
 import type { FilePreviewManifest } from "@axiom/shared/file-preview";
 
-const FilePreviewSurface = dynamic(() => import("./FilePreviewSurface"), {
-  ssr: false,
-  loading: () => <PreviewNotice>Preparing viewer…</PreviewNotice>,
-});
-const PdfPreview = dynamic(() => import("../workspace/PdfQuickPreview"), {
-  ssr: false,
-});
+const PdfPreview = lazy(() => import("../workspace/PdfQuickPreview"));
 export type CanvasPreviewSnapshot = Map<string, ResourceCardPreview>;
 export const canvasPreviewKey = (node: Extract<CanvasNode, { type: "file" }>) =>
   `${node.resourceId}:${node.versionId ?? "latest"}`;
@@ -110,14 +106,15 @@ export function CanvasMarkdownPreview({
   source: string;
   sandbox?: boolean;
 }) {
-  const { appearance, open } = useWorkspace();
+  const { appearance, open, context: hostContext } = useCanvasHost();
   const parsed = useMemo(() => parseMarkdown(source), [source]);
   const context = useMemo(
     () => ({
+      ...hostContext?.(),
       disableImages: sandbox,
       theme: appearance.dark ? ("dark" as const) : ("light" as const),
     }),
-    [appearance.dark, sandbox],
+    [appearance.dark, sandbox, hostContext],
   );
   return (
     <ReadingView
@@ -260,7 +257,7 @@ export function CanvasResourcePreview({
   onResolved?: (value: ResourceCardPreview | null) => void;
   snapshot?: CanvasPreviewSnapshot;
 }) {
-  const { open } = useWorkspace();
+  const { open } = useCanvasHost();
   const cycle = !!node.resourceId && ancestors.includes(node.resourceId);
   const state = useCanvasPreview(
     node.resourceId,
@@ -390,6 +387,7 @@ function CanvasResourceContent({
   reload: () => void;
   snapshot?: CanvasPreviewSnapshot;
 }) {
+  const host = useCanvasHost();
   if (data.kind === "document") {
     if (data.format === "canvas")
       return ancestors.length >= 3 ? (
@@ -436,11 +434,13 @@ function CanvasResourceContent({
   if (file.kind === "pdf" && !active)
     return (
       <div className="canvas-pdf-poster">
-        <PdfPreview
-          source={file.source}
-          interactive={false}
-          initialPage={node.previewPage ?? 1}
-        />
+        <Suspense fallback={<PreviewNotice>Preparing PDF…</PreviewNotice>}>
+          <PdfPreview
+            source={file.source}
+            interactive={false}
+            initialPage={node.previewPage ?? 1}
+          />
+        </Suspense>
       </div>
     );
   if ((file.kind === "video" || file.kind === "audio") && !active)
@@ -458,15 +458,7 @@ function CanvasResourceContent({
     );
   if (file.kind === "text" && /\.tex$/i.test(file.name))
     return <EquationFile source={file.source} bytes={file.bytes} />;
-  return (
-    <FilePreviewSurface
-      resourceId={node.resourceId!}
-      versionId={node.versionId}
-      compact
-      initialManifest={file}
-      onReload={reload}
-    />
-  );
+  return host.renderFile(file, reload);
 }
 function CanvasImage({
   file,

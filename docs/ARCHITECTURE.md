@@ -166,6 +166,15 @@ Cached worker scripts use synthetic responses to retain their original bootstrap
 
 ## Scope and operations
 
+The [static showcase](STATIC_SHOWCASE.md) is an independent React/Vite build in
+`apps/showcase`, hosted on GitHub Pages. It reuses `AxiomEditorView` and the shared
+`CanvasSurface`, but supplies local IndexedDB files through `CanvasHost` instead
+of account/API/sync services. `CanvasStudio` remains the authenticated adapter.
+Both import the same style cascade. Asset resolution is host-owned and optional;
+ordinary workbench rendering remains unchanged. Browser preview URLs never enter
+canonical Markdown. Only explicitly curated source/assets are built into the
+Pages artifact; application data and environment files remain out of scope.
+
 The optional [workspace assistant](WORKSPACE_ASSISTANT.md) separates private
 conversation/context capture (`assistant-api`/`assistant-service`), durable provider
 execution (`assistant-worker` via the existing tool queue), and reviewed actions

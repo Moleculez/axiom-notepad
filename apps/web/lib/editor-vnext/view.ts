@@ -3441,6 +3441,7 @@ export class AxiomEditorView {
     editing = false,
   ) {
     return new ImageView({
+      resolve: this.options.context().resolveImage,
       source,
       disabled: () => !!this.options.context().disableImages,
       readOnly: () => this.options.readOnly(),

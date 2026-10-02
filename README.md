@@ -11,7 +11,7 @@ Canvas, files and research planning share one collaborative workbench, without
 billing or commerce.
 
 [Quick start](#start-locally) · [Deployment](docs/DEPLOYMENT.md) ·
-[Documentation](docs/README.md) · [Showcase](docs/SHOWCASE.md) ·
+[Documentation](docs/README.md) · [Live editor & Canvas](https://moleculez.github.io/axiom-notepad/) · [Showcase](docs/SHOWCASE.md) ·
 [Contributing](CONTRIBUTING.md)
 
 This is a **controlled research-group beta**, not complete Typora, Google Drive or
@@ -19,6 +19,27 @@ Photoshop parity. [Verification and release gates](docs/VERIFICATION.md) disting
 tested workflows from remaining device, accessibility and provider checks.
 
 ## Built for research
+
+**Try it without an account:** the [interactive showcase](https://moleculez.github.io/axiom-notepad/)
+runs the actual editor and Canvas entirely in your browser, with local drafts,
+uploads, themes and portable exports. Cloud collaboration and account features
+belong to the self-hosted application, not the static demo.
+[Open the editor](https://moleculez.github.io/axiom-notepad/#editor&note=3f000000-0000-4000-8000-000000000001)
+or [explore Canvas](https://moleculez.github.io/axiom-notepad/#canvas&note=3f000000-0000-4000-8000-000000000002).
+Appearance groups seven categories beside a persistent live preview, with
+category-only resets and a separate local backup/import panel. Downloads include
+Markdown, styled HTML, Print / Save PDF, Canvas images and portable ZIP backups.
+See [showcase storage, settings and GitHub Pages deployment](docs/STATIC_SHOWCASE.md).
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/showcase/static-editor-dark.webp">
+  <img src="docs/assets/showcase/static-editor-light.webp" alt="The browser-local Axiom showcase: real visual Markdown editing, rendered mathematics, hierarchical outline and a fixed word-count footer. Fictional research sample." width="1440" loading="lazy">
+</picture>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/showcase/static-canvas-dark.webp">
+  <img src="docs/assets/showcase/static-canvas-light.webp" alt="The browser-local Canvas showcase: connected rich-text cards with mathematics, a linked notebook and a research checklist, sharing Axiom's production interaction surface." width="1440" loading="lazy">
+</picture>
 
 - **Learn in place.** Docs beside Search & commands provides 30 searchable guides,
   your current keyboard shortcuts, and disposable examples using the real editor

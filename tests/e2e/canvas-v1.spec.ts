@@ -69,7 +69,7 @@ test("named cards, right-to-right connections, lock, properties and card links",
       }),
     ),
     page = f.page;
-  await page.goto(`/workbench/tools/canvas/${created.id}`);
+  await page.goto(`/workbench/notes/${created.id}`);
   await expect(page.locator(".canvas-status")).toContainText("Saved on server");
   const right = page.locator('[data-canvas-node="right"]'),
     left = page.locator('[data-canvas-node="left"]');
@@ -118,7 +118,7 @@ test("named cards, right-to-right connections, lock, properties and card links",
   await page.getByRole("button", { name: "Find cards", exact: true }).click();
   await page.getByLabel("Search cards").fill("theory");
   await expect(page.locator(".canvas-card-result")).toHaveCount(1);
-  await page.goto(`/workbench/tools/canvas/${created.id}#card=right`);
+  await page.goto(`/workbench/notes/${created.id}#card=right`);
   await expect(page.locator('[data-canvas-node="right"]')).toHaveClass(
     /is-selected/,
   );
@@ -176,6 +176,7 @@ test("auto height is independent of zoom and manual resize opts out", async ({},
     .poll(async () => (await readCanvas(created.id)).nodes[0].heightMode)
     .toBe("manual");
   await card.click({ button: "right", position: { x: 30, y: 15 } });
+  await page.getByRole("menuitem", { name: "Arrange", exact: true }).click();
   await page
     .getByRole("menuitem", { name: "Restore automatic height" })
     .click();
@@ -474,6 +475,7 @@ test("card discussions validate anchors and an old dataset cannot mutate the new
   await page
     .locator('[data-canvas-node="target"]')
     .click({ button: "right", position: { x: 25, y: 15 } });
+  await page.getByRole("menuitem", { name: "Card", exact: true }).click();
   await page
     .getByRole("menuitem", { name: "Discuss card", exact: true })
     .click();

@@ -1,5 +1,11 @@
 # Settings workbench
 
+The full workbench's account settings are described below. The
+[browser-local showcase](STATIC_SHOWCASE.md#settings-without-the-clutter) has a
+separate, immediate-save dialog with seven grouped categories, a persistent live
+preview and category-only reset. Its Local data panel manages guest backups and
+uploads, never account preferences or workbench files.
+
 Appearance and Writing use a two-pane desktop layout: controls on the left and
 **Try it here** on the right. Each pane scrolls independently; Apply and Cancel
 stay outside both scrollers. The scratchpad uses the current editor and personal

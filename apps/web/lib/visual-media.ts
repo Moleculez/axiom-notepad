@@ -24,12 +24,22 @@ export type VisualMedia = {
 export const visualPixelLimit = 16_000_000;
 const byteLimit = 50 * 1024 * 1024;
 class UnavailableImage extends Error {}
+/** Object URLs are host-owned, same-origin previews, not allowed Markdown URLs. */
+function visualUrl(url: string) {
+  if (safeUrl(url, true)) return true;
+  try {
+    const address = new URL(url);
+    return address.protocol === "blob:" && address.origin === location.origin;
+  } catch {
+    return false;
+  }
+}
 export async function imageBytes(
   url: string,
   signal: AbortSignal,
 ): Promise<Blob> {
   const address = new URL(url, location.href);
-  if (!safeUrl(address.href, true))
+  if (!visualUrl(address.href))
     throw new Error("This image address is blocked.");
   const response = await fetch(address, {
     signal,
@@ -144,7 +154,7 @@ export async function loadVisualMedia(
       notice =
         "Last valid diagram preview. The current source has a syntax error.";
   } else {
-    if (!safeUrl(url, true)) throw new Error("This image address is blocked.");
+    if (!visualUrl(url)) throw new Error("This image address is blocked.");
     try {
       blob = await imageBytes(url, signal);
       fingerprint = await visualDigest(await blob.arrayBuffer());

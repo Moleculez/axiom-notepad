@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import type { MathfieldElement } from "mathlive";
+import { runtimeAsset } from "../../lib/runtime-assets";
 import type { NativeBinding } from "@axiom/editor/binding";
 import { minimalChange } from "@axiom/markdown";
 import { ErrorNotice, Loading } from "../workspace/ui";
@@ -32,7 +33,9 @@ export default function MathVisual({
     void import("mathlive")
       .then(({ MathfieldElement }) => {
         if (!alive || !host.current) return;
-        MathfieldElement.fontsDirectory = "/tool-assets/mathlive/fonts";
+        MathfieldElement.fontsDirectory = runtimeAsset(
+          "tool-assets/mathlive/fonts",
+        );
         MathfieldElement.soundsDirectory = null;
         const mf = new MathfieldElement();
         field.current = mf;

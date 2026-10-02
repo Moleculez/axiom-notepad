@@ -21,6 +21,7 @@
     "brand:build": "tsx scripts/build/brand.ts",
     "docs:assets": "tsx scripts/build/docs-assets.ts",
     "docs:research-assets": "tsx scripts/build/docs-research-assets.ts",
+    "docs:showcase-assets": "tsx scripts/build/docs-static-assets.ts",
     "setup": "tsx scripts/dev/setup.ts",
     "backup": "tsx scripts/ops/backup.ts",
     "reset:development": "tsx scripts/ops/reset-development.ts",
@@ -43,6 +44,10 @@
     "test:e2e": "playwright test",
     "test:dev": "playwright test --config dev-service.config.ts",
     "editor:lab": "tsx scripts/dev/editor-lab.ts",
+    "showcase:dev": "tsx scripts/dev/showcase.ts",
+    "showcase:build": "tsx scripts/build/showcase.ts",
+    "showcase:preview": "vite preview --config apps/showcase/vite.config.ts --host 127.0.0.1 --port 3010 --strictPort",
+    "test:showcase": "playwright test --config showcase.config.ts",
     "test:editor": "playwright test --config editor-lab.config.ts",
     "test:durability": "tsx scripts/verify/verify-durability.ts",
     "db:migrate": "dotenv -e .env -- tsx scripts/ops/migrate.ts",
@@ -133,6 +138,7 @@
     "prettier": "^3.9.6",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.56.1",
-    "vitest": "4.1.11"
+    "vitest": "4.1.11",
+    "vite": "8.3.0"
   }
 }

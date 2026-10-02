@@ -93,6 +93,7 @@ export default function MathRendering() {
         if (!worker) {
           worker = new Worker(
             new URL("../lib/math.worker.ts", import.meta.url),
+            { type: "module" },
           );
           worker.onmessage = (
             event: MessageEvent<{ id: number; result: MathResult }>,

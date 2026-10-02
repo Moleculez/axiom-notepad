@@ -59,7 +59,7 @@ test("document-level disconnect reauthorizes automatically and on explicit recon
       socket = route;
       route.connectToServer();
     });
-    await f.page.goto(`/workbench/tools/canvas/${project.id}`);
+    await f.page.goto(`/workbench/notes/${project.id}`);
     await expect(f.page.locator(".canvas-status")).toContainText(
       "Saved on server",
     );
@@ -136,13 +136,14 @@ test("commenters discuss cards while canvas edits remain disabled", async ({
       mutationId: randomUUID(),
     });
     await membership(f, { contentRole: "commenter" });
-    await f.page.goto(`/workbench/tools/canvas/${project.id}`);
+    await f.page.goto(`/workbench/notes/${project.id}`);
     await expect(
       f.page.getByRole("button", { name: "Add text card", exact: true }),
     ).toBeDisabled();
     await f.page
       .locator('[data-canvas-node="target"]')
       .click({ button: "right", position: { x: 30, y: 15 } });
+    await f.page.getByRole("menuitem", { name: "Card", exact: true }).click();
     await f.page
       .getByRole("menuitem", { name: "Discuss card", exact: true })
       .click();
@@ -192,12 +193,17 @@ test("file cards follow new versions, retain explicit pins and stop previewing a
     const upload = async (body: string, resourceId?: string) => {
       const id = randomUUID(),
         bytes = Buffer.from(body);
+      const target = resourceId
+        ? await api(f.owner.request, `resources/${resourceId}`)
+        : null;
       await api(f.owner.request, "uploads", {
         id,
         spaceId: team.id,
         name: "measurement.txt",
         bytes: bytes.length,
         resourceId,
+        expectedVersionId: target?.current_version_id,
+        expectedResourceVersion: target?.version,
       });
       const chunk = await f.owner.request.put(
         `/api/v1/uploads/${id}/chunks/1`,
@@ -233,7 +239,7 @@ test("file cards follow new versions, retain explicit pins and stop previewing a
       source: JSON.stringify({ nodes, edges: [] }),
       mutationId: randomUUID(),
     });
-    await f.page.goto(`/workbench/tools/canvas/${project.id}`);
+    await f.page.goto(`/workbench/notes/${project.id}`);
     await expect(f.page.locator('[data-canvas-node="latest"]')).toContainText(
       "Original measurement: 42",
     );

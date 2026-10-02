@@ -1,7 +1,60 @@
 # Current verification and beta release gates
 
-Updated September 28, 2026. Historical logs are [archived separately](archive/VERIFICATION-2026-09-11.md).
+Updated October 3, 2026. Historical logs are [archived separately](archive/VERIFICATION-2026-09-11.md).
 Do not treat historical browser totals or local build IDs as current release evidence.
+
+## October 3 interactive static showcase
+
+- Added Discover, Editor and Canvas for GitHub Pages, using the real Axiom editor
+  and Canvas surface with local services, not a separate mock editor. The shared
+  Canvas host keeps authenticated permissions, collaboration, discussions and
+  previews in the workbench while providing device-only equivalents in the demo.
+  Curated fictional screenshots demonstrate backend-only features separately.
+- Local notes, Canvas files, uploads and preferences persist in a dedicated
+  IndexedDB database. Asset bytes use ArrayBuffers for Safari compatibility and
+  stable paths in Markdown; previews use host-owned object URLs. Quota/storage
+  denial keeps the session editable with an explicit warning and working exports.
+  ZIP backup/restore is additive and bounded. No account API, synchronization
+  connection, provider request or service worker belongs to the static site.
+- Appearance uses a seven-category grouped rail, stable independently scrolling
+  fields, aligned controls and a persistent live preview. Typography, Page,
+  Code & tables, Typing & math and Minimap use production preference schemas.
+  Changes apply to the actual editor and Canvas cards, persist locally and never
+  rewrite Markdown. Keyboard navigation and category-only resets are covered.
+  Local data separates backup/import from confirmed reset; acceptance proves
+  cancellation, additive import and preservation of unrelated browser stores.
+  Write, Source and Read use one production document scrollport at the pane edge;
+  the toolbar, outline and word-count footer do not move with the document.
+  Math uses a module worker in development as well as in optimized builds.
+- **2,046 unit tests / 106 files**, TypeScript, ESLint, documentation checks,
+  theme validation and an isolated optimized workbench build passed. The editor
+  laboratory passed **449 checks**, with one optional benchmark skipped.
+  Sixteen static acceptance workflows passed in Chromium, Firefox and WebKit
+  (**48 runs**) against the built repository-prefix artifact. Checks cover modes,
+  math/images/Mermaid and fullscreen, tables, outline/minimap, preference reload,
+  pane scrolling, uploads, Canvas editing/connections, image/PDF/audio file cards,
+  styled HTML, real image/PDF exports, portable ZIP restore, blocked remote images
+  and storage-denied recovery. Test artifacts stay in ignored
+  `data/showcase-results/`; no working account data was used.
+- Eleven focused authenticated Canvas checks passed in Chromium on isolated
+  staging: live collaboration and local undo, immediate rich cards, named cards,
+  right-to-right connections, automatic sizing, file previews and version pins,
+  permission loss, commenter discussion, stale-dataset guards and actual exports.
+  Updated relevant fixtures to use current routes, grouped menus and guarded
+  upload replacement. This is not a full recertification of older platform/MCP/
+  offline acceptance suites or physical IME/clipboard/accessibility behavior.
+- The Pages workflow uploads only `apps/showcase/dist/` after checks. The static
+  build never loads `.env`, a database, private reports or user uploads. See
+  [the showcase guide](STATIC_SHOWCASE.md) for privacy, local backup, export
+  limitations, development commands and deployment boundaries.
+  Fresh light/dark editor, Canvas and settings captures use the built artifact
+  with isolated guest contexts and bundled fictional samples. README, the gallery
+  and the settings guide distinguish this device-only demo from account services.
+- Production security remains a separate release gate: the current dependency
+  audit reports existing advisories in Next.js (critical), Nodemailer and
+  brace-expansion (high), and DOMPurify (low). This increment does not upgrade
+  those dependencies or certify the authenticated application for public release.
+  GitHub Pages does not run the Next.js or mail server.
 
 ## September 28 in-app guide and evidence workbench
 

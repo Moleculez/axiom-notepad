@@ -27,6 +27,24 @@ for (const dialect of ["commonmark", "gfm"] as const) {
   });
 }
 describe("research dialect", () => {
+  it("resolves image previews through a trusted host without rewriting canonical source", () => {
+    const source =
+        "![Local figure](assets/figure.png)\n\n![Remote](https://example.com/private.png)",
+      doc = parseMarkdown(source),
+      before = JSON.stringify(doc);
+    const html = renderDocument(doc, {
+      resolveImage: (path) =>
+        path === "assets/figure.png"
+          ? "blob:https://demo.example/local-image"
+          : undefined,
+    });
+    expect(html).toContain('src="blob:https://demo.example/local-image"');
+    expect(html).toContain('<span class="image-unavailable">Remote</span>');
+    expect(html).not.toContain("https://example.com/private.png");
+    expect(JSON.stringify(doc)).toBe(before);
+    expect(safeUrl("blob:https://demo.example/local-image", true)).toBe("");
+    expect(renderDocument(doc)).toContain('src="assets/figure.png"');
+  });
   it("renders task gutters with intact nested and loose content", () => {
     const source =
       "- [ ] **Parent**\n\n  Second paragraph.\n\n  - [x] Child\n\n- Regular item";

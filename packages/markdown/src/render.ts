@@ -310,7 +310,14 @@ export function renderDocument(
       case "image": {
         if (context.disableImages)
           return `<span class="muted">[Image disabled in scratchpad: ${escapeHtml(plainText(n))}]</span>`;
-        const image = `<img src="${attr(uri(exact ? (n.href ?? "") : safeUrl(n.href ?? "", true)))}" alt="${attr(plainText(n))}"${n.title !== undefined ? ` title="${attr(n.title)}"` : ""}${exact ? "" : ' loading="lazy"'} />`;
+        const imageHref = context.resolveImage
+          ? (context.resolveImage(n.href ?? "") ?? "")
+          : exact
+            ? (n.href ?? "")
+            : safeUrl(n.href ?? "", true);
+        if (!imageHref && context.resolveImage)
+          return `<span class="image-unavailable">${attr(plainText(n) || "Image unavailable")}</span>`;
+        const image = `<img src="${attr(uri(imageHref))}" alt="${attr(plainText(n))}"${n.title !== undefined ? ` title="${attr(n.title)}"` : ""}${exact ? "" : ' loading="lazy"'} />`;
         return context.visuals && !exact
           ? `<span class="visual-inline" data-visual-kind="image" data-visual-from="${n.from}" data-visual-to="${n.to}">${image}</span>`
           : image;

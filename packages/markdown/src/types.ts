@@ -55,6 +55,8 @@ export interface RenderContext {
   scrollTables?: boolean;
   /** Isolated scratchpads must not load user files or external images. */
   disableImages?: boolean;
+  /** Optional host-owned asset registry. Unknown images remain placeholders. */
+  resolveImage?: (href: string) => string | undefined;
   math?: (request: import("./math-contract").MathRequest) => string;
   theme?: "light" | "dark";
   conformance?: boolean;
