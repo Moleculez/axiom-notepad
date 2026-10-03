@@ -1,4 +1,5 @@
 "use client";
+import { Button, HelpText, TextInput, TextArea } from "../ui/controls";
 import { useEffect, useMemo, useState } from "react";
 import type { AssistantSelection } from "@axiom/shared/assistant";
 import type { RevisionContent } from "@axiom/shared/revisions";
@@ -49,10 +50,10 @@ export default function AssistantExcerpt({
       subtitle={data.data?.title ?? "Loading source…"}
       onClose={onClose}
     >
-      <p className="ws-note">
+      <HelpText>
         Select text below or choose line numbers. Only this exact passage will
         be attached. Changed server text requires a fresh selection.
-      </p>
+      </HelpText>
       <ErrorNotice message={data.error} />
       {data.loading ? (
         <p role="status">Loading saved document…</p>
@@ -62,7 +63,7 @@ export default function AssistantExcerpt({
             <div className="assistant-fields">
               <label>
                 From line
-                <input
+                <TextInput
                   aria-label="Excerpt from line"
                   type="number"
                   min={1}
@@ -85,7 +86,7 @@ export default function AssistantExcerpt({
               </label>
               <label>
                 Through line
-                <input
+                <TextInput
                   aria-label="Excerpt through line"
                   type="number"
                   min={1}
@@ -104,7 +105,7 @@ export default function AssistantExcerpt({
                 />
               </label>
             </div>
-            <textarea
+            <TextArea
               className="assistant-excerpt-source"
               aria-label="Document excerpt source"
               readOnly
@@ -115,9 +116,9 @@ export default function AssistantExcerpt({
                   setRange({ from: el.selectionStart, to: el.selectionEnd });
               }}
             />
-            <p className={length > 30000 ? "form-error" : "ws-note"}>
+            <HelpText className={length > 30000 ? "form-error" : undefined}>
               {length.toLocaleString()} / 30,000 characters selected
-            </p>
+            </HelpText>
             <details>
               <summary>Selected passage</summary>
               <pre className="assistant-excerpt">
@@ -128,10 +129,10 @@ export default function AssistantExcerpt({
         )
       )}
       <div className="dialog-footer">
-        <button className="button secondary" onClick={onClose}>
+        <Button className="button secondary" onClick={onClose}>
           Cancel
-        </button>
-        <button
+        </Button>
+        <Button
           className="button primary"
           disabled={!data.data || !!data.error || !length || length > 30000}
           onClick={() =>
@@ -142,7 +143,7 @@ export default function AssistantExcerpt({
           }
         >
           Use selected excerpt
-        </button>
+        </Button>
       </div>
     </Dialog>
   );

@@ -92,7 +92,7 @@ test("8080 shows the unified toolbar, group hub and file toolbar", async ({
     page.getByRole("region", { name: "Selection actions", exact: true }),
   ).toHaveCount(0);
   await expect(
-    page.getByRole("textbox", { name: "Search files and notes" }),
+    page.getByRole("searchbox", { name: "Search files and notes" }),
   ).toBeVisible();
   await page.screenshot({
     path: info.outputPath("workspace-explorer-toolbar.png"),

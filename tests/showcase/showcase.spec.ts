@@ -785,7 +785,7 @@ test("settings use one keyboard-accessible rail, stable panes and category-only 
   expect(compact.left).toBeGreaterThanOrEqual(0);
   expect(compact.right).toBeLessThanOrEqual(compact.viewport[0]);
   await expect(
-    settings.getByRole("complementary", { name: "Live document preview" }),
+    settings.getByRole("complementary", { name: "Live appearance preview" }),
   ).toBeVisible();
   await page.screenshot({ path: info.outputPath("settings-dark.png") });
   await settings.getByRole("tab", { name: "Local data" }).focus();

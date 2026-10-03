@@ -1,4 +1,11 @@
 "use client";
+import {
+  Button,
+  Checkbox,
+  HelpText,
+  TextInput,
+  NativeSelect,
+} from "../ui/controls";
 import { useState } from "react";
 import {
   Plus,
@@ -89,29 +96,29 @@ export default function ProviderSettings({ groupId }: { groupId: string }) {
             <ShieldCheck size={19} />
             Research processing providers
           </h2>
-          <p className="ws-note">
+          <HelpText>
             Explicit submission only. API keys stay encrypted on the server;
             research prompts are never included in administrative activity logs.
-          </p>
+          </HelpText>
         </div>
-        <button
+        <Button
           className="button primary"
           disabled={!data.data?.configured}
           onClick={() => open(null)}
         >
           <Plus size={16} />
           Add provider
-        </button>
+        </Button>
       </div>
       <ErrorNotice message={error || data.error} />
       {data.loading && !data.data ? (
         <Loading />
       ) : !data.data?.configured ? (
-        <p className="ws-note">
+        <HelpText>
           Server setup required: configure the dedicated TOOL_PROVIDER_KEY
           encryption key. Private endpoint origins must also be allowlisted. No
           external processing is enabled by default.
-        </p>
+        </HelpText>
       ) : data.data?.providers.length ? (
         <div className="tool-project-list">
           {data.data.providers.map((p) => (
@@ -131,7 +138,7 @@ export default function ProviderSettings({ groupId }: { groupId: string }) {
                 {p.enabled ? "Enabled" : "Disabled"} · {p.used_today}/
                 {p.daily_limit} today (UTC)
               </span>
-              <button
+              <Button
                 className="button secondary"
                 disabled={busy}
                 onClick={() => {
@@ -148,18 +155,18 @@ export default function ProviderSettings({ groupId }: { groupId: string }) {
               >
                 <FlaskConical size={14} />
                 Test
-              </button>
-              <button className="button secondary" onClick={() => open(p)}>
+              </Button>
+              <Button className="button secondary" onClick={() => open(p)}>
                 Configure
-              </button>
+              </Button>
             </div>
           ))}
         </div>
       ) : (
-        <p className="ws-note">
+        <HelpText>
           No providers configured. Add a private compatible endpoint or an
           OpenRouter account for opt-in OCR and mathematical assistance.
-        </p>
+        </HelpText>
       )}
       {edit && (
         <Dialog
@@ -214,7 +221,7 @@ export default function ProviderSettings({ groupId }: { groupId: string }) {
               <legend>Connection</legend>
               <label>
                 Name
-                <input
+                <TextInput
                   required
                   value={name}
                   maxLength={100}
@@ -223,7 +230,7 @@ export default function ProviderSettings({ groupId }: { groupId: string }) {
               </label>
               <label>
                 Connection
-                <select
+                <NativeSelect
                   value={kind}
                   onChange={(e) => setKind(e.target.value as Provider["kind"])}
                 >
@@ -231,12 +238,12 @@ export default function ProviderSettings({ groupId }: { groupId: string }) {
                   <option value="openrouter">
                     OpenRouter · external service
                   </option>
-                </select>
+                </NativeSelect>
               </label>
               {kind === "private" && (
                 <label className="provider-full">
                   API endpoint
-                  <input
+                  <TextInput
                     required
                     type="url"
                     placeholder="http://private-inference:8000/v1/"
@@ -247,7 +254,7 @@ export default function ProviderSettings({ groupId }: { groupId: string }) {
               )}
               <label className="provider-full">
                 Model identifier
-                <input
+                <TextInput
                   required
                   value={model}
                   maxLength={160}
@@ -260,7 +267,7 @@ export default function ProviderSettings({ groupId }: { groupId: string }) {
               <legend>Credentials & limits</legend>
               <label className="provider-full">
                 API credential
-                <input
+                <TextInput
                   type="password"
                   required={edit === "new"}
                   autoComplete="new-password"
@@ -275,7 +282,7 @@ export default function ProviderSettings({ groupId }: { groupId: string }) {
               </label>
               <label>
                 Daily request limit
-                <input
+                <TextInput
                   type="number"
                   min={1}
                   max={10000}
@@ -287,32 +294,28 @@ export default function ProviderSettings({ groupId }: { groupId: string }) {
             <fieldset className="provider-form-section" disabled={busy}>
               <legend>Capabilities & availability</legend>
               <label className="provider-capability">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={ocr}
                   onChange={(e) => setOcr(e.target.checked)}
                 />
                 Model accepts images for OCR
               </label>
               <label className="provider-capability">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={paper}
                   onChange={(e) => setPaper(e.target.checked)}
                 />
                 Enable paper reading assistance (explicit excerpts only)
               </label>
               <label className="provider-capability">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={enabled}
                   onChange={(e) => setEnabled(e.target.checked)}
                 />
                 Enable for this group
               </label>
               <label className="provider-capability">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={assistant}
                   onChange={(e) => setAssistant(e.target.checked)}
                 />
@@ -326,18 +329,22 @@ export default function ProviderSettings({ groupId }: { groupId: string }) {
             </p>
             <ErrorNotice message={error} />
             <DialogFooter>
-              <button
+              <Button
                 type="button"
                 className="button secondary"
                 disabled={busy}
                 onClick={requestClose}
               >
                 Cancel
-              </button>
-              <button className="button primary" disabled={busy}>
+              </Button>
+              <Button
+                className="button primary"
+                disabled={busy}
+                pending={!!busy}
+              >
                 <Save size={15} />
-                {busy ? "Saving…" : "Save provider"}
-              </button>
+                {"Save provider"}
+              </Button>
             </DialogFooter>
           </form>
         </Dialog>
@@ -352,15 +359,15 @@ export default function ProviderSettings({ groupId }: { groupId: string }) {
             you entered will be cleared.
           </p>
           <DialogFooter>
-            <button
+            <Button
               className="button secondary"
               onClick={() => setConfirmClose(false)}
             >
               Keep editing
-            </button>
-            <button className="button primary" onClick={close}>
+            </Button>
+            <Button className="button primary" onClick={close}>
               Discard changes
-            </button>
+            </Button>
           </DialogFooter>
         </Dialog>
       )}

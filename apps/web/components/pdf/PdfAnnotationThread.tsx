@@ -1,4 +1,5 @@
 "use client";
+import { Button, HelpText, TextArea } from "../ui/controls";
 import { useEffect, useRef, useState } from "react";
 import type { Annotation } from "@axiom/shared/research";
 import { api, post, SIGN_OUT_PENDING } from "../../lib/client";
@@ -198,16 +199,12 @@ export default function PdfAnnotationThread({
           {error}
         </p>
       )}
-      {draftNotice && (
-        <p className="ws-note" role="status">
-          {draftNotice}
-        </p>
-      )}
+      {draftNotice && <HelpText role="status">{draftNotice}</HelpText>}
       {!thread && body && (
-        <p className="ws-note">
+        <HelpText>
           Your unsent draft is kept on this device. Reconnect with access to
           this annotation to continue; nothing will be sent automatically.
-        </p>
+        </HelpText>
       )}
       {thread && (
         <>
@@ -304,7 +301,7 @@ export default function PdfAnnotationThread({
             >
               <label>
                 {editing ? "Edit reply" : "Reply"}
-                <textarea
+                <TextArea
                   aria-label={editing ? "Edit reply" : "Reply"}
                   disabled={busy}
                   value={body}
@@ -338,17 +335,17 @@ export default function PdfAnnotationThread({
                     Cancel edit
                   </button>
                 )}
-                <button
+                <Button
                   className="button primary"
                   disabled={busy || !body.trim()}
                 >
                   {editing ? "Save changes" : "Add reply"}
-                </button>
+                </Button>
               </div>
-              <p className="ws-note">
+              <HelpText>
                 Unsent replies stay on this device until sent, discarded, or you
                 sign out. Sending always requires current access.
-              </p>
+              </HelpText>
             </form>
           )}
         </>

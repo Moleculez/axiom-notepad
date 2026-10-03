@@ -1,4 +1,12 @@
 "use client";
+import {
+  Button,
+  Checkbox,
+  IconButton,
+  NativeSelect,
+  TextInput,
+  TextArea,
+} from "../ui/controls";
 import { useEffect, useRef, useState } from "react";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import { Copy, Send, ShieldCheck, Trash2, X } from "lucide-react";
@@ -217,13 +225,13 @@ export default function PaperAssistant({
         <strong>
           <ShieldCheck size={15} /> Paper assistant
         </strong>
-        <button
+        <IconButton
           className="icon-button"
           aria-label="Close paper assistant"
           onClick={onClose}
         >
           <X size={15} />
-        </button>
+        </IconButton>
       </header>
       <p className="muted">
         Private to your account. Only reviewed excerpts go to the selected
@@ -237,7 +245,7 @@ export default function PaperAssistant({
       )}
       <label>
         Provider
-        <select
+        <NativeSelect
           aria-label="Paper assistant provider"
           value={providerId}
           onChange={(e) => {
@@ -251,11 +259,11 @@ export default function PaperAssistant({
               {p.name} · {p.model}
             </option>
           ))}
-        </select>
+        </NativeSelect>
       </label>
       <label>
         Task
-        <select
+        <NativeSelect
           value={action}
           onChange={(e) => {
             const next = e.target.value as keyof typeof prompts;
@@ -273,11 +281,11 @@ export default function PaperAssistant({
                 : kind[0].toUpperCase() + kind.slice(1)}
             </option>
           ))}
-        </select>
+        </NativeSelect>
       </label>
       <label>
         Physical page numbers
-        <input
+        <TextInput
           aria-label="Assistant page range"
           value={range}
           disabled={busy}
@@ -299,15 +307,16 @@ export default function PaperAssistant({
       >
         Use current page ({page})
       </button>
-      <button
+      <Button
         className="button secondary small"
         disabled={
           busy || (action === "ocr" && !provider?.capabilities.includes("ocr"))
         }
         onClick={() => void prepare()}
+        pending={!!busy}
       >
-        {busy ? "Working…" : "Prepare context locally"}
-      </button>
+        {"Prepare context locally"}
+      </Button>
       {action === "ocr" && !provider?.capabilities.includes("ocr") && (
         <small>
           Choose a provider with both paper and image/OCR capabilities.
@@ -315,7 +324,7 @@ export default function PaperAssistant({
       )}
       <label>
         Your request
-        <textarea
+        <TextArea
           aria-label="Paper assistant request"
           rows={4}
           maxLength={10000}
@@ -347,8 +356,7 @@ export default function PaperAssistant({
             <pre>{evidence.source}</pre>
           </details>
           <label className="pdf-consent">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={consent}
               onChange={(e) => setConsent(e.target.checked)}
             />
@@ -358,13 +366,13 @@ export default function PaperAssistant({
           </label>
         </div>
       )}
-      <button
+      <Button
         className="button primary small"
         disabled={busy || !evidence || !provider || !consent || !prompt.trim()}
         onClick={() => void submit()}
       >
         <Send size={14} /> Submit once
-      </button>
+      </Button>
       {error && <p role="alert">{error}</p>}
       {status && <p role="status">{status}</p>}
       <h3>Private request history</h3>
@@ -378,13 +386,13 @@ export default function PaperAssistant({
               {job.kind === "ocr" ? "Transcription" : "Reading response"} ·{" "}
               {job.status}
             </strong>
-            <button
+            <IconButton
               className="icon-button"
               aria-label="Delete private response"
               onClick={() => void remove(job)}
             >
               <Trash2 size={14} />
-            </button>
+            </IconButton>
           </header>
           {job.error && <p role="alert">{job.error}</p>}
           {["queued", "running"].includes(job.status) && (

@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "../ui/controls";
 import { useEffect, useState } from "react";
 import Dialog from "../Dialog";
 
@@ -36,10 +37,10 @@ export default function DraftGuard({
         leaving this page.
       </p>
       <div className="dialog-footer">
-        <button className="button secondary" onClick={() => setLeave(null)}>
+        <Button className="button secondary" onClick={() => setLeave(null)}>
           Keep editing
-        </button>
-        <button
+        </Button>
+        <Button
           className="button primary"
           onClick={() => {
             const proceed = leave;
@@ -48,7 +49,7 @@ export default function DraftGuard({
           }}
         >
           Discard and leave
-        </button>
+        </Button>
       </div>
     </Dialog>
   ) : null;

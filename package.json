@@ -27,6 +27,7 @@
     "reset:development": "tsx scripts/ops/reset-development.ts",
     "validate:env": "tsx scripts/ops/validate-env.ts",
     "validate:themes": "tsx scripts/verify/validate-themes.ts",
+    "validate:ui": "tsx scripts/verify/validate-ui.ts",
     "fixtures": "tsx scripts/dev/fetch-fixtures.ts",
     "format": "prettier --write apps packages scripts tests *.ts *.mjs *.json",
     "dev": "concurrently -k -n web,sync,worker npm:dev:web npm:dev:sync npm:dev:worker",
@@ -54,7 +55,7 @@
     "admin": "dotenv -e .env -- tsx scripts/ops/admin.ts",
     "seed": "dotenv -e .env -- tsx scripts/dev/seed.ts",
     "db:local": "tsx scripts/dev/local-db.ts",
-    "check": "npm run typecheck && npm run lint && npm test && npm run build"
+    "check": "npm run typecheck && npm run lint && npm run validate:ui && npm run validate:themes && npm run docs:check && npm test && npm run build"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1000.0",

@@ -47,14 +47,7 @@
   min-width: 60px;
 }
 .tool-search {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-.tool-search input {
-  border: 0;
-  background: transparent;
-  padding: 5px;
+  min-width: 0;
 }
 .tool-preview {
   display: flex;
@@ -572,36 +565,7 @@
   font-size: 10px;
 }
 .research-studio .math-library-search {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 6px;
   margin: 0 0 12px;
-  padding: 0 9px;
-  border-radius: var(--control-radius);
-  background: var(--surface);
-}
-.research-studio .math-library-search > input {
-  background: transparent;
-  padding: 9px 2px;
-  font-size: 12px;
-}
-.research-studio .math-library-search:focus-within {
-  box-shadow: inset 0 0 0 1px var(--focus);
-}
-.research-studio .math-library-search > input:focus-visible {
-  box-shadow: none;
-  outline: none;
-}
-.math-library-search > svg,
-.math-library-search > button {
-  flex: 0 0 auto;
-  color: var(--muted);
-}
-.math-library-search .icon-button {
-  width: 24px;
-  height: 24px;
-  min-height: 24px;
 }
 .math-library-tabs {
   width: 100%;

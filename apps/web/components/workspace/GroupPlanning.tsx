@@ -1,4 +1,12 @@
 "use client";
+import {
+  Button,
+  Checkbox,
+  HelpText,
+  IconButton,
+  NativeSelect,
+  TextInput,
+} from "../ui/controls";
 import { useMemo, useState, type CSSProperties } from "react";
 import { useAppearance } from "../../lib/appearance";
 import { openAssistant } from "../../lib/assistant";
@@ -119,7 +127,7 @@ export default function GroupPlanning({ id }: { id: string }) {
         </nav>
         <label>
           Portfolio
-          <select
+          <NativeSelect
             value={portfolio}
             onChange={(e) => change({ portfolio: e.target.value })}
           >
@@ -129,20 +137,20 @@ export default function GroupPlanning({ id }: { id: string }) {
                 {p.name}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
         {data.data?.canManage && (
           <>
-            <button
+            <IconButton
               className="icon-button"
               aria-label="Create portfolio"
               title="Create portfolio"
               onClick={() => setEditing("new")}
             >
               <Plus size={17} />
-            </button>
+            </IconButton>
             {portfolio && (
-              <button
+              <IconButton
                 className="icon-button"
                 aria-label="Edit portfolio"
                 title="Edit portfolio"
@@ -153,12 +161,12 @@ export default function GroupPlanning({ id }: { id: string }) {
                 }
               >
                 <Settings2 size={17} />
-              </button>
+              </IconButton>
             )}
           </>
         )}
         <span className="planning-spacer" />
-        <button
+        <IconButton
           className="icon-button"
           title="Ask across this portfolio (up to 20 workspaces)"
           aria-label="Ask across portfolio"
@@ -173,11 +181,11 @@ export default function GroupPlanning({ id }: { id: string }) {
           }
         >
           <MessageSquare size={17} />
-        </button>
+        </IconButton>
         <WorkspaceLink className="button ghost" to="/groups">
           Groups
         </WorkspaceLink>
-        <button
+        <IconButton
           className="icon-button"
           title="Export visible portfolio"
           aria-label="Export visible portfolio"
@@ -196,13 +204,13 @@ export default function GroupPlanning({ id }: { id: string }) {
           }}
         >
           <Download size={17} />
-        </button>
+        </IconButton>
       </div>
       <ErrorNotice message={data.error} retry={data.reload} />
-      <p className="ws-note">
+      <HelpText>
         Accessible active workspaces only. Totals never include work you cannot
         read.
-      </p>
+      </HelpText>
       {view === "capacity" ? (
         <GroupCapacity groupId={id} portfolioId={portfolio} />
       ) : data.loading && !data.data ? (
@@ -349,7 +357,7 @@ export function GroupCapacity({
         <CalendarDays size={17} />
         <label>
           Week of
-          <input
+          <TextInput
             type="date"
             value={start}
             onChange={(e) => {
@@ -359,7 +367,7 @@ export function GroupCapacity({
         </label>
         <label>
           Range
-          <select
+          <NativeSelect
             value={weeks}
             onChange={(e) => setWeeks(Number(e.target.value))}
           >
@@ -368,14 +376,14 @@ export function GroupCapacity({
                 {n} weeks
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
       </div>
-      <p className="ws-note">
+      <HelpText>
         Estimated demand / group availability. Unknown is not zero. Each
         estimate is the task’s own effort, not its children's rollup. Dates
         retain their workspace calendar; weeks start Monday.
-      </p>
+      </HelpText>
       <ErrorNotice message={data.error} retry={data.reload} />
       {data.loading && !data.data && <Loading />}
       {data.data && (
@@ -541,7 +549,7 @@ function AvailabilityEditor({
       >
         <label>
           Weekly hours
-          <input
+          <TextInput
             type="number"
             min={0}
             max={168}
@@ -560,8 +568,7 @@ function AvailabilityEditor({
           <legend>Working days</legend>
           {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day, i) => (
             <label className="productivity-check" key={day}>
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={value.workingDays.includes(i)}
                 onChange={(e) =>
                   setValue({
@@ -577,13 +584,13 @@ function AvailabilityEditor({
           ))}
         </fieldset>
         <h3>Date exceptions</h3>
-        <p className="ws-note">
+        <HelpText>
           Set zero for time off. Exceptions replace that day's normal hours.
-        </p>
+        </HelpText>
         <div className="productivity-subtoolbar">
           <label>
             Date
-            <input
+            <TextInput
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
@@ -591,7 +598,7 @@ function AvailabilityEditor({
           </label>
           <label>
             Hours
-            <input
+            <TextInput
               type="number"
               min={0}
               max={24}
@@ -600,7 +607,7 @@ function AvailabilityEditor({
               onChange={(e) => setExceptionHours(Number(e.target.value))}
             />
           </label>
-          <button
+          <Button
             type="button"
             className="button secondary"
             disabled={!date || exceptionHours < 0 || exceptionHours > 24}
@@ -616,13 +623,13 @@ function AvailabilityEditor({
             }}
           >
             Add exception
-          </button>
+          </Button>
         </div>
         {value.exceptions.map((ex) => (
           <div className="productivity-subtoolbar" key={ex.date}>
             <span>{ex.date}</span>
             <span>{ex.hours} h</span>
-            <button
+            <IconButton
               type="button"
               className="icon-button"
               aria-label={`Remove ${ex.date} exception`}
@@ -636,7 +643,7 @@ function AvailabilityEditor({
               }
             >
               <X size={15} />
-            </button>
+            </IconButton>
           </div>
         ))}
         <ErrorNotice
@@ -646,15 +653,15 @@ function AvailabilityEditor({
           }
         />
         <DialogFooter>
-          <button type="button" className="button secondary" onClick={onClose}>
+          <Button type="button" className="button secondary" onClick={onClose}>
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             className="button primary"
             disabled={action.busy || !validation.success}
           >
             Save availability
-          </button>
+          </Button>
         </DialogFooter>
       </form>
     </Dialog>
@@ -703,7 +710,7 @@ function PortfolioEditor({
       >
         <label>
           Name
-          <input
+          <TextInput
             required
             maxLength={120}
             value={name}
@@ -714,8 +721,7 @@ function PortfolioEditor({
           <legend>Included workspaces</legend>
           {spaces.map((s) => (
             <label className="productivity-check" key={s.id}>
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={selected.includes(s.id)}
                 onChange={(e) =>
                   setSelected(
@@ -732,7 +738,7 @@ function PortfolioEditor({
         <ErrorNotice message={action.error} />
         <DialogFooter>
           {value !== "new" && (
-            <button
+            <Button
               className="button ghost"
               type="button"
               disabled={action.busy}
@@ -760,17 +766,17 @@ function PortfolioEditor({
               }
             >
               Remove portfolio
-            </button>
+            </Button>
           )}
-          <button className="button secondary" type="button" onClick={onClose}>
+          <Button className="button secondary" type="button" onClick={onClose}>
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             className="button primary"
             disabled={action.busy || !name.trim()}
           >
             Save portfolio
-          </button>
+          </Button>
         </DialogFooter>
       </form>
     </Dialog>

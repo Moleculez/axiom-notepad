@@ -1,6 +1,7 @@
 "use client";
+import { SearchField } from "./ui/controls";
 import { useId, useState } from "react";
-import { Search, ArrowUpRight } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import { ActionIcon } from "../lib/icons/ActionIcon";
 import { editorCommandIcons } from "../lib/icons/editor-commands";
 import {
@@ -45,49 +46,47 @@ export default function CommandPalette({
     (command.id === "attachment" && offline);
   return (
     <div className="command-palette">
-      <label className="command-search">
-        <Search size={18} />
-        <input
-          autoFocus
-          aria-label={insertOnly ? "Find a block" : "Find a command"}
-          role="combobox"
-          aria-controls={id}
-          aria-expanded="true"
-          aria-activedescendant={
-            commands[active] ? id + "-" + commands[active].id : undefined
+      <SearchField
+        wrapperClassName="command-search"
+        autoFocus
+        aria-label={insertOnly ? "Find a block" : "Find a command"}
+        role="combobox"
+        aria-controls={id}
+        aria-expanded="true"
+        aria-activedescendant={
+          commands[active] ? id + "-" + commands[active].id : undefined
+        }
+        placeholder={
+          insertOnly
+            ? "Headings, math, tables, citations…"
+            : "What would you like to do?"
+        }
+        value={query}
+        onChange={(e) => {
+          setQuery(e.target.value);
+          setIndex(0);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+            e.preventDefault();
+            const next =
+              (active + (e.key === "ArrowDown" ? 1 : -1) + commands.length) %
+              commands.length;
+            setIndex(next);
+            document
+              .getElementById(id + "-" + commands[next]?.id)
+              ?.scrollIntoView({ block: "nearest" });
           }
-          placeholder={
-            insertOnly
-              ? "Headings, math, tables, citations…"
-              : "What would you like to do?"
+          if (
+            e.key === "Enter" &&
+            commands[active] &&
+            !disabled(commands[active])
+          ) {
+            e.preventDefault();
+            onExecute(commands[active].id);
           }
-          value={query}
-          onChange={(e) => {
-            setQuery(e.target.value);
-            setIndex(0);
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-              e.preventDefault();
-              const next =
-                (active + (e.key === "ArrowDown" ? 1 : -1) + commands.length) %
-                commands.length;
-              setIndex(next);
-              document
-                .getElementById(id + "-" + commands[next]?.id)
-                ?.scrollIntoView({ block: "nearest" });
-            }
-            if (
-              e.key === "Enter" &&
-              commands[active] &&
-              !disabled(commands[active])
-            ) {
-              e.preventDefault();
-              onExecute(commands[active].id);
-            }
-          }}
-        />
-      </label>
+        }}
+      />
       <div
         role="listbox"
         id={id}

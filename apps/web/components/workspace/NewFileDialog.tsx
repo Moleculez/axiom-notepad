@@ -1,4 +1,5 @@
 "use client";
+import { Button, HelpText, TextInput, NativeSelect } from "../ui/controls";
 import { useEffect, useRef, useState } from "react";
 import { FolderOpen } from "lucide-react";
 import { fileTypes, type FileType } from "@axiom/shared/file-types";
@@ -121,7 +122,7 @@ export default function NewFileDialog({
       >
         <label>
           Name
-          <input
+          <TextInput
             autoFocus
             value={name}
             maxLength={150}
@@ -132,7 +133,7 @@ export default function NewFileDialog({
         </label>
         <label>
           Workspace
-          <select
+          <NativeSelect
             required
             value={spaceId}
             disabled={busy}
@@ -146,7 +147,7 @@ export default function NewFileDialog({
                 {space.name}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
         <p className="file-create-location">
           <FolderOpen size={16} />
@@ -155,32 +156,33 @@ export default function NewFileDialog({
             : "Workspace root"}
         </p>
         {importFile && (
-          <p className="ws-note">
+          <HelpText>
             A new editable copy will be created. The original image and its
             history stay unchanged.
-          </p>
+          </HelpText>
         )}
         {!writable.length && (
-          <p className="ws-note">
+          <HelpText>
             You need editor access to an active workspace to create files.
-          </p>
+          </HelpText>
         )}
         <ErrorNotice message={error || parent.error} />
         <div className="dialog-actions">
-          <button
+          <Button
             type="button"
             className="button secondary"
             disabled={busy}
             onClick={onClose}
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             className="button primary"
             disabled={busy || !writable.some((space) => space.id === spaceId)}
+            pending={!!busy}
           >
-            {busy ? "Creating…" : "Create"}
-          </button>
+            {"Create"}
+          </Button>
         </div>
       </form>
     </Dialog>

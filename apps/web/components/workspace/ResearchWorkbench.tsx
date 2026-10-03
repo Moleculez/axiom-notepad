@@ -1,4 +1,12 @@
 "use client";
+import {
+  Button,
+  Checkbox,
+  IconButton,
+  NativeSelect,
+  TextInput,
+  TextArea,
+} from "../ui/controls";
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { BookOpen, ExternalLink, FileText, StickyNote } from "lucide-react";
@@ -53,7 +61,7 @@ export default function ResearchWorkbench({
     <div className="evidence-workbench embedded">
       <div className="evidence-discovery">
         {view === "evidence" && (
-          <select
+          <NativeSelect
             aria-label="Evidence visibility"
             value={params.get("author") ?? "mine"}
             onChange={(e) => route({ author: e.target.value })}
@@ -61,7 +69,7 @@ export default function ResearchWorkbench({
             <option value="mine">My annotations & bookmarks</option>
             <option value="shared">Shared annotations</option>
             <option value="all">All accessible evidence</option>
-          </select>
+          </NativeSelect>
         )}
         <ResearchSearch
           label="Search research"
@@ -74,7 +82,7 @@ export default function ResearchWorkbench({
           onSubmit={() => route({ q: search.trim() })}
         />
         {view === "queue" && (
-          <select
+          <NativeSelect
             aria-label="Reading status filter"
             value={params.get("status") ?? "all"}
             onChange={(e) => route({ status: e.target.value })}
@@ -85,7 +93,7 @@ export default function ResearchWorkbench({
                 {label}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         )}
       </div>
       {view === "overview" && (
@@ -187,27 +195,28 @@ function EvidenceList({
           aria-label="Selected evidence"
         >
           <span>{selected.size} selected</span>
-          <button
+          <Button
             className="button secondary"
             onClick={() => setSynthesizing(true)}
           >
             <FileText size={15} />
             Create from evidence
-          </button>
-          <button
+          </Button>
+          <Button
             className="button ghost"
             onClick={() => setSelected(new Map())}
           >
             Clear selection
-          </button>
+          </Button>
         </div>
       )}
       {!items.length && result.loading ? (
         <Loading label="Gathering evidence…" />
       ) : !items.length ? (
         <Empty title="A little room for discovery">
-          Upload a PDF, bookmark a passage or add a reference to this workspace’s
-          library. Try another filter if you expected to find something here.
+          Upload a PDF, bookmark a passage or add a reference to this
+          workspace’s library. Try another filter if you expected to find
+          something here.
         </Empty>
       ) : (
         <div className="evidence-list">
@@ -231,8 +240,7 @@ function EvidenceList({
                 data-selected={selected.has(item.key) || undefined}
               >
                 {selectable ? (
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     aria-label={`Select ${item.title}`}
                     checked={selected.has(item.key)}
                     disabled={!selected.has(item.key) && selected.size >= 50}
@@ -284,7 +292,7 @@ function EvidenceList({
                 </div>
                 <div className="evidence-row-actions">
                   {["paper", "reference"].includes(item.kind) && (
-                    <select
+                    <NativeSelect
                       aria-label={`Reading status for ${item.title}`}
                       value={local?.data.status ?? item.status ?? "want"}
                       onChange={(e) => void status(item, e.target.value)}
@@ -294,16 +302,16 @@ function EvidenceList({
                           {label}
                         </option>
                       ))}
-                    </select>
+                    </NativeSelect>
                   )}
-                  <button
+                  <IconButton
                     className="icon-button"
                     aria-label={`Open ${item.title}`}
                     title="Open source"
                     onClick={() => navigate(item.route)}
                   >
                     <ExternalLink size={16} />
-                  </button>
+                  </IconButton>
                 </div>
               </article>
             );
@@ -311,13 +319,14 @@ function EvidenceList({
         </div>
       )}
       {result.data?.next && (
-        <button
+        <Button
           className="button secondary evidence-more"
           disabled={result.loading}
           onClick={() => setCursor(result.data!.next)}
+          pending={!!result.loading}
         >
-          {result.loading ? "Loading…" : "Load more evidence"}
-        </button>
+          {"Load more evidence"}
+        </Button>
       )}
       {synthesizing && (
         <SynthesisDialog
@@ -443,7 +452,7 @@ function SynthesisDialog({
       <fieldset disabled={busy} className="synthesis-fields">
         <label>
           File name
-          <input
+          <TextInput
             aria-label="File name"
             value={name}
             maxLength={200}
@@ -452,18 +461,18 @@ function SynthesisDialog({
         </label>
         <label>
           Format
-          <select
+          <NativeSelect
             aria-label="Format"
             value={type}
             onChange={(e) => setType(e.target.value as typeof type)}
           >
             <option value="markdown">Research note</option>
             <option value="canvas">Evidence Canvas</option>
-          </select>
+          </NativeSelect>
         </label>
         <label>
           Destination workspace
-          <select
+          <NativeSelect
             aria-label="Destination workspace"
             value={destination}
             onChange={(e) => setDestination(e.target.value)}
@@ -474,7 +483,7 @@ function SynthesisDialog({
                 {s.kind === "personal" ? " · private" : " · shared"}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
       </fieldset>
       {!writable.length && (
@@ -498,7 +507,7 @@ function SynthesisDialog({
           </div>
           <details>
             <summary>Exact file source</summary>
-            <textarea
+            <TextArea
               className="synthesis-source"
               readOnly
               value={preview.source}
@@ -511,8 +520,7 @@ function SynthesisDialog({
           </p>
           {preview.sharedDestination && preview.privateCount > 0 && (
             <label className="synthesis-consent">
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={ack}
                 onChange={(e) => setAck(e.target.checked)}
               />
@@ -523,18 +531,18 @@ function SynthesisDialog({
         </>
       )}
       <DialogFooter>
-        <button className="button ghost" disabled={busy} onClick={onClose}>
+        <Button className="button ghost" disabled={busy} onClick={onClose}>
           Cancel
-        </button>
-        <button
+        </Button>
+        <Button
           className="button secondary"
           disabled={busy || !destination || !name.trim()}
           onClick={() => void perform(false)}
         >
           {busy ? "Working…" : preview ? "Refresh preview" : "Preview draft"}
-        </button>
+        </Button>
         {preview && (
-          <button
+          <Button
             className="button primary"
             disabled={
               busy ||
@@ -543,7 +551,7 @@ function SynthesisDialog({
             onClick={() => void perform(true)}
           >
             Create {type === "canvas" ? "Canvas" : "note"}
-          </button>
+          </Button>
         )}
       </DialogFooter>
     </Dialog>

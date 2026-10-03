@@ -1,4 +1,5 @@
 "use client";
+import { Button, IconButton, TextInput, NativeSelect } from "./ui/controls";
 import { promptText } from "../lib/app-prompt";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -134,24 +135,24 @@ export default function ReferenceLibrary({
             A shared bibliography. A reading journey that is yours.
           </p>
         </div>
-        <button
+        <Button
           className="button primary"
           disabled={readOnly}
           onClick={() => setEditing(null)}
         >
           <Plus size={16} />
           Add reference
-        </button>
+        </Button>
       </div>
       <div className="collection-tools">
-        <button
+        <Button
           className="button secondary small"
           disabled={readOnly}
           onClick={onImport}
         >
           <Upload size={14} />
           Import BibTeX
-        </button>
+        </Button>
         <a
           className="button secondary small"
           href={`/api/v1/references?groupId=${groupId}&format=bib`}
@@ -166,7 +167,7 @@ export default function ReferenceLibrary({
       <div className="reference-filters">
         <label>
           Find a paper
-          <input
+          <TextInput
             aria-label="Search reference library"
             value={filter.query}
             placeholder="Title, citation key, DOI…"
@@ -177,7 +178,7 @@ export default function ReferenceLibrary({
         </label>
         <label>
           Author
-          <input
+          <TextInput
             aria-label="Filter reference author"
             value={filter.author}
             onChange={(e) =>
@@ -187,7 +188,7 @@ export default function ReferenceLibrary({
         </label>
         <label>
           Year
-          <input
+          <TextInput
             aria-label="Filter reference year"
             value={filter.year}
             onChange={(e) => setFilter((f) => ({ ...f, year: e.target.value }))}
@@ -195,7 +196,7 @@ export default function ReferenceLibrary({
         </label>
         <label>
           My reading queue
-          <select
+          <NativeSelect
             aria-label="Filter reading status"
             value={filter.filterStatus}
             onChange={(e) =>
@@ -211,11 +212,11 @@ export default function ReferenceLibrary({
                 {label}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
         <label>
           Linked project
-          <select
+          <NativeSelect
             aria-label="Filter linked project"
             value={filter.project}
             onChange={(e) =>
@@ -228,11 +229,11 @@ export default function ReferenceLibrary({
                 {p.name}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
         <label>
           Linked note tag
-          <input
+          <TextInput
             aria-label="Filter linked note tag"
             value={filter.tag}
             onChange={(e) => setFilter((f) => ({ ...f, tag: e.target.value }))}
@@ -275,7 +276,7 @@ export default function ReferenceLibrary({
               >
                 {item.data.label}
               </button>
-              <button
+              <IconButton
                 className="icon-button"
                 aria-label={`Remove saved filter ${item.data.label}`}
                 onClick={() =>
@@ -288,7 +289,7 @@ export default function ReferenceLibrary({
                 }
               >
                 ×
-              </button>
+              </IconButton>
             </span>
           ))}
       </div>
@@ -353,7 +354,7 @@ export default function ReferenceLibrary({
                 ))}
               </div>
             </div>
-            <select
+            <NativeSelect
               className="reading-status"
               aria-label={`Reading status for ${r.cite_key}`}
               value={statusFor(r.id)}
@@ -371,7 +372,7 @@ export default function ReferenceLibrary({
                   {label}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </article>
         ))}
       </div>
@@ -387,13 +388,13 @@ export default function ReferenceLibrary({
             Import BibTeX, add a reference, or look up a DOI or arXiv
             identifier.
           </p>
-          <button
+          <Button
             className="button secondary"
             disabled={readOnly}
             onClick={() => setEditing(null)}
           >
             Add a reference
-          </button>
+          </Button>
         </div>
       )}
       {message && <p role="status">{message}</p>}
@@ -510,7 +511,7 @@ export function ReferenceEditor({
       <div className="reference-lookup">
         <label>
           DOI or arXiv identifier
-          <input
+          <TextInput
             aria-label="DOI or arXiv lookup identifier"
             value={identifier}
             onChange={(e) => setIdentifier(e.target.value)}
@@ -522,7 +523,7 @@ export function ReferenceEditor({
           Lookup sends only this identifier to Crossref or arXiv. Notes, files
           and your email are never sent. Results are previewed before saving.
         </p>
-        <button
+        <Button
           className="button secondary"
           disabled={busy || !identifier.trim() || !navigator.onLine}
           onClick={() =>
@@ -535,7 +536,7 @@ export function ReferenceEditor({
         >
           <Search size={15} />
           Look up metadata
-        </button>
+        </Button>
         {preview && (
           <div className="metadata-preview">
             <strong>{preview.details.title}</strong>
@@ -543,7 +544,7 @@ export function ReferenceEditor({
               {preview.details.authors} · {preview.details.year}
             </p>
             <small>Source: {preview.provider}</small>
-            <button
+            <Button
               className="button secondary small"
               onClick={() => {
                 setDraft(preview.details);
@@ -562,7 +563,7 @@ export function ReferenceEditor({
               }}
             >
               Use these details
-            </button>
+            </Button>
           </div>
         )}
       </div>
@@ -584,7 +585,7 @@ export function ReferenceEditor({
       >
         <label>
           Citation key
-          <input
+          <TextInput
             aria-label="Citation key"
             value={key}
             readOnly={!!reference}
@@ -600,7 +601,7 @@ export function ReferenceEditor({
         </label>
         <label>
           Title
-          <input
+          <TextInput
             aria-label="Reference title"
             value={draft.title}
             onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
@@ -610,7 +611,7 @@ export function ReferenceEditor({
         </label>
         <label>
           Authors
-          <input
+          <TextInput
             aria-label="Reference authors"
             value={draft.authors}
             onChange={(e) =>
@@ -631,7 +632,7 @@ export function ReferenceEditor({
                   arxiv: "arXiv ID",
                 }[k]
               }
-              <input
+              <TextInput
                 aria-label={`Reference ${k}`}
                 value={draft[k]}
                 maxLength={
@@ -652,7 +653,7 @@ export function ReferenceEditor({
         </div>
         <label>
           Source URL
-          <input
+          <TextInput
             aria-label="Reference URL"
             type="url"
             value={draft.url}
@@ -672,7 +673,7 @@ export function ReferenceEditor({
               The server now has: {remote.title} · {remote.authors} ·{" "}
               {remote.year}. Review it before saving your retained changes.
             </p>
-            <button
+            <Button
               type="button"
               className="button secondary small"
               onClick={() => {
@@ -684,8 +685,8 @@ export function ReferenceEditor({
               }}
             >
               Keep my edits
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
               className="button secondary small"
               onClick={() => {
@@ -704,19 +705,19 @@ export function ReferenceEditor({
               }}
             >
               Use latest metadata
-            </button>
+            </Button>
           </div>
         )}
         <div className="dialog-footer">
-          <button type="button" className="button secondary" onClick={onCancel}>
+          <Button type="button" className="button secondary" onClick={onCancel}>
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             className="button primary"
             disabled={busy || !!remote || !navigator.onLine}
           >
             {reference ? "Save reference" : "Add reference"}
-          </button>
+          </Button>
         </div>
       </form>
       {reference && (
@@ -769,7 +770,7 @@ export function ReferenceEditor({
           ))}
           <label>
             Choose a note
-            <select
+            <NativeSelect
               aria-label="Note to link to reference"
               value={chosenNote}
               onChange={(e) => setChosenNote(e.target.value)}
@@ -780,9 +781,9 @@ export function ReferenceEditor({
                   {n.title}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </label>
-          <button
+          <Button
             className="button secondary small"
             disabled={!chosenNote || busy}
             onClick={() =>
@@ -796,12 +797,12 @@ export function ReferenceEditor({
             }
           >
             Link this note
-          </button>
+          </Button>
           {chosenNote && (
             <>
               <label>
                 PDF attached to this note
-                <select
+                <NativeSelect
                   aria-label="PDF to link to reference"
                   value={chosenPaper}
                   onChange={(e) => setChosenPaper(e.target.value)}
@@ -816,9 +817,9 @@ export function ReferenceEditor({
                       {p.name}
                     </option>
                   ))}
-                </select>
+                </NativeSelect>
               </label>
-              <button
+              <Button
                 className="button secondary small"
                 disabled={!chosenPaper || busy}
                 onClick={() =>
@@ -832,7 +833,7 @@ export function ReferenceEditor({
                 }
               >
                 Link this PDF
-              </button>
+              </Button>
             </>
           )}
         </section>

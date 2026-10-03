@@ -1,4 +1,5 @@
 "use client";
+import { ActionRow, Button, HelpText, IconButton } from "../ui/controls";
 import { useEffect, useState } from "react";
 import {
   Download,
@@ -94,7 +95,7 @@ export default function OfflineSettings() {
             : "Browser-managed storage"}
         </span>
         {!storage.persistent && (
-          <button
+          <Button
             className="button ghost"
             onClick={() =>
               void navigator.storage.persist().then((persistent) => {
@@ -108,7 +109,7 @@ export default function OfflineSettings() {
             }
           >
             Keep on this device
-          </button>
+          </Button>
         )}
       </div>
       <ErrorNotice message={error} />
@@ -118,7 +119,7 @@ export default function OfflineSettings() {
         <>
           <div className="offline-packages">
             {!state.packages.length && (
-              <p className="ws-note">No selections have been downloaded yet.</p>
+              <HelpText>No selections have been downloaded yet.</HelpText>
             )}
             {state.packages.map((p) => (
               <article key={p.id}>
@@ -130,8 +131,8 @@ export default function OfflineSettings() {
                   </small>
                   {p.error && <p>{p.error}</p>}
                 </div>
-                <div className="ws-actions">
-                  <button
+                <ActionRow>
+                  <IconButton
                     className="icon-button"
                     title="Refresh offline copy"
                     aria-label={`Refresh ${p.name}`}
@@ -141,8 +142,8 @@ export default function OfflineSettings() {
                     }
                   >
                     <RefreshCw size={16} />
-                  </button>
-                  <button
+                  </IconButton>
+                  <IconButton
                     className="icon-button"
                     title="Remove downloaded copy only"
                     aria-label={`Remove offline copy of ${p.name}`}
@@ -152,8 +153,8 @@ export default function OfflineSettings() {
                     }
                   >
                     <Trash2 size={16} />
-                  </button>
-                </div>
+                  </IconButton>
+                </ActionRow>
               </article>
             ))}
           </div>
@@ -161,14 +162,14 @@ export default function OfflineSettings() {
             <UploadCloud size={20} />
             Pending file operations
           </h2>
-          <p className="ws-note">
+          <HelpText>
             Common changes replay in order after reconnection. A conflict pauses
             the queue; it never silently overwrites newer server changes.
             Document text synchronizes through its independent collaboration
             journal.
-          </p>
-          <div className="ws-actions">
-            <button
+          </HelpText>
+          <ActionRow>
+            <Button
               className="button secondary"
               disabled={!!busy}
               onClick={() =>
@@ -182,8 +183,8 @@ export default function OfflineSettings() {
             >
               <Download size={15} />
               Export pending work
-            </button>
-            <button
+            </Button>
+            <Button
               className="button secondary"
               disabled={!!busy || !navigator.onLine}
               onClick={() =>
@@ -192,8 +193,8 @@ export default function OfflineSettings() {
             >
               <RefreshCw size={15} />
               Sync now
-            </button>
-            <button
+            </Button>
+            <Button
               className="button ghost"
               onClick={() =>
                 downloadText(
@@ -205,25 +206,23 @@ export default function OfflineSettings() {
             >
               <Download size={15} />
               Export operation log
-            </button>
+            </Button>
             {state.queue.some(
               (c) => !["done", "cancelled"].includes(c.status),
             ) && (
-              <button
+              <Button
                 className="button ghost"
                 disabled={!!busy || !navigator.onLine}
                 onClick={() => setCancel(true)}
               >
                 Stop pending operations…
-              </button>
+              </Button>
             )}
-          </div>
+          </ActionRow>
           {!state.queue.some(
             (c) => !["done", "cancelled"].includes(c.status),
           ) && (
-            <p className="ws-note">
-              All queued file operations are synchronized.
-            </p>
+            <HelpText>All queued file operations are synchronized.</HelpText>
           )}
           {state.queue
             .filter((c) => !["done", "cancelled"].includes(c.status))
@@ -237,8 +236,8 @@ export default function OfflineSettings() {
                 </header>
                 <p>{String(c.body.name ?? c.resourceId)}</p>
                 {c.error && <ErrorNotice message={c.error} />}
-                <div className="ws-actions">
-                  <button
+                <ActionRow>
+                  <Button
                     className="button ghost"
                     onClick={() =>
                       c.body.kind === "folder"
@@ -263,11 +262,11 @@ export default function OfflineSettings() {
                     }
                   >
                     Open retained work
-                  </button>
+                  </Button>
                   {["conflict", "blocked"].includes(c.status) && (
                     <>
                       {c.method === "PATCH" || c.path.endsWith("/trash") ? (
-                        <button
+                        <Button
                           className="button primary"
                           disabled={!!busy || !navigator.onLine}
                           onClick={() =>
@@ -279,9 +278,9 @@ export default function OfflineSettings() {
                           }
                         >
                           Review server changes…
-                        </button>
+                        </Button>
                       ) : null}
-                      <button
+                      <Button
                         className="button secondary"
                         disabled={!!busy || !navigator.onLine}
                         onClick={() =>
@@ -291,19 +290,19 @@ export default function OfflineSettings() {
                         }
                       >
                         Retry unchanged request
-                      </button>
+                      </Button>
                     </>
                   )}
-                </div>
+                </ActionRow>
               </article>
             ))}
         </>
       )}
-      <p className="ws-note">
+      <HelpText>
         Removing an offline copy does not delete server files. Editor recovery
         journals are retained. Sign out to remove this account’s device caches.
         Offline copies cannot be remotely erased while a device is disconnected.
-      </p>
+      </HelpText>
       {review && (
         <Dialog title="Review offline conflict" onClose={() => setReview(null)}>
           <p>
@@ -333,14 +332,14 @@ export default function OfflineSettings() {
             </section>
           </div>
           <ErrorNotice message={error} />
-          <div className="ws-actions">
-            <button
+          <ActionRow>
+            <Button
               className="button secondary"
               onClick={() => setReview(null)}
             >
               Keep paused
-            </button>
-            <button
+            </Button>
+            <Button
               className="button primary"
               disabled={!!busy}
               onClick={() =>
@@ -356,8 +355,8 @@ export default function OfflineSettings() {
               }
             >
               Apply my changes to this version
-            </button>
-          </div>
+            </Button>
+          </ActionRow>
         </Dialog>
       )}
       {cancel && (
@@ -377,14 +376,14 @@ export default function OfflineSettings() {
             downloads afterwards.
           </p>
           <ErrorNotice message={error} />
-          <div className="ws-actions">
-            <button
+          <ActionRow>
+            <Button
               className="button secondary"
               onClick={() => setCancel(false)}
             >
               Keep queue
-            </button>
-            <button
+            </Button>
+            <Button
               className="button danger"
               disabled={!!busy}
               onClick={() =>
@@ -399,8 +398,8 @@ export default function OfflineSettings() {
               }
             >
               Download recovery & stop queue
-            </button>
-          </div>
+            </Button>
+          </ActionRow>
         </Dialog>
       )}
     </section>

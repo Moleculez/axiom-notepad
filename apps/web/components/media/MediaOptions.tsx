@@ -1,4 +1,5 @@
 "use client";
+import { Slider, NativeSelect, TextInput, TextArea } from "../ui/controls";
 import type { MediaInsertionOptions } from "../../lib/media-insertion";
 export default function MediaOptions({
   value,
@@ -16,7 +17,7 @@ export default function MediaOptions({
     <div className="media-options">
       <label>
         Insert as
-        <select
+        <NativeSelect
           aria-label="Insert as"
           value={value.display}
           onChange={(e) =>
@@ -34,11 +35,11 @@ export default function MediaOptions({
               <option value="figure">Numbered figure</option>
             </>
           )}
-        </select>
+        </NativeSelect>
       </label>
       <label>
         {image ? "Alternative text" : "Link label"}
-        <input
+        <TextInput
           value={value.alt}
           placeholder={
             image ? "Describe the image for readers…" : "Use the filename"
@@ -49,7 +50,7 @@ export default function MediaOptions({
       {value.display !== "link" && (
         <label>
           Caption
-          <textarea
+          <TextArea
             aria-label="Caption"
             rows={2}
             value={value.caption}
@@ -61,7 +62,7 @@ export default function MediaOptions({
       {value.display === "figure" && (
         <label>
           Figure label
-          <input
+          <TextInput
             value={value.label}
             placeholder="fig-experiment"
             pattern="(?:fig-)?[A-Za-z0-9_-]{1,80}"
@@ -73,9 +74,10 @@ export default function MediaOptions({
         <div className="media-options-pair">
           <label>
             Width <span>{value.width}%</span>
-            <input
+            <Slider
               aria-label="Image width"
-              type="range"
+              aria-valuetext={`${value.width}% of the page`}
+
               min={10}
               max={100}
               step={5}
@@ -85,7 +87,7 @@ export default function MediaOptions({
           </label>
           <label>
             Alignment
-            <select
+            <NativeSelect
               value={value.align}
               onChange={(e) =>
                 update({
@@ -96,14 +98,14 @@ export default function MediaOptions({
               <option value="left">Left</option>
               <option value="center">Center</option>
               <option value="right">Right</option>
-            </select>
+            </NativeSelect>
           </label>
         </div>
       )}
       {mime === "application/pdf" && (
         <label>
           Start at page
-          <input
+          <TextInput
             type="number"
             min={1}
             max={100000}
@@ -122,7 +124,7 @@ export default function MediaOptions({
       {/^(audio|video)\//.test(mime) && (
         <label>
           Start at time (seconds)
-          <input
+          <TextInput
             type="number"
             min={0}
             max={86400}

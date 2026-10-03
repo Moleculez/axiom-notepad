@@ -1,4 +1,5 @@
 "use client";
+import { Button, HelpText } from "../ui/controls";
 import { useEffect, useMemo, useState } from "react";
 import { documentAssets, parseMarkdown, plainText } from "@axiom/markdown";
 import type { ResolvedAsset } from "@axiom/shared/editor-media";
@@ -100,9 +101,7 @@ export default function AttachmentChecks({
               </button>
             ))}
           </div>
-          {!issues.length && (
-            <p className="ws-note">No attachment issues found.</p>
-          )}
+          {!issues.length && <HelpText>No attachment issues found.</HelpText>}
           <p className="ws-small muted">
             Remote URLs are not network-tested. Private or missing resources use
             the same unavailable status. No files or versions are removed
@@ -111,9 +110,9 @@ export default function AttachmentChecks({
         </>
       )}
       <DialogFooter>
-        <button className="button secondary" onClick={onClose}>
+        <Button className="button secondary" onClick={onClose}>
           Close
-        </button>
+        </Button>
       </DialogFooter>
     </Dialog>
   );

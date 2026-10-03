@@ -4,6 +4,7 @@ import {
   addDays,
   dayNumber,
   dependencyOrder,
+  taskDependencyLinks,
   type PlanningCalendar,
   type PlanningTask,
   type SchedulePlan,
@@ -129,7 +130,7 @@ export function analyzeSchedule(
       string,
       { start: number; finish: number; duration: number; latest: number }
     >();
-  const successors = new Map<string, string[]>();
+  const successors = new Map<string, Array<{ id: string; lagDays: number }>>();
   let finish = 0;
   for (const id of order) {
     const task = byId.get(id)!;
@@ -153,11 +154,15 @@ export function analyzeSchedule(
       countWorking(task.start_on, task.due_on, calendar),
     );
     let start = index(task.start_on);
+    const lags = new Map(
+      taskDependencyLinks(task).map((l) => [l.taskId, l.lagDays]),
+    );
     for (const dep of dependencies) {
+      const lagDays = lags.get(dep) ?? 0;
       const before = timing.get(dep);
-      if (before) start = Math.max(start, before.finish + 1);
+      if (before) start = Math.max(start, before.finish + 1 + lagDays);
       const children = successors.get(dep) ?? [];
-      children.push(id);
+      children.push({ id, lagDays });
       successors.set(dep, children);
     }
     const end = start + duration - 1;
@@ -169,11 +174,15 @@ export function analyzeSchedule(
   for (const id of [...order].reverse()) {
     const t = timing.get(id);
     if (!t) continue;
-    const following = (successors.get(id) ?? []).flatMap(
-      (id) => timing.get(id) ?? [],
-    );
+    const following = (successors.get(id) ?? []).flatMap(({ id, lagDays }) => {
+      const next = timing.get(id);
+      return next ? [{ ...next, lagDays }] : [];
+    });
     t.latest = following.length
-      ? following.reduce((n, t) => Math.min(n, t.latest - t.duration), Infinity)
+      ? following.reduce(
+          (n, t) => Math.min(n, t.latest - t.duration - t.lagDays),
+          Infinity,
+        )
       : finish;
   }
   return {
@@ -237,6 +246,8 @@ export function compareBaseline(
     "assignee_id",
     "estimate_hours",
     "dependencies",
+    "dependencyLinks",
+    "progress_percent",
     "milestone_id",
   ] as const;
   return {
@@ -257,13 +268,32 @@ export function compareBaseline(
     items: [...new Set([...old.keys(), ...current.keys()])].flatMap((id) => {
       const a = old.get(id),
         b = current.get(id);
+      const dependencyIdsChanged =
+        a &&
+        b &&
+        stableJson([...(a.dependencies ?? [])].sort()) !==
+          stableJson([...(b.dependencies ?? [])].sort());
       const changed =
         a && b
           ? fields.filter((f) =>
-              f === "dependencies"
-                ? stableJson([...(a[f] ?? [])].sort()) !==
-                  stableJson([...(b[f] ?? [])].sort())
-                : stableJson(a[f]) !== stableJson(b[f]),
+              f === "dependencyLinks"
+                ? !dependencyIdsChanged &&
+                  stableJson(
+                    taskDependencyLinks(a).sort((a, b) =>
+                      a.taskId.localeCompare(b.taskId),
+                    ),
+                  ) !==
+                    stableJson(
+                      taskDependencyLinks(b).sort((a, b) =>
+                        a.taskId.localeCompare(b.taskId),
+                      ),
+                    )
+                : f === "progress_percent"
+                  ? (a.progress_percent ?? 0) !== (b.progress_percent ?? 0)
+                  : f === "dependencies"
+                    ? stableJson([...(a[f] ?? [])].sort()) !==
+                      stableJson([...(b[f] ?? [])].sort())
+                    : stableJson(a[f]) !== stableJson(b[f]),
             )
           : [];
       if (a && b && !changed.length) return [];
@@ -399,6 +429,7 @@ export function scheduleCapacity(
   calendar: PlanningCalendar,
   people: CapacityPerson[],
   plan: SchedulePlan,
+  cohortCalendars?: Record<string, PlanningCalendar>,
 ): SchedulePlan["capacity"] {
   const ids = new Set(plan.proposed.map((t) => t.id));
   const dates = [
@@ -421,9 +452,9 @@ export function scheduleCapacity(
           7,
       ),
     );
-  const calendars = Object.fromEntries(
-    tasks.map((t) => [t.space_id, calendar]),
-  );
+  const calendars =
+    cohortCalendars ??
+    Object.fromEntries(tasks.map((t) => [t.space_id, calendar]));
   const before = capacityReport(tasks, calendars, people, start, weeks);
   let truncated = dates.at(-1)! > before.end;
   const calculate = (mode: "direct" | "proposed") => {

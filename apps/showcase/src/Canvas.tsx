@@ -1,3 +1,4 @@
+import { IconButton, NativeSelect } from "../../web/components/ui/controls";
 import { useEffect, useMemo, useState } from "react";
 import * as Y from "yjs";
 import { parseCanvas, readCanvas, seedCanvas } from "@axiom/shared/canvas";
@@ -103,7 +104,7 @@ export default function Canvas({
     <div className="demo-canvas-shell">
       <div className="demo-document-toolbar">
         <Network size={17} />
-        <select
+        <NativeSelect
           className="demo-document-select"
           aria-label="Choose a canvas"
           value={document.id}
@@ -116,8 +117,8 @@ export default function Canvas({
                 {d.title}
               </option>
             ))}
-        </select>
-        <button
+        </NativeSelect>
+        <IconButton
           className="icon-button"
           aria-label="New canvas"
           title="New canvas"
@@ -132,13 +133,13 @@ export default function Canvas({
           }
         >
           <Plus size={16} />
-        </button>
+        </IconButton>
         <span className="tool-spacer" />
         <span className="demo-canvas-help">
           Double-click a text card to edit · drag a port to connect · scroll to
           zoom
         </span>
-        <button
+        <IconButton
           className="icon-button"
           aria-label="Reset canvas example"
           title="Reset canvas example"
@@ -155,7 +156,7 @@ export default function Canvas({
           }}
         >
           <RotateCcw size={16} />
-        </button>
+        </IconButton>
       </div>
       <CanvasHostContext.Provider value={host}>
         {shared ? (

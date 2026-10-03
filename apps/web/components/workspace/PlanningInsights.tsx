@@ -1,4 +1,11 @@
 "use client";
+import {
+  Button,
+  Checkbox,
+  HelpText,
+  IconButton,
+  NativeSelect,
+} from "../ui/controls";
 import { useEffect, useState } from "react";
 import { Archive, Camera, ChartNoAxesCombined, Pencil, X } from "lucide-react";
 import type { Space } from "@axiom/shared/workspace";
@@ -79,14 +86,14 @@ export default function PlanningInsights({
         <ChartNoAxesCombined size={17} />
         <strong>Schedule insights</strong>
         <span className="planning-spacer" />
-        <button
+        <IconButton
           type="button"
           className="icon-button"
           aria-label="Close schedule insights"
           onClick={onClose}
         >
           <X size={16} />
-        </button>
+        </IconButton>
       </header>
       <ErrorNotice
         message={action.error || analysis.error || bases.error || detail.error}
@@ -98,8 +105,7 @@ export default function PlanningInsights({
       />
       <div className="productivity-subtoolbar">
         <label className="productivity-check">
-          <input
-            type="checkbox"
+          <Checkbox
             checked={highlight}
             onChange={(e) => setHighlight(e.target.checked)}
           />
@@ -116,19 +122,17 @@ export default function PlanningInsights({
         </span>
       </div>
       {analysis.data?.warnings.map((w) => (
-        <p className="ws-note" key={w}>
-          {w}
-        </p>
+        <HelpText key={w}>{w}</HelpText>
       ))}
-      <p className="ws-note">
+      <HelpText>
         Working-day analysis of the entire workspace. Current starts are lower
         bounds; completed predecessors are satisfied. Bars show the saved
         schedule, not automatically revised dates.
-      </p>
+      </HelpText>
       <div className="productivity-subtoolbar">
         <label>
           Baseline
-          <select
+          <NativeSelect
             aria-label="Baseline"
             value={base}
             onChange={(e) => setBase(e.target.value)}
@@ -140,11 +144,11 @@ export default function PlanningInsights({
                 {b.archived ? " · Archived" : ""}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
         <label>
           Compare with
-          <select
+          <NativeSelect
             aria-label="Compare baseline with"
             value={compare}
             onChange={(e) => setCompare(e.target.value)}
@@ -157,9 +161,9 @@ export default function PlanningInsights({
                   {b.name}
                 </option>
               ))}
-          </select>
+          </NativeSelect>
         </label>
-        <button
+        <Button
           className="button secondary"
           disabled={
             action.busy ||
@@ -170,10 +174,10 @@ export default function PlanningInsights({
         >
           <Camera size={15} />
           Capture baseline
-        </button>
+        </Button>
         {base && space.can_manage && (
           <>
-            <button
+            <IconButton
               className="icon-button"
               title="Rename baseline"
               aria-label="Rename baseline"
@@ -196,8 +200,8 @@ export default function PlanningInsights({
               }
             >
               <Pencil size={15} />
-            </button>
-            <button
+            </IconButton>
+            <IconButton
               className="icon-button"
               title="Archive or unarchive baseline"
               aria-label="Archive or unarchive baseline"
@@ -214,13 +218,13 @@ export default function PlanningInsights({
               }
             >
               <Archive size={15} />
-            </button>
+            </IconButton>
           </>
         )}
       </div>
       {detail.data && (
         <>
-          <p className="ws-note">
+          <HelpText>
             {detail.data.comparison.items.length} changed tasks
             {detail.data.comparison.calendarChanged
               ? " · Working calendar changed"
@@ -229,7 +233,7 @@ export default function PlanningInsights({
               ? " · Milestones changed"
               : ""}
             . Baseline markers use the original dates.
-          </p>
+          </HelpText>
           <div className="planning-insight-rows">
             {detail.data.comparison.items.slice(0, 200).map((t) => (
               <div key={t.id}>

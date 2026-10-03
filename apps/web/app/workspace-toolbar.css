@@ -230,43 +230,7 @@ html[data-motion="none"] .workspace-progress-fill {
   color: var(--muted);
 }
 .ws-app .workspace-recent-search {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 8px;
   margin: 0;
-  min-height: 38px;
-  font: inherit;
-  color: var(--muted);
-  padding: 0 10px;
-  border: 1px solid transparent;
-  background: var(--hover);
-  border-radius: var(--control-radius);
-}
-.workspace-recent-search > svg {
-  display: block;
-  flex: 0 0 15px;
-}
-.ws-app .workspace-recent-search:focus-within {
-  border-color: var(--focus);
-}
-.ws-app .workspace-recent-search input {
-  flex: 1;
-  width: 100%;
-  min-width: 0;
-  min-height: 36px;
-  margin: 0;
-  padding: 9px 0;
-  border: 0;
-  border-radius: 0;
-  box-shadow: none;
-  background: transparent;
-  color: var(--text);
-  font: inherit;
-  font-size: 0.85em;
-}
-.ws-app .workspace-recent-search input:focus-visible {
-  box-shadow: none;
 }
 .workspace-recent-list {
   max-height: min(55vh, 480px);

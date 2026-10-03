@@ -1,8 +1,15 @@
+import {
+  Switch,
+  TextInput,
+  NativeSelect,
+} from "../../web/components/ui/controls";
+import { NumberPreference } from "../../web/components/PreferenceControls";
 import { useId } from "react";
 import { fonts, type Preferences } from "@axiom/shared/appearance";
 import type { EditorPreferences } from "@axiom/shared/editor";
 import type { MinimapPreferences } from "@axiom/shared/minimap";
 import { useDemo, useSnapshot, store } from "./context";
+import { paperAppearance } from "./samples";
 
 export const readingSections = [
   "Typography",
@@ -47,6 +54,7 @@ export default function ReadingSettings({
       max={max}
       step={step}
       suffix={suffix}
+      resetValue={paperAppearance[key]}
       disabled={key === "readingWidth" && appearance.fullWidth}
       onChange={(value) => changeAppearance({ [key]: value })}
     />
@@ -231,7 +239,7 @@ export default function ReadingSettings({
             />
             <label className="demo-preference-field">
               Default code language
-              <input
+              <TextInput
                 aria-label="Default code language"
                 value={editor.defaultCodeLanguage}
                 maxLength={40}
@@ -342,6 +350,7 @@ export default function ReadingSettings({
               min={80}
               max={200}
               suffix=" px"
+              resetValue={paperAppearance.minimap.width}
               onChange={(value) => minimap({ width: value })}
             />
             <Choice
@@ -406,7 +415,7 @@ function Choice({
   return (
     <label className="demo-preference-field">
       {label}
-      <select
+      <NativeSelect
         aria-label={label}
         value={value}
         onChange={(event) => onChange(event.target.value)}
@@ -416,7 +425,7 @@ function Choice({
             {name}
           </option>
         ))}
-      </select>
+      </NativeSelect>
     </label>
   );
 }
@@ -428,6 +437,7 @@ function Range({
   step = 1,
   suffix = "",
   disabled = false,
+  resetValue,
   onChange,
 }: {
   label: string;
@@ -437,29 +447,22 @@ function Range({
   step?: number;
   suffix?: string;
   disabled?: boolean;
+  resetValue: number;
   onChange: (value: number) => void;
 }) {
-  const precision = step < 1 ? 2 : 0;
   return (
-    <label className="demo-preference-field demo-preference-range">
-      <span>
-        {label}
-        <output>
-          {value.toFixed(precision)}
-          {suffix}
-        </output>
-      </span>
-      <input
-        type="range"
-        aria-label={label}
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        disabled={disabled}
-        onChange={(event) => onChange(Number(event.target.value))}
-      />
-    </label>
+    <NumberPreference
+      label={label}
+      value={value}
+      min={min}
+      max={max}
+      step={step}
+      unit={suffix.trim()}
+      disabled={disabled}
+      onChange={onChange}
+      reset={() => onChange(resetValue)}
+      onInvalid={() => {}}
+    />
   );
 }
 function Toggle({
@@ -476,9 +479,7 @@ function Toggle({
   const descriptionId = useId();
   return (
     <label className="demo-toggle">
-      <input
-        type="checkbox"
-        role="switch"
+      <Switch
         aria-label={label}
         aria-describedby={hint ? descriptionId : undefined}
         checked={checked}

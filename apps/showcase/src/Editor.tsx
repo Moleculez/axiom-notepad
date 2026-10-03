@@ -1,3 +1,10 @@
+import {
+  Button,
+  IconButton,
+  NativeSelect,
+  TextInput,
+  SearchField,
+} from "../../web/components/ui/controls";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as Y from "yjs";
 import { NativeBinding } from "@axiom/editor/binding";
@@ -24,7 +31,6 @@ import {
   Upload,
   Image,
   Paperclip,
-  Search,
   FileCode2,
   Printer,
   FileText,
@@ -332,7 +338,7 @@ export default function Editor({
   return (
     <main className="demo-editor-shell">
       <header className="demo-document-toolbar">
-        <select
+        <NativeSelect
           className="demo-document-select"
           aria-label="Choose a notebook"
           value={doc.id}
@@ -345,15 +351,15 @@ export default function Editor({
                 {d.title}
               </option>
             ))}
-        </select>
-        <button
+        </NativeSelect>
+        <IconButton
           className="icon-button"
           aria-label="New note"
           title="New note"
           onClick={() => open(store.create().id)}
         >
           <Plus size={16} />
-        </button>
+        </IconButton>
         <span className="tool-spacer" />
         <div className="scratchpad-modes" role="group" aria-label="Editor mode">
           {(["write", "source", "read"] as const).map((value) => (
@@ -371,7 +377,7 @@ export default function Editor({
           ))}
         </div>
         <span className="demo-toolbar-divider" />
-        <button
+        <IconButton
           className="icon-button"
           aria-label="Undo"
           title="Undo · ⌘Z / Ctrl Z"
@@ -379,8 +385,8 @@ export default function Editor({
           onClick={() => view.current?.execute("undo")}
         >
           <Undo2 size={16} />
-        </button>
-        <button
+        </IconButton>
+        <IconButton
           className="icon-button"
           aria-label="Redo"
           title="Redo · ⇧⌘Z / Ctrl Shift Z"
@@ -388,8 +394,8 @@ export default function Editor({
           onClick={() => view.current?.execute("redo")}
         >
           <Redo2 size={16} />
-        </button>
-        <button
+        </IconButton>
+        <IconButton
           className="icon-button"
           aria-label="Insert local image or attachment"
           title="Insert local image or attachment"
@@ -400,8 +406,8 @@ export default function Editor({
           }}
         >
           <Paperclip size={16} />
-        </button>
-        <button
+        </IconButton>
+        <IconButton
           className="icon-button"
           aria-label="Toggle outline"
           title="Outline"
@@ -409,8 +415,8 @@ export default function Editor({
           onClick={() => setOutline((value) => !value)}
         >
           <List size={16} />
-        </button>
-        <button
+        </IconButton>
+        <IconButton
           className="icon-button"
           aria-label="Toggle minimap"
           title="Minimap"
@@ -425,15 +431,15 @@ export default function Editor({
           }
         >
           <Map size={16} />
-        </button>
-        <button
+        </IconButton>
+        <IconButton
           className="icon-button"
           aria-label="Export document"
           title="Export document"
           onClick={() => setExporting(true)}
         >
           <Download size={16} />
-        </button>
+        </IconButton>
       </header>
       <div className="demo-editor-layout">
         {outline && (
@@ -587,21 +593,20 @@ export default function Editor({
         >
           <div className="demo-asset-toolbar">
             <label>
-              <Search size={16} />
-              <input
+              <SearchField
                 aria-label="Find local files"
                 placeholder="Find a local file…"
                 value={assetQuery}
                 onChange={(e) => setAssetQuery(e.target.value)}
               />
             </label>
-            <button
+            <Button
               className="button secondary"
               onClick={() => uploadInput.current?.click()}
             >
               <Upload size={15} />
               Upload from device
-            </button>
+            </Button>
           </div>
           <div className="demo-asset-grid">
             {fileAssets.map((asset) => (
@@ -634,7 +639,7 @@ export default function Editor({
               <Image size={14} />
               Images keep stable Markdown paths and live previews.
             </span>
-            <button
+            <Button
               className="button secondary"
               onClick={() => {
                 setAssetDialog(false);
@@ -642,7 +647,7 @@ export default function Editor({
               }}
             >
               Cancel
-            </button>
+            </Button>
           </DialogFooter>
         </Dialog>
       )}
@@ -677,7 +682,7 @@ export default function Editor({
             <div className="demo-table-fields">
               <label>
                 Rows
-                <input
+                <TextInput
                   type="number"
                   min={2}
                   max={40}
@@ -689,7 +694,7 @@ export default function Editor({
               </label>
               <label>
                 Columns
-                <input
+                <TextInput
                   type="number"
                   min={1}
                   max={20}
@@ -703,9 +708,9 @@ export default function Editor({
               </label>
             </div>
             <DialogFooter>
-              <button className="button" type="submit">
+              <Button variant="primary" type="submit">
                 Insert table
-              </button>
+              </Button>
             </DialogFooter>
           </form>
         </Dialog>
@@ -789,13 +794,13 @@ export default function Editor({
                 ? "Preparing a styled document…"
                 : "Export a backup before clearing browser data."}
             </span>
-            <button
+            <Button
               className="button secondary"
               disabled={exportBusy}
               onClick={() => setExporting(false)}
             >
               Done
-            </button>
+            </Button>
           </DialogFooter>
         </Dialog>
       )}

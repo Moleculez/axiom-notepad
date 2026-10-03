@@ -229,7 +229,7 @@ test("directory filter is literal and folder-scoped, pagination and attached fil
     const sidebar = page.locator(".ws-sidebar");
     await sidebar.getByRole("button", { name: "Next files" }).click();
     await expect(sidebar.getByText("Page 2", { exact: true })).toBeVisible();
-    const filter = sidebar.getByRole("textbox", {
+    const filter = sidebar.getByRole("searchbox", {
       name: "Filter files in this folder",
     });
     await filter.fill("Needle");
@@ -314,10 +314,10 @@ test("appearance leaves panel sizing to the saved edge resizers", async ({
       f.page.getByText("Only on this device", { exact: true }),
     ).toBeVisible();
     await expect(
-      f.page.getByRole("checkbox", { name: "Override uiScale on this device" }),
+      f.page.getByRole("switch", { name: "Override uiScale on this device" }),
     ).toBeVisible();
     await expect(
-      f.page.getByRole("checkbox", { name: "Override density on this device" }),
+      f.page.getByRole("switch", { name: "Override density on this device" }),
     ).toBeVisible();
     for (const label of ["Sidebar width", "Research panel width"]) {
       await expect(f.page.getByText(label, { exact: true })).toHaveCount(0);

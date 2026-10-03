@@ -1,4 +1,5 @@
 "use client";
+import { ActionRow, Button, HelpText, IconButton } from "../ui/controls";
 import { useEffect, useState } from "react";
 import { Check, Copy, Network, ShieldCheck, Unplug, X } from "lucide-react";
 import { api, post } from "../../lib/client";
@@ -22,9 +23,11 @@ type Approval = {
   error?: string;
 };
 export default function ConnectionsSettings() {
-  const {params} = useLocation();
-  const [review,setReview] = useState<string|null>(params.get("review"));
-  const changes = useData<{id:string;title:string;status:string;connection_id?:string}[]>("assistant/change-sets");
+  const { params } = useLocation();
+  const [review, setReview] = useState<string | null>(params.get("review"));
+  const changes = useData<
+    { id: string; title: string; status: string; connection_id?: string }[]
+  >("assistant/change-sets");
   const { spaces, notify } = useWorkspace(),
     data = useData<{
       connections: Connection[];
@@ -40,9 +43,12 @@ export default function ConnectionsSettings() {
     [error, setError] = useState(""),
     [busy, setBusy] = useState("");
   useEffect(() => {
-    const timer = setInterval(()=>{data.revalidate();changes.revalidate();}, 10000);
+    const timer = setInterval(() => {
+      data.revalidate();
+      changes.revalidate();
+    }, 10000);
     return () => clearInterval(timer);
-  }, [data.revalidate,changes.revalidate]);
+  }, [data.revalidate, changes.revalidate]);
   const run = async (id: string, work: () => Promise<unknown>) => {
     setBusy(id);
     setError("");
@@ -71,7 +77,7 @@ export default function ConnectionsSettings() {
           <code>
             {typeof location !== "undefined" ? location.origin : ""}/mcp
           </code>
-          <button
+          <IconButton
             className="icon-button"
             aria-label="Copy MCP server URL"
             title="Copy MCP server URL"
@@ -87,13 +93,13 @@ export default function ConnectionsSettings() {
             }
           >
             <Copy size={16} />
-          </button>
+          </IconButton>
         </div>
-        <p className="ws-note">
+        <HelpText>
           Choose a remote HTTP MCP server in your client, enter this address,
           then review the permission screen. A local server is only reachable
           from this computer unless you deploy it over HTTPS.
-        </p>
+        </HelpText>
       </section>
       <ErrorNotice message={error || data.error} />
       {data.loading && !data.data ? (
@@ -105,30 +111,51 @@ export default function ConnectionsSettings() {
               <ShieldCheck size={19} />
               Requests for approval
             </h2>
-            {!data.data?.approvals.length && !changes.data?.some(s=>s.connection_id) && (
-              <p className="ws-note">No requests are waiting for review.</p>
-            )}
-            {changes.data?.filter(s=>s.connection_id).map(s=><article className="connection-approval" key={s.id}><header><strong>{s.title}</strong><span>{data.data?.connections.find(c=>c.id===s.connection_id)?.name ?? "Connected app"}</span></header><p className="ws-note">{s.status} · all writes require review</p><button className="button secondary" onClick={()=>setReview(s.id)}>Review changes</button></article>)}
+            {!data.data?.approvals.length &&
+              !changes.data?.some((s) => s.connection_id) && (
+                <HelpText>No requests are waiting for review.</HelpText>
+              )}
+            {changes.data
+              ?.filter((s) => s.connection_id)
+              .map((s) => (
+                <article className="connection-approval" key={s.id}>
+                  <header>
+                    <strong>{s.title}</strong>
+                    <span>
+                      {data.data?.connections.find(
+                        (c) => c.id === s.connection_id,
+                      )?.name ?? "Connected app"}
+                    </span>
+                  </header>
+                  <HelpText>{s.status} · all writes require review</HelpText>
+                  <Button
+                    className="button secondary"
+                    onClick={() => setReview(s.id)}
+                  >
+                    Review changes
+                  </Button>
+                </article>
+              ))}
             {data.data?.approvals.map((a) => (
               <article className="connection-approval" key={a.id}>
                 <header>
                   <strong>{a.action.replaceAll("_", " ")}</strong>
                   <span>{a.client_name}</span>
                 </header>
-                <p className="ws-note">
+                <HelpText>
                   {a.status} · expires{" "}
                   {new Date(a.expires_at).toLocaleTimeString()}
-                </p>
+                </HelpText>
                 <details>
                   <summary>Review exact targets and changes</summary>
                   <pre>{JSON.stringify(a.arguments, null, 2)}</pre>
                 </details>
                 {a.error && <ErrorNotice message={a.error} />}
-                <div className="ws-actions">
+                <ActionRow>
                   {a.status === "pending" &&
                     new Date(a.expires_at).valueOf() > Date.now() && (
                       <>
-                        <button
+                        <Button
                           className="button secondary"
                           disabled={!!busy}
                           onClick={() =>
@@ -141,8 +168,8 @@ export default function ConnectionsSettings() {
                         >
                           <X size={15} />
                           Reject
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                           className="button primary"
                           disabled={!!busy}
                           onClick={() =>
@@ -155,22 +182,22 @@ export default function ConnectionsSettings() {
                         >
                           <Check size={15} />
                           Approve exact action
-                        </button>
+                        </Button>
                       </>
                     )}
                   {a.status === "approved" && (
-                    <span className="ws-note">
+                    <HelpText as="span">
                       Approved. The client can now retry this exact request.
-                    </span>
+                    </HelpText>
                   )}
-                </div>
+                </ActionRow>
               </article>
             ))}
           </section>
           <section className="settings-card">
             <h2>Connected applications</h2>
             {!data.data?.connections.length && (
-              <p className="ws-note">No applications have been connected.</p>
+              <HelpText>No applications have been connected.</HelpText>
             )}
             {data.data?.connections.map((c) => (
               <article className="connection-entry" key={c.id}>
@@ -188,7 +215,7 @@ export default function ConnectionsSettings() {
                   </small>
                 </div>
                 {!c.revoked_at && (
-                  <button
+                  <Button
                     className="button secondary"
                     disabled={!!busy}
                     onClick={() =>
@@ -199,7 +226,7 @@ export default function ConnectionsSettings() {
                   >
                     <Unplug size={15} />
                     Revoke
-                  </button>
+                  </Button>
                 )}
               </article>
             ))}
@@ -218,7 +245,16 @@ export default function ConnectionsSettings() {
           </section>
         </>
       )}
-      {review&&<ChangeSetReview id={review} onClose={()=>setReview(null)} onChange={()=>{changes.revalidate();data.revalidate();}}/>}
+      {review && (
+        <ChangeSetReview
+          id={review}
+          onClose={() => setReview(null)}
+          onChange={() => {
+            changes.revalidate();
+            data.revalidate();
+          }}
+        />
+      )}
     </div>
   );
 }

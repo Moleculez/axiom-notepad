@@ -1,4 +1,5 @@
 "use client";
+import { Button, Checkbox } from "../ui/controls";
 import { useState } from "react";
 import {
   ArrowUpRight,
@@ -103,8 +104,7 @@ export default function TrashProtectionDetails({
               {value.canClearReading && (
                 <div className="trash-reading-confirm">
                   <label className="ws-checkbox">
-                    <input
-                      type="checkbox"
+                    <Checkbox
                       checked={confirmed}
                       disabled={action.busy}
                       onChange={(e) => setConfirmed(e.target.checked)}
@@ -112,7 +112,7 @@ export default function TrashProtectionDetails({
                     Remove the {value.reading.length} personal reading record
                     {value.reading.length === 1 ? "" : "s"} shown above
                   </label>
-                  <button
+                  <Button
                     className="button secondary"
                     disabled={!confirmed || action.busy}
                     onClick={() =>
@@ -136,11 +136,10 @@ export default function TrashProtectionDetails({
                         await onChanged();
                       })
                     }
+                    pending={!!action.busy}
                   >
-                    {action.busy
-                      ? "Updating…"
-                      : "Remove my reading data & recheck"}
-                  </button>
+                    {"Remove my reading data & recheck"}
+                  </Button>
                 </div>
               )}
             </section>
@@ -286,7 +285,7 @@ export default function TrashProtectionDetails({
                 Still need the evidence? Restore it with its links and reading
                 data intact.
               </p>
-              <button
+              <Button
                 className="button secondary"
                 disabled={action.busy}
                 onClick={() =>
@@ -305,7 +304,7 @@ export default function TrashProtectionDetails({
               >
                 <RotateCcw size={15} aria-hidden="true" />
                 Restore file
-              </button>
+              </Button>
             </div>
           )}
         </>

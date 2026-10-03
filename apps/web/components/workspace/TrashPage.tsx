@@ -1,4 +1,5 @@
 "use client";
+import { ActionRow, Button, HelpText, TextInput } from "../ui/controls";
 import { useEffect, useRef, useState } from "react";
 import {
   CheckCircle2,
@@ -105,19 +106,19 @@ export function TrashOperationDialog({
       : "Trash results";
   const footer = (
     <>
-      <button className="button secondary" onClick={onClose}>
+      <Button className="button secondary" onClick={onClose}>
         {busy ? "Continue in background" : "Close"}
-      </button>
+      </Button>
       {busy ? (
-        <button
+        <Button
           className="button secondary"
           disabled={action.busy}
           onClick={() => run("cancel")}
         >
           Cancel unfinished work
-        </button>
+        </Button>
       ) : op && preview && op.pending > 0 ? (
-        <button
+        <Button
           className={`button ${purge ? "danger" : "primary"}`}
           disabled={
             action.busy ||
@@ -134,7 +135,7 @@ export function TrashOperationDialog({
           {purge ? "Delete" : "Restore"} {op.pending}{" "}
           {workspaces ? "workspace" : "item"}
           {op.pending === 1 ? "" : "s"}
-        </button>
+        </Button>
       ) : null}
     </>
   );
@@ -175,14 +176,14 @@ export function TrashOperationDialog({
             </p>
           )}
           {workspaces && (
-            <p className="ws-note">
+            <HelpText>
               {purge
                 ? "Workspace deletion has a 30-second cancellation window. Open Lifecycle for final progress and any remaining protections."
                 : "Restores each workspace’s previous active or archived state. Individual file Trash states are preserved."}
-            </p>
+            </HelpText>
           )}
           {op.action === "restore" && !workspaces && (
-            <p className="ws-note">
+            <HelpText>
               {op.destination_id
                 ? "Restore to the chosen folder."
                 : op.restore_policy === "root"
@@ -192,7 +193,7 @@ export function TrashOperationDialog({
                 ? "Name conflicts keep both files."
                 : "Existing names are skipped."}{" "}
               Nothing is overwritten.
-            </p>
+            </HelpText>
           )}
           {busy && (
             <div className="trash-review-progress">
@@ -342,20 +343,20 @@ export function TrashOperationDialog({
                 {Math.min(offset + 50, data.data!.filteredTotal)} of{" "}
                 {data.data!.filteredTotal}
               </span>
-              <button
+              <Button
                 className="button secondary small"
                 disabled={!offset || data.loading}
                 onClick={() => setOffset(Math.max(0, offset - 50))}
               >
                 Previous results
-              </button>
-              <button
+              </Button>
+              <Button
                 className="button secondary small"
                 disabled={data.data!.nextOffset == null || data.loading}
                 onClick={() => setOffset(data.data!.nextOffset!)}
               >
                 Next results
-              </button>
+              </Button>
             </div>
           )}
           <details className="trash-review-policy">
@@ -379,7 +380,7 @@ export function TrashOperationDialog({
               Type <strong>DELETE FOREVER</strong> to delete the {op.pending}{" "}
               ready {workspaces ? "workspace" : "item"}
               {op.pending === 1 ? "" : "s"}. This cannot be undone.
-              <input
+              <TextInput
                 aria-label="Confirm permanent Trash deletion"
                 value={confirmation}
                 onChange={(e) => setConfirmation(e.target.value)}
@@ -419,7 +420,7 @@ export function TrashOperationDialog({
     <section className="console-operation">
       <h2>{title}</h2>
       {content}
-      <div className="ws-actions">{footer}</div>
+      <ActionRow>{footer}</ActionRow>
     </section>
   ) : (
     <Dialog

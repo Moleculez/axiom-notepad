@@ -1,4 +1,5 @@
 "use client";
+import { Button, Checkbox, NativeSelect, TextArea } from "../ui/controls";
 import { useRef, useState } from "react";
 import type {
   LibraryReference,
@@ -100,7 +101,7 @@ export default function ReferenceWorkflow({
           <div className="library-import-controls">
             <label>
               Format
-              <select
+              <NativeSelect
                 aria-label="Bibliography format"
                 value={format}
                 onChange={(e) => {
@@ -110,7 +111,7 @@ export default function ReferenceWorkflow({
               >
                 <option value="bib">BibTeX</option>
                 <option value="ris">RIS</option>
-              </select>
+              </NativeSelect>
             </label>
             <label>
               Choose a file
@@ -139,7 +140,7 @@ export default function ReferenceWorkflow({
           </div>
           <label>
             Or paste a bibliography
-            <textarea
+            <TextArea
               aria-label="Bibliography source"
               className="library-import-source"
               value={source}
@@ -155,7 +156,7 @@ export default function ReferenceWorkflow({
       {mode === "copy" && (
         <label>
           Destination library
-          <select
+          <NativeSelect
             aria-label="Destination library"
             value={destination}
             onChange={(e) => {
@@ -172,13 +173,12 @@ export default function ReferenceWorkflow({
                 {s.group_name ? ` · ${s.group_name}` : " · Personal"}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
       )}
       {mode !== "merge" && (
         <label className="research-inline-check">
-          <input
-            type="checkbox"
+          <Checkbox
             checked={skip}
             onChange={(e) => {
               setSkip(e.target.checked);
@@ -192,7 +192,7 @@ export default function ReferenceWorkflow({
         <>
           <label>
             Retain this reference
-            <select
+            <NativeSelect
               aria-label="Retained reference"
               value={target}
               onChange={(e) => {
@@ -208,14 +208,14 @@ export default function ReferenceWorkflow({
                   {r.cite_key} · {r.title}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </label>
           <div className="library-property-grid">
             {(Object.keys(referenceLabels) as (keyof ReferenceDetails)[]).map(
               (k) => (
                 <label key={k}>
                   <span>{referenceLabels[k]}</span>
-                  <select
+                  <NativeSelect
                     aria-label={`Merge ${k}`}
                     value={draft[k]}
                     onChange={(e) => {
@@ -228,7 +228,7 @@ export default function ReferenceWorkflow({
                         {v || "Empty"}
                       </option>
                     ))}
-                  </select>
+                  </NativeSelect>
                 </label>
               ),
             )}
@@ -284,8 +284,7 @@ export default function ReferenceWorkflow({
           )}
           {preview.privateCopy && (
             <label className="synthesis-consent">
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={consent}
                 onChange={(e) => setConsent(e.target.checked)}
               />
@@ -297,10 +296,10 @@ export default function ReferenceWorkflow({
       )}
       <ErrorNotice message={action.error} />
       <DialogFooter>
-        <button className="button secondary" onClick={onClose}>
+        <Button className="button secondary" onClick={onClose}>
           Cancel
-        </button>
-        <button
+        </Button>
+        <Button
           className="button secondary"
           disabled={
             action.busy ||
@@ -320,8 +319,8 @@ export default function ReferenceWorkflow({
           }
         >
           {preview ? "Refresh preview" : "Preview changes"}
-        </button>
-        <button
+        </Button>
+        <Button
           className="button primary"
           disabled={
             action.busy || !preview || (preview.privateCopy && !consent)
@@ -351,7 +350,7 @@ export default function ReferenceWorkflow({
             : mode === "copy"
               ? "Copy references"
               : "Import references"}
-        </button>
+        </Button>
       </DialogFooter>
     </Dialog>
   );

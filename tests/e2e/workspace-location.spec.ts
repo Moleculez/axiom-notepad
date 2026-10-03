@@ -318,7 +318,7 @@ test("selection actions only appear for selected items without shifting list or 
       name: "Selection actions",
       exact: true,
     }),
-    search = page.getByRole("textbox", { name: "Search files and notes" }),
+    search = page.getByRole("searchbox", { name: "Search files and notes" }),
     items = page.getByLabel("Explorer items", { exact: true }),
     row = page.locator(`.ws-resource-row[data-resource-id="${note.id}"]`),
     checkbox = row.getByRole("checkbox"),

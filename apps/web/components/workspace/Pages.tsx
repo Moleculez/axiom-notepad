@@ -1,4 +1,5 @@
 "use client";
+import { Button, IconButton, NativeSelect, SearchField } from "../ui/controls";
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import {
@@ -11,7 +12,6 @@ import {
   FlaskConical,
   LockKeyhole,
   Plus,
-  Search,
   Users,
 } from "lucide-react";
 import type { Resource, Space } from "@axiom/shared/workspace";
@@ -52,7 +52,7 @@ export function HomePage() {
         eyebrow="YOUR WORKSPACE"
         title={`A little space for your next idea, ${session.user.name.split(" ")[0]}.`}
         actions={
-          <button
+          <Button
             className="button primary"
             disabled={!personal}
             onClick={(event) =>
@@ -65,7 +65,7 @@ export function HomePage() {
           >
             <Plus size={17} />
             New file
-          </button>
+          </Button>
         }
       >
         Your notes, evidence, and collaborators. All in one place.
@@ -259,7 +259,7 @@ export function InboxPage() {
             >
               Preferences
             </WorkspaceLink>
-            <button
+            <Button
               className="button secondary"
               disabled={
                 action.busy || !data.data?.some((item) => !item.read_at)
@@ -273,7 +273,7 @@ export function InboxPage() {
             >
               <CheckCheck size={16} />
               Mark all read
-            </button>
+            </Button>
           </>
         }
       >
@@ -330,7 +330,7 @@ export function InboxPage() {
                   </small>
                 </WorkspaceLink>
                 <Badge>{event.kind}</Badge>
-                <button
+                <IconButton
                   className="icon-button"
                   aria-label={event.read_at ? "Mark unread" : "Mark read"}
                   onClick={() =>
@@ -344,7 +344,7 @@ export function InboxPage() {
                   }
                 >
                   <Check size={17} />
-                </button>
+                </IconButton>
               </article>
             );
           })}
@@ -382,16 +382,14 @@ export function PeoplePage() {
         Find expertise and familiar faces across your research groups.
       </PageHeading>
       <div className="ws-list-toolbar">
-        <label className="ws-search-field">
-          <Search size={17} />
-          <input
-            aria-label="Search researchers"
-            placeholder="Name, affiliation, or research interests…"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-          />
-        </label>
-        <select
+        <SearchField
+          wrapperClassName="ws-search-field"
+          aria-label="Search researchers"
+          placeholder="Name, affiliation, or research interests…"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+        />
+        <NativeSelect
           aria-label="Filter people by group"
           value={group}
           onChange={(event) => setGroup(event.target.value)}
@@ -402,7 +400,7 @@ export function PeoplePage() {
               {item.name}
             </option>
           ))}
-        </select>
+        </NativeSelect>
       </div>
       <ErrorNotice message={data.error} retry={data.reload} />
       {data.loading && !data.data ? (

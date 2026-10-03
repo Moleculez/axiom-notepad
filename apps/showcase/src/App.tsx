@@ -1,3 +1,4 @@
+import { Button, IconButton } from "../../web/components/ui/controls";
 import {
   Component,
   lazy,
@@ -74,9 +75,9 @@ class Boundary extends Component<{ children: ReactNode }, { error: boolean }> {
       <main className="demo-failure">
         <h1>This view could not load</h1>
         <p>Your locally saved drafts are intact. Reload to retry.</p>
-        <button className="button" onClick={() => location.reload()}>
+        <Button variant="primary" onClick={() => location.reload()}>
           Reload showcase
-        </button>
+        </Button>
       </main>
     ) : (
       this.props.children
@@ -253,22 +254,22 @@ export default function App() {
                 <span />
                 Local-first demo
               </span>
-              <button
+              <IconButton
                 className="icon-button"
                 title="Local files"
                 aria-label="Local files"
                 onClick={() => setFiles(true)}
               >
                 <FolderOpen size={17} />
-              </button>
-              <button
+              </IconButton>
+              <IconButton
                 className="icon-button"
                 title="Appearance"
                 aria-label="Appearance"
                 onClick={() => setSettings(true)}
               >
                 <Palette size={17} />
-              </button>
+              </IconButton>
               <a
                 className="icon-button"
                 href="https://github.com/Moleculez/axiom-notepad"
@@ -317,13 +318,13 @@ export default function App() {
             <div className="demo-toast" role="status">
               <Check size={16} />
               <span>{toast}</span>
-              <button
+              <IconButton
                 className="icon-button"
                 aria-label="Dismiss notification"
                 onClick={() => setToast("")}
               >
                 <X size={14} />
-              </button>
+              </IconButton>
             </div>
           )}
           <input
@@ -345,14 +346,14 @@ export default function App() {
               size="wide"
             >
               <div className="demo-file-actions">
-                <button
+                <Button
                   className="button secondary"
                   onClick={() => input.current?.click()}
                 >
                   <Upload size={15} />
                   Import files
-                </button>
-                <button
+                </Button>
+                <Button
                   className="button secondary"
                   onClick={() => {
                     const doc = store.create();
@@ -362,8 +363,8 @@ export default function App() {
                 >
                   <Plus size={15} />
                   New note
-                </button>
-                <button
+                </Button>
+                <Button
                   className="button secondary"
                   onClick={() => {
                     const doc = store.create(
@@ -377,7 +378,7 @@ export default function App() {
                 >
                   <Network size={15} />
                   New canvas
-                </button>
+                </Button>
               </div>
               <div className="demo-file-list">
                 {snapshot.documents.map((doc) => (
@@ -422,13 +423,13 @@ export default function App() {
                         </small>
                       </span>
                     </button>
-                    <button
+                    <IconButton
                       className="icon-button"
                       aria-label={`Download ${asset.name}`}
                       onClick={() => downloadBlob(asset.blob, asset.name)}
                     >
                       <Download size={16} />
-                    </button>
+                    </IconButton>
                   </div>
                 ))}
               </div>
@@ -438,7 +439,7 @@ export default function App() {
                 images remain placeholders until you import them.
               </p>
               <DialogFooter>
-                <button
+                <Button
                   className="button secondary"
                   onClick={async () => {
                     try {
@@ -454,10 +455,10 @@ export default function App() {
                   }}
                 >
                   Back up all local files
-                </button>
-                <button className="button" onClick={() => setFiles(false)}>
+                </Button>
+                <Button variant="primary" onClick={() => setFiles(false)}>
                   Done
-                </button>
+                </Button>
               </DialogFooter>
             </Dialog>
           )}

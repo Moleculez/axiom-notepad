@@ -1,4 +1,5 @@
 "use client";
+import { Button, HelpText } from "../ui/controls";
 import { useMemo, useState } from "react";
 import {
   parseMarkdown,
@@ -97,13 +98,13 @@ export default function AssistantAnswer({
           subtitle={`Captured ${new Date(selected.capturedAt).toLocaleString()} · ${selected.kind === "pdf" ? "Browser-extracted text, not a verified quotation" : "Submitted evidence"}`}
           onClose={() => setSelected(null)}
         >
-          <p className="ws-note">
+          <HelpText>
             This is the exact excerpt sent. The current file or task may have
             changed. Citation membership does not verify the answer.
-          </p>
+          </HelpText>
           <pre className="assistant-excerpt">{selected.source}</pre>
           <div className="dialog-footer">
-            <button
+            <Button
               className="button secondary"
               onClick={() => {
                 const e = selected;
@@ -142,7 +143,7 @@ export default function AssistantAnswer({
               }}
             >
               Open current source
-            </button>
+            </Button>
           </div>
         </Dialog>
       )}

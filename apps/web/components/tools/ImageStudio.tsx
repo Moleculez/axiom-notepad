@@ -1,4 +1,12 @@
 "use client";
+import {
+  Button,
+  IconButton,
+  Slider,
+  NativeSelect,
+  TextInput,
+  TextArea,
+} from "../ui/controls";
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import type { CloudImageDraft } from "@axiom/shared/image-cloud-drafts";
@@ -1021,7 +1029,7 @@ export default function ImageStudio({
         </div>
         <span className="tool-spacer" />
         <ResourceSharing resourceId={project.resource_id} />
-        <button
+        <IconButton
           className="icon-button"
           aria-label="Image version history"
           title="Compare image versions and working draft"
@@ -1029,8 +1037,8 @@ export default function ImageStudio({
           onClick={() => void openHistory()}
         >
           <History size={17} />
-        </button>
-        <button
+        </IconButton>
+        <IconButton
           className="icon-button"
           aria-label="Recover previous cloud draft"
           title="Recover previous cloud working draft"
@@ -1038,7 +1046,7 @@ export default function ImageStudio({
           onClick={() => void showCloudRecovery()}
         >
           <RotateCcw size={17} />
-        </button>
+        </IconButton>
         <input
           type="file"
           ref={upload}
@@ -1050,7 +1058,7 @@ export default function ImageStudio({
             e.target.value = "";
           }}
         />
-        <button
+        <IconButton
           className="icon-button"
           title="Import image as layer"
           aria-label="Import image as layer"
@@ -1058,44 +1066,45 @@ export default function ImageStudio({
           onClick={() => upload.current?.click()}
         >
           <Upload size={17} />
-        </button>
-        <button
+        </IconButton>
+        <Button
           className="button secondary"
           onClick={() => setDialog("export")}
           disabled={!doc}
         >
           <Download size={15} />
           Export
-        </button>
-        <button
+        </Button>
+        <Button
           className="button secondary"
           disabled={!baseVersion}
           onClick={() => setDialog("discussion")}
         >
           Discussion
-        </button>
-        <button
+        </Button>
+        <Button
           className="button secondary"
           disabled={!doc || busy || project.role !== "editor"}
           onClick={() => void save(true)}
         >
           <Copy size={15} />
           Save copy
-        </button>
-        <button
+        </Button>
+        <Button
           className="button primary"
           disabled={!editable || !dirty}
           onClick={() => void save()}
+          pending={!!busy}
         >
           <Save size={15} />
-          {busy ? "Processing…" : "Save version"}
-        </button>
+          {"Save version"}
+        </Button>
       </header>
       <ErrorNotice message={error} />
       {!lease && doc && project.role === "editor" && !busy && (
         <div className="tool-controls">
           <span>Saved preview and local draft remain available.</span>
-          <button
+          <Button
             className="button secondary"
             onClick={() =>
               void post(`tools/${project.resource_id}/lease`, {})
@@ -1104,7 +1113,7 @@ export default function ImageStudio({
             }
           >
             Acquire editing access
-          </button>
+          </Button>
         </div>
       )}
       {warnings.length > 0 && (
@@ -1132,9 +1141,10 @@ export default function ImageStudio({
         </label>
         <label>
           Size
-          <input
+          <Slider
             aria-label="Brush size"
-            type="range"
+            aria-valuetext={`${brushSize} pixels`}
+
             min={1}
             max={160}
             value={brushSize}
@@ -1144,9 +1154,10 @@ export default function ImageStudio({
         </label>
         <label>
           Opacity
-          <input
+          <Slider
             aria-label="Brush opacity"
-            type="range"
+            aria-valuetext={`${Math.round(brushOpacity * 100)}%`}
+
             min={0.05}
             max={1}
             step={0.05}
@@ -1155,7 +1166,7 @@ export default function ImageStudio({
           />
         </label>
         <span className="tool-spacer" />
-        <button
+        <IconButton
           className="icon-button"
           title="Undo"
           aria-label="Undo"
@@ -1163,8 +1174,8 @@ export default function ImageStudio({
           onClick={() => safely(() => doc?.undo())}
         >
           <Undo2 size={16} />
-        </button>
-        <button
+        </IconButton>
+        <IconButton
           className="icon-button"
           title="Redo"
           aria-label="Redo"
@@ -1172,8 +1183,8 @@ export default function ImageStudio({
           onClick={() => safely(() => doc?.redo())}
         >
           <Redo2 size={16} />
-        </button>
-        <button
+        </IconButton>
+        <Button
           className="button ghost"
           disabled={!editable}
           title="Crop image (C)"
@@ -1181,8 +1192,8 @@ export default function ImageStudio({
         >
           <Crop size={15} />
           Crop
-        </button>
-        <button
+        </Button>
+        <Button
           className="button ghost"
           disabled={!editable}
           title="Resize image (⌘/Ctrl+Alt+I)"
@@ -1190,8 +1201,8 @@ export default function ImageStudio({
         >
           <Maximize size={15} />
           Resize
-        </button>
-        <button
+        </Button>
+        <Button
           className="button ghost"
           disabled={
             !editable || !active || active.locked || active.kind === "group"
@@ -1200,11 +1211,11 @@ export default function ImageStudio({
         >
           <SlidersHorizontal size={15} />
           Adjust
-        </button>
+        </Button>
       </div>
       <div className="studio-body image-body">
         <nav className="image-tool-rail" aria-label="Image editing tools">
-          <button
+          <IconButton
             className="icon-button"
             aria-label="Crop image (C)"
             title="Crop image (C)"
@@ -1212,9 +1223,9 @@ export default function ImageStudio({
             onClick={() => setGeometry("crop")}
           >
             <Crop size={19} strokeWidth={1.6} />
-          </button>
+          </IconButton>
           {tools.map(({ id, label, icon: Icon }) => (
-            <button
+            <IconButton
               className="icon-button"
               aria-label={label}
               title={label}
@@ -1223,7 +1234,7 @@ export default function ImageStudio({
               onClick={() => setTool(id)}
             >
               <Icon size={19} strokeWidth={1.6} />
-            </button>
+            </IconButton>
           ))}
         </nav>
         <div
@@ -1506,7 +1517,7 @@ export default function ImageStudio({
             <Layers size={16} />
             <strong>Layers</strong>
             <span className="tool-spacer" />
-            <button
+            <IconButton
               className="icon-button"
               title="Add layer"
               aria-label="Add layer"
@@ -1514,8 +1525,8 @@ export default function ImageStudio({
               onClick={() => safely(() => doc?.addLayer())}
             >
               <Plus size={16} />
-            </button>
-            <button
+            </IconButton>
+            <IconButton
               className="icon-button"
               title="Add group"
               aria-label="Add group"
@@ -1525,11 +1536,11 @@ export default function ImageStudio({
               }
             >
               <FolderPlus size={16} />
-            </button>
+            </IconButton>
           </header>
           {active && (
             <div className="image-layer-properties">
-              <select
+              <NativeSelect
                 aria-label="Layer blend mode"
                 value={active.blend}
                 disabled={!editable}
@@ -1548,11 +1559,12 @@ export default function ImageStudio({
                       : mode.replace(/-/g, " ")}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
               <label>
                 Opacity
-                <input
-                  type="range"
+                <Slider
+                  aria-label="Layer opacity"
+                  aria-valuetext={`${Math.round(active.opacity * 100)}%`}
                   min={0}
                   max={1}
                   step={0.01}
@@ -1675,7 +1687,7 @@ export default function ImageStudio({
                     });
                   }}
                 >
-                  <button
+                  <IconButton
                     className="icon-button"
                     aria-label={`${layer.visible ? "Hide" : "Show"} ${layer.name}`}
                     disabled={!editable}
@@ -1687,7 +1699,7 @@ export default function ImageStudio({
                     }}
                   >
                     {layer.visible ? <Eye size={14} /> : <EyeOff size={14} />}
-                  </button>
+                  </IconButton>
                   <span className="layer-thumbnail">
                     {layer.kind === "group" ? (
                       <FolderPlus size={20} />
@@ -1709,7 +1721,7 @@ export default function ImageStudio({
             <div className="image-inspector">
               <label>
                 Name
-                <input
+                <TextInput
                   value={active.name}
                   disabled={!editable}
                   onChange={(e) =>
@@ -1723,7 +1735,7 @@ export default function ImageStudio({
               </label>
               <label>
                 Group
-                <select
+                <NativeSelect
                   disabled={!editable || active.kind === "group"}
                   value={active.parent ?? ""}
                   onChange={(e) =>
@@ -1742,7 +1754,7 @@ export default function ImageStudio({
                         {l.name}
                       </option>
                     ))}
-                </select>
+                </NativeSelect>
               </label>
               <div className="image-transform-controls">
                 {[
@@ -1769,7 +1781,7 @@ export default function ImageStudio({
                 ].map(([label, Icon, run]) => {
                   const Glyph = Icon as typeof RotateCw;
                   return (
-                    <button
+                    <IconButton
                       className="icon-button"
                       key={String(label)}
                       aria-label={String(label)}
@@ -1780,10 +1792,10 @@ export default function ImageStudio({
                       onClick={() => safely(run as () => void)}
                     >
                       <Glyph size={16} />
-                    </button>
+                    </IconButton>
                   );
                 })}
-                <button
+                <IconButton
                   className="icon-button"
                   title="Delete layer"
                   aria-label="Delete layer"
@@ -1791,22 +1803,22 @@ export default function ImageStudio({
                   onClick={() => safely(() => doc?.removeLayer())}
                 >
                   <Trash2 size={16} />
-                </button>
+                </IconButton>
               </div>
-              <button
+              <Button
                 className="button secondary"
                 disabled={!editable || active.locked || active.kind === "group"}
                 onClick={() => safely(() => doc?.addMask())}
               >
                 Selection → mask
-              </button>
-              <button
+              </Button>
+              <Button
                 className="button ghost"
                 disabled={!editable}
                 onClick={() => safely(() => doc?.mergeVisible())}
               >
                 Merge visible layers
-              </button>
+              </Button>
             </div>
           )}
           {doc?.selection && (
@@ -1814,8 +1826,9 @@ export default function ImageStudio({
               <h3>Selection</h3>
               <label>
                 Feather
-                <input
-                  type="range"
+                <Slider
+                  aria-label="Selection feather"
+                  aria-valuetext={`${feather} pixels`}
                   min={0}
                   max={50}
                   value={feather}
@@ -1825,7 +1838,7 @@ export default function ImageStudio({
                   }}
                 />
               </label>
-              <button
+              <Button
                 className="button secondary"
                 onClick={() => {
                   doc.selection!.invert = !doc.selection!.invert;
@@ -1834,16 +1847,16 @@ export default function ImageStudio({
                 }}
               >
                 Invert selection
-              </button>
-              <button
+              </Button>
+              <Button
                 className="button secondary"
                 disabled={!editable || doc.selection.kind !== "rectangle"}
                 onClick={() => setGeometry("crop")}
               >
                 <Crop size={14} />
                 Crop to selection
-              </button>
-              <button
+              </Button>
+              <Button
                 className="button ghost"
                 onClick={() => {
                   doc.selection = null;
@@ -1852,7 +1865,7 @@ export default function ImageStudio({
                 }}
               >
                 Deselect
-              </button>
+              </Button>
             </div>
           )}
         </aside>
@@ -1865,25 +1878,25 @@ export default function ImageStudio({
             ? `${doc.width} × ${doc.height} · ${doc.layers.length} layers`
             : ""}
         </span>
-        <button
+        <IconButton
           className="icon-button"
           title="Zoom out"
           aria-label="Zoom out"
           onClick={() => setZoom(Math.max(0.1, zoom / 1.2))}
         >
           <ZoomOut size={14} />
-        </button>
-        <button className="button ghost" onClick={() => setZoom(0.65)}>
+        </IconButton>
+        <Button className="button ghost" onClick={() => setZoom(0.65)}>
           {Math.round(zoom * 100)}%
-        </button>
-        <button
+        </Button>
+        <IconButton
           className="icon-button"
           title="Zoom in"
           aria-label="Zoom in"
           onClick={() => setZoom(Math.min(4, zoom * 1.2))}
         >
           <ZoomIn size={14} />
-        </button>
+        </IconButton>
       </footer>
       {leaving && (
         <Dialog
@@ -1897,14 +1910,14 @@ export default function ImageStudio({
           </p>
           <ErrorNotice message={error} />
           <div className="dialog-footer">
-            <button
+            <Button
               className="button secondary"
               disabled={busy}
               onClick={() => setLeaving(null)}
             >
               Stay here
-            </button>
-            <button
+            </Button>
+            <Button
               className="button primary"
               disabled={busy || !doc}
               onClick={() => {
@@ -1935,7 +1948,7 @@ export default function ImageStudio({
               }}
             >
               Keep draft &amp; leave
-            </button>
+            </Button>
           </div>
         </Dialog>
       )}
@@ -1952,16 +1965,16 @@ export default function ImageStudio({
               : "Restore it to continue where you left off."}
           </p>
           <div className="dialog-footer">
-            <button
+            <Button
               className="button secondary"
               onClick={() => downloadBlob(draft.blob, "recovered.axiom-image")}
             >
               Download draft
-            </button>
-            <button className="button secondary" onClick={() => setDraft(null)}>
+            </Button>
+            <Button className="button secondary" onClick={() => setDraft(null)}>
               Use saved version
-            </button>
-            <button
+            </Button>
+            <Button
               className="button primary"
               onClick={() => {
                 const pending = draft;
@@ -1978,7 +1991,7 @@ export default function ImageStudio({
               }}
             >
               Restore draft
-            </button>
+            </Button>
           </div>
         </Dialog>
       )}
@@ -2034,7 +2047,7 @@ export default function ImageStudio({
               </p>
               <div className="tool-export-grid">
                 {["png", "jpeg", "webp", "axiom-image", "psd"].map((format) => (
-                  <button
+                  <Button
                     className="button secondary"
                     key={format}
                     disabled={busy}
@@ -2068,7 +2081,7 @@ export default function ImageStudio({
                   >
                     <Download size={15} />
                     {format.toUpperCase()}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </>
@@ -2076,7 +2089,7 @@ export default function ImageStudio({
             <div className="tool-settings-fields">
               <label className="tool-setting-stack">
                 Text
-                <textarea
+                <TextArea
                   maxLength={10000}
                   value={text}
                   onChange={(e) => setText(e.target.value)}
@@ -2084,7 +2097,7 @@ export default function ImageStudio({
               </label>
               <label>
                 Font
-                <select
+                <NativeSelect
                   aria-label="Text layer font"
                   value={fontFamily}
                   onChange={(e) => setFontFamily(e.target.value)}
@@ -2092,11 +2105,11 @@ export default function ImageStudio({
                   {imageFonts.map((font) => (
                     <option key={font}>{font}</option>
                   ))}
-                </select>
+                </NativeSelect>
               </label>
               <label>
                 Font size
-                <input
+                <TextInput
                   type="number"
                   min={8}
                   max={500}
@@ -2104,7 +2117,7 @@ export default function ImageStudio({
                   onChange={(e) => setFontSize(Number(e.target.value))}
                 />
               </label>
-              <button
+              <Button
                 className="button primary"
                 disabled={!editable}
                 onClick={() =>
@@ -2123,13 +2136,13 @@ export default function ImageStudio({
                 }
               >
                 {editingText.current ? "Update text" : "Add text"}
-              </button>
+              </Button>
             </div>
           ) : (
             <div className="tool-settings-fields">
               <label>
                 Adjustment
-                <select
+                <NativeSelect
                   value={filter}
                   onChange={(e) => setFilter(e.target.value)}
                 >
@@ -2147,12 +2160,15 @@ export default function ImageStudio({
                   ].map((f) => (
                     <option key={f}>{f}</option>
                   ))}
-                </select>
+                </NativeSelect>
               </label>
               <label>
                 Amount
-                <input
-                  type="range"
+                <Slider
+                  aria-label={`${filter} amount`}
+                  aria-valuetext={
+                    filter === "blur" ? `${amount} pixels` : String(amount)
+                  }
                   min={
                     filter === "blur" ||
                     filter === "levels" ||
@@ -2171,7 +2187,7 @@ export default function ImageStudio({
                 worker and is undoable. Curves adjusts midtone gamma; Levels
                 trims black/white points.
               </p>
-              <button
+              <Button
                 className="button primary"
                 disabled={!editable}
                 onClick={() => {
@@ -2185,7 +2201,7 @@ export default function ImageStudio({
                 }}
               >
                 Apply adjustment
-              </button>
+              </Button>
             </div>
           )}
           <ErrorNotice message={error} />
@@ -2240,20 +2256,20 @@ export default function ImageStudio({
           </div>
           <ErrorNotice message={error} />
           <div className="dialog-footer">
-            <button
+            <Button
               className="button secondary"
               disabled={busy}
               onClick={() => setCloudRecovery(null)}
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               className="button primary"
               disabled={busy}
               onClick={() => void recoverCloudDraft()}
             >
               Recover previous draft
-            </button>
+            </Button>
           </div>
         </Dialog>
       )}

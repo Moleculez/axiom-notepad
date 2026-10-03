@@ -16,7 +16,77 @@ import {
   APPEARANCE_SCHEMA,
 } from "../packages/shared/src/appearance";
 import { applyDocumentStyle } from "../packages/shared/src/editor-looks";
+import {
+  interfaceStyleIds,
+  interfaceStyles,
+} from "../packages/shared/src/interface-styles";
 describe("personal appearance", () => {
+  it("migrates version 10 without restyling and negotiates the five-style registry safely", () => {
+    expect(interfaceStyles.map((style) => style.id)).toEqual([
+      ...interfaceStyleIds,
+    ]);
+    const legacy = {
+        ...defaults,
+        schemaVersion: 10,
+        interfaceStyle: "fluent",
+        radius: 0,
+        uiSize: 22,
+        shadows: "none",
+        lightColors: { accent: "#123456" },
+      },
+      upgraded = preferencesSchema.parse(legacy);
+    expect(upgraded).toEqual({ ...legacy, schemaVersion: 11 });
+    const request = new Request("http://localhost", {
+        headers: { [APPEARANCE_SCHEMA_HEADER]: "10" },
+      }),
+      record = {
+        preferences: upgraded,
+        previousPreferences: upgraded,
+        version: 3,
+      };
+    expect(appearanceForClient(request, record)).toEqual({
+      ...record,
+      preferences: legacy,
+      previousPreferences: legacy,
+    });
+    for (const style of interfaceStyleIds)
+      expect(
+        preferencesSchema.parse({ ...upgraded, interfaceStyle: style })
+          .interfaceStyle,
+      ).toBe(style);
+    const macos = preferencesSchema.parse({
+      ...upgraded,
+      interfaceStyle: "macos",
+    });
+    expect(
+      appearanceForClient(request, { ...record, preferences: macos }),
+    ).toBeNull();
+    expect(
+      appearanceForClient(request, { ...record, previousPreferences: macos }),
+    ).toBeNull();
+    expect(
+      appearanceForClient(
+        new Request("http://localhost", {
+          headers: { [APPEARANCE_SCHEMA_HEADER]: "11" },
+        }),
+        { ...record, preferences: macos },
+      )?.preferences,
+    ).toEqual(macos);
+  });
+  it("derives readable danger labels separately from accent labels, including custom colors", () => {
+    for (const mode of [false, true]) {
+      for (const danger of ["#ffabb5", "#b32d45", "#fff000", "#050505"]) {
+        const p = {
+            ...defaults,
+            [mode ? "darkColors" : "lightColors"]: { danger },
+          },
+          css = appearanceVariables(p, mode);
+        expect(
+          contrastRatio(css["--on-danger"], danger),
+        ).toBeGreaterThanOrEqual(4.5);
+      }
+    }
+  });
   it("adds component styles without changing version 9 colors or typography", () => {
     const { interfaceStyle: _style, ...base } = defaults;
     const legacy = { ...base, schemaVersion: 9, proseSize: 23, radius: 0 };

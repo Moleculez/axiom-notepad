@@ -110,16 +110,6 @@
   gap: 5px;
   margin-bottom: 10px;
   color: var(--muted);
-  border-bottom: 1px solid var(--line);
-}
-.ws-app .pdf-outline .pdf-outline-filter input,
-.pdf-outline .pdf-outline-filter input {
-  background: transparent;
-  padding: 7px 0;
-  border: 0;
-  border-radius: 0;
-  font-size: 12px;
-  min-width: 0;
 }
 .pdf-outline-empty {
   text-align: center;
@@ -585,9 +575,6 @@
   align-items: center;
   gap: 6px;
 }
-.pdf-compare-controls input[type="checkbox"] {
-  width: auto;
-}
 .dialog.pdf-compare-dialog {
   --dialog-width: 1240px;
 }
@@ -1029,8 +1016,6 @@
   gap: 4px;
 }
 .pdf-filter-row input[type="checkbox"] {
-  width: 14px;
-  height: 14px;
   margin: 0;
 }
 .pdf-filter-row > span {
@@ -1185,10 +1170,6 @@
   display: flex;
   align-items: center;
   gap: 8px;
-}
-.pdf-organizer-grid input[type="checkbox"] {
-  width: 15px;
-  height: 15px;
 }
 .pdf-organizer-grid article > span {
   overflow: hidden;

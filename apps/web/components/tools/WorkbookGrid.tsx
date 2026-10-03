@@ -1,4 +1,5 @@
 "use client";
+import { HelpText, IconButton, TextInput } from "../ui/controls";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { ArrowDownAZ, ArrowUpAZ, Copy, Link, Snowflake, X } from "lucide-react";
 import {
@@ -256,7 +257,7 @@ export default function WorkbookGrid({
       aria-label={`${sheet.name} worksheet`}
     >
       <div className="workbook-controls">
-        <input
+        <TextInput
           aria-label="Filter worksheet rows"
           placeholder="Filter rows…"
           value={query}
@@ -265,7 +266,7 @@ export default function WorkbookGrid({
             setSort(undefined);
           }}
         />
-        <button
+        <IconButton
           className="icon-button"
           aria-label="Sort selected column ascending"
           title={
@@ -277,25 +278,25 @@ export default function WorkbookGrid({
           onClick={() => setSort({ column: end.column, direction: "asc" })}
         >
           <ArrowDownAZ size={17} />
-        </button>
-        <button
+        </IconButton>
+        <IconButton
           className="icon-button"
           aria-label="Sort selected column descending"
           disabled={!rows.length || !!sheet.merges.length}
           onClick={() => setSort({ column: end.column, direction: "desc" })}
         >
           <ArrowUpAZ size={17} />
-        </button>
+        </IconButton>
         {sort && (
-          <button
+          <IconButton
             className="icon-button"
             aria-label="Clear worksheet sorting"
             onClick={() => setSort(undefined)}
           >
             <X size={15} />
-          </button>
+          </IconButton>
         )}
-        <button
+        <IconButton
           className="icon-button"
           aria-label="Use workbook frozen panes"
           aria-pressed={freeze}
@@ -303,24 +304,24 @@ export default function WorkbookGrid({
           onClick={() => setFreeze(!freeze)}
         >
           <Snowflake size={17} />
-        </button>
+        </IconButton>
         <span className="tool-spacer" />
-        <button
+        <IconButton
           className="icon-button"
           aria-label="Copy selected cells"
           title="Copy selected cells"
           onClick={() => void copy()}
         >
           <Copy size={16} />
-        </button>
-        <button
+        </IconButton>
+        <IconButton
           className="icon-button"
           aria-label="Copy cell link"
           title="Copy cell link"
           onClick={() => void copy(true)}
         >
           <Link size={16} />
-        </button>
+        </IconButton>
       </div>
       <div className="workbook-formula">
         <form
@@ -339,7 +340,7 @@ export default function WorkbookGrid({
               setMessage("That cell is outside this preview or filtered out.");
           }}
         >
-          <input
+          <TextInput
             aria-label="Go to cell"
             value={address}
             onChange={(e) => setAddress(e.target.value)}
@@ -580,12 +581,12 @@ export default function WorkbookGrid({
         </span>
       </footer>
       {message && (
-        <p className="ws-note" role="status">
+        <HelpText role="status">
           {message}
           <button className="text-button" onClick={() => setMessage("")}>
             Dismiss
           </button>
-        </p>
+        </HelpText>
       )}
     </section>
   );

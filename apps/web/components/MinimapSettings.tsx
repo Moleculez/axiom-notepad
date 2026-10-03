@@ -1,4 +1,5 @@
 "use client";
+import { Switch, NativeSelect } from "./ui/controls";
 import {
   minimapDefaults,
   type MinimapPreferences,
@@ -37,8 +38,7 @@ export default function MinimapSettings({
         {label}
         {hint && <small>{hint}</small>}
       </span>
-      <input
-        type="checkbox"
+      <Switch
         checked={value[key]}
         onChange={(e) => change(key, e.target.checked)}
       />
@@ -51,7 +51,7 @@ export default function MinimapSettings({
   ) => (
     <label className="setting-control">
       <span>{label}</span>
-      <select
+      <NativeSelect
         aria-label={label}
         value={value[key]}
         onChange={(e) => change(key, e.target.value as MinimapPreferences[K])}
@@ -61,7 +61,7 @@ export default function MinimapSettings({
             {text}
           </option>
         ))}
-      </select>
+      </NativeSelect>
     </label>
   );
   return (

@@ -1,4 +1,5 @@
 "use client";
+import { Button, Checkbox, IconButton, NativeSelect } from "../ui/controls";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   BookOpen,
@@ -314,7 +315,7 @@ export default function ResearchGraph({
           label="Search graph"
           placeholder="Find a note, paper, citation or tag…"
         />
-        <button
+        <Button
           className="button ghost research-filter-toggle"
           aria-expanded={filtersOpen}
           aria-controls="graph-filter-fields"
@@ -331,27 +332,27 @@ export default function ResearchGraph({
               aria-label="Active graph filters"
             />
           )}
-        </button>
+        </Button>
         <span className="tool-spacer" />
         <small className="research-source-count">
           {visible.length} sources · {visibleEdges.length} connections
           {layoutBusy ? " · Arranging…" : ""}
         </small>
-        <button
+        <IconButton
           className="icon-button"
           title={list ? "Graph view" : "Accessible list view"}
           aria-label={list ? "Graph view" : "Accessible list view"}
           onClick={() => setList(!list)}
         >
           {list ? <Network size={17} /> : <List size={17} />}
-        </button>
+        </IconButton>
       </div>
       <div
         className="research-graph-filters"
         id="graph-filter-fields"
         hidden={!filtersOpen}
       >
-        <select
+        <NativeSelect
           aria-label="Graph node types"
           value={params.get("types") ?? "note,reference,pdf"}
           onChange={(e) => onRoute({ types: e.target.value })}
@@ -360,18 +361,16 @@ export default function ResearchGraph({
           <option value="note">Notes</option>
           <option value="reference">References</option>
           <option value="pdf">PDFs</option>
-        </select>
+        </NativeSelect>
         <label className="research-inline-check">
-          <input
-            type="checkbox"
+          <Checkbox
             checked={labels}
             onChange={(e) => onRoute({ labels: e.target.checked ? "" : "off" })}
           />
           Labels
         </label>
         <label className="research-inline-check">
-          <input
-            type="checkbox"
+          <Checkbox
             checked={orphan}
             onChange={(e) =>
               onRoute({ orphans: e.target.checked ? "only" : "" })
@@ -389,7 +388,7 @@ export default function ResearchGraph({
             placeholder="All tags"
           />
         </label>
-        <select
+        <NativeSelect
           aria-label="Graph collection"
           value={params.get("collection") ?? ""}
           onChange={(e) => onRoute({ collection: e.target.value })}
@@ -400,8 +399,8 @@ export default function ResearchGraph({
               {c.name}
             </option>
           ))}
-        </select>
-        <button
+        </NativeSelect>
+        <Button
           className="button ghost"
           onClick={() =>
             onRoute({
@@ -414,7 +413,7 @@ export default function ResearchGraph({
           }
         >
           Reset filters
-        </button>
+        </Button>
       </div>
       <ErrorNotice message={data.error} retry={data.reload} />
       {data.loading && !data.data && <Loading label="Loading connections…" />}
@@ -594,43 +593,43 @@ export default function ResearchGraph({
               <p>
                 Add references, link PDFs, or cite a source in a Markdown note.
               </p>
-              <button
+              <Button
                 className="button secondary"
                 onClick={() =>
                   navigate(`/workspaces/${space.id}/research?view=library`)
                 }
               >
                 Open library
-              </button>
+              </Button>
             </div>
           )}
           <div className="research-graph-controls">
-            <button
+            <IconButton
               className="icon-button"
               aria-label="Zoom out"
               title="Zoom out"
               onClick={() => zoom(1 / 1.2)}
             >
               <Minus size={16} />
-            </button>
+            </IconButton>
             <span>{Math.round(view.zoom * 100)}%</span>
-            <button
+            <IconButton
               className="icon-button"
               aria-label="Zoom in"
               title="Zoom in"
               onClick={() => zoom(1.2)}
             >
               <Plus size={16} />
-            </button>
-            <button
+            </IconButton>
+            <IconButton
               className="icon-button"
               aria-label="Fit graph"
               title="Fit graph"
               onClick={fit}
             >
               <Focus size={16} />
-            </button>
-            <button
+            </IconButton>
+            <IconButton
               className="icon-button"
               aria-label="Reset graph layout"
               title="Reset layout"
@@ -641,8 +640,8 @@ export default function ResearchGraph({
               }}
             >
               <RotateCcw size={16} />
-            </button>
-            <button
+            </IconButton>
+            <IconButton
               className="icon-button"
               aria-label="Fullscreen graph"
               title="Fullscreen"
@@ -658,7 +657,7 @@ export default function ResearchGraph({
               }}
             >
               <Maximize size={16} />
-            </button>
+            </IconButton>
           </div>
         </div>
         {selected && (
@@ -671,13 +670,13 @@ export default function ResearchGraph({
           >
             <header>
               <span className="docs-eyebrow">{selected.kind}</span>
-              <button
+              <IconButton
                 className="icon-button"
                 aria-label="Close graph details"
                 onClick={() => onRoute({ focus: "", hops: "" })}
               >
                 <X size={16} />
-              </button>
+              </IconButton>
             </header>
             <h2>{selected.title}</h2>
             <p>{selected.detail}</p>
@@ -688,16 +687,16 @@ export default function ResearchGraph({
                 </button>
               ))}
             </div>
-            <button
+            <Button
               className="button primary"
               onClick={() => navigate(selected.route)}
             >
               <ExternalLink size={15} />
               Open source
-            </button>
+            </Button>
             <label>
               Neighborhood
-              <select
+              <NativeSelect
                 aria-label="Graph neighborhood"
                 value={hops}
                 onChange={(e) => onRoute({ hops: e.target.value })}
@@ -705,7 +704,7 @@ export default function ResearchGraph({
                 <option value="0">Entire graph</option>
                 <option value="1">One connection away</option>
                 <option value="2">Two connections away</option>
-              </select>
+              </NativeSelect>
             </label>
             <h3>Connections</h3>
             <div className="research-connections">
@@ -757,13 +756,13 @@ export default function ResearchGraph({
           </summary>
           <div>
             {(["svg", "png", "json"] as const).map((f) => (
-              <button
+              <Button
                 key={f}
                 className="button ghost"
                 onClick={() => void download(f)}
               >
                 {f.toUpperCase()}
-              </button>
+              </Button>
             ))}
           </div>
         </details>

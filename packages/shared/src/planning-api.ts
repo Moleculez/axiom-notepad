@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { previewSchedule, applySchedule } from "./schedule-service";
+import { planningSuiteApi, planningEntityHistory } from "./planning-suite-api";
 import { z } from "zod";
 import type { PoolClient } from "pg";
 import { query } from "./db";
@@ -20,7 +21,15 @@ import {
   taskPrioritySchema,
   recurrenceSchema,
 } from "./workspace";
-import { calendarSchema, dependencyOrder, type PlanningTask } from "./planning";
+import {
+  calendarSchema,
+  dependencyOrder,
+  dependencyLinkSchema,
+  resolveDependencyLinks,
+  taskDependencyLinks,
+  planningProgress,
+  type PlanningTask,
+} from "./planning";
 
 const uuid = z.uuid(),
   mutationId = uuid.default(() => randomUUID());
@@ -39,6 +48,8 @@ export const taskInput = z.object({
   noteId: uuid.nullable().default(null),
   resourceIds: z.array(uuid).max(100).default([]),
   dependencies: z.array(uuid).max(100).default([]),
+  dependencyLinks: z.array(dependencyLinkSchema).max(100).optional(),
+  progressPercent: z.number().int().min(0).max(100).default(0),
   position: z.number().finite().default(0),
 });
 const changeSchema = z.object({
@@ -49,9 +60,11 @@ const changeSchema = z.object({
 });
 const taskFields = (
   includeBody = false,
-) => `t.id,t.space_id,t.project_id,t.title,t.status,t.priority,t.assignee_id,t.parent_id,t.start_on,t.due_on,t.estimate_hours,t.labels,t.milestone_id,t.note_id,t.position,t.version,t.created_by,t.created_at,t.updated_at,t.deleted_at,${includeBody ? "t.body" : "''::text AS body"},u.name AS assignee_name,
+) => `t.id,t.space_id,t.project_id,t.title,t.status,t.priority,t.assignee_id,t.parent_id,t.start_on,t.due_on,t.estimate_hours,t.labels,t.milestone_id,t.note_id,t.position,t.progress_percent,t.version,t.created_by,t.created_at,t.updated_at,t.deleted_at,${includeBody ? "t.body" : "''::text AS body"},u.name AS assignee_name,
+ coalesce((SELECT jsonb_agg(jsonb_build_object('taskId',d.depends_on,'lagDays',d.lag_days) ORDER BY d.depends_on) FROM task_dependencies d JOIN tasks b ON b.id=d.depends_on WHERE d.task_id=t.id AND b.deleted_at IS NULL),'[]'::jsonb) AS "dependencyLinks",
  coalesce((SELECT jsonb_agg(d.depends_on ORDER BY d.depends_on) FROM task_dependencies d JOIN tasks b ON b.id=d.depends_on WHERE d.task_id=t.id AND b.deleted_at IS NULL),'[]'::jsonb) AS dependencies,
  coalesce((SELECT jsonb_agg(r.resource_id) FROM task_resources r WHERE r.task_id=t.id),'[]'::jsonb) AS resource_ids,
+ EXISTS(SELECT 1 FROM tasks c WHERE c.parent_id=t.id AND c.deleted_at IS NULL) AS has_children,
  EXISTS(SELECT 1 FROM task_dependencies d JOIN tasks b ON b.id=d.depends_on WHERE d.task_id=t.id AND b.deleted_at IS NULL AND b.status NOT IN ('done','cancelled')) AS blocked`;
 export async function planningTasks(client: PoolClient, spaceId: string) {
   const rows = (
@@ -81,7 +94,7 @@ export async function lockPlanning(
   client: PoolClient,
   userId: string,
   spaceId: string,
-  capability: "edit" | "manage" | "comment" = "edit",
+  capability: "read" | "edit" | "manage" | "comment" = "edit",
 ) {
   await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [
     "planning:" + spaceId,
@@ -106,7 +119,7 @@ async function event(
     kind: "planning",
   });
 }
-async function validateTask(
+export async function validateTask(
   client: PoolClient,
   spaceId: string,
   input: z.infer<typeof taskInput>,
@@ -183,6 +196,8 @@ export async function planningApi(
   path: string[],
   userId: string,
 ): Promise<Response | null> {
+  const suite = await planningSuiteApi(request, path, userId);
+  if (suite) return suite;
   let [endpoint, id, section, child] = path;
   const method = request.method,
     url = new URL(request.url);
@@ -256,6 +271,19 @@ export async function planningApi(
         [uuid.parse(child), id],
       );
       if (!task) throw new HttpError(404, "Task unavailable.");
+      if (task.has_children) {
+        const full = await query<PlanningTask>(
+          "SELECT id,parent_id,status,progress_percent FROM tasks WHERE space_id=$1 AND deleted_at IS NULL LIMIT 50001",
+          [id],
+        );
+        if (full.length > 50000)
+          throw new HttpError(
+            413,
+            "This workspace exceeds the progress analysis limit.",
+          );
+        task.derived_progress_percent =
+          planningProgress(full).get(task.id) ?? 0;
+      }
       return json(normalizeTask(task));
     }
     if (section === "tasks" || section === "planning") {
@@ -292,15 +320,17 @@ export async function planningApi(
       ];
       if (args[4]) uuid.parse(args[4]);
       const risk = z
-        .enum(["overdue", "blocked"])
+        .enum(["overdue", "blocked", "upcoming"])
         .nullable()
         .parse(url.searchParams.get("risk"));
       const riskWhere =
         risk === "overdue"
           ? " AND t.status NOT IN ('done','cancelled') AND t.due_on < (now() AT TIME ZONE (SELECT timezone FROM spaces WHERE id=$1))::date"
-          : risk === "blocked"
-            ? " AND t.status NOT IN ('done','cancelled') AND EXISTS(SELECT 1 FROM task_dependencies d JOIN tasks b ON b.id=d.depends_on WHERE d.task_id=t.id AND b.deleted_at IS NULL AND b.status NOT IN ('done','cancelled'))"
-            : "";
+          : risk === "upcoming"
+            ? " AND t.status NOT IN ('done','cancelled') AND t.due_on BETWEEN (now() AT TIME ZONE (SELECT timezone FROM spaces WHERE id=$1))::date AND (now() AT TIME ZONE (SELECT timezone FROM spaces WHERE id=$1))::date+7"
+            : risk === "blocked"
+              ? " AND t.status NOT IN ('done','cancelled') AND EXISTS(SELECT 1 FROM task_dependencies d JOIN tasks b ON b.id=d.depends_on WHERE d.task_id=t.id AND b.deleted_at IS NULL AND b.status NOT IN ('done','cancelled'))"
+              : "";
       const where = `t.space_id=$1 AND (t.deleted_at IS NOT NULL)=$7 AND ($2::text IS NULL OR t.status=$2) AND ($3::text IS NULL OR t.priority=$3) AND ($4::text IS NULL OR t.assignee_id=$4) AND ($5::uuid IS NULL OR t.milestone_id=$5) AND (t.title ILIKE $6 OR array_to_string(t.labels,' ') ILIKE $6)${riskWhere}`;
       const sort =
         {
@@ -328,8 +358,27 @@ export async function planningApi(
           [id],
         ),
       ]);
+      const full = items.some((t) => t.has_children)
+        ? await query<PlanningTask>(
+            "SELECT id,parent_id,status,progress_percent FROM tasks WHERE space_id=$1 AND deleted_at IS NULL LIMIT 50001",
+            [id],
+          )
+        : [];
+      if (full.length > 50000)
+        throw new HttpError(
+          413,
+          "This workspace exceeds the progress analysis limit.",
+        );
+      const progress = planningProgress(full);
       return json({
-        items: items.slice(0, limit).map(normalizeTask),
+        items: items.slice(0, limit).map((t) =>
+          normalizeTask({
+            ...t,
+            ...(t.has_children
+              ? { derived_progress_percent: progress.get(t.id) ?? 0 }
+              : {}),
+          }),
+        ),
         total: totals.total,
         completed: totals.completed,
         nextOffset: items.length > limit ? offset + limit : null,
@@ -537,18 +586,32 @@ export async function planningApi(
         const input = z
           .object({ rule: recurrenceSchema, template: taskInput })
           .parse(raw);
-        if (input.template.parentId || input.template.dependencies.length)
+        if (
+          input.template.parentId ||
+          input.template.dependencies.length ||
+          input.template.dependencyLinks?.length
+        )
           throw new HttpError(
             400,
             "Recurring instances cannot copy parent or dependency relationships.",
           );
         await validateTask(client, id, input.template, randomUUID());
-        return (
+        const routine = (
           await client.query(
             "INSERT INTO task_recurrences(space_id,project_id,created_by,rule,template) VALUES($1,$2,$3,$4,$5) RETURNING *",
             [id, space.project_id, userId, input.rule, input.template],
           )
         ).rows[0];
+        await planningEntityHistory(
+          client,
+          userId,
+          id,
+          routine.id,
+          "routine",
+          input.template.title,
+          "Created routine",
+        );
+        return routine;
       }
       if (section === "discussions") {
         const input = z
@@ -664,6 +727,15 @@ export async function mutatePlanningTask(
   if (existing?.deleted_at)
     throw new HttpError(409, "Restore this task before editing it.");
   const old = existing ? normalizeTask(existing) : null;
+  let dependencyLinks;
+  try {
+    dependencyLinks = resolveDependencyLinks(
+      raw,
+      old ? taskDependencyLinks(old) : [],
+    );
+  } catch (error) {
+    throw new HttpError(400, (error as Error).message);
+  }
   const input = taskInput.parse({
     ...(old
       ? {
@@ -683,9 +755,12 @@ export async function mutatePlanningTask(
           resourceIds: old.resource_ids,
           dependencies: old.dependencies,
           position: old.position,
+          progressPercent: old.progress_percent ?? 0,
         }
       : {}),
     ...raw,
+    dependencies: dependencyLinks.map((l) => l.taskId),
+    dependencyLinks,
   });
   // The modern evidence set and the legacy single-note field describe the
   // same links. Removing a migrated note must not silently re-add it.
@@ -721,17 +796,18 @@ export async function mutatePlanningTask(
     input.milestoneId,
     input.noteId,
     input.position,
+    input.progressPercent,
   ];
   const [task] = existing
     ? (
         await client.query(
-          "UPDATE tasks SET title=$2,body=$3,status=$4,priority=$5,assignee_id=$6,parent_id=$7,start_on=$8,due_on=$9,estimate_hours=$10,labels=$11,milestone_id=$12,note_id=$13,position=$14,version=version+1,updated_at=now() WHERE id=$1 RETURNING *",
+          "UPDATE tasks SET title=$2,body=$3,status=$4,priority=$5,assignee_id=$6,parent_id=$7,start_on=$8,due_on=$9,estimate_hours=$10,labels=$11,milestone_id=$12,note_id=$13,position=$14,progress_percent=$15,version=version+1,updated_at=now() WHERE id=$1 RETURNING *",
           [taskId, ...fields],
         )
       ).rows
     : (
         await client.query(
-          "INSERT INTO tasks(id,title,body,status,priority,assignee_id,parent_id,start_on,due_on,estimate_hours,labels,milestone_id,note_id,position,space_id,project_id,created_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) RETURNING *",
+          "INSERT INTO tasks(id,title,body,status,priority,assignee_id,parent_id,start_on,due_on,estimate_hours,labels,milestone_id,note_id,position,progress_percent,space_id,project_id,created_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18) RETURNING *",
           [taskId, ...fields, id, space.project_id, userId],
         )
       ).rows;
@@ -742,8 +818,9 @@ export async function mutatePlanningTask(
     [taskId, input.dependencies],
   );
   await client.query(
-    "INSERT INTO task_dependencies(task_id,depends_on) SELECT $1,unnest($2::uuid[]) ON CONFLICT DO NOTHING",
-    [taskId, [...new Set(input.dependencies)]],
+    `INSERT INTO task_dependencies(task_id,depends_on,lag_days) SELECT $1,x."taskId",x."lagDays" FROM jsonb_to_recordset($2::jsonb) AS x("taskId" uuid,"lagDays" integer)
+     ON CONFLICT(task_id,depends_on) DO UPDATE SET lag_days=excluded.lag_days WHERE task_dependencies.lag_days IS DISTINCT FROM excluded.lag_days`,
+    [taskId, JSON.stringify(dependencyLinks)],
   );
   await client.query(
     "DELETE FROM task_resources WHERE task_id=$1 AND NOT(resource_id=ANY($2::uuid[]))",
@@ -775,6 +852,8 @@ export async function mutatePlanningTask(
     });
   return normalizeTask({
     ...task,
+    progress_percent: input.progressPercent,
+    dependencyLinks,
     dependencies: input.dependencies,
     resource_ids: resources,
   });

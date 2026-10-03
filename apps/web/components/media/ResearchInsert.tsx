@@ -1,4 +1,5 @@
 "use client";
+import { Button, Checkbox, NativeSelect, TextInput } from "../ui/controls";
 import { useEffect, useRef, useState } from "react";
 import type { Resource } from "@axiom/shared/workspace";
 import { annotationMarkdown, type Annotation } from "@axiom/shared/research";
@@ -84,7 +85,7 @@ export default function ResearchInsert({
         <>
           <label>
             Saved annotation
-            <select
+            <NativeSelect
               value={chosen}
               onChange={(e) => {
                 setChosen(e.target.value);
@@ -101,7 +102,7 @@ export default function ResearchInsert({
                       entry.data.body.slice(0, 100)}
                   </option>
                 ))}
-            </select>
+            </NativeSelect>
           </label>
           {!annotations.loading && !annotations.data?.length && (
             <p className="ws-small muted">
@@ -112,7 +113,7 @@ export default function ResearchInsert({
           {selected && <blockquote>{selected.data.quote}</blockquote>}
           <label>
             Citation key (optional)
-            <input
+            <TextInput
               value={citeKey}
               placeholder="author2026"
               onChange={(e) =>
@@ -122,15 +123,14 @@ export default function ResearchInsert({
           </label>
           {shared && selected && !selected.shared && (
             <label className="media-check-label">
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={acknowledge}
                 onChange={(e) => setAcknowledge(e.target.checked)}
               />
               Include this private annotation in the shared note
             </label>
           )}
-          <button
+          <Button
             className="button secondary"
             disabled={!selected || (shared && !selected.shared && !acknowledge)}
             onClick={() =>
@@ -145,7 +145,7 @@ export default function ResearchInsert({
             }
           >
             Insert quotation with source
-          </button>
+          </Button>
         </>
       ) : (
         <>
@@ -154,15 +154,15 @@ export default function ResearchInsert({
             and 20 columns; formulas are never executed.
           </p>
           {!rows.length ? (
-            <button className="button secondary" onClick={() => void load()}>
+            <Button className="button secondary" onClick={() => void load()}>
               Load excerpt
-            </button>
+            </Button>
           ) : (
             <>
               <div className="media-options-pair">
                 <label>
                   First data row
-                  <input
+                  <TextInput
                     type="number"
                     min={1}
                     max={200}
@@ -176,7 +176,7 @@ export default function ResearchInsert({
                 </label>
                 <label>
                   Last data row
-                  <input
+                  <TextInput
                     type="number"
                     min={start}
                     max={200}
@@ -192,7 +192,7 @@ export default function ResearchInsert({
                   />
                 </label>
               </div>
-              <button
+              <Button
                 className="button secondary"
                 disabled={rows.length < 2 || start >= rows.length}
                 onClick={() => {
@@ -218,7 +218,7 @@ export default function ResearchInsert({
                 }}
               >
                 Insert table with source
-              </button>
+              </Button>
             </>
           )}
         </>

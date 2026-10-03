@@ -1,4 +1,12 @@
 "use client";
+import {
+  Button,
+  Checkbox,
+  HelpText,
+  IconButton,
+  TextInput,
+  NativeSelect,
+} from "../ui/controls";
 import { useEffect, useState } from "react";
 import { Download, RefreshCw, Save, ShieldCheck } from "lucide-react";
 import {
@@ -76,14 +84,14 @@ export default function SiteAnalytics({
           </p>
         </div>
         <div className="website-inline-actions">
-          <button
+          <IconButton
             className="icon-button"
             title="Refresh analytics"
             aria-label="Refresh analytics"
             onClick={data.revalidate}
           >
             <RefreshCw size={16} />
-          </button>
+          </IconButton>
           <a className="button secondary" href={`/api/v1/${path}&format=csv`}>
             <Download size={15} />
             Export CSV
@@ -117,7 +125,7 @@ export default function SiteAnalytics({
         >
           <label>
             From
-            <input
+            <TextInput
               type="date"
               required
               value={dates.from}
@@ -127,7 +135,7 @@ export default function SiteAnalytics({
           </label>
           <label>
             To
-            <input
+            <TextInput
               type="date"
               required
               value={dates.to}
@@ -136,12 +144,12 @@ export default function SiteAnalytics({
               onChange={(e) => setDates({ ...dates, to: e.target.value })}
             />
           </label>
-          <button className="button secondary">Apply dates</button>
+          <Button className="button secondary">Apply dates</Button>
         </form>
         <div className="website-fields">
           <label>
             Author
-            <select
+            <NativeSelect
               value={filters.author}
               onChange={(e) =>
                 setFilters({ ...filters, author: e.target.value })
@@ -153,11 +161,11 @@ export default function SiteAnalytics({
                   {a.name}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </label>
           <label>
             Topic
-            <select
+            <NativeSelect
               value={filters.tag}
               onChange={(e) => setFilters({ ...filters, tag: e.target.value })}
             >
@@ -165,11 +173,11 @@ export default function SiteAnalytics({
               {tags.map((t) => (
                 <option key={t}>{t}</option>
               ))}
-            </select>
+            </NativeSelect>
           </label>
           <label>
             Content
-            <select
+            <NativeSelect
               value={filters.kind}
               onChange={(e) => setFilters({ ...filters, kind: e.target.value })}
             >
@@ -177,11 +185,11 @@ export default function SiteAnalytics({
               {["post", "paper", "page", "resource"].map((k) => (
                 <option key={k}>{k}</option>
               ))}
-            </select>
+            </NativeSelect>
           </label>
           <label>
             Article
-            <select
+            <NativeSelect
               value={filters.entry}
               onChange={(e) =>
                 setFilters({ ...filters, entry: e.target.value })
@@ -195,7 +203,7 @@ export default function SiteAnalytics({
                     {e.title}
                   </option>
                 ))}
-            </select>
+            </NativeSelect>
           </label>
         </div>
       </div>
@@ -204,9 +212,9 @@ export default function SiteAnalytics({
         data.loading ? (
           <Loading label="Loading publication insights…" />
         ) : (
-          <p className="ws-note">
+          <HelpText>
             Choose a valid date range or retry to load publication insights.
-          </p>
+          </HelpText>
         )
       ) : (
         <>
@@ -241,7 +249,7 @@ export default function SiteAnalytics({
               </div>
               <label>
                 Chart metric
-                <select
+                <NativeSelect
                   value={chartMetric}
                   onChange={(e) =>
                     setChartMetric(e.target.value as keyof SiteMetrics)
@@ -252,7 +260,7 @@ export default function SiteAnalytics({
                       {label}
                     </option>
                   ))}
-                </select>
+                </NativeSelect>
               </label>
             </div>
             <svg
@@ -521,8 +529,7 @@ function AnalyticsPreferences({
         <strong>{label}</strong>
         <small>{description}</small>
       </span>
-      <input
-        type="checkbox"
+      <Checkbox
         checked={settings[key]}
         onChange={(e) => setSettings({ ...settings, [key]: e.target.checked })}
       />
@@ -576,7 +583,7 @@ function AnalyticsPreferences({
           )}
           <label>
             Google Analytics 4 measurement ID
-            <input
+            <TextInput
               placeholder="G-ABC1234567"
               maxLength={22}
               value={settings.googleMeasurementId}
@@ -589,24 +596,25 @@ function AnalyticsPreferences({
               spellCheck={false}
             />
           </label>
-          <p className="ws-note">
+          <HelpText>
             Optional integration with your own GA4 property. No Google requests
             occur until the visitor explicitly accepts. Advertising storage and
             signals remain disabled. Reports stay in Google Analytics; this
             dashboard uses only first-party aggregates.
-          </p>
+          </HelpText>
           {report.settingsVersion !== baseline.version && dirty && (
             <ErrorNotice message="Another manager changed these preferences. Discard your local changes to load the latest settings before saving." />
           )}
           <div className="website-inline-actions">
-            <button
+            <Button
               className="button primary"
               disabled={!dirty || report.settingsVersion !== baseline.version}
+              pending={!!action.busy}
             >
               <Save size={15} />
-              {action.busy ? "Saving…" : "Save privacy preferences"}
-            </button>
-            <button
+              {"Save privacy preferences"}
+            </Button>
+            <Button
               type="button"
               className="button secondary"
               disabled={!dirty}
@@ -619,15 +627,15 @@ function AnalyticsPreferences({
               }}
             >
               Discard changes
-            </button>
+            </Button>
           </div>
         </fieldset>
       </form>
       <ErrorNotice message={action.error} />
       {!manage && (
-        <p className="ws-note">
+        <HelpText>
           Only a workspace manager can change collection or public disclosures.
-        </p>
+        </HelpText>
       )}
     </section>
   );

@@ -1,4 +1,11 @@
 "use client";
+import {
+  Button,
+  HelpText,
+  IconButton,
+  TextInput,
+  NativeSelect,
+} from "../ui/controls";
 import { useEffect, useState } from "react";
 import {
   Archive,
@@ -161,7 +168,7 @@ export default function WorkspacesPage({
         <div className="console-toolbar">
           <label className="console-search">
             Find a workspace
-            <input
+            <TextInput
               type="search"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -170,35 +177,47 @@ export default function WorkspacesPage({
           </label>
           <label>
             Status
-            <select value={status} onChange={(e) => setStatus(e.target.value)}>
+            <NativeSelect
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+            >
               <option value="">All states</option>
               {["active", "archived", "trashed", "purging"].map((v) => (
                 <option key={v}>{v}</option>
               ))}
-            </select>
+            </NativeSelect>
           </label>
           <label>
             Kind
-            <select value={kind} onChange={(e) => setKind(e.target.value)}>
+            <NativeSelect
+              value={kind}
+              onChange={(e) => setKind(e.target.value)}
+            >
               <option value="">All workspaces</option>
               {["personal", "team", "project"].map((v) => (
                 <option key={v}>{v}</option>
               ))}
-            </select>
+            </NativeSelect>
           </label>
           <label>
             Access
-            <select value={role} onChange={(e) => setRole(e.target.value)}>
+            <NativeSelect
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+            >
               <option value="">All roles</option>
               <option value="manage">Can manage</option>
               {["editor", "commenter", "viewer"].map((v) => (
                 <option key={v}>{v}</option>
               ))}
-            </select>
+            </NativeSelect>
           </label>
           <label>
             Group
-            <select value={group} onChange={(e) => setGroup(e.target.value)}>
+            <NativeSelect
+              value={group}
+              onChange={(e) => setGroup(e.target.value)}
+            >
               <option value="">All groups</option>
               {data.data
                 ?.filter((s) => s.kind === "team")
@@ -207,14 +226,17 @@ export default function WorkspacesPage({
                     {s.name}
                   </option>
                 ))}
-            </select>
+            </NativeSelect>
           </label>
           <label>
             Sort
-            <select value={sort} onChange={(e) => setSort(e.target.value)}>
+            <NativeSelect
+              value={sort}
+              onChange={(e) => setSort(e.target.value)}
+            >
               <option value="name">Name A–Z</option>
               <option value="storage">Largest storage first</option>
-            </select>
+            </NativeSelect>
           </label>
           <WorkspaceLink className="button primary" to="/groups">
             <Plus size={16} />
@@ -237,14 +259,14 @@ export default function WorkspacesPage({
                     <Blocks size={22} />
                   </span>
                   <Badge>{s.effective_status}</Badge>
-                  <button
+                  <IconButton
                     className="icon-button"
                     title={`Actions for ${s.name}`}
                     aria-label={`Actions for ${s.name}`}
                     onClick={(e) => management.workspaceMenu(e, s)}
                   >
                     <MoreHorizontal size={17} />
-                  </button>
+                  </IconButton>
                 </div>
                 <WorkspaceLink
                   className="console-workspace-title"
@@ -311,9 +333,9 @@ export default function WorkspacesPage({
               {space.can_manage ? "Management access" : `${space.role} access`}
             </Badge>
             {!space.role && (
-              <span className="ws-note">
+              <HelpText as="span">
                 Management access does not grant access to private contents.
-              </span>
+              </HelpText>
             )}
             {space.role && (
               <WorkspaceLink
@@ -332,14 +354,14 @@ export default function WorkspacesPage({
                 Parent group: {space.group_name}
               </WorkspaceLink>
             )}
-            <button
+            <IconButton
               className="icon-button"
               title="Workspace actions"
               aria-label="Workspace actions"
               onClick={(e) => management.workspaceMenu(e, space)}
             >
               <MoreHorizontal size={18} />
-            </button>
+            </IconButton>
           </div>
           <nav
             className="page-section-navigation"
@@ -539,13 +561,13 @@ export function WorkspaceLifecycle({
   };
   return (
     <section className="console-lifecycle">
-      <p className="ws-note">
+      <HelpText>
         {space.kind === "personal"
           ? "Personal space is protected and cannot be archived or deleted."
           : space.kind === "team"
             ? "This is the group's default workspace. You can archive or trash it independently; permanent removal is protected to preserve group services. Group-wide actions are in Group administration."
             : "Archive for read-only access. Trash is recoverable indefinitely. Permanent deletion is owner-only, checks retained research references, and has a 30-second cancellation window."}
-      </p>
+      </HelpText>
       {parentId && space.parent_status !== "active" && (
         <div className="settings-card">
           <h3>State inherited from the parent group</h3>
@@ -599,7 +621,7 @@ export function WorkspaceLifecycle({
                       : "Preserve existing permissions and independently archived or trashed items."}
               </p>
             </div>
-            <button
+            <Button
               className={`button ${["trash", "purge"].includes(a) ? "danger" : "secondary"}`}
               disabled={
                 a === "purge" && (!data.data || !!data.data.blockers.length)
@@ -614,7 +636,7 @@ export function WorkspaceLifecycle({
                 <Archive size={16} />
               )}
               {labels[a]}
-            </button>
+            </Button>
           </div>
         ))}
       </div>

@@ -99,7 +99,7 @@
   height: min(780px, 75vh);
   background: white;
 }
-.website-live-specimen > .ws-note {
+.website-live-specimen > .ui-help {
   padding: 0 16px;
   font-size: 11px;
 }
@@ -425,15 +425,6 @@
 .website-fields textarea {
   resize: vertical;
 }
-.website-workbench input[type="checkbox"],
-.website-fields input[type="checkbox"],
-.website-check input {
-  accent-color: var(--accent);
-  flex: none;
-  width: 15px;
-  height: 15px;
-  margin: 2px 0;
-}
 .website-overview-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
@@ -466,11 +457,6 @@
   font-size: 12px;
   line-height: 2.2;
   color: var(--text);
-}
-.website-safety .ws-note {
-  padding: 14px;
-  background: var(--surface);
-  border-radius: var(--radius);
 }
 .website-section-heading {
   display: flex;

@@ -1,3 +1,4 @@
+import { Button } from "../../web/components/ui/controls";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { Download, FileQuestion } from "lucide-react";
 import type { FilePreviewManifest } from "@axiom/shared/file-preview";
@@ -113,16 +114,16 @@ export default function FileViewer({
         <span>
           {asset?.mime} · {((asset?.blob.size ?? 0) / 1024).toFixed(1)} KB
         </span>
-        <button
+        <Button
           className="button secondary"
           onClick={() => asset && downloadBlob(asset.blob, asset.name)}
         >
           <Download size={15} />
           Download original
-        </button>
-        <button className="button" onClick={onClose}>
+        </Button>
+        <Button variant="primary" onClick={onClose}>
           Done
-        </button>
+        </Button>
       </DialogFooter>
     </Dialog>
   );

@@ -91,6 +91,11 @@ See [showcase storage, settings and GitHub Pages deployment](docs/STATIC_SHOWCAS
   Group portfolios, immutable baselines, critical-path/slack overlays and weekly
   estimate-based capacity connect the individual workspace plans.
   See [workspace planning](docs/WORKSPACE_PLANNING.md).
+  Planning also includes linked/manual Goals, member-only research Intake,
+  recurring templates/history, private/shared saved views, bulk changes,
+  signed working-day dependency offsets, Quarter/Year timelines and enriched
+  CSV/SVG/print exports. Capacity previews include accessible group commitments;
+  AI/MCP changes still require explicit review.
 - **Work as a group.** Invitations, roles, personal and shared workspaces, a compact
   context toolbar with pinned recent work, Explorer drag/move/copy, immutable file
   versions, Audit and independent workspace Trash. Group administration stays
@@ -99,9 +104,12 @@ See [showcase storage, settings and GitHub Pages deployment](docs/STATIC_SHOWCAS
   loaded panels; quick requests stay quiet and reduced motion uses a static line.
 - **Make it yours.** Semantic light/dark themes, Paper Research and Technical Slate
   packs, separate reading/interface/code typography, device overrides and a live
-  settings scratchpad. Axiom, Material Tonal, Fluent Studio and Editorial component
+  settings scratchpad. Axiom, Material Tonal, Fluent Studio, Editorial and macOS Studio component
   styles change controls and surfaces independently of your colors and reading fonts.
   Settings has a searchable grouped rail and a consistent page frame.
+  Shared native controls and an interactive Interface specimen keep settings,
+  action bars and dialogs consistent. Reusable field shells align icons, labels
+  and clear actions without nested borders. See [UI criteria](docs/UI_CONTROLS.md).
 
 Math Studio, layered Image Studio, Text Studio and protected media/document viewers
 open files in the same workbench. Scoped OAuth/MCP integration and selected offline
@@ -251,6 +259,7 @@ npm run typecheck
 npm run lint
 npm test
 npm run validate:themes
+npm run validate:ui
 npm run docs:check
 npm run brand:build        # regenerate the shared logo and installed-app icons
 npm run clean:generated     # inventory only; add --apply after review

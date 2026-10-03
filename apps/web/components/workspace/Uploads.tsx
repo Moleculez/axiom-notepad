@@ -1,4 +1,5 @@
 "use client";
+import { Button, IconButton, NativeSelect } from "../ui/controls";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Check, FileUp, Pause, Play, Upload, X } from "lucide-react";
 import { MAX_FILE_BYTES, UPLOAD_CHUNK_BYTES } from "@axiom/shared/workspace";
@@ -596,7 +597,7 @@ export default function Uploads({
         </p>
         <label>
           Folder name conflicts
-          <select
+          <NativeSelect
             aria-label="Folder name conflicts"
             value={controller.folderConflict}
             disabled={controller.folderBusy}
@@ -615,24 +616,24 @@ export default function Uploads({
             <option value="skip">
               Skip matching folders and their incoming contents
             </option>
-          </select>
+          </NativeSelect>
         </label>
         <ErrorNotice message={controller.folderError} />
         <div className="dialog-footer">
-          <button
+          <Button
             className="button secondary"
             disabled={controller.folderBusy}
             onClick={controller.closeFolder}
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             className="button primary"
             disabled={controller.folderBusy}
             onClick={() => void controller.uploadFolder()}
           >
             {controller.folderBusy ? "Preparing folders…" : "Upload folder"}
-          </button>
+          </Button>
         </div>
       </Dialog>
     );
@@ -644,13 +645,13 @@ export default function Uploads({
           <Upload size={17} />
           File transfers
         </h2>
-        <button
+        <IconButton
           className="icon-button"
           aria-label="Hide file transfers"
           onClick={() => controller.setShown(false)}
         >
           <X size={17} />
-        </button>
+        </IconButton>
       </header>
       <p className="ws-small muted">
         Up to 1 GB per file. Interrupted uploads can be resumed for seven days.
@@ -691,16 +692,16 @@ export default function Uploads({
               <ErrorNotice message={item.error} />
             </div>
             {item.status === "uploading" && (
-              <button
+              <IconButton
                 className="icon-button"
                 onClick={() => controller.pause(item.id)}
                 aria-label={`Pause ${item.name}`}
               >
                 <Pause size={16} />
-              </button>
+              </IconButton>
             )}
             {item.status === "paused" && (
-              <button
+              <IconButton
                 className="icon-button"
                 onClick={() => {
                   if (controller.hasFile(item.id)) controller.resume(item);
@@ -712,11 +713,11 @@ export default function Uploads({
                 aria-label={`Resume ${item.name}`}
               >
                 <Play size={16} />
-              </button>
+              </IconButton>
             )}
             {item.status === "failed" && (
               <>
-                <button
+                <Button
                   className="button secondary"
                   onClick={() =>
                     void controller
@@ -725,9 +726,9 @@ export default function Uploads({
                   }
                 >
                   Retry verification
-                </button>
+                </Button>
                 {item.resource_id && (
-                  <button
+                  <Button
                     className="button secondary"
                     onClick={() =>
                       void controller
@@ -736,12 +737,12 @@ export default function Uploads({
                     }
                   >
                     Save as a separate copy
-                  </button>
+                  </Button>
                 )}
               </>
             )}
             {item.status === "complete" && item.completed_resource_id && (
-              <button
+              <IconButton
                 className="icon-button"
                 aria-label={`Open ${item.name}`}
                 onClick={() =>
@@ -749,10 +750,10 @@ export default function Uploads({
                 }
               >
                 <Check size={17} />
-              </button>
+              </IconButton>
             )}
             {!["uploading", "verifying", "queued"].includes(item.status) && (
-              <button
+              <IconButton
                 className="icon-button"
                 aria-label={`${["paused", "failed"].includes(item.status) ? "Cancel" : "Dismiss"} ${item.name}`}
                 onClick={() => {
@@ -764,7 +765,7 @@ export default function Uploads({
                 }}
               >
                 <X size={16} />
-              </button>
+              </IconButton>
             )}
           </div>
         ))}

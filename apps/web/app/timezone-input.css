@@ -5,38 +5,6 @@
   width: 100%;
   font-weight: 400;
 }
-.timezone-input-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border: 1px solid var(--line);
-  border-radius: var(--control-radius);
-  background: var(--surface);
-  padding: 0 8px 0 11px;
-  color: var(--muted);
-}
-.timezone-input-row:focus-within {
-  border-color: var(--accent);
-}
-.timezone-input-row > svg {
-  flex-shrink: 0;
-}
-.ws-app .timezone-input-row input {
-  width: 100%;
-  min-width: 0;
-  border: 0;
-  background: transparent;
-  border-radius: 0;
-  box-shadow: none;
-  padding: 10px 0;
-  margin: 0;
-}
-.timezone-input-row .icon-button {
-  flex-shrink: 0;
-  width: 28px;
-  height: 28px;
-  min-width: 28px;
-}
 .timezone-options {
   display: block;
   position: absolute;

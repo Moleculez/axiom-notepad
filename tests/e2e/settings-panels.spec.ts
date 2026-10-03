@@ -105,10 +105,6 @@ test("field and category searches recover cleanly; shortcut filters, recording f
     await f.page.getByRole("button", { name: "Clear settings search" }).click();
     await f.page
       .getByRole("navigation", { name: "Settings categories" })
-      .getByRole("link", { name: "Writing", exact: true })
-      .click();
-    await f.page
-      .getByRole("navigation", { name: "Settings categories" })
       .getByRole("link", { name: "Keyboard shortcuts", exact: true })
       .click();
     await expect(
@@ -155,10 +151,6 @@ test("profile drafts cancel, validate links, save and retain later input on a fa
   try {
     await f.page.goto("/workbench/settings/typography");
     await f.page.getByLabel("Note font size value", { exact: true }).fill("24");
-    await f.page
-      .getByRole("navigation", { name: "Settings categories" })
-      .getByRole("link", { name: "Account", exact: true })
-      .click();
     await f.page
       .getByRole("navigation", { name: "Settings categories" })
       .getByRole("link", { name: "Profile", exact: true })

@@ -33,6 +33,7 @@ npm ci
 npm run typecheck
 npm run lint
 npm test
+npm run validate:ui
 npm run validate:themes
 npm run docs:check
 ```
@@ -80,6 +81,10 @@ and dark artwork visually, including reduced-size readability, before committing
   Rehearse upgrades and recovery against a new database and storage destination.
 - Keep semantic theme tokens and shared controls. Follow the [theme authoring criteria](docs/THEME_AUTHORING.md)
   for light/dark, typography, focus, reduced motion and accessible contrast.
+  The [UI control contract](docs/UI_CONTROLS.md) governs sliders, native
+  checkbox/switch semantics, hints/notices, action groups, dialog focus and
+  text-scaled geometry. Use the shared components instead of page-local resets.
+  Run `validate:ui` and inspect the real Interface specimen in every style.
 - Keep optional providers explicit and disabled until configured. Never transmit
   research content as a side effect of simply opening a document.
 - Do not claim upstream editor internals are first-party code. Retain third-party

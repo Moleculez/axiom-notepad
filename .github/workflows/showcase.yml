@@ -13,6 +13,8 @@ on:
       - packages/**
       - docs/assets/**
       - scripts/build/showcase*.ts
+      - scripts/verify/**
+      - docs/*.md
       - tests/showcase/**
       - showcase.config.ts
       - package.json
@@ -42,6 +44,9 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm run lint
+      - run: npm run validate:ui
+      - run: npm run validate:themes
+      - run: npm run docs:check
       - run: npm test
       - uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
       - run: npm run showcase:build

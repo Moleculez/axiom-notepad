@@ -137,6 +137,14 @@ test("overscroll and malformed queued reading data never interrupt continued Mar
     const badId = randomUUID(),
       goodId = randomUUID();
     const groupId = f.group.id;
+    // The pending fixture deliberately uses a legacy group context. The current
+    // reader migrates it to the note's workspace; query that destination, not
+    // the old group identifier, when checking the recovered server record.
+    const spaces = await (await f.member.request.get("/api/v1/spaces")).json();
+    const spaceId = spaces.find(
+      (space: { kind: string; group_id: string }) =>
+        space.kind === "team" && space.group_id === groupId,
+    ).id;
     await f.page.evaluate(
       async ({ badId, goodId, groupId, noteId }) => {
         const userId = JSON.parse(localStorage.getItem("axiom:session")!).user
@@ -180,7 +188,7 @@ test("overscroll and malformed queued reading data never interrupt continued Mar
     await expect
       .poll(async () => {
         const response = await f.member.request.get(
-          `/api/v1/me/reading?groupId=${groupId}`,
+          `/api/v1/me/reading?groupId=${spaceId}`,
         );
         return (await response.json()).find((i: any) => i.id === goodId)?.data
           .fraction;

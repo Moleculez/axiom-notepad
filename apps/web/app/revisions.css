@@ -66,7 +66,6 @@
 .revision-workspace input[type="checkbox"],
 .suggestion-review input[type="checkbox"],
 .review-inbox input[type="checkbox"] {
-  width: auto;
   margin: 0;
   flex-shrink: 0;
 }
@@ -236,18 +235,7 @@
   min-height: 0;
 }
 .revision-workspace .revision-search {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 6px;
-  padding: 0 6px;
-  color: var(--muted);
-}
-.revision-search input {
-  width: 100%;
-  min-width: 0;
-  background: transparent;
-  font-size: 12px;
+  margin-bottom: 12px;
 }
 .revision-workspace .revision-filter {
   display: flex;

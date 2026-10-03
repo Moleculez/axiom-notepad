@@ -1,6 +1,7 @@
 "use client";
+import { Button, Checkbox, TextInput, SearchField } from "../ui/controls";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Download, Search, ImagePlus } from "lucide-react";
+import { Download, ImagePlus } from "lucide-react";
 import { parseMarkdown, renderDocument } from "@axiom/markdown";
 import type { Resource, ResourcePage } from "@axiom/shared/workspace";
 import type { FilePreviewManifest } from "@axiom/shared/file-preview";
@@ -107,18 +108,15 @@ export function Information({
         </>
       ) : (
         <>
-          <label className="visual-search">
-            <Search size={15} />
-            <input
-              aria-label="Search image metadata"
-              placeholder="Search metadata…"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-          </label>
+          <SearchField
+            wrapperClassName="visual-search"
+            aria-label="Search image metadata"
+            placeholder="Search metadata…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
           <label className="visual-check">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={sensitive}
               onChange={(e) => setSensitive(e.target.checked)}
             />
@@ -144,7 +142,7 @@ export function Information({
             ))}
           </dl>
           {fields.length > 0 && (
-            <button
+            <Button
               className="button secondary"
               onClick={() =>
                 downloadVisual(
@@ -164,7 +162,7 @@ export function Information({
             >
               <Download size={15} />
               Export {sensitive ? "all" : "non-identifying"} metadata
-            </button>
+            </Button>
           )}
         </>
       )}
@@ -264,7 +262,7 @@ export function Replies({
         />
       )}
       {error && <p role="alert">{error}</p>}
-      <button
+      <Button
         className="button secondary"
         disabled={!canReply || !body.trim() || sending}
         onClick={() => {
@@ -280,7 +278,7 @@ export function Replies({
         }}
       >
         Post reply
-      </button>
+      </Button>
     </div>
   );
 }
@@ -352,18 +350,18 @@ export function ComparePicker({
         {items
           .filter((i) => i.id !== selected)
           .map((item) => (
-            <button
+            <Button
               key={item.id}
               className="button secondary"
               onClick={() => onSelect(item)}
             >
               {item.name}
-            </button>
+            </Button>
           ))}
       </div>
       <label>
         Find a workspace image
-        <input
+        <TextInput
           aria-label="Find comparison image"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
@@ -372,7 +370,7 @@ export function ComparePicker({
       {error && <p role="alert">{error}</p>}
       <div className="visual-compare-items">
         {files.map((file) => (
-          <button
+          <Button
             key={file.id}
             className="button secondary"
             onClick={() =>
@@ -397,7 +395,7 @@ export function ComparePicker({
           >
             <ImagePlus size={14} />
             {file.name}
-          </button>
+          </Button>
         ))}
       </div>
     </section>

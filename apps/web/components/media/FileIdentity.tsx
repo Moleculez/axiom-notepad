@@ -1,4 +1,5 @@
 "use client";
+import { NativeSelect } from "../ui/controls";
 import { useState } from "react";
 import { Copy, FolderOpen } from "lucide-react";
 import type { Resource, ResourceLocation } from "@axiom/shared/workspace";
@@ -88,7 +89,7 @@ export default function FileIdentity({
       {versions.data && (
         <label>
           Version
-          <select
+          <NativeSelect
             aria-label="File version"
             value={resource.current_version_id ?? ""}
             disabled={!onVersion}
@@ -105,7 +106,7 @@ export default function FileIdentity({
                 {new Date(version.created_at).toLocaleDateString()}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
       )}
       {usage.data && (

@@ -1,4 +1,13 @@
 "use client";
+import {
+  ActionRow,
+  Button,
+  HelpText,
+  IconButton,
+  Slider,
+  NativeSelect,
+  TextArea,
+} from "../ui/controls";
 import ResizablePanel from "../ResizablePanel";
 import { useManagement } from "./ManagementActions";
 import FilePreviewSurface from "../tools/FilePreviewSurface";
@@ -252,7 +261,7 @@ export default function Workbench({
             Right pane
           </button>
           <span className="ws-spacer" />
-          <button
+          <IconButton
             className="icon-button"
             aria-label="Close split view"
             onClick={() => {
@@ -261,7 +270,7 @@ export default function Workbench({
             }}
           >
             <X size={16} />
-          </button>
+          </IconButton>
         </div>
       )}
       <div
@@ -583,12 +592,9 @@ function DocumentPane({
     ),
     comments = useNoteThreads(session.user, note.id, revision, active),
     action = useAction();
-  const research = useResearch(
-    session.user.id,
-    context.data?.space.kind === "personal"
-      ? context.data.space.id
-      : (context.data?.space.group_id ?? undefined),
-  );
+  // Reading records are workspace-scoped, including recovered legacy entries.
+  // Group ownership is not a reading-context identifier for team workspaces.
+  const research = useResearch(session.user.id, context.data?.space.id);
   const editor = useRef<EditorHandle>(null),
     scroller = useRef<HTMLDivElement>(null),
     commandRef = useRef<
@@ -1003,10 +1009,10 @@ function DocumentPane({
           <pre className="tool-submission-source">{mathReturn.result}</pre>
           <ErrorNotice message={mathReturnError} />
           <div className="dialog-footer">
-            <button className="button secondary" onClick={dismissMathReturn}>
+            <Button className="button secondary" onClick={dismissMathReturn}>
               Keep note unchanged
-            </button>
-            <button
+            </Button>
+            <Button
               className="button secondary"
               onClick={() =>
                 void navigator.clipboard
@@ -1020,8 +1026,8 @@ function DocumentPane({
               }
             >
               Copy LaTeX
-            </button>
-            <button
+            </Button>
+            <Button
               className="button primary"
               disabled={
                 readonly ||
@@ -1047,7 +1053,7 @@ function DocumentPane({
               }}
             >
               Apply to original equation
-            </button>
+            </Button>
           </div>
         </Dialog>
       )}
@@ -1094,15 +1100,15 @@ function DocumentPane({
           ))}
         </div>
         <ResourceSharing resourceId={note.id} />
-        <button
+        <IconButton
           className="icon-button"
           aria-label="Export document"
           title="Export document"
           onClick={() => setModal("export")}
         >
           <Download size={17} />
-        </button>
-        <button
+        </IconButton>
+        <IconButton
           className="icon-button"
           aria-label="Ask about this note"
           title="Ask workspace assistant"
@@ -1115,32 +1121,32 @@ function DocumentPane({
           }
         >
           <MessageSquare size={17} />
-        </button>
+        </IconButton>
         {canComment && (
-          <button
+          <IconButton
             className="icon-button"
             aria-label="Review suggestions"
             title="Review and suggest edits"
             onClick={() => setReview(true)}
           >
             <FilePenLine size={17} />
-          </button>
+          </IconButton>
         )}
-        <button
+        <IconButton
           className="icon-button"
           aria-label="Document history"
           onClick={() => setModal("history")}
         >
           <History size={17} />
-        </button>
-        <button
+        </IconButton>
+        <IconButton
           className="icon-button"
           aria-label="Toggle document panel"
           aria-expanded={!!panel}
           onClick={() => setPanel(panel ? null : "outline")}
         >
           {panel ? <PanelRightClose size={17} /> : <PanelRightOpen size={17} />}
-        </button>
+        </IconButton>
       </header>
       {mode === "read" && (
         <div
@@ -1151,9 +1157,10 @@ function DocumentPane({
           <span>Read only</span>
           <label>
             Text{" "}
-            <input
+            <Slider
               aria-label="Reading text size"
-              type="range"
+              aria-valuetext={`${readingSize ?? appearance.effective.proseSize} pixels`}
+
               min={14}
               max={30}
               value={readingSize ?? appearance.effective.proseSize}
@@ -1163,7 +1170,7 @@ function DocumentPane({
           </label>
           <label>
             Width{" "}
-            <select
+            <NativeSelect
               aria-label="Reading width"
               value={readingWidth ?? 0}
               onChange={(e) => setReadingWidth(Number(e.target.value) || null)}
@@ -1172,9 +1179,9 @@ function DocumentPane({
               <option value={60}>Narrow</option>
               <option value={72}>Balanced</option>
               <option value={90}>Wide</option>
-            </select>
+            </NativeSelect>
           </label>
-          <button
+          <Button
             className="button secondary"
             onClick={() => {
               setReadingSize(null);
@@ -1182,7 +1189,7 @@ function DocumentPane({
             }}
           >
             Reset
-          </button>
+          </Button>
         </div>
       )}
       {!readonly &&
@@ -1206,7 +1213,7 @@ function DocumentPane({
                 ["attachment", ImagePlus],
               ] as const
             ).map(([id, Icon]) => (
-              <button
+              <IconButton
                 key={id}
                 className="icon-button"
                 title={
@@ -1221,10 +1228,10 @@ function DocumentPane({
                 onClick={() => commandRef.current(id)}
               >
                 <Icon size={16} />
-              </button>
+              </IconButton>
             ))}
             <span className="ws-format-divider" />
-            <button
+            <Button
               className="button secondary"
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => {
@@ -1234,17 +1241,17 @@ function DocumentPane({
             >
               <Plus size={14} />
               Insert
-            </button>
-            <button
+            </Button>
+            <IconButton
               className="icon-button"
               aria-label="Editor commands"
               title="Editor commands"
               onClick={() => commandRef.current("commands")}
             >
               <Search size={16} />
-            </button>
+            </IconButton>
             {canComment && (
-              <button
+              <IconButton
                 className="icon-button"
                 aria-label="Comment on selection"
                 onMouseDown={(event) => event.preventDefault()}
@@ -1254,7 +1261,7 @@ function DocumentPane({
                 }}
               >
                 <MessageSquare size={16} />
-              </button>
+              </IconButton>
             )}
           </div>
         )}
@@ -1263,18 +1270,18 @@ function DocumentPane({
         retry={error ? () => setError("") : undefined}
       />
       {readingWarning && (
-        <div className="ws-note" role="status">
+        <HelpText as="div" role="status">
           {readingWarning}{" "}
           <button className="text-button" onClick={scroll}>
             Retry reading position
           </button>
-        </div>
+        </HelpText>
       )}
       {remoteVersion && (
-        <div className="ws-note">
+        <HelpText as="div">
           A restored revision is available. Your current draft is retained.
-          <div className="ws-actions">
-            <button
+          <ActionRow>
+            <Button
               className="button secondary"
               onClick={() =>
                 download(
@@ -1284,8 +1291,8 @@ function DocumentPane({
               }
             >
               Export local draft
-            </button>
-            <button
+            </Button>
+            <Button
               className="button primary"
               onClick={() => {
                 setRecovered(editor.current?.text() ?? source);
@@ -1295,9 +1302,9 @@ function DocumentPane({
               }}
             >
               Open restored revision
-            </button>
-          </div>
-        </div>
+            </Button>
+          </ActionRow>
+        </HelpText>
       )}
       {readonly && (
         <div className="ws-document-access">
@@ -1343,13 +1350,13 @@ function DocumentPane({
                     : undefined
                 }
               >
-                <div className="ws-note-meta">
+                <HelpText as="div" className="ws-note-meta">
                   <span>{context.data?.space.name}</span>
                   <Badge>
                     {note.visibility === "private" ? "Only you" : "Shared"}
                   </Badge>
                   <span>{parsed.outline.length} sections</span>
-                </div>
+                </HelpText>
                 {readonly || mode === "read" ? (
                   <h1 className="document-title">{note.title}</h1>
                 ) : (
@@ -1562,7 +1569,7 @@ function DocumentPane({
                   ["equations", Sigma],
                   ["bookmarks", BookmarkPlus],
                 ].map(([value, Icon]) => (
-                  <button
+                  <IconButton
                     key={value as string}
                     className="icon-button"
                     aria-label={`${value} panel`}
@@ -1570,15 +1577,15 @@ function DocumentPane({
                     onClick={() => setPanel(value as string)}
                   >
                     {typeof Icon !== "string" && <Icon size={16} />}
-                  </button>
+                  </IconButton>
                 ))}
-                <button
+                <IconButton
                   className="icon-button"
                   aria-label="Close document panel"
                   onClick={() => setPanel(null)}
                 >
                   <X size={15} />
-                </button>
+                </IconButton>
               </nav>
               {panel === "equations" && (
                 <EquationInspector
@@ -1778,16 +1785,20 @@ function DocumentPane({
                         {comments.data
                           ?.filter((reply) => reply.parent_id === item.id)
                           .map((reply) => (
-                            <div className="ws-note-reply" key={reply.id}>
+                            <HelpText
+                              as="div"
+                              className="ws-note-reply"
+                              key={reply.id}
+                            >
                               <strong>{reply.author_name}</strong>
                               <p>
                                 {reply.deleted ? "Reply removed." : reply.body}
                               </p>
-                            </div>
+                            </HelpText>
                           ))}
                         {canComment && (
-                          <div className="ws-actions">
-                            <button
+                          <ActionRow>
+                            <Button
                               className="text-button"
                               onClick={() => {
                                 setReply(item.id);
@@ -1795,8 +1806,8 @@ function DocumentPane({
                               }}
                             >
                               Reply
-                            </button>
-                            <button
+                            </Button>
+                            <Button
                               className="text-button"
                               onClick={() =>
                                 void action.run(async () => {
@@ -1810,8 +1821,8 @@ function DocumentPane({
                               }
                             >
                               {item.resolved ? "Reopen" : "Resolve"}
-                            </button>
-                          </div>
+                            </Button>
+                          </ActionRow>
                         )}
                       </article>
                     ))}
@@ -1857,7 +1868,7 @@ function DocumentPane({
                       )}
                       <label>
                         {reply ? "Reply" : "Comment"}
-                        <textarea
+                        <TextArea
                           rows={3}
                           required
                           maxLength={10000}
@@ -1866,12 +1877,12 @@ function DocumentPane({
                           placeholder="Ask a question or share a thought…"
                         />
                       </label>
-                      <button
+                      <Button
                         className="button primary"
                         disabled={action.busy || !comment.trim()}
                       >
                         Post comment
-                      </button>
+                      </Button>
                     </form>
                   )}
                 </>
@@ -1917,7 +1928,7 @@ function DocumentPane({
         <div className="ws-recovered">
           <span>Recovered draft retained</span>
           {recoveries.length > 1 && (
-            <select
+            <NativeSelect
               aria-label="Recovered drafts"
               value={
                 recoveries.find((draft) => draft.source === recovered)?.key ??
@@ -1935,21 +1946,21 @@ function DocumentPane({
                   Draft {recoveries.length - index} · {draft.label}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           )}
-          <button
+          <Button
             className="button secondary"
             onClick={() => download(note.title + "-recovered.md", recovered)}
           >
             Download recovered text
-          </button>
-          <button
+          </Button>
+          <IconButton
             className="icon-button"
             aria-label="Dismiss recovered draft notice"
             onClick={() => setRecovered("")}
           >
             <X size={15} />
-          </button>
+          </IconButton>
         </div>
       )}
       {(modal === "commands" || modal === "insert") && (
@@ -2037,9 +2048,9 @@ function DocumentPane({
               </button>
             ))}
             {!Object.keys(parsed.figures ?? {}).length && (
-              <p className="ws-note">
+              <HelpText>
                 Insert an image as a numbered figure and give it a label first.
-              </p>
+              </HelpText>
             )}
           </div>
         </Dialog>
@@ -2122,12 +2133,7 @@ function FilePane({
   const data = useData<any[]>(`files/${resource.id}/versions`),
     current = data.data?.find((item) => item.id === version),
     space = useData<{ space: Space }>(`spaces/${resource.space_id}`),
-    research = useResearch(
-      session.user.id,
-      space.data?.space.kind === "personal"
-        ? resource.space_id
-        : (space.data?.space.group_id ?? undefined),
-    );
+    research = useResearch(session.user.id, resource.space_id);
   useEffect(() => {
     if (requestedVersion) setVersion(requestedVersion);
   }, [requestedVersion]);
@@ -2137,7 +2143,7 @@ function FilePane({
         <ResourceIcon resource={resource} />
         <h1>{resource.name}</h1>
         <ResourceSharing resourceId={resource.id} />
-        <select
+        <NativeSelect
           aria-label="File version"
           value={version ?? ""}
           onChange={(event) => {
@@ -2152,7 +2158,7 @@ function FilePane({
               {item.id === resource.current_version_id ? " · Current" : ""}
             </option>
           ))}
-        </select>
+        </NativeSelect>
         <a
           className="button secondary"
           href={`/api/v1/files/${resource.id}/download?version=${version}`}
@@ -2160,14 +2166,14 @@ function FilePane({
           <Download size={15} />
           Download
         </a>
-        <button
+        <IconButton
           className="icon-button"
           aria-label="File details"
           onClick={() => setDetails(!details)}
         >
           <PanelRightOpen size={17} />
-        </button>
-        <button
+        </IconButton>
+        <Button
           className="button secondary"
           onClick={() => {
             setDiscussion(!discussion);
@@ -2175,7 +2181,7 @@ function FilePane({
           }}
         >
           Discussion
-        </button>
+        </Button>
       </header>
       <ErrorNotice
         message={error || data.error}
@@ -2184,10 +2190,10 @@ function FilePane({
       <div className="ws-file-body">
         <div className="ws-file-preview">
           {resource.deleted_at && (
-            <p className="ws-note">
+            <HelpText>
               This file is in the trash. Existing pinned versions remain
               readable until manual cleanup.
-            </p>
+            </HelpText>
           )}
           <FilePreviewSurface
             resourceId={resource.id}
@@ -2203,12 +2209,12 @@ function FilePane({
                   icon={BookOpen}
                   title="Large research paper"
                   action={
-                    <button
+                    <Button
                       className="button secondary"
                       onClick={() => setPermission(true)}
                     >
                       Open in research reader
-                    </button>
+                    </Button>
                   }
                 >
                   This PDF is {bytes(current?.bytes ?? resource.bytes)}. The

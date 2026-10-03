@@ -1,4 +1,5 @@
 "use client";
+import { IconButton } from "../ui/controls";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   Copy,
@@ -110,7 +111,7 @@ export default function PdfSelectionActions({
       {(["underline", "strikeout"] as const).map((kind) => {
         const Icon = kind === "underline" ? Underline : Strikethrough;
         return (
-          <button
+          <IconButton
             key={kind}
             className="icon-button"
             disabled={busy}
@@ -127,10 +128,10 @@ export default function PdfSelectionActions({
             onClick={() => onMarkup(kind)}
           >
             <Icon size={15} />
-          </button>
+          </IconButton>
         );
       })}
-      <button
+      <IconButton
         className="icon-button"
         disabled={busy}
         title="Copy text"
@@ -138,8 +139,8 @@ export default function PdfSelectionActions({
         onClick={onCopy}
       >
         <Copy size={15} />
-      </button>
-      <button
+      </IconButton>
+      <IconButton
         className="icon-button"
         disabled={busy}
         title="Insert quotation with citation"
@@ -147,8 +148,8 @@ export default function PdfSelectionActions({
         onClick={onQuote}
       >
         <Quote size={15} />
-      </button>
-      <button
+      </IconButton>
+      <IconButton
         className="icon-button"
         disabled={busy}
         title="Add annotation note"
@@ -156,15 +157,15 @@ export default function PdfSelectionActions({
         onClick={onNote}
       >
         <StickyNote size={15} />
-      </button>
-      <button
+      </IconButton>
+      <IconButton
         className="icon-button"
         title="Dismiss selection actions"
         aria-label="Dismiss selection actions"
         onClick={onClose}
       >
         <X size={14} />
-      </button>
+      </IconButton>
     </div>
   );
 }

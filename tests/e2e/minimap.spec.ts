@@ -424,7 +424,7 @@ test("Appearance previews, cancels, persists and resets minimap settings with ol
   const f = await fixture(browser, sample);
   try {
     await f.page.goto("/workbench/settings/appearance-general");
-    const toggle = f.page.getByRole("checkbox", {
+    const toggle = f.page.getByRole("switch", {
       name: "Show document minimap",
       exact: true,
     });
@@ -670,9 +670,7 @@ test("folds, passive previews and navigation-only preferences preserve block edi
     await f.page.screenshot({
       path: info.outputPath("minimap-dark-folded.png"),
     });
-    await f.page
-      .getByRole("link", { name: "Open inbox", exact: true })
-      .click();
+    await f.page.getByRole("link", { name: "Open inbox", exact: true }).click();
     await expect(
       f.page.locator(".document-minimap").filter({ visible: true }),
     ).toHaveCount(0);
@@ -762,7 +760,7 @@ test("minimap preferences converge after offline changes without modifying notes
       route.abort(),
     );
     await f.page
-      .getByRole("checkbox", { name: "Show document minimap", exact: true })
+      .getByRole("switch", { name: "Show document minimap", exact: true })
       .check();
     await f.page
       .getByLabel("Minimap sizing", { exact: true })

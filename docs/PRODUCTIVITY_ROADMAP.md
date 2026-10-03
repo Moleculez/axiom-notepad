@@ -16,7 +16,7 @@ group-admin features remain in place. No new Office editing engine is introduced
   readership analytics include comparisons, CSV, manager-controlled public counters
   and optional consent-gated GA4 embedding. Collection is disabled by default.
 - Settings uses a searchable replacement rail and one shared page frame.
-  Axiom, Material Tonal, Fluent Studio and Editorial presentations change component
+  Axiom, Material Tonal, Fluent Studio, Editorial and macOS Studio presentations change component
   styling independently of palette packs and reading typography. Processing-provider
   dialogs have grouped aligned fields, a fixed footer and guarded draft dismissal.
 
@@ -73,13 +73,17 @@ group-admin features remain in place. No new Office editing engine is introduced
    Investigate the conversation-history/outgoing-review UI walkthrough noted in
    the [documentation capture results](VERIFICATION.md); it is not passed acceptance.
    Web retrieval and autonomous operations remain excluded.
-3. **Planning refinements:** full cross-workspace capacity conflict previews,
-   larger real-world portfolio/accessibility acceptance and richer goal/intake
-   workflows remain. Portfolios, immutable baseline comparisons, critical-path/slack
-   calculations, weekly capacity and workspace-only capacity previews are implemented.
-   Existing task/List/Board/Calendar/Gantt workflows are not replaced.
-4. **Team and research operations:** richer intake, goals, recurring work and safe
-   administrator-configured non-AI automations with audit/retry/permission checks.
+3. **Planning refinements:** signed working-day dependency offsets, quarter/year
+   timelines, grouping/columns, leaf/derived progress, private/shared saved views,
+   atomic selection operations and enriched exports are implemented. Reviewed
+   capacity previews now include accessible active group workspaces and fence
+   cohort changes. Larger real-world portfolio/accessibility acceptance remains;
+   no automatic resource leveling, time tracking or extra dependency types.
+4. **Team and research operations:** linked/manual Goals, member-only Intake with
+   exactly-once task acceptance, editable future recurring templates, occurrence
+   history and archive/pause controls are implemented. Their AI/MCP writes use
+   existing human-reviewed change sets. Richer custom forms/metrics, paginated
+   intake archives and safe administrator-configured non-AI automations remain.
 5. **Menu follow-through:** audit custom inline/dropdown surfaces not backed by the
    shared context menu, and expose secondary actions through Search & commands.
    Account/recent-work popovers are now mutually exclusive; planning surfaces use

@@ -1,4 +1,5 @@
 "use client";
+import { ActionRow, Button, IconButton, TextInput } from "../ui/controls";
 import { useState } from "react";
 import {
   Copy,
@@ -62,7 +63,7 @@ export function ReferenceFields({
       {Object.entries(referenceLabels).map(([key, label]) => (
         <label key={key}>
           <span>{label}</span>
-          <input
+          <TextInput
             aria-label={`Reference ${key}`}
             type={key === "url" ? "url" : "text"}
             value={value[key as keyof ReferenceDetails]}
@@ -117,14 +118,14 @@ export function ReferenceForm({
       <div className="library-lookup">
         <label>
           DOI or arXiv identifier
-          <input
+          <TextInput
             aria-label="Lookup identifier"
             placeholder="10.… or arXiv ID"
             value={identifier}
             onChange={(e) => setIdentifier(e.target.value)}
           />
         </label>
-        <button
+        <Button
           className="button secondary"
           disabled={action.busy || !identifier.trim()}
           onClick={() =>
@@ -140,7 +141,7 @@ export function ReferenceForm({
         >
           <Search size={15} />
           Look up
-        </button>
+        </Button>
       </div>
       <p className="muted">
         Only the identifier is sent to Crossref or arXiv, when you choose Look
@@ -152,7 +153,7 @@ export function ReferenceForm({
           <p>
             {preview.details.authors} · {preview.provider}
           </p>
-          <button
+          <Button
             className="button secondary"
             onClick={() => {
               setDraft(preview.details);
@@ -171,12 +172,12 @@ export function ReferenceForm({
             }}
           >
             Use reviewed metadata
-          </button>
+          </Button>
         </div>
       )}
       <label>
         Citation key
-        <input
+        <TextInput
           aria-label="Citation key"
           required
           readOnly={!!reference}
@@ -189,7 +190,7 @@ export function ReferenceForm({
       <ReferenceFields value={draft} onChange={setDraft} />
       <label>
         Tags
-        <input
+        <TextInput
           aria-label="Reference tags"
           value={tags}
           onChange={(e) => setTags(e.target.value)}
@@ -199,10 +200,10 @@ export function ReferenceForm({
       </label>
       <ErrorNotice message={action.error} />
       <DialogFooter>
-        <button className="button secondary" onClick={onClose}>
+        <Button className="button secondary" onClick={onClose}>
           Cancel
-        </button>
-        <button
+        </Button>
+        <Button
           className="button primary"
           disabled={action.busy}
           onClick={() =>
@@ -232,7 +233,7 @@ export function ReferenceForm({
           }
         >
           {reference ? "Save reference" : "Add reference"}
-        </button>
+        </Button>
       </DialogFooter>
     </Dialog>
   );
@@ -301,13 +302,13 @@ export default function ReferenceInspector({
     >
       <header>
         <span className="docs-eyebrow">Reference details</span>
-        <button
+        <IconButton
           className="icon-button"
           aria-label="Close reference details"
           onClick={onClose}
         >
           <X size={16} />
-        </button>
+        </IconButton>
       </header>
       <ErrorNotice message={data.error || action.error} retry={data.reload} />
       {r && (
@@ -319,8 +320,8 @@ export default function ReferenceInspector({
               <span key={t}>{t}</span>
             ))}
           </div>
-          <div className="ws-actions">
-            <button
+          <ActionRow>
+            <Button
               className="button ghost"
               title="Copy Markdown citation"
               onClick={() =>
@@ -332,18 +333,18 @@ export default function ReferenceInspector({
             >
               <Copy size={14} />
               {r.cite_key}
-            </button>
+            </Button>
             {canEdit && !r.deleted_at && (
-              <button
+              <IconButton
                 className="icon-button"
                 aria-label="Edit reference"
                 title="Edit reference"
                 onClick={() => onEdit({ ...r, id: r.canonical_id ?? r.id })}
               >
                 <Pencil size={15} />
-              </button>
+              </IconButton>
             )}
-          </div>
+          </ActionRow>
           {r.merged_into && (
             <p className="research-notice">
               This citation key redirects to the merged reference. Existing
@@ -371,7 +372,7 @@ export default function ReferenceInspector({
               Visit source
             </a>
           )}
-          <button
+          <Button
             className="button ghost"
             onClick={() =>
               navigate(
@@ -381,7 +382,7 @@ export default function ReferenceInspector({
           >
             <Network size={14} />
             Explore connections
-          </button>
+          </Button>
           <h3>Linked PDFs</h3>
           <div className="research-connections">
             {r.attachments.map((p) => (
@@ -398,7 +399,7 @@ export default function ReferenceInspector({
                   </span>
                 </button>
                 {canEdit && !r.deleted_at && (
-                  <button
+                  <IconButton
                     className="icon-button"
                     aria-label={`Unlink ${p.name}`}
                     title="Unlink PDF"
@@ -407,7 +408,7 @@ export default function ReferenceInspector({
                     }
                   >
                     <X size={13} />
-                  </button>
+                  </IconButton>
                 )}
               </div>
             ))}
@@ -418,10 +419,10 @@ export default function ReferenceInspector({
             </p>
           )}
           {canEdit && !r.deleted_at && (
-            <button className="button ghost" onClick={() => setPicker("file")}>
+            <Button className="button ghost" onClick={() => setPicker("file")}>
               <Plus size={14} />
               Link PDF
-            </button>
+            </Button>
           )}
           <h3>Notes & citation usage</h3>
           <div className="research-connections">
@@ -437,7 +438,7 @@ export default function ReferenceInspector({
                   </span>
                 </button>
                 {n.manual && canEdit && !r.deleted_at && (
-                  <button
+                  <IconButton
                     className="icon-button"
                     aria-label={`Unlink ${n.title}`}
                     title="Remove association (citations remain)"
@@ -446,7 +447,7 @@ export default function ReferenceInspector({
                     }
                   >
                     <X size={13} />
-                  </button>
+                  </IconButton>
                 )}
               </div>
             ))}
@@ -455,10 +456,10 @@ export default function ReferenceInspector({
             <p className="muted">No linked or citing notes yet.</p>
           )}
           {canEdit && !r.deleted_at && (
-            <button className="button ghost" onClick={() => setPicker("note")}>
+            <Button className="button ghost" onClick={() => setPicker("note")}>
               <Plus size={14} />
               Link note
-            </button>
+            </Button>
           )}
           {r.import_source && Object.keys(r.import_source).length > 0 && (
             <details className="reference-original">

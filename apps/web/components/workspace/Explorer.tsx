@@ -1,4 +1,15 @@
 "use client";
+import {
+  ActionRow,
+  Button,
+  Checkbox,
+  HelpText,
+  IconButton,
+  TextInput,
+  NativeSelect,
+  TextArea,
+  SearchField,
+} from "../ui/controls";
 import { beginExplorerMarquee } from "../../lib/explorer-marquee";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import dynamic from "next/dynamic";
@@ -18,7 +29,6 @@ import {
   Info,
   List,
   Plus,
-  Search,
   SlidersHorizontal,
   Star,
   Trash2,
@@ -308,31 +318,31 @@ function ResourceExplorer() {
                   Storage
                 </WorkspaceLink>
               )}
-              <button
+              <IconButton
                 className="icon-button"
                 aria-label="Audit and operation progress"
                 title="Audit and operation progress"
                 onClick={management.fileActivity}
               >
                 <Clock3 size={17} />
-              </button>
+              </IconButton>
               {canEdit && view !== "trash" && (
                 <>
-                  <button
+                  <Button
                     className="button secondary"
                     onClick={() => fileInput.current?.click()}
                   >
                     <Upload size={16} />
                     Upload
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     className="button secondary"
                     onClick={() => folderInput.current?.click()}
                   >
                     <FolderPlus size={16} />
                     Upload folder
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
                     className="button primary"
                     aria-haspopup="menu"
@@ -345,7 +355,7 @@ function ResourceExplorer() {
                   >
                     <Plus size={16} />
                     New
-                  </button>
+                  </Button>
                 </>
               )}
             </>
@@ -412,11 +422,11 @@ function ResourceExplorer() {
           </nav>
         )}
         {view === "trash" && (
-          <p className="ws-note">
+          <HelpText>
             Files and all their versions remain here until you explicitly remove
             them. Moving an item to trash does not break existing pinned file
             embeds.
-          </p>
+          </HelpText>
         )}
         <div
           className="explorer-toolbar-slot"
@@ -437,12 +447,12 @@ function ResourceExplorer() {
                 navigate(`/explorer?${next}`);
               }}
             >
-              <Search size={17} />
-              <input
+              <SearchField
                 aria-label="Search files and notes"
                 placeholder="Search name, content, or tags…"
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
+                onClear={() => setSearch("")}
               />
               <button className="text-button" type="submit">
                 Search
@@ -451,7 +461,7 @@ function ResourceExplorer() {
             <label className="sr-only" htmlFor="explorer-kind">
               File type
             </label>
-            <select
+            <NativeSelect
               id="explorer-kind"
               value={kind}
               onChange={(event) => setKind(event.target.value)}
@@ -461,15 +471,15 @@ function ResourceExplorer() {
               <option value="folder">Folders</option>
               <option value="file">Files</option>
               <option value="shortcut">Shortcuts</option>
-            </select>
-            <button
+            </NativeSelect>
+            <IconButton
               className="icon-button"
               aria-label="Advanced file filters"
               aria-expanded={filters}
               onClick={() => setFilters(!filters)}
             >
               <SlidersHorizontal size={17} />
-            </button>
+            </IconButton>
             <div className="ws-segmented" aria-label="Explorer layout">
               <button
                 aria-label="List view"
@@ -487,7 +497,7 @@ function ResourceExplorer() {
               </button>
             </div>
             {layout === "list" && (
-              <button
+              <IconButton
                 className="icon-button"
                 aria-label="Choose file columns"
                 title="Choose file columns"
@@ -522,17 +532,17 @@ function ResourceExplorer() {
                 }}
               >
                 <Columns2 size={17} />
-              </button>
+              </IconButton>
             )}
             {params.get("q") && (
-              <button
+              <IconButton
                 className="icon-button"
                 title="Save this search"
                 aria-label="Save this search"
                 onClick={() => setModal("save")}
               >
                 <Star size={17} />
-              </button>
+              </IconButton>
             )}
           </div>
           {selected.length > 0 && (
@@ -557,7 +567,7 @@ function ResourceExplorer() {
                 Clear
               </button>
               <span className="ws-spacer" />
-              <button
+              <Button
                 className="button secondary"
                 disabled={
                   !selected.length ||
@@ -566,15 +576,15 @@ function ResourceExplorer() {
                 onClick={() => management.execute("move", selected)}
               >
                 Move
-              </button>
-              <button
+              </Button>
+              <Button
                 className="button secondary"
                 disabled={!selected.length}
                 onClick={() => management.execute("copyTo", selected)}
               >
                 Copy
-              </button>
-              <button
+              </Button>
+              <Button
                 className="button secondary"
                 disabled={
                   !selected.length ||
@@ -583,9 +593,9 @@ function ResourceExplorer() {
                 onClick={() => management.execute("rename", selected)}
               >
                 Rename
-              </button>
+              </Button>
               {view !== "trash" && (
-                <button
+                <Button
                   className="button secondary"
                   disabled={
                     action.busy ||
@@ -606,10 +616,10 @@ function ResourceExplorer() {
                 >
                   <Download size={15} />
                   Export selection
-                </button>
+                </Button>
               )}
               {
-                <button
+                <Button
                   className="button secondary"
                   disabled={
                     action.busy ||
@@ -631,7 +641,7 @@ function ResourceExplorer() {
                 >
                   <Trash2 size={15} />
                   {view === "trash" ? "Restore selected" : "Move to trash"}
-                </button>
+                </Button>
               }
             </div>
           )}
@@ -660,18 +670,18 @@ function ResourceExplorer() {
           >
             <label>
               Content type
-              <select name="mime" defaultValue={params.get("mime") || ""}>
+              <NativeSelect name="mime" defaultValue={params.get("mime") || ""}>
                 <option value="">All</option>
                 <option value="image/">Images</option>
                 <option value="application/pdf">PDF</option>
                 <option value="text/">Text & code</option>
                 <option value="audio/">Audio</option>
                 <option value="video/">Video</option>
-              </select>
+              </NativeSelect>
             </label>
             <label>
               Tag
-              <input
+              <TextInput
                 name="tag"
                 maxLength={40}
                 defaultValue={params.get("tag") || ""}
@@ -679,7 +689,7 @@ function ResourceExplorer() {
             </label>
             <label>
               Modified after
-              <input
+              <TextInput
                 type="date"
                 name="after"
                 defaultValue={params.get("after") || ""}
@@ -687,7 +697,7 @@ function ResourceExplorer() {
             </label>
             <label>
               Modified before
-              <input
+              <TextInput
                 type="date"
                 name="before"
                 defaultValue={params.get("before") || ""}
@@ -695,7 +705,7 @@ function ResourceExplorer() {
             </label>
             <label>
               Minimum bytes
-              <input
+              <TextInput
                 type="number"
                 name="minSize"
                 min={0}
@@ -704,16 +714,16 @@ function ResourceExplorer() {
             </label>
             <label>
               Maximum bytes
-              <input
+              <TextInput
                 type="number"
                 name="maxSize"
                 min={0}
                 defaultValue={params.get("maxSize") || ""}
               />
             </label>
-            <button className="button secondary" type="submit">
+            <Button className="button secondary" type="submit">
               Apply filters
-            </button>
+            </Button>
             <button
               className="text-button"
               type="button"
@@ -821,8 +831,7 @@ function ResourceExplorer() {
             >
               {layout === "list" && (
                 <div className="ws-resource-head">
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     aria-label="Select all items on this page"
                     checked={!!rows.length && selection.length === rows.length}
                     onChange={(event) =>
@@ -981,8 +990,7 @@ function ResourceExplorer() {
                     );
                   }}
                 >
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     aria-label={`Select ${item.name}`}
                     checked={selection.includes(item.id)}
                     onChange={(event) =>
@@ -1042,7 +1050,7 @@ function ResourceExplorer() {
                   {layout === "list" && columns.includes("kind") && (
                     <span className="ws-resource-kind">{item.kind}</span>
                   )}
-                  <button
+                  <IconButton
                     className="icon-button"
                     aria-label={`Details for ${item.name}`}
                     aria-pressed={inspector?.id === item.id}
@@ -1051,7 +1059,7 @@ function ResourceExplorer() {
                     }
                   >
                     <Info size={17} />
-                  </button>
+                  </IconButton>
                 </div>
               ))}
             </div>
@@ -1061,8 +1069,8 @@ function ResourceExplorer() {
           <span>
             {rows.length} items on this page{result.loading && " · Refreshing…"}
           </span>
-          <div className="ws-actions">
-            <button
+          <ActionRow>
+            <Button
               className="button secondary"
               disabled={!cursors.length || result.loading}
               onClick={() => {
@@ -1072,8 +1080,8 @@ function ResourceExplorer() {
             >
               <ArrowLeft size={14} />
               Previous
-            </button>
-            <button
+            </Button>
+            <Button
               className="button secondary"
               disabled={!result.data?.nextCursor || result.loading}
               onClick={() => {
@@ -1083,8 +1091,8 @@ function ResourceExplorer() {
             >
               Next
               <ChevronRight size={14} />
-            </button>
-          </div>
+            </Button>
+          </ActionRow>
         </footer>
       </section>
       {preview && (
@@ -1183,7 +1191,7 @@ export function NameDialog({
       >
         <label>
           {label}
-          <input
+          <TextInput
             autoFocus
             required
             maxLength={200}
@@ -1193,20 +1201,21 @@ export function NameDialog({
         </label>
         <ErrorNotice message={action.error} />
         <div className="dialog-footer">
-          <button
+          <Button
             className="button secondary"
             type="button"
             onClick={onClose}
             disabled={action.busy}
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             className="button primary"
             disabled={action.busy || !name.trim()}
+            pending={!!action.busy}
           >
-            {action.busy ? "Saving…" : "Save"}
-          </button>
+            {"Save"}
+          </Button>
         </div>
       </form>
     </Dialog>
@@ -1258,7 +1267,7 @@ export function CreateResource({
       >
         <label>
           {kind === "folder" ? "Folder name" : "Note title"}
-          <input
+          <TextInput
             autoFocus
             required
             value={name}
@@ -1274,7 +1283,7 @@ export function CreateResource({
         {kind === "note" && (
           <label>
             Start with a template
-            <select
+            <NativeSelect
               value={template}
               onChange={(event) => setTemplate(event.target.value)}
             >
@@ -1283,25 +1292,25 @@ export function CreateResource({
                   {item.name}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </label>
         )}
         <ErrorNotice message={action.error} />
         <div className="dialog-footer">
-          <button
+          <Button
             className="button secondary"
             type="button"
             onClick={onClose}
             disabled={action.busy}
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             className="button primary"
             disabled={action.busy || !name.trim()}
           >
             {action.busy ? "Creating…" : "Create " + kind}
-          </button>
+          </Button>
         </div>
       </form>
     </Dialog>
@@ -1388,13 +1397,13 @@ function SelectionInspector({
       {sizing.handle}
       <header>
         <h2>{resources.length} selected</h2>
-        <button
+        <IconButton
           className="icon-button"
           aria-label="Close details"
           onClick={onClose}
         >
           <X size={18} />
-        </button>
+        </IconButton>
       </header>
       <div className="ws-inspector-selection-icons">
         {resources.slice(0, 5).map((r) => (
@@ -1537,13 +1546,13 @@ export function ResourceInspector({
       {sizing.handle}
       <header>
         <h2>Details</h2>
-        <button
+        <IconButton
           className="icon-button"
           aria-label="Close details"
           onClick={onClose}
         >
           <X size={18} />
-        </button>
+        </IconButton>
       </header>
       <div className="ws-inspector-title">
         <span className="ws-resource-glyph">
@@ -1556,29 +1565,29 @@ export function ResourceInspector({
       </div>
       <div className="ws-inspector-actions">
         {!resource.deleted_at && resource.kind !== "folder" && (
-          <button className="button primary" onClick={() => open(resource)}>
+          <Button className="button primary" onClick={() => open(resource)}>
             <ArrowUpRight size={16} />
             Open
-          </button>
+          </Button>
         )}
         {resource.kind !== "folder" && !resource.deleted_at && (
-          <button
+          <IconButton
             className="icon-button"
             title="Open beside"
             aria-label="Open beside"
             onClick={() => open(resource, true)}
           >
             <Columns2 size={17} />
-          </button>
+          </IconButton>
         )}
-        <button
+        <IconButton
           className="icon-button"
           aria-label={resource.favorite ? "Remove favorite" : "Add favorite"}
           aria-pressed={!!resource.favorite}
           onClick={() => management.execute("favorite", [resource])}
         >
           <Star size={17} />
-        </button>
+        </IconButton>
       </div>
       <div className="ws-segmented ws-inspector-tabs">
         {[
@@ -1670,12 +1679,12 @@ export function ResourceInspector({
             {resource.description || "No description yet."}
           </p>
           {!resource.deleted_at && (
-            <button
+            <Button
               className="button secondary"
               onClick={() => openModal("copy")}
             >
               Copy to a space…
-            </button>
+            </Button>
           )}
           {editable && !resource.deleted_at && (
             <div className="ws-inspector-command-list">
@@ -1731,21 +1740,21 @@ export function ResourceInspector({
             </div>
           )}
           {resource.deleted_at && editable && (
-            <button
+            <Button
               className="button secondary"
               disabled={action.busy}
               onClick={() => management.execute("restore", [resource])}
             >
               Restore item
-            </button>
+            </Button>
           )}
           {resource.deleted_at && space?.can_manage && (
-            <button
+            <Button
               className="button danger"
               onClick={() => openModal("purge")}
             >
               Delete permanently…
-            </button>
+            </Button>
           )}
         </>
       )}
@@ -1768,7 +1777,7 @@ export function ResourceInspector({
                 {bytes(version.bytes)} · {timeAgo(version.created_at)}
               </small>
               <small>{version.created_by}</small>
-              <div className="ws-actions">
+              <ActionRow>
                 <a
                   className="button secondary"
                   href={`/api/v1/files/${resource.id}/download?version=${version.id}`}
@@ -1776,7 +1785,7 @@ export function ResourceInspector({
                   <Download size={14} />
                   Download
                 </a>
-                <button
+                <Button
                   className="button secondary"
                   onClick={() =>
                     void action.run(async () => {
@@ -1788,11 +1797,11 @@ export function ResourceInspector({
                   }
                 >
                   Copy embed
-                </button>
+                </Button>
                 {editable &&
                   !resource.deleted_at &&
                   version.id !== resource.current_version_id && (
-                    <button
+                    <Button
                       className="button secondary"
                       onClick={() => {
                         baseVersion.current = resource.version;
@@ -1804,11 +1813,11 @@ export function ResourceInspector({
                       }}
                     >
                       Restore as new version
-                    </button>
+                    </Button>
                   )}
                 {space?.can_manage &&
                   version.id !== resource.current_version_id && (
-                    <button
+                    <Button
                       className="button secondary danger-text"
                       onClick={() => {
                         baseVersion.current = resource.version;
@@ -1820,9 +1829,9 @@ export function ResourceInspector({
                       }}
                     >
                       Remove unused version…
-                    </button>
+                    </Button>
                   )}
-              </div>
+              </ActionRow>
             </div>
           ))}
         </>
@@ -1956,7 +1965,7 @@ function MetadataDialog({
       >
         <label>
           Description
-          <textarea
+          <TextArea
             rows={5}
             maxLength={3000}
             value={description}
@@ -1965,7 +1974,7 @@ function MetadataDialog({
         </label>
         <label>
           Tags
-          <input
+          <TextInput
             value={tags}
             onChange={(event) => setTags(event.target.value)}
             placeholder="e.g. quantum, experiment, draft"
@@ -1977,17 +1986,17 @@ function MetadataDialog({
         </p>
         <ErrorNotice message={action.error} />
         <div className="dialog-footer">
-          <button
+          <Button
             type="button"
             className="button secondary"
             disabled={action.busy}
             onClick={onClose}
           >
             Cancel
-          </button>
-          <button className="button primary" disabled={action.busy}>
+          </Button>
+          <Button className="button primary" disabled={action.busy}>
             Save details
-          </button>
+          </Button>
         </div>
       </form>
     </Dialog>
@@ -2034,7 +2043,7 @@ export function FileSafetyDialog({
       {!restore && (
         <label>
           Type {phrase} to confirm
-          <input
+          <TextInput
             autoComplete="off"
             value={confirmation}
             onChange={(event) => setConfirmation(event.target.value)}
@@ -2043,14 +2052,14 @@ export function FileSafetyDialog({
       )}
       <ErrorNotice message={action.error} />
       <div className="dialog-footer">
-        <button
+        <Button
           className="button secondary"
           onClick={onClose}
           disabled={action.busy}
         >
           Cancel
-        </button>
-        <button
+        </Button>
+        <Button
           className={`button ${restore ? "primary" : "danger"}`}
           disabled={action.busy || (!restore && confirmation !== phrase)}
           onClick={() =>
@@ -2074,7 +2083,7 @@ export function FileSafetyDialog({
             : restore
               ? "Restore version"
               : "Delete permanently"}
-        </button>
+        </Button>
       </div>
     </Dialog>
   );
@@ -2134,14 +2143,14 @@ export function MoveResource({
         )}
       </div>
       <div className="dialog-footer">
-        <button
+        <Button
           className="button secondary"
           disabled={action.busy}
           onClick={onClose}
         >
           Cancel
-        </button>
-        <button
+        </Button>
+        <Button
           className="button primary"
           disabled={action.busy || folder === resource.parent_id}
           onClick={() =>
@@ -2157,7 +2166,7 @@ export function MoveResource({
           }
         >
           Move here
-        </button>
+        </Button>
       </div>
     </Dialog>
   );
@@ -2200,7 +2209,7 @@ export function TransferResource({
       </p>
       <label>
         Destination space
-        <select
+        <NativeSelect
           value={spaceId}
           required
           onChange={(event) => {
@@ -2230,7 +2239,7 @@ export function TransferResource({
                     : "Group members"}
               </option>
             ))}
-        </select>
+        </NativeSelect>
       </label>
       {destination && (
         <>
@@ -2260,7 +2269,7 @@ export function TransferResource({
               </button>
             ))}
           </nav>
-          <input
+          <TextInput
             aria-label="Find destination folder"
             placeholder="Find a folder in this space…"
             value={search}
@@ -2291,27 +2300,26 @@ export function TransferResource({
               <p className="muted">No subfolders here.</p>
             )}
           </div>
-          <div className="ws-actions">
+          <ActionRow>
             {cursor && (
-              <button className="text-button" onClick={() => setCursor("")}>
+              <Button className="text-button" onClick={() => setCursor("")}>
                 First folders
-              </button>
+              </Button>
             )}
             {folders.data?.nextCursor && (
-              <button
+              <Button
                 className="text-button"
                 onClick={() => setCursor(folders.data!.nextCursor!)}
               >
                 More folders
-              </button>
+              </Button>
             )}
-          </div>
+          </ActionRow>
         </>
       )}
       {crossing && destination && (
-        <label className="ws-checkbox ws-note">
-          <input
-            type="checkbox"
+        <label className="ws-checkbox">
+          <Checkbox
             checked={confirmed}
             onChange={(event) => setConfirmed(event.target.checked)}
           />
@@ -2330,14 +2338,14 @@ export function TransferResource({
         retry={folders.error ? folders.reload : undefined}
       />
       <div className="dialog-footer">
-        <button
+        <Button
           className="button secondary"
           disabled={action.busy}
           onClick={onClose}
         >
           Cancel
-        </button>
-        <button
+        </Button>
+        <Button
           className="button primary"
           disabled={action.busy || !destination || (crossing && !confirmed)}
           onClick={() =>
@@ -2357,7 +2365,7 @@ export function TransferResource({
           }
         >
           {action.busy ? "Preparing…" : moving ? "Move here" : "Copy here"}
-        </button>
+        </Button>
       </div>
     </Dialog>
   );

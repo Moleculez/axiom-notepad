@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "./ui/controls";
 import BrandMark from "./BrandMark";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
@@ -102,7 +103,7 @@ export default function DatasetBoundary({ children }: { children: ReactNode }) {
             : "Checking your workspace…"}
       </p>
       {state === "error" && (
-        <button
+        <Button
           className="button secondary"
           onClick={() => {
             setState(replacement.current ? "reset" : "checking");
@@ -110,7 +111,7 @@ export default function DatasetBoundary({ children }: { children: ReactNode }) {
           }}
         >
           Retry
-        </button>
+        </Button>
       )}
     </main>
   );

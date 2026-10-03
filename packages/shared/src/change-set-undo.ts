@@ -7,6 +7,7 @@ import { documentSource } from "./document-format";
 import { sourceHash } from "./document-commands";
 import { parseCanvas } from "./canvas";
 import type { ChangeAction } from "./productivity";
+import {taskDependencyLinks} from './planning';
 
 /** Undo is itself a fresh reviewed change; never overwrite intervening work. */
 export async function prepareChangeSetUndo(id:string,user:string,key:string) {
@@ -36,7 +37,7 @@ export async function prepareChangeSetUndo(id:string,user:string,key:string) {
       if(linked.present) throw new HttpError(409,"This task has dependent work. Remove or undo dependents first.");
       inverse.payload={version:task.version,deleted:true};
     } else if(original.payload.deleted!==undefined) inverse.payload={version:task.version,deleted:!!b.deleted_at};
-    else inverse.payload={version:task.version,title:b.title,body:b.body,status:b.status,priority:b.priority,assigneeId:b.assignee_id,parentId:b.parent_id,estimateHours:b.estimate_hours==null?null:Number(b.estimate_hours),labels:b.labels,milestoneId:b.milestone_id,noteId:b.note_id,resourceIds:b.resource_ids??[],dependencies:b.dependencies??[],position:b.position};
+    else inverse.payload={version:task.version,title:b.title,body:b.body,status:b.status,priority:b.priority,assigneeId:b.assignee_id,parentId:b.parent_id,estimateHours:b.estimate_hours==null?null:Number(b.estimate_hours),labels:b.labels,milestoneId:b.milestone_id,noteId:b.note_id,resourceIds:b.resource_ids??[],dependencies:b.dependencies??[],dependencyLinks:taskDependencyLinks(b),progressPercent:b.progress_percent??0,position:b.position};
   } else if(original.action === "file_update") {
     const [current]=await query("SELECT version FROM resources WHERE id=$1",[original.targetId]);
     if(!current||current.version!==result.version) throw new HttpError(409,"File metadata changed after this action. Review its history instead.");

@@ -392,15 +392,7 @@
   min-width: 0;
 }
 .command-search {
-  display: flex;
-  align-items: center;
-  gap: 12px;
   margin: 0 0 12px;
-}
-.command-search input {
-  flex: 1;
-  min-width: 0;
-  font-size: var(--size-ui);
 }
 .command-results {
   max-height: min(480px, 55dvh);

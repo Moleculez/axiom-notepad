@@ -1,4 +1,5 @@
 "use client";
+import { Button, Checkbox, Notice, TextInput } from "../ui/controls";
 import {
   createContext,
   useContext,
@@ -1038,7 +1039,7 @@ export function ManagementProvider({
         >
           <div className="folder-color-choices">
             {[null, ...folderColors].map((color) => (
-              <button
+              <Button
                 key={color ?? "default"}
                 className="button secondary"
                 data-folder-color={color}
@@ -1052,7 +1053,7 @@ export function ManagementProvider({
               >
                 <Folder size={24} />
                 {color ?? "Default"}
-              </button>
+              </Button>
             ))}
           </div>
         </Dialog>
@@ -1284,20 +1285,20 @@ function ConfirmAction({
       <p>{description}</p>
       <ErrorNotice message={action.error} />
       <div className="dialog-footer">
-        <button
+        <Button
           className="button secondary"
           disabled={action.busy}
           onClick={onClose}
         >
           Cancel
-        </button>
-        <button
+        </Button>
+        <Button
           className="button danger"
           disabled={action.busy}
           onClick={() => void action.run(onConfirm)}
         >
           {action.busy ? "Working…" : label}
-        </button>
+        </Button>
       </div>
     </Dialog>
   );
@@ -1331,7 +1332,13 @@ function BulkResourceAction({
           ? "These items will return to their original folders where possible."
           : "Selected items and nested contents remain recoverable in Trash."}
       </p>
-      {!restoring && <p className="ws-note">Published website copies are independent. Trashing a private source does not remove it from a public website; unpublish or replace its website release separately.</p>}
+      {!restoring && (
+        <Notice tone="warning">
+          Published website copies are independent. Trashing a private source
+          does not remove it from a public website; unpublish or replace its
+          website release separately.
+        </Notice>
+      )}
       <ul className="ws-operation-items">
         {remaining.map((item) => (
           <li key={item.id}>{item.name}</li>
@@ -1339,14 +1346,14 @@ function BulkResourceAction({
       </ul>
       <ErrorNotice message={action.error} />
       <div className="dialog-footer">
-        <button
+        <Button
           className="button secondary"
           disabled={action.busy}
           onClick={onClose}
         >
           Cancel
-        </button>
-        <button
+        </Button>
+        <Button
           className={`button ${restoring ? "primary" : "danger"}`}
           disabled={action.busy}
           onClick={() =>
@@ -1390,7 +1397,7 @@ function BulkResourceAction({
             : restoring
               ? "Restore items"
               : "Move to trash"}
-        </button>
+        </Button>
       </div>
     </Dialog>
   );
@@ -1433,9 +1440,8 @@ function PasteDialog({
         ))}
       </ul>
       {crossing && (
-        <label className="ws-checkbox ws-note">
-          <input
-            type="checkbox"
+        <label className="ws-checkbox">
+          <Checkbox
             checked={confirmed}
             onChange={(event) => setConfirmed(event.target.checked)}
           />
@@ -1450,14 +1456,14 @@ function PasteDialog({
       )}
       <ErrorNotice message={action.error} />
       <div className="dialog-footer">
-        <button
+        <Button
           className="button secondary"
           disabled={action.busy}
           onClick={close}
         >
           Cancel
-        </button>
-        <button
+        </Button>
+        <Button
           className="button primary"
           disabled={
             action.busy ||
@@ -1503,7 +1509,7 @@ function PasteDialog({
           }
         >
           {action.busy ? "Working…" : clipboard.cut ? "Move here" : "Copy here"}
-        </button>
+        </Button>
       </div>
     </Dialog>
   );
@@ -1562,10 +1568,12 @@ export function LifecycleDialog({
         </div>
       )}
       {data.data?.job?.error && (
-        <p className="ws-note">Last removal attempt: {data.data.job.error}</p>
+        <Notice tone="danger">
+          Last removal attempt: {data.data.job.error}
+        </Notice>
       )}
       {purge && !!data.data?.blockers.length && (
-        <div className="ws-note">
+        <Notice tone="warning">
           <strong>
             Keep this workspace recoverable until these are resolved:
           </strong>
@@ -1576,12 +1584,12 @@ export function LifecycleDialog({
               </li>
             ))}
           </ul>
-        </div>
+        </Notice>
       )}
       {destructive && (
         <label>
           Type {space.name} to confirm
-          <input
+          <TextInput
             autoComplete="off"
             spellCheck={false}
             value={confirmation}
@@ -1594,14 +1602,14 @@ export function LifecycleDialog({
         retry={data.error ? data.reload : undefined}
       />
       <div className="dialog-footer">
-        <button
+        <Button
           className="button secondary"
           disabled={action.busy}
           onClick={onClose}
         >
           Cancel
-        </button>
-        <button
+        </Button>
+        <Button
           className={`button ${destructive ? "danger" : "primary"}`}
           disabled={
             action.busy ||
@@ -1620,7 +1628,7 @@ export function LifecycleDialog({
           }
         >
           {action.busy ? "Working…" : title}
-        </button>
+        </Button>
       </div>
     </Dialog>
   );

@@ -1,4 +1,5 @@
 "use client";
+import { IconButton } from "./ui/controls";
 import { Check, MoreHorizontal, Pencil, Share2 } from "lucide-react";
 import type { NoteComment } from "@axiom/shared/note-comments";
 import { openContextMenu } from "../lib/context-menu";
@@ -36,7 +37,7 @@ export default function AnnotationCardActions({
     <footer className="annotation-actions">
       {own && (
         <>
-          <button
+          <IconButton
             className="icon-button"
             aria-label="Edit annotation"
             title="Edit annotation"
@@ -44,8 +45,8 @@ export default function AnnotationCardActions({
             onClick={onEdit}
           >
             <Pencil size={15} />
-          </button>
-          <button
+          </IconButton>
+          <IconButton
             className="icon-button"
             aria-label={
               entry.visibility === "private"
@@ -61,11 +62,11 @@ export default function AnnotationCardActions({
             onClick={onShare}
           >
             <Share2 size={15} />
-          </button>
+          </IconButton>
         </>
       )}
       {(entry.visibility === "private" || canComment) && (
-        <button
+        <IconButton
           className="icon-button"
           aria-label={
             entry.resolved ? "Reopen annotation" : "Resolve annotation"
@@ -75,9 +76,9 @@ export default function AnnotationCardActions({
           onClick={onResolve}
         >
           <Check size={15} />
-        </button>
+        </IconButton>
       )}
-      <button
+      <IconButton
         className="icon-button"
         aria-label="More annotation actions"
         title="More actions"
@@ -122,7 +123,7 @@ export default function AnnotationCardActions({
         }}
       >
         <MoreHorizontal size={15} />
-      </button>
+      </IconButton>
       {entry.visibility === "shared" && canComment && (
         <button
           className="text-button annotation-reply-action"

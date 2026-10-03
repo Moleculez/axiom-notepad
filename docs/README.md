@@ -51,6 +51,7 @@ their own deployment-specific acceptance checks.
 - [File-first workbench](FILE_WORKBENCH.md) — canonical routes, tabs, menus and dialogs
 - [Canvas architecture](CANVAS_ARCHITECTURE.md) and [Canvas acceptance](CANVAS_V1_ACCEPTANCE.md)
 - [Design system](DESIGN_SYSTEM.md) and [theme authoring criteria](THEME_AUTHORING.md)
+- [UI controls and layout contract](UI_CONTROLS.md) — native controls, hints/notices, action hierarchy, dialog focus and automated drift guard
 - [Brand identity](BRANDING.md) and [illustrated feature tour and reproducible assets](SHOWCASE.md)
 
 Axiom owns its source-preserving parser, editing contracts and interface. Its current

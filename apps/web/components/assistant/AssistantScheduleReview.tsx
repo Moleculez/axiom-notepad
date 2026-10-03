@@ -1,4 +1,5 @@
 "use client";
+import { Button, HelpText, TextInput } from "../ui/controls";
 import { useState } from "react";
 import type {
   AssistantProposalItem,
@@ -39,7 +40,7 @@ export default function AssistantScheduleReview({
       <div className="productivity-subtoolbar">
         <label>
           Start
-          <input
+          <TextInput
             type="date"
             disabled={action.busy}
             value={value.startOn ?? ""}
@@ -51,7 +52,7 @@ export default function AssistantScheduleReview({
         </label>
         <label>
           Finish
-          <input
+          <TextInput
             type="date"
             disabled={action.busy}
             value={value.dueOn ?? ""}
@@ -86,23 +87,21 @@ export default function AssistantScheduleReview({
           </div>
           <ScheduleCapacityPreview capacity={preview.plan.capacity} />
           {preview.plan.warnings.map((w) => (
-            <p key={w} className="ws-note">
-              {w}
-            </p>
+            <HelpText key={w}>{w}</HelpText>
           ))}
-          <p className="ws-note">
+          <HelpText>
             A newer task, calendar or availability change invalidates this
             preview. Undo will not overwrite a collaborator's later edits.
-          </p>
+          </HelpText>
         </>
       )}
       <ErrorNotice message={action.error} />
       <DialogFooter>
-        <button className="button secondary" onClick={onClose}>
+        <Button className="button secondary" onClick={onClose}>
           Keep private draft
-        </button>
+        </Button>
         {preview ? (
-          <button
+          <Button
             className="button primary"
             disabled={action.busy}
             onClick={() =>
@@ -118,9 +117,9 @@ export default function AssistantScheduleReview({
             }
           >
             Apply reviewed schedule
-          </button>
+          </Button>
         ) : (
-          <button
+          <Button
             className="button primary"
             disabled={action.busy}
             onClick={() =>
@@ -132,7 +131,7 @@ export default function AssistantScheduleReview({
             }
           >
             Preview affected tasks
-          </button>
+          </Button>
         )}
       </DialogFooter>
     </Dialog>

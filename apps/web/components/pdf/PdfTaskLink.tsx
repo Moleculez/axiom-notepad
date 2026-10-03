@@ -1,4 +1,5 @@
 "use client";
+import { Button, HelpText, TextInput, NativeSelect } from "../ui/controls";
 import { useState } from "react";
 import type { Annotation } from "@axiom/shared/research";
 import Dialog, { DialogFooter } from "../Dialog";
@@ -31,11 +32,11 @@ export default function PdfTaskLink({
       subtitle={`Page ${annotation.data.page} · ${annotation.shared ? "Shared annotation" : "Private annotation"}`}
       onClose={onClose}
     >
-      <p className="ws-note">
+      <HelpText>
         The link opens this exact PDF version and annotation. Private
         annotations remain private. No quotation or annotation text is copied to
         the task.
-      </p>
+      </HelpText>
       <ErrorNotice message={error || data.error} retry={data.reload} />
       {result ? (
         <p role="status">
@@ -50,11 +51,14 @@ export default function PdfTaskLink({
         <>
           <label>
             Find a task in this workspace
-            <input value={query} onChange={(e) => setQuery(e.target.value)} />
+            <TextInput
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
           </label>
           <label>
             Task
-            <select
+            <NativeSelect
               value={selected}
               onChange={(e) => setSelected(e.target.value)}
             >
@@ -64,12 +68,12 @@ export default function PdfTaskLink({
                   {t.title}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </label>
           {!selected && (
             <label>
               New task title
-              <input
+              <TextInput
                 maxLength={300}
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
@@ -79,10 +83,10 @@ export default function PdfTaskLink({
             </label>
           )}
           <DialogFooter>
-            <button className="button secondary" onClick={onClose}>
+            <Button className="button secondary" onClick={onClose}>
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               className="button primary"
               disabled={busy || (!selected && !title.trim())}
               onClick={() =>
@@ -122,7 +126,7 @@ export default function PdfTaskLink({
                 : selected
                   ? "Link to task"
                   : "Create and link"}
-            </button>
+            </Button>
           </DialogFooter>
         </>
       )}

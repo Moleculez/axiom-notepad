@@ -85,10 +85,6 @@
   width: 250px;
   max-width: 100%;
 }
-.settings-stage .settings-content-search input {
-  font-size: 0.83em;
-  min-width: 0;
-}
 .settings-preview-toggle {
   white-space: nowrap;
 }
@@ -601,36 +597,6 @@
 .settings-form-section .ws-toggle-row input {
   flex-shrink: 0;
 }
-.settings-form-section .ws-toggle-row input[type="checkbox"] {
-  appearance: none;
-  width: 2.55em;
-  height: 1.5em;
-  border: 1px solid var(--line);
-  border-radius: 2em;
-  padding: 2px;
-  background: color-mix(in srgb, var(--muted) 24%, var(--paper));
-  position: relative;
-  cursor: pointer;
-}
-.settings-form-section .ws-toggle-row input[type="checkbox"]::before {
-  content: "";
-  position: absolute;
-  width: calc(1.5em - 6px);
-  height: calc(1.5em - 6px);
-  inset-block-start: 2px;
-  inset-inline-start: 2px;
-  border-radius: 50%;
-  background: var(--paper);
-}
-.settings-form-section .ws-toggle-row input[type="checkbox"]:checked {
-  background: var(--accent);
-  border-color: var(--accent);
-}
-.settings-form-section .ws-toggle-row input[type="checkbox"]:checked::before {
-  inset-inline-start: auto;
-  inset-inline-end: 2px;
-  background: var(--on-accent);
-}
 .settings-field-note {
   display: flex;
   flex-wrap: wrap;
@@ -762,12 +728,6 @@
   transition: none;
 }
 @media (forced-colors: active) {
-  .settings-form-section .ws-toggle-row input[type="checkbox"] {
-    appearance: auto;
-  }
-  .settings-form-section .ws-toggle-row input[type="checkbox"]::before {
-    display: none;
-  }
   .settings-split-handle > span {
     background: CanvasText;
   }
@@ -988,7 +948,7 @@
   color: var(--muted);
   font-size: 11px;
 }
-.development-setup-card .ws-note {
+.development-setup-card .ui-help {
   display: flex;
   align-items: flex-start;
   gap: 7px;

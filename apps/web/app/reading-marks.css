@@ -127,21 +127,19 @@
 .reading-mark-search {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   border-bottom: 1px solid var(--line);
   padding: 4px 0 8px;
 }
-.reading-mark-search input {
-  width: 0;
+.reading-mark-search > .ui-search-field {
   min-width: 0;
   flex: 1;
 }
 .reading-mark-search select {
-  width: auto;
+  --field-width: auto;
   max-width: 110px;
-  font-size: 0.9em;
+  flex: 0 1 auto;
 }
-.reading-mark-search :is(input, select),
 .annotation-fields :is(input, select),
 .annotation-tags input {
   border: 0 !important;
@@ -152,7 +150,6 @@
   padding: 6px 2px;
   min-height: 0;
 }
-.reading-mark-search :is(input, select):focus-visible,
 .annotation-fields :is(input, select):focus-visible,
 .annotation-tags input:focus-visible {
   box-shadow: 0 1px 0 var(--focus);
@@ -188,12 +185,7 @@
   border-bottom: 1px solid color-mix(in srgb, var(--line) 65%, transparent);
 }
 .reading-bookmark-row > input[type="checkbox"] {
-  margin: 5px 0 0;
-  width: 13px;
-  height: 13px;
-  min-height: 0;
-  flex: 0 0 13px;
-  accent-color: var(--accent);
+  margin-block-start: 0.3em;
 }
 .reading-mark-manager .reading-bookmark-open {
   flex: 1;

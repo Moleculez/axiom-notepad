@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "../ui/controls";
 import { useEffect, useRef, useState } from "react";
 import Dialog, { DialogFooter } from "../Dialog";
 import ImageGeometryDialog, {
@@ -127,9 +128,9 @@ export default function AvatarCropDialog({
     <Dialog title="Crop profile picture" onClose={onClose}>
       <p role={error ? "alert" : "status"}>{error || "Opening your photo…"}</p>
       <DialogFooter>
-        <button type="button" className="button secondary" onClick={onClose}>
+        <Button type="button" className="button secondary" onClick={onClose}>
           Cancel
-        </button>
+        </Button>
       </DialogFooter>
     </Dialog>
   );

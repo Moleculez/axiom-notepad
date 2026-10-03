@@ -1,4 +1,5 @@
 "use client";
+import { IconButton, NativeSelect } from "../ui/controls";
 import { useEffect, useRef, useState, type RefObject } from "react";
 import {
   Blend,
@@ -157,7 +158,7 @@ export default function MathPreviewActions({
           aria-label="Equation copy and download"
         >
           <div className="math-copy-control">
-            <select
+            <NativeSelect
               aria-label="Preview image format"
               value={format}
               disabled={working}
@@ -168,7 +169,7 @@ export default function MathPreviewActions({
               <option value="svg">SVG</option>
               <option value="png">PNG</option>
               <option value="jpeg">JPG</option>
-            </select>
+            </NativeSelect>
             <button
               type="button"
               disabled={!valid || working}
@@ -195,7 +196,7 @@ export default function MathPreviewActions({
               {copied ? "Copied" : "Copy"}
             </button>
           </div>
-          <button
+          <IconButton
             type="button"
             className="icon-button"
             disabled={!valid || working}
@@ -204,8 +205,8 @@ export default function MathPreviewActions({
             onClick={() => void run(() => onExport(format))}
           >
             <Download size={16} />
-          </button>
-          <button
+          </IconButton>
+          <IconButton
             type="button"
             className="icon-button"
             aria-label="More preview actions"
@@ -259,13 +260,13 @@ export default function MathPreviewActions({
             }}
           >
             <MoreHorizontal size={17} />
-          </button>
+          </IconButton>
         </div>
       </div>
       <div className="math-preview-options">
         <label title="Pixel resolution for copied and downloaded PNG/JPG images">
           Resolution
-          <select
+          <NativeSelect
             aria-label="Preview export resolution"
             value={settings.scale}
             disabled={format === "svg" || working}
@@ -276,7 +277,7 @@ export default function MathPreviewActions({
                 {value}×
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
         <button
           type="button"

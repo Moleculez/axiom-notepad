@@ -256,7 +256,7 @@ test("Math library searches rendered templates, saves symbols and inserts at the
       exact: true,
     }),
     library = page.getByRole("complementary", { name: "Math library" }),
-    search = library.getByRole("textbox", { name: "Search math library" });
+    search = library.getByRole("searchbox", { name: "Search math library" });
   await library.getByRole("tab", { name: "Saved", exact: true }).click();
   await expect(library.getByText("Save your go-to symbols")).toBeVisible();
   await search.fill("alpha");
@@ -634,13 +634,15 @@ test("Image Studio paints, undoes, persists immutable versions and fences anothe
   await page.keyboard.press("Escape");
   await page.screenshot({ path: info.outputPath("image-studio-light.png") });
   await page.getByRole("button", { name: "Add layer", exact: true }).click();
-  await page.getByRole("link", { name: "Back to tools" }).click();
+  await page.getByRole("link", { name: "Back to folder" }).click();
   const guard = page.getByRole("dialog", {
     name: "Keep your image draft before leaving",
   });
   await expect(guard).toBeVisible();
   await guard.getByRole("button", { name: "Keep draft & leave" }).click();
-  await expect(page).toHaveURL(/\/workbench\/tools$/);
+  await expect(page).toHaveURL(
+    new RegExp(`/workbench/explorer\\?space=${spaceId}$`),
+  );
   await page.goto(`/workbench/tools/image/${project.id}`);
   const recovery = page.getByRole("dialog", {
     name: "Restore local image draft?",
@@ -657,8 +659,15 @@ test("Image Studio paints, undoes, persists immutable versions and fences anothe
   await expect(page.locator(".studio-status")).toContainText(
     "Saved as a new cloud version",
   );
-  await page.goto(`/workbench/files/${project.id}`);
-  await expect(page.locator(".image-preview-stage img")).toBeVisible();
+  // Editable files open in their studio; a pinned immutable version opens
+  // in the shared file viewer instead of the retired image-only preview.
+  await page.goto(
+    `/workbench/notes/${project.id}?version=${saved.current_version_id}`,
+  );
+  await expect(
+    page.getByRole("combobox", { name: "File version" }),
+  ).toHaveValue(saved.current_version_id);
+  await expect(page.locator(".visual-file-stage img")).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Open Image Studio" }),
   ).toBeVisible();

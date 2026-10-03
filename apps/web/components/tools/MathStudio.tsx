@@ -1,4 +1,12 @@
 "use client";
+import {
+  Button,
+  Checkbox,
+  IconButton,
+  Slider,
+  NativeSelect,
+  TextArea,
+} from "../ui/controls";
 import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useRevisionVisit } from "../../lib/revision-visit";
@@ -300,7 +308,7 @@ export default function MathStudio({ project }: { project: ToolProject }) {
         <span className="tool-spacer" />
         <ResourceSharing resourceId={project.resource_id} />
         {noteBridge && (
-          <button
+          <Button
             className="button secondary"
             disabled={!document.binding}
             onClick={() => {
@@ -318,7 +326,7 @@ export default function MathStudio({ project }: { project: ToolProject }) {
             }}
           >
             Review in note
-          </button>
+          </Button>
         )}
         <div className="studio-presence">
           {document.peers.map((p) => (
@@ -331,7 +339,7 @@ export default function MathStudio({ project }: { project: ToolProject }) {
             </span>
           ))}
         </div>
-        <button
+        <IconButton
           className="icon-button"
           aria-label="Ask about this equation"
           title="Ask workspace assistant"
@@ -347,78 +355,79 @@ export default function MathStudio({ project }: { project: ToolProject }) {
           }
         >
           <MessageSquare size={17} />
-        </button>
-        <button
+        </IconButton>
+        <IconButton
           className="icon-button"
           title="Checkpoint history"
           aria-label="Checkpoint history"
           onClick={() => setPanel("history")}
         >
           <History size={17} />
-        </button>
+        </IconButton>
         {project.role !== "viewer" && (
-          <button
+          <IconButton
             className="icon-button"
             aria-label="Review suggestions"
             title="Review and suggest changes to the equation"
             onClick={() => setReview(true)}
           >
             <FilePenLine size={17} />
-          </button>
+          </IconButton>
         )}
-        <button
+        <IconButton
           className="icon-button"
           title="Rendering settings"
           aria-label="Rendering settings"
           onClick={() => setPanel("settings")}
         >
           <Settings2 size={17} />
-        </button>
-        <button
+        </IconButton>
+        <Button
           className="button secondary"
           disabled={document.readOnly || busy}
           onClick={() => void snapshot()}
+          pending={!!busy}
         >
           <Save size={15} />
-          {busy ? "Saving…" : "Checkpoint"}
-        </button>
-        <button
+          {"Checkpoint"}
+        </Button>
+        <IconButton
           className="icon-button"
           aria-label="OCR and math assistant"
           title="OCR and math assistant"
           onClick={() => setPanel("assistant")}
         >
           <Sparkles size={17} />
-        </button>
-        <button
+        </IconButton>
+        <IconButton
           className="icon-button"
           aria-label="Project discussion"
           title="Project discussion"
           onClick={() => setPanel("discussion")}
         >
           <MessageSquare size={17} />
-        </button>
-        <button className="button primary" onClick={() => setPanel("export")}>
+        </IconButton>
+        <Button className="button primary" onClick={() => setPanel("export")}>
           <Download size={15} />
           Export
-        </button>
+        </Button>
       </header>
       <ErrorNotice message={error || document.error} />
       {visualRecovery !== null && (
         <div className="tool-recovery">
           <span>A conflicting visual draft is retained. </span>
-          <button
+          <Button
             className="button secondary"
             onClick={() => downloadText(visualRecovery, "visual-draft.tex")}
           >
             Download visual draft
-          </button>
-          <button
+          </Button>
+          <Button
             className="button ghost"
             onClick={() => setVisualRecovery(null)}
           >
             Dismiss
-          </button>
+          </Button>
         </div>
       )}
       {document.recovery !== null && (
@@ -427,17 +436,17 @@ export default function MathStudio({ project }: { project: ToolProject }) {
             Previous access changed. The retained source is available for
             export; it will not be replayed into the shared project.
           </p>
-          <button
+          <Button
             className="button secondary"
             onClick={() =>
               downloadText(document.recovery!, "recovered-equation.tex")
             }
           >
             Download retained draft
-          </button>
-          <button className="button secondary" onClick={document.reopen}>
+          </Button>
+          <Button className="button secondary" onClick={document.reopen}>
             Reopen current version
-          </button>
+          </Button>
         </div>
       )}
       <div className="studio-body">
@@ -451,14 +460,14 @@ export default function MathStudio({ project }: { project: ToolProject }) {
         )}
         <section className="math-workspace">
           <div className="tool-controls">
-            <button
+            <IconButton
               className="icon-button"
               aria-label="Toggle symbol palette"
               title="Toggle symbol palette"
               onClick={() => setPalette(!palette)}
             >
               <PanelLeftClose size={16} />
-            </button>
+            </IconButton>
             <div className="studio-segmented">
               <button
                 aria-pressed={mode === "source"}
@@ -476,7 +485,7 @@ export default function MathStudio({ project }: { project: ToolProject }) {
               </button>
             </div>
             <span className="tool-separator" />
-            <button
+            <IconButton
               className="icon-button"
               title="Undo"
               aria-label="Undo"
@@ -484,8 +493,8 @@ export default function MathStudio({ project }: { project: ToolProject }) {
               onClick={() => document.binding?.history(false)}
             >
               <Undo2 size={16} />
-            </button>
-            <button
+            </IconButton>
+            <IconButton
               className="icon-button"
               title="Redo"
               aria-label="Redo"
@@ -493,16 +502,16 @@ export default function MathStudio({ project }: { project: ToolProject }) {
               onClick={() => document.binding?.history(true)}
             >
               <Redo2 size={16} />
-            </button>
+            </IconButton>
             <span className="tool-spacer" />
-            <button
+            <IconButton
               className="icon-button"
               aria-label="Toggle preview layout"
               title="Toggle preview layout"
               onClick={() => setStacked(!stacked)}
             >
               {stacked ? <Columns2 size={16} /> : <Rows2 size={16} />}
-            </button>
+            </IconButton>
           </div>
           <div className="math-split">
             <section className="math-input-pane">
@@ -648,7 +657,7 @@ export default function MathStudio({ project }: { project: ToolProject }) {
               </p>
               <label>
                 Raster resolution
-                <select
+                <NativeSelect
                   value={scale}
                   onChange={(e) => setScale(Number(e.target.value))}
                 >
@@ -657,7 +666,7 @@ export default function MathStudio({ project }: { project: ToolProject }) {
                       {n}×
                     </option>
                   ))}
-                </select>
+                </NativeSelect>
               </label>
               <div className="tool-export-grid">
                 {[
@@ -670,14 +679,14 @@ export default function MathStudio({ project }: { project: ToolProject }) {
                   "omml",
                   "docx",
                 ].map((f) => (
-                  <button
+                  <Button
                     className="button secondary"
                     key={f}
                     onClick={() => void exportMath(f)}
                   >
                     <Download size={15} />
                     {f.toUpperCase()}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </>
@@ -685,8 +694,9 @@ export default function MathStudio({ project }: { project: ToolProject }) {
             <div className="tool-settings-fields">
               <label>
                 Equation size{" "}
-                <input
-                  type="range"
+                <Slider
+                  aria-label="Equation size"
+                  aria-valuetext={`${fontSize} pixels`}
                   min={16}
                   max={64}
                   value={fontSize}
@@ -713,16 +723,14 @@ export default function MathStudio({ project }: { project: ToolProject }) {
                 <code>{background}</code>
               </label>
               <label>
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={transparent}
                   onChange={(e) => setTransparent(e.target.checked)}
                 />
                 Transparent SVG / PNG background
               </label>
               <label>
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={numbered}
                   onChange={(e) => setNumbered(e.target.checked)}
                 />
@@ -730,7 +738,7 @@ export default function MathStudio({ project }: { project: ToolProject }) {
               </label>
               <label className="tool-setting-stack">
                 TeX macro definitions
-                <textarea
+                <TextArea
                   rows={5}
                   spellCheck={false}
                   maxLength={15000}
@@ -739,13 +747,13 @@ export default function MathStudio({ project }: { project: ToolProject }) {
                   placeholder={"\\newcommand{\\vect}[1]{\\mathbf{#1}}"}
                 />
               </label>
-              <button
+              <Button
                 className="button primary"
                 disabled={document.readOnly}
                 onClick={() => void saveSettings()}
               >
                 Save project settings
-              </button>
+              </Button>
             </div>
           ) : null}
           <ErrorNotice message={error} />

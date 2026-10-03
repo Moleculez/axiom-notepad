@@ -1,4 +1,5 @@
 "use client";
+import { Button, HelpText, IconButton, SearchField } from "../ui/controls";
 import { Fragment, useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
@@ -14,7 +15,6 @@ import {
   Image as ImageIcon,
   LayoutGrid,
   Pin,
-  Search,
   Settings,
   Sigma,
   Users,
@@ -165,7 +165,7 @@ export function WorkspaceLocation() {
   return (
     <div className="workspace-location">
       <div className="workspace-history" aria-label="Navigation history">
-        <button
+        <IconButton
           className="icon-button"
           aria-label="Go back"
           title="Back"
@@ -173,8 +173,8 @@ export function WorkspaceLocation() {
           onClick={() => sessions.back(-1)}
         >
           <ArrowLeft size={16} />
-        </button>
-        <button
+        </IconButton>
+        <IconButton
           className="icon-button"
           aria-label="Go forward"
           title="Forward"
@@ -182,8 +182,8 @@ export function WorkspaceLocation() {
           onClick={() => sessions.back(1)}
         >
           <ArrowRight size={16} />
-        </button>
-        <button
+        </IconButton>
+        <IconButton
           className="icon-button"
           aria-label="Up one level"
           title="Parent folder"
@@ -191,7 +191,7 @@ export function WorkspaceLocation() {
           onClick={() => up && navigate(up)}
         >
           <ArrowUp size={16} />
-        </button>
+        </IconButton>
       </div>
       <nav
         ref={trail}
@@ -321,24 +321,22 @@ function RecentWork() {
           <strong>Recent work</strong>
           <small>On this device</small>
         </header>
-        <label className="workspace-recent-search">
-          <Search size={15} />
-          <input
-            ref={input}
-            aria-label="Filter recent work"
-            placeholder="Find a page or file…"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "ArrowDown") {
-                event.preventDefault();
-                root.current
-                  ?.querySelector<HTMLButtonElement>(".workspace-recent-open")
-                  ?.focus();
-              }
-            }}
-          />
-        </label>
+        <SearchField
+          wrapperClassName="workspace-recent-search"
+          ref={input}
+          aria-label="Filter recent work"
+          placeholder="Find a page or file…"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "ArrowDown") {
+              event.preventDefault();
+              root.current
+                ?.querySelector<HTMLButtonElement>(".workspace-recent-open")
+                ?.focus();
+            }
+          }}
+        />
         <div className="workspace-recent-list">
           {[true, false].map((pinned) => {
             const group = items.filter((item) => !!item.pinned === pinned);
@@ -379,7 +377,7 @@ function RecentWork() {
                         </span>
                       </button>
                       {fileRouteId(item.path) && (
-                        <button
+                        <IconButton
                           className="icon-button"
                           aria-label={`Open ${name} in split view`}
                           title="Open in split view"
@@ -404,9 +402,9 @@ function RecentWork() {
                           }}
                         >
                           <Columns2 size={15} />
-                        </button>
+                        </IconButton>
                       )}
-                      <button
+                      <IconButton
                         className="icon-button"
                         aria-label={`${item.pinned ? "Unpin" : "Pin"} ${name}`}
                         title={item.pinned ? "Unpin" : "Pin for quick access"}
@@ -416,7 +414,7 @@ function RecentWork() {
                         }
                       >
                         <Pin size={14} />
-                      </button>
+                      </IconButton>
                     </div>
                   );
                 })}
@@ -493,7 +491,7 @@ export function WorkspaceLauncher() {
             ["text", "Text", Braces],
           ] as const
         ).map(([type, label, Icon]) => (
-          <button
+          <Button
             type="button"
             key={type}
             className="button secondary"
@@ -501,7 +499,7 @@ export function WorkspaceLauncher() {
           >
             <Icon size={16} />
             {label}
-          </button>
+          </Button>
         ))}
       </section>
       <div className="application-destinations">
@@ -513,9 +511,9 @@ export function WorkspaceLauncher() {
           </button>
         ))}
       </div>
-      <p className="ws-note">
+      <HelpText>
         ⌘/Ctrl K · Search & commands &nbsp; · &nbsp; ⌘/Ctrl Alt R · Recent work
-      </p>
+      </HelpText>
     </main>
   );
 }

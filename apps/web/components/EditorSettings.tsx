@@ -1,4 +1,11 @@
 "use client";
+import {
+  Button,
+  Checkbox,
+  Switch,
+  TextInput,
+  NativeSelect,
+} from "./ui/controls";
 import { useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { Keyboard, RotateCcw, X, Download, Upload } from "lucide-react";
@@ -116,8 +123,7 @@ export default function EditorSettings({
                   {label}
                   <small>{hint}</small>
                 </span>
-                <input
-                  type="checkbox"
+                <Switch
                   aria-label={label}
                   checked={value[key]}
                   onChange={(e) =>
@@ -130,7 +136,7 @@ export default function EditorSettings({
             <>
               <label className="setting-control">
                 <span>Default code language</span>
-                <input
+                <TextInput
                   aria-label="Default code language"
                   value={value.defaultCodeLanguage}
                   maxLength={40}
@@ -165,7 +171,7 @@ export default function EditorSettings({
               </label>
               <label className="setting-control">
                 <span>Code indentation</span>
-                <select
+                <NativeSelect
                   aria-label="Code indentation"
                   value={value.indentSize}
                   onChange={(e) =>
@@ -180,7 +186,7 @@ export default function EditorSettings({
                       {n} spaces
                     </option>
                   ))}
-                </select>
+                </NativeSelect>
               </label>
               <p className="muted">
                 Language-name suggestions are available in the code language
@@ -225,7 +231,7 @@ export default function EditorSettings({
             Cancel restores your saved bindings.
           </p>
           <div className="shortcut-tools">
-            <input
+            <TextInput
               ref={shortcutSearch}
               aria-label="Search shortcuts"
               placeholder="Search commands or keys…"
@@ -235,7 +241,7 @@ export default function EditorSettings({
                 setRecording(null);
               }}
             />
-            <select
+            <NativeSelect
               aria-label="Shortcut platform"
               value={platform}
               onChange={(e) => {
@@ -247,10 +253,9 @@ export default function EditorSettings({
             >
               <option value="mac">macOS</option>
               <option value="windowsLinux">Windows / Linux</option>
-            </select>
+            </NativeSelect>
             <label className="shortcut-filter">
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={customOnly}
                 onChange={(e) => setCustomOnly(e.target.checked)}
               />
@@ -330,20 +335,20 @@ export default function EditorSettings({
                   .join(", ")}
                 . Reassigning removes it from those commands.
               </p>
-              <button
+              <Button
                 className="button secondary"
                 onClick={() =>
                   assign(pending.id, [pending.key], pending.conflicts)
                 }
               >
                 Reassign shortcut
-              </button>
-              <button
+              </Button>
+              <Button
                 className="button secondary"
                 onClick={() => setPending(null)}
               >
                 Keep existing bindings
-              </button>
+              </Button>
             </div>
           )}
           <div className="shortcut-list">
@@ -426,15 +431,15 @@ export default function EditorSettings({
             )}
           </div>
           <div className="shortcut-tools">
-            <button
+            <Button
               className="button secondary"
               onClick={() =>
                 onChange({ ...value, keybindings: editorDefaults.keybindings })
               }
             >
               Reset all shortcuts
-            </button>
-            <button
+            </Button>
+            <Button
               className="button secondary"
               onClick={() =>
                 download(
@@ -453,7 +458,7 @@ export default function EditorSettings({
             >
               <Download size={14} />
               Export
-            </button>
+            </Button>
             <label className="button secondary">
               <Upload size={14} />
               Import

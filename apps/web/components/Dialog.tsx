@@ -1,4 +1,5 @@
 "use client";
+import { Button, IconButton, TextInput } from "./ui/controls";
 import {
   Children,
   Fragment,
@@ -167,7 +168,7 @@ function AppPromptHost() {
         {request.input && (
           <label>
             Name
-            <input
+            <TextInput
               autoFocus
               maxLength={300}
               value={text}
@@ -176,21 +177,21 @@ function AppPromptHost() {
           </label>
         )}
         <DialogFooter>
-          <button
+          <Button
             type="button"
             autoFocus={!request.input}
             className="button secondary"
             onClick={() => finish(null)}
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
             className={`button ${request.destructive ? "danger" : "primary"}`}
             disabled={request.input && !text.trim()}
           >
             {request.confirmLabel}
-          </button>
+          </Button>
         </DialogFooter>
       </form>
     </Dialog>
@@ -208,6 +209,7 @@ export default function Dialog({
   expanded = false,
   onEscape,
   returnFocus,
+  initialFocus,
   className = "",
 }: {
   title: string;
@@ -222,6 +224,8 @@ export default function Dialog({
   onEscape?: () => void;
   /** Resolve a stable opener when a refreshed list may replace its DOM node. */
   returnFocus?: () => HTMLElement | null;
+  /** Explicit target takes precedence over the first usable form field. */
+  initialFocus?: RefObject<HTMLElement | null>;
   className?: string;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -247,6 +251,30 @@ export default function Dialog({
         ?.closest("details:not([open])")
         ?.querySelector("summary") ?? originalOpener;
     dialog.showModal();
+    const usable = (element: HTMLElement | null | undefined) =>
+      element &&
+      !element.matches(":disabled, [inert]") &&
+      !element.closest("[hidden], [inert]") &&
+      element.getClientRects().length > 0;
+    const actions = Array.from(
+      dialog.querySelectorAll<HTMLButtonElement>(".dialog-footer button"),
+    );
+    const cancel = actions.some((button) => button.classList.contains("danger"))
+      ? actions.find((button) =>
+          /^(cancel|keep|go back|back)\b/i.test(
+            button.textContent?.trim() ?? "",
+          ),
+        )
+      : undefined;
+    const candidates = [
+      initialFocus?.current,
+      dialog.querySelector<HTMLElement>("[data-dialog-initial-focus]"),
+      cancel,
+      ...dialog.querySelectorAll<HTMLElement>(
+        '.dialog-body input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([readonly]), .dialog-body textarea:not([readonly]), .dialog-body select',
+      ),
+    ];
+    candidates.find(usable)?.focus({ preventScroll: true });
     // Strict Mode replays effects. Ignore an earlier cleanup's queued close
     // event if this dialog has already been opened again.
     const close = () => {
@@ -287,14 +315,14 @@ export default function Dialog({
             </p>
           )}
         </div>
-        <button
+        <IconButton
           className="icon-button"
           type="button"
           aria-label="Close dialog"
           onClick={onClose}
         >
           <X size={19} />
-        </button>
+        </IconButton>
       </div>
       <DialogContent>{children}</DialogContent>
     </>

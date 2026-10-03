@@ -1,4 +1,12 @@
 "use client";
+import {
+  Button,
+  Checkbox,
+  IconButton,
+  TextInput,
+  NativeSelect,
+  SearchField,
+} from "../ui/controls";
 import { useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
@@ -10,7 +18,6 @@ import {
   Pencil,
   RefreshCw,
   RotateCcw,
-  Search,
 } from "lucide-react";
 import type {
   RevisionContent,
@@ -290,13 +297,13 @@ export default function ResourceHistory({
       }}
     >
       <header className="revision-header">
-        <button
+        <IconButton
           className="icon-button"
           aria-label="Back to document"
           onClick={onClose}
         >
           <ArrowLeft size={18} />
-        </button>
+        </IconButton>
         <div>
           <h2>Version history</h2>
           <p>
@@ -304,7 +311,7 @@ export default function ResourceHistory({
             document
           </p>
         </div>
-        <button
+        <IconButton
           className="icon-button"
           aria-label="Refresh comparison"
           title="Capture latest draft and refresh history"
@@ -312,9 +319,9 @@ export default function ResourceHistory({
           onClick={refresh}
         >
           <RefreshCw size={17} />
-        </button>
+        </IconButton>
         {canEdit && current?.body !== null && (
-          <button
+          <Button
             className="button secondary"
             disabled={loading || action.busy}
             onClick={() => {
@@ -324,7 +331,7 @@ export default function ResourceHistory({
           >
             <BookmarkPlus size={16} />
             Name milestone
-          </button>
+          </Button>
         )}
       </header>
       <ErrorNotice
@@ -333,18 +340,15 @@ export default function ResourceHistory({
       />
       <div className="revision-layout">
         <aside className="revision-timeline" aria-label="Revision timeline">
-          <label className="revision-search">
-            <Search size={15} />
-            <input
-              aria-label="Filter revision history"
-              placeholder="Find a milestone or author"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </label>
+          <SearchField
+            wrapperClassName="revision-search"
+            aria-label="Filter revision history"
+            placeholder="Find a milestone or author"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
           <label className="revision-filter">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={named}
               onChange={(e) => setNamed(e.target.checked)}
             />
@@ -391,7 +395,7 @@ export default function ResourceHistory({
               </p>
             )}
             {cursor && (
-              <button
+              <Button
                 className="button ghost"
                 disabled={action.busy}
                 onClick={() =>
@@ -409,7 +413,7 @@ export default function ResourceHistory({
                 }
               >
                 Load older revisions
-              </button>
+              </Button>
             )}
           </div>
         </aside>
@@ -417,7 +421,7 @@ export default function ResourceHistory({
           <div className="revision-selectors">
             <label>
               Before
-              <select
+              <NativeSelect
                 aria-label="Before revision"
                 value={beforeId}
                 onChange={(e) => setBeforeId(e.target.value)}
@@ -427,12 +431,12 @@ export default function ResourceHistory({
                     {name(v)}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
             </label>
             <span aria-hidden="true">→</span>
             <label>
               After
-              <select
+              <NativeSelect
                 aria-label="After revision"
                 value={afterId}
                 onChange={(e) => setAfterId(e.target.value)}
@@ -442,7 +446,7 @@ export default function ResourceHistory({
                     {name(v)}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
             </label>
           </div>
           {pair ? (
@@ -454,28 +458,28 @@ export default function ResourceHistory({
             {canEdit &&
               selected &&
               ["snapshot", "file"].includes(selected.kind) && (
-                <button
+                <Button
                   className="button ghost"
                   onClick={() => setRequestReview(true)}
                 >
                   <UserRoundCheck size={15} />
                   Request review
-                </button>
+                </Button>
               )}
             {selected && (
-              <button
+              <Button
                 className="button ghost"
                 onClick={() => exportRevision(selected)}
               >
                 <Download size={15} />
                 Export before
-              </button>
+              </Button>
             )}
             {canEdit &&
               selected &&
               !["current", "seen"].includes(selected.kind) && (
                 <>
-                  <button
+                  <Button
                     className="button ghost"
                     onClick={() => {
                       setLabel(selected.label ?? "");
@@ -484,9 +488,9 @@ export default function ResourceHistory({
                   >
                     <Pencil size={15} />
                     Rename
-                  </button>
+                  </Button>
                   {(selected.body !== null || imageActions) && (
-                    <button
+                    <Button
                       className="button ghost"
                       onClick={() => {
                         setLabel(selected.title + " — revision copy");
@@ -495,21 +499,21 @@ export default function ResourceHistory({
                     >
                       <Copy size={15} />
                       Open as copy
-                    </button>
+                    </Button>
                   )}
                   {(selected.kind === "snapshot" ||
                     (selected.kind === "file" && imageActions)) && (
-                    <button
+                    <Button
                       className="button secondary"
                       onClick={() => setDialog("restore")}
                     >
                       <RotateCcw size={15} />
                       Restore before
-                    </button>
+                    </Button>
                   )}
                 </>
               )}
-            <button
+            <Button
               className="button ghost"
               disabled={
                 !pair ||
@@ -546,7 +550,7 @@ export default function ResourceHistory({
             >
               <CheckCheck size={15} />
               Mark reviewed
-            </button>
+            </Button>
           </footer>
         </div>
       </div>
@@ -579,7 +583,7 @@ export default function ResourceHistory({
             ) : (
               <label>
                 Name
-                <input
+                <TextInput
                   autoFocus
                   required
                   maxLength={dialog === "copy" ? 240 : 120}
@@ -591,21 +595,21 @@ export default function ResourceHistory({
             )}
             <ErrorNotice message={action.error} />
             <div className="dialog-footer">
-              <button
+              <Button
                 type="button"
                 className="button secondary"
                 disabled={action.busy}
                 onClick={() => setDialog(null)}
               >
                 Cancel
-              </button>
-              <button className="button primary" disabled={action.busy}>
+              </Button>
+              <Button className="button primary" disabled={action.busy}>
                 {action.busy
                   ? "Saving…"
                   : dialog === "restore"
                     ? "Restore revision"
                     : "Save"}
-              </button>
+              </Button>
             </div>
           </form>
         </Dialog>

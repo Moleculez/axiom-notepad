@@ -1,3 +1,9 @@
+import {
+  Button,
+  Field,
+  IconButton,
+  NativeSelect,
+} from "../../web/components/ui/controls";
 import { useId, useMemo, useState } from "react";
 import {
   Palette,
@@ -18,11 +24,14 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { parseMarkdown } from "@axiom/markdown";
-import type { Preferences } from "@axiom/shared/appearance";
+import { fonts, type Preferences } from "@axiom/shared/appearance";
+import { NumberPreference } from "../../web/components/PreferenceControls";
 import { editorDefaults, type EditorPreferences } from "@axiom/shared/editor";
 import { themePacks } from "@axiom/shared/theme-packs";
+import { interfaceStyles } from "@axiom/shared/interface-styles";
 import Dialog, { DialogFooter } from "../../web/components/Dialog";
 import ReadingView from "../../web/components/ReadingView";
+import ThemeWorkbench from "../../web/components/ThemeWorkbench";
 import { confirmAction } from "../../web/lib/app-prompt";
 import { downloadBlob } from "../../web/lib/tools/download";
 import ReadingSettings, { type ReadingSection } from "./ReadingSettings";
@@ -83,7 +92,16 @@ const resetKeys: Record<
   }
 > = {
   "Theme & interface": {
-    appearance: ["mode", "themePack", "interfaceStyle"],
+    appearance: [
+      "mode",
+      "themePack",
+      "interfaceStyle",
+      "uiFont",
+      "uiSize",
+      "density",
+      "radius",
+      "shadows",
+    ],
     editor: [],
   },
   Typography: {
@@ -153,9 +171,10 @@ export default function ShowcaseSettings({
   onImport: () => void;
 }) {
   const snapshot = useSnapshot(),
-    { changeAppearance, notify, navigate, renderContext } = useDemo();
+    { changeAppearance, notify, navigate, renderContext, dark } = useDemo();
   const [section, setSection] = useState<Section>("Theme & interface"),
-    [busy, setBusy] = useState<"backup" | "clear" | null>(null);
+    [busy, setBusy] = useState<"backup" | "clear" | null>(null),
+    [preview, setPreview] = useState<"writing" | "interface">("writing");
   const id = useId(),
     selected = categories.findIndex((category) => category.name === section),
     context = useMemo(() => renderContext(), [renderContext]);
@@ -246,14 +265,14 @@ export default function ShowcaseSettings({
               <p>{categories[selected].description}</p>
             </div>
             {section !== "Local data" && (
-              <button
+              <IconButton
                 className="icon-button"
                 onClick={reset}
                 aria-label={`Reset ${section} settings`}
                 title="Restore defaults for this category only"
               >
                 <RotateCcw size={15} />
-              </button>
+              </IconButton>
             )}
           </header>
           <div className="demo-settings-fields" key={section}>
@@ -278,7 +297,7 @@ export default function ShowcaseSettings({
                   data.
                 </p>
                 <div className="demo-data-actions">
-                  <button
+                  <Button
                     className="button secondary"
                     disabled={!!busy}
                     onClick={async () => {
@@ -296,20 +315,19 @@ export default function ShowcaseSettings({
                         setBusy(null);
                       }
                     }}
+                    pending={!!(busy === "backup")}
                   >
                     <Download size={15} />
-                    {busy === "backup"
-                      ? "Preparing backup…"
-                      : "Download backup"}
-                  </button>
-                  <button
+                    {"Download backup"}
+                  </Button>
+                  <Button
                     className="button secondary"
                     disabled={!!busy}
                     onClick={onImport}
                   >
                     <Upload size={15} />
                     Import backup or files
-                  </button>
+                  </Button>
                 </div>
                 <p className="demo-settings-description">
                   Restore is additive: existing drafts are kept. Up to 100 MB
@@ -323,7 +341,7 @@ export default function ShowcaseSettings({
                     preferences, then restore the examples. Download a backup
                     first. Workbench accounts are never touched.
                   </p>
-                  <button
+                  <Button
                     className="button ghost danger"
                     disabled={!!busy}
                     onClick={async () => {
@@ -353,10 +371,11 @@ export default function ShowcaseSettings({
                         setBusy(null);
                       }
                     }}
+                    pending={!!(busy === "clear")}
                   >
                     <Trash2 size={15} />
-                    {busy === "clear" ? "Clearing…" : "Clear local demo"}
-                  </button>
+                    {"Clear local demo"}
+                  </Button>
                 </div>
               </>
             ) : (
@@ -366,18 +385,49 @@ export default function ShowcaseSettings({
         </section>
         <aside
           className="demo-settings-preview"
-          aria-label="Live document preview"
+          aria-label="Live appearance preview"
         >
           <header>
             <BookOpen size={14} />
             <span>Live preview</span>
+            <div
+              className="scratchpad-surface-switch"
+              role="group"
+              aria-label="Preview surface"
+            >
+              <button
+                aria-pressed={preview === "writing"}
+                onClick={() => setPreview("writing")}
+              >
+                Writing
+              </button>
+              <button
+                aria-pressed={preview === "interface"}
+                onClick={() => setPreview("interface")}
+              >
+                Interface
+              </button>
+            </div>
           </header>
-          <div className="demo-settings-preview-scroll">
+          <div
+            className="demo-settings-preview-scroll"
+            hidden={preview !== "writing"}
+          >
             <ReadingView
               parsed={previewDocument}
               source={previewSource}
               context={context}
               onLink={() => {}}
+            />
+          </div>
+          <div
+            className="demo-settings-preview-scroll"
+            hidden={preview !== "interface"}
+          >
+            <ThemeWorkbench
+              preferences={snapshot.appearance}
+              dark={dark}
+              active={preview === "interface"}
             />
           </div>
           <p>
@@ -396,13 +446,9 @@ export default function ShowcaseSettings({
           {snapshot.status}
         </span>
         <span className="tool-spacer" />
-        <button
-          className="button"
-          disabled={busy === "clear"}
-          onClick={onClose}
-        >
+        <Button variant="primary" disabled={busy === "clear"} onClick={onClose}>
           Done
-        </button>
+        </Button>
       </DialogFooter>
     </Dialog>
   );
@@ -463,7 +509,7 @@ function ThemeSettings() {
       <h4>Interface treatment</h4>
       <label className="demo-preference-field">
         Interface design
-        <select
+        <NativeSelect
           aria-label="Interface design"
           value={appearance.interfaceStyle}
           onChange={(event) =>
@@ -473,16 +519,85 @@ function ThemeSettings() {
             })
           }
         >
-          <option value="axiom">Axiom · balanced</option>
-          <option value="editorial">Editorial · quiet</option>
-          <option value="material">Material · expressive</option>
-          <option value="fluent">Fluent · layered</option>
-        </select>
+          {interfaceStyles.map((style) => (
+            <option key={style.id} value={style.id}>
+              {style.name}
+            </option>
+          ))}
+        </NativeSelect>
       </label>
       <p className="demo-settings-description">
         Interface treatments change controls and surfaces. They do not replace
         your palette or reading fonts.
       </p>
+      <h4>Interface comfort</h4>
+      <Field label="Interface font" className="demo-preference-field">
+        <NativeSelect
+          value={appearance.uiFont}
+          onChange={(event) =>
+            changeAppearance({
+              uiFont: event.target.value as Preferences["uiFont"],
+            })
+          }
+        >
+          {Object.entries(fonts).map(([id, font]) => (
+            <option key={id} value={id}>
+              {font.label}
+            </option>
+          ))}
+        </NativeSelect>
+      </Field>
+      <NumberPreference
+        label="Interface font size"
+        value={appearance.uiSize}
+        min={12}
+        max={22}
+        step={1}
+        unit="px"
+        onChange={(uiSize) => changeAppearance({ uiSize })}
+        reset={() => changeAppearance({ uiSize: paperAppearance.uiSize })}
+        onInvalid={() => {}}
+      />
+      <div className="demo-preference-pair">
+        <Field label="Density" className="demo-preference-field">
+          <NativeSelect
+            value={appearance.density}
+            onChange={(event) =>
+              changeAppearance({
+                density: event.target.value as Preferences["density"],
+              })
+            }
+          >
+            <option value="comfortable">Comfortable</option>
+            <option value="compact">Compact</option>
+          </NativeSelect>
+        </Field>
+        <Field label="Shadows" className="demo-preference-field">
+          <NativeSelect
+            value={appearance.shadows}
+            onChange={(event) =>
+              changeAppearance({
+                shadows: event.target.value as Preferences["shadows"],
+              })
+            }
+          >
+            <option value="none">None</option>
+            <option value="soft">Soft</option>
+            <option value="elevated">Elevated</option>
+          </NativeSelect>
+        </Field>
+      </div>
+      <NumberPreference
+        label="Corner radius"
+        value={appearance.radius}
+        min={0}
+        max={18}
+        step={1}
+        unit="px"
+        onChange={(radius) => changeAppearance({ radius })}
+        reset={() => changeAppearance({ radius: paperAppearance.radius })}
+        onInvalid={() => {}}
+      />
     </>
   );
 }

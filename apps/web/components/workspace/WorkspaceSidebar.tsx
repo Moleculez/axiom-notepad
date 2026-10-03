@@ -1,4 +1,5 @@
 "use client";
+import { IconButton, SearchField } from "../ui/controls";
 import { useEffect, useRef, useState } from "react";
 import {
   ArrowUp,
@@ -15,7 +16,6 @@ import {
   Search,
   Star,
   Trash2,
-  X,
 } from "lucide-react";
 import type {
   Resource,
@@ -254,7 +254,7 @@ function Directory({
           >
             <House size={15} />
           </WorkspaceLink>
-          <button
+          <IconButton
             className="icon-button"
             type="button"
             disabled={!spaceId || (!!parentId && !trail.length)}
@@ -263,7 +263,7 @@ function Directory({
             onClick={up}
           >
             <ArrowUp size={16} />
-          </button>
+          </IconButton>
         </div>
       </div>
       <nav
@@ -285,44 +285,31 @@ function Directory({
           </span>
         ))}
       </nav>
-      <div className="sidebar-directory-filter">
-        <Search size={14} />
-        <input
-          ref={input}
-          aria-label={
-            spaceId ? "Filter files in this folder" : "Filter workspaces"
+      <SearchField
+        wrapperClassName="sidebar-directory-filter"
+        ref={input}
+        aria-label={
+          spaceId ? "Filter files in this folder" : "Filter workspaces"
+        }
+        placeholder={spaceId ? "Filter this folder…" : "Find a workspace…"}
+        value={filter}
+        maxLength={200}
+        onClear={() => setFilter("")}
+        clearLabel="Clear sidebar filter"
+        onChange={(event) => setFilter(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === "Escape" && filter) {
+            event.preventDefault();
+            event.stopPropagation();
+            setFilter("");
+          } else if (event.key === "ArrowDown") {
+            event.preventDefault();
+            list.current
+              ?.querySelector<HTMLElement>(".sidebar-directory-row")
+              ?.focus();
           }
-          placeholder={spaceId ? "Filter this folder…" : "Find a workspace…"}
-          value={filter}
-          maxLength={200}
-          onChange={(event) => setFilter(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Escape" && filter) {
-              event.preventDefault();
-              event.stopPropagation();
-              setFilter("");
-            } else if (event.key === "ArrowDown") {
-              event.preventDefault();
-              list.current
-                ?.querySelector<HTMLElement>(".sidebar-directory-row")
-                ?.focus();
-            }
-          }}
-        />
-        {filter && (
-          <button
-            type="button"
-            className="icon-button"
-            aria-label="Clear sidebar filter"
-            onClick={() => {
-              setFilter("");
-              input.current?.focus();
-            }}
-          >
-            <X size={13} />
-          </button>
-        )}
-      </div>
+        }}
+      />
       <ul
         ref={list}
         className="sidebar-directory-list"
@@ -379,14 +366,14 @@ function Directory({
                     </span>
                     <ChevronRight className="sidebar-enter-hint" size={13} />
                   </WorkspaceLink>
-                  <button
+                  <IconButton
                     type="button"
                     className="icon-button sidebar-row-more"
                     aria-label={`Workspace actions for ${item.name}`}
                     onClick={(event) => management.workspaceMenu(event, item)}
                   >
                     <Ellipsis size={15} />
-                  </button>
+                  </IconButton>
                 </div>
               </li>
             ))
@@ -428,7 +415,7 @@ function Directory({
           className="sidebar-directory-pagination"
           aria-label="Directory pages"
         >
-          <button
+          <IconButton
             type="button"
             className="icon-button"
             aria-label="Previous files"
@@ -436,9 +423,9 @@ function Directory({
             onClick={() => setCursors((value) => value.slice(0, -1))}
           >
             <ChevronLeft size={15} />
-          </button>
+          </IconButton>
           <span>Page {cursors.length + 1}</span>
-          <button
+          <IconButton
             type="button"
             className="icon-button"
             aria-label="Next files"
@@ -448,7 +435,7 @@ function Directory({
             }
           >
             <ChevronRight size={15} />
-          </button>
+          </IconButton>
         </nav>
       )}
     </section>
@@ -546,7 +533,7 @@ function DirectoryRow({
             <FolderOpen size={14} />
           </WorkspaceLink>
         )}
-        <button
+        <IconButton
           type="button"
           className="icon-button sidebar-row-more"
           aria-label={`Actions for ${item.name}`}
@@ -554,7 +541,7 @@ function DirectoryRow({
           onClick={(event) => management.resourceMenu(event, [item])}
         >
           <Ellipsis size={15} />
-        </button>
+        </IconButton>
       </div>
     </li>
   );

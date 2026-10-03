@@ -1,4 +1,5 @@
 "use client";
+import { NativeSelect } from "../ui/controls";
 import { useRef } from "react";
 import type { ResourcePage } from "@axiom/shared/workspace";
 import ReferenceLibrary from "../ReferenceLibrary";
@@ -61,7 +62,7 @@ export default function ResearchCollection({
         </nav>
         <label>
           Research group
-          <select
+          <NativeSelect
             aria-label="Research group"
             value={group}
             onChange={(event) =>
@@ -74,7 +75,7 @@ export default function ResearchCollection({
                 {item.name}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
       </div>
       <ErrorNotice

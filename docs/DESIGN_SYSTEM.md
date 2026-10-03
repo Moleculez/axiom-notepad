@@ -4,10 +4,12 @@ The [brand guide](BRANDING.md) defines the shared connected-knowledge mark and
 showcase identity. Application branding inherits semantic accent and radius
 preferences; it must not impose fixed brand colors on document or account themes.
 Use [theme authoring criteria](THEME_AUTHORING.md) for reviewed pack extensions.
+The [shared UI contract](UI_CONTROLS.md) is required for control implementations,
+numeric validation, action hierarchy, dialogs and screenshot acceptance.
 
 ## Principles
 
-The application should feel calm, legible, predictable and precise. App navigation answers where; the Explorer tree answers what belongs where; the inspector answers what is selected. Do not repeat navigation in all three surfaces.
+The application should feel calm, legible, predictable and precise. App navigation answers where; the directory-style Explorer answers what belongs here; the inspector answers what is selected. Do not repeat navigation in all three surfaces.
 
 Content is the strongest visual layer. Glass belongs to restrained chrome; reading, code, PDFs, forms and data surfaces remain opaque. Color communicates purpose, not decoration. Retain all existing personal appearance and accessibility preferences.
 
@@ -53,7 +55,7 @@ paragraph spacing and 14px IBM Plex Mono code. Its heading scale is 0.9. Keep
 the interface in its chosen UI face. Do not simulate paper pagination or justify
 paragraphs; retain reflow, readable spacing and selectable mathematical output.
 New font IDs require schema compatibility, not fallback settings that erase a
-user's choices. Appearance is v8; writing and portable palettes retain v2/v1.
+user's choices. Appearance is v11; writing and portable palettes retain v2/v1.
 Compiled theme packs add paired base palettes and scoped decoration without changing
 user typography or geometry. See [Theme authoring](THEME_AUTHORING.md) for precedence,
 validation, fixtures and the accessibility review contract. Paper Research and
@@ -100,13 +102,14 @@ change. Group headings, secondary location text and restrained type labels provi
 hierarchy; the selected row is distinct without taking keyboard focus from the query.
 Scope styles to this palette so editor command menus remain unaffected.
 Creation belongs to Explorer/context menus, with note, canvas, math,
-drawing and text as peers. Every route shares the same sidebar: Quick access,
-Your workspaces, then Administration (Groups, Audit, Trash). Workspaces are
+drawing and text as peers. Every route shares the same sidebar: Quick access
+(including Audit and Trash), then Your workspaces. Group/account management stays
+in Settings and workspace pages; there is no Administration section. Workspaces are
 ownership-grouped peers; there is no separate Projects navigation product. Section
 navigation belongs inside its page, never in a replacement sidebar. See
 [file-first navigation](FILE_WORKBENCH.md).
 
-Context tree + central workbench + at most one optional inspector. Trees use actual depth indentation and one overflow action per row. Recent work replaces application tabs; the workbench supports up to two visible panes. Below two useful pane widths use a state-preserving pane switcher. Auxiliary panels become drawers before they crowd the document.
+Directory navigation + central workbench + at most one optional inspector. The sidebar starts with workspace roots; opening a workspace/folder lists its immediate children, with parent navigation and one overflow action per row, not an expanded file tree. Recent work replaces application tabs; the workbench supports up to two visible panes. Below two useful pane widths use a state-preserving pane switcher. Auxiliary panels become drawers before they crowd the document.
 
 Time-zone fields use the shared `TimeZoneInput` editable combobox: runtime IANA
 zone suggestions, city/region matching, current UTC offsets and typed-value
@@ -141,7 +144,7 @@ The document remains the primary surface. Selecting prose may reveal one small f
 
 Use shared overlay ownership for pointer and keyboard menus; opening another dismisses the previous one. Text menus show shortcuts, while compact icon panels use labeled tabs and tooltips. Preserve the source selection while a menu is open, map its target through collaborative changes, and reject an action if the target disappears or is replaced. A table's overflow scroller must not clip its non-editable toolbar or popover. Escape restores its mapped caret; leaving releases editing focus. Clipboard actions fail visibly when permission is denied; mutations respect access roles, composition ownership and author-local undo.
 
-Settings keep the shared tree and provide searchable Account, Appearance, Writing
+Settings provide searchable Account, Appearance, Writing
 and Storage categories inside the page. Switching categories or visiting another
 app tab retains the current draft. Live preview is distinct from Apply; Cancel
 restores applied values. Keep Apply/Cancel fully inside the viewport. Precision
@@ -167,6 +170,21 @@ content heights. Radius zero and shadows None remain effective; selection and
 keyboard-focus rings are functional indicators, not decorative elevation.
 Use the canonical `--line`, `--paper` and `--accent-bg` roles directly, not
 component-local aliases that disappear when a preview moves to another host.
+
+Application controls use `components/ui/controls.tsx` and the canonical
+`ui-controls.css` base: native Button/IconButton, Checkbox/Switch/Radio, Slider,
+Field, ActionRow, HelpText and Notice. Routine guidance is unboxed; important
+warnings remain recognizable. The five trusted interface styles (Axiom, Material
+Tonal, Fluent Studio, Editorial, macOS Studio) share this geometry and state
+contract while changing their component presentation. Do not reintroduce page-local
+checkbox knobs, slider drawing or general button resets. `validate:ui` checks
+the JSX boundary; see [control criteria](UI_CONTROLS.md) for usage and review.
+
+Application fields have one visual shell. Shared SearchField/InputGroup own icon
+tracks, surface and focus; Field owns the associated label, guidance and error.
+Avoid nested bordered search boxes or page-local icon offsets. Use intrinsic
+selector widths and non-shrinking short toolbar actions; wrap whole controls
+instead of splitting labels like “Manage groups” into unintended lines.
 
 Canvas headers/content/captions form a flexible column. Only card content clips;
 ports, resize handles and selection rings stay outside that clip. Auto-height
@@ -215,9 +233,9 @@ with `data-editor-field`; settings/dialog/search controls remain application chr
 
 Native editing uses semantic list, quote, table and code elements with the same font and color roles as reading. Nesting must be visible without decorative guide-line clutter. Tables fill their available frame; wide cells and code scroll within the block. Revealing source markers or block controls must not create a second competing visual theme.
 
-vNext's active ordinary prose unit reveals its inline source. Headings retain H1–H6 typography with real editable hashes. Completed list/task markers always remain rendered; only their body is editable, including nested items. `> ` immediately displays a quote rail and hides only completed quote prefixes; the body remains literal while active. Bare/unspaced markers remain editable source. Quote and list body text stays inside its container, with no negative source-marker margin. Enter creates a sibling item, Mod+Enter breaks a line inside it, and Enter on an empty item exits one nesting level. Inactive units render normally; the native rollback editor retains its earlier caret-local reveal. Selection dragging and IME must not trigger mid-gesture layout changes. Active table cells retain the grid and reveal inline syntax locally. Code uses a flat square source surface; equations are unboxed on paper, with a separated TeX surface during editing. Their controls sit above the top-right corner on hover/focus, with matching Write/Read font roles. Existing source blank lines get mapped paragraph geometry, never invented Markdown. See [typing integrity](TYPING_INTEGRITY.md).
+vNext's active ordinary prose unit reveals its inline source. Headings retain H1–H6 typography with real editable hashes. Completed list/task markers always remain rendered; only their body is editable, including nested items. `> ` immediately displays a quote rail and hides only completed quote prefixes; the body remains literal while active. Bare/unspaced markers remain editable source. Quote and list body text stays inside its container, with no negative source-marker margin. Enter creates a sibling item, Mod+Enter breaks a line inside it, and Enter on an empty item exits one nesting level. Inactive units render normally; the native rollback editor retains its earlier caret-local reveal. Selection dragging and IME must not trigger mid-gesture layout changes. Active table cells retain the grid and reveal inline syntax locally. Code uses a flat square source surface; equations and their TeX editing fields remain unboxed on the host sheet. Their controls sit above the top-right corner on hover/focus, with matching Write/Read font roles. Existing source blank lines get mapped paragraph geometry, never invented Markdown. See [typing integrity](TYPING_INTEGRITY.md).
 
-Workspace and file context menus use the editor's portal, spacing, typography, focus treatment and danger tokens. Pointer and keyboard actions share the same registry as item inspectors. F2, copy/cut/paste, Delete and Shift-F10 are scoped to Explorer focus; they never steal text-editing shortcuts. A right-click on a selected row targets the whole selection; another row becomes the sole target. Partial failures retain failed targets and offer an explicit retry. Archived workspaces move out of the navigation tree into Manage workspaces; Trash never expires automatically.
+Workspace and file context menus use the editor's portal, spacing, typography, focus treatment and danger tokens. Pointer and keyboard actions share the same registry as item inspectors. F2, copy/cut/paste, Delete and Shift-F10 are scoped to Explorer focus; they never steal text-editing shortcuts. A right-click on a selected row targets the whole selection; another row becomes the sole target. Partial failures retain failed targets and offer an explicit retry. Archived workspaces move out of directory navigation into Manage workspaces; Trash never expires automatically.
 
 Shared context menus are normalized by `lib/menu-model.ts`: at most eight root
 rows, one submenu level, and no section headings repeating the action labels.

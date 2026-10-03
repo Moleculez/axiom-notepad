@@ -1,4 +1,5 @@
 "use client";
+import { ActionRow, Button } from "../ui/controls";
 import {
   createContext,
   useCallback,
@@ -34,7 +35,11 @@ export type Session = {
   groups: { id: string; name: string; description: string; role: string }[];
 };
 export type WorkspaceContextValue = {
-  uploadBatch?: (files: File[], spaceId: string, parentId?: string | null) => import("@axiom/shared/editor-media").UploadBatch;
+  uploadBatch?: (
+    files: File[],
+    spaceId: string,
+    parentId?: string | null,
+  ) => import("@axiom/shared/editor-media").UploadBatch;
   transfers?: import("./Uploads").Transfer[];
   showUploads?: () => void;
   session: Session;
@@ -312,10 +317,10 @@ export function ErrorNotice({
       <AlertCircle size={18} />
       <span>{message}</span>
       {retry && (
-        <button className="button secondary" onClick={retry}>
+        <Button className="button secondary" onClick={retry}>
           <RefreshCw size={15} />
           Retry
-        </button>
+        </Button>
       )}
     </div>
   );
@@ -376,7 +381,7 @@ export function PageHeading({
         <h1 tabIndex={-1}>{title}</h1>
         {children && <p>{children}</p>}
       </div>
-      {actions && <div className="ws-actions">{actions}</div>}
+      {actions && <ActionRow>{actions}</ActionRow>}
     </header>
   );
 }

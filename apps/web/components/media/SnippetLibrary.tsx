@@ -1,4 +1,11 @@
 "use client";
+import {
+  Button,
+  Checkbox,
+  TextInput,
+  NativeSelect,
+  TextArea,
+} from "../ui/controls";
 import { useEffect, useMemo, useState } from "react";
 import { Copy, Plus, Archive, RotateCcw } from "lucide-react";
 import { parseMarkdown } from "@axiom/markdown";
@@ -103,14 +110,14 @@ export default function SnippetLibrary({
       <div className="media-insert-split">
         <section className="media-library">
           <div className="media-library-controls">
-            <input
+            <TextInput
               aria-label="Search snippets"
               placeholder="Search saved snippets…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
             <div className="media-filter-row">
-              <button
+              <Button
                 className="button secondary"
                 onClick={() => {
                   setSelected(null);
@@ -122,10 +129,9 @@ export default function SnippetLibrary({
               >
                 <Plus size={15} />
                 New
-              </button>
+              </Button>
               <label className="media-check-label">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={archived}
                   onChange={(e) => {
                     setArchived(e.target.checked);
@@ -202,7 +208,7 @@ export default function SnippetLibrary({
           <div className="media-options">
             <label>
               Name
-              <input
+              <TextInput
                 value={name}
                 maxLength={160}
                 onChange={(e) => setName(e.target.value)}
@@ -211,7 +217,7 @@ export default function SnippetLibrary({
             <div className="media-options-pair">
               <label>
                 Visibility
-                <select
+                <NativeSelect
                   value={scope}
                   disabled={!!selected}
                   onChange={(e) => setScope(e.target.value)}
@@ -224,11 +230,11 @@ export default function SnippetLibrary({
                         {s.name}
                       </option>
                     ))}
-                </select>
+                </NativeSelect>
               </label>
               <label>
                 Tags
-                <input
+                <TextInput
                   value={tags}
                   onChange={(e) => setTags(e.target.value)}
                   placeholder="Comma-separated"
@@ -243,7 +249,7 @@ export default function SnippetLibrary({
             )}
             <label>
               Markdown
-              <textarea
+              <TextArea
                 aria-label="Markdown"
                 className="snippet-source"
                 rows={10}
@@ -267,7 +273,7 @@ export default function SnippetLibrary({
       <DialogFooter>
         {selected && (
           <>
-            <button
+            <Button
               className="button secondary"
               onClick={() => {
                 setSelected(null);
@@ -277,8 +283,8 @@ export default function SnippetLibrary({
             >
               <Copy size={14} />
               Duplicate
-            </button>
-            <button
+            </Button>
+            <Button
               className="button secondary"
               disabled={busy}
               onClick={() => void save(!selected.archived)}
@@ -289,28 +295,27 @@ export default function SnippetLibrary({
                 <Archive size={14} />
               )}
               {selected.archived ? "Restore" : "Archive"}
-            </button>
+            </Button>
           </>
         )}
         <span className="tool-spacer" />
         {sharingPersonal && (
           <label className="media-check-label">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={shareCopy}
               onChange={(event) => setShareCopy(event.target.checked)}
             />
             Share a copy in this workspace
           </label>
         )}
-        <button
+        <Button
           className="button secondary"
           disabled={busy || !name.trim() || !body.trim()}
           onClick={() => void save()}
         >
           Save snippet
-        </button>
-        <button
+        </Button>
+        <Button
           className="button primary"
           disabled={
             !body ||
@@ -327,7 +332,7 @@ export default function SnippetLibrary({
           }}
         >
           Insert copy
-        </button>
+        </Button>
       </DialogFooter>
     </Dialog>
   );

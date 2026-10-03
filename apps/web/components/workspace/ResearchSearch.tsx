@@ -1,5 +1,5 @@
 "use client";
-import { Search, X } from "lucide-react";
+import { Button, SearchField, TextInput } from "../ui/controls";
 import { useEffect, useRef, useState } from "react";
 /** Server-backed filters wait for a typing pause; explicit Enter/blur flushes. */
 export function ResearchFilterInput({
@@ -35,7 +35,7 @@ export function ResearchFilterInput({
     if (next !== value) callback.current(next);
   };
   return (
-    <input
+    <TextInput
       aria-label={label}
       placeholder={placeholder}
       maxLength={maxLength}
@@ -81,28 +81,18 @@ export default function ResearchSearch({
         onSubmit?.();
       }}
     >
-      <Search size={16} aria-hidden />
-      <input
+      <SearchField
         aria-label={label}
         placeholder={placeholder ?? label}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onClear={() => onChange("")}
+        clearLabel={`Clear ${label.toLowerCase()}`}
       />
-      {value && (
-        <button
-          type="button"
-          className="icon-button"
-          title="Clear search"
-          aria-label={`Clear ${label.toLowerCase()}`}
-          onClick={() => onChange("")}
-        >
-          <X size={14} />
-        </button>
-      )}
       {onSubmit && (
-        <button className="button ghost" type="submit">
+        <Button className="button ghost" type="submit">
           Search
-        </button>
+        </Button>
       )}
     </form>
   );

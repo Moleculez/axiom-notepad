@@ -1,4 +1,5 @@
 "use client";
+import { Button, Checkbox, IconButton, TextInput } from "../ui/controls";
 import { useEffect, useRef, useState } from "react";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import {
@@ -232,7 +233,7 @@ export default function PdfOrganizer({
         </p>
       )}
       <div className="pdf-organizer-actions">
-        <input
+        <TextInput
           aria-label="Select page range"
           value={range}
           onChange={(e) => setRange(e.target.value)}
@@ -325,8 +326,7 @@ export default function PdfOrganizer({
             data-id={p.id}
           >
             <label>
-              <input
-                type="checkbox"
+              <Checkbox
                 disabled={busy}
                 aria-label={`Select page position ${index + 1}`}
                 checked={selected.has(p.id)}
@@ -346,7 +346,7 @@ export default function PdfOrganizer({
               Original page {p.page} · +{p.rotation}°
             </small>
             <div className="pdf-organizer-page-actions">
-              <button
+              <IconButton
                 className="icon-button"
                 disabled={busy || index === 0}
                 aria-label={`Move page ${index + 1} earlier`}
@@ -354,8 +354,8 @@ export default function PdfOrganizer({
                 onClick={() => move(p.id, -1)}
               >
                 <ArrowLeft size={14} />
-              </button>
-              <button
+              </IconButton>
+              <IconButton
                 className="icon-button"
                 disabled={busy || index === pages.length - 1}
                 aria-label={`Move page ${index + 1} later`}
@@ -363,8 +363,8 @@ export default function PdfOrganizer({
                 onClick={() => move(p.id, 1)}
               >
                 <ArrowRight size={14} />
-              </button>
-              <button
+              </IconButton>
+              <IconButton
                 className="icon-button"
                 disabled={busy}
                 aria-label={`Rotate page ${index + 1}`}
@@ -380,8 +380,8 @@ export default function PdfOrganizer({
                 }
               >
                 <RotateCw size={14} />
-              </button>
-              <button
+              </IconButton>
+              <IconButton
                 className="icon-button"
                 disabled={busy}
                 aria-label={`Duplicate page ${index + 1}`}
@@ -395,7 +395,7 @@ export default function PdfOrganizer({
                 }
               >
                 <Copy size={14} />
-              </button>
+              </IconButton>
             </div>
           </article>
         ))}
@@ -404,26 +404,27 @@ export default function PdfOrganizer({
         <span>
           {pages.length} output pages · {selected.size} selected
         </span>
-        <button className="button secondary" onClick={onClose}>
+        <Button className="button secondary" onClick={onClose}>
           Cancel
-        </button>
+        </Button>
         {meta?.resource_id && (
-          <button
+          <Button
             className="button secondary"
             disabled={busy || disabled}
             onClick={() => void exportCopy(true)}
           >
             Save to workspace…
-          </button>
+          </Button>
         )}
-        <button
+        <Button
           className="button primary"
           disabled={busy || disabled}
           onClick={() => void exportCopy()}
+          pending={!!busy}
         >
           <Download size={15} />
-          {busy ? "Processing…" : "Download arranged copy"}
-        </button>
+          {"Download arranged copy"}
+        </Button>
       </div>
     </Dialog>
   );

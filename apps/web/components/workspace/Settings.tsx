@@ -1,4 +1,15 @@
 "use client";
+import {
+  ActionRow,
+  Button,
+  Checkbox,
+  HelpText,
+  Switch,
+  TextInput,
+  NativeSelect,
+  TextArea,
+  SearchField,
+} from "../ui/controls";
 import TimeZoneInput from "../TimeZoneInput";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
@@ -12,8 +23,6 @@ import {
   Trash2,
   Upload,
   ArrowLeft,
-  Search,
-  X,
   UserRound,
   Bell,
   Users,
@@ -117,25 +126,15 @@ export function SettingsNavigation() {
       className="settings-center-nav settings-page-navigation"
       aria-label="Settings categories"
     >
-      <label className="settings-search">
-        <Search size={16} />
-        <input
-          aria-label="Find settings category"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Find a setting…"
-        />
-        {search && (
-          <button
-            type="button"
-            className="settings-search-clear"
-            aria-label="Clear category search"
-            onClick={() => setSearch("")}
-          >
-            <X size={14} />
-          </button>
-        )}
-      </label>
+      <SearchField
+        wrapperClassName="settings-search"
+        aria-label="Find settings category"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        placeholder="Find a setting…"
+        onClear={() => setSearch("")}
+        clearLabel="Clear category search"
+      />
       {!matches.length && (
         <p className="settings-nav-empty" role="status">
           No matching categories. Try “font”, “code”, or “storage”.
@@ -296,17 +295,17 @@ function SettingsReady({
             aria-label="Pending appearance and writing changes"
           >
             <span>Appearance & writing changes are still in preview.</span>
-            <div className="ws-actions">
-              <button
+            <ActionRow>
+              <Button
                 className="button secondary small"
                 onClick={draft.discard}
               >
                 Discard preference changes
-              </button>
-              <button className="button primary small" onClick={draft.apply}>
+              </Button>
+              <Button className="button primary small" onClick={draft.apply}>
                 Apply preferences
-              </button>
-            </div>
+              </Button>
+            </ActionRow>
           </section>
         )}
         {!active ? null : preference ? (
@@ -336,7 +335,7 @@ function SettingsReady({
             <OfflineSettings />
             <label>
               Reading workspace
-              <select
+              <NativeSelect
                 aria-label="Reading workspace"
                 value={context}
                 onChange={(event) => setDataContext(event.target.value)}
@@ -351,7 +350,7 @@ function SettingsReady({
                         : " · Personal"}
                     </option>
                   ))}
-              </select>
+              </NativeSelect>
             </label>
             <ErrorNotice message={openAction.error} />
             <ResearchDataSettings
@@ -413,13 +412,13 @@ function SettingsReady({
             size="compact"
           >
             <div className="button-row">
-              <button
+              <Button
                 className="button secondary"
                 onClick={() => setLeaving(null)}
               >
                 Stay in settings
-              </button>
-              <button
+              </Button>
+              <Button
                 className="button secondary"
                 onClick={() => {
                   draft.discard();
@@ -429,8 +428,8 @@ function SettingsReady({
                 }}
               >
                 Discard changes
-              </button>
-              <button
+              </Button>
+              <Button
                 className="button primary"
                 disabled={formsDirty()}
                 onClick={() => {
@@ -439,7 +438,7 @@ function SettingsReady({
                 }}
               >
                 Apply and leave
-              </button>
+              </Button>
             </div>
           </Dialog>
         )}
@@ -547,7 +546,7 @@ function ProfileForm({
             <div className="ws-profile-photo">
               <Avatar person={draft} />
               <div>
-                <button
+                <Button
                   type="button"
                   className="button secondary"
                   disabled={action.busy}
@@ -555,7 +554,7 @@ function ProfileForm({
                 >
                   <Upload size={16} />
                   Change photo
-                </button>
+                </Button>
                 <p className="ws-small muted">
                   PNG, JPEG, GIF or WebP, up to 5 MB. Images are resized and
                   metadata is removed. Crop and preview before saving your
@@ -579,7 +578,7 @@ function ProfileForm({
             <div className="ws-form-grid">
               <label>
                 Full name
-                <input
+                <TextInput
                   required
                   maxLength={100}
                   value={draft.name}
@@ -588,7 +587,7 @@ function ProfileForm({
               </label>
               <label>
                 Email address
-                <input value={draft.email} readOnly autoComplete="email" />
+                <TextInput value={draft.email} readOnly autoComplete="email" />
                 <small>
                   Contact your administrator for account identity changes.
                 </small>
@@ -596,7 +595,7 @@ function ProfileForm({
             </div>
             <label>
               Institution or affiliation
-              <input
+              <TextInput
                 maxLength={200}
                 value={draft.affiliation}
                 onChange={(event) => set("affiliation", event.target.value)}
@@ -611,7 +610,7 @@ function ProfileForm({
             </header>
             <label>
               Research interests
-              <input
+              <TextInput
                 maxLength={500}
                 value={draft.interests}
                 onChange={(event) => set("interests", event.target.value)}
@@ -620,7 +619,7 @@ function ProfileForm({
             </label>
             <label>
               Biography
-              <textarea
+              <TextArea
                 aria-label="Biography"
                 maxLength={3000}
                 rows={5}
@@ -634,7 +633,7 @@ function ProfileForm({
             </label>
             <label>
               Research links (one per line, up to eight)
-              <textarea
+              <TextArea
                 aria-label="Research links (one per line, up to eight)"
                 aria-invalid={normalizedLinks.length > 8 || undefined}
                 rows={3}
@@ -673,7 +672,7 @@ function ProfileForm({
               </label>
               <label>
                 Weekly planning capacity (hours)
-                <input
+                <TextInput
                   type="number"
                   min={0}
                   max={168}
@@ -687,11 +686,11 @@ function ProfileForm({
             </div>
           </section>
         </fieldset>
-        <p className="ws-note">
+        <HelpText>
           Your name, affiliation, biography, interests, links, and time zone are
           visible to people who share a group with you. Personal-space contents
           are not.
-        </p>
+        </HelpText>
         <ErrorNotice message={action.error} />
         {saved && (
           <p role="status">
@@ -703,7 +702,7 @@ function ProfileForm({
           <span>
             {dirty ? "Unsaved profile changes" : "Your profile is up to date"}
           </span>
-          <button
+          <Button
             type="button"
             className="button secondary"
             disabled={!dirty || action.busy}
@@ -715,13 +714,14 @@ function ProfileForm({
             }}
           >
             Cancel changes
-          </button>
-          <button
+          </Button>
+          <Button
             className="button primary"
             disabled={action.busy || !dirty || normalizedLinks.length > 8}
+            pending={!!action.busy}
           >
-            {action.busy ? "Saving…" : "Save profile"}
-          </button>
+            {"Save profile"}
+          </Button>
         </div>
       </form>
       {avatarFile && (
@@ -803,8 +803,8 @@ function SecuritySettings() {
                 {security.twoFactorEnabled ? "Enabled" : "Not enabled"}
               </Badge>
             </div>
-            <div className="ws-actions">
-              <button
+            <ActionRow>
+              <Button
                 className="button primary"
                 onClick={() =>
                   setDialog(security.twoFactorEnabled ? "disable" : "enable")
@@ -813,16 +813,16 @@ function SecuritySettings() {
                 {security.twoFactorEnabled
                   ? "Disable verification"
                   : "Set up authenticator"}
-              </button>
+              </Button>
               {security.twoFactorEnabled && (
-                <button
+                <Button
                   className="button secondary"
                   onClick={() => setDialog("recovery")}
                 >
                   Replace recovery codes
-                </button>
+                </Button>
               )}
-            </div>
+            </ActionRow>
           </section>
           <section className="ws-card">
             <div className="ws-setting-row">
@@ -833,12 +833,12 @@ function SecuritySettings() {
                 <h2>Password</h2>
                 <p>Choose a unique password of at least 12 characters.</p>
               </div>
-              <button
+              <Button
                 className="button secondary"
                 onClick={() => setDialog("password")}
               >
                 Change password
-              </button>
+              </Button>
             </div>
           </section>
           <section className="ws-card">
@@ -859,7 +859,7 @@ function SecuritySettings() {
                       : "Sign in through your institution to link this account. Email addresses must match."}
                   </p>
                 </div>
-                <button
+                <Button
                   className="button secondary"
                   disabled={action.busy}
                   onClick={() =>
@@ -894,20 +894,20 @@ function SecuritySettings() {
                   )
                     ? "Unlink institution"
                     : "Link institution"}
-                </button>
+                </Button>
               </div>
             ) : (
-              <p className="ws-note">
+              <HelpText>
                 Not configured. A deployment administrator must provide your
                 institution’s OIDC discovery URL and application credentials.
                 Password login remains available.
-              </p>
+              </HelpText>
             )}
           </section>
           <section className="ws-card">
             <div className="ws-section-heading">
               <h2>Signed-in devices</h2>
-              <button
+              <Button
                 className="button secondary"
                 disabled={action.busy || security.sessions.length < 2}
                 onClick={() =>
@@ -921,7 +921,7 @@ function SecuritySettings() {
                 }
               >
                 Sign out other devices
-              </button>
+              </Button>
             </div>
             {security.sessions.map((session: any) => (
               <div className="ws-session" key={session.id}>
@@ -941,7 +941,7 @@ function SecuritySettings() {
                 {session.current ? (
                   <Badge>Current</Badge>
                 ) : (
-                  <button
+                  <Button
                     className="button secondary"
                     disabled={action.busy}
                     onClick={() =>
@@ -952,7 +952,7 @@ function SecuritySettings() {
                     }
                   >
                     Revoke
-                  </button>
+                  </Button>
                 )}
               </div>
             ))}
@@ -1021,7 +1021,7 @@ function SecuritySettings() {
               </p>
               <label>
                 Current password
-                <input
+                <TextInput
                   autoFocus
                   required
                   type="password"
@@ -1033,7 +1033,7 @@ function SecuritySettings() {
               {dialog === "password" && (
                 <label>
                   New password
-                  <input
+                  <TextInput
                     required
                     type="password"
                     autoComplete="new-password"
@@ -1046,17 +1046,17 @@ function SecuritySettings() {
               )}
               <ErrorNotice message={action.error} />
               <div className="dialog-footer">
-                <button
+                <Button
                   type="button"
                   className="button secondary"
                   onClick={close}
                   disabled={action.busy}
                 >
                   Cancel
-                </button>
-                <button className="button primary" disabled={action.busy}>
+                </Button>
+                <Button className="button primary" disabled={action.busy}>
                   Continue
-                </button>
+                </Button>
               </div>
             </form>
           ) : (
@@ -1069,7 +1069,7 @@ function SecuritySettings() {
                   </p>
                   <label>
                     Authenticator setup key
-                    <input
+                    <TextInput
                       readOnly
                       value={
                         new URL(setup.totpURI).searchParams.get("secret") ?? ""
@@ -1093,7 +1093,7 @@ function SecuritySettings() {
                   <code key={value}>{value}</code>
                 ))}
               </div>
-              <button
+              <Button
                 className="button secondary"
                 onClick={() =>
                   download(
@@ -1106,10 +1106,9 @@ function SecuritySettings() {
               >
                 <Download size={15} />
                 Download codes
-              </button>
+              </Button>
               <label className="ws-checkbox">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={savedCodes}
                   onChange={(event) => setSavedCodes(event.target.checked)}
                 />
@@ -1133,7 +1132,7 @@ function SecuritySettings() {
                 >
                   <label>
                     Six-digit authenticator code
-                    <input
+                    <TextInput
                       required
                       inputMode="numeric"
                       autoComplete="one-time-code"
@@ -1146,23 +1145,23 @@ function SecuritySettings() {
                     />
                   </label>
                   <div className="dialog-footer">
-                    <button
+                    <Button
                       className="button primary"
                       disabled={action.busy || !savedCodes}
                     >
                       Verify and enable
-                    </button>
+                    </Button>
                   </div>
                 </form>
               ) : (
                 <div className="dialog-footer">
-                  <button
+                  <Button
                     className="button primary"
                     disabled={!savedCodes}
                     onClick={close}
                   >
                     Done
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>
@@ -1230,9 +1229,9 @@ function NotificationForm({
         <strong>{labels[key][0]}</strong>
         <small>{labels[key][1]}</small>
       </span>
-      <input
+      <Switch
         aria-label={labels[key][0]}
-        type="checkbox"
+
         checked={draft.preferences[key]}
         onChange={(event) => {
           setDraft({
@@ -1285,10 +1284,10 @@ function NotificationForm({
           </header>
           {control("email")}
           {!emailAvailable && (
-            <p className="ws-note">
+            <HelpText>
               Email delivery is not configured on this server. Your in-app inbox
               still works.
-            </p>
+            </HelpText>
           )}
         </section>
       </fieldset>
@@ -1300,7 +1299,7 @@ function NotificationForm({
             ? "Unsaved notification changes"
             : "Notification preferences are up to date"}
         </span>
-        <button
+        <Button
           type="button"
           className="button secondary"
           disabled={!dirty || action.busy}
@@ -1311,10 +1310,14 @@ function NotificationForm({
           }}
         >
           Cancel changes
-        </button>
-        <button className="button primary" disabled={action.busy || !dirty}>
-          {action.busy ? "Saving…" : "Save preferences"}
-        </button>
+        </Button>
+        <Button
+          className="button primary"
+          disabled={action.busy || !dirty}
+          pending={!!action.busy}
+        >
+          {"Save preferences"}
+        </Button>
       </div>
     </form>
   );
@@ -1335,7 +1338,7 @@ export function StorageSettings({ scopeId }: { scopeId?: string } = {}) {
         {!scopeId && (
           <label>
             Space
-            <select
+            <NativeSelect
               value={spaceId ?? ""}
               onChange={(event) =>
                 navigate(`/settings/storage?space=${event.target.value}`)
@@ -1346,11 +1349,11 @@ export function StorageSettings({ scopeId }: { scopeId?: string } = {}) {
                   {space.name}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </label>
         )}
         {storage?.space.can_manage && storage.space.kind !== "project" && (
-          <button
+          <Button
             className="button secondary"
             disabled={storage.space.effective_status !== "active"}
             title={
@@ -1370,7 +1373,7 @@ export function StorageSettings({ scopeId }: { scopeId?: string } = {}) {
             }}
           >
             Set storage limit
-          </button>
+          </Button>
         )}
       </div>
       <ErrorNotice
@@ -1430,11 +1433,11 @@ export function StorageSettings({ scopeId }: { scopeId?: string } = {}) {
                 </div>
               </dl>
             </div>
-            <p className="ws-note">
+            <HelpText>
               Completed files and versions are retained until explicit manual
               cleanup. Existing pinned links remain tied to their immutable
               version. Maximum upload: 1 GB per file.
-            </p>
+            </HelpText>
             <div className="ws-section-heading">
               <h2>Largest current files</h2>
               <WorkspaceLink to={`/trash?space=${spaceId}`}>
@@ -1505,7 +1508,7 @@ export function StorageSettings({ scopeId }: { scopeId?: string } = {}) {
           >
             <label>
               Limit in GB (leave blank for no quota)
-              <input
+              <TextInput
                 type="number"
                 min={0}
                 step="0.1"
@@ -1515,17 +1518,17 @@ export function StorageSettings({ scopeId }: { scopeId?: string } = {}) {
             </label>
             <ErrorNotice message={action.error} />
             <div className="dialog-footer">
-              <button
+              <Button
                 type="button"
                 className="button secondary"
                 onClick={() => setQuotaDialog(false)}
                 disabled={action.busy}
               >
                 Cancel
-              </button>
-              <button className="button primary" disabled={action.busy}>
+              </Button>
+              <Button className="button primary" disabled={action.busy}>
                 Save limit
-              </button>
+              </Button>
             </div>
           </form>
         </Dialog>

@@ -1,4 +1,5 @@
 "use client";
+import { ActionRow, Button, HelpText } from "../ui/controls";
 import { useEffect, useState } from "react";
 import { Download } from "lucide-react";
 import Dialog from "../Dialog";
@@ -29,14 +30,14 @@ export function ExportsPage() {
   }, [running, result.revalidate]);
   return (
     <section>
-      <p className="ws-note">
+      <HelpText>
         Select items in Explorer to prepare a portable ZIP. Exports contain
         current Markdown, matching BibTeX, and exact linked file versions. They
         do not contain comments, account data, or full edit history; use an
         administrator backup for full recovery. Up to 1,000 items, 25 MB of
         Markdown, and 100 GB of files per export. Finished archives stay until
         you remove them.
-      </p>
+      </HelpText>
       <ErrorNotice
         message={result.error || action.error}
         retry={result.error ? result.reload : undefined}
@@ -56,7 +57,7 @@ export function ExportsPage() {
                 {item.bytes ? ` · ${bytes(item.bytes)}` : ""}
               </small>
               <ErrorNotice message={item.error} />
-              <div className="ws-actions">
+              <ActionRow>
                 {item.status === "ready" && (
                   <a
                     className="button secondary"
@@ -67,14 +68,14 @@ export function ExportsPage() {
                   </a>
                 )}
                 {!["queued", "running"].includes(item.status) && (
-                  <button
+                  <Button
                     className="button secondary"
                     onClick={() => setRemove(item.id)}
                   >
                     Remove archive…
-                  </button>
+                  </Button>
                 )}
-              </div>
+              </ActionRow>
             </div>
           ))}
         </div>
@@ -97,14 +98,14 @@ export function ExportsPage() {
           </p>
           <ErrorNotice message={action.error} />
           <div className="dialog-footer">
-            <button
+            <Button
               className="button secondary"
               disabled={action.busy}
               onClick={() => setRemove(null)}
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               className="button danger"
               disabled={action.busy}
               onClick={() =>
@@ -116,7 +117,7 @@ export function ExportsPage() {
               }
             >
               Remove archive
-            </button>
+            </Button>
           </div>
         </Dialog>
       )}

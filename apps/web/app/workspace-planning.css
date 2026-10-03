@@ -11,9 +11,6 @@
   padding: 7px 9px;
   font-size: calc(var(--size-ui) * 0.83);
 }
-.ws-app .planning-search input {
-  padding: 7px;
-}
 .ws-app .planning-field-grid label {
   margin: 0;
 }
@@ -161,15 +158,22 @@
 }
 .workspace-directory-filters {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 12px;
   margin: 24px 0;
 }
-.workspace-directory-filters input {
+.workspace-directory-filters > .ui-search-field {
+  flex: 1 1 20em;
   max-width: 440px;
 }
-.workspace-directory-filters select {
-  width: auto;
+.workspace-directory-filters > select {
+  --field-width: auto;
+  flex: 0 0 auto;
+}
+.workspace-directory-filters > .button {
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 .unified-workspace-grid {
   display: grid;
@@ -433,10 +437,6 @@
   max-width: 300px;
   color: var(--muted);
 }
-.planning-search input {
-  padding: 7px;
-  min-width: 0;
-}
 .planning-count {
   color: var(--muted);
   font-size: calc(var(--size-ui) * 0.78);
@@ -479,7 +479,7 @@
 .planning-list-head,
 .planning-task-row {
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) 140px 160px 220px;
+  grid-template-columns: 24px minmax(220px, 1fr) 140px 160px 220px;
   align-items: center;
   gap: 16px;
   padding: 0 24px;
@@ -765,8 +765,12 @@
   position: absolute;
   top: 0;
   bottom: 0;
-  background: color-mix(in srgb, var(--text) 3%, transparent);
   pointer-events: none;
+}
+.gantt-nonworking > span {
+  position: absolute;
+  inset-block: 0;
+  background: color-mix(in srgb, var(--text) 3%, transparent);
 }
 .gantt-today {
   position: absolute;
@@ -799,6 +803,7 @@
   border-bottom: 1px solid color-mix(in srgb, var(--line) 65%, transparent);
   display: flex;
   align-items: center;
+  width: 100%;
 }
 .gantt-row:hover {
   background: color-mix(in srgb, var(--accent) 3%, transparent);
@@ -813,7 +818,7 @@
   z-index: 3;
   background: var(--paper);
   border-right: 1px solid var(--line);
-  padding-right: 12px;
+  padding-right: 0;
   font-size: calc(var(--size-ui) * 0.83);
 }
 .gantt-label > button:not(.icon-button),
@@ -837,7 +842,7 @@
 }
 .gantt-bar {
   position: absolute;
-  height: 26px;
+  height: max(28px, calc(var(--size-ui) * 2));
   min-width: 8px;
   display: flex;
   align-items: center;
@@ -857,7 +862,7 @@
 .gantt-bar.cancelled {
   opacity: 0.45;
 }
-.gantt-bar.dragging {
+.gantt-bar.is-dragging {
   opacity: 0.8;
   box-shadow: 0 3px 9px #0002;
   cursor: grabbing;

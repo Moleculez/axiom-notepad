@@ -1,6 +1,7 @@
 "use client";
+import { Button, TextInput, SearchField } from "../ui/controls";
 import { useEffect, useState } from "react";
-import { Check, Copy, LockKeyhole, Search, Users } from "lucide-react";
+import { Check, Copy, LockKeyhole, Users } from "lucide-react";
 import type { Space } from "@axiom/shared/workspace";
 import { fileRouteId } from "@axiom/shared/file-routes";
 import Dialog from "../Dialog";
@@ -21,14 +22,14 @@ export default function ResourceSharing({
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button
+      <Button
         type="button"
         className="button secondary ws-share-button"
         onClick={() => setOpen(true)}
       >
         <Users size={15} />
         Share
-      </button>
+      </Button>
       {open && (
         <SharingDialog resourceId={resourceId} onClose={() => setOpen(false)} />
       )}
@@ -103,16 +104,14 @@ function SharingDialog({
             {!personal && (
               <section className="sharing-people">
                 <h3>People with access</h3>
-                <label className="sharing-search">
-                  <Search size={15} />
-                  <input
-                    type="search"
-                    aria-label="Find a collaborator"
-                    placeholder="Find a collaborator…"
-                    value={search}
-                    onChange={(event) => setSearch(event.target.value)}
-                  />
-                </label>
+                <SearchField
+                  wrapperClassName="sharing-search"
+                  type="search"
+                  aria-label="Find a collaborator"
+                  placeholder="Find a collaborator…"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                />
                 <ul
                   className="sharing-member-list"
                   aria-label="People with access"
@@ -134,23 +133,23 @@ function SharingDialog({
                 )}
                 {(page > 0 || value.nextPage !== null) && (
                   <div className="sharing-pagination">
-                    <button
+                    <Button
                       type="button"
                       className="button ghost small"
                       disabled={page === 0 || access.loading}
                       onClick={() => setPage(page - 1)}
                     >
                       Previous
-                    </button>
+                    </Button>
                     <span>Page {page + 1}</span>
-                    <button
+                    <Button
                       type="button"
                       className="button ghost small"
                       disabled={value.nextPage === null || access.loading}
                       onClick={() => setPage(value.nextPage!)}
                     >
                       Next
-                    </button>
+                    </Button>
                   </div>
                 )}
               </section>
@@ -160,13 +159,13 @@ function SharingDialog({
                 Link to this file
               </label>
               <div className="sharing-link-row">
-                <input
+                <TextInput
                   id={`share-link-${resourceId}`}
                   readOnly
                   value={link?.href ?? ""}
                   onFocus={(event) => event.currentTarget.select()}
                 />
-                <button
+                <Button
                   type="button"
                   className="button secondary"
                   aria-label="Copy file link"
@@ -187,7 +186,7 @@ function SharingDialog({
                     <Copy size={16} />
                   )}
                   Copy
-                </button>
+                </Button>
               </div>
               <p>
                 Copying a link never grants access. Collaborators must sign in.
@@ -199,7 +198,7 @@ function SharingDialog({
       )}
       <div className="dialog-footer">
         {value?.space.can_manage && !personal && (
-          <button
+          <Button
             type="button"
             className="button secondary"
             onClick={() => {
@@ -208,12 +207,12 @@ function SharingDialog({
             }}
           >
             Manage access
-          </button>
+          </Button>
         )}
         <span className="dialog-spacer" />
-        <button type="button" className="button primary" onClick={onClose}>
+        <Button type="button" className="button primary" onClick={onClose}>
           Done
-        </button>
+        </Button>
       </div>
     </Dialog>
   );

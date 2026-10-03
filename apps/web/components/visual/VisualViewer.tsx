@@ -1,4 +1,11 @@
 "use client";
+import {
+  Button,
+  Checkbox,
+  IconButton,
+  TextInput,
+  NativeSelect,
+} from "../ui/controls";
 import { useEffect, useRef, useState, type ComponentType } from "react";
 import {
   ArrowLeft,
@@ -90,7 +97,7 @@ function Tool({
   disabled?: boolean;
 }) {
   return (
-    <button
+    <IconButton
       type="button"
       className={`icon-button${active ? " active" : ""}`}
       title={label}
@@ -100,7 +107,7 @@ function Tool({
       onClick={onClick}
     >
       <Icon size={17} />
-    </button>
+    </IconButton>
   );
 }
 function useMedia(
@@ -635,7 +642,7 @@ export default function VisualViewer({
             onClick={() => changeTransform(zoomVisual(t, t.zoom / 1.25))}
           />
           <label className="visual-zoom">
-            <input
+            <TextInput
               aria-label="Zoom percentage"
               type="number"
               min={1}
@@ -653,7 +660,7 @@ export default function VisualViewer({
             disabled={!media}
             onClick={() => changeTransform(zoomVisual(t, t.zoom * 1.25))}
           />
-          <button
+          <Button
             type="button"
             className="button ghost"
             onClick={() => {
@@ -674,8 +681,8 @@ export default function VisualViewer({
             }}
           >
             Fit
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             className="button ghost"
             onClick={() => {
@@ -697,14 +704,14 @@ export default function VisualViewer({
             }}
           >
             Width
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             className="button ghost"
             onClick={() => changeTransform({ ...t, zoom: 1, x: 0, y: 0 })}
           >
             1:1
-          </button>
+          </Button>
           <span className="visual-separator" />
           <Tool
             icon={RotateCw}
@@ -734,7 +741,7 @@ export default function VisualViewer({
               setPixelated(false);
             }}
           />
-          <select
+          <NativeSelect
             aria-label="Viewer background"
             value={background}
             onChange={(e) => setBackground(e.target.value)}
@@ -743,7 +750,7 @@ export default function VisualViewer({
             <option value="paper">Theme paper</option>
             <option value="light">Light</option>
             <option value="dark">Dark</option>
-          </select>
+          </NativeSelect>
           <span className="visual-spacer" />
           <Tool
             icon={Columns2}
@@ -836,7 +843,7 @@ export default function VisualViewer({
                 }}
               />
             </label>
-            <select
+            <NativeSelect
               aria-label="Markup line width"
               value={stroke}
               onChange={(e) => {
@@ -855,7 +862,7 @@ export default function VisualViewer({
                   {n} px
                 </option>
               ))}
-            </select>
+            </NativeSelect>
             <span className="visual-separator" />
             <Tool
               icon={Undo2}
@@ -1066,7 +1073,7 @@ export default function VisualViewer({
                   </p>
                   <label>
                     Format
-                    <select
+                    <NativeSelect
                       aria-label="Format"
                       value={format}
                       onChange={(e) =>
@@ -1079,11 +1086,11 @@ export default function VisualViewer({
                       {asset.kind === "mermaid" && (
                         <option value="svg">SVG · vector</option>
                       )}
-                    </select>
+                    </NativeSelect>
                   </label>
                   <label>
                     Scale
-                    <select
+                    <NativeSelect
                       aria-label="Export scale"
                       value={scale}
                       onChange={(e) => setScale(Number(e.target.value))}
@@ -1093,52 +1100,50 @@ export default function VisualViewer({
                           {n}×
                         </option>
                       ))}
-                    </select>
+                    </NativeSelect>
                   </label>
                   <label className="visual-check">
-                    <input
-                      type="checkbox"
+                    <Checkbox
                       checked={opaque}
                       onChange={(e) => setOpaque(e.target.checked)}
                     />
                     White background
                   </label>
                   <label className="visual-check">
-                    <input
-                      type="checkbox"
+                    <Checkbox
                       checked={includeMarks}
                       onChange={(e) => setIncludeMarks(e.target.checked)}
                     />
                     Include visible markup
                   </label>
                   <div className="visual-action-grid">
-                    <button
+                    <Button
                       className="button primary"
                       disabled={!media || busy}
                       onClick={download}
                     >
                       <Download size={15} />
                       Download copy
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       className="button secondary"
                       disabled={!media || busy}
                       onClick={copy}
                     >
                       <Copy size={15} />
                       Copy PNG
-                    </button>
+                    </Button>
                   </div>
                   <hr />
-                  <button className="button secondary" onClick={original}>
+                  <Button className="button secondary" onClick={original}>
                     <Download size={15} />
                     {asset.kind === "mermaid"
                       ? "Download Mermaid source"
                       : "Download original"}
-                  </button>
+                  </Button>
                   {asset.kind === "image" && asset.placement?.versionId && (
                     <>
-                      <button
+                      <Button
                         className="button secondary"
                         onClick={() =>
                           void run(async () => {
@@ -1158,8 +1163,8 @@ export default function VisualViewer({
                       >
                         <ImagePlus size={15} />
                         Edit a copy in Image Studio
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         className="button ghost"
                         onClick={() =>
                           void run(async () => {
@@ -1172,10 +1177,10 @@ export default function VisualViewer({
                         }
                       >
                         Open original file
-                      </button>
+                      </Button>
                     </>
                   )}
-                  <button
+                  <Button
                     className="button ghost"
                     onClick={() =>
                       void run(async () => {
@@ -1194,9 +1199,9 @@ export default function VisualViewer({
                     {asset.kind === "mermaid"
                       ? "Mermaid source"
                       : "image Markdown"}
-                  </button>
+                  </Button>
                   {asset.url && (
-                    <button
+                    <Button
                       className="button ghost"
                       onClick={() =>
                         void run(() =>
@@ -1206,9 +1211,9 @@ export default function VisualViewer({
                     >
                       <Link2 size={15} />
                       Copy image address
-                    </button>
+                    </Button>
                   )}
-                  <button
+                  <Button
                     className="button ghost"
                     onClick={() =>
                       downloadVisual(
@@ -1234,7 +1239,7 @@ export default function VisualViewer({
                   >
                     <Download size={15} />
                     Export editable markup JSON
-                  </button>
+                  </Button>
                   <p className="visual-caption">
                     Raster export of an animated image captures one frame. SVG
                     preserves Mermaid vectors; no raster-to-vector conversion is
@@ -1335,7 +1340,7 @@ export default function VisualViewer({
                       {canEdit && selectedMark.shape?.kind === "label" && (
                         <label>
                           Label
-                          <input
+                          <TextInput
                             aria-label="Annotation label"
                             maxLength={500}
                             value={selectedMark.shape.text}
@@ -1370,7 +1375,7 @@ export default function VisualViewer({
                       )}
                       {canEdit && (
                         <div className="visual-action-grid">
-                          <button
+                          <Button
                             className="button secondary"
                             disabled={
                               !canShare ||
@@ -1395,8 +1400,8 @@ export default function VisualViewer({
                             {selectedMark.visibility === "private"
                               ? "Share annotation"
                               : "Make private"}
-                          </button>
-                          <button
+                          </Button>
+                          <Button
                             className="button secondary"
                             onClick={() =>
                               void modify(selectedMark, {
@@ -1406,8 +1411,8 @@ export default function VisualViewer({
                           >
                             <Check size={14} />
                             {selectedMark.resolved ? "Reopen" : "Resolve"}
-                          </button>
-                          <button
+                          </Button>
+                          <Button
                             className="button ghost danger"
                             onClick={() =>
                               void modify(selectedMark, { deleted: true })
@@ -1415,13 +1420,13 @@ export default function VisualViewer({
                           >
                             <Trash2 size={14} />
                             Remove
-                          </button>
+                          </Button>
                         </div>
                       )}
                       {!canEdit &&
                         scope?.can_manage &&
                         selectedMark.visibility === "shared" && (
-                          <button
+                          <Button
                             className="button ghost danger"
                             onClick={() =>
                               void modify(selectedMark, { deleted: true })
@@ -1429,7 +1434,7 @@ export default function VisualViewer({
                           >
                             <Trash2 size={14} />
                             Remove shared annotation
-                          </button>
+                          </Button>
                         )}
                       {selectedMark.visibility === "shared" && (
                         <Replies

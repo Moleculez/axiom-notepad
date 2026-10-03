@@ -1,4 +1,5 @@
 "use client";
+import { IconButton } from "../ui/controls";
 import { Unlink } from "lucide-react";
 import {
   ErrorNotice,
@@ -41,7 +42,7 @@ export default function TaskPaperLinks({
             {!l.shared && <small> · Private</small>}
           </WorkspaceLink>
           {!readOnly && (
-            <button
+            <IconButton
               type="button"
               className="icon-button"
               title="Remove paper link"
@@ -59,7 +60,7 @@ export default function TaskPaperLinks({
               }
             >
               <Unlink size={15} />
-            </button>
+            </IconButton>
           )}
         </div>
       ))}

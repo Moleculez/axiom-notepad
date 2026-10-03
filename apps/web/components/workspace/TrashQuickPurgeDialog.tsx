@@ -1,4 +1,5 @@
 "use client";
+import { Button, Checkbox, Notice, TextInput } from "../ui/controls";
 import { useRef, useState } from "react";
 import { Trash2, Unlink, ShieldCheck } from "lucide-react";
 import type { TrashQuickPurgePlan } from "@axiom/shared/trash";
@@ -74,18 +75,17 @@ export default function TrashQuickPurgeDialog({
             </ul>
           </section>
           {plan.breaksLinks && (
-            <p className="trash-quick-warning">
+            <Notice tone="warning">
               Notes and saved revisions will be kept, but their links to this
               file will stop working. Their text is not rewritten. This includes
               older versions of the file.
-            </p>
+            </Notice>
           )}
           {plan.canPurge ? (
             <>
               {plan.breaksLinks && (
                 <label className="ws-checkbox">
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={acknowledged}
                     disabled={action.busy}
                     onChange={(event) => setAcknowledged(event.target.checked)}
@@ -96,7 +96,7 @@ export default function TrashQuickPurgeDialog({
               <label className="trash-delete-confirm">
                 Type <strong>DELETE FOREVER</strong> to remove the protection
                 above and permanently delete this file.
-                <input
+                <TextInput
                   aria-label="Confirm quick purge"
                   placeholder="DELETE FOREVER"
                   autoComplete="off"
@@ -124,30 +124,30 @@ export default function TrashQuickPurgeDialog({
               <p>Nothing will be changed while these protections remain.</p>
             </section>
           )}
-          <p className="ws-note">
+          <Notice tone="warning">
             This affects this file only. It cannot be undone. Shared stored data
             may remain. If protection changes after this preview, nothing is
             removed.
-          </p>
+          </Notice>
         </div>
       )}
       <DialogFooter>
-        <button
+        <Button
           className="button secondary"
           disabled={action.busy}
           onClick={onClose}
         >
           Back
-        </button>
-        <button
+        </Button>
+        <Button
           className="button secondary"
           disabled={action.busy || data.loading}
           onClick={reload}
         >
           Refresh preview
-        </button>
+        </Button>
         {plan?.canPurge && (
-          <button
+          <Button
             className="button danger"
             disabled={
               action.busy ||
@@ -173,10 +173,11 @@ export default function TrashQuickPurgeDialog({
                 onPurged();
               })
             }
+            pending={!!action.busy}
           >
             <Trash2 size={15} aria-hidden="true" />
-            {action.busy ? "Removing…" : "Remove protection & purge"}
-          </button>
+            {"Remove protection & purge"}
+          </Button>
         )}
       </DialogFooter>
     </Dialog>

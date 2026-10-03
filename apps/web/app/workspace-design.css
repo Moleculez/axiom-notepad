@@ -136,17 +136,6 @@ body {
 .icon-button:active:not(:disabled) {
   opacity: 0.8;
 }
-:is(input, textarea, select):not([type="checkbox"]):not([type="range"]):not(
-    [type="color"]
-  ):not(:where([data-editor-field])) {
-  border-radius: var(--control-radius);
-}
-input:not(:where([data-editor-field])):focus-visible,
-textarea:not(:where([data-editor-field])):focus-visible,
-select:not(:where([data-editor-field])):focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: 2px;
-}
 .document-topline {
   padding: 10px 22px;
   min-height: 58px;
@@ -628,23 +617,6 @@ select:not(:where([data-editor-field])):focus-visible {
 .dialog-body > label {
   display: grid;
   gap: 7px;
-}
-.dialog label:has(> input:is([type="checkbox"], [type="radio"])) {
-  display: flex;
-  flex-direction: row;
-  justify-content: flex-start;
-  align-items: center;
-  gap: 9px;
-  margin-block: 12px;
-  line-height: 1.5;
-}
-.dialog input:is([type="checkbox"], [type="radio"]) {
-  width: 1em;
-  height: 1em;
-  min-height: 0;
-  flex: 0 0 1em;
-  margin: 0;
-  accent-color: var(--accent);
 }
 .dialog-body input:not([type="checkbox"]):not([type="radio"]),
 .dialog-body select,

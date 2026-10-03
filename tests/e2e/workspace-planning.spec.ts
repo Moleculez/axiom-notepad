@@ -101,7 +101,7 @@ test("unified workspace, task inspector, Gantt preview, undo, settings and legac
       page.getByText("Schedule restored.", { exact: true }),
     ).toBeVisible();
     const resize = page.getByRole("button", {
-      name: "Resize end of Prepare experiment",
+      name: "Resize finish of Prepare experiment",
       exact: true,
     });
     const handle = (await resize.boundingBox())!;
@@ -141,7 +141,7 @@ test("unified workspace, task inspector, Gantt preview, undo, settings and legac
     await expect(
       page.locator(".gantt-label").filter({ hasText: "Reproduce baseline" }),
     ).toBeVisible();
-    await page.getByRole("button", { name: "Board", exact: true }).click();
+    await page.getByLabel("Task view").selectOption("board");
     await expect(page.locator(".planning-board-card")).toHaveCount(3);
     await page
       .getByRole("navigation", { name: "Workspace sections" })
@@ -197,10 +197,8 @@ test("unified workspace, task inspector, Gantt preview, undo, settings and legac
     await page
       .getByRole("button", { name: "Close task details", exact: true })
       .click();
-    await page.getByRole("button", { name: "Gantt", exact: true }).click();
-    await expect(
-      page.getByRole("button", { name: "Gantt", exact: true }),
-    ).toHaveAttribute("aria-pressed", "true");
+    await page.getByLabel("Task view").selectOption("gantt");
+    await expect(page.getByLabel("Task view")).toHaveValue("gantt");
     await expect(page.locator(".gantt-bar")).toHaveCount(2);
     await page.screenshot({
       path: test.info().outputPath("workspace-gantt-light.png"),
@@ -292,7 +290,10 @@ test("personal task drafts recover and 5,000-row Gantt remains virtualized", asy
     await expect(page.locator(".gantt-row")).not.toHaveCount(0);
     expect(await page.locator(".gantt-row").count()).toBeLessThan(80);
     await page.locator(".gantt-scroll").evaluate((el) => {
-      el.scrollTop = 210000;
+      const rowHeight = el
+        .querySelector<HTMLElement>(".gantt-row")!
+        .getBoundingClientRect().height;
+      el.scrollTop = 4773 * rowHeight;
     });
     await expect(
       page.locator(".gantt-label").filter({ hasText: "Experiment 4773" }),

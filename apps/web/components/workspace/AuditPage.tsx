@@ -1,4 +1,11 @@
 "use client";
+import {
+  Button,
+  HelpText,
+  IconButton,
+  NativeSelect,
+  TextInput,
+} from "../ui/controls";
 import { useEffect, useState } from "react";
 import {
   ArrowDownToLine,
@@ -189,13 +196,13 @@ export default function AuditPage({
       {operations ? (
         <>
           <div className="console-toolbar">
-            <p className="ws-note">
+            <HelpText>
               Completed changes persist. Cancel only stops work that has not yet
               completed.
-            </p>
+            </HelpText>
             <label>
               Status
-              <select
+              <NativeSelect
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
               >
@@ -210,7 +217,7 @@ export default function AuditPage({
                 ].map((s) => (
                   <option key={s}>{s}</option>
                 ))}
-              </select>
+              </NativeSelect>
             </label>
           </div>
           {operationId ? (
@@ -224,11 +231,11 @@ export default function AuditPage({
                   onComplete={refresh}
                 />
               ) : operationKind === "workspace" ? (
-                <p className="ws-note">
+                <HelpText>
                   Workspace deletion is processed in the background. Open its
                   Lifecycle page to review blockers or cancel during the grace
                   period.
-                </p>
+                </HelpText>
               ) : (
                 <FileOperationActivity
                   key={operationId}
@@ -283,20 +290,20 @@ export default function AuditPage({
           )}
           {!operationId && (
             <div className="console-pagination">
-              <button
+              <Button
                 className="button secondary"
                 disabled={!operationOffset}
                 onClick={() => setOperationOffset((n) => Math.max(0, n - 50))}
               >
                 Previous
-              </button>
-              <button
+              </Button>
+              <Button
                 className="button secondary"
                 disabled={jobs.data?.nextOffset == null}
                 onClick={() => setOperationOffset(jobs.data!.nextOffset!)}
               >
                 Next
-              </button>
+              </Button>
             </div>
           )}
         </>
@@ -305,7 +312,7 @@ export default function AuditPage({
           <div className="console-toolbar">
             <label className="console-search">
               Search history
-              <input
+              <TextInput
                 type="search"
                 placeholder="Item or person…"
                 value={search}
@@ -315,7 +322,7 @@ export default function AuditPage({
             {!spaceId && (
               <label>
                 Workspace
-                <select
+                <NativeSelect
                   aria-label="Workspace"
                   value={space}
                   onChange={(e) => updateFilters({ space: e.target.value })}
@@ -331,12 +338,12 @@ export default function AuditPage({
                       {s.name}
                     </option>
                   ))}
-                </select>
+                </NativeSelect>
               </label>
             )}
             <label>
               Action
-              <select
+              <NativeSelect
                 aria-label="Action"
                 value={actionFilter}
                 onChange={(e) => updateFilters({ action: e.target.value })}
@@ -363,11 +370,11 @@ export default function AuditPage({
                     {auditLabel(v)}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
             </label>
             <label>
               Item type
-              <select
+              <NativeSelect
                 aria-label="Item type"
                 value={entity}
                 onChange={(e) => updateFilters({ entity: e.target.value })}
@@ -392,9 +399,9 @@ export default function AuditPage({
                     {auditLabel(v)}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
             </label>
-            <button
+            <IconButton
               className="icon-button"
               title="Export up to 200 records from this page (JSON)"
               aria-label="Export audit page"
@@ -402,22 +409,22 @@ export default function AuditPage({
               onClick={exportPage}
             >
               <ArrowDownToLine size={17} />
-            </button>
-            <button
+            </IconButton>
+            <IconButton
               className="icon-button"
               title="Refresh history"
               aria-label="Refresh history"
               onClick={data.reload}
             >
               <RefreshCw size={17} />
-            </button>
+            </IconButton>
           </div>
           <details className="console-filter-details">
             <summary>Date and person filters</summary>
             <div className="console-toolbar">
               <label>
                 From
-                <input
+                <TextInput
                   type="date"
                   value={after}
                   onChange={(e) => updateFilters({ after: e.target.value })}
@@ -425,7 +432,7 @@ export default function AuditPage({
               </label>
               <label>
                 Through
-                <input
+                <TextInput
                   type="date"
                   value={before}
                   onChange={(e) => updateFilters({ before: e.target.value })}
@@ -433,7 +440,7 @@ export default function AuditPage({
               </label>
               <label>
                 Person ID
-                <input
+                <TextInput
                   value={actor}
                   placeholder="Select a person from record details"
                   onChange={(e) => updateFilters({ actor: e.target.value })}
@@ -491,7 +498,7 @@ export default function AuditPage({
                 </div>
               )}
               <div className="console-pagination">
-                <button
+                <Button
                   className="button secondary"
                   disabled={!previous.length || data.loading}
                   onClick={() => {
@@ -501,8 +508,8 @@ export default function AuditPage({
                 >
                   <ArrowLeft size={15} />
                   Newer
-                </button>
-                <button
+                </Button>
+                <Button
                   className="button secondary"
                   disabled={!data.data?.nextCursor || data.loading}
                   onClick={() => {
@@ -512,25 +519,25 @@ export default function AuditPage({
                 >
                   Older
                   <ArrowRight size={15} />
-                </button>
+                </Button>
               </div>
-              <p className="ws-note">
+              <HelpText>
                 Metadata history is retained. Automatic document versions expire
                 after 30 days; named versions and review evidence are kept. A
                 purge removes content, not its authorized audit record.
-              </p>
+              </HelpText>
             </div>
             {selected && (
               <aside className="console-inspector" aria-label="Change details">
                 <div className="ws-section-heading">
                   <h2>Change details</h2>
-                  <button
+                  <IconButton
                     className="icon-button"
                     aria-label="Close change details"
                     onClick={() => setSelected(null)}
                   >
                     <X size={17} />
-                  </button>
+                  </IconButton>
                 </div>
                 <ErrorNotice message={detail.error} retry={detail.reload} />
                 {detail.data ? (
@@ -599,11 +606,11 @@ function AuditDetails({
         <p>{event.actor_name}</p>
       )}
       {event.contributors.length > 1 && (
-        <p className="ws-note">
+        <HelpText>
           {event.contributors.length} contributors in this editing checkpoint.
-        </p>
+        </HelpText>
       )}
-      {event.space_name && <p className="ws-note">{event.space_name}</p>}
+      {event.space_name && <HelpText>{event.space_name}</HelpText>}
       {changes.length ? (
         <div className="audit-changes">
           {changes.map((change) => (
@@ -621,11 +628,11 @@ function AuditDetails({
           ))}
         </div>
       ) : (
-        <p className="ws-note">
+        <HelpText>
           {event.evidence === "legacy-summary"
             ? "Legacy summary. Before and after values were not recorded."
             : "No field-level comparison is available for this event."}
-        </p>
+        </HelpText>
       )}
       {event.resource_available && (
         <WorkspaceLink
@@ -652,27 +659,27 @@ function AuditDetails({
               Open retained file version
             </WorkspaceLink>
           ) : (
-            <button
+            <Button
               className="button secondary"
               onClick={() => setCompare((v) => !v)}
             >
               {compare ? "Hide" : "Compare"} saved version
-            </button>
+            </Button>
           )
         ) : (
-          <p className="ws-note">
+          <HelpText>
             The version body has expired, was purged, or is no longer
             accessible. Its metadata remains in history.
-          </p>
+          </HelpText>
         ))}
       <ErrorNotice message={version.error} retry={version.reload} />
       {compare && version.data && (
         <div className="audit-version-comparison">
           <h4>Changes from the previous retained version</h4>
           {!version.data.previous_body && (
-            <p className="ws-note">
+            <HelpText>
               No earlier retained body. This version is shown as added text.
-            </p>
+            </HelpText>
           )}
           <pre aria-label="Saved version line comparison">
             {auditVersionDiff(

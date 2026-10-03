@@ -1,4 +1,15 @@
 "use client";
+import {
+  Button,
+  Checkbox,
+  HelpText,
+  IconButton,
+  Notice,
+  Radio,
+  TextInput,
+  TextArea,
+  NativeSelect,
+} from "../ui/controls";
 import { useEffect, useState } from "react";
 import {
   ArrowDown,
@@ -165,7 +176,7 @@ function WebsiteSetup({
         >
           <label>
             Website title
-            <input
+            <TextInput
               required
               maxLength={150}
               value={title}
@@ -176,7 +187,7 @@ function WebsiteSetup({
             Site address
             <span className="website-slug">
               <span>/sites/</span>
-              <input
+              <TextInput
                 aria-label="Site address"
                 required
                 minLength={2}
@@ -187,14 +198,14 @@ function WebsiteSetup({
               />
             </span>
           </label>
-          <button className="button primary" disabled={action.busy}>
+          <Button className="button primary" disabled={action.busy}>
             <Plus size={16} />
             Create private website draft
-          </button>
+          </Button>
           <ErrorNotice message={action.error} />
         </form>
       ) : (
-        <p className="ws-note">A workspace manager can set up this website.</p>
+        <HelpText>A workspace manager can set up this website.</HelpText>
       )}
     </section>
   );
@@ -321,7 +332,7 @@ function WebsiteEditor({
               <fieldset disabled={!editable || action.busy}>
                 <label>
                   Website title
-                  <input
+                  <TextInput
                     value={config.title}
                     maxLength={150}
                     onChange={(e) => set({ title: e.target.value })}
@@ -329,7 +340,7 @@ function WebsiteEditor({
                 </label>
                 <label>
                   Description
-                  <textarea
+                  <TextArea
                     rows={4}
                     value={config.description}
                     maxLength={2000}
@@ -337,12 +348,12 @@ function WebsiteEditor({
                   />
                 </label>
                 <div className="website-inline-actions">
-                  <button
+                  <Button
                     className="button secondary"
                     onClick={() => setPicker("logo")}
                   >
                     Choose site logo
-                  </button>
+                  </Button>
                   {config.logoId && (
                     <button
                       className="text-button"
@@ -388,17 +399,17 @@ function WebsiteEditor({
                 <li>Save, then build a frozen preview.</li>
                 <li>A manager reviews it and publishes the exact release.</li>
               </ol>
-              <p className="ws-note">
+              <Notice tone="warning">
                 Deleting a private source does not remove its published copy.
                 Unpublish or replace the website release separately. Trashing
                 the workspace suspends its site.
-              </p>
-              <button
+              </Notice>
+              <Button
                 className="button secondary"
                 onClick={() => setTab("content")}
               >
                 Choose content
-              </button>
+              </Button>
             </section>
           </div>
         )}
@@ -412,14 +423,14 @@ function WebsiteEditor({
                   editor.
                 </p>
               </div>
-              <button
+              <Button
                 className="button primary"
                 disabled={!editable}
                 onClick={() => setPicker("content")}
               >
                 <Plus size={16} />
                 Add from workspace
-              </button>
+              </Button>
             </div>
             {!config.entries.length ? (
               <Empty title="Start with a paper or a note">
@@ -461,7 +472,7 @@ function WebsiteEditor({
                       >
                         <ExternalLink size={16} />
                       </WorkspaceLink>
-                      <button
+                      <IconButton
                         className="icon-button"
                         title="Remove from draft"
                         aria-label={`Remove ${e.title} from draft`}
@@ -469,7 +480,7 @@ function WebsiteEditor({
                         onClick={() => removeEntry(e.id)}
                       >
                         <Trash2 size={16} />
-                      </button>
+                      </IconButton>
                     </article>
                   );
                 })}
@@ -484,14 +495,14 @@ function WebsiteEditor({
                     read-only resource pages and approved bytes will be public.
                   </p>
                 </div>
-                <button
+                <Button
                   className="button secondary"
                   disabled={!editable}
                   onClick={() => setPicker("assets")}
                 >
                   <Plus size={15} />
                   Choose resources
-                </button>
+                </Button>
               </div>
               <p>
                 {config.assetIds.length} selected. Missing assets are replaced
@@ -546,7 +557,7 @@ function WebsiteEditor({
                   edits.
                 </p>
               </div>
-              <button
+              <Button
                 className="button primary"
                 disabled={
                   !editable ||
@@ -570,12 +581,10 @@ function WebsiteEditor({
               >
                 <Eye size={16} />
                 Build review preview
-              </button>
+              </Button>
             </div>
             {dirty && (
-              <p className="ws-note">
-                Save your draft before building a preview.
-              </p>
+              <HelpText>Save your draft before building a preview.</HelpText>
             )}
             {!site.releases.length && (
               <Empty title="No release yet">
@@ -601,17 +610,17 @@ function WebsiteEditor({
                     {r.error && <p className="website-warning">{r.error}</p>}
                   </div>
                   {r.status === "ready" && (
-                    <button
+                    <Button
                       className="button secondary"
                       onClick={() => setReview(r)}
                     >
                       <Eye size={15} />
                       Review
-                    </button>
+                    </Button>
                   )}
                   {!r.published_at &&
                     !["queued", "building"].includes(r.status) && (
-                      <button
+                      <IconButton
                         className="icon-button"
                         aria-label="Remove unused release"
                         title="Remove unused release"
@@ -628,7 +637,7 @@ function WebsiteEditor({
                         }
                       >
                         <Trash2 size={16} />
-                      </button>
+                      </IconButton>
                     )}
                 </article>
               ))}
@@ -642,13 +651,13 @@ function WebsiteEditor({
                     releases and exported copies are unchanged.
                   </p>
                 </div>
-                <button
+                <Button
                   className="button secondary"
                   disabled={!manage}
                   onClick={() => setWithdraw(true)}
                 >
                   Unpublish…
-                </button>
+                </Button>
               </section>
             )}
           </>
@@ -660,7 +669,7 @@ function WebsiteEditor({
             <span className="unsaved-dot" />
             Unsaved website draft
           </span>
-          <button
+          <Button
             className="button secondary"
             disabled={action.busy}
             onClick={() => {
@@ -669,15 +678,16 @@ function WebsiteEditor({
             }}
           >
             Discard changes
-          </button>
-          <button
+          </Button>
+          <Button
             className="button primary"
             disabled={!editable || action.busy}
             onClick={() => void save()}
+            pending={!!action.busy}
           >
             <Save size={15} />
-            {action.busy ? "Saving…" : "Save draft"}
-          </button>
+            {"Save draft"}
+          </Button>
         </footer>
       )}
       {picker && (
@@ -777,14 +787,14 @@ function WebsiteEditor({
           </p>
           <ErrorNotice message={action.error} />
           <DialogFooter>
-            <button
+            <Button
               className="button secondary"
               disabled={action.busy}
               onClick={() => setWithdraw(false)}
             >
               Keep published
-            </button>
-            <button
+            </Button>
+            <Button
               className="button danger"
               disabled={action.busy}
               onClick={() =>
@@ -797,7 +807,7 @@ function WebsiteEditor({
               }
             >
               Unpublish website
-            </button>
+            </Button>
           </DialogFooter>
         </Dialog>
       )}
@@ -839,7 +849,7 @@ export function ResourcePicker({
       subtitle="Only resources you explicitly select will enter the publication draft."
       onClose={onClose}
     >
-      <input
+      <TextInput
         type="search"
         autoFocus
         aria-label="Find resource"
@@ -857,35 +867,37 @@ export function ResourcePicker({
               publicationFileMime(r.name, r.mime).startsWith("image/") ||
               r.mime === "application/vnd.axiom.image+zip",
           )
-          .map((r) => (
-            <label key={r.id}>
-              <input
-                type={images ? "radio" : "checkbox"}
-                name={images ? "website-image" : undefined}
-                disabled={selected.includes(r.id)}
-                checked={
-                  selected.includes(r.id) || chosen.some((v) => v.id === r.id)
-                }
-                onChange={(e) =>
-                  setChosen((v) =>
-                    e.target.checked
-                      ? images
-                        ? [r]
-                        : [...v, r]
-                      : v.filter((x) => x.id !== r.id),
-                  )
-                }
-              />
-              <FileText size={18} />
-              <span>
-                <strong>{r.name}</strong>
-                <small>
-                  {r.document_type ?? r.mime ?? r.kind}
-                  {selected.includes(r.id) ? " · Already selected" : ""}
-                </small>
-              </span>
-            </label>
-          ))}
+          .map((r) => {
+            const ChoiceInput = images ? Radio : Checkbox;
+            return (
+              <label key={r.id}>
+                <ChoiceInput
+                  name={images ? "website-image" : undefined}
+                  disabled={selected.includes(r.id)}
+                  checked={
+                    selected.includes(r.id) || chosen.some((v) => v.id === r.id)
+                  }
+                  onChange={(e) =>
+                    setChosen((v) =>
+                      e.target.checked
+                        ? images
+                          ? [r]
+                          : [...v, r]
+                        : v.filter((x) => x.id !== r.id),
+                    )
+                  }
+                />
+                <FileText size={18} />
+                <span>
+                  <strong>{r.name}</strong>
+                  <small>
+                    {r.document_type ?? r.mime ?? r.kind}
+                    {selected.includes(r.id) ? " · Already selected" : ""}
+                  </small>
+                </span>
+              </label>
+            );
+          })}
         {data.loading && <Loading label="Loading resources…" />}
         {data.data && !data.data.items.length && <p>No matching resources.</p>}
       </div>
@@ -907,16 +919,16 @@ export function ResourcePicker({
       </div>
       <DialogFooter>
         <span>{chosen.length} selected</span>
-        <button className="button secondary" onClick={onClose}>
+        <Button className="button secondary" onClick={onClose}>
           Cancel
-        </button>
-        <button
+        </Button>
+        <Button
           className="button primary"
           disabled={!chosen.length}
           onClick={() => onChoose(chosen)}
         >
           Add selection
-        </button>
+        </Button>
       </DialogFooter>
     </Dialog>
   );
@@ -1005,7 +1017,7 @@ function EntryDetails({
         <fieldset disabled={disabled} className="website-fields">
           <label className="full">
             Title
-            <input
+            <TextInput
               required
               maxLength={200}
               value={value.title}
@@ -1014,7 +1026,7 @@ function EntryDetails({
           </label>
           <label>
             Type
-            <select
+            <NativeSelect
               value={value.kind}
               onChange={(e) =>
                 set({ kind: e.target.value as SiteEntry["kind"] })
@@ -1023,11 +1035,11 @@ function EntryDetails({
               {["post", "paper", "page", "resource"].map((v) => (
                 <option key={v}>{v}</option>
               ))}
-            </select>
+            </NativeSelect>
           </label>
           <label>
             URL slug
-            <input
+            <TextInput
               required
               minLength={2}
               maxLength={80}
@@ -1038,7 +1050,7 @@ function EntryDetails({
           </label>
           <label className="full">
             Summary
-            <textarea
+            <TextArea
               rows={3}
               maxLength={2000}
               value={value.summary}
@@ -1047,7 +1059,7 @@ function EntryDetails({
           </label>
           <label>
             Date
-            <input
+            <TextInput
               type="date"
               value={value.date ?? ""}
               onChange={(e) => set({ date: e.target.value || undefined })}
@@ -1055,11 +1067,11 @@ function EntryDetails({
           </label>
           <label>
             Tags, comma separated
-            <input value={tags} onChange={(e) => setTags(e.target.value)} />
+            <TextInput value={tags} onChange={(e) => setTags(e.target.value)} />
           </label>
           <label>
             DOI
-            <input
+            <TextInput
               maxLength={200}
               value={value.doi}
               placeholder="10.…"
@@ -1068,7 +1080,7 @@ function EntryDetails({
           </label>
           <label>
             License
-            <input
+            <TextInput
               maxLength={100}
               value={value.license}
               placeholder="e.g. CC BY 4.0"
@@ -1078,15 +1090,12 @@ function EntryDetails({
           <div className="full">
             <span className="website-field-label">Public authors</span>
             {!config.authors.length && (
-              <p className="ws-note">
-                Add authors in People & navigation first.
-              </p>
+              <HelpText>Add authors in People & navigation first.</HelpText>
             )}
             <div className="website-resource-chips">
               {config.authors.map((a) => (
                 <label className="website-check" key={a.id}>
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={value.authorIds.includes(a.id)}
                     onChange={(e) =>
                       set({
@@ -1102,13 +1111,13 @@ function EntryDetails({
             </div>
           </div>
           <div className="full website-inline-actions">
-            <button
+            <Button
               type="button"
               className="button secondary"
               onClick={() => setCover(true)}
             >
               Choose cover image
-            </button>
+            </Button>
             {value.coverId && (
               <button
                 type="button"
@@ -1120,35 +1129,33 @@ function EntryDetails({
             )}
           </div>
           <label className="website-check full">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={value.included}
               onChange={(e) => set({ included: e.target.checked })}
             />
             Include in the next release
           </label>
           <label className="website-check full">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={value.originalDownload}
               onChange={(e) => set({ originalDownload: e.target.checked })}
             />
             Offer the original file for download
           </label>
-          <p className="ws-note full">
+          <Notice tone="warning" className="full">
             Original files can expose hidden cells, speaker notes, comments or
             metadata. Images are otherwise flattened and stripped of metadata;
             PDF and media previews necessarily expose complete source bytes.
-          </p>
+          </Notice>
         </fieldset>
         <ErrorNotice message={action.error} />
         <DialogFooter>
-          <button type="button" className="button secondary" onClick={onClose}>
+          <Button type="button" className="button secondary" onClick={onClose}>
             Cancel
-          </button>
-          <button className="button primary" disabled={disabled}>
+          </Button>
+          <Button className="button primary" disabled={disabled}>
             Apply to draft
-          </button>
+          </Button>
         </DialogFooter>
       </form>
       {cover && (
@@ -1186,7 +1193,7 @@ function PeopleAndNavigation({
               imported.
             </p>
           </div>
-          <button
+          <IconButton
             className="icon-button"
             aria-label="Add public author"
             title="Add author"
@@ -1208,7 +1215,7 @@ function PeopleAndNavigation({
             }
           >
             <Plus size={17} />
-          </button>
+          </IconButton>
         </div>
         {config.authors.map((a) => (
           <details className="website-author" key={a.id} open>
@@ -1227,7 +1234,7 @@ function PeopleAndNavigation({
                       }[key]
                     }
                     {key === "bio" ? (
-                      <textarea
+                      <TextArea
                         rows={3}
                         maxLength={2000}
                         value={a[key]}
@@ -1242,7 +1249,7 @@ function PeopleAndNavigation({
                         }
                       />
                     ) : (
-                      <input
+                      <TextInput
                         value={a[key]}
                         maxLength={
                           key === "url"
@@ -1292,7 +1299,7 @@ function PeopleAndNavigation({
             <h3>Navigation</h3>
             <p>Archive, search and RSS are always available.</p>
           </div>
-          <button
+          <IconButton
             className="icon-button"
             aria-label="Add navigation link"
             title="Add link"
@@ -1312,7 +1319,7 @@ function PeopleAndNavigation({
             }
           >
             <Plus size={17} />
-          </button>
+          </IconButton>
         </div>
         {config.navigation.map((n, i) => (
           <fieldset
@@ -1322,7 +1329,7 @@ function PeopleAndNavigation({
           >
             <label>
               Label
-              <input
+              <TextInput
                 maxLength={60}
                 value={n.label}
                 onChange={(e) =>
@@ -1336,7 +1343,7 @@ function PeopleAndNavigation({
             </label>
             <label>
               Destination
-              <select
+              <NativeSelect
                 value={n.entryId ?? "external"}
                 onChange={(e) =>
                   set({
@@ -1360,12 +1367,12 @@ function PeopleAndNavigation({
                     {e.included ? "" : " (excluded)"}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
             </label>
             {n.url !== undefined && (
               <label>
                 HTTPS address
-                <input
+                <TextInput
                   type="url"
                   value={n.url}
                   onChange={(e) =>
@@ -1379,7 +1386,7 @@ function PeopleAndNavigation({
               </label>
             )}
             <div className="website-inline-actions">
-              <button
+              <IconButton
                 className="icon-button"
                 title="Move up"
                 aria-label="Move link up"
@@ -1391,8 +1398,8 @@ function PeopleAndNavigation({
                 }}
               >
                 <ArrowUp size={15} />
-              </button>
-              <button
+              </IconButton>
+              <IconButton
                 className="icon-button"
                 title="Move down"
                 aria-label="Move link down"
@@ -1404,8 +1411,8 @@ function PeopleAndNavigation({
                 }}
               >
                 <ArrowDown size={15} />
-              </button>
-              <button
+              </IconButton>
+              <IconButton
                 className="icon-button"
                 title="Remove link"
                 aria-label="Remove navigation link"
@@ -1416,7 +1423,7 @@ function PeopleAndNavigation({
                 }
               >
                 <Trash2 size={15} />
-              </button>
+              </IconButton>
             </div>
           </fieldset>
         ))}
@@ -1459,10 +1466,10 @@ function DomainSettings({
         </div>
       </dl>
       {!site.domainTarget && (
-        <p className="ws-note">
+        <HelpText>
           Set PUBLISH_DOMAIN_TARGET to this deployment’s public hostname and
           configure the publication gateway before connecting a domain.
-        </p>
+        </HelpText>
       )}
       {!domain ? (
         <form
@@ -1478,20 +1485,20 @@ function DomainSettings({
         >
           <label>
             Domain
-            <input
+            <TextInput
               required
               placeholder="research.example.org"
               value={hostname}
               onChange={(e) => setHostname(e.target.value)}
             />
           </label>
-          <button
+          <Button
             className="button primary"
             disabled={!manage || action.busy || !site.domainTarget}
           >
             <Plus size={15} />
             Connect domain
-          </button>
+          </Button>
         </form>
       ) : (
         <>
@@ -1527,13 +1534,13 @@ function DomainSettings({
               </tbody>
             </table>
           </div>
-          <p className="ws-note">
+          <HelpText>
             DNS changes can take time to propagate. The built-in URL becomes a
             redirect after verification. This does not publish a private
             website.
-          </p>
+          </HelpText>
           <div className="website-inline-actions">
-            <button
+            <Button
               className="button primary"
               disabled={!manage || action.busy}
               onClick={() =>
@@ -1548,8 +1555,8 @@ function DomainSettings({
             >
               <Check size={15} />
               Verify DNS
-            </button>
-            <button
+            </Button>
+            <Button
               className="button secondary"
               disabled={!manage || action.busy}
               onClick={() =>
@@ -1564,7 +1571,7 @@ function DomainSettings({
               }
             >
               Disconnect domain
-            </button>
+            </Button>
           </div>
         </>
       )}
@@ -1643,14 +1650,13 @@ function ReleaseReview({
               </ul>
             </section>
           )}
-          <p className="ws-note">
+          <Notice tone="warning">
             Confirm permission to publish all selected text, figures, files and
             public profiles. Downloaded or exported copies cannot be recalled.
-          </p>
+          </Notice>
           {manage && (
             <label className="website-check">
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={consent}
                 onChange={(e) => setConsent(e.target.checked)}
               />
@@ -1663,7 +1669,7 @@ function ReleaseReview({
               <summary>Export a static website</summary>
               <label>
                 Deployment base URL
-                <input
+                <TextInput
                   type="url"
                   value={exportUrl}
                   onChange={(e) => setExportUrl(e.target.value)}
@@ -1677,37 +1683,34 @@ function ReleaseReview({
                 Download ZIP
               </a>
               <label className="website-check">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={includeGoogle}
                   onChange={(e) => setIncludeGoogle(e.target.checked)}
                 />
                 Include configured Google Analytics (visitor consent required)
               </label>
-              <p className="ws-note">
+              <HelpText>
                 First-party analytics and live counters are not included.
                 Exported sites are independent public copies. Serve over
                 HTTP(S), not file://.
-              </p>
+              </HelpText>
             </details>
           )}
           {!manage && (
-            <p className="ws-note">
-              A workspace manager must approve publication.
-            </p>
+            <HelpText>A workspace manager must approve publication.</HelpText>
           )}
           <ErrorNotice message={data.error || action.error} />
         </aside>
       </div>
       <DialogFooter>
-        <button
+        <Button
           className="button secondary"
           disabled={action.busy}
           onClick={onClose}
         >
           Close preview
-        </button>
-        <button
+        </Button>
+        <Button
           className="button primary"
           disabled={!manage || !consent || !data.data || action.busy}
           onClick={() =>
@@ -1734,7 +1737,7 @@ function ReleaseReview({
             : restore
               ? "Restore this release"
               : "Publish this release"}
-        </button>
+        </Button>
       </DialogFooter>
     </Dialog>
   );

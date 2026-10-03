@@ -1,4 +1,5 @@
 "use client";
+import { Button, IconButton, TextInput } from "../ui/controls";
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import {
@@ -300,18 +301,18 @@ export default function SuggestionEditor(props: Props) {
       aria-label="Suggesting edits"
     >
       <header className="revision-header">
-        <button
+        <IconButton
           className="icon-button"
           aria-label="Return to accepted document"
           onClick={() => void close()}
         >
           <ArrowLeft size={18} />
-        </button>
+        </IconButton>
         <div>
           <h2>Suggesting · {props.title}</h2>
           <p role="status">{status}</p>
         </div>
-        <button
+        <Button
           className="button ghost"
           onClick={() =>
             download(
@@ -324,8 +325,8 @@ export default function SuggestionEditor(props: Props) {
         >
           <Download size={15} />
           Export proposal
-        </button>
-        <button
+        </Button>
+        <Button
           className="button secondary"
           disabled={!projection || busy || !!projection.conflict}
           onClick={async () => {
@@ -343,7 +344,7 @@ export default function SuggestionEditor(props: Props) {
         >
           <Send size={15} />
           Publish proposal
-        </button>
+        </Button>
       </header>
       <div className="revision-compare-toolbar">
         <div className="ws-segmented">
@@ -364,25 +365,25 @@ export default function SuggestionEditor(props: Props) {
         </div>
         {props.format !== "latex" && (
           <>
-            <button
+            <IconButton
               className="icon-button"
               aria-label="Bold"
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => view.current?.execute("bold")}
             >
               <Bold size={15} />
-            </button>
-            <button
+            </IconButton>
+            <IconButton
               className="icon-button"
               aria-label="Italic"
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => view.current?.execute("italic")}
             >
               <Italic size={15} />
-            </button>
+            </IconButton>
             {props.insertScope && (
               <>
-                <button
+                <IconButton
                   className="icon-button"
                   aria-label="Insert proposal attachment"
                   onMouseDown={(e) => e.preventDefault()}
@@ -392,8 +393,8 @@ export default function SuggestionEditor(props: Props) {
                   }}
                 >
                   <Paperclip size={15} />
-                </button>
-                <button
+                </IconButton>
+                <IconButton
                   className="icon-button"
                   aria-label="Link a note in proposal"
                   onMouseDown={(e) => e.preventDefault()}
@@ -403,33 +404,33 @@ export default function SuggestionEditor(props: Props) {
                   }}
                 >
                   <Link2 size={15} />
-                </button>
+                </IconButton>
               </>
             )}
-            <button
+            <IconButton
               className="icon-button"
               aria-label="Insert proposal table"
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => view.current?.execute("table")}
             >
               <Table2 size={15} />
-            </button>
+            </IconButton>
           </>
         )}
-        <button
+        <IconButton
           className="icon-button"
           aria-label="Undo proposal edit"
           onClick={() => projection?.history(false)}
         >
           <Undo2 size={15} />
-        </button>
-        <button
+        </IconButton>
+        <IconButton
           className="icon-button"
           aria-label="Redo proposal edit"
           onClick={() => projection?.history(true)}
         >
           <Redo2 size={15} />
-        </button>
+        </IconButton>
         <span className="revision-notice">
           Edits are proposals, not changes to the shared document.
         </span>
@@ -491,7 +492,7 @@ export default function SuggestionEditor(props: Props) {
       <footer className="suggestion-message">
         <label>
           Note to reviewers
-          <input
+          <TextInput
             maxLength={10000}
             value={message}
             placeholder="Explain the change or cite supporting evidence"

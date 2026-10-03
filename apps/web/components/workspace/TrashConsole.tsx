@@ -1,4 +1,14 @@
 "use client";
+import {
+  ActionRow,
+  Button,
+  Checkbox,
+  HelpText,
+  IconButton,
+  TextInput,
+  NativeSelect,
+  SearchField,
+} from "../ui/controls";
 import { Fragment, useEffect, useRef, useState } from "react";
 import {
   Blocks,
@@ -8,7 +18,6 @@ import {
   History,
   MoreHorizontal,
   RotateCcw,
-  Search,
   SlidersHorizontal,
   Trash2,
 } from "lucide-react";
@@ -267,20 +276,18 @@ function FileTrash() {
       <div className="console-toolbar trash-toolbar">
         <label className="console-search">
           Search Trash
-          <span className="trash-search-field">
-            <Search size={16} aria-hidden="true" />
-            <input
-              aria-label="Search Trash"
-              type="search"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Note, folder or filename…"
-            />
-          </span>
+          <SearchField
+            wrapperClassName="trash-search-field"
+            aria-label="Search Trash"
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Note, folder or filename…"
+          />
         </label>
         <label>
           Workspace
-          <select
+          <NativeSelect
             aria-label="Trash workspace"
             value={scope}
             onChange={(e) => navigate(`/trash?space=${e.target.value}`)}
@@ -294,9 +301,9 @@ function FileTrash() {
               </option>
             ))}
             <option value="managed">All managed workspaces</option>
-          </select>
+          </NativeSelect>
         </label>
-        <button
+        <Button
           className="button secondary"
           aria-expanded={options}
           onClick={() => setOptions((v) => !v)}
@@ -308,7 +315,7 @@ function FileTrash() {
               {[kind, after, before].filter(Boolean).length}
             </span>
           )}
-        </button>
+        </Button>
       </div>
       {options && (
         <section
@@ -334,7 +341,7 @@ function FileTrash() {
           <div className="console-toolbar trash-filter-fields">
             <label>
               Kind
-              <select
+              <NativeSelect
                 aria-label="Trash item kind"
                 value={kind}
                 onChange={(e) => setKind(e.target.value)}
@@ -344,11 +351,11 @@ function FileTrash() {
                 <option value="folder">Folders</option>
                 <option value="file">Files</option>
                 <option value="shortcut">Shortcuts</option>
-              </select>
+              </NativeSelect>
             </label>
             <label>
               Sort
-              <select
+              <NativeSelect
                 aria-label="Sort Trash"
                 value={`${sort}:${direction}`}
                 onChange={(e) => {
@@ -361,11 +368,11 @@ function FileTrash() {
                 <option value="deleted:asc">Oldest deleted</option>
                 <option value="name:asc">Name A–Z</option>
                 <option value="size:desc">Largest first</option>
-              </select>
+              </NativeSelect>
             </label>
             <label>
               Deleted from
-              <input
+              <TextInput
                 type="date"
                 value={after}
                 onChange={(e) => setAfter(e.target.value)}
@@ -373,7 +380,7 @@ function FileTrash() {
             </label>
             <label>
               Through
-              <input
+              <TextInput
                 type="date"
                 value={before}
                 onChange={(e) => setBefore(e.target.value)}
@@ -387,7 +394,7 @@ function FileTrash() {
           <div className="console-toolbar trash-restore-fields">
             <label>
               If the original folder is unavailable
-              <select
+              <NativeSelect
                 value={restorePolicy}
                 onChange={(e) =>
                   setRestorePolicy(e.target.value as "retain" | "root")
@@ -397,11 +404,11 @@ function FileTrash() {
                   Keep in Trash; restore parent first
                 </option>
                 <option value="root">Restore to workspace root</option>
-              </select>
+              </NativeSelect>
             </label>
             <label>
               Name conflicts
-              <select
+              <NativeSelect
                 value={conflict}
                 onChange={(e) =>
                   setConflict(e.target.value as "keep-both" | "skip")
@@ -409,12 +416,11 @@ function FileTrash() {
               >
                 <option value="keep-both">Keep both (add a suffix)</option>
                 <option value="skip">Skip existing names</option>
-              </select>
+              </NativeSelect>
             </label>
           </div>
           <label className="ws-checkbox">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={chooseDestination}
               disabled={scopeIds.length !== 1 || !canRestore}
               onChange={(e) => setChooseDestination(e.target.checked)}
@@ -429,25 +435,25 @@ function FileTrash() {
                 onChange={(value) => setDestination(value.parentId)}
                 exclude={selection}
               />
-              <p className="ws-note">
+              <HelpText>
                 Choose a folder. With no folder selected, the original location
                 policy applies.
-              </p>
+              </HelpText>
             </>
           )}
-          <p className="ws-note">
+          <HelpText>
             Folders include their trashed descendants exactly once. Restore does
             not overwrite active items. File cleanup never removes a workspace.
-          </p>
+          </HelpText>
         </section>
       )}
       <div className="console-toolbar console-scope-actions">
-        <span className="ws-note">
+        <HelpText as="span">
           {data.data?.total ?? 0} matching entries ·{" "}
           {scope === "managed"
             ? `${scopeIds.length} managed workspaces`
             : (scopes[0]?.name ?? "Choose a workspace")}
-        </span>
+        </HelpText>
         <span className="ws-spacer" />
         <button
           className="text-button"
@@ -469,10 +475,10 @@ function FileTrash() {
         </button>
       </div>
       {!canRestore && (
-        <p className="ws-note">
+        <HelpText>
           Restore the workspace first, or ask an editor for help. Permanent file
           deletion requires manager access in an active workspace.
-        </p>
+        </HelpText>
       )}
       <ErrorNotice message={data.error || action.error} retry={data.reload} />
       {!!selectedCount && (
@@ -504,22 +510,22 @@ function FileTrash() {
             Clear selection
           </button>
           <span className="ws-spacer" />
-          <button
+          <Button
             className="button secondary"
             disabled={!canRestore || action.busy}
             onClick={() => preview("restore")}
           >
             <RotateCcw size={15} />
             Restore selected
-          </button>
-          <button
+          </Button>
+          <Button
             className="button secondary danger-text"
             disabled={!canPurge || action.busy}
             onClick={() => preview("purge")}
           >
             <Trash2 size={15} />
             Delete selected permanently
-          </button>
+          </Button>
         </div>
       )}
       {data.loading && !data.data ? (
@@ -544,8 +550,7 @@ function FileTrash() {
             <thead>
               <tr>
                 <th>
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     aria-label="Select this page of Trash"
                     checked={
                       !!rows.length &&
@@ -589,32 +594,32 @@ function FileTrash() {
         </div>
       )}
       <div className="console-pagination">
-        <span className="ws-note">
+        <HelpText as="span">
           {data.data?.total
             ? `${offset + 1}–${offset + rows.length} of ${data.data.total} entries`
             : "0 entries"}
-        </span>
+        </HelpText>
         <span className="ws-spacer" />
-        <button
+        <Button
           className="button secondary"
           disabled={!offset || data.loading}
           onClick={() => setOffset((n) => Math.max(0, n - 50))}
         >
           Previous
-        </button>
-        <button
+        </Button>
+        <Button
           className="button secondary"
           disabled={data.data?.nextOffset == null || data.loading}
           onClick={() => setOffset(data.data!.nextOffset!)}
         >
           Next
-        </button>
+        </Button>
       </div>
-      <p className="ws-note">
+      <HelpText>
         Nothing expires automatically. Choose Delete to review what is ready,
         see why other items are kept, and resolve your own reading data before
         confirming permanent removal.
-      </p>
+      </HelpText>
       {operation && (
         <TrashOperationDialog
           key={operation}
@@ -728,8 +733,7 @@ function TrashTreeRow({
         }}
       >
         <td>
-          <input
-            type="checkbox"
+          <Checkbox
             aria-label={`Select ${item.name}`}
             checked={allMatching || selected.includes(item.id)}
             onChange={() => select(item, false, true)}
@@ -741,7 +745,7 @@ function TrashTreeRow({
             style={{ paddingInlineStart: `${depth * 1.25}em` }}
           >
             {item.has_children ? (
-              <button
+              <IconButton
                 className="icon-button"
                 aria-label={`${expanded ? "Collapse" : "Expand"} ${item.name}`}
                 aria-expanded={expanded}
@@ -752,7 +756,7 @@ function TrashTreeRow({
                 ) : (
                   <ChevronRight size={14} />
                 )}
-              </button>
+              </IconButton>
             ) : (
               <span className="console-tree-spacer" />
             )}
@@ -778,14 +782,14 @@ function TrashTreeRow({
         </td>
         <td>{bytes(Number(item.bytes ?? 0))}</td>
         <td>
-          <button
+          <IconButton
             className="icon-button"
             title={`Actions for ${item.name}`}
             aria-label={`Actions for ${item.name}`}
             onClick={(e) => menu(e, item)}
           >
             <MoreHorizontal size={16} />
-          </button>
+          </IconButton>
         </td>
       </tr>
       {expanded && (
@@ -812,22 +816,22 @@ function TrashTreeRow({
           {(offset > 0 || children.data?.nextOffset != null) && (
             <tr>
               <td colSpan={6}>
-                <div className="ws-actions">
-                  <button
+                <ActionRow>
+                  <Button
                     className="text-button"
                     disabled={!offset}
                     onClick={() => setOffset((n) => Math.max(0, n - 50))}
                   >
                     Previous children
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     className="text-button"
                     disabled={children.data?.nextOffset == null}
                     onClick={() => setOffset(children.data!.nextOffset!)}
                   >
                     More children
-                  </button>
-                </div>
+                  </Button>
+                </ActionRow>
               </td>
             </tr>
           )}
@@ -917,7 +921,7 @@ function WorkspaceTrash() {
       <div className="console-toolbar">
         <label className="console-search">
           Search workspaces
-          <input
+          <TextInput
             type="search"
             value={search}
             placeholder="Workspace or group name…"
@@ -925,7 +929,7 @@ function WorkspaceTrash() {
           />
         </label>
         <span className="ws-spacer" />
-        <button
+        <Button
           className="button secondary"
           disabled={!rows.length || action.busy}
           onClick={() =>
@@ -937,14 +941,14 @@ function WorkspaceTrash() {
         >
           <RotateCcw size={16} />
           Restore all matching
-        </button>
+        </Button>
       </div>
-      <p className="ws-note">
+      <HelpText>
         Each workspace is restored independently, including its previous
         archived state. Restore a trashed group in Group administration first.
         Personal and default group workspaces are protected from permanent
         deletion. Emptying file Trash never deletes a workspace.
-      </p>
+      </HelpText>
       <ErrorNotice message={data.error || action.error} retry={data.reload} />
       {!!selected.length && (
         <div
@@ -957,22 +961,22 @@ function WorkspaceTrash() {
             Clear selection
           </button>
           <span className="ws-spacer" />
-          <button
+          <Button
             className="button secondary"
             disabled={action.busy}
             onClick={() => preview("restore")}
           >
             <RotateCcw size={15} />
             Restore selected
-          </button>
-          <button
+          </Button>
+          <Button
             className="button secondary danger-text"
             disabled={action.busy}
             onClick={() => preview("purge")}
           >
             <Trash2 size={15} />
             Delete selected permanently
-          </button>
+          </Button>
         </div>
       )}
       {data.loading && !data.data ? (
@@ -988,8 +992,7 @@ function WorkspaceTrash() {
             <thead>
               <tr>
                 <th>
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     aria-label="Select matching workspaces"
                     checked={
                       !!rows.length &&
@@ -1032,8 +1035,7 @@ function WorkspaceTrash() {
                     }}
                   >
                     <td>
-                      <input
-                        type="checkbox"
+                      <Checkbox
                         aria-label={`Select ${s.name}`}
                         checked={selected.includes(s.id)}
                         onChange={(e) =>
@@ -1066,13 +1068,13 @@ function WorkspaceTrash() {
                     <td>{s.resources} resources</td>
                     <td>{bytes(s.bytes)}</td>
                     <td>
-                      <button
+                      <IconButton
                         className="icon-button"
                         aria-label={`Actions for ${s.name}`}
                         onClick={(e) => menu(e, s)}
                       >
                         <MoreHorizontal size={17} />
-                      </button>
+                      </IconButton>
                     </td>
                   </tr>
                 </Fragment>

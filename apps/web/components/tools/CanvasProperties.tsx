@@ -1,4 +1,11 @@
 "use client";
+import {
+  Button,
+  Checkbox,
+  HelpText,
+  NativeSelect,
+  TextInput,
+} from "../ui/controls";
 import { useEffect, useState, type ReactNode } from "react";
 import {
   canvasTitle,
@@ -32,9 +39,9 @@ export default function CanvasProperties({
 }) {
   if (!node && !edge)
     return (
-      <p className="ws-note">
+      <HelpText>
         Select one card or connection to inspect its properties.
-      </p>
+      </HelpText>
     );
   return (
     <fieldset className="canvas-properties" disabled={readOnly}>
@@ -95,17 +102,16 @@ export default function CanvasProperties({
                 <span className="canvas-property-value">
                   {preview?.resource.name ?? node.file}
                 </span>
-                <button
+                <Button
                   type="button"
                   className="button secondary"
                   onClick={changeFile}
                 >
                   Change file…
-                </button>
+                </Button>
               </Property>
               <label className="canvas-property-toggle">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={!node.versionId}
                   disabled={
                     readOnly || (preview?.kind !== "file" && !node.versionId)
@@ -130,14 +136,14 @@ export default function CanvasProperties({
                 </span>
               </label>
               <Property label="Image fit">
-                <select
+                <NativeSelect
                   aria-label="Image fit"
                   value={node.fit ?? "contain"}
                   onChange={(e) => updateNode({ fit: e.target.value })}
                 >
                   <option value="contain">Show entire image</option>
                   <option value="cover">Fill card</option>
-                </select>
+                </NativeSelect>
               </Property>
               {preview?.kind === "file" && preview.file.kind === "pdf" && (
                 <Property label="Preview page">
@@ -153,8 +159,7 @@ export default function CanvasProperties({
           )}
           <hr />
           <label className="canvas-property-toggle">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={!!node.locked}
               onChange={(e) => updateNode({ locked: e.target.checked })}
             />
@@ -164,8 +169,7 @@ export default function CanvasProperties({
           </label>
           {node.type !== "group" && (
             <label className="canvas-property-toggle">
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={node.heightMode === "auto"}
                 disabled={readOnly || !!node.locked}
                 onChange={(e) =>
@@ -205,18 +209,18 @@ export default function CanvasProperties({
             </Property>
           </div>
           {node.type === "group" && (
-            <button
+            <Button
               type="button"
               className="button secondary"
               disabled={!!node.locked}
               onClick={fitGroup}
             >
               Fit around contained cards
-            </button>
+            </Button>
           )}
-          <p className="ws-note">
+          <HelpText>
             {node.type} · {node.id}
-          </p>
+          </HelpText>
         </>
       )}
       {edge && (
@@ -232,7 +236,7 @@ export default function CanvasProperties({
           {(["from", "to"] as const).map((end) => (
             <div className="canvas-connection-properties" key={end}>
               <Property label={end === "from" ? "From card" : "To card"}>
-                <select
+                <NativeSelect
                   aria-label={`${end} card`}
                   value={edge[`${end}Node`]}
                   onChange={(e) =>
@@ -244,11 +248,11 @@ export default function CanvasProperties({
                       {canvasTitle(n)}
                     </option>
                   ))}
-                </select>
+                </NativeSelect>
               </Property>
               <div className="canvas-property-pair">
                 <Property label="Port">
-                  <select
+                  <NativeSelect
                     aria-label={`${end} port`}
                     value={
                       edge[`${end}Side`] ?? (end === "from" ? "right" : "left")
@@ -260,10 +264,10 @@ export default function CanvasProperties({
                     {canvasSides.map((side) => (
                       <option key={side}>{side}</option>
                     ))}
-                  </select>
+                  </NativeSelect>
                 </Property>
                 <Property label="Arrow">
-                  <select
+                  <NativeSelect
                     aria-label={`${end} arrow`}
                     value={
                       edge[`${end}End`] ?? (end === "to" ? "arrow" : "none")
@@ -274,7 +278,7 @@ export default function CanvasProperties({
                   >
                     <option value="none">None</option>
                     <option value="arrow">Arrow</option>
-                  </select>
+                  </NativeSelect>
                 </Property>
               </div>
             </div>
@@ -321,7 +325,7 @@ function Draft({
     setFocused(false);
   };
   return (
-    <input
+    <TextInput
       aria-label={label}
       type={type}
       maxLength={max}

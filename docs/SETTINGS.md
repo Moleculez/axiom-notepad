@@ -24,7 +24,7 @@ focus indicators; scrollbars never displace the other pane or shared actions.
   overwrite it. Every category uses the same full-width outer frame. Appearance
   and Writing add the live split preview within that frame.
 - **Appearance → Theme → Interface style** offers Axiom, Material Tonal, Fluent
-  Studio and Editorial component treatments. These affect controls, selection,
+  Studio, Editorial and macOS Studio component treatments. These affect controls, selection,
   navigation and surfaces—not just colors. Palette packs, custom colors, reading
   fonts, explicit shape/effect preferences and website templates stay independent.
   Public website reading preferences, six additional visual themes and privacy
@@ -136,10 +136,13 @@ reload unless saved; closing a dirty Settings tab prompts before discarding them
 
 `SettingsSplitPanel.tsx` owns pointer/keyboard resizing; `settings.css` scopes the
 layout and form treatment; `interface-styles.css` owns the common settings rail,
-frame and component presentations. Appearance schema 10 adds `interfaceStyle`,
-defaulting to Axiom, while schema 9 adds PDF-reader defaults, retaining
+frame and component presentations. The shared native controls are defined in
+`components/ui/controls.tsx` and `ui-controls.css`; precision sliders coalesce
+expensive preview updates to a frame and flush the last value on release/blur.
+See the [control contract](UI_CONTROLS.md). Appearance schema 11 adds macOS Studio
+to the registry; schema 10 adds `interfaceStyle`, defaulting to Axiom, while schema 9 adds PDF-reader defaults, retaining
 nested minimap preferences from schema 8, the reading-mark toggles from schema 7
-and `blockGuides` from schema 6. Versions 1–9 migrate without dropping
+and `blockGuides` from schema 6. Versions 1–10 migrate without dropping
 saved choices; older readers receive a compatible shape, and stale writes are
 rejected with 426.
 Save, cancel, section reset, offline merging and previous preferences include it.

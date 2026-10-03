@@ -69,32 +69,8 @@
   font-weight: 550;
 }
 .sidebar-directory-filter {
-  display: flex;
-  align-items: center;
-  gap: 7px;
   margin: 0 4px 9px;
-  padding: 0 8px;
-  border: 1px solid transparent;
-  border-radius: var(--control-radius-small);
-  background: color-mix(in srgb, var(--surface) 70%, transparent);
-  color: var(--muted);
-}
-.sidebar-directory-filter:focus-within {
-  border-color: var(--line);
-  background: var(--surface);
-}
-.sidebar-directory-filter svg {
-  flex-shrink: 0;
-}
-.ws-app .sidebar-directory-filter input {
-  width: 100%;
-  min-width: 0;
-  padding: 8px 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  font-size: 0.8em;
+  --field-width: calc(100% - 8px);
 }
 .sidebar-directory-list {
   list-style: none;

@@ -1,4 +1,12 @@
 "use client";
+import {
+  Button,
+  Checkbox,
+  IconButton,
+  TextInput,
+  NativeSelect,
+  SearchField,
+} from "./ui/controls";
 import { useState } from "react";
 import {
   ArrowDown,
@@ -7,7 +15,6 @@ import {
   Download,
   MoreHorizontal,
   Pencil,
-  Search,
   Trash2,
   Undo2,
   X,
@@ -141,27 +148,28 @@ export default function BookmarkManager({
   return (
     <div className="reading-mark-manager">
       <div className="reading-mark-search">
-        <Search size={14} />
-        <input
+        <SearchField
           aria-label="Search bookmarks"
           placeholder="Search labels or tags…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
+          onClear={() => setQuery("")}
+          clearLabel="Clear bookmark search"
         />
-        <select
+        <NativeSelect
           aria-label="Sort bookmarks"
           value={sort}
           onChange={(e) => setSort(e.target.value)}
         >
           <option value="document">Location</option>
           <option value="recent">Recent</option>
-        </select>
+        </NativeSelect>
       </div>
       <div className="reading-mark-tools">
         <span>
           {matches.length} bookmark{matches.length === 1 ? "" : "s"}
         </span>
-        <button
+        <IconButton
           className="icon-button"
           title="Previous bookmark"
           aria-label="Previous bookmark"
@@ -169,8 +177,8 @@ export default function BookmarkManager({
           onClick={() => step(-1)}
         >
           <ArrowUp size={14} />
-        </button>
-        <button
+        </IconButton>
+        <IconButton
           className="icon-button"
           title="Next bookmark"
           aria-label="Next bookmark"
@@ -178,8 +186,8 @@ export default function BookmarkManager({
           onClick={() => step(1)}
         >
           <ArrowDown size={14} />
-        </button>
-        <button
+        </IconButton>
+        <IconButton
           className="icon-button"
           title="Export bookmarks"
           aria-label="Export bookmarks"
@@ -233,7 +241,7 @@ export default function BookmarkManager({
           }
         >
           <Download size={14} />
-        </button>
+        </IconButton>
       </div>
       {error && (
         <p className="reading-mark-error" role="alert">
@@ -256,7 +264,7 @@ export default function BookmarkManager({
       {!!selected.length && (
         <div className="reading-mark-status">
           <span>{selected.length} selected</span>
-          <button
+          <IconButton
             className="icon-button"
             aria-label="Delete selected bookmarks"
             title="Delete selected bookmarks"
@@ -268,14 +276,14 @@ export default function BookmarkManager({
             }
           >
             <Trash2 size={14} />
-          </button>
-          <button
+          </IconButton>
+          <IconButton
             className="icon-button"
             aria-label="Clear bookmark selection"
             onClick={() => setSelected([])}
           >
             <X size={14} />
-          </button>
+          </IconButton>
         </div>
       )}
       {!matches.length && (
@@ -294,8 +302,7 @@ export default function BookmarkManager({
             key={entry.key}
             data-mark-color={item.data.color ?? "neutral"}
           >
-            <input
-              type="checkbox"
+            <Checkbox
               aria-label={`Select bookmark ${item.data.label || "Saved position"}`}
               checked={selected.includes(entry.key)}
               onChange={(e) =>
@@ -336,7 +343,7 @@ export default function BookmarkManager({
                 </small>
               )}
             </button>
-            <button
+            <IconButton
               className="icon-button"
               title="Bookmark actions"
               aria-label={`Actions for bookmark ${item.data.label || "Saved position"}`}
@@ -374,7 +381,7 @@ export default function BookmarkManager({
               }
             >
               <MoreHorizontal size={15} />
-            </button>
+            </IconButton>
             {editing?.id === item.id && (
               <form
                 className="reading-mark-edit"
@@ -394,7 +401,7 @@ export default function BookmarkManager({
               >
                 <label>
                   Label
-                  <input
+                  <TextInput
                     autoFocus
                     aria-label="Bookmark label"
                     value={editing.data.label}
@@ -409,7 +416,7 @@ export default function BookmarkManager({
                 </label>
                 <label>
                   Tags
-                  <input
+                  <TextInput
                     aria-label="Bookmark tags"
                     defaultValue={editing.data.tags?.join(", ") ?? ""}
                     placeholder="theory, review"
@@ -459,10 +466,10 @@ export default function BookmarkManager({
                   >
                     Cancel
                   </button>
-                  <button className="button secondary small" disabled={busy}>
+                  <Button className="button secondary small" disabled={busy}>
                     <Pencil size={13} />
                     Save bookmark
-                  </button>
+                  </Button>
                 </div>
               </form>
             )}

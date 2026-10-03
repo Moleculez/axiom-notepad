@@ -157,11 +157,7 @@
 }
 .ws-document .reading-controls input[type="range"] {
   width: 100px;
-  accent-color: var(--accent);
   margin: 0;
-  padding: 0;
-  min-height: 0;
-  height: 18px;
 }
 .ws-document .reading-controls select {
   width: 120px;

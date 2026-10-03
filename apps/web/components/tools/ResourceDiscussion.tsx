@@ -1,4 +1,13 @@
 "use client";
+import {
+  Button,
+  Checkbox,
+  HelpText,
+  IconButton,
+  NativeSelect,
+  TextInput,
+  TextArea,
+} from "../ui/controls";
 import { useState } from "react";
 import { MessageSquare, Send, Check, Trash2, RotateCcw } from "lucide-react";
 import { api, post } from "../../lib/client";
@@ -77,19 +86,18 @@ export default function ResourceDiscussion({
         <h2>Discussion</h2>
         <span className="tool-spacer" />
         <label>
-          <input
-            type="checkbox"
+          <Checkbox
             checked={showResolved}
             onChange={(e) => setShowResolved(e.target.checked)}
           />
           Resolved
         </label>
       </header>
-      <p className="ws-note">
+      <HelpText>
         {versionId
           ? "Comments stay attached to this exact file version."
           : "Shared with everyone who can read this project."}
-      </p>
+      </HelpText>
       <ErrorNotice message={error || data.error} />
       {data.loading && !data.data ? (
         <Loading />
@@ -109,13 +117,13 @@ export default function ResourceDiscussion({
                   <strong>{c.author}</strong>
                   <time>{new Date(c.created_at).toLocaleDateString()}</time>
                   {onAnchor && c.anchor.kind === "canvas-node" ? (
-                    <button
+                    <Button
                       type="button"
                       className="button ghost"
                       onClick={() => onAnchor(c.anchor)}
                     >
                       {label(c.anchor)}
-                    </button>
+                    </Button>
                   ) : (
                     <span>{label(c.anchor)}</span>
                   )}
@@ -123,7 +131,7 @@ export default function ResourceDiscussion({
                 <p>{c.body}</p>
                 {c.author_id === session.user.id && canComment && (
                   <div className="resource-comment-actions">
-                    <button
+                    <Button
                       className="button ghost"
                       onClick={() =>
                         void api(`resource-comments/${resourceId}/${c.id}`, {
@@ -140,8 +148,8 @@ export default function ResourceDiscussion({
                         <Check size={13} />
                       )}{" "}
                       {c.resolved ? "Reopen" : "Resolve"}
-                    </button>
-                    <button
+                    </Button>
+                    <IconButton
                       className="icon-button"
                       aria-label="Delete my comment"
                       title="Delete my comment"
@@ -155,7 +163,7 @@ export default function ResourceDiscussion({
                       }
                     >
                       <Trash2 size={13} />
-                    </button>
+                    </IconButton>
                   </div>
                 )}
               </article>
@@ -184,7 +192,7 @@ export default function ResourceDiscussion({
         >
           {kinds.length > 1 && (
             <div className="discussion-anchor">
-              <select
+              <NativeSelect
                 aria-label="Comment anchor type"
                 value={kind}
                 onChange={(e) => setKind(e.target.value)}
@@ -194,9 +202,9 @@ export default function ResourceDiscussion({
                     {k === "whole" ? "Whole file" : k}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
               {kind !== "whole" && (
-                <input
+                <TextInput
                   aria-label="Comment location"
                   required
                   value={location}
@@ -214,7 +222,7 @@ export default function ResourceDiscussion({
               )}
             </div>
           )}
-          <textarea
+          <TextArea
             aria-label="Write a comment"
             required
             rows={3}
@@ -223,10 +231,14 @@ export default function ResourceDiscussion({
             value={body}
             onChange={(e) => setBody(e.target.value)}
           />
-          <button className="button primary" disabled={busy || !body.trim()}>
+          <Button
+            className="button primary"
+            disabled={busy || !body.trim()}
+            pending={!!busy}
+          >
             <Send size={14} />
-            {busy ? "Posting…" : "Comment"}
-          </button>
+            {"Comment"}
+          </Button>
         </form>
       )}
     </section>

@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "./ui/controls";
 import { confirmAction } from "../lib/app-prompt";
 import { useEffect, useState } from "react";
 import {
@@ -106,7 +107,7 @@ export default function ResearchDataSettings({
             Open a PDF and choose Keep offline to add it here.
           </p>
         )}
-        <button
+        <Button
           className="button secondary small"
           disabled={!research.papers.length}
           onClick={async () => {
@@ -127,7 +128,7 @@ export default function ResearchDataSettings({
           }}
         >
           Clear offline PDFs only
-        </button>
+        </Button>
       </section>
       <section className="settings-card">
         <h3>
@@ -157,14 +158,14 @@ export default function ResearchDataSettings({
           this reading context.
         </p>
         <div className="button-row">
-          <button
+          <Button
             className="button secondary"
             onClick={() => void work(() => research.sync())}
           >
             <RefreshCw size={15} />
             Retry sync
-          </button>
-          <button
+          </Button>
+          <Button
             className="button secondary"
             onClick={() =>
               void work(async () => {
@@ -197,7 +198,7 @@ export default function ResearchDataSettings({
           >
             <Download size={15} />
             Export personal reading data
-          </button>
+          </Button>
         </div>
         <p className="muted">
           Includes your cached bookmarks, reading state, owned annotations and
@@ -217,16 +218,16 @@ export default function ResearchDataSettings({
               <p>{entry.error}</p>
               <div className="button-row">
                 {!Object.hasOwn(entry, "conflict") && (
-                  <button
+                  <Button
                     className="button secondary small"
                     onClick={() =>
                       void work(() => research.resolve(entry, true))
                     }
                   >
                     Retry this item
-                  </button>
+                  </Button>
                 )}
-                <button
+                <Button
                   className="button secondary small"
                   onClick={() =>
                     download(
@@ -237,28 +238,28 @@ export default function ResearchDataSettings({
                   }
                 >
                   Export local changes
-                </button>
+                </Button>
                 {Object.hasOwn(entry, "conflict") ? (
                   <>
-                    <button
+                    <Button
                       className="button secondary small"
                       onClick={() =>
                         void work(() => research.resolve(entry, true))
                       }
                     >
                       Keep my changes
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       className="button secondary small"
                       onClick={() =>
                         void work(() => research.resolve(entry, false))
                       }
                     >
                       Use server version
-                    </button>
+                    </Button>
                   </>
                 ) : (
-                  <button
+                  <Button
                     className="button secondary small"
                     onClick={async () => {
                       if (
@@ -277,7 +278,7 @@ export default function ResearchDataSettings({
                     }}
                   >
                     Discard local item
-                  </button>
+                  </Button>
                 )}
               </div>
             </article>

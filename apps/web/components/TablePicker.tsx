@@ -1,4 +1,5 @@
 "use client";
+import { Button, TextInput } from "./ui/controls";
 import { useState } from "react";
 export default function TablePicker({
   onInsert,
@@ -21,7 +22,7 @@ export default function TablePicker({
       <div className="table-picker-controls">
         <label>
           Data rows
-          <input
+          <TextInput
             name="rows"
             aria-label="Table rows"
             type="number"
@@ -33,7 +34,7 @@ export default function TablePicker({
         </label>
         <label>
           Columns
-          <input
+          <TextInput
             name="columns"
             aria-label="Table columns"
             type="number"
@@ -66,9 +67,9 @@ export default function TablePicker({
         )}
       </div>
       <div className="dialog-footer">
-        <button className="button primary" type="submit">
+        <Button className="button primary" type="submit">
           Insert table
-        </button>
+        </Button>
       </div>
     </form>
   );

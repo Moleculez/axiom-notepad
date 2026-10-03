@@ -1,3 +1,4 @@
+import { Button, Switch, NativeSelect } from "../../web/components/ui/controls";
 import { useEffect, useRef, useState } from "react";
 import { Download, Package, Copy } from "lucide-react";
 import {
@@ -223,7 +224,7 @@ export default function CanvasExport({
       <div className="canvas-export-fields">
         <label>
           Format
-          <select
+          <NativeSelect
             aria-label="Canvas export format"
             value={format}
             onChange={(e) => setFormat(e.target.value)}
@@ -237,11 +238,11 @@ export default function CanvasExport({
             <option value="png">PNG image</option>
             <option value="jpeg">JPEG image</option>
             <option value="pdf">PDF document</option>
-          </select>
+          </NativeSelect>
         </label>
         <label>
           Include
-          <select
+          <NativeSelect
             aria-label="Canvas export scope"
             value={scope}
             onChange={(e) => setScope(e.target.value)}
@@ -251,13 +252,13 @@ export default function CanvasExport({
               Selected cards
             </option>
             <option value="viewport">Current view</option>
-          </select>
+          </NativeSelect>
         </label>
         {visual && (
           <>
             <label>
               Resolution
-              <select
+              <NativeSelect
                 value={scale}
                 onChange={(e) => setScale(Number(e.target.value))}
               >
@@ -266,22 +267,21 @@ export default function CanvasExport({
                     {n}×
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
             </label>
             <label>
               Background
-              <select
+              <NativeSelect
                 value={background}
                 onChange={(e) => setBackground(e.target.value)}
               >
                 <option value="theme">Current theme</option>
                 <option value="white">White paper</option>
                 <option value="transparent">Transparent</option>
-              </select>
+              </NativeSelect>
             </label>
             <label className="demo-toggle">
-              <input
-                type="checkbox"
+              <Switch
                 checked={grid}
                 onChange={(e) => setGrid(e.target.checked)}
               />
@@ -319,19 +319,24 @@ export default function CanvasExport({
           {progress || "Exports do not change your working canvas."}
         </span>
         {format === "png" && (
-          <button
+          <Button
             className="button secondary"
             disabled={busy}
             onClick={() => void run(true)}
           >
             <Copy size={15} />
             Copy
-          </button>
+          </Button>
         )}
-        <button className="button" disabled={busy} onClick={() => void run()}>
+        <Button
+          variant="primary"
+          disabled={busy}
+          onClick={() => void run()}
+          pending={!!busy}
+        >
           <Download size={15} />
-          {busy ? "Preparing…" : "Export"}
-        </button>
+          {"Export"}
+        </Button>
       </DialogFooter>
     </Dialog>
   );

@@ -1,4 +1,12 @@
 "use client";
+import {
+  Button,
+  Checkbox,
+  HelpText,
+  NativeSelect,
+  TextArea,
+  TextInput,
+} from "../ui/controls";
 import { useEffect, useRef, useState } from "react";
 import { Upload, Sparkles, ScanText, Copy, X } from "lucide-react";
 import type { ToolJob } from "@axiom/shared/research-tools";
@@ -129,14 +137,14 @@ export default function MathAssistant({
   };
   return (
     <div className="math-assistant">
-      <p className="ws-note">
+      <HelpText>
         Results are suggestions, not proof verification. Review alongside your
         original. Nothing is sent automatically or silently replaces your work.
-      </p>
+      </HelpText>
       <div className="tool-settings-fields">
         <label>
           Task
-          <select
+          <NativeSelect
             value={kind}
             onChange={(e) => setKind(e.target.value as typeof kind)}
           >
@@ -144,11 +152,11 @@ export default function MathAssistant({
             <option value="check">Check mathematics</option>
             <option value="explain">Explain</option>
             <option value="ocr">Image / PDF → LaTeX</option>
-          </select>
+          </NativeSelect>
         </label>
         <label>
           Provider
-          <select
+          <NativeSelect
             value={provider}
             onChange={(e) => setProvider(e.target.value)}
           >
@@ -159,21 +167,21 @@ export default function MathAssistant({
                 {p.model}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
         {providers.loading ? (
           <Loading />
         ) : (
           !supported?.length && (
-            <p className="ws-note">
+            <HelpText>
               No compatible provider is enabled. A group administrator can add
               one under Group administration → Providers.
-            </p>
+            </HelpText>
           )
         )}
         <label className="tool-setting-stack">
           Instructions
-          <textarea
+          <TextArea
             rows={3}
             maxLength={10000}
             placeholder="Describe the expression or the question you want checked…"
@@ -217,7 +225,7 @@ export default function MathAssistant({
                 <span>{pdf.name}</span>
                 <label>
                   Page
-                  <input
+                  <TextInput
                     aria-label="PDF page for OCR"
                     type="number"
                     min={1}
@@ -225,13 +233,13 @@ export default function MathAssistant({
                     onChange={(e) => setPage(Number(e.target.value))}
                   />
                 </label>
-                <button
+                <Button
                   className="button secondary"
                   disabled={busy}
                   onClick={() => void renderPdf()}
                 >
                   Preview selected page
-                </button>
+                </Button>
               </div>
             )}
             {image && (
@@ -292,7 +300,7 @@ export default function MathAssistant({
                   )}
                 </div>
                 <div className="tool-controls">
-                  <button
+                  <Button
                     className="button secondary"
                     disabled={!crop || crop.width < 0.01 || crop.height < 0.01}
                     onClick={() => {
@@ -324,8 +332,8 @@ export default function MathAssistant({
                     }}
                   >
                     Apply crop
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     className="button ghost"
                     onClick={() => {
                       setImage(undefined);
@@ -333,7 +341,7 @@ export default function MathAssistant({
                     }}
                   >
                     Remove image
-                  </button>
+                  </Button>
                 </div>
               </>
             )}
@@ -344,8 +352,7 @@ export default function MathAssistant({
           <pre className="tool-submission-source">{source || "(empty)"}</pre>
         </details>
         <label className="tool-consent">
-          <input
-            type="checkbox"
+          <Checkbox
             checked={consent}
             onChange={(e) => setConsent(e.target.checked)}
           />
@@ -359,7 +366,7 @@ export default function MathAssistant({
             . I have permission to submit this research material.
           </span>
         </label>
-        <button
+        <Button
           className="button primary"
           disabled={
             readOnly ||
@@ -392,7 +399,7 @@ export default function MathAssistant({
         >
           {kind === "ocr" ? <ScanText size={15} /> : <Sparkles size={15} />}
           Submit explicitly
-        </button>
+        </Button>
       </div>
       <ErrorNotice message={error || providers.error || jobs.error} />
       <h3>Requests and reviewed results</h3>
@@ -404,9 +411,9 @@ export default function MathAssistant({
             </strong>
             <small>{new Date(job.created_at).toLocaleString()}</small>
           </div>
-          {job.error && <p className="ws-note">{job.error}</p>}
+          {job.error && <HelpText>{job.error}</HelpText>}
           {job.status === "queued" || job.status === "running" ? (
-            <button
+            <Button
               className="button secondary"
               onClick={() =>
                 void post(`tool-jobs/${job.id}/cancel`, {})
@@ -416,7 +423,7 @@ export default function MathAssistant({
             >
               <X size={14} />
               Cancel request
-            </button>
+            </Button>
           ) : job.result?.text ? (
             <>
               <div className="assistant-comparison">
@@ -429,7 +436,7 @@ export default function MathAssistant({
                   <pre>{job.result.text}</pre>
                 </div>
               </div>
-              <button
+              <Button
                 className="button secondary"
                 onClick={() =>
                   void navigator.clipboard.writeText(job.result!.text!).then(
@@ -440,14 +447,14 @@ export default function MathAssistant({
               >
                 <Copy size={14} />
                 Copy result
-              </button>
-              <button
+              </Button>
+              <Button
                 className="button secondary"
                 disabled={readOnly}
                 onClick={() => onInsert(job.result!.text!)}
               >
                 Insert reviewed result at selection
-              </button>
+              </Button>
             </>
           ) : null}
         </article>

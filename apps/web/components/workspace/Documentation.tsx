@@ -1,14 +1,8 @@
 "use client";
+import { Button, SearchField } from "../ui/controls";
 import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import {
-  ArrowRight,
-  BookOpen,
-  Copy,
-  FlaskConical,
-  Search,
-  X,
-} from "lucide-react";
+import { ArrowRight, BookOpen, Copy, FlaskConical } from "lucide-react";
 import { parseMarkdown } from "@axiom/markdown";
 import {
   docArticle,
@@ -91,24 +85,15 @@ export default function Documentation() {
         <WorkspaceLink to="/docs" className="docs-brand">
           <BookOpen size={18} /> Axiom guide
         </WorkspaceLink>
-        <label className="docs-search">
-          <Search size={15} />
-          <input
-            aria-label="Search documentation"
-            placeholder="Find a feature…"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-          {query && (
-            <button
-              className="icon-button"
-              aria-label="Clear documentation search"
-              onClick={() => setQuery("")}
-            >
-              <X size={14} />
-            </button>
-          )}
-        </label>
+        <SearchField
+          wrapperClassName="docs-search"
+          aria-label="Search documentation"
+          placeholder="Find a feature…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onClear={() => setQuery("")}
+          clearLabel="Clear documentation search"
+        />
         <nav aria-label="Documentation chapters">
           {docSections.map(([section, title]) => {
             const entries = results.filter((a) => a.section === section);
@@ -141,7 +126,7 @@ export default function Documentation() {
               <span className="docs-eyebrow">{activeSection?.[1]}</span>
               <h1>{article.title}</h1>
               <p>{article.summary}</p>
-              <button
+              <Button
                 className="button ghost docs-copy"
                 onClick={() =>
                   void navigator.clipboard.writeText(location.href).then(
@@ -152,7 +137,7 @@ export default function Documentation() {
               >
                 <Copy size={14} />
                 Copy link
-              </button>
+              </Button>
             </header>
             <ReadingView
               parsed={parsed}
@@ -203,12 +188,12 @@ export default function Documentation() {
                       Temporary sample · no files, uploads or cloud connection.
                     </p>
                   </div>
-                  <button
+                  <Button
                     className="button secondary"
                     onClick={() => setPlaying(playing === id ? null : id)}
                   >
                     {playing === id ? "Close example" : "Open example"}
-                  </button>
+                  </Button>
                 </div>
                 {playing === id &&
                   (article.playground === "canvas" ? (

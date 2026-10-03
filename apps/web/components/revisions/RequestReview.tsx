@@ -1,4 +1,5 @@
 "use client";
+import { Button, NativeSelect, TextArea } from "../ui/controls";
 import { useState } from "react";
 import Dialog from "../Dialog";
 import {
@@ -50,7 +51,7 @@ export default function RequestReview({
         {data.loading && <Loading label="Finding reviewers…" />}
         <label>
           Reviewer
-          <select
+          <NativeSelect
             required
             value={reviewer}
             onChange={(e) => setReviewer(e.target.value)}
@@ -61,11 +62,11 @@ export default function RequestReview({
                 {u.name}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
         <label>
           What should they check?
-          <textarea
+          <TextArea
             maxLength={5000}
             value={message}
             onChange={(e) => setMessage(e.target.value)}
@@ -74,15 +75,15 @@ export default function RequestReview({
         </label>
         <ErrorNotice message={action.error || data.error} />
         <div className="dialog-footer">
-          <button className="button secondary" type="button" onClick={onClose}>
+          <Button className="button secondary" type="button" onClick={onClose}>
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             className="button primary"
             disabled={action.busy || !reviewer}
           >
             Request review
-          </button>
+          </Button>
         </div>
       </form>
     </Dialog>

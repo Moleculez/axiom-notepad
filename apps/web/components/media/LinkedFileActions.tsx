@@ -1,4 +1,5 @@
 "use client";
+import { ActionRow, Button, IconButton } from "../ui/controls";
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { ExternalLink, Columns2, X } from "lucide-react";
@@ -141,19 +142,19 @@ export default function LinkedFileActions({
       <div className="linked-file-actions-heading">
         <h3>{resource?.name ?? "Attachment"}</h3>
         <span className="tool-spacer" />
-        <button
+        <IconButton
           className="icon-button"
           aria-label="Close file actions"
           onClick={() => dismiss.current()}
         >
           <X size={14} />
-        </button>
+        </IconButton>
       </div>
       <ErrorNotice message={error} />
       {resource ? (
         <>
-          <div className="ws-actions">
-            <button
+          <ActionRow>
+            <Button
               className="button secondary"
               onClick={() => {
                 open({ id: resource.id, kind: "file" });
@@ -162,8 +163,8 @@ export default function LinkedFileActions({
             >
               <ExternalLink size={14} />
               Open
-            </button>
-            <button
+            </Button>
+            <Button
               className="button secondary"
               onClick={() => {
                 open({ id: resource.id, kind: "file" }, true);
@@ -172,8 +173,8 @@ export default function LinkedFileActions({
             >
               <Columns2 size={14} />
               Open beside
-            </button>
-          </div>
+            </Button>
+          </ActionRow>
           <FileIdentity
             key={`${resource.id}:${target.version}`}
             resource={resource}

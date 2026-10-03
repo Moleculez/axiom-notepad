@@ -1,4 +1,5 @@
 "use client";
+import { IconButton, InputGroup, TextInput } from "./ui/controls";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { Check, ChevronDown, Globe2 } from "lucide-react";
 import {
@@ -14,15 +15,22 @@ export default function TimeZoneInput({
   onChange,
   required = false,
   disabled = false,
+  id: suppliedId,
+  "aria-describedby": described,
+  "aria-invalid": invalid,
   "aria-label": label = "Time zone",
 }: {
   value: string;
   onChange: (zone: string) => void;
   required?: boolean;
   disabled?: boolean;
+  id?: string;
+  "aria-describedby"?: string;
+  "aria-invalid"?: boolean | "true" | "false";
   "aria-label"?: string;
 }) {
-  const id = useId(),
+  const generated = useId(),
+    id = suppliedId ?? generated,
     input = useRef<HTMLInputElement>(null),
     popup = useRef<HTMLSpanElement>(null);
   const [shown, setShown] = useState(false),
@@ -73,9 +81,29 @@ export default function TimeZoneInput({
         }
       }}
     >
-      <span className="timezone-input-row">
-        <Globe2 size={16} aria-hidden="true" />
-        <input
+      <InputGroup
+        className="timezone-input-row"
+        leading={<Globe2 aria-hidden="true" />}
+        trailing={
+          <IconButton
+            type="button"
+            disabled={disabled}
+            tabIndex={-1}
+            label="Show time zones"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => {
+              if (input.current?.matches(":disabled")) return;
+              input.current?.focus();
+              if (shown) setShown(false);
+              else show();
+            }}
+          >
+            <ChevronDown aria-hidden="true" />
+          </IconButton>
+        }
+      >
+        <TextInput
+          id={id}
           ref={input}
           role="combobox"
           aria-label={label}
@@ -85,8 +113,12 @@ export default function TimeZoneInput({
           aria-activedescendant={
             shown && options[active] ? `${id}-${active}` : undefined
           }
-          aria-invalid={(touched && !valid) || undefined}
-          aria-describedby={touched && !valid ? `${id}-error` : undefined}
+          aria-invalid={invalid || (touched && !valid) || undefined}
+          aria-describedby={
+            [described, touched && !valid && `${id}-error`]
+              .filter(Boolean)
+              .join(" ") || undefined
+          }
           required={required}
           disabled={disabled}
           autoComplete="off"
@@ -126,23 +158,7 @@ export default function TimeZoneInput({
             } else if (event.key === "Tab") setShown(false);
           }}
         />
-        <button
-          type="button"
-          disabled={disabled}
-          tabIndex={-1}
-          className="icon-button"
-          aria-label="Show time zones"
-          onMouseDown={(event) => event.preventDefault()}
-          onClick={() => {
-            if (input.current?.matches(":disabled")) return;
-            input.current?.focus();
-            if (shown) setShown(false);
-            else show();
-          }}
-        >
-          <ChevronDown size={15} />
-        </button>
-      </span>
+      </InputGroup>
       {shown && !disabled && (
         <span className="timezone-options" ref={popup}>
           <span id={`${id}-options`} role="listbox" aria-label="Time zones">

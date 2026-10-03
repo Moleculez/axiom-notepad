@@ -45,7 +45,6 @@ test("My groups and storage management stay in Settings without sidebar footer s
     ).toHaveCount(1);
     await page.screenshot({ path: info.outputPath("settings-my-groups.png") });
 
-    await nav.getByRole("link", { name: "Storage", exact: true }).click();
     const storage = nav.locator("section").filter({
       has: page.getByRole("heading", { name: "Storage", exact: true }),
     });
@@ -63,7 +62,6 @@ test("My groups and storage management stay in Settings without sidebar footer s
     await page.screenshot({
       path: info.outputPath("settings-storage-management.png"),
     });
-    await nav.getByRole("link", { name: "Account", exact: true }).click();
     await nav.getByRole("link", { name: "Profile", exact: true }).click();
     await expect(page.getByLabel("Full name", { exact: true })).toHaveValue(
       "Retained profile draft",

@@ -1,4 +1,11 @@
 "use client";
+import {
+  ActionRow,
+  Button,
+  HelpText,
+  TextInput,
+  TextArea,
+} from "../ui/controls";
 import { useEffect, useRef, useState } from "react";
 import { Link2, Plus, Users, Mail } from "lucide-react";
 import { invitationToken } from "@axiom/shared/invitation-input";
@@ -75,20 +82,20 @@ export default function GroupsHub({
         </PageHeading>
       )}
       <div className="workspace-action-row">
-        <input
+        <TextInput
           aria-label="Search your groups"
           placeholder="Find a group…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <button className="button secondary" onClick={() => setJoining(true)}>
+        <Button className="button secondary" onClick={() => setJoining(true)}>
           <Link2 size={16} />
           Join with invitation
-        </button>
-        <button className="button primary" onClick={() => setCreating(true)}>
+        </Button>
+        <Button className="button primary" onClick={() => setCreating(true)}>
           <Plus size={16} />
           Create group
-        </button>
+        </Button>
       </div>
       <ErrorNotice
         message={action.error || invitations.error}
@@ -120,22 +127,22 @@ export default function GroupsHub({
                   {new Date(invite.expires_at).toLocaleDateString()}
                 </small>
               </div>
-              <div className="ws-actions">
-                <button
+              <ActionRow>
+                <Button
                   className="button secondary"
                   disabled={action.busy}
                   onClick={() => respond(invite, true)}
                 >
                   Decline
-                </button>
-                <button
+                </Button>
+                <Button
                   className="button primary"
                   disabled={action.busy}
                   onClick={() => respond(invite, false)}
                 >
                   {invite.already_joined ? "Open group" : "Accept invitation"}
-                </button>
-              </div>
+                </Button>
+              </ActionRow>
             </div>
           ))}
         </section>
@@ -236,14 +243,14 @@ export default function GroupsHub({
             notes, and account stay yours.
           </p>
           {leave.role === "owner" ? (
-            <p className="ws-note">
+            <HelpText>
               Transfer group ownership before leaving. The last project lead
               must also appoint a replacement.
-            </p>
+            </HelpText>
           ) : (
             <label>
               Type the group name
-              <input
+              <TextInput
                 aria-label="Confirm group departure"
                 value={confirmation}
                 onChange={(e) => setConfirmation(e.target.value)}
@@ -252,22 +259,22 @@ export default function GroupsHub({
           )}
           <ErrorNotice message={action.error} />
           <div className="dialog-footer">
-            <button
+            <Button
               className="button secondary"
               disabled={action.busy}
               onClick={() => setLeave(null)}
             >
               Cancel
-            </button>
+            </Button>
             {leave.role === "owner" ? (
-              <button
+              <Button
                 className="button primary"
                 onClick={() => navigate(`/admin/${leave.id}/members`)}
               >
                 Transfer ownership
-              </button>
+              </Button>
             ) : (
-              <button
+              <Button
                 className="button danger"
                 disabled={action.busy || confirmation !== leave.name}
                 onClick={() =>
@@ -279,7 +286,7 @@ export default function GroupsHub({
                 }
               >
                 Leave group
-              </button>
+              </Button>
             )}
           </div>
         </Dialog>
@@ -330,7 +337,7 @@ export function CreateGroupDialog({
         </p>
         <label>
           Group name
-          <input
+          <TextInput
             autoFocus
             required
             maxLength={200}
@@ -341,7 +348,7 @@ export function CreateGroupDialog({
         </label>
         <label>
           Description <span className="muted">(optional)</span>
-          <textarea
+          <TextArea
             rows={3}
             maxLength={2000}
             value={description}
@@ -350,20 +357,21 @@ export function CreateGroupDialog({
         </label>
         <ErrorNotice message={action.error} />
         <div className="dialog-footer">
-          <button
+          <Button
             type="button"
             className="button secondary"
             disabled={action.busy}
             onClick={onClose}
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             className="button primary"
             disabled={action.busy || !name.trim()}
+            pending={!!action.busy}
           >
-            {action.busy ? "Creating…" : "Create group"}
-          </button>
+            {"Create group"}
+          </Button>
         </div>
       </form>
     </Dialog>
@@ -409,7 +417,7 @@ function JoinGroupDialog({
         </p>
         <label>
           Invitation link or token
-          <input
+          <TextInput
             autoFocus
             autoComplete="off"
             spellCheck={false}
@@ -432,16 +440,16 @@ function JoinGroupDialog({
           </section>
         )}
         <div className="dialog-footer">
-          <button
+          <Button
             type="button"
             className="button secondary"
             disabled={action.busy}
             onClick={onClose}
           >
             Cancel
-          </button>
+          </Button>
           {invite ? (
-            <button
+            <Button
               type="button"
               className="button primary"
               disabled={action.busy}
@@ -454,14 +462,15 @@ function JoinGroupDialog({
               }
             >
               {invite.already_joined ? "Open group" : "Accept invitation"}
-            </button>
+            </Button>
           ) : (
-            <button
+            <Button
               className="button primary"
               disabled={action.busy || !value.trim()}
+              pending={!!action.busy}
             >
-              {action.busy ? "Checking…" : "Preview invitation"}
-            </button>
+              {"Preview invitation"}
+            </Button>
           )}
         </div>
       </form>

@@ -1,4 +1,5 @@
 "use client";
+import { IconButton } from "./ui/controls";
 import {
   useEffect,
   useId,
@@ -773,7 +774,7 @@ export default function DocumentMinimap(props: Props) {
           />
         ))}
       </div>
-      <button
+      <IconButton
         className="minimap-menu icon-button"
         aria-label="Minimap options"
         title={compact ? "Minimap options · compact pane" : "Minimap options"}
@@ -784,7 +785,7 @@ export default function DocumentMinimap(props: Props) {
         }}
       >
         <MoreHorizontal size={13} />
-      </button>
+      </IconButton>
       <span className="sr-only" role="status">
         {message}
       </span>

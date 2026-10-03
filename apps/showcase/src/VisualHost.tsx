@@ -1,3 +1,8 @@
+import {
+  Button,
+  IconButton,
+  NativeSelect,
+} from "../../web/components/ui/controls";
 import { useEffect, useRef, useState } from "react";
 import {
   ZoomIn,
@@ -185,24 +190,24 @@ function Viewer({
       }}
     >
       <div className="demo-visual-toolbar">
-        <button
+        <IconButton
           className="icon-button"
           aria-label="Previous image"
           disabled={index === 0}
           onClick={() => setIndex((i) => i - 1)}
         >
           <ArrowLeft size={16} />
-        </button>
-        <button
+        </IconButton>
+        <IconButton
           className="icon-button"
           aria-label="Next image"
           disabled={index >= request.items.length - 1}
           onClick={() => setIndex((i) => i + 1)}
         >
           <ArrowRight size={16} />
-        </button>
+        </IconButton>
         <span className="tool-spacer" />
-        <button
+        <IconButton
           className="icon-button"
           aria-label="Zoom out"
           onClick={() =>
@@ -210,9 +215,9 @@ function Viewer({
           }
         >
           <ZoomOut size={17} />
-        </button>
+        </IconButton>
         <span>{Math.round(transform.zoom * 100)}%</span>
-        <button
+        <IconButton
           className="icon-button"
           aria-label="Zoom in"
           onClick={() =>
@@ -220,8 +225,8 @@ function Viewer({
           }
         >
           <ZoomIn size={17} />
-        </button>
-        <button
+        </IconButton>
+        <Button
           className="button ghost"
           onClick={() =>
             media &&
@@ -237,8 +242,8 @@ function Viewer({
           }
         >
           Fit
-        </button>
-        <button
+        </Button>
+        <IconButton
           className="icon-button"
           aria-label="Rotate image"
           onClick={() =>
@@ -246,16 +251,16 @@ function Viewer({
           }
         >
           <RotateCw size={17} />
-        </button>
-        <button
+        </IconButton>
+        <IconButton
           className="icon-button"
           aria-label="Image information"
           aria-pressed={information}
           onClick={() => setInformation((old) => !old)}
         >
           <Info size={17} />
-        </button>
-        <button
+        </IconButton>
+        <IconButton
           className="icon-button"
           aria-label={
             fullscreen.active ? "Exit fullscreen" : "Fullscreen viewer"
@@ -263,7 +268,7 @@ function Viewer({
           onClick={() => void fullscreen.toggle()}
         >
           {fullscreen.active ? <Minimize size={17} /> : <Maximize size={17} />}
-        </button>
+        </IconButton>
       </div>
       <div className="demo-visual-body" ref={stage}>
         <div className="demo-visual-stage">
@@ -320,7 +325,7 @@ function Viewer({
       </div>
       <DialogFooter>
         <span>{media?.notice || "Drag to pan · scroll to zoom"}</span>
-        <select
+        <NativeSelect
           aria-label="Visual export format"
           value={format}
           onChange={(e) => setFormat(e.target.value)}
@@ -330,15 +335,15 @@ function Viewer({
           <option value="webp">WebP</option>
           {media?.svg && <option value="svg">SVG</option>}
           {item.kind === "image" && <option value="original">Original</option>}
-        </select>
-        <button
+        </NativeSelect>
+        <Button
           className="button secondary"
           disabled={!media}
           onClick={() => void download()}
         >
           <Download size={15} />
           Download
-        </button>
+        </Button>
       </DialogFooter>
     </Dialog>
   );

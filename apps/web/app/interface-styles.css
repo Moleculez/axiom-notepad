@@ -1,9 +1,22 @@
 /* Component presentation belongs to the application, not untrusted theme CSS.
    Explicit radius, font, contrast and motion preferences remain authoritative. */
-html[data-interface-style="material"] .ws-app {
+html[data-interface-style="material"] {
+  --field-surface: color-mix(in srgb, var(--surface) 80%, var(--accent-bg));
+  --field-edge: transparent;
   --control-radius: calc(var(--radius) * 1.65);
   --control-radius-small: calc(var(--radius) * 0.9);
   --panel-radius: calc(var(--radius) * 1.8);
+  --window-radius: calc(var(--radius) * 2);
+  --control-surface: var(--accent-bg);
+  --control-edge: transparent;
+  --control-hover: color-mix(in srgb, var(--accent-bg) 80%, var(--accent) 20%);
+  --checkbox-radius: min(0.25em, calc(var(--radius) * 0.35));
+  --switch-off: var(--surface);
+  --slider-track-height: 6px;
+  --slider-thumb-width: 6px;
+  --slider-thumb-height: 22px;
+  --slider-thumb-radius: var(--control-radius-small);
+  --slider-thumb-fill: var(--accent);
 }
 html[data-interface-style="material"]
   :is(
@@ -35,16 +48,25 @@ html[data-interface-style="material"]
   border-radius: calc(var(--radius) * 1.8);
   box-shadow: var(--shadow);
 }
-html[data-interface-style="fluent"] .ws-app {
+html[data-interface-style="fluent"] {
+  --field-surface: var(--paper);
+  --field-edge: var(--line);
   --control-radius: calc(var(--radius) * 0.5);
   --control-radius-small: calc(var(--radius) * 0.35);
   --panel-radius: var(--radius);
+  --window-radius: var(--radius);
+  --control-surface: var(--paper);
+  --control-edge: var(--line);
+  --control-hover: var(--surface);
+  --checkbox-radius: min(0.18em, calc(var(--radius) * 0.2));
+  --slider-track-height: 3px;
+  --slider-thumb-width: 16px;
+  --slider-thumb-height: 16px;
 }
 html[data-interface-style="fluent"]
   :is(.button.secondary, .theme-workbench-input input) {
   background: var(--paper);
   border-color: var(--line);
-  border-bottom-color: var(--muted);
 }
 html[data-interface-style="fluent"]
   :is(.ws-side-link.active, .page-section-link.active) {
@@ -64,10 +86,18 @@ html[data-interface-style="fluent"]
   border-radius: var(--radius);
   box-shadow: var(--shadow);
 }
-html[data-interface-style="editorial"] .ws-app {
+html[data-interface-style="editorial"] {
+  --field-surface: var(--paper);
+  --field-edge: var(--line);
   --control-radius: calc(var(--radius) * 0.25);
   --control-radius-small: calc(var(--radius) * 0.2);
   --panel-radius: calc(var(--radius) * 0.5);
+  --window-radius: calc(var(--radius) * 0.5);
+  --control-surface: var(--paper);
+  --control-edge: var(--line);
+  --control-hover: var(--surface);
+  --checkbox-radius: 0;
+  --slider-track-height: 2px;
 }
 html[data-interface-style="editorial"]
   :is(
@@ -81,6 +111,58 @@ html[data-interface-style="editorial"]
   background: var(--paper);
   backdrop-filter: none;
   box-shadow: none;
+}
+html[data-interface-style="macos"] {
+  --field-surface: color-mix(in srgb, var(--surface) 55%, var(--paper));
+  --field-edge: var(--line);
+  --control-radius: calc(var(--radius) * 0.65);
+  --control-radius-small: calc(var(--radius) * 0.45);
+  --panel-radius: calc(var(--radius) * 1.1);
+  --window-radius: calc(var(--radius) * 1.6);
+  --control-surface: color-mix(in srgb, var(--paper) 70%, var(--surface));
+  --control-edge: var(--line);
+  --control-hover: var(--surface);
+  --checkbox-radius: min(0.3em, calc(var(--radius) * 0.3));
+  --switch-width: 2.4em;
+  --switch-height: 1.4em;
+  --slider-track-height: 3px;
+  --slider-thumb-width: 17px;
+  --slider-thumb-height: 17px;
+}
+html[data-interface-style="macos"] :is(.settings-rail, .ws-sidebar) {
+  background: var(--chrome-background, var(--sidebar));
+}
+html[data-interface-style="macos"]
+  :is(
+    .ws-side-link.active,
+    .page-section-link.active,
+    .theme-workbench-row.is-selected
+  ) {
+  background: var(--accent-bg);
+  color: var(--accent);
+  border-radius: var(--control-radius);
+}
+html[data-interface-style="macos"]
+  :is(
+    .dialog,
+    .axiom-field-dialog,
+    .action-menu,
+    .editor-context-menu,
+    .axiom-completions
+  ) {
+  background: var(--paper);
+  border-color: var(--line);
+  border-radius: var(--window-radius);
+  box-shadow: var(--shadow);
+}
+html[data-interface-style="macos"] :is(.dialog-heading, .dialog-footer) {
+  background: color-mix(in srgb, var(--paper) 85%, var(--surface));
+}
+html[data-interface-style="material"] .dialog-footer {
+  background: color-mix(in srgb, var(--accent-bg) 25%, var(--paper));
+}
+html[data-interface-style="fluent"] .dialog-heading {
+  border-block-end: 1px solid var(--line);
 }
 html[data-interface-style="editorial"]
   :is(.ws-side-link.active, .page-section-link.active) {
@@ -170,6 +252,10 @@ html[data-interface-style="editorial"]
   border-radius: 0;
   background: transparent;
   border-width: 0 0 2px;
+}
+.interface-style-sample.style-macos i {
+  border-radius: calc(var(--radius) * 0.65);
+  background: var(--paper);
 }
 
 /* One settings frame, irrespective of the category or preview visibility. */

@@ -1,4 +1,13 @@
 "use client";
+import {
+  ActionRow,
+  Button,
+  IconButton,
+  TextInput,
+  SearchField,
+  NativeSelect,
+  TextArea,
+} from "../ui/controls";
 import ReferencePrefix from "../media/ReferencePrefix";
 import TimeZoneInput from "../TimeZoneInput";
 import { useEffect, useState } from "react";
@@ -213,14 +222,14 @@ export default function UnifiedWorkspace({
             {space.description ? ` · ${space.description}` : ""}
           </p>
         </div>
-        <button
+        <IconButton
           className="icon-button"
           title="Workspace actions"
           aria-label="Workspace actions"
           onClick={(e) => management.workspaceMenu(e, space)}
         >
           <Settings2 size={19} />
-        </button>
+        </IconButton>
       </header>
       <nav className="unified-workspace-nav" aria-label="Workspace sections">
         {space.group_id && (
@@ -296,23 +305,24 @@ function WorkspaceDirectory() {
         title={researchView ? "Choose a research workspace" : "Workspaces"}
         eyebrow="RESEARCH, TOGETHER"
         actions={
-          <button className="button primary" onClick={() => setCreating(true)}>
+          <Button className="button primary" onClick={() => setCreating(true)}>
             <Plus size={16} />
             New workspace
-          </button>
+          </Button>
         }
       >
         One home for your files, plans, evidence and conversations.
       </PageHeading>
       <div className="workspace-directory-filters">
-        <input
-          type="search"
+        <SearchField
           aria-label="Find a workspace"
           placeholder="Find a workspace…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
+          onClear={() => setSearch("")}
+          clearLabel="Clear workspace search"
         />
-        <select
+        <NativeSelect
           aria-label="Workspace state"
           value={state}
           onChange={(e) => setState(e.target.value)}
@@ -320,10 +330,10 @@ function WorkspaceDirectory() {
           <option value="active">Active</option>
           <option value="archived">Archived</option>
           <option value="">All states</option>
-        </select>
+        </NativeSelect>
         <WorkspaceLink to="/groups" className="button secondary">
-          <Users size={16} />
-          Manage groups
+          <Users size={16} aria-hidden="true" />
+          <span>Manage groups</span>
         </WorkspaceLink>
       </div>
       <ErrorNotice message={data.error} retry={data.reload} />
@@ -426,7 +436,7 @@ function CreateWorkspace({ onClose }: { onClose: () => void }) {
       >
         <label>
           Name
-          <input
+          <TextInput
             autoFocus
             required
             maxLength={200}
@@ -436,7 +446,7 @@ function CreateWorkspace({ onClose }: { onClose: () => void }) {
         </label>
         <label>
           Description
-          <textarea
+          <TextArea
             rows={3}
             maxLength={3000}
             value={description}
@@ -446,7 +456,7 @@ function CreateWorkspace({ onClose }: { onClose: () => void }) {
         <div className="planning-field-grid">
           <label>
             Group
-            <select
+            <NativeSelect
               required
               value={group}
               onChange={(e) => setGroup(e.target.value)}
@@ -456,17 +466,17 @@ function CreateWorkspace({ onClose }: { onClose: () => void }) {
                   {g.name}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </label>
           <label>
             Access
-            <select
+            <NativeSelect
               value={audience}
               onChange={(e) => setAudience(e.target.value)}
             >
               <option value="restricted">Invited workspace members</option>
               <option value="group">Everyone in the group</option>
-            </select>
+            </NativeSelect>
           </label>
         </div>
         {!session.groups.length && (
@@ -477,15 +487,15 @@ function CreateWorkspace({ onClose }: { onClose: () => void }) {
         )}
         <ErrorNotice message={action.error} />
         <div className="dialog-footer">
-          <button type="button" className="button secondary" onClick={onClose}>
+          <Button type="button" className="button secondary" onClick={onClose}>
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             className="button primary"
             disabled={action.busy || !name.trim() || !group}
           >
             Create workspace
-          </button>
+          </Button>
         </div>
       </form>
     </Dialog>
@@ -508,7 +518,7 @@ function WorkspaceOverview({ space }: { space: Space }) {
           Start with a question, keep the evidence close, and make the next step
           clear.
         </p>
-        <div className="ws-actions">
+        <ActionRow>
           <WorkspaceLink
             className="button primary"
             to={`/workspaces/${space.id}/planning?task=new`}
@@ -523,7 +533,7 @@ function WorkspaceOverview({ space }: { space: Space }) {
             <ChartGantt size={16} />
             Open timeline
           </WorkspaceLink>
-        </div>
+        </ActionRow>
       </div>
       <ErrorNotice message={data.error} retry={data.reload} />
       {data.loading && !data.data ? (
@@ -803,7 +813,7 @@ function WorkspaceMetadata({ space }: { space: Space }) {
         >
           <label>
             Name
-            <input
+            <TextInput
               required
               maxLength={200}
               value={name}
@@ -812,7 +822,7 @@ function WorkspaceMetadata({ space }: { space: Space }) {
           </label>
           <label>
             Description
-            <textarea
+            <TextArea
               rows={3}
               maxLength={3000}
               value={description}
@@ -822,16 +832,19 @@ function WorkspaceMetadata({ space }: { space: Space }) {
           <div className="planning-field-grid">
             <label>
               Workspace color
-              <select value={color} onChange={(e) => setColor(e.target.value)}>
+              <NativeSelect
+                value={color}
+                onChange={(e) => setColor(e.target.value)}
+              >
                 {["blue", "green", "purple", "orange"].map((c) => (
                   <option key={c}>{c}</option>
                 ))}
-              </select>
+              </NativeSelect>
             </label>
             {space.project_id && (
               <label>
                 Audience
-                <select
+                <NativeSelect
                   value={audience}
                   onChange={(e) =>
                     setAudience(e.target.value as "group" | "restricted")
@@ -839,13 +852,13 @@ function WorkspaceMetadata({ space }: { space: Space }) {
                 >
                   <option value="restricted">Invited workspace members</option>
                   <option value="group">Everyone in the group</option>
-                </select>
+                </NativeSelect>
               </label>
             )}
           </div>
-          <button className="button primary" disabled={!dirty}>
+          <Button className="button primary" disabled={!dirty}>
             Save settings
-          </button>
+          </Button>
         </fieldset>
         <ErrorNotice message={action.error} />
       </form>
@@ -933,13 +946,13 @@ function CalendarForm({
         </div>
         <h3>Date exceptions</h3>
         <div className="planning-field-grid">
-          <input
+          <TextInput
             type="date"
             aria-label="Exception date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
           />
-          <button
+          <Button
             className="button secondary"
             disabled={!date || calendar.exceptions.some((e) => e.date === date)}
             onClick={() => {
@@ -951,12 +964,12 @@ function CalendarForm({
             }}
           >
             Add exception
-          </button>
+          </Button>
         </div>
         {calendar.exceptions.map((e) => (
           <div className="planning-calendar-exception" key={e.date}>
             <span>{e.date}</span>
-            <select
+            <NativeSelect
               aria-label={`Working status on ${e.date}`}
               value={String(e.working)}
               onChange={(event) =>
@@ -972,7 +985,7 @@ function CalendarForm({
             >
               <option value="false">Non-working day</option>
               <option value="true">Working day</option>
-            </select>
+            </NativeSelect>
             <button
               className="text-button"
               onClick={() =>
@@ -988,7 +1001,7 @@ function CalendarForm({
             </button>
           </div>
         ))}
-        <button
+        <Button
           className="button primary"
           onClick={() =>
             void action.run(async () => {
@@ -1007,7 +1020,7 @@ function CalendarForm({
           }
         >
           Save calendar
-        </button>
+        </Button>
       </fieldset>
       <ErrorNotice message={action.error} />
     </section>

@@ -7,6 +7,51 @@ import {
   type Task,
 } from "./workspace";
 
+export const dependencyLinkSchema = z.object({
+  taskId: z.uuid(),
+  lagDays: z.number().int().min(-365).max(365).default(0),
+});
+export type DependencyLink = z.infer<typeof dependencyLinkSchema>;
+export function taskDependencyLinks(task: {
+  dependencies?: string[];
+  dependencyLinks?: DependencyLink[];
+}): DependencyLink[] {
+  const lags = new Map(
+    (task.dependencyLinks ?? []).map((link) => [link.taskId, link.lagDays]),
+  );
+  return [
+    ...new Set(
+      task.dependencies ?? task.dependencyLinks?.map((l) => l.taskId) ?? [],
+    ),
+  ].map((taskId) => ({ taskId, lagDays: lags.get(taskId) ?? 0 }));
+}
+/** Old ID-only writes retain offsets on unchanged links. New links start at zero. */
+export function resolveDependencyLinks(
+  raw: { dependencies?: string[]; dependencyLinks?: DependencyLink[] },
+  previous: DependencyLink[] = [],
+): DependencyLink[] {
+  if (raw.dependencyLinks !== undefined) {
+    const links = z
+      .array(dependencyLinkSchema)
+      .max(100)
+      .parse(raw.dependencyLinks);
+    if (new Set(links.map((l) => l.taskId)).size !== links.length)
+      throw new Error("A dependency may appear only once.");
+    if (
+      raw.dependencies !== undefined &&
+      (new Set(raw.dependencies).size !== links.length ||
+        links.some((l) => !raw.dependencies!.includes(l.taskId)))
+    )
+      throw new Error("Dependency IDs and relationships must agree.");
+    return links;
+  }
+  if (raw.dependencies === undefined) return previous;
+  const prior = new Map(previous.map((l) => [l.taskId, l.lagDays]));
+  return [...new Set(z.array(z.uuid()).max(100).parse(raw.dependencies))].map(
+    (taskId) => ({ taskId, lagDays: prior.get(taskId) ?? 0 }),
+  );
+}
+
 /** Local drafts are untrusted input; an unfinished title is valid before saving. */
 export const planningDraftSchema = z.object({
   title: z.string().max(300),
@@ -22,6 +67,8 @@ export const planningDraftSchema = z.object({
   milestoneId: z.uuid().nullable(),
   resourceIds: z.array(z.uuid()).max(100),
   dependencies: z.array(z.uuid()).max(100),
+  dependencyLinks: z.array(dependencyLinkSchema).max(100).optional(),
+  progressPercent: z.number().int().min(0).max(100).default(0),
   version: z.number().int().positive().optional(),
 });
 export type PlanningDraft = z.infer<typeof planningDraftSchema>;
@@ -58,6 +105,10 @@ export type PlanningTask = Omit<Task, "project_id"> & {
   deleted_at: string | null;
   resource_ids: string[];
   position: number;
+  dependencyLinks?: DependencyLink[];
+  progress_percent?: number;
+  derived_progress_percent?: number;
+  has_children?: boolean;
 };
 export type ScheduleChange = {
   id: string;
@@ -120,6 +171,84 @@ export function nextWorkingDay(
   for (let i = 0; i < 10000; i++, current = addDays(current, 1))
     if (workingDay(current, calendar)) return current;
   throw new Error("No working day within the supported calendar range.");
+}
+/** Offset from the next working day; -1 permits overlap on the predecessor's finish. */
+export function dependencyStart(
+  end: string,
+  lagDays: number,
+  calendar: PlanningCalendar,
+) {
+  if (!Number.isInteger(lagDays) || Math.abs(lagDays) > 365)
+    throw new Error("Use an integer lag from -365 to 365 working days.");
+  let current = nextWorkingDay(end, calendar);
+  const direction = lagDays < 0 ? -1 : 1;
+  for (let n = 0; n < Math.abs(lagDays); n++) {
+    current = addDays(current, direction);
+    for (let i = 0; !workingDay(current, calendar); i++) {
+      if (i > 10000)
+        throw new Error("No working day within the supported calendar range.");
+      current = addDays(current, direction);
+    }
+  }
+  return current;
+}
+
+/** One leaf, one contribution: parents never double-count their descendants. */
+export function planningProgress(tasks: PlanningTask[]) {
+  const children = new Map<string, string[]>(),
+    byId = new Map(tasks.map((t) => [t.id, t]));
+  for (const t of tasks)
+    if (t.parent_id && byId.has(t.parent_id)) {
+      const list = children.get(t.parent_id) ?? [];
+      list.push(t.id);
+      children.set(t.parent_id, list);
+    }
+  const results = new Map<string, { sum: number; count: number }>(),
+    visiting = new Set<string>();
+  const stack = tasks.map((t) => ({ id: t.id, exit: false }));
+  while (stack.length) {
+    const { id, exit } = stack.pop()!;
+    if (results.has(id)) continue;
+    const t = byId.get(id)!;
+    if (exit) {
+      const values = (children.get(id) ?? []).flatMap(
+        (id) => results.get(id) ?? [],
+      );
+      results.set(
+        id,
+        values.reduce(
+          (a, b) => ({ sum: a.sum + b.sum, count: a.count + b.count }),
+          { sum: 0, count: 0 },
+        ),
+      );
+    } else if (!children.has(id))
+      results.set(
+        id,
+        t.status === "cancelled"
+          ? { sum: 0, count: 0 }
+          : {
+              sum: t.status === "done" ? 100 : (t.progress_percent ?? 0),
+              count: 1,
+            },
+      );
+    else if (!visiting.has(id)) {
+      visiting.add(id);
+      stack.push(
+        { id, exit: true },
+        ...(children.get(id) ?? []).map((id) => ({ id, exit: false })),
+      );
+    }
+  }
+  return new Map(
+    tasks.map((t) => {
+      const r = results.get(t.id);
+      return [
+        t.id,
+        t.derived_progress_percent ??
+          (r?.count ? Math.round(r.sum / r.count) : 0),
+      ];
+    }),
+  );
 }
 export function workingDuration(
   start: string,
@@ -213,14 +342,16 @@ export function planSchedule(
     const task = original.get(id)!,
       own = dates.get(id)!;
     let earliest = own.start;
-    for (const predecessorId of task.dependencies ?? []) {
+    for (const { taskId: predecessorId, lagDays } of taskDependencyLinks(
+      task,
+    )) {
       const predecessor = dates.get(predecessorId)!;
       if (!predecessor.end && changed.has(predecessorId))
         warnings.push(
           `${task.title}: predecessor is unscheduled; existing dates were kept.`,
         );
       if (!predecessor.end || !own.start) continue;
-      const minimum = nextWorkingDay(predecessor.end, calendar);
+      const minimum = dependencyStart(predecessor.end, lagDays, calendar);
       if (
         own.start < minimum &&
         (changed.has(predecessorId) || directIds.has(id))
@@ -229,7 +360,10 @@ export function planSchedule(
           taskId: id,
           predecessorId,
           earliest: minimum,
-          reason: "Starts before its predecessor has finished.",
+          reason:
+            lagDays === 0
+              ? "Starts before the next working day after its predecessor finishes."
+              : `Starts before the finish-to-start constraint (${lagDays > 0 ? "+" : ""}${lagDays} working days).`,
         });
         if (!earliest || minimum > earliest) earliest = minimum;
       }
@@ -283,13 +417,48 @@ export function planSchedule(
     }),
   };
 }
-export function planningCsv(tasks: PlanningTask[]) {
+export function planningCsv(
+  tasks: PlanningTask[],
+  options: {
+    milestones?: Array<{
+      id: string;
+      title: string;
+      due_on: string | null;
+      completed_at: unknown;
+    }>;
+    baseline?: PlanningTask[];
+    criticalIds?: string[];
+    scope?: string;
+  } = {},
+) {
+  const progress = planningProgress(tasks),
+    names = new Map(tasks.map((t) => [t.id, t.title])),
+    milestones = new Map(options.milestones?.map((m) => [m.id, m]) ?? []),
+    baseline = new Map(options.baseline?.map((t) => [t.id, t]) ?? []),
+    critical = new Set(options.criticalIds ?? []);
   const cell = (value: unknown) =>
     `"${String(value ?? "")
       .replace(/^(?:\s*[=+@\-]|[\t\r])/, "'$&")
       .replaceAll('"', '""')}"`;
   return [
-    ["Title", "Status", "Assignee", "Start", "Due", "Priority", "Workspace"],
+    [
+      "Title",
+      "Status",
+      "Assignee",
+      "Start",
+      "Due",
+      "Priority",
+      "Workspace",
+      "Progress (%)",
+      "Predecessors (working-day offsets)",
+      "Milestone",
+      "Milestone due",
+      "Baseline start",
+      "Baseline due",
+      "Critical path",
+      "Export scope",
+      "Record type",
+    ],
     ...tasks.map((t) => [
       t.title,
       t.status,
@@ -298,6 +467,40 @@ export function planningCsv(tasks: PlanningTask[]) {
       t.due_on,
       t.priority,
       t.space_id,
+      progress.get(t.id) ?? 0,
+      taskDependencyLinks(t)
+        .map(
+          (l) =>
+            `${names.get(l.taskId) ?? "Outside export"} (${l.lagDays > 0 ? "+" : ""}${l.lagDays}d)`,
+        )
+        .join("; "),
+      t.milestone_id
+        ? (milestones.get(t.milestone_id)?.title ?? "Outside export")
+        : "",
+      t.milestone_id ? milestones.get(t.milestone_id)?.due_on : "",
+      baseline.get(t.id)?.start_on,
+      baseline.get(t.id)?.due_on,
+      critical.has(t.id) ? "yes" : "",
+      options.scope ?? "Loaded filtered tasks",
+      "task",
+    ]),
+    ...(options.milestones ?? []).map((m) => [
+      m.title,
+      m.completed_at ? "done" : "open",
+      "",
+      "",
+      m.due_on,
+      "",
+      "",
+      "",
+      "",
+      m.title,
+      m.due_on,
+      "",
+      "",
+      "",
+      options.scope ?? "Loaded filtered tasks",
+      "milestone",
     ]),
   ]
     .map((row) => row.map(cell).join(","))
@@ -315,6 +518,17 @@ export function planningSvg(
     accent: "#476b83",
     line: "#e3e8ed",
   },
+  options: {
+    milestones?: Array<{
+      id: string;
+      title: string;
+      due_on: string | null;
+      completed_at: unknown;
+    }>;
+    baseline?: PlanningTask[];
+    criticalIds?: string[];
+    scope?: string;
+  } = {},
 ) {
   const escape = (value: string) =>
     value.replace(
@@ -328,22 +542,58 @@ export function planningSvg(
           "'": "&apos;",
         })[c]!,
     );
-  const dates = tasks
+  const dates = [...tasks, ...(options.baseline ?? [])]
       .flatMap((task) => [task.start_on, task.due_on])
+      .concat(options.milestones?.map((m) => m.due_on) ?? [])
       .filter((d): d is string => !!d),
     first = dates.length
       ? Math.min(...dates.map(dayNumber))
       : dayNumber("2000-01-01"),
     last = dates.length ? Math.max(...dates.map(dayNumber)) : first + 30;
   const width = 1200,
-    height = 110 + tasks.length * 30,
+    height = 150 + (tasks.length + (options.milestones?.length ?? 0)) * 30,
     scale = 800 / Math.max(30, last - first + 1),
     x = (date: string) => 360 + (dayNumber(date) - first) * scale;
+  const progress = planningProgress(tasks),
+    index = new Map(tasks.map((t, i) => [t.id, i])),
+    byId = new Map(tasks.map((t) => [t.id, t])),
+    base = new Map(options.baseline?.map((t) => [t.id, t]) ?? []),
+    critical = new Set(options.criticalIds ?? []);
   const rows = tasks
     .map((task, i) => {
       const y = 100 + i * 30;
-      return `<g><line x1="24" x2="1176" y1="${y + 15}" y2="${y + 15}" stroke="${escape(colors.line)}"/><text x="24" y="${y}" font-size="12">${escape(task.title.slice(0, 45))}</text>${task.start_on && task.due_on ? `<rect x="${x(task.start_on)}" y="${y - 12}" width="${Math.max(2, (dayNumber(task.due_on) - dayNumber(task.start_on) + 1) * scale)}" height="16" rx="3" fill="${escape(colors.accent)}"/><title>${escape(`${task.title}: ${task.start_on} to ${task.due_on}`)}</title>` : `<text x="360" y="${y}" font-size="11" fill="${escape(colors.muted)}">Unscheduled</text>`}</g>`;
+      const before = base.get(task.id),
+        barWidth =
+          task.start_on && task.due_on
+            ? Math.max(
+                2,
+                (dayNumber(task.due_on) - dayNumber(task.start_on) + 1) * scale,
+              )
+            : 0;
+      return `<g><line x1="24" x2="1176" y1="${y + 15}" y2="${y + 15}" stroke="${escape(colors.line)}"/><text x="24" y="${y}" font-size="12">${escape(task.title.slice(0, 42))}</text><text x="310" y="${y}" font-size="10">${progress.get(task.id) ?? 0}%</text>${before?.start_on && before.due_on ? `<rect x="${x(before.start_on)}" y="${y + 7}" width="${Math.max(2, (dayNumber(before.due_on) - dayNumber(before.start_on) + 1) * scale)}" height="3" fill="${escape(colors.muted)}"/>` : ""}${task.start_on && task.due_on ? `<rect x="${x(task.start_on)}" y="${y - 12}" width="${barWidth}" height="16" rx="3" fill="${escape(colors.accent)}" opacity=".3" stroke="${critical.has(task.id) ? "#b85454" : escape(colors.accent)}" stroke-width="${critical.has(task.id) ? 2 : 1}"/><rect x="${x(task.start_on)}" y="${y - 12}" width="${(barWidth * (progress.get(task.id) ?? 0)) / 100}" height="16" rx="3" fill="${escape(colors.accent)}"/><title>${escape(`${task.title}: ${task.start_on} to ${task.due_on}`)}</title>` : `<text x="360" y="${y}" font-size="11" fill="${escape(colors.muted)}">Unscheduled</text>`}</g>`;
     })
     .join("");
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-label="Workspace timeline"><rect width="100%" height="100%" fill="${escape(colors.paper)}"/><g fill="${escape(colors.text)}" font-family="system-ui, sans-serif"><text x="24" y="35" font-size="22">${escape(title)}</text><text x="24" y="61" font-size="12" fill="${escape(colors.muted)}">${tasks.length} tasks${dates.length ? ` · ${dateFromDay(first)} to ${dateFromDay(last)}` : ""} · Date-only schedule</text>${rows}</g></svg>`;
+  const edges = tasks
+    .flatMap((t, i) =>
+      taskDependencyLinks(t).flatMap((link) => {
+        const p = byId.get(link.taskId),
+          from = index.get(link.taskId);
+        if (!p?.due_on || !t.start_on || from === undefined) return [];
+        const a = x(p.due_on) + scale,
+          b = x(t.start_on),
+          y1 = 94 + from * 30,
+          y2 = 94 + i * 30;
+        return [
+          `<g><path d="M${a},${y1} H${a + 8} V${y2 - 10} H${b - 6} V${y2} H${b}" fill="none" stroke="${escape(colors.muted)}" stroke-width="1" marker-end="url(#arrow)"/><title>${escape(`${p.title} → ${t.title}: ${link.lagDays} working days`)}</title>${link.lagDays ? `<text x="${(a + b) / 2}" y="${y2 - 12}" font-size="9">${link.lagDays > 0 ? "+" : ""}${link.lagDays}d</text>` : ""}</g>`,
+        ];
+      }),
+    )
+    .join("");
+  const milestones = (options.milestones ?? [])
+    .map((m, i) => {
+      const y = 100 + (tasks.length + i) * 30;
+      return `<text x="24" y="${y}" font-size="12">${escape(m.title.slice(0, 42))}</text>${m.due_on ? `<path d="M${x(m.due_on)},${y - 14} l7,7 l-7,7 l-7,-7 Z" fill="${escape(colors.accent)}" opacity="${m.completed_at ? 1 : 0.5}"/>` : ""}`;
+    })
+    .join("");
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-label="Workspace timeline"><defs><marker id="arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="${escape(colors.muted)}"/></marker></defs><rect width="100%" height="100%" fill="${escape(colors.paper)}"/><g fill="${escape(colors.text)}" font-family="system-ui, sans-serif"><text x="24" y="35" font-size="22">${escape(title)}</text><text x="24" y="61" font-size="12" fill="${escape(colors.muted)}">${tasks.length} tasks${dates.length ? ` · ${dateFromDay(first)} to ${dateFromDay(last)}` : ""} · Date-only schedule · ${escape(options.scope ?? "Loaded / filtered tasks; outside links excluded; private drafts excluded")}</text>${rows}${edges}${milestones}<text x="24" y="${height - 24}" font-size="11" fill="${escape(colors.muted)}">Legend: filled portion = progress · thin lower bar = baseline · red outline = critical · diamond = milestone · arrow offsets = working days</text></g></svg>`;
 }

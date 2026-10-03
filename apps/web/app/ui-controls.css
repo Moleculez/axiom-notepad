@@ -1,0 +1,934 @@
+/* Application controls only. Editable document fields and task nodes have their
+   own presentation contract; never target them with a generic form reset. */
+:root {
+  --control-height: max(32px, calc(var(--size-ui) * 2.4));
+  --control-height-compact: max(28px, calc(var(--size-ui) * 2.133));
+  --control-text-size: calc(var(--size-ui) * 0.9);
+  --control-gap: calc(var(--size-ui) * 0.5);
+  --control-surface: var(--surface);
+  --control-edge: var(--line);
+  --control-hover: var(--hover);
+  --control-selected: var(--accent-bg);
+  --control-selected-text: var(--accent);
+  --checkbox-radius: min(0.25em, calc(var(--radius) * 0.3));
+  --switch-width: 2.6em;
+  --switch-height: 1.5em;
+  --switch-radius: calc(var(--radius) * 2);
+  --switch-off: color-mix(in srgb, var(--muted) 18%, var(--paper));
+  --slider-track-height: 4px;
+  --slider-thumb-width: 16px;
+  --slider-thumb-height: 16px;
+  --slider-thumb-radius: 50%;
+  --slider-thumb-fill: var(--paper);
+  --slider-thumb-border: var(--accent);
+  --on-danger: var(--paper);
+}
+
+/* One field surface across dialogs, inspectors, search and settings. Document
+   fields opt out; native color/file/hidden controls are not text fields. */
+:root {
+  --field-surface: var(--surface);
+  --field-edge: var(--line);
+  --field-padding-inline: 0.8em;
+  --field-icon-size: 1.125em;
+  --field-adornment-gap: 0.625em;
+  --field-action-size: min(
+    var(--control-height-compact),
+    calc(var(--control-height) - 4px)
+  );
+}
+:is(input, textarea, select).ui-input:not([data-editor-field]),
+.ws-app :is(input, textarea, select).ui-input:not([data-editor-field]),
+.dialog :is(input, textarea, select).ui-input:not([data-editor-field]) {
+  font-family: var(--font-ui);
+  font-size: var(--control-text-size);
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--text);
+  background: var(--field-surface);
+  border: 1px solid var(--field-edge);
+  border-radius: var(--control-radius);
+  min-height: var(--control-height);
+  width: var(--field-width, 100%);
+  min-width: 0;
+  padding: 0.55em var(--field-padding-inline);
+  margin: 0;
+  outline: none;
+  box-shadow: none;
+  transition:
+    border-color 120ms,
+    background-color 120ms;
+}
+:is(input, textarea, select).ui-input:not([data-editor-field]):hover:not(
+    :disabled
+  ):not([readonly]) {
+  border-color: var(--muted);
+}
+:is(input, textarea, select).ui-input:not([data-editor-field]):focus,
+.ws-app :is(input, textarea, select).ui-input:not([data-editor-field]):focus,
+.dialog :is(input, textarea, select).ui-input:not([data-editor-field]):focus {
+  border-color: var(--focus);
+  outline: none;
+  box-shadow: inset 0 0 0 1px var(--focus);
+}
+.ui-input::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
+.ui-input:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.ui-input[readonly] {
+  background: var(--paper);
+}
+:is(input, textarea, select).ui-input[aria-invalid="true"]:not(
+    [data-editor-field]
+  ),
+.ws-app
+  :is(input, textarea, select).ui-input[aria-invalid="true"]:not(
+    [data-editor-field]
+  ),
+.dialog
+  :is(input, textarea, select).ui-input[aria-invalid="true"]:not(
+    [data-editor-field]
+  ) {
+  border-color: var(--danger);
+}
+.ui-textarea {
+  resize: vertical;
+  min-height: 6em;
+}
+.ui-select {
+  cursor: pointer;
+  padding-inline-end: 2em;
+}
+.ui-select[multiple] {
+  padding: 0.5em;
+}
+.ui-input-group,
+.ws-app .ui-input-group,
+.dialog .ui-input-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  min-width: 0;
+  min-height: var(--control-height);
+  width: var(--field-width, 100%);
+  padding: 0;
+  border: 1px solid var(--field-edge);
+  border-radius: var(--control-radius);
+  background: var(--field-surface);
+  color: var(--text);
+  font: 400 var(--control-text-size)/1.4 var(--font-ui);
+  box-shadow: none;
+  transition: border-color 120ms;
+}
+:where(.ui-input-group) {
+  margin: 0;
+}
+.ui-input-group:hover:not(:has(:disabled, [readonly])) {
+  border-color: var(--muted);
+}
+.ui-input-group:focus-within,
+.ws-app .ui-input-group:focus-within,
+.dialog .ui-input-group:focus-within {
+  border-color: var(--focus);
+  box-shadow: inset 0 0 0 1px var(--focus);
+}
+.ui-input-group:has(> [aria-invalid="true"]),
+.ws-app .ui-input-group:has(> [aria-invalid="true"]),
+.dialog .ui-input-group:has(> [aria-invalid="true"]) {
+  border-color: var(--danger);
+}
+.ui-input-group:has(> [readonly]) {
+  background: var(--paper);
+}
+.ui-input-group:has(> :disabled) {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.ui-input-leading,
+.ui-input-trailing {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  align-self: stretch;
+  min-width: 0;
+  color: var(--muted);
+}
+.ui-input-leading {
+  padding-inline-start: var(--field-padding-inline);
+  padding-inline-end: var(--field-adornment-gap);
+  pointer-events: none;
+}
+.ui-input-leading > svg {
+  display: block;
+  width: var(--field-icon-size);
+  height: var(--field-icon-size);
+  flex: 0 0 auto;
+}
+.ui-input-trailing {
+  padding-inline-end: 3px;
+  gap: 2px;
+}
+:is(.ui-input-group, .ws-app .ui-input-group, .dialog .ui-input-group)
+  > :is(input, select).ui-input:not([data-editor-field]),
+:is(.ui-input-group, .ws-app .ui-input-group, .dialog .ui-input-group)
+  > :is(input, select).ui-input:not([data-editor-field]):is(:hover, :focus) {
+  flex: 1 1 0%;
+  width: 0;
+  min-width: 0;
+  min-height: calc(var(--control-height) - 2px);
+  background: transparent;
+  border: 0;
+  border-radius: var(--control-radius);
+  box-shadow: none;
+  outline: none;
+  font: inherit;
+  color: inherit;
+  opacity: 1;
+}
+:is(.ui-input-group, .ws-app .ui-input-group, .dialog .ui-input-group):has(
+    > .ui-input-leading
+  )
+  > input.ui-input:not([data-editor-field]) {
+  padding-inline-start: 0;
+}
+.ui-input-trailing
+  :is(.icon-button, .ws-app .icon-button, .dialog .icon-button) {
+  inline-size: var(--field-action-size);
+  block-size: var(--field-action-size);
+  min-inline-size: var(--field-action-size);
+  min-block-size: var(--field-action-size);
+  font-size: inherit;
+  padding: 0.35em;
+  border: 0;
+  background: transparent;
+  border-radius: var(--control-radius-small);
+  color: var(--muted);
+}
+.ui-input-trailing .icon-button > svg {
+  width: var(--field-icon-size);
+  height: var(--field-icon-size);
+}
+.ui-search-clear-slot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: var(--field-action-size);
+}
+.ui-search-field:has(.ui-search-clear-slot)
+  input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+}
+.ui-picker {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  width: 100%;
+  font-weight: 400;
+}
+input.ui-picker-validity {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  pointer-events: none;
+}
+.ui-picker-popup {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  padding: 6px;
+  overflow: auto;
+  z-index: 1200;
+  border: 1px solid var(--line);
+  border-radius: var(--control-radius);
+  background: var(--paper);
+  color: var(--text);
+  box-shadow: var(--shadow);
+  font: var(--control-text-size)/1.45 var(--font-ui);
+}
+.ui-picker-popup [role="listbox"] {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ui-picker-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-radius: var(--control-radius-small);
+  padding: 8px 10px;
+  cursor: pointer;
+}
+.ui-picker-option[data-active="true"] {
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+.ui-picker-option[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.ui-picker-option > span {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.ui-picker-option strong {
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.ui-picker-option small,
+.ui-picker-status {
+  color: var(--muted);
+  font-size: var(--size-ui-small);
+}
+.ui-picker-status {
+  display: block;
+  padding: 8px 10px;
+}
+.ui-picker-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ui-picker-tags > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--line);
+  border-radius: var(--control-radius-small);
+  padding-inline-start: 8px;
+  font-size: var(--size-ui-small);
+  background: var(--paper);
+  min-width: 0;
+  max-width: 100%;
+}
+.ui-picker-tag-label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  padding-block: 3px;
+}
+.ui-picker-tags .icon-button {
+  flex: 0 0 auto;
+  min-height: 24px;
+  min-width: 24px;
+  padding: 3px;
+}
+@media (forced-colors: active) {
+  :is(input, textarea, select).ui-input:not([data-editor-field]):focus,
+  .ws-app :is(input, textarea, select).ui-input:not([data-editor-field]):focus,
+  .dialog :is(input, textarea, select).ui-input:not([data-editor-field]):focus,
+  .ui-picker-field:focus-within,
+  .ui-input-group:focus-within {
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
+  }
+  .ui-picker-option[data-active="true"] {
+    outline: 1px solid Highlight;
+  }
+}
+
+.button,
+.ws-app .button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--control-gap);
+  min-block-size: var(--control-height);
+  max-inline-size: 100%;
+  block-size: auto;
+  padding: 0.5em 0.9em;
+  border: 1px solid var(--control-edge);
+  border-radius: var(--control-radius);
+  background: var(--control-surface);
+  color: var(--text);
+  font: var(--weight-ui) var(--control-text-size)/1.35 var(--font-ui);
+  text-align: center;
+  text-decoration: none;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  box-shadow: none;
+  filter: none;
+  cursor: pointer;
+}
+.button.primary,
+.ws-app .button.primary {
+  border-color: transparent;
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.button.danger,
+.ws-app .button.danger {
+  border-color: transparent;
+  background: var(--danger);
+  color: var(--on-danger);
+}
+.button.ghost,
+.ws-app .button.ghost {
+  border-color: transparent;
+  background: transparent;
+}
+.button.danger.ghost,
+.ws-app .button.danger.ghost {
+  color: var(--danger);
+}
+.button:hover:not(:disabled),
+.ws-app .button:hover:not(:disabled) {
+  background: var(--control-hover);
+}
+.button.primary:hover:not(:disabled),
+.ws-app .button.primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 90%, var(--text));
+}
+.button.danger:hover:not(:disabled),
+.ws-app .button.danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--danger) 90%, var(--text));
+}
+.button.danger.ghost:hover:not(:disabled),
+.ws-app .button.danger.ghost:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--danger) 8%, var(--paper));
+}
+.button[aria-pressed="true"]:not(.primary, .danger),
+.ws-app .button[aria-pressed="true"]:not(.primary, .danger) {
+  background: var(--control-selected);
+  color: var(--control-selected-text);
+}
+.button[data-control-size="compact"],
+.button.small {
+  min-block-size: var(--control-height-compact);
+  padding-block: 0.35em;
+}
+.button[data-pending] {
+  position: relative;
+  padding-inline-end: 2.4em;
+}
+.button[data-pending="true"]::after {
+  content: "";
+  position: absolute;
+  inset-inline-end: 0.8em;
+  inline-size: 0.85em;
+  block-size: 0.85em;
+  border: 1.5px solid currentColor;
+  border-inline-end-color: transparent;
+  border-radius: 50%;
+  animation: ui-control-spin 900ms linear infinite;
+}
+.button > svg,
+.icon-button > svg {
+  flex: 0 0 auto;
+  inline-size: 1.2em;
+  block-size: 1.2em;
+}
+.icon-button,
+.ws-app .icon-button {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  inline-size: var(--control-height-compact);
+  block-size: var(--control-height-compact);
+  min-inline-size: 28px;
+  min-block-size: 28px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--control-radius-small);
+  background: transparent;
+  color: var(--muted);
+  font-size: var(--size-ui);
+  cursor: pointer;
+}
+.icon-button:hover:not(:disabled),
+.ws-app .icon-button:hover:not(:disabled),
+.icon-button[aria-pressed="true"] {
+  background: var(--control-hover);
+  color: var(--text);
+}
+:is(.button, .icon-button):active:not(:disabled) {
+  filter: brightness(0.96);
+  transform: none;
+}
+:is(.button, .icon-button, .ui-checkbox, .ui-switch, .ui-slider):disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+input.ui-checkbox,
+.ws-app input.ui-checkbox,
+.dialog input.ui-checkbox {
+  appearance: none;
+  position: relative;
+  flex: 0 0 auto;
+  inline-size: 1.15em;
+  block-size: 1.15em;
+  min-block-size: 0;
+  margin: 0;
+  padding: 0;
+  border: 1.25px solid var(--muted);
+  border-radius: var(--checkbox-radius);
+  background: var(--paper);
+  color: var(--on-accent);
+  font-size: var(--size-ui);
+  vertical-align: -0.15em;
+  cursor: pointer;
+  box-shadow: none;
+}
+input.ui-checkbox:hover:not(:disabled):not(:checked):not(:indeterminate) {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+}
+input.ui-checkbox:checked,
+input.ui-checkbox:indeterminate {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+input.ui-checkbox::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  inline-size: 0.55em;
+  block-size: 0.3em;
+  border: solid currentColor;
+  border-width: 0 0 1.8px 1.8px;
+  transform: translateY(-0.06em) rotate(-45deg);
+  opacity: 0;
+}
+input.ui-checkbox:checked::before {
+  opacity: 1;
+}
+input.ui-checkbox:indeterminate::before {
+  inline-size: 0.55em;
+  block-size: 0;
+  border-width: 0 0 2px;
+  transform: none;
+  opacity: 1;
+}
+/* Transparent hit extension does not add a wrapper or change row geometry. */
+input.ui-checkbox::after {
+  content: "";
+  position: absolute;
+  inset: -5px;
+}
+input.ui-radio,
+.ws-app input.ui-radio,
+.dialog input.ui-radio {
+  border-radius: 50%;
+}
+input.ui-radio::before {
+  inline-size: 0.45em;
+  block-size: 0.45em;
+  border: 0;
+  border-radius: 50%;
+  background: currentColor;
+  transform: none;
+}
+input.ui-switch,
+.ws-app input.ui-switch,
+.dialog input.ui-switch {
+  appearance: none;
+  position: relative;
+  flex: 0 0 auto;
+  inline-size: var(--switch-width);
+  block-size: var(--switch-height);
+  min-block-size: 0;
+  margin: 0;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--muted) 65%, var(--line));
+  border-radius: var(--switch-radius);
+  background: var(--switch-off);
+  font-size: var(--size-ui);
+  cursor: pointer;
+  box-shadow: none;
+}
+input.ui-switch::before {
+  content: "";
+  position: absolute;
+  inset-block-start: 2px;
+  inset-inline-start: 2px;
+  inline-size: calc(var(--switch-height) - 6px);
+  block-size: calc(var(--switch-height) - 6px);
+  border-radius: 50%;
+  background: var(--muted);
+  transition:
+    transform 150ms ease,
+    background-color 150ms ease;
+}
+input.ui-switch:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+input.ui-switch:checked::before {
+  background: var(--on-accent);
+  transform: translateX(calc(var(--switch-width) - var(--switch-height)));
+}
+[dir="rtl"] input.ui-switch:checked::before {
+  transform: translateX(calc(var(--switch-height) - var(--switch-width)));
+}
+
+input.ui-slider {
+  inline-size: 100%;
+}
+input.ui-slider,
+.ws-app input.ui-slider,
+.dialog input.ui-slider {
+  appearance: none;
+  display: block;
+  block-size: max(28px, calc(var(--size-ui) * 1.9));
+  min-block-size: max(28px, calc(var(--size-ui) * 1.9));
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--control-radius-small);
+  background: transparent;
+  box-shadow: none;
+  font-size: var(--size-ui);
+  cursor: pointer;
+  accent-color: var(--accent);
+}
+input.ui-slider::-webkit-slider-runnable-track {
+  block-size: var(--slider-track-height);
+  border: 0;
+  border-radius: var(--control-radius);
+  background: linear-gradient(
+    to right,
+    var(--accent) var(--slider-progress),
+    var(--line) var(--slider-progress)
+  );
+}
+input.ui-slider::-moz-range-track {
+  block-size: var(--slider-track-height);
+  border: 0;
+  border-radius: var(--control-radius);
+  background: var(--line);
+}
+input.ui-slider::-moz-range-progress {
+  block-size: var(--slider-track-height);
+  border-radius: var(--control-radius);
+  background: var(--accent);
+}
+input.ui-slider::-webkit-slider-thumb {
+  appearance: none;
+  inline-size: var(--slider-thumb-width);
+  block-size: var(--slider-thumb-height);
+  margin-block-start: calc(
+    (var(--slider-track-height) - var(--slider-thumb-height)) / 2
+  );
+  border: 2px solid var(--slider-thumb-border);
+  border-radius: var(--slider-thumb-radius);
+  background: var(--slider-thumb-fill);
+  box-shadow: none;
+}
+input.ui-slider::-moz-range-thumb {
+  inline-size: var(--slider-thumb-width);
+  block-size: var(--slider-thumb-height);
+  box-sizing: border-box;
+  border: 2px solid var(--slider-thumb-border);
+  border-radius: var(--slider-thumb-radius);
+  background: var(--slider-thumb-fill);
+  box-shadow: none;
+}
+:is(.button, .icon-button, .ui-checkbox, .ui-switch, .ui-slider):focus-visible,
+.ws-app
+  :is(
+    .button,
+    .icon-button,
+    .ui-checkbox,
+    .ui-switch,
+    .ui-slider
+  ):focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+  box-shadow: none;
+}
+
+.ui-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-inline-size: 0;
+}
+.ui-actions[data-align="end"] {
+  justify-content: flex-end;
+}
+.ui-actions[data-align="between"] {
+  justify-content: space-between;
+}
+.ui-actions > :is(.button, .icon-button) {
+  flex-shrink: 0;
+}
+.ui-field {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  min-inline-size: 0;
+}
+.ui-field > label,
+.ws-app .ui-field > label,
+.dialog .ui-field > label {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  color: var(--text);
+  font-size: var(--control-text-size);
+  font-weight: 500;
+  line-height: 1.4;
+}
+.ui-field-label-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.ui-field-label-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  min-height: 1.4em;
+  color: var(--muted);
+}
+.ui-field-label-icon > svg {
+  display: block;
+  width: 1em;
+  height: 1em;
+}
+.ui-field > .ui-help {
+  margin: 0;
+}
+.dialog-body > .ui-field + .ui-field {
+  margin-block-start: 16px;
+}
+.dialog label:has(> :where(.ui-checkbox, .ui-switch)),
+.ws-app label:has(> :where(.ui-checkbox, .ui-switch)) {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 10px;
+  margin-block: 12px;
+  line-height: 1.5;
+  min-block-size: 28px;
+}
+.dialog label:has(> :where(.ui-switch)),
+.ws-app label:has(> :where(.ui-switch)) {
+  align-items: center;
+}
+.ui-help,
+.ws-app .ui-help,
+.dialog .ui-help {
+  display: block;
+  padding: 0;
+  margin-block: 0.35em 0.7em;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--muted);
+  font: var(--weight-ui) var(--size-ui-small)/1.6 var(--font-ui);
+  overflow-wrap: anywhere;
+  box-shadow: none;
+}
+span.ui-help,
+.ws-app span.ui-help,
+.dialog span.ui-help {
+  display: inline;
+  margin-block: 0;
+}
+.ui-help.form-error,
+.ws-app .ui-help.form-error,
+.dialog .ui-help.form-error {
+  color: var(--danger);
+}
+.ui-notice {
+  --notice-tone: var(--accent);
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--notice-tone) 28%, var(--line));
+  border-radius: var(--control-radius-small);
+  background: color-mix(in srgb, var(--notice-tone) 6%, var(--paper));
+  color: var(--text);
+  font: var(--weight-ui) var(--size-ui-small)/1.65 var(--font-ui);
+}
+.ui-notice[data-tone="warning"] {
+  --notice-tone: var(--warning);
+}
+.ui-notice[data-tone="danger"] {
+  --notice-tone: var(--danger);
+}
+.ui-notice[data-tone="success"] {
+  --notice-tone: var(--green);
+}
+.ui-notice > svg {
+  flex: 0 0 auto;
+  inline-size: 1.3em;
+  block-size: 1.3em;
+  color: var(--notice-tone);
+  margin-block-start: 0.2em;
+}
+.ui-notice > div {
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
+.ui-notice p:last-child {
+  margin-block-end: 0;
+}
+.theme-workbench-control-section {
+  display: grid;
+  gap: 16px;
+  padding-block: 20px;
+  margin-block: 16px;
+  border-block: 1px solid var(--line);
+}
+.theme-workbench-field-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15em), 1fr));
+  align-items: start;
+  gap: 16px;
+  margin-block: 16px;
+  min-width: 0;
+}
+.theme-workbench-field-grid > .ui-field {
+  min-width: 0;
+}
+.planning-integer-field {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.theme-workbench-control-section h3 {
+  margin: 0;
+}
+.theme-workbench-switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0;
+}
+.theme-workbench-switch small {
+  display: block;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.theme-workbench-choices {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.theme-workbench-choices legend {
+  padding: 0;
+  margin-bottom: 12px;
+}
+.theme-workbench-choices label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 28px;
+  margin: 0;
+}
+.theme-workbench-choices label:not(:first-of-type) {
+  margin-inline-start: 18px;
+}
+
+/* Keep paired values aligned without the old oversized vertical slider padding. */
+.preference-number-heading {
+  margin-block-end: 6px;
+}
+.preference-number {
+  gap: 6px;
+}
+.setting-number-value {
+  font-variant-numeric: tabular-nums;
+}
+.setting-number-value > input {
+  min-block-size: var(--control-height-compact);
+}
+.dialog-footer {
+  gap: 8px;
+}
+.dialog-footer .ui-help {
+  margin: 0;
+  margin-inline-end: auto;
+}
+.dialog label > .ui-checkbox {
+  margin-block-start: 0.15em;
+}
+.theme-workbench label:has(> .ui-checkbox) {
+  flex-direction: row;
+}
+.showcase-app .demo-settings-fields .demo-toggle > .ui-switch {
+  order: 1;
+}
+
+@keyframes ui-control-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  :is(.button, .icon-button, .ui-checkbox, .ui-switch, .ui-slider),
+  .ui-switch::before {
+    transition: none;
+  }
+  .button[data-pending="true"]::after {
+    animation: none;
+  }
+}
+:is([data-motion="none"], [data-motion="reduced"]) .ui-switch::before {
+  transition: none;
+}
+:is([data-motion="none"], [data-motion="reduced"])
+  .button[data-pending="true"]::after {
+  animation: none;
+}
+@media (forced-colors: active) {
+  :is(input.ui-checkbox, input.ui-switch, input.ui-slider),
+  .ws-app :is(input.ui-checkbox, input.ui-switch, input.ui-slider),
+  .dialog :is(input.ui-checkbox, input.ui-switch, input.ui-slider) {
+    appearance: auto;
+    forced-color-adjust: auto;
+  }
+  :is(input.ui-checkbox, input.ui-switch)::before,
+  input.ui-checkbox::after {
+    display: none;
+  }
+  :is(
+    .button,
+    .icon-button,
+    .ui-checkbox,
+    .ui-switch,
+    .ui-slider
+  ):focus-visible,
+  .ws-app
+    :is(
+      .button,
+      .icon-button,
+      .ui-checkbox,
+      .ui-switch,
+      .ui-slider
+    ):focus-visible,
+  .theme-workbench :is(button, input):focus-visible {
+    outline: 2px solid Highlight;
+    outline-offset: 3px;
+  }
+  .button,
+  .icon-button,
+  .ui-notice {
+    border-color: ButtonText;
+  }
+}

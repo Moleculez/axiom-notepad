@@ -23,14 +23,6 @@ body {
 .showcase-app > .skip-link:focus {
   top: 8px;
 }
-.showcase-app .button:not(.secondary):not(.ghost) {
-  background: var(--accent);
-  color: var(--on-accent);
-  border: 1px solid var(--accent);
-}
-.showcase-app .button:not(.secondary):not(.ghost):hover {
-  filter: brightness(0.94);
-}
 .demo-document-toolbar .scratchpad-modes {
   display: flex;
   gap: 2px;
@@ -762,7 +754,7 @@ body {
 }
 .demo-settings-group {
   color: var(--subtle);
-  font: 500 10px/1.5 var(--font-ui);
+  font: 500 calc(var(--size-ui) * 0.6667)/1.5 var(--font-ui);
   margin: 20px 10px 8px;
 }
 .demo-settings-navigation > div:first-child .demo-settings-group {
@@ -780,7 +772,7 @@ body {
   border-radius: var(--control-radius-small);
   background: transparent;
   color: var(--muted);
-  font: 12px/1.45 var(--font-ui);
+  font: calc(var(--size-ui) * 0.8)/1.45 var(--font-ui);
   text-align: start;
 }
 .demo-settings-navigation button svg {
@@ -813,14 +805,14 @@ body {
   border-bottom: 1px solid var(--line);
 }
 .demo-settings-panel-heading h3 {
-  font: 600 15px/1.45 var(--font-ui);
+  font: 600 var(--size-ui)/1.45 var(--font-ui);
   letter-spacing: -0.015em;
   margin: 0;
 }
 .demo-settings-panel-heading p,
 .demo-settings-description {
   color: var(--muted);
-  font: 12px/1.7 var(--font-ui);
+  font: calc(var(--size-ui) * 0.8)/1.7 var(--font-ui);
   margin: 5px 0 0;
 }
 .demo-settings-panel-heading .icon-button {
@@ -837,7 +829,7 @@ body {
   scrollbar-gutter: stable;
 }
 .demo-settings-fields h4 {
-  font: 550 11px/1.5 var(--font-ui);
+  font: 550 calc(var(--size-ui) * 0.7333)/1.5 var(--font-ui);
   color: var(--muted);
   margin: 22px 0 12px;
   padding-top: 20px;
@@ -860,7 +852,7 @@ body {
   min-width: 0;
   margin-block: 14px;
   color: var(--muted);
-  font: 12px/1.5 var(--font-ui);
+  font: calc(var(--size-ui) * 0.8)/1.5 var(--font-ui);
 }
 .demo-preference-field :is(input:not([type="range"]), select) {
   width: 100%;
@@ -868,34 +860,12 @@ body {
   min-height: 36px;
   padding: 7px 10px;
   background: var(--paper);
-  font: 12px/1.5 var(--font-ui);
+  font: calc(var(--size-ui) * 0.8)/1.5 var(--font-ui);
 }
 .demo-preference-pair {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
-}
-.demo-preference-range > span {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-.demo-preference-range output {
-  color: var(--subtle);
-  font: 11px/1.4 var(--font-ui);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-.demo-preference-range input {
-  width: 100%;
-  min-height: 24px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-}
-.demo-preference-range:has(input:disabled) {
-  opacity: 0.5;
 }
 .showcase-app .demo-settings-fields .demo-toggle {
   gap: 18px;
@@ -904,7 +874,7 @@ body {
   padding-block: 11px;
   margin: 0;
   border-bottom: 1px solid color-mix(in srgb, var(--line) 55%, transparent);
-  font: 12px/1.6 var(--font-ui);
+  font: calc(var(--size-ui) * 0.8)/1.6 var(--font-ui);
 }
 .demo-settings-fields .demo-toggle > span {
   flex: 1;
@@ -914,44 +884,8 @@ body {
   display: block;
   margin-top: 3px;
   color: var(--subtle);
-  font-size: 11px;
+  font-size: calc(var(--size-ui) * 0.7333);
   line-height: 1.5;
-}
-.showcase-app .demo-settings-fields .demo-toggle > input {
-  appearance: none;
-  position: relative;
-  order: 1;
-  width: 30px;
-  height: 18px;
-  flex: 0 0 30px;
-  min-height: 0;
-  padding: 0;
-  margin: 0;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--muted) 12%, var(--paper));
-  cursor: pointer;
-  transition: background 120ms ease;
-}
-.demo-settings-fields .demo-toggle > input::before {
-  content: "";
-  position: absolute;
-  inset: 2px auto auto 2px;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--paper);
-  box-shadow: 0 1px 2px #0002;
-  transform: translateX(0);
-  transition: transform 120ms ease;
-}
-.showcase-app .demo-settings-fields .demo-toggle > input:checked {
-  background: var(--accent);
-  border-color: var(--accent);
-}
-.demo-settings-fields .demo-toggle > input:checked::before {
-  transform: translateX(12px);
-  background: var(--on-accent);
 }
 .demo-settings-preview {
   border-inline-start: 1px solid var(--line);
@@ -963,7 +897,21 @@ body {
   gap: 8px;
   padding: 22px 20px 18px;
   color: var(--subtle);
-  font: 11px/1.5 var(--font-ui);
+  font: calc(var(--size-ui) * 0.7333)/1.5 var(--font-ui);
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+.demo-settings-preview .scratchpad-surface-switch {
+  margin-inline-start: auto;
+}
+.demo-settings-preview-scroll[hidden] {
+  display: none;
+}
+.demo-settings-preview .theme-workbench {
+  padding: 0;
+}
+.demo-settings-fields .preference-number {
+  margin-block: 16px;
 }
 .demo-settings-preview-scroll {
   flex: 1;
@@ -985,14 +933,14 @@ body {
   margin: 0;
   padding: 14px 20px;
   color: var(--subtle);
-  font: 11px/1.6 var(--font-ui);
+  font: calc(var(--size-ui) * 0.7333)/1.6 var(--font-ui);
 }
 .demo-settings-save {
   display: flex;
   align-items: center;
   gap: 7px;
   color: var(--subtle);
-  font: 11px/1.5 var(--font-ui);
+  font: calc(var(--size-ui) * 0.7333)/1.5 var(--font-ui);
 }
 .demo-settings-save[data-error="true"] {
   color: var(--danger);
@@ -1015,7 +963,7 @@ body {
 }
 .demo-local-summary span {
   color: var(--muted);
-  font: 11px/1.5 var(--font-ui);
+  font: calc(var(--size-ui) * 0.7333)/1.5 var(--font-ui);
 }
 .demo-data-actions {
   display: flex;
@@ -1025,7 +973,7 @@ body {
 }
 .demo-data-actions .button,
 .demo-local-reset .button {
-  font-size: 12px;
+  font-size: calc(var(--size-ui) * 0.8);
   min-height: 35px;
 }
 .demo-local-reset {
@@ -1063,7 +1011,7 @@ body {
   background: none;
   border-radius: var(--control-radius-small);
   color: var(--muted);
-  font-size: 11px;
+  font-size: calc(var(--size-ui) * 0.7333);
   padding: 7px;
   text-transform: capitalize;
 }
@@ -1094,11 +1042,11 @@ body {
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 20%, transparent);
 }
 .demo-theme-grid strong {
-  font-size: 12px;
+  font-size: calc(var(--size-ui) * 0.8);
   font-weight: 500;
 }
 .demo-theme-grid small {
-  font-size: 10px;
+  font-size: calc(var(--size-ui) * 0.6667);
   color: var(--muted);
   grid-column: 2;
 }
@@ -1124,14 +1072,7 @@ body {
   gap: 10px;
   margin: 12px 0;
   color: var(--text);
-  font-size: 12px;
-}
-.demo-toggle input {
-  width: 14px;
-  height: 14px;
-  margin: 0;
-  flex-shrink: 0;
-  accent-color: var(--accent);
+  font-size: calc(var(--size-ui) * 0.8);
 }
 .demo-asset-toolbar {
   display: flex;

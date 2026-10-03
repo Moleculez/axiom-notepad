@@ -1,4 +1,5 @@
 "use client";
+import { SearchField, NativeSelect } from "../ui/controls";
 import { useEffect, useId, useRef, useState } from "react";
 import type { MathRequest } from "@axiom/markdown";
 import {
@@ -6,7 +7,6 @@ import {
   Star,
   Sigma,
   LayoutTemplate,
-  X,
   ChevronRight,
 } from "lucide-react";
 import {
@@ -109,28 +109,19 @@ export default function MathPalette({
           <h2>Math library</h2>
           <small>{mathSymbols.length} symbols</small>
         </div>
-        <label className="tool-search math-library-search">
-          <Search size={15} />
-          <input
-            aria-label="Search math library"
-            placeholder={
-              tab === "templates"
-                ? "Find a template…"
-                : "Name, command, or topic…"
-            }
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-          />
-          {search && (
-            <button
-              className="icon-button"
-              aria-label="Clear library search"
-              onClick={() => setSearch("")}
-            >
-              <X size={13} />
-            </button>
-          )}
-        </label>
+        <SearchField
+          wrapperClassName="tool-search math-library-search"
+          aria-label="Search math library"
+          placeholder={
+            tab === "templates"
+              ? "Find a template…"
+              : "Name, command, or topic…"
+          }
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          onClear={() => setSearch("")}
+          clearLabel="Clear library search"
+        />
         <div
           className="studio-segmented math-library-tabs"
           role="tablist"
@@ -178,7 +169,7 @@ export default function MathPalette({
           ))}
         </div>
         {tab === "symbols" && (
-          <select
+          <NativeSelect
             className="math-category"
             aria-label="Symbol category"
             value={search.trim() ? "all" : category}
@@ -189,7 +180,7 @@ export default function MathPalette({
             {mathCategories.map((value) => (
               <option key={value}>{value}</option>
             ))}
-          </select>
+          </NativeSelect>
         )}
         <div className="math-library-count" role="status">
           {count}{" "}

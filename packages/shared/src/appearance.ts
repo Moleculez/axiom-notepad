@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { legacyDocumentDecorations } from "./document-style";
 import { themePack, themePackIds } from "./theme-packs";
+import { interfaceStyleIds } from "./interface-styles";
 import { minimapPreferencesSchema } from "./minimap";
 import { pdfReaderPreferencesSchema } from "./pdf-reader";
 
@@ -269,16 +270,14 @@ export const presets: Record<
     },
   },
 };
-export const APPEARANCE_SCHEMA = 10;
+export const APPEARANCE_SCHEMA = 11;
 export const APPEARANCE_SCHEMA_HEADER = "X-Axiom-Appearance-Schema";
 const currentPreferencesSchema = z
   .object({
     schemaVersion: z.literal(APPEARANCE_SCHEMA).default(APPEARANCE_SCHEMA),
     mode: z.enum(["system", "light", "dark"]).default("system"),
     themePack: z.enum(themePackIds).default("default"),
-    interfaceStyle: z
-      .enum(["axiom", "material", "fluent", "editorial"])
-      .default("axiom"),
+    interfaceStyle: z.enum(interfaceStyleIds).default("axiom"),
     lightPreset: z
       .enum(["frost", "paper", "sepia", "lightContrast"])
       .default("frost"),
@@ -378,7 +377,8 @@ export const preferencesSchema = z.preprocess((value) => {
       value.schemaVersion === 6 ||
       value.schemaVersion === 7 ||
       value.schemaVersion === 8 ||
-      value.schemaVersion === 9)
+      value.schemaVersion === 9 ||
+      value.schemaVersion === 10)
   )
     return {
       documentDecorations: legacyDocumentDecorations(value),
@@ -428,6 +428,23 @@ export function appearanceForClient(
 ) {
   const version = request.headers.get(APPEARANCE_SCHEMA_HEADER);
   if (version === String(APPEARANCE_SCHEMA)) return record;
+  if (version === "10") {
+    // v10 cannot represent macOS Studio. Never send an unknown ID that an old
+    // tab could replace with fallback defaults, including in a restore point.
+    if (
+      record.preferences.interfaceStyle === "macos" ||
+      record.previousPreferences?.interfaceStyle === "macos"
+    )
+      return null;
+    const legacy = (p: Preferences) => ({ ...p, schemaVersion: 10 });
+    return {
+      ...record,
+      preferences: legacy(record.preferences),
+      previousPreferences: record.previousPreferences
+        ? legacy(record.previousPreferences)
+        : record.previousPreferences,
+    };
+  }
   if (version === "9") {
     const legacy = ({ interfaceStyle: _style, ...rest }: Preferences) => ({
       ...rest,
@@ -580,8 +597,15 @@ export function appearanceVariables(
   dark: boolean,
 ): Record<string, string> {
   const result: Record<string, string> = {};
-  for (const [key, color] of Object.entries(paletteFor(p, dark)))
+  const palette = paletteFor(p, dark);
+  for (const [key, color] of Object.entries(palette))
     result["--" + key.replace(/[A-Z]/g, (c) => "-" + c.toLowerCase())] = color;
+  // Solid destructive controls need their own foreground, not on-accent.
+  result["--on-danger"] =
+    contrastRatio(palette.danger, "#ffffff") >=
+    contrastRatio(palette.danger, "#000000")
+      ? "#ffffff"
+      : "#000000";
   for (const role of ["ui", "prose", "heading", "code"] as const)
     result[`--font-${role}`] = fonts[p[`${role}Font`]].family;
   for (const role of ["ui", "prose", "code"] as const)

@@ -1,4 +1,5 @@
 "use client";
+import { Button, HelpText, IconButton, SearchField } from "../ui/controls";
 import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import {
@@ -11,7 +12,6 @@ import {
   Minimize,
   PanelLeftClose,
   PanelLeftOpen,
-  Search,
 } from "lucide-react";
 import type { FilePreviewManifest } from "@axiom/shared/file-preview";
 import {
@@ -280,7 +280,7 @@ export default function OfficePreview({
   return (
     <div className="office-viewer" ref={stage}>
       <div className="office-toolbar">
-        <button
+        <IconButton
           className="icon-button"
           aria-label="Toggle document navigator"
           aria-pressed={navigator}
@@ -292,7 +292,7 @@ export default function OfficePreview({
           ) : (
             <PanelLeftOpen size={17} />
           )}
-        </button>
+        </IconButton>
         <div className="office-mode" role="group" aria-label="Document view">
           <button
             aria-pressed={mode === "reading"}
@@ -307,22 +307,20 @@ export default function OfficePreview({
             {office.format === "pptx" ? "Slides" : "Pages"}
           </button>
         </div>
-        <label className="office-search">
-          <Search size={15} />
-          <input
-            aria-label="Search document text"
-            placeholder="Find in text…"
-            value={query}
-            maxLength={200}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              setNavigator(true);
-              setMode("reading");
-            }}
-          />
-        </label>
+        <SearchField
+          wrapperClassName="office-search"
+          aria-label="Search document text"
+          placeholder="Find in text…"
+          value={query}
+          maxLength={200}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setNavigator(true);
+            setMode("reading");
+          }}
+        />
         <span className="tool-spacer" />
-        <button
+        <IconButton
           className="icon-button"
           aria-label="Copy reading link"
           title="Copy reading link"
@@ -330,8 +328,8 @@ export default function OfficePreview({
           onClick={() => void copy(true)}
         >
           <Link size={16} />
-        </button>
-        <button
+        </IconButton>
+        <IconButton
           className="icon-button"
           aria-label="Copy displayed text"
           title="Copy displayed text"
@@ -339,7 +337,7 @@ export default function OfficePreview({
           onClick={() => void copy()}
         >
           <Copy size={16} />
-        </button>
+        </IconButton>
         <a
           className="icon-button"
           aria-label="Download original"
@@ -348,7 +346,7 @@ export default function OfficePreview({
         >
           <Download size={16} />
         </a>
-        <button
+        <IconButton
           className="icon-button"
           aria-label={
             fullscreen ? "Exit document fullscreen" : "Document fullscreen"
@@ -370,7 +368,7 @@ export default function OfficePreview({
           }}
         >
           {fullscreen ? <Minimize size={16} /> : <Maximize size={16} />}
-        </button>
+        </IconButton>
       </div>
       <ErrorNotice message={error} />
       {notice && (
@@ -442,9 +440,9 @@ export default function OfficePreview({
                 ))}
             {snapshot?.format === "docx" &&
               !(term ? matches : headings).length && (
-                <p className="ws-note">
+                <HelpText>
                   {term ? "No text matches." : "No headings in this document."}
-                </p>
+                </HelpText>
               )}
             {snapshot?.format === "pptx" &&
               term &&
@@ -452,11 +450,11 @@ export default function OfficePreview({
                 `${item.title}\n${item.blocks.map(officeBlockText).join("\n")}\n${item.notes}`
                   .toLocaleLowerCase()
                   .includes(term.toLocaleLowerCase()),
-              ) && <p className="ws-note">No matching slides.</p>}
+              ) && <HelpText>No matching slides.</HelpText>}
             {matches.length === 200 && (
-              <p className="ws-note">
+              <HelpText>
                 First 200 matching blocks. Refine your search.
-              </p>
+              </HelpText>
             )}
           </nav>
         )}
@@ -472,7 +470,7 @@ export default function OfficePreview({
                     : "Page-layout preview"}
                 </h3>
                 <p>{file.message}</p>
-                <button
+                <Button
                   className="button secondary"
                   disabled={
                     file.status === "queued" ||
@@ -488,7 +486,7 @@ export default function OfficePreview({
                   {file.status === "queued"
                     ? "Converting privately…"
                     : "Generate private preview"}
-                </button>
+                </Button>
                 {!office.converterAvailable && (
                   <small>
                     Private conversion is not configured. Reading view remains
@@ -510,14 +508,14 @@ export default function OfficePreview({
               <>
                 {snapshot.format === "pptx" && (
                   <div className="office-slide-controls">
-                    <button
+                    <IconButton
                       className="icon-button"
                       aria-label="Previous slide"
                       disabled={slide <= 0}
                       onClick={() => setSlide(slide - 1)}
                     >
                       <ChevronLeft size={17} />
-                    </button>
+                    </IconButton>
                     <span>
                       Slide {snapshot.slides.length ? slide + 1 : 0} of{" "}
                       {snapshot.slides.length}
@@ -525,14 +523,14 @@ export default function OfficePreview({
                         ? " · hidden in original"
                         : ""}
                     </span>
-                    <button
+                    <IconButton
                       className="icon-button"
                       aria-label="Next slide"
                       disabled={slide >= snapshot.slides.length - 1}
                       onClick={() => setSlide(slide + 1)}
                     >
                       <ChevronRight size={17} />
-                    </button>
+                    </IconButton>
                   </div>
                 )}
                 <div
@@ -548,18 +546,18 @@ export default function OfficePreview({
                       <Block key={block.id} block={block} query={term} />
                     ))}
                     {!blocks.length && (
-                      <p className="ws-note">
+                      <HelpText>
                         No extractable text. Use the page preview or download
                         the original.
-                      </p>
+                      </HelpText>
                     )}
                     {blocks.length > limit && (
-                      <button
+                      <Button
                         className="button secondary"
                         onClick={() => setLimit(limit + 100)}
                       >
                         Show 100 more blocks
-                      </button>
+                      </Button>
                     )}
                     {snapshot.format === "pptx" &&
                       snapshot.slides[slide]?.notes && (
@@ -594,10 +592,10 @@ export default function OfficePreview({
                           Original document comments ({snapshot.comments.length}
                           )
                         </summary>
-                        <p className="ws-note">
+                        <HelpText>
                           Imported author labels, not workspace identities.
                           Comment anchors and threads are not reconstructed.
-                        </p>
+                        </HelpText>
                         {snapshot.comments.map((comment, index) => (
                           <div key={`${comment.id}-${index}`}>
                             <strong>

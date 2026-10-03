@@ -1,25 +1,46 @@
 "use client";
-import { useMemo, useRef, useState } from "react";
-import type { PlanningAnalysis } from "@axiom/shared/planning-analysis";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   CalendarDays,
   ChevronDown,
   ChevronRight,
   Diamond,
   Focus,
-  Minus,
-  Plus,
+  Link2,
+  Settings2,
 } from "lucide-react";
+import type { PlanningAnalysis } from "@axiom/shared/planning-analysis";
 import {
   addDays,
   dayNumber,
   dateFromDay,
+  dependencyStart,
+  planningProgress,
+  taskDependencyLinks,
   workingDay,
+  type DependencyLink,
   type PlanningCalendar,
   type PlanningTask,
   type ScheduleChange,
 } from "@axiom/shared/planning";
-
+import {
+  ActionRow,
+  Button,
+  Checkbox,
+  Field,
+  HelpText,
+  IconButton,
+  NativeSelect,
+  Switch,
+} from "../ui/controls";
+import Dialog from "../Dialog";
+import {
+  PlanningEntityPicker,
+  PlanningIntegerInput,
+  usePlanningRowSize,
+} from "./PlanningFields";
+import { ErrorNotice, useAction } from "./ui";
+import { api } from "../../lib/client";
 export type Milestone = {
   id: string;
   title: string;
@@ -27,9 +48,12 @@ export type Milestone = {
   completed_at: string | null;
   version: number;
 };
-const rowHeight = 44,
-  headerHeight = 48;
-type Row = { task?: PlanningTask; milestone?: Milestone; depth: number };
+type Row = {
+  task?: PlanningTask;
+  milestone?: Milestone;
+  depth: number;
+  group?: { id: string; title: string; tasks: PlanningTask[] };
+};
 export function orderedPlanningRows(
   tasks: PlanningTask[],
   collapsed: Set<string>,
@@ -59,9 +83,36 @@ export function orderedPlanningRows(
   }
   return rows;
 }
-
-/** DOM bars, a clipped SVG dependency layer, and virtual rows share one scrollport. */
+const columnLabels: Record<string, string> = {
+  assignee: "Assignee",
+  status: "Status",
+  priority: "Priority",
+  start: "Start",
+  due: "Finish",
+  progress: "Progress",
+};
+const scales: Record<string, number> = {
+  day: 32,
+  week: 14,
+  month: 5,
+  quarter: 2,
+  year: 0.9,
+};
+type Drag = {
+  id: string;
+  mode: "move" | "start" | "end";
+  x: number;
+  delta: number;
+};
+type LinkDraft = {
+  predecessor: string;
+  successor: string;
+  lag: number;
+  existing?: boolean;
+};
+/** Shared virtual geometry; one scrollport owns table, timeline and all overlays. */
 export default function PlanningGantt({
+  spaceId = "",
   tasks,
   milestones,
   calendar,
@@ -74,7 +125,17 @@ export default function PlanningGantt({
   onScrollPosition,
   analysis,
   baseline = [],
+  selection = new Map(),
+  onSelect = () => {},
+  grouping = "parent",
+  columns = [],
+  showDependencies = true,
+  showBaseline = true,
+  showCritical = true,
+  onOptions = () => {},
+  onDependency = async () => {},
 }: {
+  spaceId?: string;
   tasks: PlanningTask[];
   milestones: Milestone[];
   calendar: PlanningCalendar;
@@ -87,49 +148,119 @@ export default function PlanningGantt({
   onScrollPosition?: (value: number) => void;
   analysis?: PlanningAnalysis | null;
   baseline?: PlanningTask[];
+  selection?: Map<string, PlanningTask>;
+  onSelect?: (task: PlanningTask, range?: boolean) => void;
+  grouping?: string;
+  columns?: string[];
+  showDependencies?: boolean;
+  showBaseline?: boolean;
+  showCritical?: boolean;
+  onOptions?: (options: Record<string, string | null>) => void;
+  onDependency?: (task: PlanningTask, links: DependencyLink[]) => Promise<void>;
 }) {
-  const root = useRef<HTMLDivElement>(null),
-    [scroll, setScroll] = useState({
+  const rowHeight = usePlanningRowSize(52),
+    headerHeight = usePlanningRowSize(72),
+    root = useRef<HTMLDivElement>(null);
+  const [scroll, setScroll] = useState({
       top: initialScroll,
       left: 0,
       height: 600,
       width: 1000,
-    });
-  const [collapsed, setCollapsed] = useState(new Set<string>()),
-    [tableWidth, setTableWidth] = useState(290),
-    [fit, setFit] = useState<number | null>(null);
-  const [drag, setDrag] = useState<{
-    id: string;
-    mode: "move" | "start" | "end";
-    x: number;
-    delta: number;
-  } | null>(null);
-  const dragged = useRef(false);
+    }),
+    [collapsed, setCollapsed] = useState(new Set<string>()),
+    [tableWidth, setTableWidth] = useState(300),
+    [fit, setFit] = useState<number | null>(null),
+    [drag, setDrag] = useState<Drag | null>(null),
+    [link, setLink] = useState<LinkDraft | null>(null),
+    [linkSource, setLinkSource] = useState<string | null>(null),
+    [validOffset, setValidOffset] = useState(true),
+    [settings, setSettings] = useState(false);
+  const dragRef = useRef<Drag | null>(null),
+    moved = useRef(false),
+    linkDropFinished = useRef(false),
+    frame = useRef(0),
+    pending = useRef(0),
+    anchor = useRef<number | null>(null),
+    action = useAction();
   const today = new Intl.DateTimeFormat("sv-SE", {
     timeZone: calendar.timezone,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
   }).format(new Date());
-  const rows = useMemo<Row[]>(
-    () => [
-      ...orderedPlanningRows(tasks, collapsed),
-      ...milestones.map((milestone) => ({ milestone, depth: 0 })),
-    ],
-    [tasks, collapsed, milestones],
+  const maps = useMemo(
+    () => ({
+      byId: new Map(tasks.map((t) => [t.id, t])),
+      parents: new Set(
+        tasks.flatMap((t) => (t.parent_id ? [t.parent_id] : [])),
+      ),
+      baseline: new Map(baseline.map((t) => [t.id, t])),
+      analysis: new Map(analysis?.tasks.map((t) => [t.id, t]) ?? []),
+      progress: planningProgress(tasks),
+      milestones: new Map(milestones.map((m) => [m.id, m.title])),
+    }),
+    [tasks, baseline, analysis, milestones],
   );
-  const dates = [
-    ...baseline.flatMap((t) => [t.start_on, t.due_on]),
-    ...tasks.flatMap((t) => [t.start_on, t.due_on]),
-    ...milestones.map((m) => m.due_on),
-  ].filter((d): d is string => !!d);
-  const first =
-    (dates.length ? Math.min(...dates.map(dayNumber)) : dayNumber(today)) - 7;
-  const last = Math.max(
-    first + 60,
-    (dates.length ? Math.max(...dates.map(dayNumber)) : first + 30) + 21,
-  );
-  const dayWidth = fit ?? { day: 30, week: 12, month: 4 }[zoom] ?? 12,
+  const rows = useMemo<Row[]>(() => {
+    if (grouping === "parent")
+      return [
+        ...orderedPlanningRows(tasks, collapsed),
+        ...milestones.map((milestone) => ({ milestone, depth: 0 })),
+      ];
+    const groups = new Map<
+      string,
+      { id: string; title: string; tasks: PlanningTask[] }
+    >();
+    for (const task of tasks) {
+      const key =
+          grouping === "assignee"
+            ? (task.assignee_id ?? "none")
+            : (task.milestone_id ?? "none"),
+        id = `${grouping}:${key}`;
+      let g = groups.get(id);
+      if (!g) {
+        g = {
+          id,
+          title:
+            grouping === "assignee"
+              ? (task.assignee_name ?? "Unassigned")
+              : (maps.milestones.get(key) ?? "No milestone"),
+          tasks: [],
+        };
+        groups.set(id, g);
+      }
+      g.tasks.push(task);
+    }
+    return [...groups.values()]
+      .sort((a, b) => a.title.localeCompare(b.title))
+      .flatMap((group) => [
+        { group, depth: 0 },
+        ...(collapsed.has(group.id)
+          ? []
+          : group.tasks.map((task) => ({ task, depth: 1 }))),
+      ]) as Row[];
+  }, [tasks, milestones, collapsed, grouping, maps]);
+  let low = Infinity,
+    high = -Infinity;
+  for (const t of [...tasks, ...(showBaseline ? baseline : [])])
+    for (const d of [t.start_on, t.due_on])
+      if (d) {
+        low = Math.min(low, dayNumber(d));
+        high = Math.max(high, dayNumber(d));
+      }
+  for (const m of milestones)
+    if (m.due_on) {
+      low = Math.min(low, dayNumber(m.due_on));
+      high = Math.max(high, dayNumber(m.due_on));
+    }
+  const first = (Number.isFinite(low) ? low : dayNumber(today)) - 7,
+    last = Math.max(
+      first + 60,
+      first + ({ quarter: 360, year: 1080, month: 180, week: 90 }[zoom] ?? 60),
+      (Number.isFinite(high) ? high : first + 30) + 21,
+    ),
+    dayWidth = fit ?? scales[zoom] ?? 14,
+    labelWidth = tableWidth + columns.length * 110,
     timelineWidth = (last - first + 1) * dayWidth;
   const start = Math.max(
       0,
@@ -138,51 +269,74 @@ export default function PlanningGantt({
     end = Math.min(
       rows.length,
       start + Math.ceil(scroll.height / rowHeight) + 18,
+    ),
+    visible = rows.slice(start, end),
+    index = useMemo(
+      () =>
+        new Map(
+          rows.flatMap((r, i) => (r.task ? [[r.task.id, i] as const] : [])),
+        ),
+      [rows],
     );
-  const visible = rows.slice(start, end),
-    index = new Map(
-      rows.flatMap((r, i) => (r.task ? [[r.task.id, i] as const] : [])),
-    ),
-    byId = new Map(tasks.map((t) => [t.id, t]));
-  const firstDay = Math.max(
-      0,
-      Math.floor((scroll.left - tableWidth) / dayWidth) - 2,
-    ),
+  const firstDay = Math.max(0, Math.floor(scroll.left / dayWidth) - 2),
     lastDay = Math.min(
       last - first + 1,
-      firstDay + Math.ceil(scroll.width / dayWidth) + 5,
-    );
-  const x = (date: string) => (dayNumber(date) - first) * dayWidth;
-  const edges = visible.flatMap(
-    (row) =>
-      row.task?.dependencies?.flatMap((id) => {
-        const predecessor = byId.get(id),
-          from = index.get(id),
-          to = index.get(row.task!.id);
-        if (
-          !predecessor?.due_on ||
-          !row.task!.start_on ||
-          from === undefined ||
-          to === undefined
-        )
-          return [];
-        const a = x(predecessor.due_on) + dayWidth,
-          b = x(row.task!.start_on),
-          y1 = from * rowHeight + 22,
-          y2 = to * rowHeight + 22;
-        return [
-          {
-            key: id + row.task!.id,
-            path: `M ${a} ${y1} H ${a + 8} V ${y2 - 16} H ${b - 8} V ${y2} H ${b}`,
-            invalid: b < a,
-          },
-        ];
-      }) ?? [],
-  );
-  function move(
+      firstDay +
+        Math.ceil(Math.max(0, scroll.width - labelWidth) / dayWidth) +
+        6,
+    ),
+    x = (date: string) => (dayNumber(date) - first) * dayWidth;
+  useEffect(() => {
+    const node = root.current;
+    if (!node) return;
+    node.scrollTop = initialScroll;
+    const update = () =>
+      setScroll((s) => ({
+        ...s,
+        width: node.clientWidth,
+        height: node.clientHeight,
+      }));
+    update();
+    const resize = new ResizeObserver(update);
+    resize.observe(node);
+    return () => resize.disconnect();
+  }, []);
+  useEffect(() => {
+    if (anchor.current !== null && root.current) {
+      root.current.scrollLeft = Math.max(
+        0,
+        (anchor.current - first) * dayWidth - (scroll.width - labelWidth) / 2,
+      );
+      anchor.current = null;
+    }
+  }, [dayWidth, first]);
+  useEffect(() => () => cancelAnimationFrame(frame.current), []);
+  useEffect(() => {
+    if (!linkSource) return;
+    const escape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setLinkSource(null);
+    };
+    window.addEventListener("keydown", escape);
+    return () => window.removeEventListener("keydown", escape);
+  }, [linkSource]);
+  function scale(value: string) {
+    anchor.current =
+      first + (scroll.left + (scroll.width - labelWidth) / 2) / dayWidth;
+    setFit(null);
+    onZoom(value);
+  }
+  function collapse(id: string) {
+    setCollapsed((old) => {
+      const next = new Set(old);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+  function begin(
     event: React.PointerEvent,
     task: PlanningTask,
-    mode: "move" | "start" | "end",
+    mode: Drag["mode"],
   ) {
     if (
       readOnly ||
@@ -194,73 +348,170 @@ export default function PlanningGantt({
       return;
     event.stopPropagation();
     event.currentTarget.setPointerCapture(event.pointerId);
-    dragged.current = false;
-    setDrag({ id: task.id, mode, x: event.clientX, delta: 0 });
+    moved.current = false;
+    const d = { id: task.id, mode, x: event.clientX, delta: 0 };
+    dragRef.current = d;
+    setDrag(d);
   }
-  function openFromBar(id: string) {
-    if (!dragged.current) onOpen(id);
-    dragged.current = false;
+  function pointerMove(event: React.PointerEvent) {
+    const d = dragRef.current;
+    if (!d) return;
+    pending.current = event.clientX - d.x;
+    if (Math.abs(pending.current) > 3) moved.current = true;
+    if (!frame.current)
+      frame.current = requestAnimationFrame(() => {
+        frame.current = 0;
+        if (dragRef.current) {
+          dragRef.current = { ...dragRef.current, delta: pending.current };
+          setDrag(dragRef.current);
+        }
+      });
   }
-  function finish(event: React.PointerEvent, task: PlanningTask) {
-    if (!drag || drag.id !== task.id) return;
-    event.stopPropagation();
-    const amount = Math.round((event.clientX - drag.x) / dayWidth);
+  function changesFor(task: PlanningTask, mode: Drag["mode"], amount: number) {
+    const targets =
+      mode === "move" && selection.has(task.id)
+        ? [...selection.values()].filter(
+            (t) =>
+              t.start_on &&
+              t.due_on &&
+              !t.deleted_at &&
+              !["done", "cancelled"].includes(t.status),
+          )
+        : [task];
+    return targets.map((t) => {
+      let startOn = mode === "end" ? t.start_on! : addDays(t.start_on!, amount),
+        dueOn = mode === "start" ? t.due_on! : addDays(t.due_on!, amount);
+      if (startOn > dueOn) {
+        if (mode === "start") startOn = dueOn;
+        else dueOn = startOn;
+      }
+      return { id: t.id, version: t.version, startOn, dueOn };
+    });
+  }
+  function finish(event: React.PointerEvent) {
+    const d = dragRef.current;
+    if (!d) return;
+    cancelAnimationFrame(frame.current);
+    frame.current = 0;
+    dragRef.current = null;
     setDrag(null);
-    if (!amount || !task.start_on || !task.due_on) return;
-    dragged.current = true;
-    let startOn =
-        drag.mode === "end" ? task.start_on : addDays(task.start_on, amount),
-      dueOn =
-        drag.mode === "start" ? task.due_on : addDays(task.due_on, amount);
-    if (startOn > dueOn) {
-      if (drag.mode === "start") startOn = dueOn;
-      else dueOn = startOn;
+    const amount = Math.round((event.clientX - d.x) / dayWidth),
+      task = maps.byId.get(d.id);
+    if (task && amount) {
+      moved.current = true;
+      onSchedule(changesFor(task, d.mode, amount));
     }
-    onSchedule([{ id: task.id, version: task.version, startOn, dueOn }]);
+  }
+  function keyboardMove(
+    event: React.KeyboardEvent,
+    task: PlanningTask,
+    mode: Drag["mode"],
+  ) {
+    if (
+      readOnly ||
+      !task.start_on ||
+      !task.due_on ||
+      ["done", "cancelled"].includes(task.status) ||
+      !["ArrowLeft", "ArrowRight"].includes(event.key) ||
+      !event.altKey
+    )
+      return;
+    event.preventDefault();
+    event.stopPropagation();
+    onSchedule(changesFor(task, mode, event.key === "ArrowLeft" ? -1 : 1));
+  }
+  const edges = showDependencies
+    ? visible.flatMap((row) =>
+        row.task
+          ? taskDependencyLinks(row.task).flatMap((dep) => {
+              const predecessor = maps.byId.get(dep.taskId),
+                from = index.get(dep.taskId),
+                to = index.get(row.task!.id);
+              if (
+                !predecessor?.due_on ||
+                !row.task!.start_on ||
+                from === undefined ||
+                to === undefined
+              )
+                return [];
+              const a = x(predecessor.due_on) + dayWidth,
+                b = x(row.task!.start_on),
+                y1 = from * rowHeight + rowHeight / 2,
+                y2 = to * rowHeight + rowHeight / 2;
+              return [
+                {
+                  key: dep.taskId + row.task!.id,
+                  path: `M ${a} ${y1} H ${a + 10} V ${y2 - rowHeight * 0.3} H ${b - 10} V ${y2} H ${b}`,
+                  invalid:
+                    row.task!.start_on <
+                    dependencyStart(predecessor.due_on, dep.lagDays, calendar),
+                  a,
+                  b,
+                  y: y2 - rowHeight * 0.3,
+                  source: dep.taskId,
+                  target: row.task!.id,
+                  lag: dep.lagDays,
+                },
+              ];
+            })
+          : [],
+      )
+    : [];
+  const dates = Array.from(
+    { length: Math.max(0, lastDay - firstDay) },
+    (_, i) => first + firstDay + i,
+  );
+  const headerGroups: Array<{ label: string; left: number; width: number }> =
+    [];
+  for (const day of dates) {
+    const date = dateFromDay(day),
+      label =
+        zoom === "year"
+          ? date.slice(0, 4)
+          : zoom === "quarter"
+            ? `${date.slice(0, 4)} · Q${Math.floor((Number(date.slice(5, 7)) - 1) / 3) + 1}`
+            : date.slice(0, 7),
+      left = (day - first) * dayWidth,
+      previous = headerGroups.at(-1);
+    if (previous?.label === label) previous.width += dayWidth;
+    else headerGroups.push({ label, left, width: dayWidth });
   }
   return (
     <section className="planning-gantt" aria-label="Gantt schedule">
       <div className="planning-gantt-controls">
-        <div
-          className="scratchpad-modes"
+        <NativeSelect
           aria-label="Timeline scale"
-          role="group"
+          value={fit ? "fit" : zoom}
+          onChange={(e) => scale(e.target.value)}
         >
-          {["day", "week", "month"].map((value) => (
-            <button
-              key={value}
-              aria-pressed={!fit && zoom === value}
-              onClick={() => {
-                setFit(null);
-                onZoom(value);
-              }}
-            >
-              {value[0].toUpperCase() + value.slice(1)}
-            </button>
+          {fit && <option value="fit">Fit</option>}
+          {Object.keys(scales).map((s) => (
+            <option key={s} value={s}>
+              {s[0].toUpperCase() + s.slice(1)}
+            </option>
           ))}
-        </div>
-        <button
-          className="button ghost"
+        </NativeSelect>
+        <Button
+          variant="ghost"
           onClick={() =>
             root.current?.scrollTo({
-              left: Math.max(0, x(today) - 80),
+              left: Math.max(0, x(today) - (scroll.width - labelWidth) / 2),
               behavior: "smooth",
             })
           }
         >
           <CalendarDays size={15} />
           Today
-        </button>
-        <button
-          className="button ghost"
+        </Button>
+        <Button
+          variant="ghost"
           onClick={() => {
             setFit(
               Math.max(
-                1,
+                0.1,
                 Math.min(
-                  30,
-                  ((root.current?.clientWidth ?? 1000) - tableWidth - 24) /
-                    (last - first + 1),
+                  32,
+                  (scroll.width - labelWidth - 24) / (last - first + 1),
                 ),
               ),
             );
@@ -269,30 +520,34 @@ export default function PlanningGantt({
         >
           <Focus size={15} />
           Fit
-        </button>
+        </Button>
         <span className="planning-spacer" />
-        <label className="planning-width">
-          Task column{" "}
-          <input
-            aria-label="Task column width"
-            type="range"
-            min="220"
-            max="480"
-            value={tableWidth}
-            onChange={(e) => setTableWidth(Number(e.target.value))}
-          />
-        </label>
-        <small>Drag to preview · {calendar.timezone}</small>
+        <Button
+          variant="ghost"
+          disabled={readOnly}
+          onClick={() => setLink({ predecessor: "", successor: "", lag: 0 })}
+        >
+          <Link2 size={15} />
+          Link tasks
+        </Button>
+        <IconButton
+          label="Timeline columns and layers"
+          onClick={() => setSettings(true)}
+        >
+          <Settings2 size={16} />
+        </IconButton>
       </div>
+      <HelpText className="planning-gantt-help">
+        Drag bars to review schedule changes; Alt + ←/→ moves a day. Drag a
+        finish connector to another task’s start, or use Link tasks.
+        Shift-select rows for a range.
+        {linkSource
+          ? " Choose a successor start connector · Escape cancels."
+          : ""}
+      </HelpText>
       <div
         className="gantt-scroll"
-        ref={(node) => {
-          root.current = node;
-          if (node && !node.dataset.restored) {
-            node.scrollTop = initialScroll;
-            node.dataset.restored = "1";
-          }
-        }}
+        ref={root}
         onScroll={(e) => {
           const node = e.currentTarget;
           setScroll({
@@ -303,262 +558,681 @@ export default function PlanningGantt({
           });
           onScrollPosition?.(node.scrollTop);
         }}
+        onPointerMove={pointerMove}
+        onPointerUp={finish}
+        onPointerCancel={() => {
+          dragRef.current = null;
+          setDrag(null);
+        }}
       >
         <div
           className="gantt-canvas"
           style={{
-            width: tableWidth + timelineWidth,
+            width: labelWidth + timelineWidth,
             height: headerHeight + rows.length * rowHeight,
+            minHeight: "100%",
           }}
         >
+          <div className="gantt-header" style={{ height: headerHeight }}>
+            <div
+              className="gantt-label-header"
+              style={{ width: labelWidth, height: headerHeight }}
+            >
+              <strong style={{ width: tableWidth }}>
+                Tasks · {tasks.length.toLocaleString()}
+              </strong>
+              {columns.map((c) => (
+                <span key={c}>{columnLabels[c]}</span>
+              ))}
+              <div
+                className="gantt-column-resizer"
+                role="separator"
+                aria-label="Task column width"
+                aria-orientation="vertical"
+                aria-valuemin={220}
+                aria-valuemax={560}
+                aria-valuenow={tableWidth}
+                tabIndex={0}
+                style={{ left: tableWidth - 4 }}
+                onKeyDown={(e) => {
+                  if (
+                    ["ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key)
+                  ) {
+                    e.preventDefault();
+                    setTableWidth((w) =>
+                      e.key === "Home"
+                        ? 220
+                        : e.key === "End"
+                          ? 560
+                          : Math.max(
+                              220,
+                              Math.min(
+                                560,
+                                w + (e.key === "ArrowRight" ? 10 : -10),
+                              ),
+                            ),
+                    );
+                  }
+                }}
+                onPointerDown={(e) => {
+                  if (e.button !== 0) return;
+                  e.currentTarget.setPointerCapture(e.pointerId);
+                  e.currentTarget.dataset.start = String(e.clientX);
+                  e.currentTarget.dataset.width = String(tableWidth);
+                }}
+                onPointerMove={(e) => {
+                  if (e.currentTarget.hasPointerCapture(e.pointerId))
+                    setTableWidth(
+                      Math.max(
+                        220,
+                        Math.min(
+                          560,
+                          Number(e.currentTarget.dataset.width) +
+                            e.clientX -
+                            Number(e.currentTarget.dataset.start),
+                        ),
+                      ),
+                    );
+                }}
+                onPointerUp={(e) => {
+                  if (e.currentTarget.hasPointerCapture(e.pointerId))
+                    e.currentTarget.releasePointerCapture(e.pointerId);
+                }}
+              />
+            </div>
+            <div
+              className="gantt-date-headers"
+              style={{ left: labelWidth, width: timelineWidth }}
+            >
+              {headerGroups.map((g) => (
+                <span
+                  key={g.label}
+                  className="gantt-date-major"
+                  style={{ left: g.left, width: g.width }}
+                >
+                  {g.label}
+                </span>
+              ))}
+              {dates
+                .filter(
+                  (day) =>
+                    dayWidth >= 18 ||
+                    (zoom === "week" &&
+                      new Date(day * 86400000).getUTCDay() === 1) ||
+                    (zoom === "month" &&
+                      new Date(day * 86400000).getUTCDay() === 1) ||
+                    (["quarter", "year"].includes(zoom) &&
+                      dateFromDay(day).endsWith("-01")) ||
+                    (fit && dateFromDay(day).endsWith("-01")),
+                )
+                .map((day) => (
+                  <span
+                    key={day}
+                    className="gantt-date-minor"
+                    style={{
+                      left: (day - first) * dayWidth,
+                      width: Math.max(
+                        dayWidth,
+                        dayWidth * (dayWidth < 5 ? 28 : 7),
+                      ),
+                    }}
+                  >
+                    {dayWidth >= 18
+                      ? dateFromDay(day).slice(8)
+                      : ["quarter", "year"].includes(zoom) || fit
+                        ? dateFromDay(day).slice(5, 7)
+                        : dateFromDay(day).slice(5)}
+                  </span>
+                ))}
+            </div>
+          </div>
           <div
-            className="gantt-dates"
+            className="gantt-nonworking"
             style={{
-              marginLeft: tableWidth,
+              left: labelWidth,
+              top: headerHeight,
+              height: rows.length * rowHeight,
               width: timelineWidth,
-              height: headerHeight,
             }}
           >
-            {Array.from({ length: Math.max(0, lastDay - firstDay) }, (_, i) => {
-              const offset = i + firstDay,
-                date = dateFromDay(first + offset),
-                show =
-                  dayWidth >= 24 ||
-                  (dayWidth >= 8
-                    ? new Date(date + "T00:00:00Z").getUTCDay() === 1
-                    : date.endsWith("-01"));
-              return show ? (
-                <span key={date} style={{ left: offset * dayWidth }}>
-                  {new Date(date + "T00:00:00Z").toLocaleDateString(undefined, {
-                    timeZone: "UTC",
-                    month: "short",
-                    day: "numeric",
-                  })}
-                </span>
-              ) : null;
-            })}
+            {dayWidth >= 2 &&
+              dates
+                .filter((day) => !workingDay(dateFromDay(day), calendar))
+                .map((day) => (
+                  <span
+                    key={day}
+                    style={{ left: (day - first) * dayWidth, width: dayWidth }}
+                  />
+                ))}
           </div>
           <div
-            className="gantt-corner"
-            style={{ width: tableWidth, height: headerHeight }}
-          >
-            Work item{" "}
-            <small>
-              {tasks.length} tasks · {milestones.length} milestones
-            </small>
-          </div>
-          <div
-            className="gantt-timeline"
+            className="gantt-today"
             style={{
-              left: tableWidth,
+              left: labelWidth + x(today),
               top: headerHeight,
-              width: timelineWidth,
               height: rows.length * rowHeight,
             }}
+            aria-hidden="true"
+          />
+          <svg
+            className="gantt-dependencies"
+            width={timelineWidth}
+            height={rows.length * rowHeight}
+            style={{ left: labelWidth, top: headerHeight }}
+            aria-label="Finish-to-start dependencies"
           >
-            {dayWidth >= 8 &&
-              Array.from(
-                { length: Math.max(0, lastDay - firstDay) },
-                (_, i) => {
-                  const offset = i + firstDay;
-                  return !workingDay(dateFromDay(first + offset), calendar) ? (
-                    <div
-                      key={offset}
-                      className="gantt-nonworking"
-                      style={{ left: offset * dayWidth, width: dayWidth }}
-                    />
-                  ) : null;
-                },
-              )}
-            {dayNumber(today) >= first && dayNumber(today) <= last && (
-              <div
-                className="gantt-today"
-                aria-label={`Today: ${today}`}
-                style={{ left: x(today) + dayWidth / 2 }}
-              />
-            )}
-            <svg
-              className="gantt-dependencies"
-              aria-label="Finish-to-start dependencies"
-              width={timelineWidth}
-              height={rows.length * rowHeight}
-            >
-              {edges.map((edge) => (
-                <path
-                  key={edge.key}
-                  d={edge.path}
-                  className={edge.invalid ? "conflict" : ""}
-                />
-              ))}
-            </svg>
-          </div>
-          {visible.map((row, offset) => {
-            const rowIndex = start + offset,
-              task = row.task,
-              milestone = row.milestone,
-              top = headerHeight + rowIndex * rowHeight;
-            let left = task?.start_on
-              ? x(task.start_on)
-              : milestone?.due_on
-                ? x(milestone.due_on)
-                : null;
-            let width =
-              task?.start_on && task.due_on
-                ? Math.max(
-                    dayWidth,
-                    (dayNumber(task.due_on) - dayNumber(task.start_on) + 1) *
-                      dayWidth,
-                  )
-                : 0;
-            if (drag && task && drag.id === task.id && left !== null) {
-              if (drag.mode !== "end") left += drag.delta * dayWidth;
-              if (drag.mode === "start") width -= drag.delta * dayWidth;
-              if (drag.mode === "end") width += drag.delta * dayWidth;
-              width = Math.max(dayWidth, width);
-            }
-            const hasChildren =
-              task && tasks.some((t) => t.parent_id === task.id);
-            const original = task && baseline.find((t) => t.id === task.id);
-            return (
-              <div
-                className="gantt-row"
-                key={task?.id ?? milestone!.id}
-                style={{
-                  top,
-                  height: rowHeight,
-                  width: tableWidth + timelineWidth,
-                }}
+            <defs>
+              <marker
+                id="planning-arrow"
+                markerWidth="6"
+                markerHeight="6"
+                refX="5"
+                refY="3"
+                orient="auto"
               >
-                <div
-                  className="gantt-label"
-                  style={{
-                    width: tableWidth,
-                    paddingLeft: 12 + Math.min(row.depth, 8) * 16,
-                  }}
+                <path d="M0,0 L6,3 L0,6 Z" fill="currentColor" />
+              </marker>
+            </defs>
+            {edges.map((edge) => (
+              <g
+                key={edge.key}
+                className={edge.invalid ? "gantt-dependency-conflict" : ""}
+              >
+                <path d={edge.path} markerEnd="url(#planning-arrow)" />
+                <path
+                  className="gantt-edge-hit"
+                  d={edge.path}
+                  onClick={() =>
+                    !readOnly &&
+                    setLink({
+                      predecessor: edge.source,
+                      successor: edge.target,
+                      lag: edge.lag,
+                      existing: true,
+                    })
+                  }
                 >
-                  {hasChildren ? (
-                    <button
-                      className="icon-button"
-                      aria-label={`${collapsed.has(task.id) ? "Expand" : "Collapse"} ${task.title}`}
-                      onClick={() =>
-                        setCollapsed((old) => {
-                          const next = new Set(old);
-                          if (next.has(task.id)) next.delete(task.id);
-                          else next.add(task.id);
-                          return next;
-                        })
-                      }
+                  <title>
+                    {maps.byId.get(edge.source)?.title} →{" "}
+                    {maps.byId.get(edge.target)?.title} · {edge.lag} working
+                    days{edge.invalid ? " · conflict" : ""}
+                  </title>
+                </path>
+                {edge.lag !== 0 && (
+                  <text x={(edge.a + edge.b) / 2} y={edge.y - 4}>
+                    {edge.lag > 0 ? "+" : ""}
+                    {edge.lag}d
+                  </text>
+                )}
+              </g>
+            ))}
+          </svg>
+          {visible.map((row, i) => {
+            const task = row.task,
+              key = task?.id ?? row.milestone?.id ?? row.group!.id,
+              y = headerHeight + (start + i) * rowHeight;
+            if (row.group) {
+              const g = row.group,
+                dated = g.tasks.filter((t) => t.start_on && t.due_on),
+                beg = dated.reduce(
+                  (a, t) => (!a || t.start_on! < a ? t.start_on! : a),
+                  "",
+                ),
+                finish = dated.reduce(
+                  (a, t) => (t.due_on! > a ? t.due_on! : a),
+                  "",
+                ),
+                leaf = g.tasks.filter(
+                  (t) => !maps.parents.has(t.id) && t.status !== "cancelled",
+                ),
+                progress = leaf.length
+                  ? Math.round(
+                      leaf.reduce(
+                        (n, t) => n + (maps.progress.get(t.id) ?? 0),
+                        0,
+                      ) / leaf.length,
+                    )
+                  : 0;
+              return (
+                <div
+                  key={key}
+                  className="gantt-row gantt-group-row"
+                  style={{ top: y, height: rowHeight }}
+                >
+                  <div className="gantt-label" style={{ width: labelWidth }}>
+                    <Button
+                      variant="ghost"
+                      size="compact"
+                      onClick={() => collapse(g.id)}
                     >
-                      {collapsed.has(task.id) ? (
+                      {collapsed.has(g.id) ? (
                         <ChevronRight size={14} />
                       ) : (
                         <ChevronDown size={14} />
                       )}
-                    </button>
-                  ) : milestone ? (
-                    <Diamond size={14} />
-                  ) : (
-                    <span className={`task-status-dot ${task!.status}`} />
-                  )}
-                  {task ? (
-                    <button onClick={() => onOpen(task.id)} title={task.title}>
-                      {task.title}
-                    </button>
-                  ) : (
-                    <span>{milestone!.title}</span>
-                  )}
-                  {task?.blocked && (
-                    <small title="Waiting for dependencies">Blocked</small>
+                      <strong>{g.title}</strong>
+                      <small>
+                        {g.tasks.length} · {progress}%
+                      </small>
+                    </Button>
+                  </div>
+                  {beg && finish && (
+                    <span
+                      className="gantt-group-span"
+                      style={{
+                        left: labelWidth + x(beg),
+                        width: Math.max(5, x(finish) - x(beg) + dayWidth),
+                      }}
+                      title={`Derived group span ${beg} → ${finish}`}
+                    />
                   )}
                 </div>
-                {original?.start_on && original.due_on && (
+              );
+            }
+            const milestone = row.milestone,
+              base =
+                task && showBaseline ? maps.baseline.get(task.id) : undefined,
+              progress = task ? (maps.progress.get(task.id) ?? 0) : 0,
+              offset =
+                drag && task && drag.id === task.id
+                  ? Math.round(drag.delta / dayWidth)
+                  : 0,
+              beg = task?.start_on
+                ? addDays(task.start_on, drag?.mode === "end" ? 0 : offset)
+                : null,
+              finishDate = task?.due_on
+                ? addDays(task.due_on, drag?.mode === "start" ? 0 : offset)
+                : null;
+            return (
+              <div
+                key={key}
+                className={`gantt-row ${task && selection.has(task.id) ? "is-selected" : ""}`}
+                style={{ top: y, height: rowHeight }}
+              >
+                <div className="gantt-label" style={{ width: labelWidth }}>
                   <div
-                    className="gantt-baseline"
-                    title={`Baseline: ${original.start_on} → ${original.due_on}`}
+                    className="gantt-task-cell"
                     style={{
-                      left: tableWidth + x(original.start_on),
+                      width: tableWidth,
+                      paddingInlineStart: 12 + Math.min(row.depth, 8) * 14,
+                    }}
+                  >
+                    {task ? (
+                      <>
+                        <Checkbox
+                          aria-label={`Select ${task.title}`}
+                          checked={selection.has(task.id)}
+                          onChange={() => {}}
+                          onClick={(e) => onSelect(task, e.shiftKey)}
+                        />
+                        {maps.parents.has(task.id) ? (
+                          <IconButton
+                            label={`${collapsed.has(task.id) ? "Expand" : "Collapse"} ${task.title}`}
+                            onClick={() => collapse(task.id)}
+                          >
+                            {collapsed.has(task.id) ? (
+                              <ChevronRight size={14} />
+                            ) : (
+                              <ChevronDown size={14} />
+                            )}
+                          </IconButton>
+                        ) : (
+                          <span className="gantt-fold-placeholder" />
+                        )}
+                        <button
+                          className="gantt-task-name"
+                          onClick={() => onOpen(task.id)}
+                          title={task.title}
+                        >
+                          {task.title}
+                        </button>
+                        {task.blocked && (
+                          <span
+                            title="Blocked by unfinished work"
+                            className="gantt-blocked-dot"
+                          />
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <Diamond size={15} />
+                        <span>{milestone?.title}</span>
+                      </>
+                    )}
+                  </div>
+                  {columns.map((c) => (
+                    <span
+                      className="gantt-data-cell"
+                      key={c}
+                      title={
+                        task
+                          ? String(
+                              c === "progress"
+                                ? `${progress}%`
+                                : c === "assignee"
+                                  ? (task.assignee_name ?? "Unassigned")
+                                  : c === "start"
+                                    ? (task.start_on ?? "—")
+                                    : c === "due"
+                                      ? (task.due_on ?? "—")
+                                      : task[c as "status" | "priority"],
+                            )
+                          : ""
+                      }
+                    >
+                      {task
+                        ? c === "progress"
+                          ? `${progress}%`
+                          : c === "assignee"
+                            ? (task.assignee_name ?? "Unassigned")
+                            : c === "start"
+                              ? (task.start_on ?? "—")
+                              : c === "due"
+                                ? (task.due_on ?? "—")
+                                : task[c as "status" | "priority"].replaceAll(
+                                    "_",
+                                    " ",
+                                  )
+                        : "—"}
+                    </span>
+                  ))}
+                </div>
+                {base?.start_on && base.due_on && (
+                  <span
+                    className="gantt-baseline-bar"
+                    style={{
+                      left: labelWidth + x(base.start_on),
                       width: Math.max(
-                        dayWidth,
-                        (dayNumber(original.due_on) -
-                          dayNumber(original.start_on) +
-                          1) *
-                          dayWidth,
+                        3,
+                        x(base.due_on) - x(base.start_on) + dayWidth,
                       ),
                     }}
+                    title={`Baseline: ${base.start_on} → ${base.due_on}`}
                   />
                 )}
-                {task && left !== null && width > 0 ? (
+                {task && beg && finishDate ? (
                   <div
-                    className={`gantt-bar ${task.status} ${analysis?.tasks.find((t) => t.id === task.id)?.critical ? "critical" : ""} ${width < 70 ? "compact" : ""} ${drag?.id === task.id ? "dragging" : ""}`}
-                    style={{ left: tableWidth + left, width }}
-                    onPointerDown={(e) => move(e, task, "move")}
-                    onPointerMove={(e) => {
-                      if (drag?.id === task.id)
-                        setDrag({
-                          ...drag,
-                          delta: Math.round((e.clientX - drag.x) / dayWidth),
-                        });
+                    className={`gantt-bar ${task.status} ${showCritical && maps.analysis.get(task.id)?.critical ? "is-critical" : ""} ${drag?.id === task.id ? "is-dragging" : ""}`}
+                    style={{
+                      left: labelWidth + x(beg),
+                      width: Math.max(22, x(finishDate) - x(beg) + dayWidth),
                     }}
-                    onPointerUp={(e) => finish(e, task)}
-                    onPointerCancel={() => setDrag(null)}
                   >
-                    {!readOnly && (
-                      <button
-                        className="gantt-resize start"
-                        aria-label={`Resize start of ${task.title}`}
-                        title="Drag start date, or open task to enter dates"
-                        onClick={() => openFromBar(task.id)}
-                        onPointerDown={(e) => move(e, task, "start")}
-                      >
-                        <Minus size={10} />
-                      </button>
-                    )}
+                    <span
+                      className="gantt-progress-fill"
+                      style={{ width: `${progress}%` }}
+                    />
+                    <button
+                      className="gantt-resize start"
+                      aria-label={`Resize start of ${task.title}`}
+                      disabled={readOnly}
+                      onPointerDown={(e) => begin(e, task, "start")}
+                      onKeyDown={(e) => keyboardMove(e, task, "start")}
+                    />
                     <button
                       className="gantt-bar-title"
-                      title={`${task.title} · ${task.start_on} → ${task.due_on}. Open to edit dates.`}
-                      onClick={() => openFromBar(task.id)}
+                      aria-label={`${task.title}, ${beg} to ${finishDate}, ${progress}% complete. Alt arrows to move.`}
+                      onPointerDown={(e) => begin(e, task, "move")}
+                      onKeyDown={(e) => keyboardMove(e, task, "move")}
+                      onClick={() => {
+                        if (!moved.current) onOpen(task.id);
+                        moved.current = false;
+                      }}
                     >
                       {task.title}
                     </button>
+                    <button
+                      className="gantt-resize end"
+                      aria-label={`Resize finish of ${task.title}`}
+                      disabled={readOnly}
+                      onPointerDown={(e) => begin(e, task, "end")}
+                      onKeyDown={(e) => keyboardMove(e, task, "end")}
+                    />
                     {!readOnly && (
-                      <button
-                        className="gantt-resize end"
-                        aria-label={`Resize end of ${task.title}`}
-                        title="Drag finish date, or open task to enter dates"
-                        onClick={() => openFromBar(task.id)}
-                        onPointerDown={(e) => move(e, task, "end")}
-                      >
-                        <Plus size={10} />
-                      </button>
+                      <>
+                        <button
+                          className={`gantt-link-handle start ${linkSource ? "is-target" : ""}`}
+                          data-dependency-target={task.id}
+                          aria-label={`Link predecessor to ${task.title}`}
+                          onClick={() => {
+                            if (linkSource)
+                              setLink({
+                                predecessor: linkSource,
+                                successor: task.id,
+                                lag: 0,
+                              });
+                            else
+                              setLink({
+                                predecessor: "",
+                                successor: task.id,
+                                lag: 0,
+                              });
+                            setLinkSource(null);
+                          }}
+                        />
+                        <button
+                          className="gantt-link-handle end"
+                          aria-label={`Connect ${task.title} to a successor`}
+                          onPointerDown={(e) => {
+                            if (e.button !== 0) return;
+                            e.stopPropagation();
+                            linkDropFinished.current = false;
+                            e.currentTarget.setPointerCapture(e.pointerId);
+                            setLinkSource(task.id);
+                          }}
+                          onPointerUp={(e) => {
+                            e.stopPropagation();
+                            const target = document
+                              .elementFromPoint(e.clientX, e.clientY)
+                              ?.closest<HTMLElement>("[data-dependency-target]")
+                              ?.dataset.dependencyTarget;
+                            if (target && target !== task.id) {
+                              linkDropFinished.current = true;
+                              setLink({
+                                predecessor: task.id,
+                                successor: target,
+                                lag: 0,
+                              });
+                              setLinkSource(null);
+                            }
+                          }}
+                          onPointerCancel={() => setLinkSource(null)}
+                          onClick={() => {
+                            if (!linkDropFinished.current)
+                              setLinkSource(task.id);
+                            linkDropFinished.current = false;
+                          }}
+                        />
+                      </>
                     )}
                   </div>
-                ) : milestone && left !== null ? (
-                  <span
-                    className="gantt-milestone"
-                    title={`${milestone.title} · ${milestone.due_on}`}
-                    style={{ left: tableWidth + left }}
-                  >
-                    <Diamond size={18} />
-                  </span>
-                ) : (
-                  <button
+                ) : task ? (
+                  <Button
                     className="gantt-unscheduled"
-                    style={{ left: tableWidth + 16 }}
-                    onClick={() => task && onOpen(task.id)}
+                    variant="ghost"
+                    size="compact"
+                    style={{ left: labelWidth + 16 }}
+                    onClick={() => onOpen(task.id)}
                   >
-                    {task ? "Set start and finish dates" : "No milestone date"}
-                  </button>
-                )}
+                    Set dates
+                  </Button>
+                ) : milestone?.due_on ? (
+                  <span
+                    className={`gantt-milestone ${milestone.completed_at ? "done" : ""}`}
+                    style={{ left: labelWidth + x(milestone.due_on) }}
+                    title={`${milestone.title} · ${milestone.due_on}`}
+                  >
+                    <Diamond size={17} />
+                  </span>
+                ) : null}
               </div>
             );
           })}
         </div>
       </div>
-      <div className="planning-caption">
-        <span className="gantt-legend-line" /> Today · shaded days are
-        non-working · connector lines show finish-to-start dependencies.
-        Unscheduled tasks stay undated.
-      </div>
+      {settings && (
+        <Dialog title="Timeline display" onClose={() => setSettings(false)}>
+          <Field label="Group tasks">
+            <NativeSelect
+              value={grouping}
+              onChange={(e) => onOptions({ grouping: e.target.value })}
+            >
+              <option value="parent">Task hierarchy</option>
+              <option value="assignee">Assignee</option>
+              <option value="milestone">Milestone</option>
+            </NativeSelect>
+          </Field>
+          <fieldset className="planning-column-options">
+            <legend>Table columns</legend>
+            {Object.entries(columnLabels).map(([id, label]) => (
+              <label key={id}>
+                <Checkbox
+                  checked={columns.includes(id)}
+                  onChange={(e) =>
+                    onOptions({
+                      columns:
+                        (e.target.checked
+                          ? [...columns, id]
+                          : columns.filter((c) => c !== id)
+                        ).join(",") || null,
+                    })
+                  }
+                />
+                {label}
+              </label>
+            ))}
+          </fieldset>
+          <div className="planning-layer-options">
+            {[
+              ["dependencies", "Dependencies", showDependencies],
+              ["baseline", "Baseline", showBaseline],
+              ["critical", "Critical path", showCritical],
+            ].map(([id, label, checked]) => (
+              <label key={String(id)}>
+                {label}
+                <Switch
+                  aria-label={String(label)}
+                  checked={Boolean(checked)}
+                  onChange={(e) =>
+                    onOptions({ [String(id)]: e.target.checked ? null : "0" })
+                  }
+                />
+              </label>
+            ))}
+          </div>
+          <HelpText>
+            Grouping spans and progress are derived; no authored parent dates
+            are changed.
+          </HelpText>
+          <ActionRow>
+            <Button onClick={() => setSettings(false)}>Done</Button>
+          </ActionRow>
+        </Dialog>
+      )}
+      {link && (
+        <Dialog
+          title={link.existing ? "Edit dependency" : "Link tasks"}
+          subtitle="Finish-to-start links use the workspace working calendar. Saving does not move dates."
+          onClose={() => !action.busy && setLink(null)}
+        >
+          <ErrorNotice message={action.error} />
+          <Field label="Predecessor">
+            <PlanningEntityPicker
+              spaceId={spaceId}
+              kind="task"
+              label="Dependency predecessor"
+              value={link.predecessor}
+              onChange={(v) =>
+                setLink((l) => l && { ...l, predecessor: String(v) })
+              }
+            />
+          </Field>
+          <Field label="Successor">
+            <PlanningEntityPicker
+              spaceId={spaceId}
+              kind="task"
+              label="Dependency successor"
+              value={link.successor}
+              onChange={(v) =>
+                setLink((l) => l && { ...l, successor: String(v) })
+              }
+            />
+          </Field>
+          <Field
+            label="Offset in working days"
+            hint="0 = next working day; positive = delay; negative = overlap."
+          >
+            <PlanningIntegerInput
+              label="Dependency offset in working days"
+              min={-365}
+              max={365}
+              value={link.lag}
+              onValidity={setValidOffset}
+              onCommit={(lag) => setLink((l) => l && { ...l, lag })}
+            />
+          </Field>
+          <HelpText>
+            Tasks outside the current view remain available. Current versions
+            and the full dependency graph are checked before saving.
+          </HelpText>
+          <ActionRow>
+            {link.existing && (
+              <Button
+                variant="danger"
+                disabled={action.busy}
+                onClick={() =>
+                  void action.run(async () => {
+                    const task =
+                      maps.byId.get(link.successor) ??
+                      (await api<PlanningTask>(
+                        `spaces/${spaceId}/tasks/${link.successor}`,
+                      ));
+                    await onDependency(
+                      task,
+                      taskDependencyLinks(task).filter(
+                        (d) => d.taskId !== link.predecessor,
+                      ),
+                    );
+                    setLink(null);
+                  })
+                }
+              >
+                Remove link
+              </Button>
+            )}
+            <Button onClick={() => setLink(null)}>Cancel</Button>
+            <Button
+              variant="primary"
+              disabled={
+                action.busy ||
+                !validOffset ||
+                !link.predecessor ||
+                !link.successor ||
+                link.predecessor === link.successor
+              }
+              onClick={() =>
+                void action.run(async () => {
+                  const task =
+                    maps.byId.get(link.successor) ??
+                    (await api<PlanningTask>(
+                      `spaces/${spaceId}/tasks/${link.successor}`,
+                    ));
+                  const links = taskDependencyLinks(task).filter(
+                    (d) => d.taskId !== link.predecessor,
+                  );
+                  await onDependency(task, [
+                    ...links,
+                    { taskId: link.predecessor, lagDays: link.lag },
+                  ]);
+                  setLink(null);
+                })
+              }
+            >
+              Save link
+            </Button>
+          </ActionRow>
+        </Dialog>
+      )}
     </section>
   );
 }

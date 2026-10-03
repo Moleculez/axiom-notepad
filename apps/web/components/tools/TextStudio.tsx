@@ -1,4 +1,5 @@
 "use client";
+import { Button, IconButton } from "../ui/controls";
 import { useState } from "react";
 import { Download, MessageSquare, Undo2, Redo2 } from "lucide-react";
 import type { ToolProject } from "@axiom/shared/research-tools";
@@ -36,7 +37,7 @@ export default function TextStudio({ project }: { project: ToolProject }) {
         <h1>{project.name}</h1>
         <ResourceSharing resourceId={project.resource_id} />
         <span className="tool-spacer" />
-        <button
+        <IconButton
           className="icon-button"
           title="Undo"
           aria-label="Undo"
@@ -44,8 +45,8 @@ export default function TextStudio({ project }: { project: ToolProject }) {
           onClick={() => shared.binding?.history(false)}
         >
           <Undo2 size={17} />
-        </button>
-        <button
+        </IconButton>
+        <IconButton
           className="icon-button"
           title="Redo"
           aria-label="Redo"
@@ -53,8 +54,8 @@ export default function TextStudio({ project }: { project: ToolProject }) {
           onClick={() => shared.binding?.history(true)}
         >
           <Redo2 size={17} />
-        </button>
-        <button
+        </IconButton>
+        <IconButton
           className="icon-button"
           title="Download source"
           aria-label="Download source"
@@ -66,8 +67,8 @@ export default function TextStudio({ project }: { project: ToolProject }) {
           }
         >
           <Download size={17} />
-        </button>
-        <button
+        </IconButton>
+        <IconButton
           className="icon-button"
           title="Discussion"
           aria-label="Discussion"
@@ -75,22 +76,22 @@ export default function TextStudio({ project }: { project: ToolProject }) {
           onClick={() => setDiscussion(!discussion)}
         >
           <MessageSquare size={17} />
-        </button>
+        </IconButton>
       </header>
       <ErrorNotice message={shared.error} />
       {shared.recovery !== null && (
         <div className="tool-recovery">
-          <button
+          <Button
             className="button secondary"
             onClick={() =>
               downloadText(shared.recovery!, `${project.name}-recovered.txt`)
             }
           >
             Export retained draft
-          </button>
-          <button className="button ghost" onClick={shared.reopen}>
+          </Button>
+          <Button className="button ghost" onClick={shared.reopen}>
             Reopen server version
-          </button>
+          </Button>
         </div>
       )}
       <div className="plain-text-body">

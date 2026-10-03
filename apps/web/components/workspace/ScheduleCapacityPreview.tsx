@@ -1,3 +1,4 @@
+import { HelpText } from "../ui/controls";
 import type { SchedulePlan } from "@axiom/shared/planning";
 export default function ScheduleCapacityPreview({
   capacity,
@@ -14,14 +15,14 @@ export default function ScheduleCapacityPreview({
       <summary>
         Capacity impact · {capacity[mode].length} changed member-weeks
       </summary>
-      <p className="ws-note">
+      <HelpText>
         {capacity.coverage} No dates or assignments are adjusted automatically.
-      </p>
+      </HelpText>
       {capacity.truncated && (
-        <p className="ws-note">
+        <HelpText>
           Partial preview: first 52 weeks and 200 changed member-weeks. Inspect
           Group capacity before applying.
-        </p>
+        </HelpText>
       )}
       <div className="productivity-data-scroll">
         <table className="productivity-data-table">
@@ -54,10 +55,10 @@ export default function ScheduleCapacityPreview({
         </table>
       </div>
       {!capacity[mode].length && (
-        <p className="ws-note">
+        <HelpText>
           No change to allocated estimates within this range. Unestimated,
           unassigned and undated tasks are not treated as zero work.
-        </p>
+        </HelpText>
       )}
     </details>
   );

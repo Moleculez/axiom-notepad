@@ -1,4 +1,11 @@
 "use client";
+import {
+  Button,
+  Checkbox,
+  TextInput,
+  NativeSelect,
+  TextArea,
+} from "../ui/controls";
 import { openAssistant } from "../../lib/assistant";
 import { useEffect, useRef, useState } from "react";
 import type { PDFDocumentProxy } from "pdfjs-dist";
@@ -167,7 +174,7 @@ export default function PdfOcrPanel({
       <div className="pdf-compare-controls">
         <label>
           Pages
-          <input
+          <TextInput
             aria-label="OCR page range"
             value={range}
             onChange={(e) => setRange(e.target.value)}
@@ -175,7 +182,7 @@ export default function PdfOcrPanel({
         </label>
         <label>
           Language
-          <select
+          <NativeSelect
             value={language}
             onChange={(e) => setLanguage(e.target.value)}
           >
@@ -191,11 +198,10 @@ export default function PdfOcrPanel({
                 }[l] ?? l}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
         <label>
-          <input
-            type="checkbox"
+          <Checkbox
             checked={research}
             disabled={!cap?.research}
             onChange={(e) => setResearch(e.target.checked)}
@@ -203,8 +209,7 @@ export default function PdfOcrPanel({
           Equation-aware text
         </label>
         <label>
-          <input
-            type="checkbox"
+          <Checkbox
             checked={searchable}
             onChange={(e) => setSearchable(e.target.checked)}
           />
@@ -212,14 +217,13 @@ export default function PdfOcrPanel({
         </label>
       </div>
       <label className="pdf-save-option">
-        <input
-          type="checkbox"
+        <Checkbox
           checked={consent}
           onChange={(e) => setConsent(e.target.checked)}
         />
         Process the selected pages using this deployment’s private OCR service.
       </label>
-      <button
+      <Button
         className="button primary"
         disabled={!cap?.available || !consent || busy || dirty}
         onClick={() =>
@@ -248,7 +252,7 @@ export default function PdfOcrPanel({
         }
       >
         Start OCR
-      </button>
+      </Button>
       {error && (
         <p role="alert" className="form-error">
           {error}
@@ -256,7 +260,7 @@ export default function PdfOcrPanel({
       )}
       <label>
         Processing history
-        <select
+        <NativeSelect
           aria-label="OCR job"
           value={id}
           disabled={dirty || busy}
@@ -276,7 +280,7 @@ export default function PdfOcrPanel({
               {j.completed_pages}/{j.settings.pages.length} pages
             </option>
           ))}
-        </select>
+        </NativeSelect>
       </label>
       {job && (
         <>
@@ -318,7 +322,7 @@ export default function PdfOcrPanel({
               <header>
                 <label>
                   Review page
-                  <select
+                  <NativeSelect
                     value={page}
                     disabled={dirty}
                     onChange={(e) => {
@@ -334,7 +338,7 @@ export default function PdfOcrPanel({
                           : ""}
                       </option>
                     ))}
-                  </select>
+                  </NativeSelect>
                 </label>
               </header>
               <PdfPages
@@ -366,7 +370,7 @@ export default function PdfOcrPanel({
                   : "Recognized text / LaTeX"}{" "}
                 · {selected?.reviewed ? "Reviewed" : "Needs review"}
               </header>
-              <textarea
+              <TextArea
                 aria-label="OCR research text"
                 value={draft}
                 maxLength={100000}

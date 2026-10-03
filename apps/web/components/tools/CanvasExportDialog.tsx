@@ -1,4 +1,11 @@
 "use client";
+import {
+  Button,
+  Checkbox,
+  HelpText,
+  NativeSelect,
+  TextInput,
+} from "../ui/controls";
 import { useEffect, useRef, useState } from "react";
 import { Copy, Download, Package } from "lucide-react";
 import { exportJsonCanvas, type CanvasData } from "@axiom/shared/canvas";
@@ -250,7 +257,7 @@ export default function CanvasExportDialog({
       <fieldset className="canvas-export-fields" disabled={busy}>
         <label>
           Format
-          <select
+          <NativeSelect
             aria-label="Export format"
             value={format}
             onChange={(e) => setFormat(e.target.value)}
@@ -262,11 +269,11 @@ export default function CanvasExportDialog({
             <option value="canvas">JSON Canvas</option>
             <option value="markdown">Markdown outline</option>
             <option value="zip">Portable ZIP bundle</option>
-          </select>
+          </NativeSelect>
         </label>
         <label>
           Area
-          <select
+          <NativeSelect
             aria-label="Export area"
             value={scope}
             onChange={(e) => setScope(e.target.value)}
@@ -276,14 +283,14 @@ export default function CanvasExportDialog({
               Selected cards
             </option>
             <option value="viewport">Current viewport</option>
-          </select>
+          </NativeSelect>
         </label>
         {visual && (
           <>
             <div className="canvas-property-pair">
               <label>
                 Resolution
-                <select
+                <NativeSelect
                   aria-label="Export resolution"
                   value={scale}
                   onChange={(e) => setScale(Number(e.target.value))}
@@ -293,11 +300,11 @@ export default function CanvasExportDialog({
                       {n}×
                     </option>
                   ))}
-                </select>
+                </NativeSelect>
               </label>
               <label>
                 Padding
-                <input
+                <TextInput
                   aria-label="Export padding"
                   type="number"
                   min={0}
@@ -313,7 +320,7 @@ export default function CanvasExportDialog({
             </div>
             <label>
               Background
-              <select
+              <NativeSelect
                 aria-label="Export background"
                 value={background}
                 onChange={(e) => setBackground(e.target.value)}
@@ -326,11 +333,10 @@ export default function CanvasExportDialog({
                 >
                   Transparent
                 </option>
-              </select>
+              </NativeSelect>
             </label>
             <label className="canvas-property-toggle">
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={grid}
                 onChange={(e) => setGrid(e.target.checked)}
               />
@@ -338,8 +344,7 @@ export default function CanvasExportDialog({
             </label>
             {format === "pdf" && (
               <label className="canvas-property-toggle">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={tiled}
                   onChange={(e) => setTiled(e.target.checked)}
                 />
@@ -349,14 +354,14 @@ export default function CanvasExportDialog({
           </>
         )}
       </fieldset>
-      <p className="ws-note">
+      <HelpText>
         {data.nodes.length} cards ·{" "}
         {visual
           ? `${Math.round(bounds.width * scale)} × ${Math.round(bounds.height * scale)} px. Webpages and media export as static cards. SVG keeps connection geometry, not editable rich text.`
           : format === "zip"
             ? "Includes a lossless canvas snapshot, portable .canvas, readable sources, accessible linked assets, and a checksummed manifest. Latest dependencies are captured when the job runs."
             : "Source-only export. Linked assets are not embedded; choose ZIP to include them."}
-      </p>
+      </HelpText>
       <ErrorNotice message={error || jobs.error || currentJob?.error} />
       {warnings.length > 0 && (
         <details className="canvas-export-warnings" open>
@@ -389,28 +394,28 @@ export default function CanvasExportDialog({
         {busy ? (
           <>
             <span role="status">{progress}</span>
-            <button
+            <Button
               className="button secondary"
               onClick={() => controller.current?.abort()}
             >
               Cancel
-            </button>
+            </Button>
           </>
         ) : (
           <>
             {visual && (
-              <button
+              <Button
                 className="button secondary"
                 onClick={() => void run(true)}
               >
                 <Copy size={15} />
                 Copy PNG
-              </button>
+              </Button>
             )}
-            <button className="button primary" onClick={() => void run()}>
+            <Button className="button primary" onClick={() => void run()}>
               <Download size={15} />
               {format === "zip" ? "Prepare bundle" : "Export"}
-            </button>
+            </Button>
           </>
         )}
       </div>

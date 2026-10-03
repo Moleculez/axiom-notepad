@@ -1,4 +1,15 @@
 "use client";
+import {
+  ActionRow,
+  Button,
+  Checkbox,
+  HelpText,
+  IconButton,
+  TextInput,
+  TextArea,
+  NativeSelect,
+  SearchField,
+} from "../ui/controls";
 import TimeZoneInput from "../TimeZoneInput";
 import DraftGuard from "./DraftGuard";
 import { useEffect, useMemo, useState } from "react";
@@ -18,7 +29,6 @@ import {
   MessageSquare,
   Plus,
   Repeat2,
-  Search,
 } from "lucide-react";
 import type { ResourcePage, Task } from "@axiom/shared/workspace";
 import { parseMarkdown } from "@axiom/markdown";
@@ -145,10 +155,10 @@ export default function ProjectsPage({
         eyebrow="PROJECTS"
         title="From open questions to shared progress"
         actions={
-          <button className="button primary" onClick={() => setCreate(true)}>
+          <Button className="button primary" onClick={() => setCreate(true)}>
             <Plus size={17} />
             New project
-          </button>
+          </Button>
         }
       >
         Give each line of research its own files, tasks, discussions, and review
@@ -250,7 +260,7 @@ function CreateProject({
       >
         <label>
           Project name
-          <input
+          <TextInput
             autoFocus
             required
             value={name}
@@ -261,7 +271,7 @@ function CreateProject({
         </label>
         <label>
           Research question or purpose
-          <textarea
+          <TextArea
             value={description}
             maxLength={3000}
             onChange={(event) => setDescription(event.target.value)}
@@ -271,7 +281,7 @@ function CreateProject({
         <div className="ws-form-grid">
           <label>
             Research group
-            <select
+            <NativeSelect
               required
               value={groupId}
               onChange={(event) => setGroup(event.target.value)}
@@ -281,7 +291,7 @@ function CreateProject({
                   {group.name}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </label>
           <label>
             Calendar time zone
@@ -295,17 +305,17 @@ function CreateProject({
         </div>
         <ErrorNotice message={action.error} />
         <div className="dialog-footer">
-          <button
+          <Button
             className="button secondary"
             type="button"
             disabled={action.busy}
             onClick={onClose}
           >
             Cancel
-          </button>
-          <button className="button primary" disabled={action.busy || !groupId}>
+          </Button>
+          <Button className="button primary" disabled={action.busy || !groupId}>
             Create project
-          </button>
+          </Button>
         </div>
       </form>
     </Dialog>
@@ -393,35 +403,33 @@ function Tasks({ project }: { project: any }) {
             </button>
           ))}
         </div>
-        <label className="ws-search-field">
-          <Search size={16} />
-          <input
-            aria-label="Filter tasks"
-            placeholder="Filter tasks or labels…"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-          />
-        </label>
-        <button
+        <SearchField
+          wrapperClassName="ws-search-field"
+          aria-label="Filter tasks"
+          placeholder="Filter tasks or labels…"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+        />
+        <Button
           className="button secondary"
           aria-pressed={mine}
           onClick={() => setMine(!mine)}
         >
           Assigned to me
-        </button>
+        </Button>
         {editable && (
           <>
-            <button
+            <IconButton
               className="icon-button"
               aria-label="Recurring tasks"
               onClick={() => setRecurring(true)}
             >
               <Repeat2 size={17} />
-            </button>
-            <button className="button primary" onClick={() => setCreate(true)}>
+            </IconButton>
+            <Button className="button primary" onClick={() => setCreate(true)}>
               <Plus size={16} />
               Task
-            </button>
+            </Button>
           </>
         )}
       </div>
@@ -511,7 +519,7 @@ function Tasks({ project }: { project: any }) {
         </span>
         {result.data?.nextOffset !== null &&
           result.data?.nextOffset !== undefined && (
-            <button
+            <Button
               className="button secondary"
               disabled={result.loading}
               onClick={() => {
@@ -520,7 +528,7 @@ function Tasks({ project }: { project: any }) {
               }}
             >
               Load more tasks
-            </button>
+            </Button>
           )}
       </footer>
       {(create || taskData.data) && (
@@ -594,7 +602,7 @@ function TaskCard({
         )}
       </footer>
       {onStatus && (
-        <select
+        <NativeSelect
           aria-label={`Status of ${task.title}`}
           disabled={disabled}
           value={task.status}
@@ -605,7 +613,7 @@ function TaskCard({
               {label}
             </option>
           ))}
-        </select>
+        </NativeSelect>
       )}
     </article>
   );
@@ -689,7 +697,7 @@ function TaskDialog({
         <fieldset disabled={!editable || action.busy} className="ws-fieldset">
           <label>
             Title
-            <input
+            <TextInput
               autoFocus
               required
               maxLength={200}
@@ -699,7 +707,7 @@ function TaskDialog({
           </label>
           <label>
             Details & acceptance criteria
-            <textarea
+            <TextArea
               rows={4}
               maxLength={100000}
               value={draft.body}
@@ -710,7 +718,7 @@ function TaskDialog({
           <div className="ws-form-grid">
             <label>
               Status
-              <select
+              <NativeSelect
                 value={draft.status}
                 onChange={(event) => field("status", event.target.value)}
               >
@@ -719,22 +727,22 @@ function TaskDialog({
                     {label}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
             </label>
             <label>
               Priority
-              <select
+              <NativeSelect
                 value={draft.priority}
                 onChange={(event) => field("priority", event.target.value)}
               >
                 {["low", "normal", "high", "urgent"].map((value) => (
                   <option key={value}>{value}</option>
                 ))}
-              </select>
+              </NativeSelect>
             </label>
             <label>
               Assignee
-              <select
+              <NativeSelect
                 value={draft.assigneeId}
                 onChange={(event) => field("assigneeId", event.target.value)}
               >
@@ -744,11 +752,11 @@ function TaskDialog({
                     {person.name}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
             </label>
             <label>
               Estimate (hours)
-              <input
+              <TextInput
                 type="number"
                 min={0}
                 max={10000}
@@ -759,7 +767,7 @@ function TaskDialog({
             </label>
             <label>
               Start date
-              <input
+              <TextInput
                 type="date"
                 value={draft.startOn}
                 onChange={(event) => field("startOn", event.target.value)}
@@ -767,7 +775,7 @@ function TaskDialog({
             </label>
             <label>
               Due date
-              <input
+              <TextInput
                 type="date"
                 min={draft.startOn || undefined}
                 value={draft.dueOn}
@@ -776,7 +784,7 @@ function TaskDialog({
             </label>
             <label>
               Milestone
-              <select
+              <NativeSelect
                 value={draft.milestoneId}
                 onChange={(event) => field("milestoneId", event.target.value)}
               >
@@ -786,11 +794,11 @@ function TaskDialog({
                     {item.title}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
             </label>
             <label>
               Linked note
-              <select
+              <NativeSelect
                 value={draft.noteId}
                 onChange={(event) => field("noteId", event.target.value)}
               >
@@ -800,11 +808,11 @@ function TaskDialog({
                     {item.name}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
             </label>
             <label>
               Parent task
-              <select
+              <NativeSelect
                 value={draft.parentId}
                 onChange={(event) => field("parentId", event.target.value)}
               >
@@ -816,11 +824,11 @@ function TaskDialog({
                       {item.title}
                     </option>
                   ))}
-              </select>
+              </NativeSelect>
             </label>
             <label>
               Labels (comma-separated)
-              <input
+              <TextInput
                 value={draft.labels}
                 onChange={(event) => field("labels", event.target.value)}
               />
@@ -832,8 +840,7 @@ function TaskDialog({
               .filter((item) => item.id !== task?.id)
               .map((item) => (
                 <label key={item.id}>
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={draft.dependencies.includes(item.id)}
                     onChange={(event) =>
                       field(
@@ -854,18 +861,18 @@ function TaskDialog({
         </fieldset>
         <ErrorNotice message={action.error} />
         <div className="dialog-footer">
-          <button
+          <Button
             type="button"
             className="button secondary"
             disabled={action.busy}
             onClick={onClose}
           >
             {editable ? "Cancel" : "Close"}
-          </button>
+          </Button>
           {editable && (
-            <button className="button primary" disabled={action.busy}>
+            <Button className="button primary" disabled={action.busy}>
               {action.busy ? "Saving…" : task ? "Save changes" : "Create task"}
-            </button>
+            </Button>
           )}
         </div>
       </form>
@@ -896,7 +903,7 @@ function TaskCalendar({
   return (
     <section className="ws-calendar">
       <header>
-        <button
+        <IconButton
           className="icon-button"
           aria-label="Previous month"
           onClick={() =>
@@ -908,7 +915,7 @@ function TaskCalendar({
           }
         >
           <ChevronLeft size={18} />
-        </button>
+        </IconButton>
         <h2>
           {month.toLocaleDateString(undefined, {
             month: "long",
@@ -916,7 +923,7 @@ function TaskCalendar({
             timeZone: "UTC",
           })}
         </h2>
-        <button
+        <IconButton
           className="icon-button"
           aria-label="Next month"
           onClick={() =>
@@ -928,7 +935,7 @@ function TaskCalendar({
           }
         >
           <ChevronRight size={18} />
-        </button>
+        </IconButton>
         <span>{timezone} · Due dates</span>
       </header>
       <div className="ws-calendar-grid">
@@ -1002,7 +1009,7 @@ function Recurrences({
               {row.rule.start}
             </small>
           </div>
-          <button
+          <Button
             className="button secondary"
             disabled={action.busy}
             onClick={() =>
@@ -1017,7 +1024,7 @@ function Recurrences({
             }
           >
             {row.enabled ? "Pause" : "Resume"}
-          </button>
+          </Button>
         </div>
       ))}
       <form
@@ -1036,7 +1043,7 @@ function Recurrences({
         <h3>New recurring task</h3>
         <label>
           Title
-          <input
+          <TextInput
             required
             value={title}
             maxLength={200}
@@ -1047,18 +1054,18 @@ function Recurrences({
         <div className="ws-form-grid">
           <label>
             Frequency
-            <select
+            <NativeSelect
               value={frequency}
               onChange={(event) => setFrequency(event.target.value)}
             >
               {["daily", "weekly", "monthly"].map((value) => (
                 <option key={value}>{value}</option>
               ))}
-            </select>
+            </NativeSelect>
           </label>
           <label>
             Every (interval)
-            <input
+            <TextInput
               type="number"
               min={1}
               max={52}
@@ -1069,7 +1076,7 @@ function Recurrences({
           </label>
           <label>
             Start
-            <input
+            <TextInput
               type="date"
               required
               value={start}
@@ -1078,7 +1085,7 @@ function Recurrences({
           </label>
           <label>
             Until (optional)
-            <input
+            <TextInput
               type="date"
               min={start}
               value={until}
@@ -1087,7 +1094,7 @@ function Recurrences({
           </label>
           <label>
             Assignee
-            <select
+            <NativeSelect
               value={assigneeId}
               onChange={(event) => setAssignee(event.target.value)}
             >
@@ -1097,22 +1104,22 @@ function Recurrences({
                   {person.name}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </label>
         </div>
         <ErrorNotice message={action.error} />
         <div className="dialog-footer">
-          <button
+          <Button
             type="button"
             className="button secondary"
             disabled={action.busy}
             onClick={onClose}
           >
             Close
-          </button>
-          <button className="button primary" disabled={action.busy}>
+          </Button>
+          <Button className="button primary" disabled={action.busy}>
             Add recurrence
-          </button>
+          </Button>
         </div>
       </form>
     </Dialog>
@@ -1152,10 +1159,10 @@ function ProjectSection({
           <div className="ws-section-heading">
             <h2>Research milestones</h2>
             {editable && (
-              <button className="button primary" onClick={() => setModal(true)}>
+              <Button className="button primary" onClick={() => setModal(true)}>
                 <Plus size={16} />
                 Milestone
-              </button>
+              </Button>
             )}
           </div>
           {!data.data?.length && !data.loading ? (
@@ -1187,7 +1194,7 @@ function ProjectSection({
                     {item.completed_tasks} of {item.tasks} tasks complete
                   </p>
                   {editable && (
-                    <button
+                    <Button
                       className="button secondary"
                       disabled={action.busy}
                       onClick={() =>
@@ -1206,7 +1213,7 @@ function ProjectSection({
                       {item.completed_at
                         ? "Reopen milestone"
                         : "Mark milestone complete"}
-                    </button>
+                    </Button>
                   )}
                 </article>
               ))}
@@ -1261,7 +1268,7 @@ function ProjectSection({
               )}
               <label>
                 Discussion
-                <textarea
+                <TextArea
                   required
                   rows={3}
                   value={body}
@@ -1275,8 +1282,7 @@ function ProjectSection({
                 <div className="ws-checkboxes">
                   {members.data?.map((person) => (
                     <label key={person.id}>
-                      <input
-                        type="checkbox"
+                      <Checkbox
                         checked={mentions.includes(person.id)}
                         onChange={(event) =>
                           setMentions((previous) =>
@@ -1291,13 +1297,13 @@ function ProjectSection({
                   ))}
                 </div>
               </details>
-              <button
+              <Button
                 className="button primary"
                 disabled={action.busy || !body.trim()}
               >
                 <MessageSquare size={15} />
                 Post discussion
-              </button>
+              </Button>
             </form>
           )}
           {data.data
@@ -1436,7 +1442,7 @@ function MilestoneDialog({
       >
         <label>
           Milestone title
-          <input
+          <TextInput
             required
             autoFocus
             maxLength={200}
@@ -1446,7 +1452,7 @@ function MilestoneDialog({
         </label>
         <label>
           Target date
-          <input
+          <TextInput
             type="date"
             value={dueOn}
             onChange={(event) => setDue(event.target.value)}
@@ -1454,17 +1460,17 @@ function MilestoneDialog({
         </label>
         <ErrorNotice message={action.error} />
         <div className="dialog-footer">
-          <button
+          <Button
             type="button"
             className="button secondary"
             onClick={onClose}
             disabled={action.busy}
           >
             Cancel
-          </button>
-          <button className="button primary" disabled={action.busy}>
+          </Button>
+          <Button className="button primary" disabled={action.busy}>
             Create milestone
-          </button>
+          </Button>
         </div>
       </form>
     </Dialog>
@@ -1508,10 +1514,10 @@ function Reviews({
       <div className="ws-section-heading">
         <h2>Review the evidence</h2>
         {project.role === "editor" && !project.archived_at && (
-          <button className="button primary" onClick={() => setCreate(true)}>
+          <Button className="button primary" onClick={() => setCreate(true)}>
             <Plus size={16} />
             Request review
-          </button>
+          </Button>
         )}
       </div>
       <p className="muted">
@@ -1571,7 +1577,7 @@ function Reviews({
           >
             <label>
               Project note
-              <select
+              <NativeSelect
                 required
                 value={noteId}
                 onChange={(event) => setNote(event.target.value)}
@@ -1582,11 +1588,11 @@ function Reviews({
                     {note.name}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
             </label>
             <label>
               Reviewer
-              <select
+              <NativeSelect
                 required
                 value={reviewerId}
                 onChange={(event) => setReviewer(event.target.value)}
@@ -1599,11 +1605,11 @@ function Reviews({
                       {person.name}
                     </option>
                   ))}
-              </select>
+              </NativeSelect>
             </label>
             <label>
               What should they check?
-              <textarea
+              <TextArea
                 rows={3}
                 value={message}
                 maxLength={5000}
@@ -1612,20 +1618,20 @@ function Reviews({
             </label>
             <ErrorNotice message={action.error || notes.error} />
             <div className="dialog-footer">
-              <button
+              <Button
                 className="button secondary"
                 type="button"
                 onClick={() => setCreate(false)}
                 disabled={action.busy}
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 className="button primary"
                 disabled={action.busy || !noteId || !reviewerId}
               >
                 Request review
-              </button>
+              </Button>
             </div>
           </form>
         </Dialog>
@@ -1638,10 +1644,10 @@ function Reviews({
           onClose={() => !action.busy && setSelected(null)}
         >
           {selected.outdated && (
-            <p className="ws-note">
+            <HelpText>
               This is an older snapshot. Any decision applies only to this
               revision, not the newer live note.
-            </p>
+            </HelpText>
           )}
           {selected.message && (
             <blockquote className="ws-preserve-lines">
@@ -1655,7 +1661,7 @@ function Reviews({
               onLink={() => {}}
             />
           </div>
-          <button
+          <Button
             className="button secondary"
             onClick={() => {
               setSelected(null);
@@ -1663,10 +1669,10 @@ function Reviews({
             }}
           >
             Open live note
-          </button>
+          </Button>
           <label>
             Review response
-            <textarea
+            <TextArea
               rows={3}
               value={response}
               maxLength={10000}
@@ -1679,32 +1685,32 @@ function Reviews({
             {selected.status === "pending" &&
               selected.reviewer_id === session.user.id && (
                 <>
-                  <button
+                  <Button
                     className="button secondary"
                     disabled={action.busy}
                     onClick={() => void reply("changes_requested")}
                   >
                     Request changes
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     className="button primary"
                     disabled={action.busy}
                     onClick={() => void reply("approved")}
                   >
                     Approve this revision
-                  </button>
+                  </Button>
                 </>
               )}
             {selected.status === "pending" &&
               (selected.requested_by === session.user.id ||
                 project.can_manage) && (
-                <button
+                <Button
                   className="button secondary"
                   disabled={action.busy}
                   onClick={() => void reply("cancelled")}
                 >
                   Cancel request
-                </button>
+                </Button>
               )}
           </div>
         </Dialog>
@@ -1729,10 +1735,10 @@ export function ProjectMembers({ project }: { project: any }) {
       <div className="ws-section-heading">
         <h2>Workspace collaborators</h2>
         {project.can_manage && (
-          <button className="button primary" onClick={() => setAdding(true)}>
+          <Button className="button primary" onClick={() => setAdding(true)}>
             <Plus size={16} />
             Add member
-          </button>
+          </Button>
         )}
       </div>
       <p className="muted">
@@ -1758,7 +1764,7 @@ export function ProjectMembers({ project }: { project: any }) {
           </div>
           {project.can_manage ? (
             <>
-              <select
+              <NativeSelect
                 aria-label={`Content role for ${person.name}`}
                 value={person.role}
                 disabled={action.busy}
@@ -1776,8 +1782,8 @@ export function ProjectMembers({ project }: { project: any }) {
                 {["viewer", "commenter", "editor"].map((role) => (
                   <option key={role}>{role}</option>
                 ))}
-              </select>
-              <button
+              </NativeSelect>
+              <Button
                 className="button secondary"
                 disabled={action.busy}
                 onClick={() =>
@@ -1792,7 +1798,7 @@ export function ProjectMembers({ project }: { project: any }) {
                 }
               >
                 {person.can_manage ? "Remove lead role" : "Make lead"}
-              </button>
+              </Button>
               {person.explicit && (
                 <button
                   className="text-button danger-text"
@@ -1838,7 +1844,7 @@ export function ProjectMembers({ project }: { project: any }) {
           >
             <label>
               Researcher
-              <select
+              <NativeSelect
                 required
                 value={person}
                 onChange={(event) => setPerson(event.target.value)}
@@ -1849,22 +1855,21 @@ export function ProjectMembers({ project }: { project: any }) {
                     {person.name}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
             </label>
             <label>
               Content role
-              <select
+              <NativeSelect
                 value={role}
                 onChange={(event) => setRole(event.target.value)}
               >
                 {["viewer", "commenter", "editor"].map((role) => (
                   <option key={role}>{role}</option>
                 ))}
-              </select>
+              </NativeSelect>
             </label>
             <label className="ws-checkbox">
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={lead}
                 onChange={(event) => setLead(event.target.checked)}
               />
@@ -1872,20 +1877,20 @@ export function ProjectMembers({ project }: { project: any }) {
             </label>
             <ErrorNotice message={action.error || people.error} />
             <div className="dialog-footer">
-              <button
+              <Button
                 type="button"
                 className="button secondary"
                 disabled={action.busy}
                 onClick={() => setAdding(false)}
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 className="button primary"
                 disabled={action.busy || !person}
               >
                 Add collaborator
-              </button>
+              </Button>
             </div>
           </form>
         </Dialog>
@@ -1967,7 +1972,7 @@ export function ProjectSettings({ project }: { project: any }) {
     >
       <label>
         Project name
-        <input
+        <TextInput
           required
           maxLength={200}
           value={name}
@@ -1976,7 +1981,7 @@ export function ProjectSettings({ project }: { project: any }) {
       </label>
       <label>
         Description
-        <textarea
+        <TextArea
           rows={4}
           maxLength={3000}
           value={description}
@@ -1994,7 +1999,7 @@ export function ProjectSettings({ project }: { project: any }) {
       </label>
       <label>
         Project color
-        <select
+        <NativeSelect
           aria-label="Project color"
           value={color}
           onChange={(event) => setColor(event.target.value)}
@@ -2002,11 +2007,11 @@ export function ProjectSettings({ project }: { project: any }) {
           {["blue", "green", "purple", "orange"].map((value) => (
             <option key={value}>{value}</option>
           ))}
-        </select>
+        </NativeSelect>
       </label>
       <label>
         Who can access this project?
-        <select
+        <NativeSelect
           value={audience}
           onChange={(event) => {
             setAudience(event.target.value);
@@ -2015,12 +2020,11 @@ export function ProjectSettings({ project }: { project: any }) {
         >
           <option value="restricted">Explicit project members</option>
           <option value="group">Entire group</option>
-        </select>
+        </NativeSelect>
       </label>
       {audience !== project.audience && (
-        <label className="ws-checkbox ws-note">
-          <input
-            type="checkbox"
+        <label className="ws-checkbox">
+          <Checkbox
             checked={confirmed}
             onChange={(event) => setConfirmed(event.target.checked)}
           />
@@ -2029,8 +2033,7 @@ export function ProjectSettings({ project }: { project: any }) {
         </label>
       )}
       <label className="ws-checkbox">
-        <input
-          type="checkbox"
+        <Checkbox
           checked={archived}
           onChange={(event) => setArchived(event.target.checked)}
         />
@@ -2039,31 +2042,32 @@ export function ProjectSettings({ project }: { project: any }) {
       <ErrorNotice message={action.error} />
       {message && <p role="status">{message}</p>}
       {dirty && baseVersion !== project.version && (
-        <p className="ws-note">
+        <HelpText>
           This project changed elsewhere. Your draft is preserved; saving will
           reject a stale revision. Cancel changes to load the latest version.
-        </p>
+        </HelpText>
       )}
-      <div className="ws-actions">
-        <button
+      <ActionRow>
+        <Button
           type="button"
           className="button secondary"
           disabled={!dirty || action.busy}
           onClick={reset}
         >
           Cancel changes
-        </button>
-        <button
+        </Button>
+        <Button
           className="button primary"
           disabled={
             !dirty ||
             action.busy ||
             (audience !== project.audience && !confirmed)
           }
+          pending={!!action.busy}
         >
-          {action.busy ? "Saving…" : "Save project settings"}
-        </button>
-      </div>
+          {"Save project settings"}
+        </Button>
+      </ActionRow>
       <DraftGuard dirty={dirty} title="Unsaved project settings" />
     </form>
   );

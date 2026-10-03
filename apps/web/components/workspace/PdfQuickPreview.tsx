@@ -1,4 +1,5 @@
 "use client";
+import { ActionRow, Button, TextInput, NativeSelect } from "../ui/controls";
 import { useEffect, useState } from "react";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import { ErrorNotice } from "./ui";
@@ -65,21 +66,21 @@ export default function PdfQuickPreview({
     <div className="pdf-quick-preview pdf-workbench pdf-preview-reader">
       <ErrorNotice message={error} />
       {interactive && (
-        <div className="ws-actions">
-          <button
+        <ActionRow>
+          <Button
             className="button secondary"
             disabled={!pdf || page <= 1}
             onClick={() => setPage((p) => p - 1)}
           >
             Previous page
-          </button>
+          </Button>
           <span aria-live="polite">
             {pdf ? `${page} / ${pdf.numPages}` : "Loading PDF…"}
           </span>
           {pdf && (
             <label className="pdf-preview-page-input">
               Go to page{" "}
-              <input
+              <TextInput
                 aria-label="Preview page"
                 type="number"
                 min={1}
@@ -97,14 +98,14 @@ export default function PdfQuickPreview({
               />
             </label>
           )}
-          <button
+          <Button
             className="button secondary"
             disabled={!pdf || page >= pdf.numPages}
             onClick={() => setPage((p) => p + 1)}
           >
             Next page
-          </button>
-          <select
+          </Button>
+          <NativeSelect
             aria-label="Preview zoom"
             value={scale}
             onChange={(event) =>
@@ -122,8 +123,8 @@ export default function PdfQuickPreview({
                 {value * 100}%
               </option>
             ))}
-          </select>
-        </div>
+          </NativeSelect>
+        </ActionRow>
       )}
       {pdf && (
         <PdfPages

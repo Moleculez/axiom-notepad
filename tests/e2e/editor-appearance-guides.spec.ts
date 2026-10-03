@@ -21,7 +21,7 @@ test("block range preference previews, cancels, persists, resets and rejects old
     await expect(
       page.getByRole("navigation", { name: "Current location" }),
     ).toContainText("General");
-    const toggle = page.getByRole("checkbox", {
+    const toggle = page.getByRole("switch", {
       name: "Show block ranges",
       exact: true,
     });

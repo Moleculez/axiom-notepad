@@ -1,4 +1,5 @@
 "use client";
+import { NativeSelect, TextInput } from "../ui/controls";
 import { useState } from "react";
 import type { Annotation } from "@axiom/shared/research";
 import { api } from "../../lib/client";
@@ -103,7 +104,7 @@ export default function PdfBulkActions({
       {!!marks.length && (
         <>
           <span>{marks.length} selected</span>
-          <select
+          <NativeSelect
             aria-label="Bulk annotation action"
             value={action}
             disabled={busy}
@@ -117,9 +118,9 @@ export default function PdfBulkActions({
             <option value="share">Share</option>
             <option value="private">Make private</option>
             <option value="delete">Remove</option>
-          </select>
+          </NativeSelect>
           {action === "color" ? (
-            <select
+            <NativeSelect
               aria-label="Bulk annotation color"
               value={value}
               onChange={(e) => setValue(e.target.value)}
@@ -127,9 +128,9 @@ export default function PdfBulkActions({
               {["yellow", "green", "blue", "pink"].map((c) => (
                 <option key={c}>{c}</option>
               ))}
-            </select>
+            </NativeSelect>
           ) : action === "tag" ? (
-            <input
+            <TextInput
               aria-label="Bulk annotation tag"
               value={value}
               maxLength={40}

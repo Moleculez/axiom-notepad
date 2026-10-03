@@ -1,4 +1,5 @@
 "use client";
+import { Button, TextInput } from "./ui/controls";
 import BrandMark from "./BrandMark";
 import { useEffect, useState } from "react";
 import {
@@ -219,7 +220,7 @@ export default function Auth({
             {mode === "invite" && (
               <label>
                 Your name
-                <input
+                <TextInput
                   autoComplete="name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -231,7 +232,7 @@ export default function Auth({
             {!twoFactor && mode !== "reset" && (
               <label>
                 Email address
-                <input
+                <TextInput
                   type="email"
                   autoComplete="email"
                   value={email}
@@ -259,7 +260,7 @@ export default function Auth({
                     </button>
                   )}
                 </span>
-                <input
+                <TextInput
                   id="account-password"
                   aria-label="Password"
                   type="password"
@@ -281,7 +282,7 @@ export default function Auth({
             {twoFactor && (
               <label>
                 {recovery ? "Recovery code" : "Authenticator code"}
-                <input
+                <TextInput
                   autoFocus
                   required
                   aria-label={recovery ? "Recovery code" : "Authenticator code"}
@@ -318,7 +319,7 @@ export default function Auth({
                 {message}
               </div>
             )}
-            <button
+            <Button
               className="button primary auth-submit"
               disabled={busy || (mode === "invite" && !groupName)}
             >
@@ -338,10 +339,10 @@ export default function Auth({
                   <ArrowRight size={17} />
                 </>
               )}
-            </button>
+            </Button>
           </form>
           {mode === "login" && !twoFactor && institution?.enabled && (
-            <button
+            <Button
               className="button secondary auth-submit"
               disabled={busy}
               onClick={() => {
@@ -363,7 +364,7 @@ export default function Auth({
               }}
             >
               Sign in with {institution.name}
-            </button>
+            </Button>
           )}
           {twoFactor && (
             <button

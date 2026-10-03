@@ -1,4 +1,13 @@
 "use client";
+import {
+  Button,
+  HelpText,
+  Slider,
+  Switch,
+  NativeSelect,
+  TextInput,
+  SearchField,
+} from "./ui/controls";
 import PdfReaderSettings from "./pdf/PdfReaderSettings";
 import { confirmAction } from "../lib/app-prompt";
 import {
@@ -19,13 +28,13 @@ import {
   Keyboard,
   PencilLine,
   PanelRight,
-  X,
 } from "lucide-react";
 import EditorSettings from "./EditorSettings";
 import SettingsEditorPreview from "./SettingsEditorPreview";
 import MinimapSettings from "./MinimapSettings";
 import SettingsSplitPanel from "./SettingsSplitPanel";
 import { themePacks, type ThemePackId } from "@axiom/shared/theme-packs";
+import { interfaceStyles } from "@axiom/shared/interface-styles";
 import {
   editorThemes,
   applyEditorTheme,
@@ -177,9 +186,9 @@ function AppearanceSettingsReady({
           {label}
           {hint && <small>{hint}</small>}
         </span>
-        <input
+        <Switch
           aria-label={label}
-          type="checkbox"
+
           checked={draft[key] as boolean}
           onChange={(e) => change(key, e.target.checked as never)}
         />
@@ -194,7 +203,7 @@ function AppearanceSettingsReady({
     show(category, label) && (
       <label className="setting-control" key={key}>
         <span>{label}</span>
-        <select
+        <NativeSelect
           aria-label={label}
           value={String(draft[key])}
           onChange={(e) => change(key, e.target.value as never)}
@@ -204,7 +213,7 @@ function AppearanceSettingsReady({
               {name}
             </option>
           ))}
-        </select>
+        </NativeSelect>
       </label>
     );
   const colors = paletteFor(draft, editDark),
@@ -227,15 +236,13 @@ function AppearanceSettingsReady({
     <div className={`appearance-settings ${routed ? "settings-routed" : ""}`}>
       {!routed && (
         <div className="settings-navigation">
-          <label className="settings-search">
-            <Search size={16} />
-            <input
-              aria-label="Search settings"
-              placeholder="Find a setting…"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-          </label>
+          <SearchField
+            wrapperClassName="settings-search"
+            aria-label="Search settings"
+            placeholder="Find a setting…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
           <nav aria-label="Personal settings">
             {[
               ["General", SlidersHorizontal],
@@ -301,28 +308,18 @@ function AppearanceSettingsReady({
           </div>
           <div className="settings-intro-tools">
             {routed && section !== "Keyboard shortcuts" && (
-              <label className="settings-search settings-content-search">
-                <Search size={16} />
-                <input
-                  aria-label="Search settings"
-                  placeholder="Search settings…"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                />
-                {query && (
-                  <button
-                    type="button"
-                    className="settings-search-clear"
-                    aria-label="Clear settings search"
-                    onClick={() => setQuery("")}
-                  >
-                    <X size={14} />
-                  </button>
-                )}
-              </label>
+              <SearchField
+                wrapperClassName="settings-search settings-content-search"
+                aria-label="Search settings"
+                placeholder="Search settings…"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onClear={() => setQuery("")}
+                clearLabel="Clear settings search"
+              />
             )}
             {previewCategory && (
-              <button
+              <Button
                 type="button"
                 className="button secondary small settings-preview-toggle"
                 aria-label={
@@ -333,7 +330,7 @@ function AppearanceSettingsReady({
               >
                 <PanelRight size={16} />
                 Preview
-              </button>
+              </Button>
             )}
           </div>
         </div>
@@ -466,48 +463,27 @@ function AppearanceSettingsReady({
                     reading typography stay independent.
                   </p>
                   <div>
-                    {(
-                      [
-                        [
-                          "axiom",
-                          "Axiom",
-                          "Quiet, familiar research workspace",
-                        ],
-                        [
-                          "material",
-                          "Material Tonal",
-                          "Rounded controls and tonal selection",
-                        ],
-                        [
-                          "fluent",
-                          "Fluent Studio",
-                          "Precise borders and layered chrome",
-                        ],
-                        [
-                          "editorial",
-                          "Editorial",
-                          "Flat surfaces and understated rules",
-                        ],
-                      ] as const
-                    ).map(([value, title, description]) => (
-                      <button
-                        type="button"
-                        key={value}
-                        aria-pressed={draft.interfaceStyle === value}
-                        onClick={() => change("interfaceStyle", value)}
-                      >
-                        <span
-                          className={`interface-style-sample style-${value}`}
-                          aria-hidden="true"
+                    {interfaceStyles.map(
+                      ({ id: value, name: title, description }) => (
+                        <button
+                          type="button"
+                          key={value}
+                          aria-pressed={draft.interfaceStyle === value}
+                          onClick={() => change("interfaceStyle", value)}
                         >
-                          <i />
-                          <i />
-                          <i />
-                        </span>
-                        <strong>{title}</strong>
-                        <small>{description}</small>
-                      </button>
-                    ))}
+                          <span
+                            className={`interface-style-sample style-${value}`}
+                            aria-hidden="true"
+                          >
+                            <i />
+                            <i />
+                            <i />
+                          </span>
+                          <strong>{title}</strong>
+                          <small>{description}</small>
+                        </button>
+                      ),
+                    )}
                   </div>
                 </fieldset>
                 <label className="setting-control">
@@ -518,7 +494,7 @@ function AppearanceSettingsReady({
                       typography choices stay in control.
                     </small>
                   </span>
-                  <select
+                  <NativeSelect
                     aria-label="Theme pack"
                     value={draft.themePack}
                     onChange={(e) =>
@@ -531,18 +507,18 @@ function AppearanceSettingsReady({
                         {pack.name}
                       </option>
                     ))}
-                  </select>
+                  </NativeSelect>
                 </label>
                 {draft.themePack !== "default" && (
                   <div className="theme-pack-description">
-                    <p className="ws-note">
+                    <HelpText>
                       {
                         themePacks.find((pack) => pack.id === draft.themePack)
                           ?.description
                       }{" "}
                       Custom color overrides take priority.
-                    </p>
-                    <button
+                    </HelpText>
+                    <Button
                       type="button"
                       className="button secondary"
                       onClick={() => {
@@ -557,7 +533,7 @@ function AppearanceSettingsReady({
                       }}
                     >
                       Preview pack colors without overrides
-                    </button>
+                    </Button>
                   </div>
                 )}
                 <div className="appearance-look">
@@ -568,7 +544,7 @@ function AppearanceSettingsReady({
                       reading experience.
                     </p>
                   </div>
-                  <button
+                  <Button
                     className="button secondary"
                     onClick={() => {
                       setDraft(modernAppearance(draft));
@@ -579,7 +555,7 @@ function AppearanceSettingsReady({
                     }}
                   >
                     Try the modern look
-                  </button>
+                  </Button>
                 </div>
                 {select("Theme", "mode", "Color mode", [
                   ["system", "Follow the system"],
@@ -589,7 +565,7 @@ function AppearanceSettingsReady({
                 <div className="setting-pair">
                   <label>
                     Light palette
-                    <select
+                    <NativeSelect
                       aria-label="Light palette"
                       value={matchingEditorTheme(draft, false)}
                       onChange={(e) => {
@@ -608,11 +584,11 @@ function AppearanceSettingsReady({
                             {p.name}
                           </option>
                         ))}
-                    </select>
+                    </NativeSelect>
                   </label>
                   <label>
                     Dark palette
-                    <select
+                    <NativeSelect
                       aria-label="Dark palette"
                       value={matchingEditorTheme(draft, true)}
                       onChange={(e) => {
@@ -631,7 +607,7 @@ function AppearanceSettingsReady({
                             {p.name}
                           </option>
                         ))}
-                    </select>
+                    </NativeSelect>
                   </label>
                 </div>
                 <div
@@ -747,14 +723,13 @@ function AppearanceSettingsReady({
                       overrides are unchanged.
                     </small>
                   </span>
-                  <input
-                    type="checkbox"
+                  <Switch
                     checked={savePrevious}
                     onChange={(e) => setSavePrevious(e.target.checked)}
                   />
                 </label>
                 {appearance.previousPreferences && (
-                  <button
+                  <Button
                     className="button secondary"
                     onClick={() => {
                       setDraft(appearance.previousPreferences!);
@@ -766,20 +741,20 @@ function AppearanceSettingsReady({
                   >
                     <RotateCcw size={15} />
                     Restore previous appearance
-                  </button>
+                  </Button>
                 )}
                 <details className="theme-editor">
                   <summary>Visual theme editor</summary>
                   <label>
                     Edit palette
-                    <select
+                    <NativeSelect
                       aria-label="Palette to customize"
                       value={editDark ? "dark" : "light"}
                       onChange={(e) => setEditDark(e.target.value === "dark")}
                     >
                       <option value="light">Light colors</option>
                       <option value="dark">Dark colors</option>
-                    </select>
+                    </NativeSelect>
                   </label>
                   <p className="muted">
                     Pick a swatch or enter HEX / RGB. Text values commit on
@@ -870,12 +845,12 @@ function AppearanceSettingsReady({
                       </div>
                     </fieldset>
                   ))}
-                  <button
+                  <Button
                     className="button secondary small"
                     onClick={() => change(colorKey, {})}
                   >
                     Restore {editDark ? "dark" : "light"} palette defaults
-                  </button>
+                  </Button>
                   <div className="contrast-checks">
                     {checks.map(([label, a, b]) => (
                       <span
@@ -894,14 +869,14 @@ function AppearanceSettingsReady({
                     Reset remain available.
                   </p>
                   <div className="button-row">
-                    <input
+                    <TextInput
                       aria-label="Custom theme name"
                       placeholder="Name this palette"
                       maxLength={60}
                       value={themeName}
                       onChange={(e) => setThemeName(e.target.value)}
                     />
-                    <button
+                    <Button
                       className="button secondary"
                       disabled={!themeName.trim() || draft.themes.length >= 30}
                       onClick={() => {
@@ -918,7 +893,7 @@ function AppearanceSettingsReady({
                       }}
                     >
                       Save palette
-                    </button>
+                    </Button>
                   </div>
                   {draft.themes.map((t) => (
                     <div className="saved-theme" key={t.id}>
@@ -950,7 +925,7 @@ function AppearanceSettingsReady({
                     </div>
                   ))}
                   <div className="button-row">
-                    <button
+                    <Button
                       className="button secondary"
                       onClick={() =>
                         download(
@@ -972,7 +947,7 @@ function AppearanceSettingsReady({
                     >
                       <Download size={15} />
                       Export palette
-                    </button>
+                    </Button>
                     <label className="button secondary file-button">
                       <Upload size={15} />
                       Import palette
@@ -1285,9 +1260,9 @@ function AppearanceSettingsReady({
                           }[key]
                         }
                       </span>
-                      <input
+                      <Switch
                         aria-label={`Override ${key} on this device`}
-                        type="checkbox"
+
                         checked={device[key] !== undefined}
                         onChange={(e) =>
                           setDevice((d) => {
@@ -1302,7 +1277,7 @@ function AppearanceSettingsReady({
                     </label>
                     {device[key] !== undefined &&
                       (key === "density" ? (
-                        <select
+                        <NativeSelect
                           aria-label="Device density"
                           value={device.density}
                           onChange={(e) =>
@@ -1315,16 +1290,16 @@ function AppearanceSettingsReady({
                         >
                           <option value="comfortable">Comfortable</option>
                           <option value="compact">Compact</option>
-                        </select>
+                        </NativeSelect>
                       ) : (
                         <label className="setting-control">
                           <span>
                             Device value
                             <output>{device[key]}×</output>
                           </span>
-                          <input
-                            type="range"
+                          <Slider
                             aria-label={`Device ${key}`}
+                            aria-valuetext={`${device[key]} times`}
                             min={0.8}
                             max={1.5}
                             step={0.05}
@@ -1369,22 +1344,22 @@ function AppearanceSettingsReady({
                   These settings changed while you were editing:{" "}
                   {settings.conflicts.join(", ")}
                 </p>
-                <button
+                <Button
                   className="button secondary"
                   onClick={() => {
                     settings.resolve(true);
                   }}
                 >
                   Keep my edited values
-                </button>
-                <button
+                </Button>
+                <Button
                   className="button secondary"
                   onClick={() => {
                     settings.resolve(false);
                   }}
                 >
                   Use latest conflicting values
-                </button>
+                </Button>
               </div>
             )}
             {editorSettings.conflicts.length > 0 && (
@@ -1393,7 +1368,7 @@ function AppearanceSettingsReady({
                   Conflicting editor settings:{" "}
                   {editorSettings.conflicts.join(", ")}
                 </p>
-                <button
+                <Button
                   className="button secondary"
                   onClick={() => {
                     const p = editorSettings.resolve(true);
@@ -1401,8 +1376,8 @@ function AppearanceSettingsReady({
                   }}
                 >
                   Keep my editor settings
-                </button>
-                <button
+                </Button>
+                <Button
                   className="button secondary"
                   onClick={() => {
                     const p = editorSettings.resolve(false);
@@ -1410,19 +1385,19 @@ function AppearanceSettingsReady({
                   }}
                 >
                   Use synced editor settings
-                </button>
+                </Button>
               </div>
             )}
             {appearance.conflicts.length > 0 && (
               <div className="settings-conflict">
                 <p>Conflicting settings: {appearance.conflicts.join(", ")}</p>
-                <button
+                <Button
                   className="button secondary"
                   onClick={() => appearance.resolve(true)}
                 >
                   Keep my conflicting values
-                </button>
-                <button
+                </Button>
+                <Button
                   className="button secondary"
                   onClick={() => {
                     const synced = appearance.resolve(false);
@@ -1430,7 +1405,7 @@ function AppearanceSettingsReady({
                   }}
                 >
                   Use synced values
-                </button>
+                </Button>
               </div>
             )}
           </div>
@@ -1449,7 +1424,7 @@ function AppearanceSettingsReady({
             " · Check incomplete values before applying"}
         </span>
         <div className="settings-reset-actions">
-          <button
+          <Button
             className="button appearance-reset"
             onClick={async () => {
               if (
@@ -1469,8 +1444,8 @@ function AppearanceSettingsReady({
           >
             <RotateCcw size={15} />
             Reset all
-          </button>
-          <button
+          </Button>
+          <Button
             className="button secondary"
             onClick={() => {
               if (section === "Keyboard shortcuts")
@@ -1509,10 +1484,10 @@ function AppearanceSettingsReady({
             }}
           >
             Reset section
-          </button>
+          </Button>
         </div>
         <div className="settings-confirm-actions">
-          <button
+          <Button
             className="button secondary"
             onClick={() => {
               settings.discard();
@@ -1521,15 +1496,15 @@ function AppearanceSettingsReady({
             }}
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             className="button primary"
             onClick={save}
             disabled={Object.values(invalid).some(Boolean)}
           >
             <Check size={15} />
             Apply
-          </button>
+          </Button>
         </div>
       </div>
     </div>

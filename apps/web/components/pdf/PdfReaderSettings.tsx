@@ -1,4 +1,5 @@
 "use client";
+import { Slider, Switch, NativeSelect } from "../ui/controls";
 import type { Preferences } from "@axiom/shared/appearance";
 export default function PdfReaderSettings({
   value,
@@ -17,7 +18,7 @@ export default function PdfReaderSettings({
       </p>
       <label className="settings-row">
         <span>Page layout</span>
-        <select
+        <NativeSelect
           aria-label="Default PDF page layout"
           value={value.layout}
           onChange={(e) =>
@@ -30,11 +31,11 @@ export default function PdfReaderSettings({
           <option value="continuous">Continuous</option>
           <option value="single">Single page</option>
           <option value="facing">Facing pages</option>
-        </select>
+        </NativeSelect>
       </label>
       <label className="settings-row">
         <span>Paper appearance</span>
-        <select
+        <NativeSelect
           aria-label="Default PDF paper appearance"
           value={value.theme}
           onChange={(e) =>
@@ -45,12 +46,11 @@ export default function PdfReaderSettings({
           <option value="warm">Warm paper</option>
           <option value="graphite">Graphite surround</option>
           <option value="contrast">High contrast surround</option>
-        </select>
+        </NativeSelect>
       </label>
       <label className="settings-row">
         <span>Show reading navigator</span>
-        <input
-          type="checkbox"
+        <Switch
           aria-label="Show PDF reading navigator by default"
           checked={value.navigator}
           onChange={(e) => onChange({ ...value, navigator: e.target.checked })}
@@ -58,9 +58,9 @@ export default function PdfReaderSettings({
       </label>
       <label className="settings-row">
         <span>Navigator width · {value.navigatorWidth}px</span>
-        <input
-          type="range"
+        <Slider
           aria-label="Default PDF navigator width"
+          aria-valuetext={`${value.navigatorWidth} pixels`}
           min={200}
           max={440}
           step={10}

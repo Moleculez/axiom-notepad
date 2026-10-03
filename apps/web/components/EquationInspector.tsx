@@ -1,6 +1,7 @@
 "use client";
+import { Button, SearchField } from "./ui/controls";
 import { useMemo, useState } from "react";
-import { Search, Sigma, AlertCircle, ArrowUpRight } from "lucide-react";
+import { Sigma, AlertCircle, ArrowUpRight } from "lucide-react";
 import {
   documentIndex,
   type ParsedDocument,
@@ -35,16 +36,14 @@ export default function EquationInspector({
           </p>
         </div>
       </header>
-      <label className="equation-search">
-        <Search size={15} />
-        <input
-          type="search"
-          aria-label="Search equations"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Find a label or TeX…"
-        />
-      </label>
+      <SearchField
+        wrapperClassName="equation-search"
+        type="search"
+        aria-label="Search equations"
+        value={query}
+        onChange={(event) => setQuery(event.target.value)}
+        placeholder="Find a label or TeX…"
+      />
       {!!index.diagnostics.length && (
         <div
           className="equation-diagnostics"
@@ -85,13 +84,13 @@ export default function EquationInspector({
               </span>
             </button>
             {openStudio && (
-              <button
+              <Button
                 className="button ghost equation-studio-link"
                 onClick={() => openStudio(equation)}
               >
                 <ArrowUpRight size={14} />
                 Open in Math Studio
-              </button>
+              </Button>
             )}
           </div>
         ))}

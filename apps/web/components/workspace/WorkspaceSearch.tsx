@@ -1,4 +1,5 @@
 "use client";
+import { SearchField } from "../ui/controls";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import {
   ArrowUpRight,
@@ -8,7 +9,6 @@ import {
   FileSearch,
   History,
   Search,
-  X,
 } from "lucide-react";
 import type { ResourcePage } from "@axiom/shared/workspace";
 import { tabTitle } from "@axiom/shared/application-tabs";
@@ -240,58 +240,44 @@ export default function WorkspaceSearch({ onClose }: { onClose: () => void }) {
       className="workspace-search-dialog"
       onClose={onClose}
     >
-      <div className="discovery-search-input">
-        {commandsOnly ? <Command size={21} /> : <Search size={21} />}
-        <input
-          ref={input}
-          autoFocus
-          role="combobox"
-          aria-label="Global search"
-          aria-autocomplete="list"
-          aria-expanded="true"
-          aria-controls={`${id}-results`}
-          aria-activedescendant={selected ? `${id}-${selected.id}` : undefined}
-          placeholder={
-            commandsOnly
-              ? "Where would you like to go?"
-              : "Find files, folders, or a command…"
-          }
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.nativeEvent.isComposing) return;
-            if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-              event.preventDefault();
-              setActive((value) =>
-                Math.max(
-                  0,
-                  Math.min(
-                    entries.length - 1,
-                    value + (event.key === "ArrowDown" ? 1 : -1),
-                  ),
+      <SearchField
+        wrapperClassName="discovery-search-input"
+        icon={commandsOnly ? <Command /> : <Search />}
+        ref={input}
+        autoFocus
+        role="combobox"
+        aria-label="Global search"
+        aria-autocomplete="list"
+        aria-expanded="true"
+        aria-controls={`${id}-results`}
+        aria-activedescendant={selected ? `${id}-${selected.id}` : undefined}
+        placeholder={
+          commandsOnly
+            ? "Where would you like to go?"
+            : "Find files, folders, or a command…"
+        }
+        value={query}
+        onChange={(event) => setQuery(event.target.value)}
+        onClear={() => setQuery("")}
+        onKeyDown={(event) => {
+          if (event.nativeEvent.isComposing) return;
+          if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+            event.preventDefault();
+            setActive((value) =>
+              Math.max(
+                0,
+                Math.min(
+                  entries.length - 1,
+                  value + (event.key === "ArrowDown" ? 1 : -1),
                 ),
-              );
-            } else if (event.key === "Enter") {
-              event.preventDefault();
-              if (selected) finish(selected.action);
-            }
-          }}
-        />
-        {query && (
-          <button
-            type="button"
-            className="icon-button"
-            aria-label="Clear search"
-            title="Clear search"
-            onClick={() => {
-              setQuery("");
-              input.current?.focus();
-            }}
-          >
-            <X size={16} />
-          </button>
-        )}
-      </div>
+              ),
+            );
+          } else if (event.key === "Enter") {
+            event.preventDefault();
+            if (selected) finish(selected.action);
+          }
+        }}
+      />
       <div
         className="discovery-scope-row"
         role="group"

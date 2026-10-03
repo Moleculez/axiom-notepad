@@ -1,4 +1,5 @@
 "use client";
+import { Button, TextInput } from "../ui/controls";
 import { useEffect, useState } from "react";
 import type { Space } from "@axiom/shared/workspace";
 import { api } from "../../lib/client";
@@ -46,7 +47,7 @@ export default function ReferencePrefix({ space }: { space: Space }) {
       >
         <label>
           Prefix
-          <input
+          <TextInput
             aria-label="File code prefix"
             value={prefix}
             disabled={!space.can_manage}
@@ -57,12 +58,12 @@ export default function ReferencePrefix({ space }: { space: Space }) {
           />
         </label>
         {space.can_manage && (
-          <button
+          <Button
             className="button secondary"
             disabled={busy || !/^[A-Z][A-Z0-9]{1,11}$/.test(prefix)}
           >
             Save prefix
-          </button>
+          </Button>
         )}
       </form>
       <small role="status">

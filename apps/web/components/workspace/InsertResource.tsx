@@ -1,11 +1,19 @@
 "use client";
+import {
+  ActionRow,
+  Button,
+  Checkbox,
+  IconButton,
+  TextInput,
+  NativeSelect,
+  SearchField,
+} from "../ui/controls";
 import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import {
   Check,
   ChevronRight,
   Folder,
-  Search,
   Upload,
   Link2,
   Library,
@@ -360,18 +368,16 @@ export default function InsertResource({
       <div className="media-insert-split">
         <section className="media-library" aria-label="Browse files">
           <div className="media-library-controls">
-            <label className="ws-search-field">
-              <Search size={16} />
-              <input
-                autoFocus
-                aria-label="Search files or reference codes"
-                placeholder="Search names, tags, or file codes…"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </label>
+            <SearchField
+              wrapperClassName="ws-search-field"
+              autoFocus
+              aria-label="Search files or reference codes"
+              placeholder="Search names, tags, or file codes…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
             <div className="media-filter-row">
-              <select
+              <NativeSelect
                 aria-label="Workspace"
                 value={scope}
                 disabled={!selection && note.visibility === "shared"}
@@ -393,9 +399,9 @@ export default function InsertResource({
                       {s.name}
                     </option>
                   ))}
-              </select>
+              </NativeSelect>
               {kind === "file" && (
-                <select
+                <NativeSelect
                   aria-label="File type"
                   value={filter}
                   disabled={!!selection}
@@ -410,12 +416,12 @@ export default function InsertResource({
                       {type === "all" ? "All files" : type.toUpperCase()}
                     </option>
                   ))}
-                </select>
+                </NativeSelect>
               )}
             </div>
             {tab === "library" && (
               <div className="media-filter-row">
-                <select
+                <NativeSelect
                   aria-label="Library view"
                   value={view}
                   onChange={(e) => {
@@ -427,8 +433,8 @@ export default function InsertResource({
                   <option value="folder">Folders</option>
                   <option value="recent">Recent</option>
                   <option value="favorites">Favorites</option>
-                </select>
-                <select
+                </NativeSelect>
+                <NativeSelect
                   aria-label="Sort files"
                   value={sort}
                   onChange={(e) => setSort(e.target.value)}
@@ -436,7 +442,7 @@ export default function InsertResource({
                   <option value="updated">Recently modified</option>
                   <option value="name">Name</option>
                   <option value="size">Size</option>
-                </select>
+                </NativeSelect>
               </div>
             )}
             {folder && (
@@ -482,8 +488,7 @@ export default function InsertResource({
                       role="listitem"
                     >
                       {item.kind !== "folder" && !selection && (
-                        <input
-                          type="checkbox"
+                        <Checkbox
                           aria-label={"Select " + item.name}
                           checked={selected.some(
                             (entry) => entry.id === item.id,
@@ -547,13 +552,13 @@ export default function InsertResource({
                   ))
               )}
               {data.data?.nextCursor && (
-                <button
+                <Button
                   className="button secondary"
                   disabled={data.loading}
                   onClick={() => setCursor(data.data!.nextCursor!)}
                 >
                   Load more files
-                </button>
+                </Button>
               )}
             </div>
           )}
@@ -572,13 +577,13 @@ export default function InsertResource({
                 Stored privately in the selected workspace. Maximum 1 GB per
                 file.
               </p>
-              <button
+              <Button
                 className="button secondary"
                 disabled={!canUpload || busy}
                 onClick={() => input.current?.click()}
               >
                 Choose files
-              </button>
+              </Button>
               <input
                 ref={input}
                 type="file"
@@ -606,7 +611,7 @@ export default function InsertResource({
                     <small>{bytes(file.size)}</small>
                   </span>
                   {!busy && (
-                    <button
+                    <IconButton
                       className="icon-button"
                       aria-label={"Remove " + file.name}
                       onClick={() =>
@@ -616,7 +621,7 @@ export default function InsertResource({
                       }
                     >
                       <X size={14} />
-                    </button>
+                    </IconButton>
                   )}
                 </div>
               ))}
@@ -639,19 +644,19 @@ export default function InsertResource({
                     </div>
                   ))}
               {busy && (
-                <div className="ws-actions">
-                  <button className="button secondary" onClick={showUploads}>
+                <ActionRow>
+                  <Button className="button secondary" onClick={showUploads}>
                     Manage / retry uploads
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     className="button secondary"
                     onClick={() =>
                       void batch?.cancel().catch((e) => setError(e.message))
                     }
                   >
                     Cancel insertion
-                  </button>
-                </div>
+                  </Button>
+                </ActionRow>
               )}
             </div>
           )}
@@ -660,7 +665,7 @@ export default function InsertResource({
               <Link2 size={28} />
               <label>
                 Image or file URL
-                <input
+                <TextInput
                   type="url"
                   placeholder="https://…"
                   value={url}
@@ -675,7 +680,7 @@ export default function InsertResource({
                 host; access and availability may change.
               </p>
               {filter === "image" && (
-                <button
+                <Button
                   className="button secondary"
                   onClick={() => {
                     try {
@@ -695,7 +700,7 @@ export default function InsertResource({
                   }}
                 >
                   Load image preview
-                </button>
+                </Button>
               )}
             </div>
           )}
@@ -801,19 +806,19 @@ export default function InsertResource({
             "No source changes until insertion"
           )}
         </span>
-        <button className="button secondary" onClick={onClose}>
+        <Button className="button secondary" onClick={onClose}>
           Cancel
-        </button>
+        </Button>
         {tab === "upload" ? (
-          <button
+          <Button
             className="button primary"
             disabled={busy || !localFiles.length || !canUpload}
             onClick={() => void startUpload()}
           >
             Upload & review
-          </button>
+          </Button>
         ) : (
-          <button
+          <Button
             className="button primary"
             disabled={busy || (tab === "url" ? !url.trim() : !selected.length)}
             onClick={insert}
@@ -822,7 +827,7 @@ export default function InsertResource({
             {selected.length > 1 && tab !== "url"
               ? " " + selected.length + " files"
               : ""}
-          </button>
+          </Button>
         )}
       </DialogFooter>
     </Dialog>

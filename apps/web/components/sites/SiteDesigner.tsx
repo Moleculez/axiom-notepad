@@ -1,4 +1,14 @@
 "use client";
+import {
+  Button,
+  Checkbox,
+  HelpText,
+  IconButton,
+  Slider,
+  NativeSelect,
+  TextInput,
+  TextArea,
+} from "../ui/controls";
 import { useState } from "react";
 import {
   ArrowDown,
@@ -105,7 +115,7 @@ export default function SiteDesigner({
             <div className="website-fields">
               <label>
                 Color mode
-                <select
+                <NativeSelect
                   value={design.mode}
                   onChange={(e) =>
                     set({ mode: e.target.value as SiteDesign["mode"] })
@@ -114,11 +124,11 @@ export default function SiteDesigner({
                   <option value="system">Follow visitor’s system</option>
                   <option value="light">Light</option>
                   <option value="dark">Dark</option>
-                </select>
+                </NativeSelect>
               </label>
               <label>
                 Reading typeface
-                <select
+                <NativeSelect
                   value={design.font}
                   onChange={(e) =>
                     set({ font: e.target.value as SiteDesign["font"] })
@@ -128,7 +138,7 @@ export default function SiteDesigner({
                   <option value="latin-modern">Latin Modern · LaTeX</option>
                   <option value="serif">Source Serif · editorial</option>
                   <option value="sans">Inter · contemporary</option>
-                </select>
+                </NativeSelect>
               </label>
               <label>
                 Accent
@@ -144,7 +154,7 @@ export default function SiteDesigner({
               </label>
               <label>
                 Spacing
-                <select
+                <NativeSelect
                   value={design.spacing}
                   onChange={(e) =>
                     set({ spacing: e.target.value as SiteDesign["spacing"] })
@@ -152,7 +162,7 @@ export default function SiteDesigner({
                 >
                   <option value="comfortable">Comfortable</option>
                   <option value="compact">Compact</option>
-                </select>
+                </NativeSelect>
               </label>
             </div>
           </fieldset>
@@ -167,8 +177,9 @@ export default function SiteDesigner({
             <div className="website-fields">
               <label>
                 Text size · {design.reading.fontSize}px
-                <input
-                  type="range"
+                <Slider
+                  aria-label="Website reading font size"
+                  aria-valuetext={`${design.reading.fontSize} pixels`}
                   min="16"
                   max="24"
                   value={design.reading.fontSize}
@@ -184,8 +195,9 @@ export default function SiteDesigner({
               </label>
               <label>
                 Line height · {design.reading.lineHeight}
-                <input
-                  type="range"
+                <Slider
+                  aria-label="Website reading line height"
+                  aria-valuetext={`${design.reading.lineHeight} times the font size`}
                   min="1.4"
                   max="2.2"
                   step="0.05"
@@ -202,8 +214,9 @@ export default function SiteDesigner({
               </label>
               <label>
                 Line length · {design.reading.measure} characters
-                <input
-                  type="range"
+                <Slider
+                  aria-label="Website reading measure"
+                  aria-valuetext={`${design.reading.measure} characters`}
                   min="55"
                   max="90"
                   value={design.reading.measure}
@@ -228,8 +241,7 @@ export default function SiteDesigner({
               ] as const
             ).map(([key, label]) => (
               <label className="website-check" key={key}>
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={design.reading[key]}
                   onChange={(e) =>
                     set({
@@ -242,7 +254,7 @@ export default function SiteDesigner({
             ))}
             <label>
               Archive layout
-              <select
+              <NativeSelect
                 value={design.archive.style}
                 onChange={(e) =>
                   set({
@@ -255,11 +267,10 @@ export default function SiteDesigner({
               >
                 <option value="timeline">Timeline · year and month</option>
                 <option value="list">Compact chronological list</option>
-              </select>
+              </NativeSelect>
             </label>
             <label className="website-check">
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={design.archive.includePages}
                 onChange={(e) =>
                   set({
@@ -280,7 +291,7 @@ export default function SiteDesigner({
               <h3>Homepage sections</h3>
               <p>Arrange, duplicate, hide or edit each section.</p>
             </div>
-            <button
+            <IconButton
               className="icon-button"
               title="Add section"
               aria-label="Add homepage section"
@@ -296,7 +307,7 @@ export default function SiteDesigner({
               }}
             >
               <Plus size={17} />
-            </button>
+            </IconButton>
           </div>
           <div className="website-section-list">
             {sections.map((s, i) => (
@@ -311,7 +322,7 @@ export default function SiteDesigner({
                   {s.hidden && <EyeOff size={13} />}
                 </button>
                 <div>
-                  <button
+                  <IconButton
                     className="icon-button"
                     title="Move section up"
                     aria-label={`Move ${s.title} up`}
@@ -319,8 +330,8 @@ export default function SiteDesigner({
                     onClick={() => move(i, -1)}
                   >
                     <ArrowUp size={14} />
-                  </button>
-                  <button
+                  </IconButton>
+                  <IconButton
                     className="icon-button"
                     title="Move section down"
                     aria-label={`Move ${s.title} down`}
@@ -328,7 +339,7 @@ export default function SiteDesigner({
                     onClick={() => move(i, 1)}
                   >
                     <ArrowDown size={14} />
-                  </button>
+                  </IconButton>
                 </div>
               </div>
             ))}
@@ -337,7 +348,7 @@ export default function SiteDesigner({
             <fieldset className="website-section-fields" disabled={disabled}>
               <label>
                 Section type
-                <select
+                <NativeSelect
                   value={section.kind}
                   onChange={(e) =>
                     edit({ kind: e.target.value as typeof section.kind })
@@ -346,11 +357,11 @@ export default function SiteDesigner({
                   {siteSectionSchema.shape.kind.options.map((v) => (
                     <option key={v}>{v}</option>
                   ))}
-                </select>
+                </NativeSelect>
               </label>
               <label>
                 Heading
-                <input
+                <TextInput
                   maxLength={200}
                   value={section.title}
                   onChange={(e) => edit({ title: e.target.value })}
@@ -358,7 +369,7 @@ export default function SiteDesigner({
               </label>
               <label>
                 Text (Markdown)
-                <textarea
+                <TextArea
                   rows={5}
                   maxLength={20000}
                   value={section.text}
@@ -370,13 +381,12 @@ export default function SiteDesigner({
               ) && (
                 <details>
                   <summary>Choose specific pages</summary>
-                  <p className="ws-note">
+                  <HelpText>
                     Leave unselected to use this section’s automatic collection.
-                  </p>
+                  </HelpText>
                   {config.entries.map((e) => (
                     <label key={e.id} className="website-check">
-                      <input
-                        type="checkbox"
+                      <Checkbox
                         checked={section.entryIds.includes(e.id)}
                         onChange={(event) =>
                           edit({
@@ -392,14 +402,14 @@ export default function SiteDesigner({
                 </details>
               )}
               <div className="website-inline-actions">
-                <button
+                <Button
                   className="button secondary"
                   onClick={() => edit({ hidden: !section.hidden })}
                 >
                   {section.hidden ? <Eye size={14} /> : <EyeOff size={14} />}
                   {section.hidden ? "Show section" : "Hide section"}
-                </button>
-                <button
+                </Button>
+                <IconButton
                   className="icon-button"
                   title="Duplicate section"
                   aria-label="Duplicate section"
@@ -415,8 +425,8 @@ export default function SiteDesigner({
                   }}
                 >
                   <Copy size={15} />
-                </button>
-                <button
+                </IconButton>
+                <IconButton
                   className="icon-button"
                   title="Remove section"
                   aria-label="Remove section"
@@ -430,7 +440,7 @@ export default function SiteDesigner({
                   }}
                 >
                   <Trash2 size={15} />
-                </button>
+                </IconButton>
               </div>
             </fieldset>
           )}

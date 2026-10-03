@@ -1,4 +1,5 @@
 "use client";
+import { ActionRow, Button, Checkbox, TextArea } from "../ui/controls";
 import { useState } from "react";
 import { Check, X, History, FilePenLine, ArrowUpRight } from "lucide-react";
 import {
@@ -31,11 +32,7 @@ export default function ReviewInbox({ spaceId }: { spaceId?: string } = {}) {
     <div className="review-inbox">
       <div className="revision-compare-toolbar">
         <label>
-          <input
-            type="checkbox"
-            checked={all}
-            onChange={(e) => setAll(e.target.checked)}
-          />
+          <Checkbox checked={all} onChange={(e) => setAll(e.target.checked)} />
           Include completed reviews
         </label>
       </div>
@@ -67,14 +64,14 @@ export default function ReviewInbox({ spaceId }: { spaceId?: string } = {}) {
             {r.response && (
               <p className="suggestion-explanation">Response: {r.response}</p>
             )}
-            <div className="ws-actions">
-              <button
+            <ActionRow>
+              <Button
                 className="button secondary"
                 onClick={() => setSelected(r)}
               >
                 <History size={15} />
                 Compare milestone
-              </button>
+              </Button>
               <WorkspaceLink
                 className="button ghost"
                 to={"/notes/" + r.resource_id}
@@ -84,7 +81,7 @@ export default function ReviewInbox({ spaceId }: { spaceId?: string } = {}) {
               </WorkspaceLink>
               {r.reviewer_id === session.user.id && (
                 <>
-                  <button
+                  <Button
                     className="button ghost"
                     onClick={() => {
                       setRespond({ value: r, status: "approved" });
@@ -93,8 +90,8 @@ export default function ReviewInbox({ spaceId }: { spaceId?: string } = {}) {
                   >
                     <Check size={15} />
                     Approve review
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     className="button ghost"
                     onClick={() => {
                       setRespond({ value: r, status: "changes_requested" });
@@ -103,11 +100,11 @@ export default function ReviewInbox({ spaceId }: { spaceId?: string } = {}) {
                   >
                     <FilePenLine size={15} />
                     Request changes
-                  </button>
+                  </Button>
                 </>
               )}
               {r.requested_by === session.user.id && r.status === "pending" && (
-                <button
+                <Button
                   className="button ghost"
                   onClick={() => {
                     setRespond({ value: r, status: "cancelled" });
@@ -116,9 +113,9 @@ export default function ReviewInbox({ spaceId }: { spaceId?: string } = {}) {
                 >
                   <X size={15} />
                   Cancel request
-                </button>
+                </Button>
               )}
-            </div>
+            </ActionRow>
           </article>
         ))}
       <h2>Pending edit proposals</h2>
@@ -199,7 +196,7 @@ export default function ReviewInbox({ spaceId }: { spaceId?: string } = {}) {
             </p>
             <label>
               Review notes
-              <textarea
+              <TextArea
                 maxLength={5000}
                 value={response}
                 onChange={(e) => setResponse(e.target.value)}
@@ -207,9 +204,9 @@ export default function ReviewInbox({ spaceId }: { spaceId?: string } = {}) {
             </label>
             <ErrorNotice message={action.error} />
             <div className="dialog-footer">
-              <button className="button primary" disabled={action.busy}>
+              <Button className="button primary" disabled={action.busy}>
                 Submit response
-              </button>
+              </Button>
             </div>
           </form>
         </Dialog>

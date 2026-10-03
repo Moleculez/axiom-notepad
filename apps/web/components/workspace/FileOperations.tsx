@@ -1,4 +1,12 @@
 "use client";
+import {
+  ActionRow,
+  Button,
+  Checkbox,
+  HelpText,
+  NativeSelect,
+  TextInput,
+} from "../ui/controls";
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ChevronRight, Folder, History, Link2 } from "lucide-react";
 import type { Resource, ResourcePage } from "@axiom/shared/workspace";
@@ -41,7 +49,7 @@ export function FolderDestination({
     <div className="file-destination">
       <label>
         Workspace
-        <select
+        <NativeSelect
           aria-label="Destination workspace"
           value={value.spaceId}
           onChange={(event) =>
@@ -61,11 +69,11 @@ export function FolderDestination({
                 {s.kind === "personal" ? " · Only you" : ""}
               </option>
             ))}
-        </select>
+        </NativeSelect>
       </label>
       <label>
         Find a destination folder
-        <input
+        <TextInput
           type="search"
           value={search}
           placeholder="Search folders in this workspace…"
@@ -101,7 +109,7 @@ export function FolderDestination({
         {rows.data?.items
           .filter((r) => !exclude.includes(r.id))
           .map((r) => (
-            <button
+            <Button
               key={r.id}
               className="button secondary"
               onClick={() => {
@@ -112,18 +120,18 @@ export function FolderDestination({
               <Folder size={17} />
               {r.name}
               <ChevronRight size={14} />
-            </button>
+            </Button>
           ))}
         {!rows.loading && !rows.data?.items.length && (
-          <p className="ws-note">
+          <HelpText>
             No subfolders. Use the current folder as the destination.
-          </p>
+          </HelpText>
         )}
       </div>
       <ErrorNotice message={rows.error} retry={rows.reload} />
       {(previous.length > 0 || rows.data?.nextCursor) && (
-        <div className="ws-actions">
-          <button
+        <ActionRow>
+          <Button
             className="button secondary"
             disabled={!previous.length || rows.loading}
             onClick={() => {
@@ -132,8 +140,8 @@ export function FolderDestination({
             }}
           >
             Previous folders
-          </button>
-          <button
+          </Button>
+          <Button
             className="button secondary"
             disabled={!rows.data?.nextCursor || rows.loading}
             onClick={() => {
@@ -142,8 +150,8 @@ export function FolderDestination({
             }}
           >
             Next folders
-          </button>
-        </div>
+          </Button>
+        </ActionRow>
       )}
     </div>
   );
@@ -208,7 +216,7 @@ export function FileOperationDialog({
         <div className="bulk-rename-fields">
           <label>
             Rename method
-            <select
+            <NativeSelect
               value={rename.mode}
               onChange={(e) =>
                 setRename({
@@ -221,12 +229,12 @@ export function FileOperationDialog({
               <option value="suffix">Add suffix</option>
               <option value="replace">Find and replace</option>
               <option value="number">Number sequence</option>
-            </select>
+            </NativeSelect>
           </label>
           {rename.mode === "replace" && (
             <label>
               Find
-              <input
+              <TextInput
                 value={rename.find}
                 onChange={(e) => setRename({ ...rename, find: e.target.value })}
               />
@@ -234,7 +242,7 @@ export function FileOperationDialog({
           )}
           <label>
             {rename.mode === "number" ? "Base name" : "New text"}
-            <input
+            <TextInput
               value={rename.text}
               onChange={(e) => setRename({ ...rename, text: e.target.value })}
             />
@@ -242,7 +250,7 @@ export function FileOperationDialog({
           {rename.mode === "number" && (
             <label>
               Start number
-              <input
+              <TextInput
                 type="number"
                 min={1}
                 max={99999}
@@ -259,10 +267,10 @@ export function FileOperationDialog({
               />
             </label>
           )}
-          <p className="ws-note">
+          <HelpText>
             File extensions are preserved. Each rename is checked against the
             current revision.
-          </p>
+          </HelpText>
         </div>
       )}
       <ul className="ws-operation-items">
@@ -279,21 +287,20 @@ export function FileOperationDialog({
         ))}
       </ul>
       {command === "copy" && (
-        <p className="ws-note">
+        <HelpText>
           Copies include current content and linked evidence. Comments and
           version history remain with the originals.
-        </p>
+        </HelpText>
       )}
       {command === "trash" && (
-        <p className="ws-note">
+        <HelpText>
           Selected items and their children remain recoverable in Trash. This
           does not permanently delete anything.
-        </p>
+        </HelpText>
       )}
       {crossing && (
         <label className="ws-checkbox">
-          <input
-            type="checkbox"
+          <Checkbox
             checked={confirmed}
             onChange={(e) => setConfirmed(e.target.checked)}
           />
@@ -311,14 +318,14 @@ export function FileOperationDialog({
       )}
       <ErrorNotice message={action.error || renameError} />
       <div className="dialog-footer">
-        <button
+        <Button
           className="button secondary"
           disabled={action.busy}
           onClick={onClose}
         >
           Cancel
-        </button>
-        <button
+        </Button>
+        <Button
           className={`button ${command === "trash" ? "danger" : "primary"}`}
           disabled={action.busy || !!renameError || (crossing && !confirmed)}
           onClick={() =>
@@ -350,7 +357,7 @@ export function FileOperationDialog({
                   : command === "trash"
                     ? "Move to trash"
                     : "Restore items"}
-        </button>
+        </Button>
       </div>
     </Dialog>
   );
@@ -430,9 +437,9 @@ export function FileOperationActivity({
               );
             })}
           </ul>
-          <div className="ws-actions">
+          <ActionRow>
             {["queued", "running"].includes(op.status) ? (
-              <button
+              <Button
                 className="button secondary"
                 disabled={action.busy}
                 onClick={() =>
@@ -443,11 +450,11 @@ export function FileOperationActivity({
                 }
               >
                 Cancel remaining
-              </button>
+              </Button>
             ) : (
               (op.results.some((r) => !r.ok) ||
                 op.results.length < op.input.items.length) && (
-                <button
+                <Button
                   className="button secondary"
                   disabled={action.busy}
                   onClick={() =>
@@ -458,13 +465,13 @@ export function FileOperationActivity({
                   }
                 >
                   Retry remaining
-                </button>
+                </Button>
               )
             )}
             {op.status === "completed" &&
               ["rename", "move", "trash"].includes(op.command) &&
               op.results.some((r) => r.ok && r.resource) && (
-                <button
+                <Button
                   className="button secondary"
                   disabled={action.busy}
                   onClick={() =>
@@ -514,18 +521,18 @@ export function FileOperationActivity({
                   }
                 >
                   Undo unchanged items
-                </button>
+                </Button>
               )}
-          </div>
-          <p className="ws-note">
+          </ActionRow>
+          <HelpText>
             Undo checks permissions and revisions again; it never overwrites
             later edits.
-          </p>
+          </HelpText>
         </>
       ) : (
         <div className="file-operation-results">
           {data.data?.map((r) => (
-            <button
+            <Button
               key={r.id}
               className="button secondary"
               onClick={() => onOpen(r.id)}
@@ -535,7 +542,7 @@ export function FileOperationActivity({
                 {r.command} · {r.input.items.length} items
               </span>
               <small>{r.status}</small>
-            </button>
+            </Button>
           ))}
           {!data.loading && !data.data?.length && (
             <p>No file operations yet.</p>
@@ -544,9 +551,9 @@ export function FileOperationActivity({
       )}
       {!embedded && (
         <div className="dialog-footer">
-          <button className="button primary" onClick={onClose}>
+          <Button className="button primary" onClick={onClose}>
             Continue working
-          </button>
+          </Button>
         </div>
       )}
     </>
@@ -586,7 +593,7 @@ export function ShortcutDialog({
       />
       <ErrorNotice message={action.error} />
       <div className="dialog-footer">
-        <button
+        <Button
           className="button primary"
           disabled={action.busy}
           onClick={() =>
@@ -602,7 +609,7 @@ export function ShortcutDialog({
           }
         >
           Create shortcut here
-        </button>
+        </Button>
       </div>
     </Dialog>
   );

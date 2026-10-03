@@ -14,11 +14,16 @@ Do not replace it with an upstream editor mark or add a remote font for letterin
 
 ### Interface styles and public website templates
 
-Appearance schema 10 separates `interfaceStyle` from `themePack`. The four trusted
-styles (Axiom, Material Tonal, Fluent Studio, Editorial) live in
+Appearance schema 11 separates `interfaceStyle` from `themePack`. The five trusted
+styles (Axiom, Material Tonal, Fluent Studio, Editorial, macOS Studio) live in
 `apps/web/app/interface-styles.css`. They are component-level presentations,
 not uploaded CSS: rounded tonal controls, layered/bordered chrome or flat editorial
-rules. They reference semantic palette, radius and shadow tokens. A zero-radius,
+rules. IDs/labels come from `packages/shared/src/interface-styles.ts` in both
+production and showcase. Version 10 preferences migrate without restyling; a
+version 10 reader cannot represent macOS Studio and receives an upgrade response
+rather than an unknown ID. Current-schema writes remain mandatory, including
+the bundled preference API, so an old tab cannot erase a new style choice.
+They reference semantic palette, radius and shadow tokens. A zero-radius,
 no-shadow, high-contrast or reduced-motion user choice must still win. UI, prose
 and equation fonts remain independent. Material/Fluent are design inspirations,
 not claims of shipping their libraries or exact conformance; see Fluent's
@@ -30,6 +35,25 @@ areas, editor geometry or authorization. Review settings, menus, dialogs, file
 lists and the Interface specimen in every style; avoid specificity conflicts with
 old page-local styles. Settings navigation is a vertical rail, not a second row
 of pills, and scrollable content sits inside stationary panel frames.
+
+Control drawing has one owner, `app/ui-controls.css`. Consume `--control-surface`,
+`--control-edge`, `--control-hover`, `--control-selected`, shape and slider/switch
+presentation roles in trusted base styles; never duplicate an input/knob reset
+in each page. Style variables are inherited from `html[data-interface-style]`,
+including portal dialogs and the static showcase. `--on-danger` is derived for
+solid destructive labels independently of `--on-accent`; do not substitute paper
+or fixed white. Shared native controls, unboxed HelpText, consequential Notice,
+pending geometry and keyboard states are governed by [UI controls](UI_CONTROLS.md).
+Application text fields additionally consume `--field-surface` and `--field-edge`.
+Use TextInput/TextArea/NativeSelect/SearchField/Picker rather than a page-local
+native reset. Document-editing fields retain `data-editor-field` and their
+single-sheet treatment. Search icons belong inside SearchField; asynchronous
+entity popups remain owned by the parent dialog rather than a second portal.
+InputGroup owns decorative prefixes and trailing actions as one surface; Field
+owns the linked label above it. Never add a second border around SearchField or
+position its icon with page-local offsets. Layout uses wrapperClassName and
+`--field-width`; prominent search may adjust the shared text/height roles without
+redrawing the control. See the icon-field geometry checklist in UI controls.
 
 Public website templates are a third, separate layer under `apps/publish/client`.
 They must work without the private app shell or preference stores, use only
@@ -69,7 +93,7 @@ footnotes, dark mode and print in each theme before adding an ID.
    fonts; new font assets require a reviewed base application change, provenance,
    license files, fallback stacks, and offline/export testing. Packs cannot load
    remote assets. Keep assets in the manifest even when used by base components.
-5. Run `npm run validate:themes`, typecheck, unit tests, and browser acceptance.
+5. Run `npm run validate:themes`, `npm run validate:ui`, typecheck, unit tests, and browser acceptance.
    Preview the pack in Settings → Appearance → Theme. The right panel offers both
    the real writing scratchpad and an interactive Interface specimen.
 

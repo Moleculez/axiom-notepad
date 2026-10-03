@@ -25,7 +25,7 @@ import { HttpError } from "./access";
 
 export async function processRecurrences() {
   const rules = await query(
-    "SELECT r.id,s.id AS space_id,s.timezone FROM task_recurrences r JOIN spaces s ON s.id=r.space_id WHERE r.enabled AND axiom_space_state(s.id)='active' ORDER BY r.id LIMIT 500",
+    "SELECT r.id,s.id AS space_id,s.timezone FROM task_recurrences r JOIN spaces s ON s.id=r.space_id WHERE r.enabled AND NOT r.archived AND axiom_space_state(s.id)='active' ORDER BY r.id LIMIT 500",
   );
   for (const entry of rules)
     await transaction(async (client) => {
@@ -47,7 +47,7 @@ export async function processRecurrences() {
       const {
         rows: [row],
       } = await client.query(
-        "SELECT r.*,s.id AS space_id FROM task_recurrences r JOIN spaces s ON s.id=r.space_id WHERE r.id=$1 AND r.enabled FOR UPDATE OF r SKIP LOCKED",
+        "SELECT r.*,s.id AS space_id FROM task_recurrences r JOIN spaces s ON s.id=r.space_id WHERE r.id=$1 AND r.enabled AND NOT r.archived FOR UPDATE OF r SKIP LOCKED",
         [entry.id],
       );
       if (!row) return;
@@ -89,7 +89,7 @@ export async function processRecurrences() {
             const {
               rows: [task],
             } = await client.query(
-              "INSERT INTO tasks(project_id,created_by,title,body,priority,assignee_id,due_on,estimate_hours,labels,space_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id",
+              "INSERT INTO tasks(project_id,created_by,title,body,priority,assignee_id,due_on,estimate_hours,labels,space_id,status,progress_percent,milestone_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,(SELECT id FROM project_milestones WHERE id=$13 AND space_id=$10)) RETURNING id",
               [
                 row.project_id,
                 row.created_by,
@@ -101,6 +101,9 @@ export async function processRecurrences() {
                 t.estimateHours ?? null,
                 t.labels ?? [],
                 row.space_id,
+                t.status ?? "todo",
+                t.progressPercent ?? 0,
+                t.milestoneId ?? null,
               ],
             );
             await client.query(

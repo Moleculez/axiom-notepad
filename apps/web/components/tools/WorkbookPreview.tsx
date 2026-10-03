@@ -1,4 +1,5 @@
 "use client";
+import { HelpText, NativeSelect } from "../ui/controls";
 import { useEffect, useState } from "react";
 import type { FilePreviewManifest } from "@axiom/shared/file-preview";
 import { DownloadFallback } from "./FilePreviewSurface";
@@ -92,7 +93,7 @@ export default function WorkbookPreview({
       <div className="tool-controls">
         <label>
           Sheet{" "}
-          <select
+          <NativeSelect
             aria-label="Workbook sheet"
             value={selected}
             onChange={(e) => setSelected(Number(e.target.value))}
@@ -102,7 +103,7 @@ export default function WorkbookPreview({
                 {s.name}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
         <span className="tool-spacer" />
         <small>
@@ -140,16 +141,16 @@ export default function WorkbookPreview({
             ))}
           </nav>
           {sheets[selected].truncated && (
-            <p className="ws-note">
+            <HelpText>
               This large sheet is limited to 50,000 rows and 256 columns in
               preview.
-            </p>
+            </HelpText>
           )}
         </>
       ) : (
         !error &&
         (loaded ? (
-          <p className="ws-note">This workbook has no worksheets.</p>
+          <HelpText>This workbook has no worksheets.</HelpText>
         ) : (
           <Loading label="Decoding workbook in an isolated worker…" />
         ))

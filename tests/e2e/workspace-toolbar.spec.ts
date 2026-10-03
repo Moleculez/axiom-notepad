@@ -19,14 +19,14 @@ test("recent switcher search icon aligns with its input at standard and large ty
   await page.goto("/workbench/home");
   await page.getByRole("button", { name: "Recent work", exact: true }).click();
   const popover = page.getByRole("region", { name: "Recent work switcher" });
-  const input = popover.getByRole("textbox", { name: "Filter recent work" });
+  const input = popover.getByRole("searchbox", { name: "Filter recent work" });
   await expect(input).toBeFocused();
   for (const size of [15, 20]) {
     await popover.evaluate((element, size) => {
       element.style.fontSize = `${size}px`;
     }, size);
     const iconBox = (await popover
-      .locator(".workspace-recent-search > svg")
+      .locator(".workspace-recent-search .ui-input-leading > svg")
       .boundingBox())!;
     const inputBox = (await input.boundingBox())!;
     expect(
@@ -189,7 +189,9 @@ test("workspace calendar uses the same zone picker and saves a selected IANA val
 test("Explorer filtering keeps its input mounted and supports global history", async () => {
   const page = f.page;
   await page.goto("/workbench/explorer?view=all");
-  const search = page.getByRole("textbox", { name: "Search files and notes" });
+  const search = page.getByRole("searchbox", {
+    name: "Search files and notes",
+  });
   await search.fill("study");
   await search.press("Enter");
   await expect(page).toHaveURL(/q=study/);

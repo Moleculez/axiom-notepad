@@ -1,4 +1,5 @@
 "use client";
+import { Button, IconButton } from "../ui/controls";
 import { useEffect, useRef, useState } from "react";
 import { ZoomIn, ZoomOut, Maximize, ImagePlus } from "lucide-react";
 import type { FilePreviewManifest } from "@axiom/shared/file-preview";
@@ -108,15 +109,15 @@ export default function VisualFilePreview({
             : file.mime}
         </span>
         <span className="tool-spacer" />
-        <button
+        <IconButton
           className="icon-button"
           aria-label="Zoom out"
           title="Zoom out"
           onClick={() => setT((v) => zoomVisual(v, v.zoom / 1.25))}
         >
           <ZoomOut size={16} />
-        </button>
-        <button
+        </IconButton>
+        <Button
           className="button ghost"
           title="Fit image"
           onClick={() =>
@@ -128,29 +129,29 @@ export default function VisualFilePreview({
           }
         >
           {Math.round(t.zoom * 100)}%
-        </button>
-        <button
+        </Button>
+        <IconButton
           className="icon-button"
           aria-label="Zoom in"
           title="Zoom in"
           onClick={() => setT((v) => zoomVisual(v, v.zoom * 1.25))}
         >
           <ZoomIn size={16} />
-        </button>
-        <button
+        </IconButton>
+        <IconButton
           className="icon-button"
           aria-label="View image larger"
           title="View image larger"
           onClick={() => open()}
         >
           <Maximize size={16} />
-        </button>
-        <button className="button secondary" onClick={onEdit}>
+        </IconButton>
+        <Button className="button secondary" onClick={onEdit}>
           <ImagePlus size={15} />
           {file.mime === "application/vnd.axiom.image+zip"
             ? "Open Image Studio"
             : "Edit a copy"}
-        </button>
+        </Button>
       </div>
       {error && (
         <p className="visual-notice is-error" role="alert">

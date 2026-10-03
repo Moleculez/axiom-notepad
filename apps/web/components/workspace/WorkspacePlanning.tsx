@@ -1,5 +1,25 @@
 "use client";
+import {
+  ActionRow,
+  Button,
+  Checkbox,
+  HelpText,
+  IconButton,
+  TextInput,
+  NativeSelect,
+  TextArea,
+  SearchField,
+} from "../ui/controls";
 import TaskPaperLinks from "./TaskPaperLinks";
+import {
+  PlanningIntegerInput,
+  PlanningEntityPicker,
+  PersonPicker,
+  usePlanningRowSize,
+} from "./PlanningFields";
+import { PlanningBulkActions, PlanningViewActions } from "./PlanningActions";
+import { PlanningGoals, PlanningIntake } from "./PlanningSuitePanels";
+const PlanningRoutines = dynamic(() => import("./PlanningRoutines"));
 import ScheduleCapacityPreview from "./ScheduleCapacityPreview";
 import { openAssistant } from "../../lib/assistant";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -15,12 +35,11 @@ import {
   Plus,
   Repeat2,
   RotateCcw,
-  Search,
   Trash2,
   Users,
   X,
 } from "lucide-react";
-import type { Resource, Space } from "@axiom/shared/workspace";
+import type { Space } from "@axiom/shared/workspace";
 import {
   dayNumber,
   dateFromDay,
@@ -28,6 +47,9 @@ import {
   planningDraftSchema,
   planningSvg,
   planningViews,
+  taskDependencyLinks,
+  resolveDependencyLinks,
+  planningProgress,
   type PlanningCalendar,
   type PlanningDraft,
   type PlanningTask,
@@ -118,6 +140,9 @@ export default function WorkspacePlanning({ space }: { space: Space }) {
   const { revision, refresh, notify } = useWorkspace(),
     { params, path } = useLocation(),
     tabs = useWorkSessions();
+  const section = ["goals", "intake"].includes(params.get("section") ?? "")
+    ? params.get("section")!
+    : "tasks";
   const online = useOnline(),
     readOnly =
       space.role !== "editor" || space.effective_status !== "active" || !online;
@@ -139,7 +164,7 @@ export default function WorkspacePlanning({ space }: { space: Space }) {
   ])
     if (params.get(name)) filter.set(name, params.get(name)!);
   const data = useData<PlanData>(
-      `spaces/${space.id}/planning?${filter}`,
+      section === "tasks" ? `spaces/${space.id}/planning?${filter}` : null,
       revision,
     ),
     people = useData<Person[]>(`spaces/${space.id}/planning-members`, revision),
@@ -152,6 +177,12 @@ export default function WorkspacePlanning({ space }: { space: Space }) {
   const [insights, setInsights] = useState(false),
     [analysis, setAnalysis] = useState<PlanningAnalysis | null>(null),
     [baseline, setBaseline] = useState<PlanningTask[]>([]);
+  const [selection, setSelection] = useState(new Map<string, PlanningTask>()),
+    anchor = useRef<string | null>(null);
+  useEffect(() => {
+    setSelection(new Map());
+    anchor.current = null;
+  }, [space.id]);
   const updateLayers = useCallback(
     (analysis: PlanningAnalysis | null, tasks: PlanningTask[]) => {
       setAnalysis(analysis);
@@ -203,6 +234,31 @@ export default function WorkspacePlanning({ space }: { space: Space }) {
     milestones = data.data?.milestones ?? [],
     selected = params.get("task"),
     deleted = params.get("deleted") === "1";
+  const selectTask = (task: PlanningTask, range = false) => {
+    setSelection((old) => {
+      const next = new Map(old);
+      if (range && anchor.current) {
+        const a = tasks.findIndex((t) => t.id === anchor.current),
+          b = tasks.findIndex((t) => t.id === task.id);
+        if (a >= 0 && b >= 0) {
+          const span = tasks.slice(Math.min(a, b), Math.max(a, b) + 1);
+          if (new Set([...next.keys(), ...span.map((t) => t.id)]).size > 1000) {
+            notify(
+              "Select at most 1,000 tasks per bulk change. Narrow the selection first.",
+            );
+            return old;
+          }
+          for (const t of span) next.set(t.id, t);
+          return next;
+        }
+      }
+      if (next.has(task.id)) next.delete(task.id);
+      else if (next.size < 1000) next.set(task.id, task);
+      else notify("At most 1,000 selected tasks.");
+      return next;
+    });
+    anchor.current = task.id;
+  };
   const schedule = (changes: ScheduleChange[]) =>
     void action.run(async () => {
       setPreview(
@@ -231,279 +287,348 @@ export default function WorkspacePlanning({ space }: { space: Space }) {
     });
   return (
     <div className="workspace-planning">
-      <div className="planning-toolbar">
-        <button
-          className="button ghost"
-          disabled={!tasks.length || tasks.length > 100}
-          title={
-            tasks.length > 100
-              ? "Filter to at most 100 tasks to select exact planning evidence"
-              : "Review selected planning evidence before sending"
-          }
-          onClick={() =>
-            openAssistant({
-              spaceId: space.id,
-              selection: {
-                kind: "planning",
-                id: space.id,
-                taskIds: tasks.map((t) => t.id),
-              },
-              selectionLabel: `${space.name} · ${tasks.length} tasks`,
-              prompt:
-                "Explain schedule risks and missing information in these selected tasks. Distinguish the deterministic forecast from your interpretation.",
-            })
-          }
-        >
-          Ask about this plan
-        </button>
-        <button
-          className="button ghost"
-          aria-pressed={insights}
-          onClick={() => setInsights(!insights)}
-        >
-          Insights & baselines
-        </button>
-        <nav className="planning-view-switch" aria-label="Planning views">
-          {views.map(([key, Icon, label]) => (
-            <button
-              key={key}
-              aria-pressed={view === key}
-              onClick={() => change({ view: key })}
-            >
-              <Icon size={16} />
-              {label}
-            </button>
-          ))}
-        </nav>
-        <span className="planning-spacer" />
-        <button
-          className="button ghost"
-          onClick={() => setManage("milestones")}
-        >
-          <Flag size={15} />
-          Milestones
-        </button>
-        <button
-          className="icon-button"
-          title="Recurring tasks"
-          aria-label="Recurring tasks"
-          onClick={() => setManage("recurrences")}
-        >
-          <Repeat2 size={17} />
-        </button>
-        <button
-          className="icon-button"
-          title="Export filtered tasks"
-          aria-label="Export filtered tasks"
-          disabled={!tasks.length}
-          onClick={() => setExporting(true)}
-        >
-          <Download size={17} />
-        </button>
-        <button
-          className="button primary"
-          disabled={readOnly}
-          onClick={() => change({ task: "new" })}
-        >
-          <Plus size={16} />
-          New task
-        </button>
-      </div>
-      <div className="planning-filters">
-        <label className="planning-search">
-          <Search size={15} />
-          <input
-            aria-label="Find tasks"
-            placeholder="Find tasks or labels…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </label>
-        <select
-          aria-label="Filter task status"
-          value={params.get("status") ?? ""}
-          onChange={(e) => change({ status: e.target.value || null })}
-        >
-          <option value="">All statuses</option>
-          {Object.entries(statusNames).map(([key, label]) => (
-            <option key={key} value={key}>
-              {label}
-            </option>
-          ))}
-        </select>
-        <select
-          aria-label="Filter assignee"
-          value={params.get("assignee") ?? ""}
-          onChange={(e) => change({ assignee: e.target.value || null })}
-        >
-          <option value="">Anyone</option>
-          {people.data?.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-            </option>
-          ))}
-        </select>
-        <select
-          aria-label="Filter priority"
-          value={params.get("priority") ?? ""}
-          onChange={(e) => change({ priority: e.target.value || null })}
-        >
-          <option value="">All priorities</option>
-          {["low", "normal", "high", "urgent"].map((p) => (
-            <option key={p}>{p}</option>
-          ))}
-        </select>
-        <select
-          aria-label="Filter milestone"
-          value={params.get("milestone") ?? ""}
-          onChange={(e) => change({ milestone: e.target.value || null })}
-        >
-          <option value="">All milestones</option>
-          {milestones.map((m) => (
-            <option key={m.id} value={m.id}>
-              {m.title}
-            </option>
-          ))}
-        </select>
-        <select
-          aria-label="Filter planning risk"
-          value={params.get("risk") ?? ""}
-          onChange={(e) => change({ risk: e.target.value || null })}
-        >
-          <option value="">All risks</option>
-          <option value="overdue">Overdue</option>
-          <option value="blocked">Blocked</option>
-        </select>
-        <button
-          className={`icon-button ${deleted ? "active" : ""}`}
-          aria-pressed={deleted}
-          title="Deleted tasks"
-          aria-label="Deleted tasks"
-          onClick={() => change({ deleted: deleted ? null : "1" })}
-        >
-          <Trash2 size={16} />
-        </button>
-        <span className="planning-count" role="status">
-          {data.data
-            ? `${data.data.total.toLocaleString()} tasks · ${data.data.completed} done`
-            : "Loading…"}
-        </span>
-      </div>
-      {!online && (
-        <p className="planning-notice">
-          Offline · You can keep a local task draft. Planning changes require a
-          connection.
-        </p>
-      )}
-      {undo && (
-        <div className="planning-notice">
-          Schedule updated.
+      <nav className="planning-section-tabs" aria-label="Planning sections">
+        {["tasks", "goals", "intake"].map((key) => (
           <button
-            className="text-button"
-            disabled={action.busy || readOnly}
+            key={key}
+            aria-pressed={section === key}
             onClick={() =>
-              void action.run(async () => {
-                await mutate(`spaces/${space.id}/schedule/undo`, {
-                  previewId: undo,
-                });
-                setUndo(null);
-                refresh();
-                notify("Schedule restored.");
-              })
+              change({ section: key === "tasks" ? null : key, task: null })
             }
           >
-            <RotateCcw size={14} />
-            Undo
+            {key[0].toUpperCase() + key.slice(1)}
           </button>
-          <button
-            className="icon-button"
-            aria-label="Dismiss schedule receipt"
-            onClick={() => setUndo(null)}
-          >
-            <X size={14} />
-          </button>
-        </div>
-      )}
-      <ErrorNotice
-        message={data.error || people.error || action.error}
-        retry={data.error ? data.reload : undefined}
-      />
-      {data.data?.nextOffset != null && (
-        <p className="planning-notice">
-          Showing the first {tasks.length.toLocaleString()} matching tasks.
-          Refine filters to see the rest. Scheduling still validates the entire
-          workspace dependency graph.
-        </p>
-      )}
-      {insights && data.data && (
-        <PlanningInsights
+        ))}
+      </nav>
+      {section === "goals" ? (
+        <PlanningGoals
           space={space}
-          version={data.data.version}
-          onClose={() => setInsights(false)}
-          onLayers={updateLayers}
+          people={people.data ?? []}
+          readOnly={readOnly}
         />
-      )}
-      {data.loading && !data.data ? (
-        <Loading />
+      ) : section === "intake" ? (
+        <PlanningIntake
+          space={space}
+          people={people.data ?? []}
+          online={online}
+        />
       ) : (
-        data.data && (
-          <div className="planning-content">
-            {!tasks.length && view !== "gantt" && view !== "workload" ? (
-              <Empty
-                title={
-                  deleted ? "No deleted tasks" : "A clear plan starts here"
+        <>
+          <div className="planning-toolbar">
+            <Button
+              className="button ghost"
+              disabled={!tasks.length || tasks.length > 100}
+              title={
+                tasks.length > 100
+                  ? "Filter to at most 100 tasks to select exact planning evidence"
+                  : "Review selected planning evidence before sending"
+              }
+              onClick={() =>
+                openAssistant({
+                  spaceId: space.id,
+                  selection: {
+                    kind: "planning",
+                    id: space.id,
+                    taskIds: tasks.map((t) => t.id),
+                  },
+                  selectionLabel: `${space.name} · ${tasks.length} tasks`,
+                  prompt:
+                    "Explain schedule risks and missing information in these selected tasks. Distinguish the deterministic forecast from your interpretation.",
+                })
+              }
+            >
+              Ask about this plan
+            </Button>
+            <Button
+              className="button ghost"
+              aria-pressed={insights}
+              onClick={() => setInsights(!insights)}
+            >
+              Insights & baselines
+            </Button>
+            <NativeSelect
+              aria-label="Task view"
+              value={view}
+              onChange={(e) => change({ view: e.target.value })}
+            >
+              {views.map(([key, , label]) => (
+                <option key={key} value={key}>
+                  {label}
+                </option>
+              ))}
+            </NativeSelect>
+            <PlanningViewActions
+              spaceId={space.id}
+              canManage={space.can_manage}
+              params={params}
+              change={change}
+            />
+            <span className="planning-spacer" />
+            <Button
+              className="button ghost"
+              onClick={() => setManage("milestones")}
+            >
+              <Flag size={15} />
+              Milestones
+            </Button>
+            <IconButton
+              className="icon-button"
+              title="Recurring tasks"
+              aria-label="Recurring tasks"
+              onClick={() => setManage("recurrences")}
+            >
+              <Repeat2 size={17} />
+            </IconButton>
+            <IconButton
+              className="icon-button"
+              title="Export filtered tasks"
+              aria-label="Export filtered tasks"
+              disabled={!tasks.length}
+              onClick={() => setExporting(true)}
+            >
+              <Download size={17} />
+            </IconButton>
+            <Button
+              className="button primary"
+              disabled={readOnly}
+              onClick={() => change({ task: "new" })}
+            >
+              <Plus size={16} />
+              New task
+            </Button>
+          </div>
+          <div className="planning-filters">
+            <SearchField
+              wrapperClassName="planning-search"
+              aria-label="Find tasks"
+              placeholder="Find tasks or labels…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            <NativeSelect
+              aria-label="Filter task status"
+              value={params.get("status") ?? ""}
+              onChange={(e) => change({ status: e.target.value || null })}
+            >
+              <option value="">All statuses</option>
+              {Object.entries(statusNames).map(([key, label]) => (
+                <option key={key} value={key}>
+                  {label}
+                </option>
+              ))}
+            </NativeSelect>
+            <PersonPicker
+              label="Filter assignee"
+              people={people.data ?? []}
+              value={params.get("assignee") ?? ""}
+              onChange={(v) => change({ assignee: v || null })}
+            />
+            <NativeSelect
+              aria-label="Filter priority"
+              value={params.get("priority") ?? ""}
+              onChange={(e) => change({ priority: e.target.value || null })}
+            >
+              <option value="">All priorities</option>
+              {["low", "normal", "high", "urgent"].map((p) => (
+                <option key={p}>{p}</option>
+              ))}
+            </NativeSelect>
+            <PlanningEntityPicker
+              spaceId={space.id}
+              kind="milestone"
+              label="Filter milestone"
+              value={params.get("milestone") ?? ""}
+              onChange={(v) => change({ milestone: String(v) || null })}
+            />
+            <NativeSelect
+              aria-label="Filter planning risk"
+              value={params.get("risk") ?? ""}
+              onChange={(e) => change({ risk: e.target.value || null })}
+            >
+              <option value="">All risks</option>
+              <option value="overdue">Overdue</option>
+              <option value="blocked">Blocked</option>
+              <option value="upcoming">Upcoming · 7 days</option>
+            </NativeSelect>
+            <IconButton
+              className={`icon-button ${deleted ? "active" : ""}`}
+              aria-pressed={deleted}
+              title="Deleted tasks"
+              aria-label="Deleted tasks"
+              onClick={() => change({ deleted: deleted ? null : "1" })}
+            >
+              <Trash2 size={16} />
+            </IconButton>
+            <span className="planning-count" role="status">
+              {data.data
+                ? `${data.data.total.toLocaleString()} tasks · ${data.data.completed} done`
+                : "Loading…"}
+            </span>
+          </div>
+          <PlanningBulkActions
+            spaceId={space.id}
+            selected={[...selection.values()]}
+            people={people.data ?? []}
+            readOnly={readOnly}
+            onClear={() => setSelection(new Map())}
+            onSchedule={schedule}
+          />
+          {!online && (
+            <p className="planning-notice">
+              Offline · You can keep a local task draft. Planning changes
+              require a connection.
+            </p>
+          )}
+          {undo && (
+            <div className="planning-notice">
+              Schedule updated.
+              <button
+                className="text-button"
+                disabled={action.busy || readOnly}
+                onClick={() =>
+                  void action.run(async () => {
+                    await mutate(`spaces/${space.id}/schedule/undo`, {
+                      previewId: undo,
+                    });
+                    setUndo(null);
+                    refresh();
+                    notify("Schedule restored.");
+                  })
                 }
               >
-                {deleted
-                  ? "Deleted tasks can be restored from their details."
-                  : "Add a task, link research evidence, and plan your next milestone."}
-              </Empty>
-            ) : view === "gantt" ? (
-              <PlanningGantt
-                analysis={analysis}
-                baseline={baseline}
-                tasks={tasks}
-                milestones={milestones}
-                calendar={data.data.calendar}
-                readOnly={readOnly || deleted}
-                onOpen={(id) => change({ task: id })}
-                onSchedule={schedule}
-                zoom={params.get("zoom") ?? "week"}
-                onZoom={(value) => change({ zoom: value })}
-                initialScroll={Number(tabs?.active?.view?.planningScroll ?? 0)}
-                onScrollPosition={(scroll) => {
-                  scrollPosition.current = scroll;
-                }}
-              />
-            ) : view === "board" ? (
-              <TaskBoard
-                tasks={tasks}
-                readOnly={readOnly || deleted}
-                onOpen={(id) => change({ task: id })}
-                onStatus={updateStatus}
-              />
-            ) : view === "calendar" ? (
-              <TaskCalendar
-                tasks={tasks}
-                calendar={data.data.calendar}
-                onOpen={(id) => change({ task: id })}
-              />
-            ) : view === "workload" ? (
-              space.group_id ? (
-                <GroupCapacity groupId={space.group_id} />
-              ) : (
-                <TaskWorkload tasks={tasks} people={people.data ?? []} />
-              )
-            ) : (
-              <TaskList
-                tasks={tasks}
-                onOpen={(id) => change({ task: id })}
-                onStatus={updateStatus}
-                readOnly={readOnly || deleted}
-              />
-            )}
-          </div>
-        )
+                <RotateCcw size={14} />
+                Undo
+              </button>
+              <IconButton
+                className="icon-button"
+                aria-label="Dismiss schedule receipt"
+                onClick={() => setUndo(null)}
+              >
+                <X size={14} />
+              </IconButton>
+            </div>
+          )}
+          <ErrorNotice
+            message={data.error || people.error || action.error}
+            retry={data.error ? data.reload : undefined}
+          />
+          {data.data?.nextOffset != null && (
+            <p className="planning-notice">
+              Showing the first {tasks.length.toLocaleString()} matching tasks.
+              Refine filters to see the rest. Scheduling still validates the
+              entire workspace dependency graph.
+            </p>
+          )}
+          {insights && data.data && (
+            <PlanningInsights
+              space={space}
+              version={data.data.version}
+              onClose={() => setInsights(false)}
+              onLayers={updateLayers}
+            />
+          )}
+          {data.loading && !data.data ? (
+            <Loading />
+          ) : (
+            data.data && (
+              <div className="planning-content">
+                {!tasks.length && view !== "gantt" && view !== "workload" ? (
+                  <Empty
+                    title={
+                      deleted ? "No deleted tasks" : "A clear plan starts here"
+                    }
+                  >
+                    {deleted
+                      ? "Deleted tasks can be restored from their details."
+                      : "Add a task, link research evidence, and plan your next milestone."}
+                  </Empty>
+                ) : view === "gantt" ? (
+                  <PlanningGantt
+                    spaceId={space.id}
+                    analysis={analysis}
+                    baseline={baseline}
+                    tasks={tasks}
+                    milestones={milestones}
+                    calendar={data.data.calendar}
+                    readOnly={readOnly || deleted}
+                    onOpen={(id) => change({ task: id })}
+                    onSchedule={schedule}
+                    selection={selection}
+                    onSelect={selectTask}
+                    grouping={params.get("grouping") ?? "parent"}
+                    columns={
+                      params.get("columns")?.split(",").filter(Boolean) ?? []
+                    }
+                    showDependencies={params.get("dependencies") !== "0"}
+                    showBaseline={params.get("baseline") !== "0"}
+                    showCritical={params.get("critical") !== "0"}
+                    onOptions={change}
+                    onDependency={async (task, links) => {
+                      await mutate(
+                        `spaces/${space.id}/tasks/${task.id}`,
+                        { version: task.version, dependencyLinks: links },
+                        "PATCH",
+                      );
+                      refresh();
+                      notify(
+                        "Dependency saved. Dates have not moved; review any conflicts before rescheduling.",
+                      );
+                    }}
+                    zoom={params.get("zoom") ?? "week"}
+                    onZoom={(value) => change({ zoom: value })}
+                    initialScroll={Number(
+                      tabs?.active?.view?.planningScroll ?? 0,
+                    )}
+                    onScrollPosition={(scroll) => {
+                      scrollPosition.current = scroll;
+                    }}
+                  />
+                ) : view === "board" ? (
+                  <TaskBoard
+                    tasks={tasks}
+                    readOnly={readOnly || deleted}
+                    onOpen={(id) => change({ task: id })}
+                    onStatus={updateStatus}
+                  />
+                ) : view === "calendar" ? (
+                  <TaskCalendar
+                    tasks={tasks}
+                    calendar={data.data.calendar}
+                    onOpen={(id) => change({ task: id })}
+                  />
+                ) : view === "workload" ? (
+                  space.group_id ? (
+                    <GroupCapacity groupId={space.group_id} />
+                  ) : (
+                    <TaskWorkload tasks={tasks} people={people.data ?? []} />
+                  )
+                ) : (
+                  <TaskList
+                    tasks={tasks}
+                    onOpen={(id) => change({ task: id })}
+                    onStatus={updateStatus}
+                    readOnly={readOnly || deleted}
+                    selection={selection}
+                    onSelect={selectTask}
+                    onSelectAll={() => {
+                      if (tasks.length > 1000) {
+                        notify(
+                          "This view has more than 1,000 tasks. Refine filters before selecting all.",
+                        );
+                        return;
+                      }
+                      setSelection(
+                        selection.size
+                          ? new Map()
+                          : new Map(tasks.map((t) => [t.id, t])),
+                      );
+                    }}
+                  />
+                )}
+              </div>
+            )
+          )}
+        </>
       )}
       {selected && (
         <TaskInspector
@@ -576,38 +701,38 @@ export default function WorkspacePlanning({ space }: { space: Space }) {
             </ul>
           )}
           {!!preview.conflicts.length && (
-            <p className="ws-note">
+            <HelpText>
               Direct-only preserves dependent dates, including any conflicts.
               Proposed changes only push unfinished successors; completed work
               is never moved.
-            </p>
+            </HelpText>
           )}
           <ErrorNotice message={action.error} />
           <div className="dialog-footer">
-            <button
+            <Button
               className="button secondary"
               disabled={action.busy}
               onClick={() => setPreview(null)}
             >
               Cancel
-            </button>
+            </Button>
             {!!preview.conflicts.length && (
-              <button
+              <Button
                 className="button secondary"
                 disabled={action.busy || readOnly}
                 onClick={() => apply("direct")}
               >
                 Apply direct edits only
-              </button>
+              </Button>
             )}
-            <button
+            <Button
               className="button primary"
               disabled={action.busy || readOnly}
               onClick={() => apply("proposed")}
             >
               <Check size={16} />
               Apply {preview.proposed.length} changes
-            </button>
+            </Button>
           </div>
         </Dialog>
       )}
@@ -618,29 +743,45 @@ export default function WorkspacePlanning({ space }: { space: Space }) {
           onClose={() => setExporting(false)}
         >
           <div className="planning-export-actions">
-            <button
+            <Button
               className="button secondary"
               onClick={() =>
-                download(`${space.name}-tasks.csv`, planningCsv(tasks))
+                download(
+                  `${space.name}-tasks.csv`,
+                  planningCsv(tasks, {
+                    milestones,
+                    baseline,
+                    criticalIds: analysis?.tasks
+                      .filter((t) => t.critical)
+                      .map((t) => t.id),
+                    scope: `${tasks.length} loaded filtered tasks; workspace milestones`,
+                  }),
+                )
               }
             >
               <Download size={16} />
               Download CSV
-            </button>
-            <button
+            </Button>
+            <Button
               className="button secondary"
               onClick={() =>
                 download(
                   `${space.name}-timeline.svg`,
-                  planningSvg(tasks, space.name),
+                  planningSvg(tasks, space.name, undefined, {
+                    milestones,
+                    baseline,
+                    criticalIds: analysis?.tasks
+                      .filter((t) => t.critical)
+                      .map((t) => t.id),
+                  }),
                   "image/svg+xml",
                 )
               }
             >
               <ChartGantt size={16} />
               Download SVG timeline
-            </button>
-            <button
+            </Button>
+            <Button
               className="button secondary"
               onClick={() => {
                 const target = window.open("", "_blank");
@@ -653,6 +794,21 @@ export default function WorkspacePlanning({ space }: { space: Space }) {
                 const heading = target.document.createElement("h1");
                 heading.textContent = space.name;
                 target.document.body.append(heading);
+                const figure = target.document.createElement("div");
+                figure.innerHTML = planningSvg(tasks, space.name, undefined, {
+                  milestones,
+                  baseline,
+                  criticalIds: analysis?.tasks
+                    .filter((t) => t.critical)
+                    .map((t) => t.id),
+                });
+                figure.style.cssText = "width:100%;break-inside:avoid";
+                const svg = figure.querySelector("svg");
+                if (svg) {
+                  svg.style.width = "100%";
+                  svg.style.height = "auto";
+                }
+                target.document.body.append(figure);
                 const list = target.document.createElement("table");
                 list.style.cssText =
                   "width:100%;border-collapse:collapse;font:12px system-ui";
@@ -691,25 +847,33 @@ export default function WorkspacePlanning({ space }: { space: Space }) {
               }}
             >
               Print / Save PDF
-            </button>
+            </Button>
           </div>
           <div className="dialog-footer">
-            <button
+            <Button
               className="button secondary"
               onClick={() => setExporting(false)}
             >
               Done
-            </button>
+            </Button>
           </div>
         </Dialog>
       )}
-      {manage && (
-        <PlanningManager
+      {manage === "recurrences" ? (
+        <PlanningRoutines
           space={space}
-          mode={manage}
           readOnly={readOnly}
           onClose={() => setManage(null)}
         />
+      ) : (
+        manage && (
+          <PlanningManager
+            space={space}
+            mode={manage}
+            readOnly={readOnly}
+            onClose={() => setManage(null)}
+          />
+        )
       )}
     </div>
   );
@@ -720,16 +884,31 @@ function TaskList({
   onOpen,
   onStatus,
   readOnly,
+  selection,
+  onSelect,
+  onSelectAll,
 }: {
   tasks: PlanningTask[];
   onOpen: (id: string) => void;
   onStatus: (task: PlanningTask, status: string) => void;
   readOnly: boolean;
+  selection: Map<string, PlanningTask>;
+  onSelect: (task: PlanningTask, range?: boolean) => void;
+  onSelectAll: () => void;
 }) {
   const [top, setTop] = useState(0),
-    row = 52,
+    [height, setHeight] = useState(600),
+    scroll = useRef<HTMLDivElement>(null),
+    row = usePlanningRowSize(56),
     start = Math.max(0, Math.floor(top / row) - 6),
-    visible = tasks.slice(start, start + 32);
+    visible = tasks.slice(start, start + Math.ceil(height / row) + 12);
+  useEffect(() => {
+    const node = scroll.current;
+    if (!node) return;
+    const observer = new ResizeObserver(() => setHeight(node.clientHeight));
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
   return (
     <div
       className="planning-list"
@@ -738,6 +917,16 @@ function TaskList({
       aria-rowcount={tasks.length + 1}
     >
       <div className="planning-list-head" role="row">
+        <span role="columnheader">
+          <Checkbox
+            aria-label="Select all visible tasks"
+            checked={!!tasks.length && tasks.every((t) => selection.has(t.id))}
+            indeterminate={
+              selection.size > 0 && !tasks.every((t) => selection.has(t.id))
+            }
+            onChange={onSelectAll}
+          />
+        </span>
         <span role="columnheader">Task</span>
         <span role="columnheader">Status</span>
         <span role="columnheader">Assignee</span>
@@ -745,6 +934,7 @@ function TaskList({
       </div>
       <div
         className="planning-list-scroll"
+        ref={scroll}
         onScroll={(e) => setTop(e.currentTarget.scrollTop)}
       >
         <div style={{ height: tasks.length * row, position: "relative" }}>
@@ -754,8 +944,17 @@ function TaskList({
               key={task.id}
               role="row"
               aria-rowindex={start + i + 2}
+              aria-selected={selection.has(task.id)}
               style={{ top: (start + i) * row, height: row }}
             >
+              <span role="cell">
+                <Checkbox
+                  aria-label={`Select ${task.title}`}
+                  checked={selection.has(task.id)}
+                  onChange={() => {}}
+                  onClick={(e) => onSelect(task, e.shiftKey)}
+                />
+              </span>
               <div role="cell">
                 <button
                   className="planning-task-title"
@@ -771,7 +970,7 @@ function TaskList({
                 <small>{task.labels.join(" · ")}</small>
               </div>
               <div role="cell">
-                <select
+                <NativeSelect
                   aria-label={`Status of ${task.title}`}
                   value={task.status}
                   disabled={readOnly}
@@ -782,7 +981,7 @@ function TaskList({
                       {l}
                     </option>
                   ))}
-                </select>
+                </NativeSelect>
               </div>
               <span role="cell">{task.assignee_name ?? "Unassigned"}</span>
               <button role="cell" onClick={() => onOpen(task.id)}>
@@ -894,7 +1093,7 @@ function TaskCalendar({
       <header>
         <label>
           Due dates{" "}
-          <input
+          <TextInput
             aria-label="Calendar month"
             type="month"
             value={month}
@@ -955,10 +1154,10 @@ function TaskWorkload({
   return (
     <section className="planning-workload">
       <h3>Open work in this view</h3>
-      <p className="ws-note">
+      <HelpText>
         Estimates show total remaining task effort, not weekly utilization.
         Unestimated work is reported separately.
-      </p>
+      </HelpText>
       {[{ id: "", name: "Unassigned" }, ...people].map((person) => {
         const assigned = tasks.filter(
             (t) =>
@@ -1002,6 +1201,8 @@ function taskDraft(task?: PlanningTask): Draft {
     milestoneId: task?.milestone_id ?? null,
     resourceIds: task?.resource_ids ?? [],
     dependencies: task?.dependencies ?? [],
+    dependencyLinks: task ? taskDependencyLinks(task) : [],
+    progressPercent: task?.progress_percent ?? 0,
     version: task?.version,
   };
 }
@@ -1068,13 +1269,13 @@ function TaskInspector(props: {
         <>
           <header>
             <h2>Task details</h2>
-            <button
+            <IconButton
               className="icon-button"
               aria-label="Close task details"
               onClick={props.onClose}
             >
               <X size={18} />
-            </button>
+            </IconButton>
           </header>
           <ErrorNotice message={detail.error} retry={detail.reload} />
           {detail.loading && <Loading />}
@@ -1089,7 +1290,6 @@ function TaskForm({
   task,
   tasks,
   people,
-  milestones,
   readOnly,
   onClose,
   onSchedule,
@@ -1115,7 +1315,14 @@ function TaskForm({
       const saved = JSON.parse(localStorage.getItem(key) ?? "null");
       const result =
         saved &&
-        planningDraftSchema.safeParse({ ...baseline.current, ...saved });
+        planningDraftSchema.safeParse({
+          ...baseline.current,
+          ...saved,
+          dependencyLinks: resolveDependencyLinks(
+            saved,
+            baseline.current.dependencyLinks ?? [],
+          ),
+        });
       if (result?.success) return result.data;
     } catch {}
     return baseline.current;
@@ -1123,9 +1330,8 @@ function TaskForm({
   const [schedule, setSchedule] = useState(false),
     [start, setStart] = useState(task?.start_on ?? ""),
     [end, setEnd] = useState(task?.due_on ?? ""),
-    [evidenceSearch, setEvidenceSearch] = useState(""),
-    [related, setRelated] = useState(""),
-    [labelsText, setLabelsText] = useState(draft.labels.join(", "));
+    [labelsText, setLabelsText] = useState(draft.labels.join(", ")),
+    [invalidOffsets, setInvalidOffsets] = useState(new Set<string>());
   const dirty = JSON.stringify(draft) !== JSON.stringify(baseline.current),
     dirtyRef = useRef(dirty);
   dirtyRef.current = dirty;
@@ -1174,9 +1380,6 @@ function TaskForm({
       window.removeEventListener("axiom:before-navigate", navigate);
     };
   }, []);
-  const evidence = useData<{ items: Resource[] }>(
-    `resources?spaceId=${space.id}&view=all&limit=100&q=${encodeURIComponent(evidenceSearch)}`,
-  );
   const set = (patch: Partial<Draft>) =>
     setDraft((old) => ({ ...old, ...patch }));
   const save = () =>
@@ -1206,15 +1409,9 @@ function TaskForm({
       notify("Task saved.");
       onClose();
     });
-  const relatedTasks = tasks
-    .filter(
-      (t) =>
-        t.id !== id &&
-        (draft.dependencies.includes(t.id) ||
-          t.id === draft.parentId ||
-          t.title.toLowerCase().includes(related.toLowerCase())),
-    )
-    .slice(0, 150);
+  const taskNames = new Map(tasks.map((t) => [t.id, t.title]));
+  const hasChildren =
+    task?.has_children ?? tasks.some((t) => t.parent_id === id);
   const removed = !!task?.deleted_at;
   return (
     <>
@@ -1224,7 +1421,7 @@ function TaskForm({
           <h2>{task ? "Task details" : "New task"}</h2>
         </div>
         {task && (
-          <button
+          <Button
             className="button ghost"
             onClick={() =>
               openAssistant({
@@ -1234,15 +1431,15 @@ function TaskForm({
             }
           >
             Ask assistant
-          </button>
+          </Button>
         )}
-        <button
+        <IconButton
           className="icon-button"
           aria-label="Close task details"
           onClick={onClose}
         >
           <X size={18} />
-        </button>
+        </IconButton>
       </header>
       <div className="planning-inspector-body">
         {(recovered || storageError) && (
@@ -1262,7 +1459,7 @@ function TaskForm({
         <fieldset disabled={readOnly || removed || action.busy}>
           <label>
             Title
-            <input
+            <TextInput
               autoFocus
               maxLength={300}
               value={draft.title}
@@ -1273,7 +1470,7 @@ function TaskForm({
           <div className="planning-field-grid">
             <label>
               Status
-              <select
+              <NativeSelect
                 value={draft.status}
                 onChange={(e) =>
                   set({ status: e.target.value as Draft["status"] })
@@ -1284,11 +1481,11 @@ function TaskForm({
                     {l}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
             </label>
             <label>
               Priority
-              <select
+              <NativeSelect
                 value={draft.priority}
                 onChange={(e) =>
                   set({ priority: e.target.value as Draft["priority"] })
@@ -1297,25 +1494,53 @@ function TaskForm({
                 {["low", "normal", "high", "urgent"].map((p) => (
                   <option key={p}>{p}</option>
                 ))}
-              </select>
+              </NativeSelect>
             </label>
             <label>
               Assignee
-              <select
+              <PersonPicker
+                label="Task assignee"
+                people={people}
                 value={draft.assigneeId ?? ""}
-                onChange={(e) => set({ assigneeId: e.target.value || null })}
-              >
-                <option value="">Unassigned</option>
-                {people.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
+                onChange={(value) => set({ assigneeId: value || null })}
+              />
+            </label>
+            <label>
+              Progress (%)
+              <TextInput
+                type="number"
+                min={0}
+                max={100}
+                step={1}
+                value={
+                  hasChildren
+                    ? (task?.derived_progress_percent ??
+                      planningProgress(tasks).get(id) ??
+                      0)
+                    : draft.status === "done"
+                      ? 100
+                      : draft.progressPercent
+                }
+                disabled={draft.status === "done" || hasChildren}
+                onChange={(e) =>
+                  set({
+                    progressPercent: Math.max(
+                      0,
+                      Math.min(100, Number(e.target.value)),
+                    ),
+                  })
+                }
+              />
+              {hasChildren && (
+                <HelpText>
+                  Derived from non-cancelled descendant leaves. Parent dates
+                  remain independent.
+                </HelpText>
+              )}
             </label>
             <label>
               Effort (hours)
-              <input
+              <TextInput
                 type="number"
                 min="0"
                 max="10000"
@@ -1338,7 +1563,7 @@ function TaskForm({
           />
           <label>
             Labels (comma separated)
-            <input
+            <TextInput
               value={labelsText}
               maxLength={818}
               onChange={(e) => {
@@ -1354,123 +1579,108 @@ function TaskForm({
           </label>
           <label>
             Milestone
-            <select
+            <PlanningEntityPicker
+              spaceId={space.id}
+              kind="milestone"
+              label="Task milestone"
               value={draft.milestoneId ?? ""}
-              onChange={(e) => set({ milestoneId: e.target.value || null })}
-            >
-              <option value="">No milestone</option>
-              {milestones.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.title}
-                </option>
-              ))}
-            </select>
+              onChange={(v) => set({ milestoneId: String(v) || null })}
+            />
           </label>
           <details>
             <summary>Subtasks & dependencies</summary>
             <label>
-              Find related task
-              <input
-                value={related}
-                onChange={(e) => setRelated(e.target.value)}
-                placeholder="Search tasks in the current view…"
+              Parent task
+              <PlanningEntityPicker
+                spaceId={space.id}
+                kind="task"
+                label="Parent task"
+                exclude={[id]}
+                value={draft.parentId ?? ""}
+                onChange={(v) => set({ parentId: String(v) || null })}
               />
             </label>
             <label>
-              Parent task
-              <select
-                value={draft.parentId ?? ""}
-                onChange={(e) => set({ parentId: e.target.value || null })}
-              >
-                <option value="">Top-level task</option>
-                {relatedTasks.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.title}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
               Finish-to-start dependencies
-              <select
+              <PlanningEntityPicker
+                spaceId={space.id}
+                kind="task"
+                label="Predecessor tasks"
                 multiple
-                size={5}
+                exclude={[id]}
                 value={draft.dependencies}
-                onChange={(e) =>
+                onChange={(v) => {
+                  const ids = v as string[];
                   set({
-                    dependencies: Array.from(
-                      e.target.selectedOptions,
-                      (o) => o.value,
+                    dependencies: ids,
+                    dependencyLinks: resolveDependencyLinks(
+                      { dependencies: ids },
+                      draft.dependencyLinks ?? [],
                     ),
-                  })
-                }
-              >
-                {relatedTasks.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.title}
-                  </option>
-                ))}
-              </select>
+                  });
+                }}
+              />
             </label>
-            <small>
-              Use ⌘/Ctrl to select several. Clear view filters to find more
-              tasks. Cycles and cross-workspace links are rejected by the
-              server.
-            </small>
+            {draft.dependencyLinks?.map((link, i) => (
+              <label key={link.taskId} className="planning-lag-field">
+                {taskNames.get(link.taskId) ?? `Predecessor ${i + 1}`} · offset
+                (working days)
+                <PlanningIntegerInput
+                  label={`Working-day offset for predecessor ${i + 1}`}
+                  min={-365}
+                  max={365}
+                  value={link.lagDays}
+                  onValidity={(valid) =>
+                    setInvalidOffsets((previous) => {
+                      if (valid === !previous.has(link.taskId)) return previous;
+                      const next = new Set(previous);
+                      if (valid) next.delete(link.taskId);
+                      else next.add(link.taskId);
+                      return next;
+                    })
+                  }
+                  onCommit={(lagDays) =>
+                    set({
+                      dependencyLinks: draft.dependencyLinks?.map((d) =>
+                        d.taskId === link.taskId ? { ...d, lagDays } : d,
+                      ),
+                    })
+                  }
+                />
+              </label>
+            ))}
+            <HelpText>
+              Zero starts on the next working day after finish; positive offsets
+              delay and negative offsets overlap. Saving a link never moves
+              dates. Cycles and cross-workspace links are rejected.
+            </HelpText>
           </details>
           <details>
             <summary>
               Linked research evidence ({draft.resourceIds.length})
             </summary>
-            <label>
-              Find workspace files
-              <input
-                value={evidenceSearch}
-                onChange={(e) => setEvidenceSearch(e.target.value)}
-              />
-            </label>
+            <PlanningEntityPicker
+              spaceId={space.id}
+              kind="file"
+              label="Linked workspace files"
+              multiple
+              value={draft.resourceIds}
+              onChange={(v) => set({ resourceIds: v as string[] })}
+            />
             <div className="planning-evidence">
-              {[
-                ...new Set([
-                  ...draft.resourceIds,
-                  ...(evidence.data?.items
-                    .filter((r) => r.kind !== "folder")
-                    .map((r) => r.id) ?? []),
-                ]),
-              ].map((resourceId) => {
-                const r = evidence.data?.items.find((r) => r.id === resourceId);
-                return (
-                  <label key={resourceId}>
-                    <input
-                      type="checkbox"
-                      checked={draft.resourceIds.includes(resourceId)}
-                      onChange={(e) =>
-                        set({
-                          resourceIds: e.target.checked
-                            ? [...draft.resourceIds, resourceId]
-                            : draft.resourceIds.filter((v) => v !== resourceId),
-                        })
-                      }
-                    />
-                    <span>{r?.name ?? "Linked file"}</span>
-                    <WorkspaceLink
-                      to={`/notes/${resourceId}`}
-                      aria-label={`Open ${r?.name ?? "linked file"}`}
-                    >
-                      ↗
-                    </WorkspaceLink>
-                  </label>
-                );
-              })}
+              {draft.resourceIds.map((resourceId, i) => (
+                <WorkspaceLink key={resourceId} to={`/notes/${resourceId}`}>
+                  Open evidence {i + 1} ↗
+                </WorkspaceLink>
+              ))}
             </div>
-            <ErrorNotice message={evidence.error} />
           </details>
           {task && <TaskPaperLinks taskId={task.id} readOnly={readOnly} />}
           {!task && (
             <div className="planning-field-grid">
               <label>
                 Start
-                <input
+                <TextInput
                   type="date"
                   value={draft.startOn ?? ""}
                   onChange={(e) => set({ startOn: e.target.value || null })}
@@ -1478,7 +1688,7 @@ function TaskForm({
               </label>
               <label>
                 Finish
-                <input
+                <TextInput
                   type="date"
                   min={draft.startOn ?? undefined}
                   value={draft.dueOn ?? ""}
@@ -1495,7 +1705,7 @@ function TaskForm({
               {task.start_on ?? "No start date"} →{" "}
               {task.due_on ?? "No finish date"}
             </p>
-            <button
+            <Button
               className="button secondary"
               disabled={
                 readOnly ||
@@ -1511,7 +1721,7 @@ function TaskForm({
             >
               <ChartGantt size={15} />
               Reschedule…
-            </button>
+            </Button>
             {dirty && (
               <small>Save task details before previewing date changes.</small>
             )}
@@ -1531,7 +1741,7 @@ function TaskForm({
           {dirty ? "Local draft · not yet shared" : "Saved"}
         </span>
         {task && (
-          <button
+          <IconButton
             className="icon-button"
             title={removed ? "Restore task" : "Delete task"}
             aria-label={removed ? "Restore task" : "Delete task"}
@@ -1565,9 +1775,9 @@ function TaskForm({
             }
           >
             {removed ? <RotateCcw size={16} /> : <Trash2 size={16} />}
-          </button>
+          </IconButton>
         )}
-        <button
+        <Button
           className="button secondary"
           disabled={action.busy}
           onClick={() => {
@@ -1580,20 +1790,21 @@ function TaskForm({
           }}
         >
           Discard draft
-        </button>
-        <button
+        </Button>
+        <Button
           className="button primary"
           disabled={
             readOnly ||
             removed ||
             action.busy ||
+            invalidOffsets.size > 0 ||
             !draft.title.trim() ||
             (!!task && !dirty)
           }
           onClick={save}
         >
           Save task
-        </button>
+        </Button>
       </footer>
       {schedule && task && (
         <Dialog
@@ -1604,7 +1815,7 @@ function TaskForm({
           <div className="planning-field-grid">
             <label>
               Start date
-              <input
+              <TextInput
                 type="date"
                 value={start}
                 onChange={(e) => setStart(e.target.value)}
@@ -1612,7 +1823,7 @@ function TaskForm({
             </label>
             <label>
               Finish date
-              <input
+              <TextInput
                 type="date"
                 min={start || undefined}
                 value={end}
@@ -1621,13 +1832,13 @@ function TaskForm({
             </label>
           </div>
           <div className="dialog-footer">
-            <button
+            <Button
               className="button secondary"
               onClick={() => setSchedule(false)}
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               className="button primary"
               disabled={!!start && !!end && end < start}
               onClick={() => {
@@ -1643,7 +1854,7 @@ function TaskForm({
               }}
             >
               Preview changes
-            </button>
+            </Button>
           </div>
         </Dialog>
       )}
@@ -1676,9 +1887,9 @@ export function WorkspaceDiscussion({
         title="Unsent discussion comment"
       />
       <h3>{compact ? "Task discussion" : "Workspace discussions"}</h3>
-      <p className="ws-note">
+      <HelpText>
         Keep decisions and research context alongside the work.
-      </p>
+      </HelpText>
       <ErrorNotice
         message={data.error || action.error}
         retry={data.error ? data.reload : undefined}
@@ -1700,7 +1911,7 @@ export function WorkspaceDiscussion({
       >
         <label>
           {reply ? "Reply to discussion" : "Add a comment"}
-          <textarea
+          <TextArea
             rows={compact ? 3 : 4}
             value={body}
             maxLength={100000}
@@ -1708,17 +1919,17 @@ export function WorkspaceDiscussion({
             placeholder="Share a decision, observation, or question…"
           />
         </label>
-        <div className="ws-actions">
+        <ActionRow>
           {reply && (
-            <button
+            <Button
               type="button"
               className="text-button"
               onClick={() => setReply(null)}
             >
               Cancel reply
-            </button>
+            </Button>
           )}
-          <button
+          <Button
             className="button primary"
             disabled={
               action.busy ||
@@ -1729,8 +1940,8 @@ export function WorkspaceDiscussion({
             }
           >
             Post comment
-          </button>
-        </div>
+          </Button>
+        </ActionRow>
       </form>
       {data.data?.map((post) => (
         <article key={post.id} className={post.parent_id ? "reply" : ""}>
@@ -1789,7 +2000,7 @@ function PlanningManager({
               <strong>{row.title ?? row.template.title}</strong>
               <small>{row.due_on?.slice(0, 10) ?? row.rule?.frequency}</small>
             </div>
-            <button
+            <Button
               className="button secondary"
               disabled={readOnly || action.busy}
               onClick={() =>
@@ -1817,7 +2028,7 @@ function PlanningManager({
                 : row.enabled
                   ? "Pause"
                   : "Resume"}
-            </button>
+            </Button>
           </div>
         ))}
       </div>
@@ -1841,7 +2052,7 @@ function PlanningManager({
       >
         <label>
           {mode === "milestones" ? "Milestone title" : "Recurring task title"}
-          <input
+          <TextInput
             required
             value={title}
             maxLength={200}
@@ -1851,7 +2062,7 @@ function PlanningManager({
         <div className="planning-field-grid">
           <label>
             {mode === "milestones" ? "Target date" : "First occurrence"}
-            <input
+            <TextInput
               type="date"
               required={mode === "recurrences"}
               value={date}
@@ -1861,28 +2072,28 @@ function PlanningManager({
           {mode === "recurrences" && (
             <label>
               Repeat
-              <select
+              <NativeSelect
                 value={frequency}
                 onChange={(e) => setFrequency(e.target.value)}
               >
                 {["daily", "weekly", "monthly"].map((v) => (
                   <option key={v}>{v}</option>
                 ))}
-              </select>
+              </NativeSelect>
             </label>
           )}
         </div>
-        <button
+        <Button
           className="button primary"
           disabled={readOnly || action.busy || !title.trim()}
         >
           Create {mode === "milestones" ? "milestone" : "routine"}
-        </button>
+        </Button>
       </form>
       <div className="dialog-footer">
-        <button className="button secondary" onClick={onClose}>
+        <Button className="button secondary" onClick={onClose}>
           Done
-        </button>
+        </Button>
       </div>
     </Dialog>
   );

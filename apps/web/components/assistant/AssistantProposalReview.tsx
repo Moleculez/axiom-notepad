@@ -1,4 +1,11 @@
 "use client";
+import {
+  Button,
+  HelpText,
+  TextArea,
+  TextInput,
+  NativeSelect,
+} from "../ui/controls";
 import { useMemo, useState } from "react";
 import { versionDiff } from "@axiom/shared/version-diff";
 import { taskStatusSchema, taskPrioritySchema } from "@axiom/shared/workspace";
@@ -94,7 +101,7 @@ function TaskDocumentReview({
         {data.kind === "document" ? (
           <label>
             Proposed replacement
-            <textarea
+            <TextArea
               rows={10}
               maxLength={30000}
               value={data.source}
@@ -105,7 +112,7 @@ function TaskDocumentReview({
           <>
             <label>
               Title
-              <input
+              <TextInput
                 value={data.fields.title}
                 maxLength={300}
                 onChange={(e) =>
@@ -118,7 +125,7 @@ function TaskDocumentReview({
             </label>
             <label>
               Description
-              <textarea
+              <TextArea
                 rows={5}
                 maxLength={12000}
                 value={data.fields.body}
@@ -133,7 +140,7 @@ function TaskDocumentReview({
             <div className="assistant-fields">
               <label>
                 Status
-                <select
+                <NativeSelect
                   value={data.fields.status}
                   onChange={(e) =>
                     update({
@@ -150,11 +157,11 @@ function TaskDocumentReview({
                       {v.replaceAll("_", " ")}
                     </option>
                   ))}
-                </select>
+                </NativeSelect>
               </label>
               <label>
                 Priority
-                <select
+                <NativeSelect
                   value={data.fields.priority}
                   onChange={(e) =>
                     update({
@@ -169,11 +176,11 @@ function TaskDocumentReview({
                   {taskPrioritySchema.options.map((v) => (
                     <option key={v}>{v}</option>
                   ))}
-                </select>
+                </NativeSelect>
               </label>
               <label>
                 Assignee
-                <select
+                <NativeSelect
                   value={data.fields.assigneeId ?? ""}
                   onChange={(e) =>
                     update({
@@ -191,11 +198,11 @@ function TaskDocumentReview({
                       {m.name}
                     </option>
                   ))}
-                </select>
+                </NativeSelect>
               </label>
               <label>
                 Effort (hours)
-                <input
+                <TextInput
                   type="number"
                   min={0}
                   max={10000}
@@ -215,7 +222,7 @@ function TaskDocumentReview({
             </div>
             <label>
               Labels, separated by commas
-              <input
+              <TextInput
                 value={labels}
                 onChange={(e) => {
                   setLabels(e.target.value);
@@ -232,10 +239,10 @@ function TaskDocumentReview({
                 }}
               />
             </label>
-            <p className="ws-note">
+            <HelpText>
               Schedules and dependencies are unchanged. New tasks are
               unscheduled.
-            </p>
+            </HelpText>
           </>
         )}
       </fieldset>
@@ -257,11 +264,11 @@ function TaskDocumentReview({
       )}
       <ErrorNotice message={error} />
       <div className="dialog-footer">
-        <button className="button secondary" disabled={busy} onClick={onClose}>
+        <Button className="button secondary" disabled={busy} onClick={onClose}>
           Keep private draft
-        </button>
+        </Button>
         {!preview ? (
-          <button
+          <Button
             className="button primary"
             disabled={busy}
             onClick={() =>
@@ -273,9 +280,9 @@ function TaskDocumentReview({
             }
           >
             Preview exact changes
-          </button>
+          </Button>
         ) : (
-          <button
+          <Button
             className="button primary"
             disabled={busy}
             onClick={() =>
@@ -311,7 +318,7 @@ function TaskDocumentReview({
             {data.kind === "document"
               ? "Open suggestion editor"
               : "Apply reviewed task change"}
-          </button>
+          </Button>
         )}
       </div>
     </Dialog>

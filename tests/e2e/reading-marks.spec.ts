@@ -527,7 +527,7 @@ test("nested targets, keyboard menus, hover previews and settings preserve docum
     await f.page.keyboard.press("Escape");
     await f.page.keyboard.press("Escape");
     await f.page.goto("/workbench/settings/appearance-general");
-    const margin = f.page.getByRole("checkbox", {
+    const margin = f.page.getByRole("switch", {
       name: "Show reading marks in the margin",
       exact: true,
     });
@@ -663,13 +663,9 @@ test("floating rich cards respect dark appearance, square corners and no shadows
         .getByRole("status")
         .filter({ hasText: "Draft saved on this device" }),
     ).toBeVisible();
-    await f.page
-      .getByRole("link", { name: "Open inbox", exact: true })
-      .click();
+    await f.page.getByRole("link", { name: "Open inbox", exact: true }).click();
     await expect(f.page.locator("[data-annotation-card]")).toHaveCount(0);
-    await f.page
-      .getByRole("button", { name: "Go back", exact: true })
-      .click();
+    await f.page.getByRole("button", { name: "Go back", exact: true }).click();
     await f.page
       .getByRole("button", { name: "bookmarks panel", exact: true })
       .click();

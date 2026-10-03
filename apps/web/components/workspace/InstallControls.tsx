@@ -1,4 +1,5 @@
 "use client";
+import { Button, HelpText } from "../ui/controls";
 import { useEffect, useState } from "react";
 import { Download, RefreshCw } from "lucide-react";
 import { documentsSavedLocally } from "../../lib/document-sessions";
@@ -36,7 +37,7 @@ export default function InstallControls() {
   return (
     <div className="offline-install-controls">
       {install ? (
-        <button
+        <Button
           className="button secondary"
           onClick={() =>
             void install
@@ -49,15 +50,15 @@ export default function InstallControls() {
         >
           <Download size={16} />
           Install Axiom
-        </button>
+        </Button>
       ) : (
-        <p className="ws-note">
+        <HelpText>
           Install from your browser’s address bar or “Add to Dock” menu for a
           dedicated app window. Installation requires HTTPS or localhost.
-        </p>
+        </HelpText>
       )}
       {waiting && (
-        <button
+        <Button
           className="button primary"
           onClick={() => {
             if (
@@ -79,7 +80,7 @@ export default function InstallControls() {
         >
           <RefreshCw size={16} />
           Apply downloaded update
-        </button>
+        </Button>
       )}
     </div>
   );

@@ -1,4 +1,5 @@
 "use client";
+import { HelpText } from "../ui/controls";
 import { useEffect, useState } from "react";
 import type { SiteConfig } from "@axiom/shared/sites";
 import { api, errorMessage } from "../../lib/client";
@@ -62,10 +63,10 @@ export default function SiteDesignPreview({
           ))}
         </div>
       </header>
-      <p className="ws-note">
+      <HelpText>
         Same renderer and styles as the public site. Article text is a sample;
         no analytics run here.
-      </p>
+      </HelpText>
       <ErrorNotice message={error} />
       {html ? (
         <iframe

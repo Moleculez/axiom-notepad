@@ -1,4 +1,5 @@
 "use client";
+import { IconButton, TextInput } from "../ui/controls";
 import { useEffect, useRef, useState, type MouseEvent } from "react";
 import type * as Y from "yjs";
 import type { Awareness } from "y-protocols/awareness";
@@ -159,7 +160,7 @@ export default function CanvasCardContents(props: Props) {
     </div>
   );
   const actions = (
-    <button
+    <IconButton
       type="button"
       className="icon-button canvas-card-more"
       aria-label="Card actions"
@@ -168,7 +169,7 @@ export default function CanvasCardContents(props: Props) {
       onClick={props.menu}
     >
       <MoreHorizontal size={16} />
-    </button>
+    </IconButton>
   );
   return (
     <div
@@ -268,7 +269,7 @@ function CardNameInput({
     if (!finished.current && save(value.trim())) finished.current = true;
   };
   return (
-    <input
+    <TextInput
       autoFocus
       aria-label="Card name"
       maxLength={200}

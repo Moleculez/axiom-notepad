@@ -1,5 +1,12 @@
 "use client";
 import {
+  Button,
+  HelpText,
+  IconButton,
+  TextInput,
+  NativeSelect,
+} from "../ui/controls";
+import {
   useEffect,
   useMemo,
   useRef,
@@ -1111,7 +1118,7 @@ export function CanvasSurface({
         <h1>{project.name}</h1>
         {!sandbox && host.sharing}
         <span className="tool-spacer" />
-        <button
+        <IconButton
           className="icon-button"
           title="Undo (⌘Z)"
           aria-label="Undo"
@@ -1119,8 +1126,8 @@ export function CanvasSurface({
           onClick={() => undo.current?.undo()}
         >
           <Undo2 size={17} />
-        </button>
-        <button
+        </IconButton>
+        <IconButton
           className="icon-button"
           title="Redo (⇧⌘Z)"
           aria-label="Redo"
@@ -1128,8 +1135,8 @@ export function CanvasSurface({
           onClick={() => undo.current?.redo()}
         >
           <Redo2 size={17} />
-        </button>
-        <button
+        </IconButton>
+        <IconButton
           className="icon-button"
           title="Import JSON Canvas"
           aria-label="Import JSON Canvas"
@@ -1137,7 +1144,7 @@ export function CanvasSurface({
           onClick={() => importInput.current?.click()}
         >
           <Upload size={17} />
-        </button>
+        </IconButton>
         <input
           ref={importInput}
           hidden
@@ -1148,7 +1155,7 @@ export function CanvasSurface({
             e.target.value = "";
           }}
         />
-        <button
+        <IconButton
           className="icon-button"
           title="Export canvas"
           aria-label="Export canvas"
@@ -1159,8 +1166,8 @@ export function CanvasSurface({
           }
         >
           <Download size={17} />
-        </button>
-        <button
+        </IconButton>
+        <IconButton
           className="icon-button"
           title="Find cards"
           aria-label="Find cards"
@@ -1168,9 +1175,9 @@ export function CanvasSurface({
           onClick={() => setPanel(panel === "cards" ? null : "cards")}
         >
           <Search size={17} />
-        </button>
+        </IconButton>
         {host.discussion && (
-          <button
+          <IconButton
             className="icon-button"
             title="Discussion"
             aria-label="Discussion"
@@ -1181,9 +1188,9 @@ export function CanvasSurface({
             }
           >
             <MessageSquare size={17} />
-          </button>
+          </IconButton>
         )}
-        <button
+        <IconButton
           className="icon-button"
           aria-label="Properties"
           title="Properties"
@@ -1191,20 +1198,20 @@ export function CanvasSurface({
           onClick={() => setPanel(panel === "properties" ? null : "properties")}
         >
           <SlidersHorizontal size={17} />
-        </button>
+        </IconButton>
       </header>
       <ErrorNotice message={error || parsed.error || shared.error} />
       {shared.recovery !== null && (
         <div className="tool-recovery">
-          <button
+          <Button
             className="button secondary"
             onClick={() => downloadText(shared.recovery!, "recovered.canvas")}
           >
             Export retained canvas
-          </button>
-          <button className="button ghost" onClick={shared.reopen}>
+          </Button>
+          <Button className="button ghost" onClick={shared.reopen}>
             Reopen server version
-          </button>
+          </Button>
         </div>
       )}
       <div className="canvas-layout">
@@ -1697,7 +1704,7 @@ export function CanvasSurface({
             </div>
           )}
           <div className="canvas-dock" role="toolbar" aria-label="Canvas tools">
-            <button
+            <IconButton
               className="icon-button"
               title="Select"
               aria-label="Select"
@@ -1705,8 +1712,8 @@ export function CanvasSurface({
               onClick={() => setHand(false)}
             >
               <MousePointer2 size={20} />
-            </button>
-            <button
+            </IconButton>
+            <IconButton
               className="icon-button"
               title="Pan (hold Space)"
               aria-label="Pan"
@@ -1714,9 +1721,9 @@ export function CanvasSurface({
               onClick={() => setHand(true)}
             >
               <Hand size={20} />
-            </button>
+            </IconButton>
             <span className="canvas-dock-separator" />
-            <button
+            <IconButton
               className="icon-button"
               title="Text card (N)"
               aria-label="Add text card"
@@ -1724,8 +1731,8 @@ export function CanvasSurface({
               onClick={() => add("text")}
             >
               <StickyNote size={20} />
-            </button>
-            <button
+            </IconButton>
+            <IconButton
               className="icon-button"
               title="File card"
               aria-label="Add file card"
@@ -1733,8 +1740,8 @@ export function CanvasSurface({
               onClick={() => setPicker(true)}
             >
               <FilePlus2 size={20} />
-            </button>
-            <button
+            </IconButton>
+            <IconButton
               className="icon-button"
               title="Web link"
               aria-label="Add web link"
@@ -1742,8 +1749,8 @@ export function CanvasSurface({
               onClick={() => add("link")}
             >
               <Link2 size={20} />
-            </button>
-            <button
+            </IconButton>
+            <IconButton
               className="icon-button"
               title={selected.length ? "Group selection" : "Add group"}
               aria-label="Add group"
@@ -1753,8 +1760,8 @@ export function CanvasSurface({
               }
             >
               <Group size={20} />
-            </button>
-            <button
+            </IconButton>
+            <IconButton
               className="icon-button"
               aria-label="Research templates"
               title="Research templates"
@@ -1775,8 +1782,8 @@ export function CanvasSurface({
               }}
             >
               <LayoutTemplate size={20} />
-            </button>
-            <button
+            </IconButton>
+            <IconButton
               className="icon-button"
               aria-label="Snap to grid"
               title="Snap to grid"
@@ -1784,7 +1791,7 @@ export function CanvasSurface({
               onClick={() => setSnap(!snap)}
             >
               <Grid2X2 size={18} />
-            </button>
+            </IconButton>
           </div>
           {!!selection.length && (
             <div
@@ -1793,7 +1800,7 @@ export function CanvasSurface({
               aria-label="Selected card actions"
             >
               {host.assistant && (
-                <button
+                <Button
                   className="button ghost"
                   disabled={sandbox || !selected.length || selected.length > 50}
                   onClick={() =>
@@ -1803,7 +1810,7 @@ export function CanvasSurface({
                   }
                 >
                   Ask assistant
-                </button>
+                </Button>
               )}
               {Object.entries(canvasColors).map(([key, color]) => (
                 <button
@@ -1834,7 +1841,7 @@ export function CanvasSurface({
                 />
               ))}
               {selectedEdge && (
-                <input
+                <TextInput
                   aria-label="Connection label"
                   placeholder="Connection label"
                   maxLength={1000}
@@ -1854,7 +1861,7 @@ export function CanvasSurface({
                   }
                 />
               )}
-              <button
+              <IconButton
                 className="icon-button"
                 title="Duplicate selection (⌘D)"
                 aria-label="Duplicate selection"
@@ -1862,8 +1869,8 @@ export function CanvasSurface({
                 onClick={() => duplicate()}
               >
                 <Plus size={16} />
-              </button>
-              <button
+              </IconButton>
+              <IconButton
                 className="icon-button"
                 title="Remove selection"
                 aria-label="Remove selection"
@@ -1871,7 +1878,7 @@ export function CanvasSurface({
                 onClick={remove}
               >
                 <X size={16} />
-              </button>
+              </IconButton>
             </div>
           )}
           <div className="canvas-navigation">
@@ -1910,7 +1917,7 @@ export function CanvasSurface({
               ))}
             </svg>
             <div>
-              <button
+              <IconButton
                 className="icon-button"
                 aria-label="Zoom out"
                 title="Zoom out"
@@ -1919,9 +1926,9 @@ export function CanvasSurface({
                 }
               >
                 <Minus size={15} />
-              </button>
+              </IconButton>
               <span>{Math.round(view.zoom * 100)}%</span>
-              <button
+              <IconButton
                 className="icon-button"
                 aria-label="Zoom in"
                 title="Zoom in"
@@ -1930,15 +1937,15 @@ export function CanvasSurface({
                 }
               >
                 <Plus size={15} />
-              </button>
-              <button
+              </IconButton>
+              <IconButton
                 className="icon-button"
                 aria-label="Zoom to fit"
                 title="Zoom to fit (0)"
                 onClick={() => fit()}
               >
                 <Maximize size={15} />
-              </button>
+              </IconButton>
             </div>
           </div>
         </div>
@@ -1952,17 +1959,17 @@ export function CanvasSurface({
                     ? "Properties"
                     : "Find cards"}
               </h2>
-              <button
+              <IconButton
                 className="icon-button"
                 aria-label="Close panel"
                 onClick={() => setPanel(null)}
               >
                 <X size={16} />
-              </button>
+              </IconButton>
             </header>
             {panel === "discussion" ? (
               <>
-                <select
+                <NativeSelect
                   aria-label="Discussion scope"
                   value={commentCard ?? ""}
                   onChange={(e) => setCommentCard(e.target.value || null)}
@@ -1976,7 +1983,7 @@ export function CanvasSurface({
                   {commentCard && !nodeMap.has(commentCard) && (
                     <option value={commentCard}>Removed card</option>
                   )}
-                </select>
+                </NativeSelect>
                 {host.discussion?.(
                   commentCard,
                   new Map(nodes.map((n) => [n.id, canvasTitle(n)])),
@@ -2040,13 +2047,13 @@ export function CanvasSurface({
               />
             ) : (
               <>
-                <input
+                <TextInput
                   aria-label="Search cards"
                   placeholder="Names, content, tags…"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                 />
-                <select
+                <NativeSelect
                   aria-label="Card type"
                   value={cardType}
                   onChange={(e) => setCardType(e.target.value)}
@@ -2056,7 +2063,7 @@ export function CanvasSurface({
                       {type === "all" ? "All card types" : type}
                     </option>
                   ))}
-                </select>
+                </NativeSelect>
                 {nodes
                   .filter(
                     (n) =>
@@ -2102,14 +2109,14 @@ export function CanvasSurface({
             /offline|unavailable|interrupted|Connecting/.test(
               shared.status,
             ) && (
-              <button
+              <IconButton
                 className="icon-button"
                 aria-label="Reconnect canvas"
                 title="Reconnect without discarding local work"
                 onClick={shared.reconnect}
               >
                 <RefreshCw size={13} />
-              </button>
+              </IconButton>
             )}
         </span>
         <span>
@@ -2155,11 +2162,11 @@ export function CanvasSurface({
             setReplaceFile(null);
           }}
         >
-          <p className="ws-note">
+          <HelpText>
             {host.local
               ? "Choose a note or file saved in this browser. Import images, PDFs, audio and video from your computer."
               : "Cards follow the latest resource by default. You can pin a saved file version in Properties. Every preview checks access again."}
-          </p>
+          </HelpText>
           {host.importFiles && (
             <label className="button secondary">
               Import files
@@ -2177,7 +2184,7 @@ export function CanvasSurface({
               />
             </label>
           )}
-          <input
+          <TextInput
             autoFocus
             aria-label="Search files"
             placeholder="Find a note, figure, or paper…"

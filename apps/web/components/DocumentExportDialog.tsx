@@ -1,4 +1,11 @@
 "use client";
+import {
+  Button,
+  Checkbox,
+  Slider,
+  NativeSelect,
+  TextInput,
+} from "./ui/controls";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Download, Printer, RefreshCw } from "lucide-react";
 import { fonts, paletteFor, type Preferences } from "@axiom/shared/appearance";
@@ -227,7 +234,7 @@ export default function DocumentExportDialog({
         <div className="document-export-settings">
           <label>
             Format
-            <select
+            <NativeSelect
               aria-label="Format"
               value={format}
               onChange={(e) => {
@@ -240,11 +247,11 @@ export default function DocumentExportDialog({
               <option value="pdf">Print / Save as PDF</option>
               <option value="md">Markdown source</option>
               <option value="zip">Markdown + assets (ZIP)</option>
-            </select>
+            </NativeSelect>
           </label>
           <label>
             File name
-            <input
+            <TextInput
               aria-label="File name"
               maxLength={150}
               value={filename}
@@ -255,7 +262,7 @@ export default function DocumentExportDialog({
             <legend>Presentation</legend>
             <label>
               Style
-              <select
+              <NativeSelect
                 aria-label="Style"
                 value={options.style}
                 onChange={(e) =>
@@ -268,11 +275,11 @@ export default function DocumentExportDialog({
                 <option value="document">Match document</option>
                 <option value="academic">Academic</option>
                 <option value="minimal">Minimal</option>
-              </select>
+              </NativeSelect>
             </label>
             <label>
               Colors
-              <select
+              <NativeSelect
                 aria-label="Colors"
                 value={options.colors}
                 disabled={format === "pdf"}
@@ -282,19 +289,17 @@ export default function DocumentExportDialog({
               >
                 <option value="document">Document colors</option>
                 <option value="paper">Light paper</option>
-              </select>
+              </NativeSelect>
             </label>
             <label className="document-export-check">
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={options.title}
                 onChange={(e) => change("title", e.target.checked)}
               />
               Include document title
             </label>
             <label className="document-export-check">
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={options.toc}
                 onChange={(e) => change("toc", e.target.checked)}
               />
@@ -302,9 +307,10 @@ export default function DocumentExportDialog({
             </label>
             <label>
               Text scale <output>{Math.round(options.scale * 100)}%</output>
-              <input
+              <Slider
                 aria-label="Text scale"
-                type="range"
+                aria-valuetext={`${Math.round(options.scale * 100)}%`}
+
                 min="0.7"
                 max="1.4"
                 step="0.05"
@@ -319,7 +325,7 @@ export default function DocumentExportDialog({
               <div className="document-export-fields">
                 <label>
                   Paper
-                  <select
+                  <NativeSelect
                     aria-label="Paper"
                     value={options.paper}
                     onChange={(e) =>
@@ -328,11 +334,11 @@ export default function DocumentExportDialog({
                   >
                     <option>A4</option>
                     <option>Letter</option>
-                  </select>
+                  </NativeSelect>
                 </label>
                 <label>
                   Orientation
-                  <select
+                  <NativeSelect
                     aria-label="Orientation"
                     value={options.orientation}
                     onChange={(e) =>
@@ -344,12 +350,12 @@ export default function DocumentExportDialog({
                   >
                     <option value="portrait">Portrait</option>
                     <option value="landscape">Landscape</option>
-                  </select>
+                  </NativeSelect>
                 </label>
               </div>
               <label>
                 Margins (mm)
-                <input
+                <TextInput
                   aria-label="Margins (mm)"
                   type="number"
                   min={8}
@@ -391,10 +397,10 @@ export default function DocumentExportDialog({
             <span>
               {ready ? "Preview ready" : progress || "Preview unavailable"}
             </span>
-            <button className="button secondary" onClick={refresh}>
+            <Button className="button secondary" onClick={refresh}>
               <RefreshCw size={14} />
               Refresh snapshot
-            </button>
+            </Button>
           </div>
           {changed && (
             <p className="document-export-notice" role="status">
@@ -443,12 +449,12 @@ export default function DocumentExportDialog({
             <p key={warning}>{warning}</p>
           ))}
           {error && (
-            <button
+            <Button
               className="button secondary"
               onClick={() => setAttempt((value) => value + 1)}
             >
               Retry preview
-            </button>
+            </Button>
           )}
         </div>
       ) : null}
@@ -458,9 +464,9 @@ export default function DocumentExportDialog({
             ? "Preparing archive in the background…"
             : "Only accessible content is exported."}
         </span>
-        <button className="button secondary" onClick={onClose}>
+        <Button className="button secondary" onClick={onClose}>
           Close
-        </button>
+        </Button>
         {zip?.ready && format === "zip" ? (
           <a
             className="button primary"
@@ -471,7 +477,7 @@ export default function DocumentExportDialog({
             Download ZIP
           </a>
         ) : (
-          <button
+          <Button
             className="button primary"
             disabled={
               !filename.trim() ||
@@ -486,7 +492,7 @@ export default function DocumentExportDialog({
               : format === "zip"
                 ? "Prepare ZIP"
                 : "Download"}
-          </button>
+          </Button>
         )}
       </DialogFooter>
     </Dialog>

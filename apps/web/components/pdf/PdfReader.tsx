@@ -1,4 +1,12 @@
 "use client";
+import {
+  Button,
+  Checkbox,
+  IconButton,
+  TextInput,
+  NativeSelect,
+  TextArea,
+} from "../ui/controls";
 import { openAssistant } from "../../lib/assistant";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -802,7 +810,7 @@ export default function PdfReader({
             go(index >= 0 ? index + 1 : Number(pageInput));
           }}
         >
-          <input
+          <TextInput
             aria-label="Go to PDF page"
             className="pdf-page-input"
             value={pageInput}
@@ -832,7 +840,7 @@ export default function PdfReader({
         >
           <Minus size={16} />
         </Tool>
-        <select
+        <NativeSelect
           aria-label="PDF zoom"
           value={typeof scale === "number" ? String(scale) : scale}
           onChange={(e) =>
@@ -864,7 +872,7 @@ export default function PdfReader({
                 {Math.round(n * 100)}%
               </option>
             ))}
-        </select>
+        </NativeSelect>
         <Tool
           label="Zoom in"
           onClick={() =>
@@ -892,7 +900,7 @@ export default function PdfReader({
         >
           <SquareDashed size={17} />
         </Tool>
-        <select
+        <NativeSelect
           aria-label="Drawing tool"
           value={drawingTool ?? ""}
           disabled={!pdf}
@@ -907,7 +915,7 @@ export default function PdfReader({
           <option value="ink">Pen</option>
           <option value="arrow">Arrow</option>
           <option value="textbox">Text box</option>
-        </select>
+        </NativeSelect>
         <Tool
           label="Page note"
           disabled={!meta}
@@ -1014,7 +1022,7 @@ export default function PdfReader({
         >
           <label>
             Layout
-            <select
+            <NativeSelect
               aria-label="PDF page layout"
               value={view}
               onChange={(e) => setView(e.target.value as PdfView)}
@@ -1022,11 +1030,11 @@ export default function PdfReader({
               <option value="continuous">Continuous</option>
               <option value="single">Single page</option>
               <option value="facing">Facing pages</option>
-            </select>
+            </NativeSelect>
           </label>
           <label>
             Paper
-            <select
+            <NativeSelect
               aria-label="PDF paper appearance"
               value={theme}
               onChange={(e) => setTheme(e.target.value as PdfTheme)}
@@ -1035,7 +1043,7 @@ export default function PdfReader({
               <option value="warm">Warm paper</option>
               <option value="graphite">Graphite surround</option>
               <option value="contrast">High contrast surround</option>
-            </select>
+            </NativeSelect>
           </label>
           <Tool
             label="Rotate PDF clockwise"
@@ -1171,7 +1179,7 @@ export default function PdfReader({
                         void search();
                       }}
                     >
-                      <input
+                      <TextInput
                         aria-label="Search PDF text"
                         value={query}
                         onChange={(e) => {
@@ -1180,18 +1188,17 @@ export default function PdfReader({
                         }}
                         placeholder="Find a phrase…"
                       />
-                      <button
+                      <IconButton
                         className="icon-button"
                         aria-label="Find"
                         disabled={!pdf || !query.trim()}
                       >
                         <Search size={17} />
-                      </button>
+                      </IconButton>
                     </form>
                     <div className="pdf-filter-row">
                       <label>
-                        <input
-                          type="checkbox"
+                        <Checkbox
                           checked={matchCase}
                           onChange={(e) => {
                             searchToken.current++;
@@ -1201,8 +1208,7 @@ export default function PdfReader({
                         Case
                       </label>
                       <label>
-                        <input
-                          type="checkbox"
+                        <Checkbox
                           checked={wholeWord}
                           onChange={(e) => {
                             searchToken.current++;
@@ -1300,7 +1306,7 @@ export default function PdfReader({
                           >
                             Page {value.data.page}
                           </button>
-                          <input
+                          <TextInput
                             aria-label={`Bookmark label for page ${value.data.page}`}
                             key={value.id}
                             defaultValue={value.data.label}
@@ -1336,14 +1342,14 @@ export default function PdfReader({
                       <h3>Annotations</h3>
                       <span>{annotations.length}</span>
                     </div>
-                    <input
+                    <TextInput
                       aria-label="Filter annotations"
                       placeholder="Search notes and quotations…"
                       value={filter}
                       onChange={(e) => setFilter(e.target.value)}
                     />
                     <div className="pdf-filter-row">
-                      <select
+                      <NativeSelect
                         aria-label="Annotation visibility filter"
                         value={scope}
                         onChange={(e) => setScope(e.target.value)}
@@ -1351,8 +1357,8 @@ export default function PdfReader({
                         <option value="all">All accessible</option>
                         <option value="mine">My annotations</option>
                         <option value="shared">Shared</option>
-                      </select>
-                      <select
+                      </NativeSelect>
+                      <NativeSelect
                         aria-label="Annotation color filter"
                         value={colorFilter}
                         onChange={(e) => setColorFilter(e.target.value)}
@@ -1361,7 +1367,7 @@ export default function PdfReader({
                         {["yellow", "green", "blue", "pink"].map((c) => (
                           <option key={c}>{c}</option>
                         ))}
-                      </select>
+                      </NativeSelect>
                     </div>
                     {!visibleAnnotations.length && (
                       <div className="pdf-empty">
@@ -1379,8 +1385,7 @@ export default function PdfReader({
                     )}
                     {!!visibleAnnotations.length && (
                       <label className="pdf-bulk-select">
-                        <input
-                          type="checkbox"
+                        <Checkbox
                           aria-label="Select visible annotations"
                           checked={
                             visibleAnnotations.length > 0 &&
@@ -1422,8 +1427,7 @@ export default function PdfReader({
                           key={a.id}
                         >
                           <label className="pdf-bulk-select">
-                            <input
-                              type="checkbox"
+                            <Checkbox
                               aria-label={`Select annotation on page ${a.data.page}`}
                               disabled={entry.pending || a.author_id !== userId}
                               checked={checked.has(a.id)}
@@ -1822,7 +1826,7 @@ export default function PdfReader({
             {selected.quote && <blockquote>{selected.quote}</blockquote>}
             <label>
               Annotation note
-              <textarea
+              <TextArea
                 aria-label="Annotation note"
                 value={body}
                 rows={8}
@@ -1846,7 +1850,7 @@ export default function PdfReader({
             </div>
             <label>
               Tags
-              <input
+              <TextInput
                 aria-label="Annotation tags"
                 value={tags}
                 maxLength={500}
@@ -1861,20 +1865,20 @@ export default function PdfReader({
               </small>
             )}
             <div className="button-row">
-              <button
+              <Button
                 className="button primary small"
                 disabled={busy || (selected.kind === "note" && !body.trim())}
                 onClick={() => void save()}
               >
                 {editing ? "Save changes" : "Save privately"}
-              </button>
-              <button
+              </Button>
+              <Button
                 className="button secondary small"
                 disabled={busy || (selected.kind === "note" && !body.trim())}
                 onClick={() => void save(true)}
               >
                 Insert quotation
-              </button>
+              </Button>
             </div>
           </section>
         )}
@@ -1920,7 +1924,7 @@ export default function PdfReader({
             </p>
             <label>
               Password
-              <input
+              <TextInput
                 autoFocus
                 type="password"
                 value={password}
@@ -1928,9 +1932,9 @@ export default function PdfReader({
               />
             </label>
             <div className="dialog-footer">
-              <button className="button primary" disabled={!password}>
+              <Button className="button primary" disabled={!password}>
                 Unlock
-              </button>
+              </Button>
             </div>
           </form>
         </Dialog>
@@ -2064,7 +2068,7 @@ export function Tool({
   disabled?: boolean;
 }) {
   return (
-    <button
+    <IconButton
       type="button"
       className="icon-button"
       aria-label={label}
@@ -2074,7 +2078,7 @@ export function Tool({
       onClick={onClick}
     >
       {children}
-    </button>
+    </IconButton>
   );
 }
 function Thumbnail({

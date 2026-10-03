@@ -1,14 +1,15 @@
 "use client";
+import {
+  Button,
+  Checkbox,
+  HelpText,
+  IconButton,
+  NativeSelect,
+  SearchField,
+} from "../ui/controls";
 import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import {
-  Download,
-  FileQuestion,
-  Maximize,
-  Search,
-  WrapText,
-  Link,
-} from "lucide-react";
+import { Download, FileQuestion, Maximize, WrapText, Link } from "lucide-react";
 import type { FilePreviewManifest } from "@axiom/shared/file-preview";
 import { parseDelimited } from "@axiom/shared/file-preview";
 import { parseMarkdown } from "@axiom/markdown";
@@ -82,7 +83,7 @@ export default function FilePreviewSurface({
       {file.message &&
         !file.office &&
         file.source.includes("preview-content") && (
-          <p className="ws-note">{file.message}</p>
+          <HelpText>{file.message}</HelpText>
         )}
       <ErrorNotice message={conversionError} />
       {file.office ? (
@@ -126,7 +127,7 @@ export default function FilePreviewSurface({
         <>
           <DownloadFallback file={file} />
           <div className="tool-controls">
-            <button
+            <Button
               className="button secondary"
               disabled={file.status === "queued"}
               onClick={() =>
@@ -144,7 +145,7 @@ export default function FilePreviewSurface({
               {file.status === "queued"
                 ? "Converting privately…"
                 : "Generate private preview"}
-            </button>
+            </Button>
           </div>
         </>
       ) : file.kind === "workbook" ? (
@@ -252,7 +253,7 @@ export function MediaPreview({ file }: { file: FilePreviewManifest }) {
         <span className="tool-spacer" />
         <label>
           Speed{" "}
-          <select
+          <NativeSelect
             value={speed}
             onChange={(e) => setSpeed(Number(e.target.value))}
           >
@@ -261,17 +262,16 @@ export function MediaPreview({ file }: { file: FilePreviewManifest }) {
                 {n}×
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
         <label>
-          <input
-            type="checkbox"
+          <Checkbox
             checked={loop}
             onChange={(e) => setLoop(e.target.checked)}
           />
           Loop
         </label>
-        <button
+        <IconButton
           className="icon-button"
           aria-label="Copy link at current time"
           title="Copy link at current time"
@@ -285,7 +285,7 @@ export function MediaPreview({ file }: { file: FilePreviewManifest }) {
           }}
         >
           <Link size={16} />
-        </button>
+        </IconButton>
         {file.kind === "video" && (
           <>
             <label className="button secondary">
@@ -303,7 +303,7 @@ export function MediaPreview({ file }: { file: FilePreviewManifest }) {
                 }}
               />
             </label>
-            <button
+            <IconButton
               className="icon-button"
               title="Fullscreen"
               aria-label="Fullscreen"
@@ -314,7 +314,7 @@ export function MediaPreview({ file }: { file: FilePreviewManifest }) {
               }
             >
               <Maximize size={16} />
-            </button>
+            </IconButton>
           </>
         )}
       </div>
@@ -410,26 +410,24 @@ function TextPreview({ file }: { file: FilePreviewManifest }) {
   return (
     <>
       <div className="tool-controls">
-        <label className="tool-search">
-          <Search size={15} />
-          <input
-            aria-label="Search file"
-            placeholder="Find in file…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </label>
+        <SearchField
+          wrapperClassName="tool-search"
+          aria-label="Search file"
+          placeholder="Find in file…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
         <span className="tool-spacer" />
         {file.kind === "markdown" && (
-          <button
+          <Button
             className="button secondary"
             aria-pressed={rendered}
             onClick={() => setRendered(!rendered)}
           >
             {rendered ? "Source" : "Reading view"}
-          </button>
+          </Button>
         )}
-        <select
+        <NativeSelect
           aria-label="Text encoding"
           value={encoding}
           onChange={(e) => setEncoding(e.target.value)}
@@ -445,8 +443,8 @@ function TextPreview({ file }: { file: FilePreviewManifest }) {
           ].map((e) => (
             <option key={e}>{e}</option>
           ))}
-        </select>
-        <button
+        </NativeSelect>
+        <IconButton
           className="icon-button"
           title="Wrap lines"
           aria-label="Wrap lines"
@@ -454,7 +452,7 @@ function TextPreview({ file }: { file: FilePreviewManifest }) {
           onClick={() => setWrap(!wrap)}
         >
           <WrapText size={16} />
-        </button>
+        </IconButton>
       </div>
       <ErrorNotice message={error} />
       {text === null ? (
@@ -482,12 +480,12 @@ function TextPreview({ file }: { file: FilePreviewManifest }) {
             line may be incomplete.
           </small>
           {limit < 20_000_000 && (
-            <button
+            <Button
               className="button secondary"
               onClick={() => setLimit(Math.min(limit + 2_000_000, 20_000_000))}
             >
               Load more
-            </button>
+            </Button>
           )}
         </div>
       )}
@@ -534,12 +532,12 @@ function TextLines({
         ))}
       </pre>
       {visible.length > count && (
-        <button
+        <Button
           className="button secondary"
           onClick={() => setCount(count + 2000)}
         >
           Show 2,000 more lines
-        </button>
+        </Button>
       )}
     </div>
   );

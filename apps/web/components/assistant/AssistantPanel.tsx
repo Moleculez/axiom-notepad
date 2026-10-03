@@ -1,4 +1,14 @@
 "use client";
+import {
+  Button,
+  Checkbox,
+  HelpText,
+  IconButton,
+  Notice,
+  NativeSelect,
+  TextArea,
+  SearchField,
+} from "../ui/controls";
 import { useEffect, useRef, useState } from "react";
 import {
   ArrowUp,
@@ -10,7 +20,6 @@ import {
   LoaderCircle,
   MessageSquare,
   Plus,
-  Search,
   ShieldCheck,
   Square,
   Trash2,
@@ -87,7 +96,11 @@ export default function AssistantPanel({
     intent.spaceIds ?? [spaceId],
   );
   const [office, setOffice] = useState<SearchResult | null>(null);
-  const [assistantMode,setAssistantMode] = useState<"ask"|"prepare"|"suggest">("ask"), [discover,setDiscover] = useState(false), [changeSet,setChangeSet] = useState<string|null>(null);
+  const [assistantMode, setAssistantMode] = useState<
+      "ask" | "prepare" | "suggest"
+    >("ask"),
+    [discover, setDiscover] = useState(false),
+    [changeSet, setChangeSet] = useState<string | null>(null);
   const scope = conversation?.spaceIds ?? scopeIds;
   const [prompt, setPrompt] = useState(""),
     [picked, setPicked] = useState<Picked[]>([]),
@@ -167,7 +180,8 @@ export default function AssistantPanel({
       if (raw) {
         const d = JSON.parse(raw);
         setPrompt(typeof d.prompt === "string" ? d.prompt.slice(0, 10000) : "");
-        if (["ask","prepare","suggest"].includes(d.mode)) setAssistantMode(d.mode);
+        if (["ask", "prepare", "suggest"].includes(d.mode))
+          setAssistantMode(d.mode);
         setDiscover(d.discover === true);
         setPicked(
           Array.isArray(d.selections)
@@ -269,7 +283,7 @@ export default function AssistantPanel({
         draftKey,
         JSON.stringify({
           prompt,
-          mode:assistantMode,
+          mode: assistantMode,
           discover,
           conversationId,
           spaceIds: scopeIds,
@@ -281,7 +295,16 @@ export default function AssistantPanel({
         "The prompt could not be saved on this device. Export it before closing.",
       );
     }
-  }, [prompt, picked, conversationId, draftKey, draftLoaded, scopeIds,assistantMode,discover]);
+  }, [
+    prompt,
+    picked,
+    conversationId,
+    draftKey,
+    draftLoaded,
+    scopeIds,
+    assistantMode,
+    discover,
+  ]);
   useEffect(() => {
     setPrepared(null);
     setConsent(false);
@@ -408,7 +431,9 @@ export default function AssistantPanel({
           prompt,
           selections: picked.map(stripLabel),
           allowTaskCreate: allowTasks,
-          ...(assistantMode !== "suggest" ? {agent:{mode:assistantMode,discover}} : {}),
+          ...(assistantMode !== "suggest"
+            ? { agent: { mode: assistantMode, discover } }
+            : {}),
         },
       );
       if (
@@ -459,15 +484,15 @@ export default function AssistantPanel({
           <h2>Research assistant</h2>
         </div>
         <div>
-          <button
+          <IconButton
             className="icon-button"
             aria-label="Conversation history"
             title="Conversation history"
             onClick={() => setHistoryOpen(!historyOpen)}
           >
             <History size={16} />
-          </button>
-          <button
+          </IconButton>
+          <IconButton
             className="icon-button"
             aria-label="New conversation"
             title="New conversation"
@@ -475,24 +500,46 @@ export default function AssistantPanel({
             onClick={newConversation}
           >
             <Plus size={17} />
-          </button>
-          <button
+          </IconButton>
+          <IconButton
             className="icon-button"
             aria-label="Close assistant"
             onClick={onClose}
           >
             <X size={17} />
-          </button>
+          </IconButton>
         </div>
       </header>
       <div className="assistant-mode-bar">
-        <label>Mode<select aria-label="Assistant mode" value={assistantMode} disabled={busy||!!active} onChange={e=>setAssistantMode(e.target.value as typeof assistantMode)}><option value="ask">Ask</option><option value="prepare">Prepare changes</option><option value="suggest">Suggest edits</option></select></label>
-        <AssistantWorkflows spaceId={spaceId} prompt={prompt} onPick={text=>{setPrompt(text);setAssistantMode("prepare");}} onReview={setChangeSet}/>
+        <label>
+          Mode
+          <NativeSelect
+            aria-label="Assistant mode"
+            value={assistantMode}
+            disabled={busy || !!active}
+            onChange={(e) =>
+              setAssistantMode(e.target.value as typeof assistantMode)
+            }
+          >
+            <option value="ask">Ask</option>
+            <option value="prepare">Prepare changes</option>
+            <option value="suggest">Suggest edits</option>
+          </NativeSelect>
+        </label>
+        <AssistantWorkflows
+          spaceId={spaceId}
+          prompt={prompt}
+          onPick={(text) => {
+            setPrompt(text);
+            setAssistantMode("prepare");
+          }}
+          onReview={setChangeSet}
+        />
       </div>
       <div className="assistant-scope">
         <label>
           Workspace
-          <select
+          <NativeSelect
             aria-label="Assistant workspace"
             disabled={busy}
             value={spaceId}
@@ -503,11 +550,11 @@ export default function AssistantPanel({
                 {s.name}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
         <label>
           Provider
-          <select
+          <NativeSelect
             aria-label="Assistant provider"
             disabled={busy}
             value={providerId}
@@ -519,7 +566,7 @@ export default function AssistantPanel({
                 {p.name} · {p.model}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
       </div>
       {spaces.find((s) => s.id === spaceId)?.group_id && (
@@ -529,9 +576,12 @@ export default function AssistantPanel({
               ? "One workspace"
               : `${scope.length} selected group workspaces`}
           </summary>
-          <p className="ws-note">
-            {discover ? "Relevant excerpts may be retrieved and sent from these workspaces after consent." : "Only selected evidence is sent."} Start a new conversation to change this boundary.
-          </p>
+          <HelpText>
+            {discover
+              ? "Relevant excerpts may be retrieved and sent from these workspaces after consent."
+              : "Only selected evidence is sent."}{" "}
+            Start a new conversation to change this boundary.
+          </HelpText>
           {spaces
             .filter(
               (s) =>
@@ -539,8 +589,7 @@ export default function AssistantPanel({
             )
             .map((s) => (
               <label className="productivity-check" key={s.id}>
-                <input
-                  type="checkbox"
+                <Checkbox
                   disabled={
                     !!conversationId ||
                     busy ||
@@ -604,12 +653,12 @@ export default function AssistantPanel({
               A group administrator must enable the workspace assistant on a
               processing provider. No research is sent automatically.
             </p>
-            <button
+            <Button
               className="button secondary"
               onClick={() => navigate("/settings/groups")}
             >
               Provider settings
-            </button>
+            </Button>
           </section>
         )}
         {!conversation?.turns.length && providers.data?.length ? (
@@ -638,7 +687,7 @@ export default function AssistantPanel({
           <div className="assistant-conversation-heading">
             <span title={conversation.title}>{conversation.title}</span>
             <div>
-              <button
+              <IconButton
                 className="icon-button"
                 title="Rename conversation"
                 aria-label="Rename conversation"
@@ -662,8 +711,8 @@ export default function AssistantPanel({
                 }
               >
                 <Pencil size={14} />
-              </button>
-              <button
+              </IconButton>
+              <IconButton
                 className="icon-button"
                 title="Export conversation"
                 aria-label="Export conversation"
@@ -681,8 +730,8 @@ export default function AssistantPanel({
                 }
               >
                 <Download size={14} />
-              </button>
-              <button
+              </IconButton>
+              <IconButton
                 className="icon-button"
                 title="Delete private conversation"
                 aria-label="Delete private conversation"
@@ -707,7 +756,7 @@ export default function AssistantPanel({
                 }
               >
                 <Trash2 size={14} />
-              </button>
+              </IconButton>
             </div>
           </div>
         )}
@@ -738,9 +787,37 @@ export default function AssistantPanel({
                 </button>
               </>
             )}
-            {turn.warning && <p className="ws-note">{turn.warning}</p>}
-            {!!turn.activity?.length && <details className="assistant-activity"><summary>{turn.activity.at(-1)?.message} · {turn.round}/8 rounds</summary><ol>{turn.activity.map((item,i)=><li key={i}>{item.message}</li>)}</ol></details>}
-            {turn.changeSetId && <section className="assistant-proposal"><header><strong>Workspace changes</strong><span>Review required</span></header><p>Review files, diffs, destinations and planning impact before applying.</p><button className="button secondary" onClick={()=>setChangeSet(turn.changeSetId!)}>Review changes</button></section>}
+            {turn.warning && <Notice tone="warning">{turn.warning}</Notice>}
+            {!!turn.activity?.length && (
+              <details className="assistant-activity">
+                <summary>
+                  {turn.activity.at(-1)?.message} · {turn.round}/8 rounds
+                </summary>
+                <ol>
+                  {turn.activity.map((item, i) => (
+                    <li key={i}>{item.message}</li>
+                  ))}
+                </ol>
+              </details>
+            )}
+            {turn.changeSetId && (
+              <section className="assistant-proposal">
+                <header>
+                  <strong>Workspace changes</strong>
+                  <span>Review required</span>
+                </header>
+                <p>
+                  Review files, diffs, destinations and planning impact before
+                  applying.
+                </p>
+                <Button
+                  className="button secondary"
+                  onClick={() => setChangeSet(turn.changeSetId!)}
+                >
+                  Review changes
+                </Button>
+              </section>
+            )}
             {turn.error && <p className="form-error">{turn.error}</p>}
             {["queued", "running"].includes(turn.status) ? (
               <div className="assistant-progress" role="status">
@@ -765,9 +842,9 @@ export default function AssistantPanel({
                 </button>
               </div>
             ) : !turn.answer && !turn.error ? (
-              <p className="ws-note">
+              <HelpText>
                 {turn.status}. Nothing is automatically resubmitted.
-              </p>
+              </HelpText>
             ) : null}
             {turn.proposals?.map((item) => (
               <section key={item.id} className="assistant-proposal">
@@ -787,14 +864,14 @@ export default function AssistantPanel({
                 <div>
                   {item.state === "draft" && (
                     <>
-                      <button
+                      <Button
                         className="button secondary"
                         disabled={busy}
                         onClick={() => setReview({ item, turn })}
                       >
                         Review draft
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         className="button ghost"
                         disabled={busy}
                         onClick={() =>
@@ -808,11 +885,11 @@ export default function AssistantPanel({
                         }
                       >
                         Dismiss
-                      </button>
+                      </Button>
                     </>
                   )}
                   {item.state === "applied" && item.result && (
-                    <button
+                    <Button
                       className="button secondary"
                       disabled={busy}
                       onClick={() =>
@@ -827,7 +904,7 @@ export default function AssistantPanel({
                       }
                     >
                       <Undo2 size={14} /> Undo task change
-                    </button>
+                    </Button>
                   )}
                 </div>
               </section>
@@ -851,8 +928,7 @@ export default function AssistantPanel({
         {searchOpen && (
           <div className="assistant-search">
             <label>
-              <Search size={14} />
-              <input
+              <SearchField
                 aria-label="Search assistant evidence"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -915,11 +991,10 @@ export default function AssistantPanel({
                 </span>
                 {(s.kind === "document" || s.kind === "task") && (
                   <label>
-                    <input
-                      type="checkbox"
+                    <Checkbox
                       checked={s.editable}
                       onChange={(e) => {
-                        if(e.target.checked) setAssistantMode("suggest");
+                        if (e.target.checked) setAssistantMode("suggest");
                         setPicked((old) =>
                           old.map((v, j) =>
                             j === i ? { ...s, editable: e.target.checked } : v,
@@ -958,15 +1033,24 @@ export default function AssistantPanel({
             ))}
           </ul>
         )}
-        {assistantMode === "suggest" ? <label className="assistant-task-consent">
-          <input
-            type="checkbox"
-            checked={allowTasks}
-            onChange={(e) => setAllowTasks(e.target.checked)}
-          />
-          Allow private new-task drafts
-        </label> : <label className="assistant-task-consent"><input type="checkbox" checked={discover} onChange={e=>setDiscover(e.target.checked)}/>Search and read within selected workspaces</label>}
-        <textarea
+        {assistantMode === "suggest" ? (
+          <label className="assistant-task-consent">
+            <Checkbox
+              checked={allowTasks}
+              onChange={(e) => setAllowTasks(e.target.checked)}
+            />
+            Allow private new-task drafts
+          </label>
+        ) : (
+          <label className="assistant-task-consent">
+            <Checkbox
+              checked={discover}
+              onChange={(e) => setDiscover(e.target.checked)}
+            />
+            Search and read within selected workspaces
+          </label>
+        )}
+        <TextArea
           ref={promptRef}
           aria-label="Assistant request"
           placeholder="Ask about your research…"
@@ -985,13 +1069,13 @@ export default function AssistantPanel({
           <small>
             {recovered ? "Device draft recovered · " : ""}⌘/Ctrl Enter to review
           </small>
-          <button
+          <Button
             className="button primary"
             disabled={busy || !!active || !prompt.trim() || !selectedProvider}
           >
             <ArrowUp size={15} />
             Review & send
-          </button>
+          </Button>
         </div>
       </form>
       {prepared && (
@@ -1005,12 +1089,20 @@ export default function AssistantPanel({
             request, instructions and the conversation history that will be
             transmitted.
           </p>
-          <p className="ws-note">
+          <HelpText>
             {prepared.characters.toLocaleString()} characters ·{" "}
             {prepared.evidence.length} current excerpts · expires{" "}
             {new Date(prepared.expiresAt).toLocaleTimeString()}
-          </p>
-          {prepared.agent?.discover && <p className="assistant-scope-consent">This run may search and send additional relevant excerpts from the {scope.length} selected workspace{scope.length===1?"":"s"} to this provider, for at most eight model rounds. Captured sources appear in the conversation. No workspace changes are applied without a separate review.</p>}
+          </HelpText>
+          {prepared.agent?.discover && (
+            <p className="assistant-scope-consent">
+              This run may search and send additional relevant excerpts from the{" "}
+              {scope.length} selected workspace{scope.length === 1 ? "" : "s"}{" "}
+              to this provider, for at most eight model rounds. Captured sources
+              appear in the conversation. No workspace changes are applied
+              without a separate review.
+            </p>
+          )}
           <div className="assistant-outgoing">
             {prepared.messages.map((message, i) => (
               <details key={i} open={i === prepared.messages.length - 1}>
@@ -1026,22 +1118,23 @@ export default function AssistantPanel({
             ))}
           </div>
           <label className="assistant-consent">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={consent}
               onChange={(e) => setConsent(e.target.checked)}
             />
-            {prepared.agent?.discover ? "I approve this context and scoped retrieval of additional excerpts for this run. The provider's billing and retention policies apply." : "I approve sending this exact context to this provider. Its billing and retention policies apply."}
+            {prepared.agent?.discover
+              ? "I approve this context and scoped retrieval of additional excerpts for this run. The provider's billing and retention policies apply."
+              : "I approve sending this exact context to this provider. Its billing and retention policies apply."}
           </label>
           <ErrorNotice message={error} />
           <div className="dialog-footer">
-            <button
+            <Button
               className="button secondary"
               onClick={() => setPrepared(null)}
             >
               Back
-            </button>
-            <button
+            </Button>
+            <Button
               className="button primary"
               disabled={
                 busy ||
@@ -1066,7 +1159,7 @@ export default function AssistantPanel({
               }
             >
               Send approved context
-            </button>
+            </Button>
           </div>
         </Dialog>
       )}
@@ -1079,7 +1172,13 @@ export default function AssistantPanel({
           onClose={() => setReview(null)}
         />
       )}
-      {changeSet && <ChangeSetReview id={changeSet} onClose={()=>setChangeSet(null)} onChange={reload}/>}
+      {changeSet && (
+        <ChangeSetReview
+          id={changeSet}
+          onClose={() => setChangeSet(null)}
+          onChange={reload}
+        />
+      )}
       {office && (
         <AssistantOfficeExcerpt
           id={office.id}

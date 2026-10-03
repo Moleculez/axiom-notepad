@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "../ui/controls";
 import { useMemo } from "react";
 import type { Resource } from "@axiom/shared/workspace";
 import { parseMarkdown } from "@axiom/markdown";
@@ -61,10 +62,10 @@ export default function FileQuickPreview({
         )}
       </div>
       <div className="dialog-footer">
-        <button className="button secondary" onClick={onClose}>
+        <Button className="button secondary" onClick={onClose}>
           Close preview
-        </button>
-        <button
+        </Button>
+        <Button
           className="button primary"
           onClick={() => {
             onClose();
@@ -72,7 +73,7 @@ export default function FileQuickPreview({
           }}
         >
           Open item
-        </button>
+        </Button>
       </div>
     </Dialog>
   );

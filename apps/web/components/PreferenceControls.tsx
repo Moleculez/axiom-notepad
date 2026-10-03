@@ -1,5 +1,6 @@
 "use client";
-import { useEffect, useId, useState } from "react";
+import { HelpText, IconButton, Slider, TextInput } from "./ui/controls";
+import { useEffect, useId, useRef, useState } from "react";
 import { Copy, RotateCcw } from "lucide-react";
 import { parseThemeColor } from "@axiom/shared/appearance";
 
@@ -13,6 +14,7 @@ export function NumberPreference({
   onChange,
   reset,
   onInvalid,
+  disabled = false,
 }: {
   label: string;
   value: number;
@@ -23,16 +25,47 @@ export function NumberPreference({
   onChange: (value: number) => void;
   reset: () => void;
   onInvalid: (invalid: boolean) => void;
+  disabled?: boolean;
 }) {
   const [text, setText] = useState(String(value));
+  const [sliderValue, setSliderValue] = useState(value);
   const [error, setError] = useState("");
   const id = useId();
+  const frame = useRef<number | null>(null),
+    queued = useRef<number | null>(null),
+    change = useRef(onChange);
+  change.current = onChange;
+  const flush = () => {
+    if (frame.current !== null) cancelAnimationFrame(frame.current);
+    frame.current = null;
+    const next = queued.current;
+    queued.current = null;
+    if (next !== null) change.current(next);
+  };
+  const slide = (next: number) => {
+    // Native feedback is immediate; expensive document previews update once per frame.
+    setSliderValue(next);
+    setText(String(next));
+    setError("");
+    onInvalid(false);
+    queued.current = next;
+    if (frame.current === null) frame.current = requestAnimationFrame(flush);
+  };
   useEffect(() => {
+    if (queued.current !== null) return;
     setText(String(value));
+    setSliderValue(value);
     setError("");
     onInvalid(false);
   }, [value]);
-  useEffect(() => () => onInvalid(false), []);
+  useEffect(
+    () => () => {
+      // A category switch must not lose the final drag value.
+      flush();
+      onInvalid(false);
+    },
+    [],
+  );
   const valid = (text: string) =>
     text.trim() !== "" &&
     Number.isFinite(Number(text)) &&
@@ -43,8 +76,12 @@ export function NumberPreference({
       setError(`Use a number from ${min} to ${max}${unit ? ` ${unit}` : ""}.`);
       return;
     }
-    const n = Math.round(Number(text) / step) * step;
-    onChange(Number(Math.min(max, Math.max(min, n)).toFixed(6)));
+    flush();
+    const n = min + Math.round((Number(text) - min) / step) * step;
+    const next = Number(Math.min(max, Math.max(min, n)).toFixed(6));
+    onChange(next);
+    setSliderValue(next);
+    setText(String(next));
     setError("");
     onInvalid(false);
   };
@@ -53,9 +90,10 @@ export function NumberPreference({
       <div className="preference-number-heading">
         <label htmlFor={id}>{label}</label>
         <span className="setting-number-value">
-          <input
+          <TextInput
             id={id}
             type="number"
+            disabled={disabled}
             aria-label={`${label} value`}
             min={min}
             max={max}
@@ -83,11 +121,15 @@ export function NumberPreference({
             }}
           />
           <span>{unit}</span>
-          <button
+          <IconButton
             type="button"
+            disabled={disabled}
             className="icon-button"
             aria-label={`Reset ${label}`}
             onClick={() => {
+              if (frame.current !== null) cancelAnimationFrame(frame.current);
+              frame.current = null;
+              queued.current = null;
               reset();
               setText(String(value));
               setError("");
@@ -95,22 +137,31 @@ export function NumberPreference({
             }}
           >
             <RotateCcw size={14} />
-          </button>
+          </IconButton>
         </span>
       </div>
-      <input
-        type="range"
+      <Slider
         aria-label={label}
+        disabled={disabled}
         min={min}
         max={max}
         step={step}
-        value={value}
-        onChange={(event) => onChange(Number(event.target.value))}
+        aria-valuetext={`${sliderValue}${unit ? ` ${unit}` : ""}`}
+        value={sliderValue}
+        onChange={(event) => slide(Number(event.target.value))}
+        onPointerUp={flush}
+        onKeyUp={flush}
+        onBlur={flush}
       />
       {error && (
-        <small id={`${id}-error`} className="form-error" role="alert">
+        <HelpText
+          as="small"
+          id={`${id}-error`}
+          className="form-error"
+          role="alert"
+        >
           {error}
-        </small>
+        </HelpText>
       )}
     </div>
   );
@@ -167,7 +218,7 @@ export function ColorPreference({
             onInvalid(false);
           }}
         />
-        <input
+        <TextInput
           id={id}
           type="text"
           aria-label={`${label} color value`}
@@ -196,7 +247,7 @@ export function ColorPreference({
             }
           }}
         />
-        <button
+        <IconButton
           type="button"
           className="icon-button"
           aria-label={`Copy ${label} color`}
@@ -213,8 +264,8 @@ export function ColorPreference({
           }}
         >
           <Copy size={14} />
-        </button>
-        <button
+        </IconButton>
+        <IconButton
           type="button"
           className="icon-button"
           aria-label={`Reset ${label} color`}
@@ -226,13 +277,18 @@ export function ColorPreference({
           }}
         >
           <RotateCcw size={14} />
-        </button>
+        </IconButton>
       </div>
       {copied && <small role="status">Copied {value}</small>}
       {error && (
-        <small id={`${id}-error`} className="form-error" role="alert">
+        <HelpText
+          as="small"
+          id={`${id}-error`}
+          className="form-error"
+          role="alert"
+        >
           {error}
-        </small>
+        </HelpText>
       )}
     </div>
   );

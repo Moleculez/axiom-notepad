@@ -43,22 +43,6 @@
 body {
   font: var(--weight-ui) var(--size-ui)/1.55 var(--font-ui);
 }
-.button.primary {
-  background: var(--accent);
-  color: var(--on-accent, #fff);
-}
-.button.primary:hover {
-  background: color-mix(in srgb, var(--accent) 90%, var(--text));
-}
-.button.danger {
-  background: var(--danger);
-  color: var(--on-accent, #fff);
-}
-.button.secondary {
-  background: var(--paper);
-  color: var(--text);
-  border-color: var(--line);
-}
 .text-button,
 .research-editor .md-link {
   color: var(--accent);
@@ -151,11 +135,6 @@ input[type="checkbox"] {
   height: 18px;
   flex: 0 0 18px;
   accent-color: var(--accent);
-}
-input[type="range"] {
-  accent-color: var(--accent);
-  padding: 8px 0;
-  box-shadow: none;
 }
 h1,
 h2,
@@ -454,20 +433,7 @@ h4 {
   font-size: 0.87em;
 }
 .settings-search {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 8px;
-  margin: 0;
-  background: var(--paper);
-  padding: 0 8px;
-  border-radius: var(--radius);
-  border: 1px solid var(--line);
-}
-.settings-search input {
-  border: 0;
-  box-shadow: none;
-  padding-inline: 0;
+  min-width: 0;
 }
 .settings-content {
   padding: 26px 32px;

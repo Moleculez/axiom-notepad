@@ -1,4 +1,5 @@
 "use client";
+import { TextArea } from "./ui/controls";
 import { useLayoutEffect, useRef } from "react";
 
 // Textarea rows cannot predict wrapping after a font, zoom, or pane-size change.
@@ -53,7 +54,7 @@ export default function NoteTitle({
     };
   }, []);
   return (
-    <textarea
+    <TextArea
       ref={ref}
       className="document-title"
       aria-label="Note title"

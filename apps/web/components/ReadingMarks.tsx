@@ -1,5 +1,12 @@
 "use client";
 import {
+  Button,
+  IconButton,
+  TextInput,
+  NativeSelect,
+  SearchField,
+} from "./ui/controls";
+import {
   useCallback,
   useEffect,
   useMemo,
@@ -19,7 +26,6 @@ import {
   MoreHorizontal,
   Plus,
   Pencil,
-  Search,
   X,
 } from "lucide-react";
 import {
@@ -811,14 +817,14 @@ export default function ReadingMarks(props: Props) {
             <LockKeyhole size={13} />
           )}
         </span>
-        <button
+        <IconButton
           className="icon-button"
           aria-label="Close annotation card"
           title="Close · draft retained"
           onClick={() => void close()}
         >
           <X size={15} />
-        </button>
+        </IconButton>
       </header>
       {message && (
         <p className="reading-mark-error" role="alert">
@@ -859,7 +865,7 @@ export default function ReadingMarks(props: Props) {
       {draft ? (
         <>
           <div className="annotation-fields">
-            <input
+            <TextInput
               aria-label="Annotation title"
               placeholder="A short title (optional)"
               maxLength={200}
@@ -871,7 +877,7 @@ export default function ReadingMarks(props: Props) {
                 })
               }
             />
-            <select
+            <NativeSelect
               aria-label="Annotation category"
               value={draft.input.category}
               onChange={(e) =>
@@ -889,7 +895,7 @@ export default function ReadingMarks(props: Props) {
                   {blockLabel(c)}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </div>
           {draft.input.anchor?.quote && (
             <p className="annotation-source-excerpt">
@@ -914,7 +920,7 @@ export default function ReadingMarks(props: Props) {
           />
           <label className="annotation-tags">
             Tags
-            <input
+            <TextInput
               key={`${draft.id}:${editorRevision}`}
               aria-label="Annotation tags"
               defaultValue={draft.input.tags.join(", ")}
@@ -935,7 +941,7 @@ export default function ReadingMarks(props: Props) {
           </label>
           <footer>
             <small role="status">{draftStatus}</small>
-            <button
+            <IconButton
               className="icon-button"
               aria-label="Export annotation draft"
               title="Export draft"
@@ -953,7 +959,7 @@ export default function ReadingMarks(props: Props) {
               }
             >
               <Download size={14} />
-            </button>
+            </IconButton>
             <button
               className="text-button"
               disabled={busy}
@@ -968,7 +974,7 @@ export default function ReadingMarks(props: Props) {
             >
               Discard
             </button>
-            <button
+            <Button
               className="button secondary small"
               disabled={busy || !!conflict || !draft.input.body.trim()}
               onClick={() =>
@@ -980,7 +986,7 @@ export default function ReadingMarks(props: Props) {
               }
             >
               Save
-            </button>
+            </Button>
           </footer>
         </>
       ) : active ? (
@@ -1217,14 +1223,15 @@ export default function ReadingMarks(props: Props) {
       ) : (
         <>
           <div className="reading-mark-search">
-            <Search size={14} />
-            <input
+            <SearchField
               aria-label="Search annotations"
               value={query}
               placeholder="Search notes or tags…"
               onChange={(e) => setQuery(e.target.value)}
+              onClear={() => setQuery("")}
+              clearLabel="Clear annotation search"
             />
-            <select
+            <NativeSelect
               aria-label="Filter annotations"
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
@@ -1234,14 +1241,14 @@ export default function ReadingMarks(props: Props) {
               <option value="shared">Shared</option>
               <option value="resolved">Resolved</option>
               <option value="unattached">Needs reattachment</option>
-            </select>
+            </NativeSelect>
           </div>
           <div className="reading-mark-tools">
             <span>
               {annotations.length} annotation
               {annotations.length === 1 ? "" : "s"}
             </span>
-            <button
+            <IconButton
               className="icon-button"
               aria-label="Export annotations"
               title="Export annotations"
@@ -1293,7 +1300,7 @@ export default function ReadingMarks(props: Props) {
               }
             >
               <Download size={14} />
-            </button>
+            </IconButton>
           </div>
           {props.threads.error && (
             <p role="alert" className="reading-mark-error">

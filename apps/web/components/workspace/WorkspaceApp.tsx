@@ -1,4 +1,5 @@
 "use client";
+import { Button, IconButton } from "../ui/controls";
 import BrandMark from "../BrandMark";
 import AssistantHost from "../assistant/AssistantHost";
 import { openAssistant } from "../../lib/assistant";
@@ -564,7 +565,7 @@ export default function WorkspaceApp() {
             <header className="ws-appbar">
               <WorkspaceProgress />
               <div className="ws-brand-area">
-                <button
+                <IconButton
                   className="icon-button"
                   aria-label={
                     page === "settings"
@@ -579,7 +580,7 @@ export default function WorkspaceApp() {
                   }
                 >
                   <Menu size={19} />
-                </button>
+                </IconButton>
                 <WorkspaceLink
                   to="/home"
                   className="brand"
@@ -612,14 +613,14 @@ export default function WorkspaceApp() {
                 <kbd>⌘/Ctrl K</kbd>
               </button>
               <div className="ws-app-tools">
-                <button
+                <IconButton
                   className="icon-button"
                   aria-label="Open research assistant"
                   title="Research assistant"
                   onClick={() => openAssistant()}
                 >
                   <MessageSquare size={18} />
-                </button>
+                </IconButton>
                 <WorkspaceStatus offline={offline} />
                 <WorkspaceLink
                   className="icon-button"
@@ -629,7 +630,7 @@ export default function WorkspaceApp() {
                 >
                   <Bell size={18} />
                 </WorkspaceLink>
-                <button
+                <IconButton
                   className="icon-button"
                   aria-label="File transfers"
                   onClick={() => transfers.setShown(!transfers.shown)}
@@ -638,7 +639,7 @@ export default function WorkspaceApp() {
                   {transfers.transfers.some((item) =>
                     ["uploading", "queued", "verifying"].includes(item.status),
                   ) && <span className="ws-notification-dot" />}
-                </button>
+                </IconButton>
                 <details
                   ref={accountMenu}
                   className="ws-menu ws-account-menu"
@@ -726,13 +727,13 @@ export default function WorkspaceApp() {
                   >
                     <div className="ws-sidebar-heading">
                       <span>Workspace</span>
-                      <button
+                      <IconButton
                         className="icon-button"
                         aria-label="Collapse sidebar"
                         onClick={() => setSidebar(false)}
                       >
                         <Menu size={16} />
-                      </button>
+                      </IconButton>
                     </div>
                     <div className="ws-sidebar-scroll">
                       <WorkspaceSidebar key={session.user.id} />
@@ -827,13 +828,13 @@ export default function WorkspaceApp() {
             {notice && (
               <div className="ws-notice" role="status">
                 <span>{notice}</span>
-                <button
+                <IconButton
                   className="icon-button"
                   aria-label="Dismiss notification"
                   onClick={() => setNotice("")}
                 >
                   <X size={15} />
-                </button>
+                </IconButton>
               </div>
             )}
             <Uploads controller={transfers} />
@@ -852,13 +853,13 @@ export default function WorkspaceApp() {
                   Other devices’ offline copies are not affected.
                 </p>
                 <div className="dialog-footer">
-                  <button
+                  <Button
                     className="button secondary"
                     onClick={() => setSignout(false)}
                   >
                     Cancel
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     className="button primary"
                     onClick={() =>
                       void finishSignout().catch((error) =>
@@ -867,7 +868,7 @@ export default function WorkspaceApp() {
                     }
                   >
                     Sign out and clear caches
-                  </button>
+                  </Button>
                 </div>
               </Dialog>
             )}

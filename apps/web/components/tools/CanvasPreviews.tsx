@@ -1,4 +1,5 @@
 "use client";
+import { Button, IconButton } from "../ui/controls";
 import {
   Component,
   lazy,
@@ -64,14 +65,14 @@ export function PreviewNotice({
       <FileQuestion size={23} />
       <span>{children}</span>
       {retry && (
-        <button
+        <IconButton
           className="icon-button"
           title="Retry preview"
           aria-label="Retry preview"
           onClick={retry}
         >
           <RefreshCw size={15} />
-        </button>
+        </IconButton>
       )}
     </div>
   );
@@ -182,10 +183,10 @@ export function CanvasLinkPreview({
       {active && allowed ? (
         <>
           <div className="canvas-embed-actions" data-export-exclude>
-            <button className="button ghost" onClick={onDone}>
+            <Button className="button ghost" onClick={onDone}>
               <X size={14} />
               Done
-            </button>
+            </Button>
             <a
               className="icon-button"
               title="Open webpage externally"
@@ -215,10 +216,10 @@ export function CanvasLinkPreview({
           <span>{node.url}</span>
           <div data-export-exclude>
             {allowed && (
-              <button className="button secondary" onClick={onActivate}>
+              <Button className="button secondary" onClick={onActivate}>
                 <Play size={14} />
                 Load webpage
-              </button>
+              </Button>
             )}
             <a
               className="button ghost"
@@ -278,7 +279,7 @@ export function CanvasResourcePreview({
     return (
       <PreviewNotice>
         Canvas reference cycle.{" "}
-        <button
+        <Button
           className="button ghost"
           data-export-exclude
           onClick={() =>
@@ -290,7 +291,7 @@ export function CanvasResourcePreview({
           }
         >
           Open original <ArrowUpRight size={14} />
-        </button>
+        </Button>
       </PreviewNotice>
     );
   if (state.error && !resolved)
@@ -344,30 +345,30 @@ export function CanvasResourcePreview({
         <small>{node.versionId ? "Pinned version" : "Live reference"}</small>
       </div>
       <div className="canvas-preview-actions" data-export-exclude>
-        <button
+        <IconButton
           className="icon-button"
           title={active ? "Finish interacting" : "Interact with preview"}
           aria-label={active ? "Finish interacting" : "Interact with preview"}
           onClick={active ? onDone : onActivate}
         >
           {active ? <X size={15} /> : <Play size={15} />}
-        </button>
-        <button
+        </IconButton>
+        <IconButton
           className="icon-button"
           title="Open original"
           aria-label="Open original"
           onClick={openOriginal}
         >
           <ArrowUpRight size={15} />
-        </button>
-        <button
+        </IconButton>
+        <IconButton
           className="icon-button"
           title="Refresh preview"
           aria-label="Refresh preview"
           onClick={state.reload}
         >
           <RefreshCw size={14} />
-        </button>
+        </IconButton>
       </div>
     </div>
   );

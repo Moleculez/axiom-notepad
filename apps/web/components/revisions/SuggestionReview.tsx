@@ -1,4 +1,11 @@
 "use client";
+import {
+  ActionRow,
+  Button,
+  Checkbox,
+  IconButton,
+  TextArea,
+} from "../ui/controls";
 import { useRef, useState } from "react";
 import {
   Check,
@@ -83,13 +90,13 @@ export default function SuggestionReview({
   return (
     <section className="suggestion-review" aria-label="Review suggestions">
       <header className="revision-header">
-        <button
+        <IconButton
           className="icon-button"
           aria-label="Close suggestion review"
           onClick={onClose}
         >
           <ArrowLeft size={17} />
-        </button>
+        </IconButton>
         <div>
           <h2>Review suggestions</h2>
           <p>
@@ -97,22 +104,21 @@ export default function SuggestionReview({
             editors may accept or reject
           </p>
         </div>
-        <button className="button secondary" onClick={() => onCompose()}>
+        <Button className="button secondary" onClick={() => onCompose()}>
           <FilePenLine size={15} />
           Suggest edits
-        </button>
-        <button
+        </Button>
+        <IconButton
           className="icon-button"
           aria-label="Refresh suggestions"
           onClick={proposals.reload}
         >
           <RefreshCw size={15} />
-        </button>
+        </IconButton>
       </header>
       <div className="revision-compare-toolbar">
         <label>
-          <input
-            type="checkbox"
+          <Checkbox
             checked={showClosed}
             onChange={(e) => setShowClosed(e.target.checked)}
           />
@@ -120,7 +126,7 @@ export default function SuggestionReview({
         </label>
         {canEdit && selected.length > 0 && (
           <>
-            <button
+            <Button
               className="button secondary"
               disabled={reviewBusy}
               onClick={() =>
@@ -132,8 +138,8 @@ export default function SuggestionReview({
             >
               <Check size={15} />
               Accept selected ({selected.length})
-            </button>
-            <button
+            </Button>
+            <Button
               className="button ghost"
               disabled={reviewBusy}
               onClick={() =>
@@ -145,11 +151,11 @@ export default function SuggestionReview({
             >
               <X size={15} />
               Reject selected
-            </button>
+            </Button>
           </>
         )}
         {undo && canEdit && (
-          <button
+          <Button
             className="button ghost"
             disabled={reviewBusy}
             onClick={() =>
@@ -170,7 +176,7 @@ export default function SuggestionReview({
           >
             <Undo2 size={15} />
             Undo last decision
-          </button>
+          </Button>
         )}
       </div>
       <ErrorNotice
@@ -194,9 +200,9 @@ export default function SuggestionReview({
             <article className="suggestion-card" key={p.id}>
               <header>
                 {canEdit && p.status === "pending" && (
-                  <input
+                  <Checkbox
                     aria-label={"Select proposal by " + p.author}
-                    type="checkbox"
+
                     checked={selected.includes(p.id)}
                     onChange={(e) =>
                       setSelected((ids) =>
@@ -245,8 +251,8 @@ export default function SuggestionReview({
                   proposal to inspect every change before deciding.
                 </p>
               )}
-              <div className="ws-actions">
-                <button
+              <ActionRow>
+                <Button
                   className="button ghost"
                   onClick={() =>
                     download(
@@ -258,47 +264,47 @@ export default function SuggestionReview({
                 >
                   <Download size={15} />
                   Export proposal
-                </button>
+                </Button>
                 {p.status === "pending" && canEdit && (
                   <>
-                    <button
+                    <Button
                       className="button secondary"
                       disabled={reviewBusy || p.conflicted}
                       onClick={() => void decide("accept", [p])}
                     >
                       <Check size={15} />
                       Accept
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       className="button ghost"
                       disabled={reviewBusy}
                       onClick={() => void decide("reject", [p])}
                     >
                       <X size={15} />
                       Reject
-                    </button>
+                    </Button>
                   </>
                 )}
                 {p.status === "pending" && p.authorId === session.user.id && (
                   <>
-                    <button
+                    <Button
                       className="button ghost"
                       disabled={!!p.conflicted || reviewBusy}
                       onClick={() => onCompose(p)}
                     >
                       <Pencil size={15} />
                       Revise
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       className="button ghost"
                       disabled={reviewBusy}
                       onClick={() => void decide("withdraw", [p])}
                     >
                       Withdraw
-                    </button>
+                    </Button>
                   </>
                 )}
-                <button
+                <Button
                   className="button ghost"
                   onClick={() => {
                     setReply(reply === p.id ? null : p.id);
@@ -307,8 +313,8 @@ export default function SuggestionReview({
                 >
                   <MessageSquare size={15} />
                   Reply ({p.replies.length})
-                </button>
-              </div>
+                </Button>
+              </ActionRow>
               {p.replies.map((r) => (
                 <div className="suggestion-reply" key={r.id}>
                   <strong>{r.author}</strong>
@@ -335,16 +341,16 @@ export default function SuggestionReview({
                     });
                   }}
                 >
-                  <textarea
+                  <TextArea
                     aria-label="Reply to proposal"
                     required
                     maxLength={10000}
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                   />
-                  <button className="button secondary" disabled={reviewBusy}>
+                  <Button className="button secondary" disabled={reviewBusy}>
                     Send reply
-                  </button>
+                  </Button>
                 </form>
               )}
             </article>

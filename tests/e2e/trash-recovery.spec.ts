@@ -109,8 +109,12 @@ test("quick purge cannot override a formal review even through a retained note s
   }
 });
 test.beforeAll(() => {
-  if (origin !== "http://localhost:3008")
-    throw new Error("Trash acceptance requires isolated staging on port 3008.");
+  if (
+    !["http://localhost:3004", "http://localhost:3008"].includes(origin ?? "")
+  )
+    throw new Error(
+      "Trash acceptance requires isolated staging on port 3004 or 3008.",
+    );
 });
 let ownerState: Awaited<ReturnType<BrowserContext["storageState"]>>;
 async function call(

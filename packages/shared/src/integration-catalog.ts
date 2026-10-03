@@ -48,6 +48,109 @@ const write = (
  * credentials. Payloads are validated again by the same application services. */
 export const integrationActions: Action[] = [
   read(
+    "workspace_goals",
+    "spaces/:id/goals",
+    "workspace",
+    "Read outcomes, metrics, linked progress and archive state in an authorized workspace.",
+  ),
+  read(
+    "workspace_intake",
+    "spaces/:id/intake",
+    "workspace",
+    "Read private member-only research requests and review state; no anonymous or public submissions.",
+  ),
+  read(
+    "workspace_planning_views",
+    "spaces/:id/planning-views",
+    "workspace",
+    "Read this member's private and workspace-shared planning views.",
+  ),
+  read(
+    "workspace_planning_lookup",
+    "spaces/:id/planning-options",
+    "workspace",
+    "Search authorized workspace task/file/milestone choices using query.kind and query.q; selected IDs may be supplied as query.ids.",
+  ),
+  read(
+    "workspace_routines",
+    "spaces/:id/recurrences",
+    "workspace",
+    "Read routine rules and future task templates. Generated tasks are unchanged by template edits.",
+  ),
+  write(
+    "workspace_goal_create",
+    "spaces/:id/goals",
+    "workspace",
+    "Create a linked or metric goal. title, kind, body?, ownerId?, dueOn?, taskIds?, milestoneIds?, target?, currentValue?, unit?. Requires review.",
+    "POST",
+    true,
+  ),
+  write(
+    "workspace_goal_update",
+    "spaces/:id/goals/:entity",
+    "workspace",
+    "Update or archive/reopen goal id with required version. Requires review; linked tasks stay in this workspace.",
+    "PATCH",
+    true,
+  ),
+  write(
+    "workspace_intake_submit",
+    "spaces/:id/intake",
+    "workspace",
+    "Submit a member-only request: kind research/experiment/paper-review/data-request, title, body?, dueOn?, priority?. Requires review.",
+    "POST",
+    true,
+  ),
+  write(
+    "workspace_intake_update",
+    "spaces/:id/intake/:entity",
+    "workspace",
+    "Edit/resubmit this member's undecided request id with version, title, kind, body, dueOn, priority. Requires review.",
+    "PATCH",
+    true,
+  ),
+  write(
+    "workspace_intake_review",
+    "spaces/:id/intake/:entity",
+    "workspace",
+    "Review request id with version, decision accepted/rejected/needs-changes/withdrawn, note and optional task fields. Acceptance atomically creates one task. Requires workspace management and review.",
+    "PATCH",
+    true,
+    true,
+  ),
+  write(
+    "workspace_tasks_bulk",
+    "spaces/:id/tasks-bulk",
+    "workspace",
+    "Atomically update at most 1000 tasks: items [{id,version}], patch {status?,priority?,assigneeId?,labels?,deleted?}. One stale task aborts all. Dates use reviewed schedule previews instead.",
+    "POST",
+    true,
+  ),
+  write(
+    "workspace_routine_create",
+    "spaces/:id/recurrences",
+    "workspace",
+    "Create a recurrence rule and validated task template. Parent/dependency links cannot be copied. Requires review.",
+    "POST",
+    true,
+  ),
+  write(
+    "workspace_routine_update",
+    "spaces/:id/recurrences/:entity",
+    "workspace",
+    "Edit future routine id with version, rule?, template?, enabled?, archived?. Generated tasks are preserved. Requires review.",
+    "PATCH",
+    true,
+  ),
+  write(
+    "workspace_planning_view_create",
+    "spaces/:id/planning-views",
+    "workspace",
+    "Save name and validated state for a private planning view; shared=true additionally requires workspace management. Requires review.",
+    "POST",
+    true,
+  ),
+  read(
     "workspace_schedule_analysis",
     "spaces/:id/planning-analysis",
     "workspace",
@@ -130,13 +233,13 @@ export const integrationActions: Action[] = [
     "workspace_task_create",
     "spaces/:id/tasks",
     "workspace",
-    "Create a task. payload: title, body?, status?, assigneeId?, parentId?, startOn?, dueOn?, estimateHours?, labels?, milestoneId?, dependencies?, resourceIds?.",
+    "Create a task. payload: title, body?, status?, assigneeId?, parentId?, startOn?, dueOn?, estimateHours?, labels?, milestoneId?, dependencies?, dependencyLinks?:[{taskId,lagDays:-365..365 working days}], progressPercent?:0..100, resourceIds?.",
   ),
   write(
     "workspace_task_update",
     "tasks/:id",
     "task",
-    "Update task with required version. Use deleted=true/false for recoverable deletion or restoration. Dependencies must remain acyclic.",
+    "Update task with required version. Use deleted=true/false for recoverable deletion/restoration. dependencyLinks includes signed working-day lagDays and must remain acyclic; ID-only updates retain existing offsets. progressPercent is manual leaf progress. Link saves never change dates.",
     "PATCH",
   ),
   write(
@@ -521,3 +624,17 @@ export const integrationActionInput = z
   })
   .strict();
 export type IntegrationActionInput = z.infer<typeof integrationActionInput>;
+/** The only secondary path parameter is a validated entity within a workspace. */
+export function integrationPath(
+  action: Pick<Action, "path" | "target">,
+  spaceId: string,
+  id?: string,
+) {
+  const path = action.path.replace(
+    ":id",
+    encodeURIComponent(action.target === "workspace" ? spaceId : (id ?? "")),
+  );
+  return path.includes(":entity")
+    ? path.replace(":entity", z.uuid().parse(id))
+    : path;
+}

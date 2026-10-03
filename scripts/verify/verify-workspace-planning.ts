@@ -7,6 +7,7 @@ import {
   forwardMigrations,
 } from "../../packages/shared/src/migrations";
 import { migrateDatabase } from "../../packages/shared/src/migrate-database";
+import { verifyPlanningSuite } from "./planning-suite-checks";
 
 // Disposable, local-only v24 upgrade fixture. Never migrate the configured database.
 const configured = new URL(process.env.DATABASE_URL ?? "");
@@ -81,6 +82,10 @@ try {
       [oldTask],
     )
   ).rows[0];
+  // Rehearse an actual upgrade: older fixtures are committed before DDL, so
+  // deferred resource triggers cannot leave ALTER TABLE with pending events.
+  await db.query("COMMIT");
+  await db.query("BEGIN");
   await migrateDatabase(db);
   await migrateDatabase(db);
   assert.deepEqual(
@@ -311,6 +316,13 @@ try {
   console.log(
     `PASS v24 upgrade, independent lifecycle, personal/shared permissions, DAG, schedule preview/apply/idempotency/undo/conflicts, soft delete/restore, audit, and 5,000-task server filtering (${Math.round(performance.now() - started)} ms). Database retained: ${name}`,
   );
+  await verifyPlanningSuite(db, call, {
+    owner,
+    viewer,
+    outsider,
+    group,
+    space: study.id,
+  });
 } finally {
   await pool.end();
   await db.end();

@@ -1,6 +1,7 @@
 "use client";
+import { Slider, SearchField } from "./ui/controls";
 import { useMemo, useState } from "react";
-import { Search, Network } from "lucide-react";
+import { Network } from "lucide-react";
 import { colorFor } from "../lib/client";
 export default function Graph({
   notes,
@@ -57,19 +58,18 @@ export default function Graph({
         <Network size={32} strokeWidth={1} />
       </div>
       <div className="graph-tools">
-        <label className="search-field">
-          <Search size={16} />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Filter notes or tags…"
-            aria-label="Filter graph"
-          />
-        </label>
+        <SearchField
+          wrapperClassName="search-field"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Filter notes or tags…"
+          aria-label="Filter graph"
+        />
         <label className="zoom-control">
           Zoom
-          <input
-            type="range"
+          <Slider
+            aria-label="Graph zoom"
+            aria-valuetext={`${Math.round(zoom * 100)}%`}
             min="0.6"
             max="1.5"
             step="0.05"

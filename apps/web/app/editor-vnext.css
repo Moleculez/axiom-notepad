@@ -110,11 +110,6 @@
   color: var(--muted);
   cursor: pointer;
 }
-.axiom-find input[type="checkbox"] {
-  width: 12px;
-  height: 12px;
-  accent-color: var(--accent);
-}
 .axiom-find [role="status"] {
   margin-inline: 5px;
   color: var(--muted);

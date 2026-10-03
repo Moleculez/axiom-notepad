@@ -292,7 +292,13 @@ INSERT INTO app_instance(singleton,setup_completed_at) SELECT true,CASE WHEN EXI
     name: "workspace-owned-research-libraries",
     sql: workspaceResearchMigration,
   },
+  {
+    version: 39,
+    name: "research-planning-suite-and-dependency-lag",
+    sql: planningSuiteMigration,
+  },
 ];
+import { planningSuiteMigration } from "./planning-suite-migration";
 import { workspaceResearchMigration } from "./workspace-research-migration";
 import { researchIndexInvalidationMigration } from "./research-index-invalidation-migration";
 import { researchLibraryIntegrityMigration } from "./research-library-integrity-migration";

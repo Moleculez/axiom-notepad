@@ -1,4 +1,5 @@
 "use client";
+import { IconButton } from "./ui/controls";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { parseMarkdown } from "@axiom/markdown";
 import { editorAppearanceKey } from "@axiom/shared/minimap";
@@ -199,7 +200,7 @@ export default function EditorPlayground({
                 </button>
               ))}
             </div>
-            <button
+            <IconButton
               type="button"
               className="icon-button"
               aria-label="Copy sample Markdown"
@@ -215,8 +216,8 @@ export default function EditorPlayground({
               }
             >
               <Copy size={15} />
-            </button>
-            <button
+            </IconButton>
+            <IconButton
               type="button"
               className="icon-button scratchpad-reset"
               aria-label="Reset sample"
@@ -227,7 +228,7 @@ export default function EditorPlayground({
               }}
             >
               <RotateCcw size={15} />
-            </button>
+            </IconButton>
           </div>
           {showInterface && (
             <small

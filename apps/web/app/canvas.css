@@ -431,8 +431,8 @@
   border-top: 1px solid var(--line);
   margin: 0;
 }
-.canvas-properties > .ws-note {
-  font-size: 10px;
+.canvas-properties > .ui-help {
+  font-size: var(--size-ui-small);
   overflow-wrap: anywhere;
 }
 .canvas-property-value {
@@ -1037,12 +1037,6 @@
   color: var(--muted);
   margin-top: 4px;
   font-size: 11px;
-}
-.connection-consent input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
-  flex-shrink: 0;
-  accent-color: var(--accent);
 }
 .connection-safeguard {
   display: flex;

@@ -1,4 +1,5 @@
 "use client";
+import { Button, NativeSelect, TextInput } from "../ui/controls";
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import {
   Crop,
@@ -368,7 +369,7 @@ export default function ImageGeometryDialog({
             ) : mode === "crop" ? (
               <label>
                 Aspect ratio
-                <select
+                <NativeSelect
                   aria-label="Crop aspect ratio"
                   value={ratioKey}
                   disabled={!editable}
@@ -385,10 +386,10 @@ export default function ImageGeometryDialog({
                   <option value="wide">16:9 · Widescreen</option>
                   <option value="portrait">3:4 · Portrait</option>
                   <option value="tall">9:16 · Tall</option>
-                </select>
+                </NativeSelect>
               </label>
             ) : (
-              <button
+              <Button
                 type="button"
                 className="button secondary image-geometry-lock"
                 aria-pressed={locked}
@@ -408,7 +409,7 @@ export default function ImageGeometryDialog({
                   <LockKeyholeOpen size={15} />
                 )}
                 Keep proportions
-              </button>
+              </Button>
             )}
             <div className="image-geometry-dimensions">
               {(mode === "crop"
@@ -421,7 +422,7 @@ export default function ImageGeometryDialog({
                       key
                     ]
                   }
-                  <input
+                  <TextInput
                     aria-label={
                       key === "x"
                         ? "Crop left"
@@ -450,7 +451,7 @@ export default function ImageGeometryDialog({
                   aria-label="Resize scale presets"
                 >
                   {[0.25, 0.5, 1, 2].map((scale) => (
-                    <button
+                    <Button
                       key={scale}
                       type="button"
                       className="button ghost"
@@ -464,12 +465,12 @@ export default function ImageGeometryDialog({
                       }
                     >
                       {scale * 100}%
-                    </button>
+                    </Button>
                   ))}
                 </div>
                 <label>
                   Resampling
-                  <select
+                  <NativeSelect
                     aria-label="Resampling"
                     value={sampling}
                     disabled={!editable}
@@ -481,7 +482,7 @@ export default function ImageGeometryDialog({
                     <option value="pixelated">
                       Nearest neighbor · pixel art
                     </option>
-                  </select>
+                  </NativeSelect>
                 </label>
               </>
             )}
@@ -515,7 +516,7 @@ export default function ImageGeometryDialog({
           </div>
         </fieldset>
         <DialogFooter>
-          <button
+          <Button
             type="button"
             className="button ghost image-geometry-reset"
             disabled={applying}
@@ -525,16 +526,16 @@ export default function ImageGeometryDialog({
           >
             <RotateCcw size={15} />
             Reset
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             className="button secondary"
             disabled={applying}
             onClick={onClose}
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
             className="button primary"
             disabled={!!validation || !editable || !changed || applying}
@@ -547,7 +548,7 @@ export default function ImageGeometryDialog({
                 : mode === "crop"
                   ? "Apply crop"
                   : "Resize image"}
-          </button>
+          </Button>
         </DialogFooter>
       </form>
     </Dialog>

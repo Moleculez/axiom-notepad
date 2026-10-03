@@ -1,4 +1,13 @@
 "use client";
+import {
+  ActionRow,
+  Button,
+  Checkbox,
+  HelpText,
+  NativeSelect,
+  TextInput,
+  TextArea,
+} from "../ui/controls";
 import { useEffect, useState } from "react";
 import {
   MoreHorizontal,
@@ -98,7 +107,7 @@ export default function GroupAdministration({
       <div className="productivity-filters">
         <label>
           Administer group
-          <select
+          <NativeSelect
             aria-label="Administer group"
             value={id ?? ""}
             onChange={(e) => navigate(`/admin/${e.target.value}/${section}`)}
@@ -108,7 +117,7 @@ export default function GroupAdministration({
                 {g.name}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
         <WorkspaceLink className="button secondary" to="/groups">
           <Plus size={16} />
@@ -252,10 +261,10 @@ export function GroupContent({
       {group && (
         <>
           {!active && (
-            <p className="ws-note">
+            <HelpText>
               This group is {group.status}. Membership and new invitations are
               read-only. Lifecycle controls remain in Settings.
-            </p>
+            </HelpText>
           )}
           {section === "overview" && (
             <>
@@ -332,7 +341,7 @@ export function GroupContent({
               <div className="productivity-filters">
                 <label>
                   Search
-                  <input
+                  <TextInput
                     aria-label={`Search ${section}`}
                     value={search}
                     onChange={(e) => {
@@ -350,7 +359,7 @@ export function GroupContent({
                 </label>
                 <label>
                   Filter
-                  <select
+                  <NativeSelect
                     aria-label={`Filter ${section}`}
                     value={filter}
                     onChange={(e) => {
@@ -376,17 +385,17 @@ export function GroupContent({
                         {title(f)}
                       </option>
                     ))}
-                  </select>
+                  </NativeSelect>
                 </label>
                 {section === "invitations" && (
-                  <button
+                  <Button
                     className="button primary"
                     disabled={!active}
                     onClick={() => setInvite(true)}
                   >
                     <Plus size={16} />
                     Invite researchers
-                  </button>
+                  </Button>
                 )}
               </div>
               {section === "members" && (
@@ -408,7 +417,7 @@ export function GroupContent({
                   <span className="ws-spacer" />
                   {section === "members" ? (
                     <>
-                      <select
+                      <NativeSelect
                         aria-label="Bulk content role"
                         value={bulkRole}
                         onChange={(e) => setBulkRole(e.target.value)}
@@ -416,8 +425,8 @@ export function GroupContent({
                         {["viewer", "commenter", "editor"].map((r) => (
                           <option key={r}>{r}</option>
                         ))}
-                      </select>
-                      <button
+                      </NativeSelect>
+                      <Button
                         className="button secondary"
                         disabled={!active || action.busy}
                         onClick={() =>
@@ -427,17 +436,17 @@ export function GroupContent({
                         }
                       >
                         Apply content role
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         className="button secondary danger-text"
                         disabled={!active || action.busy}
                         onClick={() => setRemove(selected as Member[])}
                       >
                         Remove selected
-                      </button>
+                      </Button>
                     </>
                   ) : (
-                    <button
+                    <Button
                       className="button secondary"
                       disabled={action.busy}
                       onClick={() =>
@@ -445,7 +454,7 @@ export function GroupContent({
                       }
                     >
                       Revoke selected invitations
-                    </button>
+                    </Button>
                   )}
                 </div>
               )}
@@ -462,8 +471,7 @@ export function GroupContent({
                       <tr>
                         {section !== "activity" && (
                           <th>
-                            <input
-                              type="checkbox"
+                            <Checkbox
                               aria-label={`Select this page of ${section}`}
                               checked={
                                 data.data.items.some((m) =>
@@ -527,8 +535,7 @@ export function GroupContent({
                         <tr key={item.id}>
                           {section !== "activity" && (
                             <td>
-                              <input
-                                type="checkbox"
+                              <Checkbox
                                 aria-label={`Select ${item.name ?? item.email}`}
                                 disabled={
                                   section === "members"
@@ -554,7 +561,7 @@ export function GroupContent({
                               </td>
                               <td>
                                 {canChange(item) && owner ? (
-                                  <select
+                                  <NativeSelect
                                     aria-label={`Group role for ${item.name}`}
                                     value={item.role}
                                     disabled={action.busy}
@@ -566,14 +573,14 @@ export function GroupContent({
                                   >
                                     <option value="member">Member</option>
                                     <option value="admin">Administrator</option>
-                                  </select>
+                                  </NativeSelect>
                                 ) : (
                                   <Badge>{item.role}</Badge>
                                 )}
                               </td>
                               <td>
                                 {canChange(item) ? (
-                                  <select
+                                  <NativeSelect
                                     aria-label={`Default content role for ${item.name}`}
                                     value={item.content_role}
                                     disabled={action.busy}
@@ -588,26 +595,26 @@ export function GroupContent({
                                         <option key={r}>{r}</option>
                                       ),
                                     )}
-                                  </select>
+                                  </NativeSelect>
                                 ) : (
                                   item.content_role
                                 )}
                               </td>
                               <td>
-                                <div className="ws-actions">
+                                <ActionRow>
                                   {canChange(item) && (
-                                    <button
+                                    <Button
                                       className="text-button danger-text"
                                       disabled={action.busy}
                                       onClick={() => setRemove([item])}
                                     >
                                       Remove
-                                    </button>
+                                    </Button>
                                   )}
                                   {owner &&
                                     active &&
                                     item.id !== session.user.id && (
-                                      <button
+                                      <Button
                                         className="text-button"
                                         onClick={() => {
                                           setTransfer(item);
@@ -615,9 +622,9 @@ export function GroupContent({
                                         }}
                                       >
                                         Transfer ownership
-                                      </button>
+                                      </Button>
                                     )}
-                                </div>
+                                </ActionRow>
                               </td>
                             </>
                           ) : section === "invitations" ? (
@@ -636,11 +643,11 @@ export function GroupContent({
                                 </small>
                               </td>
                               <td>
-                                <div className="ws-actions">
+                                <ActionRow>
                                   {item.status !== "accepted" &&
                                     (owner || item.role !== "admin") && (
                                       <>
-                                        <button
+                                        <Button
                                           className="text-button"
                                           disabled={!active || action.busy}
                                           onClick={() =>
@@ -648,9 +655,9 @@ export function GroupContent({
                                           }
                                         >
                                           Reissue link
-                                        </button>
+                                        </Button>
                                         {item.status !== "revoked" && (
-                                          <button
+                                          <Button
                                             className="text-button danger-text"
                                             disabled={action.busy}
                                             onClick={() =>
@@ -658,11 +665,11 @@ export function GroupContent({
                                             }
                                           >
                                             Revoke
-                                          </button>
+                                          </Button>
                                         )}
                                       </>
                                     )}
-                                </div>
+                                </ActionRow>
                               </td>
                             </>
                           ) : (
@@ -688,20 +695,20 @@ export function GroupContent({
                   {data.data?.total ?? 0} results · Page{" "}
                   {Math.floor(offset / 30) + 1}
                 </span>
-                <button
+                <Button
                   className="button secondary small"
                   disabled={!offset || data.loading}
                   onClick={() => setOffset(Math.max(0, offset - 30))}
                 >
                   Previous
-                </button>
-                <button
+                </Button>
+                <Button
                   className="button secondary small"
                   disabled={data.data?.nextOffset == null || data.loading}
                   onClick={() => setOffset(data.data!.nextOffset!)}
                 >
                   Next
-                </button>
+                </Button>
               </div>
             </>
           )}
@@ -744,7 +751,7 @@ export function GroupContent({
                   : r.error}
               </span>
               {r.link && (
-                <input
+                <TextInput
                   readOnly
                   aria-label={`Invitation link for ${r.email}`}
                   value={r.link}
@@ -784,21 +791,21 @@ export function GroupContent({
             ))}
           </ul>
           <ErrorNotice message={action.error} />
-          <div className="ws-actions">
-            <button
+          <ActionRow>
+            <Button
               className="button secondary"
               onClick={() => setRemove(null)}
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               className="button primary"
               disabled={action.busy}
               onClick={() => memberChange(remove, { remove: true })}
             >
               Remove from group
-            </button>
-          </div>
+            </Button>
+          </ActionRow>
         </Dialog>
       )}
       {transfer && (
@@ -813,14 +820,14 @@ export function GroupContent({
           </p>
           <label>
             Type TRANSFER
-            <input
+            <TextInput
               aria-label="Confirm ownership transfer"
               value={confirmation}
               onChange={(e) => setConfirmation(e.target.value)}
             />
           </label>
           <ErrorNotice message={action.error} />
-          <button
+          <Button
             className="button primary"
             disabled={confirmation !== "TRANSFER" || action.busy}
             onClick={() =>
@@ -836,7 +843,7 @@ export function GroupContent({
             }
           >
             Transfer ownership
-          </button>
+          </Button>
         </Dialog>
       )}
     </>
@@ -874,7 +881,7 @@ function InvitationDialog({
       </p>
       <label>
         Email addresses
-        <textarea
+        <TextArea
           aria-label="Invitation email addresses"
           rows={5}
           value={emails}
@@ -886,18 +893,18 @@ function InvitationDialog({
       <div className="productivity-filters">
         <label>
           Group role
-          <select
+          <NativeSelect
             aria-label="Invitation group role"
             value={role}
             onChange={(e) => setRole(e.target.value)}
           >
             <option value="member">Member</option>
             {owner && <option value="admin">Administrator</option>}
-          </select>
+          </NativeSelect>
         </label>
         <label>
           Default content role
-          <select
+          <NativeSelect
             aria-label="Invitation content role"
             value={contentRole}
             onChange={(e) => setContentRole(e.target.value)}
@@ -905,15 +912,15 @@ function InvitationDialog({
             {["viewer", "commenter", "editor"].map((r) => (
               <option key={r}>{r}</option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
       </div>
       <ErrorNotice message={action.error} />
-      <div className="ws-actions">
-        <button className="button secondary" onClick={onClose}>
+      <ActionRow>
+        <Button className="button secondary" onClick={onClose}>
           Cancel
-        </button>
-        <button
+        </Button>
+        <Button
           className="button primary"
           disabled={!addresses.length || addresses.length > 100 || action.busy}
           onClick={() =>
@@ -929,8 +936,8 @@ function InvitationDialog({
           }
         >
           Create invitations
-        </button>
-      </div>
+        </Button>
+      </ActionRow>
     </Dialog>
   );
 }
@@ -986,7 +993,7 @@ export function GroupSettings({
         <h2>Group identity</h2>
         <label>
           Group name
-          <input
+          <TextInput
             aria-label="Group name"
             value={name}
             maxLength={200}
@@ -996,7 +1003,7 @@ export function GroupSettings({
         </label>
         <label>
           Description
-          <textarea
+          <TextArea
             aria-label="Group description"
             value={description}
             maxLength={2000}
@@ -1013,7 +1020,7 @@ export function GroupSettings({
               ? " · Updated elsewhere; reload before saving"
               : ""}
           </span>
-          <button
+          <Button
             className="button secondary"
             disabled={!dirty}
             onClick={() => {
@@ -1024,8 +1031,8 @@ export function GroupSettings({
             }}
           >
             Cancel changes
-          </button>
-          <button
+          </Button>
+          <Button
             className="button primary"
             disabled={
               !dirty || !name.trim() || action.busy || group.status !== "active"
@@ -1047,7 +1054,7 @@ export function GroupSettings({
             }
           >
             Save group settings
-          </button>
+          </Button>
         </div>
       </section>
       <section className="settings-card">
@@ -1056,7 +1063,7 @@ export function GroupSettings({
           Group lifecycle applies to all group workspaces. Individual workspace
           actions only affect that workspace and never change group membership.
         </p>
-        <div className="ws-actions">
+        <ActionRow>
           <WorkspaceLink
             className="button secondary"
             to={`/workspaces/${group.space_id}/settings/storage`}
@@ -1065,28 +1072,28 @@ export function GroupSettings({
             Storage & file versions
           </WorkspaceLink>
           {space && (
-            <button
+            <Button
               className="button secondary"
               onClick={(e) => management.workspaceMenu(e, space)}
             >
               <MoreHorizontal size={16} />
               Manage workspace lifecycle
-            </button>
+            </Button>
           )}
-        </div>
+        </ActionRow>
       </section>
       <GroupLifecycle groupId={group.id} />
       {leaving && (
         <Dialog title="Unsaved group settings" onClose={() => setLeaving(null)}>
           <p>Your group name or description has not been saved.</p>
-          <div className="ws-actions">
-            <button
+          <ActionRow>
+            <Button
               className="button secondary"
               onClick={() => setLeaving(null)}
             >
               Keep editing
-            </button>
-            <button
+            </Button>
+            <Button
               className="button primary"
               onClick={() => {
                 const proceed = leaving;
@@ -1095,8 +1102,8 @@ export function GroupSettings({
               }}
             >
               Discard and leave
-            </button>
-          </div>
+            </Button>
+          </ActionRow>
         </Dialog>
       )}
     </>
@@ -1134,7 +1141,7 @@ function GroupLifecycle({ groupId }: { groupId: string }) {
           <p>
             <strong>{group.workspaces}</strong> workspaces · {group.status}
           </p>
-          <div className="ws-actions">
+          <ActionRow>
             {(group.status === "trashed"
               ? ["restore"]
               : group.status === "archived"
@@ -1147,7 +1154,7 @@ function GroupLifecycle({ groupId }: { groupId: string }) {
                   group.role === "owner",
               )
               .map((value) => (
-                <button
+                <Button
                   key={value}
                   className={`button ${value === "trash" ? "danger" : "secondary"}`}
                   onClick={() => {
@@ -1156,9 +1163,9 @@ function GroupLifecycle({ groupId }: { groupId: string }) {
                   }}
                 >
                   {value[0].toUpperCase() + value.slice(1)} entire group
-                </button>
+                </Button>
               ))}
-          </div>
+          </ActionRow>
         </>
       )}
       {operation && group && (
@@ -1169,7 +1176,7 @@ function GroupLifecycle({ groupId }: { groupId: string }) {
         >
           <label>
             Type “{group.name}” to confirm
-            <input
+            <TextInput
               autoFocus
               value={confirmation}
               onChange={(e) => setConfirmation(e.target.value)}
@@ -1177,14 +1184,14 @@ function GroupLifecycle({ groupId }: { groupId: string }) {
           </label>
           <ErrorNotice message={action.error} />
           <div className="dialog-footer">
-            <button
+            <Button
               className="button secondary"
               onClick={() => setOperation(null)}
               disabled={action.busy}
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               className={`button ${operation === "trash" ? "danger" : "primary"}`}
               disabled={action.busy || confirmation !== group.name}
               onClick={() =>
@@ -1200,7 +1207,7 @@ function GroupLifecycle({ groupId }: { groupId: string }) {
               }
             >
               Confirm {operation}
-            </button>
+            </Button>
           </div>
         </Dialog>
       )}

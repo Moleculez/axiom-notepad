@@ -1,4 +1,5 @@
 "use client";
+import { Button, HelpText } from "../ui/controls";
 import { useEffect, useRef, useState } from "react";
 import type { MathfieldElement } from "mathlive";
 import { runtimeAsset } from "../../lib/runtime-assets";
@@ -177,10 +178,10 @@ export default function MathVisual({
   }, [readOnly]);
   return (
     <div className="math-visual">
-      <p className="ws-note">
+      <HelpText>
         Structured input for supported equations. Source remains authoritative;
         advanced LaTeX and custom macros can always be edited in Source.
-      </p>
+      </HelpText>
       {!ready && !error && <Loading label="Loading visual input…" />}
       <div ref={host} />
       <ErrorNotice message={error} />
@@ -188,13 +189,13 @@ export default function MathVisual({
         <div className="tool-recovery">
           <h3>Retained visual draft</h3>
           <pre>{conflict}</pre>
-          <button
+          <Button
             className="button secondary"
             onClick={() => downloadText(conflict, "visual-draft.tex")}
           >
             Download draft
-          </button>
-          <button
+          </Button>
+          <Button
             className="button secondary"
             onClick={() => {
               field.current?.setValue(binding.source, {
@@ -207,7 +208,7 @@ export default function MathVisual({
             }}
           >
             Show current source
-          </button>
+          </Button>
         </div>
       )}
     </div>

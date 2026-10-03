@@ -1,4 +1,11 @@
 "use client";
+import {
+  Button,
+  HelpText,
+  NativeSelect,
+  TextArea,
+  TextInput,
+} from "../ui/controls";
 import { useEffect, useRef, useState } from "react";
 import type { AssistantSelection } from "@axiom/shared/assistant";
 import type { OfficeExcerptSource } from "@axiom/shared/assistant-office";
@@ -80,19 +87,17 @@ export default function AssistantOfficeExcerpt({
         <p role="status">{status}</p>
       ) : (
         <>
-          <p className="ws-note">
+          <HelpText>
             Select a passage, slide, or worksheet rows. Saved formulas are not
             recalculated. Hidden cells/notes may be present; review before
             sending.
-          </p>
+          </HelpText>
           {data.warnings.map((w) => (
-            <p className="ws-note" key={w}>
-              {w}
-            </p>
+            <HelpText key={w}>{w}</HelpText>
           ))}
           <label>
             Jump to a source block
-            <select
+            <NativeSelect
               defaultValue=""
               onChange={(e) => {
                 const item = data.locators[Number(e.target.value)];
@@ -111,9 +116,9 @@ export default function AssistantOfficeExcerpt({
                   {l.label} · {l.target}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </label>
-          <textarea
+          <TextArea
             className="assistant-excerpt"
             ref={source}
             readOnly
@@ -129,7 +134,7 @@ export default function AssistantOfficeExcerpt({
           <div className="productivity-subtoolbar">
             <label>
               From character
-              <input
+              <TextInput
                 type="number"
                 min={0}
                 max={data.source.length}
@@ -141,7 +146,7 @@ export default function AssistantOfficeExcerpt({
             </label>
             <label>
               To character
-              <input
+              <TextInput
                 type="number"
                 min={1}
                 max={data.source.length}
@@ -156,10 +161,10 @@ export default function AssistantOfficeExcerpt({
         </>
       )}
       <DialogFooter>
-        <button className="button secondary" onClick={close}>
+        <Button className="button secondary" onClick={close}>
           Cancel
-        </button>
-        <button
+        </Button>
+        <Button
           className="button primary"
           disabled={
             !data ||
@@ -180,7 +185,7 @@ export default function AssistantOfficeExcerpt({
           }}
         >
           Add selected evidence
-        </button>
+        </Button>
       </DialogFooter>
     </Dialog>
   );

@@ -58,6 +58,7 @@ export class FindPanel {
       const wrapper = document.createElement("label");
       wrapper.title = label;
       input.type = "checkbox";
+      input.className = "ui-checkbox";
       input.setAttribute("aria-label", label);
       input.addEventListener("change", () => {
         this.update();

@@ -1,4 +1,5 @@
 "use client";
+import { IconButton, SearchField } from "../ui/controls";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import {
@@ -122,7 +123,7 @@ export default function PdfOutline({
         <h3>Contents</h3>
         {items.length > 0 && (
           <div>
-            <button
+            <IconButton
               className="icon-button"
               aria-label="Filter outline"
               title="Filter sections"
@@ -135,9 +136,9 @@ export default function PdfOutline({
               }}
             >
               <Search size={14} />
-            </button>
+            </IconButton>
             {structure.branches.size > 0 && (
-              <button
+              <IconButton
                 className="icon-button"
                 aria-label="Collapse outline sections"
                 title="Collapse sections"
@@ -147,15 +148,14 @@ export default function PdfOutline({
                 }}
               >
                 <ChevronsDownUp size={14} />
-              </button>
+              </IconButton>
             )}
           </div>
         )}
       </header>
       {filtering && (
         <div className="pdf-outline-filter">
-          <Search size={13} />
-          <input
+          <SearchField
             ref={input}
             aria-label="Search PDF outline"
             placeholder="Find a section…"
@@ -169,7 +169,7 @@ export default function PdfOutline({
               }
             }}
           />
-          <button
+          <IconButton
             className="icon-button"
             aria-label="Close outline filter"
             onClick={() => {
@@ -178,7 +178,7 @@ export default function PdfOutline({
             }}
           >
             <X size={13} />
-          </button>
+          </IconButton>
         </div>
       )}
       {!items.length && (

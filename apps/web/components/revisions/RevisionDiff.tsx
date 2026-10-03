@@ -1,4 +1,5 @@
 "use client";
+import { Button, Checkbox, IconButton, Slider } from "../ui/controls";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowDown, ArrowUp, Columns2, Rows2 } from "lucide-react";
 import type { ParsedDocument } from "@axiom/markdown";
@@ -260,32 +261,31 @@ export default function RevisionDiff({
             Source
           </button>
         </div>
-        <button
+        <Button
           className="button ghost"
           aria-pressed={split}
           onClick={() => setSplit(!split)}
         >
           {split ? <Columns2 size={15} /> : <Rows2 size={15} />}
           {split ? "Side by side" : "Unified"}
-        </button>
-        <button
+        </Button>
+        <IconButton
           className="icon-button"
           aria-label="Previous change"
           onClick={() => jump(-1)}
         >
           <ArrowUp size={15} />
-        </button>
-        <button
+        </IconButton>
+        <IconButton
           className="icon-button"
           aria-label="Next change"
           onClick={() => jump(1)}
         >
           <ArrowDown size={15} />
-        </button>
+        </IconButton>
         {!rendered && (
           <label>
-            <input
-              type="checkbox"
+            <Checkbox
               checked={all}
               onChange={(e) => setAll(e.target.checked)}
             />
@@ -294,8 +294,7 @@ export default function RevisionDiff({
         )}
         {!rendered && (
           <label>
-            <input
-              type="checkbox"
+            <Checkbox
               checked={whitespace}
               onChange={(e) => setWhitespace(e.target.checked)}
             />
@@ -408,12 +407,12 @@ export default function RevisionDiff({
               <section>{raw()}</section>
             )}
             {!rendered && lines.length > limit && (
-              <button
+              <Button
                 className="button secondary"
                 onClick={() => setLimit((n) => n + 200)}
               >
                 Show more comparison regions
-              </button>
+              </Button>
             )}
           </div>
           {before.format === "latex" && (
@@ -479,18 +478,19 @@ function ImageComparison({
   return (
     <div className="revision-comparison">
       <div className="revision-compare-toolbar">
-        <button
+        <Button
           className="button secondary"
           aria-pressed={wipe}
           onClick={() => setWipe(!wipe)}
         >
           {wipe ? "Wipe comparison" : "Side by side"}
-        </button>
+        </Button>
         <label>
           Zoom
-          <input
+          <Slider
             aria-label="Comparison zoom"
-            type="range"
+            aria-valuetext={`${Math.round(zoom * 100)}%`}
+
             min=".25"
             max="3"
             step=".25"
@@ -498,15 +498,16 @@ function ImageComparison({
             onChange={(e) => setZoom(Number(e.target.value))}
           />
         </label>
-        <button className="button ghost" onClick={() => setZoom(1)}>
+        <Button className="button ghost" onClick={() => setZoom(1)}>
           Fit images
-        </button>
+        </Button>
         {wipe && (
           <label>
             Reveal
-            <input
+            <Slider
               aria-label="Image comparison reveal"
-              type="range"
+              aria-valuetext={`${position}%`}
+
               min="0"
               max="100"
               value={position}

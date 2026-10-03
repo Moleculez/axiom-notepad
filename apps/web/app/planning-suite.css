@@ -1,0 +1,457 @@
+/* Planning uses app controls, not independent page-specific field drawings. */
+.planning-section-tabs {
+  display: flex;
+  gap: 18px;
+  flex: none;
+  border-bottom: 1px solid var(--line);
+  padding: 0 22px;
+}
+.planning-section-tabs > button {
+  padding: 12px 2px;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  color: var(--muted);
+  font-size: var(--size-ui-small);
+}
+.planning-section-tabs > button[aria-pressed="true"] {
+  color: var(--text);
+  border-color: var(--accent);
+}
+.planning-toolbar > .ui-select,
+.planning-gantt-controls > .ui-select,
+.planning-filters > .ui-select,
+.planning-suite-panel > header > .ui-select {
+  --field-width: auto;
+  max-width: 190px;
+}
+.planning-filters > .ui-picker {
+  width: 170px;
+}
+.planning-selection-bar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 8px 22px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+  flex: none;
+}
+.planning-selection-bar > .ui-help {
+  flex: 1;
+}
+.planning-task-row[aria-selected="true"],
+.gantt-row.is-selected .gantt-label {
+  background: var(--accent-bg);
+}
+.planning-suite-panel {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 22px;
+  scrollbar-gutter: stable;
+}
+.planning-suite-panel > header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.planning-suite-panel > header > div:first-child {
+  flex: 1;
+  min-width: 250px;
+}
+.planning-suite-panel h2 {
+  margin: 0 0 6px;
+  font: 600 calc(var(--size-ui) * 1.2)/1.4 var(--font-ui);
+}
+.planning-suite-panel > header > .ui-select {
+  width: auto;
+}
+.ws-app label.planning-check-label,
+.dialog label.planning-check-label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-weight: 400;
+}
+.planning-outcome-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+}
+.planning-outcome-grid > article {
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--card-radius);
+  background: var(--paper);
+}
+.planning-outcome-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.planning-outcome-heading > button {
+  flex: 1;
+  text-align: left;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.planning-outcome-heading > svg {
+  flex: none;
+  color: var(--muted);
+}
+.planning-outcome-grid progress {
+  width: 100%;
+  height: 5px;
+  margin-top: 18px;
+  border: 0;
+  accent-color: var(--accent);
+}
+.planning-outcome-grid p,
+.planning-request-list small {
+  color: var(--muted);
+  font-size: var(--size-ui-small);
+  line-height: 1.6;
+}
+.planning-request-list > article {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  border-bottom: 1px solid var(--line);
+  padding: 18px 0;
+}
+.planning-request-list > article > div:first-child {
+  flex: 1;
+  min-width: 0;
+}
+.planning-request-title {
+  display: block;
+  text-align: left;
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+.planning-request-list small {
+  display: block;
+}
+.planning-request-list p {
+  margin: 8px 0;
+}
+.planning-request-list .ui-actions {
+  flex: none;
+}
+.planning-suite-form {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.planning-suite-form .planning-field-grid {
+  margin: 0;
+}
+.planning-history ol {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.planning-history li {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+.planning-history small {
+  color: var(--muted);
+}
+.planning-routine-list > article {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.planning-routine-list > article > button {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+}
+.planning-routine-list small {
+  display: block;
+  color: var(--muted);
+  margin-top: 6px;
+}
+.planning-occurrence {
+  padding: 10px 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid var(--line);
+}
+.planning-occurrence small {
+  color: var(--muted);
+}
+.planning-weekdays {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  border: 0;
+  padding: 0;
+}
+.dialog .planning-weekdays > label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+}
+.planning-saved-views > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+.planning-saved-views strong {
+  flex: 1;
+}
+.planning-saved-views small {
+  color: var(--muted);
+}
+.ws-app .planning-lag-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 90px;
+  align-items: center;
+  gap: 12px;
+  font-size: var(--size-ui-small);
+}
+.planning-gantt > .ui-help.planning-gantt-help {
+  padding: 6px 22px 10px;
+  flex: none;
+}
+.gantt-header {
+  position: sticky;
+  top: 0;
+  z-index: 8;
+  background: var(--paper);
+  border-bottom: 1px solid var(--line);
+}
+.gantt-label-header {
+  position: sticky;
+  left: 0;
+  display: flex;
+  align-items: center;
+  background: var(--paper);
+  z-index: 2;
+  border-right: 1px solid var(--line);
+  font-size: var(--size-ui-small);
+}
+.gantt-label-header > strong {
+  flex: none;
+  padding-inline: 16px;
+  font-weight: 500;
+}
+.gantt-label-header > span {
+  width: 110px;
+  flex: none;
+  padding-inline: 10px;
+  color: var(--muted);
+}
+.gantt-column-resizer {
+  position: absolute;
+  inset-block: 0;
+  width: 8px;
+  cursor: col-resize;
+  touch-action: none;
+}
+.gantt-column-resizer:hover,
+.gantt-column-resizer:focus-visible {
+  background: var(--accent-bg);
+  border-inline-start: 2px solid var(--accent);
+}
+.gantt-date-headers {
+  position: absolute;
+  inset-block: 0;
+  overflow: hidden;
+  font-size: var(--size-ui-small);
+}
+.gantt-date-headers > span {
+  position: absolute;
+  padding: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.gantt-date-major {
+  top: 0;
+  height: 50%;
+  border-inline-start: 1px solid var(--line);
+  background: var(--surface);
+  font-weight: 500;
+}
+.gantt-date-minor {
+  top: 50%;
+  color: var(--muted);
+}
+.gantt-task-cell {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-inline-end: 10px;
+  min-width: 0;
+}
+.gantt-task-name {
+  min-width: 0;
+  flex: 1;
+  text-align: left;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+.gantt-fold-placeholder {
+  width: 20px;
+  flex: none;
+}
+.gantt-data-cell {
+  flex: none;
+  width: 110px;
+  padding-inline: 10px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+.gantt-blocked-dot {
+  width: 6px;
+  height: 6px;
+  border: 1px solid var(--danger);
+  border-radius: 50%;
+  flex: none;
+}
+.gantt-group-row .gantt-label {
+  background: var(--surface);
+}
+.gantt-group-row .gantt-label > .button {
+  justify-content: flex-start;
+  padding-inline: 12px;
+}
+.gantt-group-span {
+  position: absolute;
+  height: 8px;
+  border: 1px solid var(--muted);
+  border-top-width: 3px;
+  pointer-events: none;
+  opacity: 0.6;
+}
+.gantt-dependencies {
+  z-index: 2;
+  color: var(--muted);
+}
+.gantt-dependencies .gantt-edge-hit {
+  pointer-events: stroke;
+  stroke: transparent;
+  stroke-width: 10;
+  cursor: pointer;
+}
+.gantt-dependency-conflict path:not(.gantt-edge-hit) {
+  stroke: var(--danger);
+}
+.gantt-dependencies text {
+  fill: var(--muted);
+  font: calc(var(--size-ui) * 0.7) var(--font-ui);
+}
+.gantt-label {
+  z-index: 5;
+}
+.gantt-bar {
+  border-radius: var(--control-radius-small);
+}
+.gantt-bar.is-critical {
+  border-color: var(--danger);
+  border-width: 2px;
+}
+.gantt-progress-fill {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  pointer-events: none;
+  border-radius: inherit;
+}
+.gantt-bar-title,
+.gantt-resize {
+  z-index: 1;
+}
+.gantt-link-handle {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--accent);
+  background: var(--paper);
+  border-radius: 50%;
+  opacity: 0;
+  top: calc(50% - 6px);
+  touch-action: none;
+  z-index: 4;
+}
+.gantt-link-handle.start {
+  left: -15px;
+}
+.gantt-link-handle.end {
+  right: -15px;
+}
+.gantt-bar:hover .gantt-link-handle,
+.gantt-bar:focus-within .gantt-link-handle,
+.gantt-link-handle.is-target {
+  opacity: 1;
+}
+.gantt-link-handle:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.gantt-baseline-bar {
+  position: absolute;
+  bottom: 4px;
+  height: 4px;
+  border: 1px solid var(--muted);
+  border-radius: 1px;
+  opacity: 0.7;
+}
+.planning-column-options {
+  border: 0;
+  padding: 16px 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.dialog .planning-column-options > label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+.dialog .planning-layer-options > label {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 0;
+}
+@media (forced-colors: active) {
+  .gantt-bar,
+  .gantt-link-handle,
+  .gantt-group-span {
+    border-color: CanvasText;
+  }
+  .gantt-progress-fill {
+    background: Highlight;
+    opacity: 0.3;
+  }
+  .gantt-dependencies path:not(.gantt-edge-hit) {
+    stroke: CanvasText;
+  }
+}

@@ -1,4 +1,13 @@
 "use client";
+import {
+  Button,
+  Checkbox,
+  IconButton,
+  TextArea,
+  TextInput,
+  NativeSelect,
+  SearchField,
+} from "./ui/controls";
 import BrandMark from "./BrandMark";
 import { confirmAction } from "../lib/app-prompt";
 import { printDocument } from "../lib/print-document";
@@ -1080,13 +1089,13 @@ export default function Notebook() {
                 Axiom<span className="brand-dot">.</span>
               </span>
             </a>
-            <button
+            <IconButton
               className="icon-button sidebar-toggle"
               aria-label="Hide sidebar"
               onClick={() => setSidebar(false)}
             >
               <Menu size={17} />
-            </button>
+            </IconButton>
           </div>
           <button className="group-switch" onClick={() => setModal("groups")}>
             <div className="group-symbol">
@@ -1144,13 +1153,13 @@ export default function Notebook() {
           <div className="sidebar-scroll">
             <div className="nav-section-title">
               <span>PROJECTS</span>
-              <button
+              <IconButton
                 className="icon-button"
                 aria-label="New project"
                 onClick={() => setModal("project")}
               >
                 <Plus size={14} />
-              </button>
+              </IconButton>
             </div>
             {workspace.projects.map((p) => (
               <div className="project-nav" key={p.id}>
@@ -1179,7 +1188,7 @@ export default function Notebook() {
                     <Folder size={15} className={`project-color-${p.color}`} />
                     <span>{p.name}</span>
                   </button>
-                  <button
+                  <IconButton
                     className="icon-button project-add"
                     aria-label={`Add note to ${p.name}`}
                     onClick={() => {
@@ -1188,7 +1197,7 @@ export default function Notebook() {
                     }}
                   >
                     <Plus size={12} />
-                  </button>
+                  </IconButton>
                 </div>
                 {!collapsed.includes(p.id) &&
                   noteRows(
@@ -1266,7 +1275,7 @@ export default function Notebook() {
                 <strong>{session.user.name}</strong>
                 <span>{group?.role ?? "Researcher"}</span>
               </div>
-              <button
+              <IconButton
                 className="icon-button"
                 aria-label="Notifications"
                 onClick={() => setModal("notifications")}
@@ -1275,7 +1284,7 @@ export default function Notebook() {
                 {workspace.notifications.some((n) => !n.read_at) && (
                   <i className="notification-dot" />
                 )}
-              </button>
+              </IconButton>
             </div>
           </div>
         </aside>
@@ -1283,13 +1292,13 @@ export default function Notebook() {
       <div className="main-area">
         <header className="topbar">
           <div className="breadcrumbs">
-            <button
+            <IconButton
               className="icon-button"
               aria-label="Toggle sidebar"
               onClick={() => setSidebar((v) => !v)}
             >
               <Menu size={18} />
-            </button>
+            </IconButton>
             <span className="breadcrumb-group">{group?.name ?? "Axiom"}</span>
             <ChevronRight size={13} />
             <span>
@@ -1315,7 +1324,7 @@ export default function Notebook() {
           </div>
           <div className="topbar-actions">
             {offline && <span className="offline-label">Offline</span>}
-            <button
+            <IconButton
               className="icon-button"
               aria-label={dark ? "Use light theme" : "Use dark theme"}
               onClick={() => {
@@ -1327,8 +1336,8 @@ export default function Notebook() {
             >
               <Sun size={17} className={dark ? "" : "hidden"} />
               <Moon size={17} className={dark ? "hidden" : ""} />
-            </button>
-            <button
+            </IconButton>
+            <IconButton
               className="icon-button"
               aria-label="Appearance settings"
               onClick={() => {
@@ -1337,15 +1346,15 @@ export default function Notebook() {
               }}
             >
               <Settings size={17} />
-            </button>
-            <button
+            </IconButton>
+            <Button
               className="button primary small"
               onClick={() => newNote()}
               disabled={!groupId || offline}
             >
               <Plus size={15} />
               New note
-            </button>
+            </Button>
           </div>
         </header>
         {page === "note" && note ? (
@@ -1409,7 +1418,7 @@ export default function Notebook() {
                   {initials(session.user.name)}
                 </span>
               </div>
-              <button
+              <IconButton
                 className="icon-button"
                 aria-label={
                   workspace.notes.find((n) => n.id === note.id)?.favorite
@@ -1434,23 +1443,23 @@ export default function Notebook() {
                       : ""
                   }
                 />
-              </button>
-              <button
+              </IconButton>
+              <Button
                 className="button secondary small"
                 onClick={() => setModal("share")}
               >
                 <Users size={14} />
                 Share
-              </button>
-              <button
+              </Button>
+              <IconButton
                 className="icon-button"
                 aria-label="Note actions"
                 onClick={() => setModal("note-actions")}
               >
                 <MoreHorizontal size={19} />
-              </button>
+              </IconButton>
               <span className="toolbar-divider" />
-              <button
+              <IconButton
                 className="icon-button"
                 aria-label="Toggle context panel"
                 onClick={() => setContextOpen((v) => !v)}
@@ -1460,7 +1469,7 @@ export default function Notebook() {
                 ) : (
                   <PanelRightOpen size={18} />
                 )}
-              </button>
+              </IconButton>
             </div>
             {remoteVersion && (
               <div className="recovery-banner">
@@ -1763,7 +1772,11 @@ export default function Notebook() {
                     <ReadingView
                       active={mode === "read"}
                       source={source}
-                      visual={{resourceId: note.id, anchor:(from,to)=>editor.current?.markAnchor(from,to,"block")}}
+                      visual={{
+                        resourceId: note.id,
+                        anchor: (from, to) =>
+                          editor.current?.markAnchor(from, to, "block"),
+                      }}
                       parsed={parsed}
                       context={renderContext}
                       onLink={openLink}
@@ -2135,20 +2148,20 @@ export default function Notebook() {
                             </button>
                           </div>
                         )}
-                        <textarea
+                        <TextArea
                           aria-label="Write a comment"
                           placeholder="Add a thought or a question…"
                           value={commentText}
                           onChange={(e) => setCommentText(e.target.value)}
                           rows={3}
                         />
-                        <button
+                        <Button
                           className="button primary small"
                           disabled={!commentText.trim() || busy || offline}
                         >
                           Post comment
                           <ArrowRight size={13} />
-                        </button>
+                        </Button>
                       </form>
                     </>
                   )}
@@ -2349,13 +2362,13 @@ export default function Notebook() {
                             Start a paper review, derivation, or experiment log.
                           </p>
                         </div>
-                        <button
+                        <Button
                           className="button secondary small"
                           onClick={() => navigate("templates")}
                         >
                           Explore templates
                           <ArrowRight size={14} />
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   </>
@@ -2398,13 +2411,13 @@ export default function Notebook() {
                         </p>
                       </div>
                       {page !== "trash" && (
-                        <button
+                        <Button
                           className="button primary"
                           onClick={() => newNote()}
                         >
                           <Plus size={16} />
                           New note
-                        </button>
+                        </Button>
                       )}
                     </div>
                     <div className="collection-tools">
@@ -2492,21 +2505,21 @@ export default function Notebook() {
           <p>
             Your text is retained here. Copy or download it before dismissing.
           </p>
-          <textarea
+          <TextArea
             aria-label="Recovered editor text"
             readOnly
             value={recoveredText}
           />
           <div>
-            <button
+            <Button
               className="button secondary"
               onClick={() =>
                 download("recovered-editor-text.md", recoveredText)
               }
             >
               Download recovered text
-            </button>
-            <button
+            </Button>
+            <Button
               className="button secondary"
               onClick={() => {
                 setRecoveredText("");
@@ -2517,7 +2530,7 @@ export default function Notebook() {
               }}
             >
               Dismiss recovery
-            </button>
+            </Button>
           </div>
         </aside>
       )}
@@ -2556,7 +2569,7 @@ export default function Notebook() {
             <form onSubmit={createFromTemplate}>
               <label>
                 Note title
-                <input
+                <TextInput
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
                   placeholder="A question worth exploring"
@@ -2585,7 +2598,7 @@ export default function Notebook() {
               <div className="form-grid">
                 <label>
                   Project
-                  <select
+                  <NativeSelect
                     name="projectId"
                     defaultValue={
                       page === "project" || modal === "new-note"
@@ -2599,31 +2612,31 @@ export default function Notebook() {
                         {p.name}
                       </option>
                     ))}
-                  </select>
+                  </NativeSelect>
                 </label>
                 <label>
                   Visibility
-                  <select
+                  <NativeSelect
                     name="visibility"
                     defaultValue={page === "private" ? "private" : "shared"}
                   >
                     <option value="shared">Shared with group</option>
                     <option value="private">Private draft</option>
-                  </select>
+                  </NativeSelect>
                 </label>
               </div>
               <div className="dialog-footer">
-                <button
+                <Button
                   className="button secondary"
                   type="button"
                   onClick={closeModal}
                 >
                   Cancel
-                </button>
-                <button className="button primary" disabled={busy}>
+                </Button>
+                <Button className="button primary" disabled={busy}>
                   Create note
                   <ArrowRight size={15} />
-                </button>
+                </Button>
               </div>
             </form>
           )}
@@ -2647,7 +2660,7 @@ export default function Notebook() {
             >
               <label>
                 Project name
-                <input
+                <TextInput
                   name="name"
                   required
                   autoFocus
@@ -2657,7 +2670,7 @@ export default function Notebook() {
               </label>
               <label>
                 Description
-                <textarea
+                <TextArea
                   name="description"
                   rows={3}
                   placeholder="What are you exploring together?"
@@ -2665,18 +2678,18 @@ export default function Notebook() {
               </label>
               <label>
                 Color
-                <select name="color">
+                <NativeSelect name="color">
                   <option value="blue">Slate blue</option>
                   <option value="green">Sage green</option>
                   <option value="purple">Muted violet</option>
                   <option value="orange">Warm ochre</option>
-                </select>
+                </NativeSelect>
               </label>
               <div className="dialog-footer">
-                <button className="button primary" disabled={busy}>
+                <Button className="button primary" disabled={busy}>
                   <FolderPlus size={15} />
                   Create project
-                </button>
+                </Button>
               </div>
             </form>
           )}
@@ -2719,30 +2732,28 @@ export default function Notebook() {
               >
                 <label>
                   Create a research group
-                  <input
+                  <TextInput
                     name="name"
                     required
                     placeholder="Your lab or group name"
                   />
                 </label>
-                <button className="button primary" disabled={busy}>
+                <Button className="button primary" disabled={busy}>
                   <Plus size={15} />
                   Create group
-                </button>
+                </Button>
               </form>
             </>
           )}
           {modal === "search" && (
             <>
-              <label className="search-field dialog-search">
-                <Search size={19} />
-                <input
-                  autoFocus
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search notes, ideas, or tags…"
-                />
-              </label>
+              <SearchField
+                wrapperClassName="search-field dialog-search"
+                autoFocus
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search notes, ideas, or tags…"
+              />
               <div className="search-results">
                 {searchResults.map((result) => (
                   <button
@@ -2804,7 +2815,7 @@ export default function Notebook() {
             >
               <label>
                 LaTeX expression
-                <textarea
+                <TextArea
                   className="mono"
                   name="latex"
                   autoFocus
@@ -2816,7 +2827,7 @@ export default function Notebook() {
                 />
               </label>
               <label className="checkbox-label">
-                <input type="checkbox" name="display" defaultChecked />
+                <Checkbox name="display" defaultChecked />
                 Display on its own line
               </label>
               <div
@@ -2828,10 +2839,10 @@ export default function Notebook() {
                 }}
               />
               <div className="dialog-footer">
-                <button className="button primary">
+                <Button className="button primary">
                   Insert equation
                   <Sigma size={15} />
-                </button>
+                </Button>
               </div>
             </form>
           )}
@@ -2882,7 +2893,7 @@ export default function Notebook() {
                 </p>
               </div>
               {note.visibility === "private" ? (
-                <button
+                <Button
                   className="button primary"
                   onClick={() =>
                     void run(async () => {
@@ -2894,9 +2905,9 @@ export default function Notebook() {
                 >
                   Publish to group
                   <ArrowRight size={15} />
-                </button>
+                </Button>
               ) : (
-                <button
+                <Button
                   className="button primary"
                   onClick={() =>
                     void navigator.clipboard
@@ -2906,10 +2917,10 @@ export default function Notebook() {
                 >
                   <Copy size={15} />
                   Copy note link
-                </button>
+                </Button>
               )}
               {manager && (
-                <button
+                <Button
                   className="button secondary"
                   onClick={() => {
                     setModal("workspace-settings");
@@ -2918,7 +2929,7 @@ export default function Notebook() {
                 >
                   <Users size={15} />
                   Manage members
-                </button>
+                </Button>
               )}
             </>
           )}
@@ -2943,7 +2954,7 @@ export default function Notebook() {
               >
                 <label>
                   Tags
-                  <input
+                  <TextInput
                     name="tags"
                     defaultValue={note.tags.join(", ")}
                     placeholder="Separate tags with commas"
@@ -2952,7 +2963,7 @@ export default function Notebook() {
                 <div className="form-grid">
                   <label>
                     Project
-                    <select
+                    <NativeSelect
                       name="projectId"
                       defaultValue={note.project_id ?? ""}
                     >
@@ -2962,11 +2973,14 @@ export default function Notebook() {
                           {p.name}
                         </option>
                       ))}
-                    </select>
+                    </NativeSelect>
                   </label>
                   <label>
                     Parent note
-                    <select name="parentId" defaultValue={note.parent_id ?? ""}>
+                    <NativeSelect
+                      name="parentId"
+                      defaultValue={note.parent_id ?? ""}
+                    >
                       <option value="">Top-level note</option>
                       {activeNotes
                         .filter(
@@ -2980,12 +2994,12 @@ export default function Notebook() {
                             {n.title}
                           </option>
                         ))}
-                    </select>
+                    </NativeSelect>
                   </label>
                 </div>
-                <button className="button primary small" disabled={busy}>
+                <Button className="button primary small" disabled={busy}>
                   Save details
-                </button>
+                </Button>
               </form>
               <hr />
               <div className="action-list">
@@ -3079,10 +3093,10 @@ export default function Notebook() {
                 days.
               </p>
               <div className="dialog-footer">
-                <button className="button secondary" onClick={closeModal}>
+                <Button className="button secondary" onClick={closeModal}>
                   Keep note
-                </button>
-                <button
+                </Button>
+                <Button
                   className="button danger"
                   disabled={busy}
                   onClick={() =>
@@ -3096,7 +3110,7 @@ export default function Notebook() {
                   }
                 >
                   Move to trash
-                </button>
+                </Button>
               </div>
             </>
           )}
@@ -3116,15 +3130,15 @@ export default function Notebook() {
                   });
                 }}
               >
-                <input
+                <TextInput
                   name="label"
                   required
                   placeholder="Name a milestone…"
                   aria-label="Milestone name"
                 />
-                <button className="button primary small" disabled={busy}>
+                <Button className="button primary small" disabled={busy}>
                   Save
-                </button>
+                </Button>
               </form>
               <div className="version-list">
                 {versions.map((version) => (
@@ -3137,7 +3151,7 @@ export default function Notebook() {
                         {version.author_name && "· " + version.author_name}
                       </span>
                     </div>
-                    <button
+                    <Button
                       className="button secondary small"
                       disabled={busy}
                       onClick={() => {
@@ -3146,7 +3160,7 @@ export default function Notebook() {
                       }}
                     >
                       Restore
-                    </button>
+                    </Button>
                   </div>
                 ))}
               </div>
@@ -3166,13 +3180,13 @@ export default function Notebook() {
                 to reopen the restored document.
               </p>
               <div className="dialog-footer">
-                <button
+                <Button
                   className="button secondary"
                   onClick={() => setModal("history")}
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   className="button primary"
                   disabled={busy}
                   onClick={() =>
@@ -3188,7 +3202,7 @@ export default function Notebook() {
                   }
                 >
                   Restore version
-                </button>
+                </Button>
               </div>
             </>
           )}
@@ -3245,7 +3259,7 @@ export default function Notebook() {
                       <small>{member.email}</small>
                     </div>
                     {group?.role === "owner" && member.role !== "owner" ? (
-                      <select
+                      <NativeSelect
                         aria-label={`Role for ${member.name}`}
                         value={member.role}
                         onChange={(e) =>
@@ -3263,14 +3277,14 @@ export default function Notebook() {
                       >
                         <option value="member">Member</option>
                         <option value="admin">Admin</option>
-                      </select>
+                      </NativeSelect>
                     ) : (
                       <span className="role-badge">{member.role}</span>
                     )}
                     {manager &&
                       member.role !== "owner" &&
                       member.id !== session.user.id && (
-                        <button
+                        <IconButton
                           className="icon-button danger-text"
                           aria-label={`Remove ${member.name}`}
                           onClick={() => {
@@ -3279,7 +3293,7 @@ export default function Notebook() {
                           }}
                         >
                           <X size={15} />
-                        </button>
+                        </IconButton>
                       )}
                   </div>
                 ))}
@@ -3306,7 +3320,7 @@ export default function Notebook() {
                   >
                     <label>
                       Invite a researcher
-                      <input
+                      <TextInput
                         type="email"
                         name="email"
                         placeholder="colleague@research.org"
@@ -3314,25 +3328,25 @@ export default function Notebook() {
                       />
                     </label>
                     <div className="invite-form-actions">
-                      <select name="role" aria-label="Invitation role">
+                      <NativeSelect name="role" aria-label="Invitation role">
                         <option value="member">Member</option>
                         {group?.role === "owner" && (
                           <option value="admin">Administrator</option>
                         )}
-                      </select>
-                      <button className="button primary small" disabled={busy}>
+                      </NativeSelect>
+                      <Button className="button primary small" disabled={busy}>
                         <Plus size={14} />
                         Create invitation
-                      </button>
+                      </Button>
                     </div>
                     {inviteLink && (
                       <div className="copy-field">
-                        <input
+                        <TextInput
                           value={inviteLink}
                           readOnly
                           aria-label="Invitation link"
                         />
-                        <button
+                        <IconButton
                           type="button"
                           className="icon-button"
                           aria-label="Copy invitation"
@@ -3343,7 +3357,7 @@ export default function Notebook() {
                           }
                         >
                           <Copy size={15} />
-                        </button>
+                        </IconButton>
                       </div>
                     )}
                   </form>
@@ -3355,7 +3369,7 @@ export default function Notebook() {
                   Keep your notes portable with Markdown and BibTeX.
                 </p>
                 <div className="button-row">
-                  <button
+                  <Button
                     className="button secondary small"
                     onClick={() => {
                       setImportFile(null);
@@ -3365,7 +3379,7 @@ export default function Notebook() {
                   >
                     <Upload size={14} />
                     Import notes
-                  </button>
+                  </Button>
                   <a
                     className="button secondary small"
                     href={`/api/v1/export?groupId=${groupId}`}
@@ -3379,20 +3393,20 @@ export default function Notebook() {
                 <h3>Your account</h3>
                 <p className="muted">{session.user.email}</p>
                 <div className="button-row">
-                  <button
+                  <Button
                     className="button secondary small"
                     onClick={() => setModal("password")}
                   >
                     <LockKeyhole size={14} />
                     Change password
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     className="button secondary small"
                     onClick={() => setModal("logout")}
                   >
                     <LogOut size={14} />
                     Sign out
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -3404,13 +3418,13 @@ export default function Notebook() {
                 from this group? Their access to shared notes will end.
               </p>
               <div className="dialog-footer">
-                <button
+                <Button
                   className="button secondary"
                   onClick={() => setModal("workspace-settings")}
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   className="button danger"
                   disabled={busy}
                   onClick={() =>
@@ -3424,7 +3438,7 @@ export default function Notebook() {
                   }
                 >
                   Remove member
-                </button>
+                </Button>
               </div>
             </>
           )}
@@ -3454,7 +3468,7 @@ export default function Notebook() {
             >
               <label>
                 Current password
-                <input
+                <TextInput
                   type="password"
                   name="current"
                   autoComplete="current-password"
@@ -3463,7 +3477,7 @@ export default function Notebook() {
               </label>
               <label>
                 New password
-                <input
+                <TextInput
                   type="password"
                   name="next"
                   autoComplete="new-password"
@@ -3472,9 +3486,9 @@ export default function Notebook() {
                 />
               </label>
               <div className="dialog-footer">
-                <button className="button primary" disabled={busy}>
+                <Button className="button primary" disabled={busy}>
                   Change password
-                </button>
+                </Button>
               </div>
             </form>
           )}
@@ -3488,7 +3502,7 @@ export default function Notebook() {
               </p>
               <div className="dialog-footer">
                 {note && (
-                  <button
+                  <Button
                     className="button secondary"
                     onClick={() =>
                       download(
@@ -3498,9 +3512,9 @@ export default function Notebook() {
                     }
                   >
                     Export current note
-                  </button>
+                  </Button>
                 )}
-                <button
+                <Button
                   className="button primary"
                   onClick={() =>
                     void run(async () => {
@@ -3543,7 +3557,7 @@ export default function Notebook() {
                   }
                 >
                   Sign out
-                </button>
+                </Button>
               </div>
             </>
           )}
@@ -3577,7 +3591,7 @@ export default function Notebook() {
                 </>
               )}
               <div className="dialog-footer">
-                <button
+                <Button
                   className="button primary"
                   disabled={!importFile || busy}
                   onClick={() =>
@@ -3598,7 +3612,7 @@ export default function Notebook() {
                 >
                   {importPreview ? "Import notes" : "Preview import"}
                   <ArrowRight size={15} />
-                </button>
+                </Button>
               </div>
             </>
           )}
@@ -3627,7 +3641,7 @@ export default function Notebook() {
                   </p>
                 )}
               </div>
-              <button
+              <Button
                 className="button secondary small"
                 onClick={() =>
                   void run(async () => {
@@ -3638,7 +3652,7 @@ export default function Notebook() {
               >
                 <CheckCheck size={15} />
                 Mark all as read
-              </button>
+              </Button>
             </>
           )}
           {modal === "help" && (
@@ -3693,12 +3707,12 @@ export default function Notebook() {
                 Open notes remain available offline. New notes, attachments,
                 membership changes, and server history need a connection.
               </p>
-              <button
+              <Button
                 className="button secondary"
                 onClick={() => workspaceCommand("shortcuts")}
               >
                 Customize keyboard shortcuts
-              </button>
+              </Button>
               <div className="shortcut-guide">
                 {editorCommands
                   .filter(
@@ -3767,10 +3781,10 @@ function Empty({
       <h3>{title}</h3>
       <p>{description}</p>
       {action && (
-        <button className="button primary small" onClick={action}>
+        <Button className="button primary small" onClick={action}>
           {label}
           <Plus size={14} />
-        </button>
+        </Button>
       )}
     </div>
   );

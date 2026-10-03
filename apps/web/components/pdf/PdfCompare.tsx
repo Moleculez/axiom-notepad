@@ -1,4 +1,5 @@
 "use client";
+import { Checkbox, TextInput, NativeSelect } from "../ui/controls";
 import { useEffect, useRef, useState } from "react";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import type { PdfComparison } from "@axiom/shared/pdf-compare";
@@ -244,13 +245,13 @@ export default function PdfCompare({
       returnFocus={returnFocus}
     >
       <div className="pdf-compare-controls">
-        <input
+        <TextInput
           aria-label="Find comparison PDF"
           placeholder="Find a PDF…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
-        <select
+        <NativeSelect
           aria-label="Comparison PDF"
           value={file}
           onChange={(e) => setFile(e.target.value)}
@@ -263,8 +264,8 @@ export default function PdfCompare({
               {f.name}
             </option>
           ))}
-        </select>
-        <select
+        </NativeSelect>
+        <NativeSelect
           aria-label="Comparison version"
           value={version}
           onChange={(e) => setVersion(e.target.value)}
@@ -275,10 +276,9 @@ export default function PdfCompare({
               {v.id === meta.id ? " · currently open" : ""}
             </option>
           ))}
-        </select>
+        </NativeSelect>
         <label>
-          <input
-            type="checkbox"
+          <Checkbox
             checked={linked}
             onChange={(e) => setLinked(e.target.checked)}
           />
@@ -325,7 +325,7 @@ export default function PdfCompare({
                 </strong>
                 <label>
                   Page
-                  <input
+                  <TextInput
                     aria-label={`${side === 0 ? "Original" : "Comparison"} page`}
                     type="number"
                     min={1}
@@ -345,7 +345,7 @@ export default function PdfCompare({
                     }
                   />
                 </label>
-                <select
+                <NativeSelect
                   aria-label={`${side === 0 ? "Original" : "Comparison"} zoom`}
                   value={scales[side]}
                   onChange={(e) =>
@@ -365,11 +365,11 @@ export default function PdfCompare({
                       {v * 100}%
                     </option>
                   ))}
-                </select>
+                </NativeSelect>
               </header>
               <label className="pdf-compare-ocr">
                 Scanned-page text
-                <select
+                <NativeSelect
                   aria-label={`${side === 0 ? "Original" : "Comparison"} OCR text`}
                   value={ocr[side]}
                   onChange={(e) => {
@@ -390,7 +390,7 @@ export default function PdfCompare({
                         Reviewed OCR · {new Date(j.created_at).toLocaleString()}
                       </option>
                     ))}
-                </select>
+                </NativeSelect>
               </label>
               {doc && (
                 <PdfPages

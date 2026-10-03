@@ -1,4 +1,5 @@
 "use client";
+import { Button, HelpText, TextInput } from "./ui/controls";
 import BrandMark from "./BrandMark";
 import { useState } from "react";
 import { ArrowRight, LockKeyhole } from "lucide-react";
@@ -46,7 +47,7 @@ export default function DevelopmentSetup({
         >
           <label>
             One-time setup token
-            <input
+            <TextInput
               autoFocus
               aria-label="One-time setup token"
               type="password"
@@ -65,7 +66,7 @@ export default function DevelopmentSetup({
           <div className="canvas-property-pair">
             <label>
               Your name
-              <input
+              <TextInput
                 aria-label="Your name"
                 autoComplete="name"
                 required
@@ -76,7 +77,7 @@ export default function DevelopmentSetup({
             </label>
             <label>
               Email
-              <input
+              <TextInput
                 aria-label="Owner email"
                 type="email"
                 autoComplete="email"
@@ -88,7 +89,7 @@ export default function DevelopmentSetup({
           </div>
           <label>
             Password
-            <input
+            <TextInput
               aria-label="Owner password"
               type="password"
               autoComplete="new-password"
@@ -102,7 +103,7 @@ export default function DevelopmentSetup({
           </label>
           <label>
             Group name
-            <input
+            <TextInput
               aria-label="Initial group name"
               required
               maxLength={160}
@@ -115,14 +116,14 @@ export default function DevelopmentSetup({
               {error}
             </p>
           )}
-          <button className="button primary" disabled={busy}>
-            {busy ? "Creating your workspace…" : "Create owner and group"}
+          <Button className="button primary" disabled={busy} pending={!!busy}>
+            {"Create owner and group"}
             <ArrowRight size={16} />
-          </button>
-          <p className="ws-note">
+          </Button>
+          <HelpText>
             <LockKeyhole size={13} /> Local-only setup closes permanently after
             completion. Sign in normally afterward.
-          </p>
+          </HelpText>
         </form>
       </section>
     </main>

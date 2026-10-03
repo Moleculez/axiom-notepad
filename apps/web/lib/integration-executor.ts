@@ -11,6 +11,7 @@ import {
 import {
   integrationActions,
   integrationActionInput,
+  integrationPath,
 } from "@axiom/shared/integration-catalog";
 import { withAuditContext } from "@axiom/shared/audit-context";
 import { appUrl } from "@axiom/shared/auth";
@@ -201,12 +202,7 @@ export async function executeIntegrationAction(
           await verifyTargets();
           return { ...current, contentHash: sourceHash(current.body) };
         }
-        const path = action.path.replace(
-          ":id",
-          encodeURIComponent(
-            action.target === "workspace" ? input.spaceId : (input.id ?? ""),
-          ),
-        );
+        const path = integrationPath(action,input.spaceId,input.id);
         if (path.includes(":id") || path.endsWith("//"))
           throw new HttpError(400, "This action needs a target ID.");
         const url = new URL(`${appUrl}/api/v1/${path}`);

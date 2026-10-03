@@ -98,9 +98,20 @@ test("palette remains contained with dark colors and large interface typography"
   await expect(input).toHaveCSS("font-size", "22px");
   const before = await input.boundingBox();
   await input.fill("> planning");
-  // The workspace destination and the accessible group's planning destination
-  // both match since portfolios were added to Search & commands.
-  await expect(dialog.getByRole("option")).toHaveCount(2);
+  // The built-in planning guide, workspace destination and this fixture's
+  // accessible group portfolio all match. Assert the groups, not an old count
+  // that predates documentation in Search & commands.
+  await expect(dialog.getByRole("option")).toHaveCount(3);
+  await expect(
+    dialog
+      .getByRole("group", { name: "Documentation", exact: true })
+      .getByRole("option", { name: /^Planning & Gantt / }),
+  ).toHaveCount(1);
+  await expect(
+    dialog
+      .getByRole("group", { name: "Commands", exact: true })
+      .getByRole("option"),
+  ).toHaveCount(1);
   await expect(
     dialog
       .getByRole("group", { name: "Group planning", exact: true })
@@ -144,7 +155,7 @@ test("sidebar filtering, direct-folder location and level navigation", async ({}
     .click();
   await expect(page.getByRole("menu")).toBeVisible();
   await page.keyboard.press("Escape");
-  const filter = sidebar.getByRole("textbox", {
+  const filter = sidebar.getByRole("searchbox", {
     name: "Filter files in this folder",
   });
   await filter.fill("no matching file");

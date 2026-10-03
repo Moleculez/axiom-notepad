@@ -18,34 +18,9 @@
   padding-bottom: 8px;
 }
 .discovery-search-input {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-height: 52px;
-  padding: 4px 12px;
-  border: 1px solid var(--line);
-  border-radius: var(--control-radius);
-  color: var(--muted);
-  background: var(--hover);
   flex-shrink: 0;
-}
-.discovery-search-input:focus-within {
-  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
-}
-.ws-app .discovery-search-input input {
-  min-width: 0;
-  flex: 1;
-  width: 100%;
-  padding: 8px 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  font-size: 1em;
-  color: var(--text);
-}
-.discovery-search-input > svg {
-  flex-shrink: 0;
+  --control-text-size: var(--size-ui);
+  --control-height: max(44px, calc(var(--size-ui) * 2.8));
 }
 .discovery-scope-row {
   display: flex;

@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "../ui/controls";
 import { useEffect, useState } from "react";
 import * as Y from "yjs";
 import {
@@ -86,7 +87,7 @@ export default function CanvasPlayground({
       {!readOnly && (
         <div className="scratchpad-toolbar">
           <strong>Canvas example</strong>
-          <button
+          <Button
             className="button ghost"
             onClick={() =>
               void navigator.clipboard.writeText(shared?.source ?? "").then(
@@ -97,14 +98,14 @@ export default function CanvasPlayground({
           >
             <Copy size={14} />
             Copy JSON
-          </button>
-          <button
+          </Button>
+          <Button
             className="button ghost"
             onClick={() => setReset((n) => n + 1)}
           >
             <RotateCcw size={14} />
             Reset sample
-          </button>
+          </Button>
         </div>
       )}
       {shared && (

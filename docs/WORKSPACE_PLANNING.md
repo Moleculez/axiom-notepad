@@ -1,13 +1,14 @@
 # Unified workspaces and planning
 
 Files and project work now live in one Workspace. Personal and group workspaces
-share the same shell: **Overview · Files · Planning · Discussions · Reviews ·
-Settings**. The sidebar remains stable across these sections. Clicking a workspace
+share the same shell: **Overview · Research · Files · Planning · Discussions ·
+Reviews · Website · Settings**. The sidebar remains stable across these sections. Clicking a workspace
 resumes its previous view on this account/device; a first visit opens Overview.
 The directory and its New workspace action are available in the page launcher.
 
 ## Planning interactions
 
+Planning contains **Tasks · Goals · Intake**, without additional sidebar pages.
 List, Board, Calendar, Gantt and Workload share the same server-side search,
 status, priority, assignee, milestone and deleted-task filters. Section navigation
 retains its last filters. Task links use
@@ -28,15 +29,19 @@ drafts are not an offline mutation queue or a backup. Deleted tasks retain their
 history and can be restored from the Deleted tasks filter. Linked task evidence
 protects referenced files against permanent removal and cross-workspace moves.
 
-Milestones can be created, dated, completed and reopened. Recurring task templates
-can be created, paused and resumed; the workspace worker creates occurrences.
+Milestones can be created, dated, completed and reopened. Recurring routines
+support daily/weekly/monthly rules, intervals, date bounds and weekdays, next-five
+occurrence previews, full future-template edits, history, pause/resume and
+archive/reopen-paused. Existing generated tasks are never rewritten. The worker
+creates at most one task per routine/date and processes bounded catch-up batches.
 Workspace/task discussions support replies. Reviews reuse the existing
 snapshot-bound resource-review workflow rather than a second approval engine.
 
 ## Gantt and scheduling
 
-- Day, Week and Month zoom, Fit, Today, collapsible task groups, milestones,
-  dependency lines, a resizable label column and virtualized rows share a single
+- Day, Week, Month, Quarter and Year zoom, anchored zoom, Fit, Today, dual date
+  headers, collapsible task/assignee/milestone groups, configurable columns,
+  milestones, dependency lines, a resizable task column and virtualized rows share a single
   scrollport. Unscheduled tasks remain visible rather than receiving fake dates.
 - Drag a bar or either edge to propose dates. Keyboard/click access opens task
   details; Reschedule offers explicit date fields, including clearing dates.
@@ -49,6 +54,15 @@ snapshot-bound resource-review workflow rather than a second approval engine.
 - The full workspace graph is validated, not only visible/paged tasks. Self-links,
   missing dependencies and cycles are rejected. Subtask ancestry is checked
   separately from scheduling dependencies.
+- Drag a finish connector to another task's start, click a dependency line, or
+  use **Link tasks** to create/edit/remove a relationship. Finish-to-start links
+  have an integer offset of −365…365 **working days**: zero means the next
+  working day after finish, positive delays and negative permits overlap.
+  Link saves change metadata only, never dates. Legacy ID-only writes retain
+  existing offsets; new ID-only relationships default to zero. Proposals,
+  conflicts, critical path/slack, baselines and exports use the same offsets.
+- Leaf progress is manually editable; Done means 100%. Parent and grouping
+  progress is derived from non-cancelled descendant leaves, not saved rollup dates.
 - A preview belongs to its creator and expires after 15 minutes. Apply checks
   workspace planning revision, task versions, access and lifecycle inside one
   transaction. Retries are idempotent. Guarded Undo restores the prior dates only
@@ -60,9 +74,11 @@ dates. Dates remain calendar dates, not browser-local timestamps. Calendar chang
 do not silently rewrite existing schedules; new previews use the updated calendar.
 
 Export provides CSV, a portable SVG timeline and a print/PDF task table for the
-**loaded filtered tasks**, excluding descriptions and private drafts. SVG uses a
-portable light palette and task bars; it is not an exact screenshot of dependency
-lines/milestone decorations. CSV cells guard spreadsheet formula prefixes.
+**loaded filtered tasks** plus workspace milestones, excluding descriptions and
+private drafts. SVG/print use a portable light palette with dependencies/offsets,
+progress, critical path, milestones, a legend and the selected baseline. CSV
+includes progress, predecessors/offsets, milestone records, baseline dates,
+critical markers and explicit scope. CSV cells guard spreadsheet formula prefixes.
 Workload reports remaining estimated hours, task counts and unestimated work,
 not weekly utilization or automatic resource leveling.
 
@@ -114,9 +130,36 @@ This is bounded research planning, not a claim of unlimited portfolio scale.
 
 Finish-to-start is the only dependency type. Holiday
 providers, automatic resource leveling, simultaneous task-description co-editing
-and an all-account planning export are not delivered here. Parent/dependency
-pickers use tasks in the current filtered view (up to 150 matching choices); clear
-filters to find another task. Capacity uses estimates, not tracked time.
+and an all-account planning export are not delivered here. Entity pickers search
+the entire authorized workspace, independent of current task filters. Results
+are bounded to 100; type to narrow. Selected labels survive transient failures,
+requests cancel on query changes, and failed lookups offer Retry. Deleted files,
+files under trashed ancestors and restricted notes are excluded. Capacity uses
+estimates, not tracked time.
+
+## Views, bulk work, goals and intake
+
+- Save filters/view/zoom/grouping/columns/layers as a private or shared view.
+  Readers can save their own private views; workspace management is required for
+  shared views. Edit/delete is version-fenced. Presets include My work, Upcoming,
+  Blocked and Overdue. Private view details are not copied into shared activity.
+- Select rows, Shift-select ranges, or select loaded tasks, up to 1,000. Bulk
+  status, assignee, priority, label replacement and Trash/restore are atomic: one
+  stale/inaccessible task aborts all. Parent/child Trash ordering is checked.
+  Date shifts use the ordinary reviewed preview/apply/Undo path and show skipped
+  undated/completed/cancelled counts; selection never authorizes silent date edits.
+- Goals support owner, due date, Markdown, linked tasks/milestones or a manual
+  current/target metric, history and archive/reopen. Selecting both parent and
+  child counts each leaf once. Missing targets are reported rather than counted
+  complete. Workspace progress indexes are reused across the goal list.
+- Intake is member-only, not an anonymous/public form. Research, Experiment,
+  Paper review and Data request templates support Markdown and requested date/
+  priority. Authors edit/resubmit undecided requests and withdraw them. Managers
+  accept, reject or request changes with a review note. Acceptance creates exactly
+  one linked task atomically; retries return the original result.
+- Goals are bounded to 200; Intake shows the latest 200 requests and history the
+  latest 100 events/occurrences. These limits are explicit, not full-text archives.
+  Goal/intake/routine forms guard unsaved closure and disable edits during saves.
 
 ## Group coordination and schedule analysis
 
@@ -140,11 +183,13 @@ filters to find another task. Capacity uses estimates, not tracked time.
   Availability is explicit per group/member, with weekday and date exceptions.
   Blank means unknown, zero means unavailable. Members edit themselves; group
   administrators can edit others. No timers/timesheets are introduced.
-- Manual and assistant schedule previews show changed member-weeks. Their capacity
-  impact is deliberately **workspace-only** against group availability; consult
-  the group capacity view for combined commitments. Previews show at most 52 weeks
+- Manual and assistant schedule previews show changed member-weeks across the
+  caller's **accessible active group workspaces**, using each working calendar.
+  Restricted/ungranted workspaces are not exposed; the preview states partial
+  coverage and unknown availability. Previews show at most 52 weeks
   and 200 changed member-weeks, with a partial-coverage notice. They do not level
-  resources. Availability changes invalidate previously reviewed schedules.
+  resources. Cohort planning/membership/calendar/lifecycle changes, current
+  accessible workspace IDs and availability versions are fenced at apply.
 - PDF annotations can link to an existing or new task in the paper's workspace.
   Links preserve PDF version/page/annotation identity without copying private
   text. Visibility follows current paper and annotation permissions. Deleted or
@@ -159,6 +204,14 @@ with its original single-workspace boundary. Back up, stop old writers, migrate,
 then restart matching web/sync/worker builds; do not run mixed schema versions.
 
 ## Upgrade and verification
+
+Forward migration **39** adds relationship offsets, leaf progress, saved views,
+Goals, Intake, metadata history, routine archive state and capacity receipt fences.
+It preserves task/file IDs, descriptions, Markdown and Yjs bytes. Back up, stop
+old writers, run `npm run db:migrate`, then restart matching web/sync/worker code.
+Do not reset or seed an existing installation. The rehearsal below now includes
+suite permissions, intake retry, recurring-worker idempotency, and MCP/in-app
+change-set review/revocation as well as legacy upgrade checks.
 
 Forward migration **25** adds workspace metadata/calendar/revisions, planning
 scope columns, evidence links, preview receipts and metadata-only audit triggers.

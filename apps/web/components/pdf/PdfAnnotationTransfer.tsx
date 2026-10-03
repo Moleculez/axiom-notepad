@@ -1,4 +1,5 @@
 "use client";
+import { Button, Checkbox } from "../ui/controls";
 import { useEffect, useRef, useState } from "react";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import type { Annotation, AnnotationData } from "@axiom/shared/research";
@@ -159,8 +160,7 @@ export default function PdfAnnotationTransfer({
       </p>
       {mode === "export" && (
         <label>
-          <input
-            type="checkbox"
+          <Checkbox
             checked={includePrivate}
             onChange={(e) => setIncludePrivate(e.target.checked)}
             disabled={busy}
@@ -185,8 +185,7 @@ export default function PdfAnnotationTransfer({
         <div className="pdf-import-list">
           {candidates.map((data, index) => (
             <label key={data.imported!.sourceId}>
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={selected.has(index)}
                 disabled={busy}
                 onChange={() =>
@@ -210,27 +209,29 @@ export default function PdfAnnotationTransfer({
         </div>
       )}
       <DialogFooter>
-        <button className="button secondary" onClick={onClose}>
+        <Button className="button secondary" onClick={onClose}>
           {busy ? "Cancel" : "Close"}
-        </button>
+        </Button>
         {mode === "export" ? (
-          <button
+          <Button
             className="button primary"
             disabled={busy || !chosen.length}
             onClick={() => void exportCopy()}
+            pending={!!busy}
           >
-            {busy ? "Preparing…" : "Download annotated copy"}
-          </button>
+            {"Download annotated copy"}
+          </Button>
         ) : !prepared ? (
-          <button
+          <Button
             className="button primary"
             disabled={busy}
             onClick={() => void inspect()}
+            pending={!!busy}
           >
-            {busy ? "Inspecting…" : "Inspect embedded annotations"}
-          </button>
+            {"Inspect embedded annotations"}
+          </Button>
         ) : (
-          <button
+          <Button
             className="button primary"
             disabled={busy || !selected.size}
             onClick={async () => {
@@ -250,7 +251,7 @@ export default function PdfAnnotationTransfer({
             }}
           >
             Import {selected.size} privately
-          </button>
+          </Button>
         )}
       </DialogFooter>
     </Dialog>

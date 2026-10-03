@@ -27,7 +27,7 @@ uses the reviewed fictional Spectral Lab screenshots.
   Markdown, SVG, PNG, JPEG, PDF and a portable ZIP. ZIP includes local notes and
   uploads, and can be restored additively through Local files → Import files.
 - **Appearance:** Axiom, Paper Research and Technical Slate packs; light, dark
-  and system modes; Axiom, Material, Fluent and Editorial component styles;
+  and system modes; Axiom, Material Tonal, Fluent Studio, Editorial and macOS Studio component styles;
   separate body/heading/code fonts, weights and sizes, line/paragraph/letter/word
   spacing, reading width, equation scale, LaTeX-style numbering, folding guides,
   focus/typewriter behavior, code wrapping/numbers/indentation, table navigation
@@ -39,10 +39,17 @@ uses the reviewed fictional Spectral Lab screenshots.
 **Appearance** opens one consistent desktop dialog. Its grouped navigation has
 seven categories: Theme & interface, Typography, Page, Code & tables, Typing &
 math, Minimap and Local data. Up/Down and Home/End navigate the category rail.
-Fields scroll independently while the category heading, live reading preview and
+Fields scroll independently while the category heading, live preview and
 Done button stay visible. Controls retain interface typography even when the
 document font changes. The document's own scrollbar sits at the pane edge in
 Write, Source and Read modes; its toolbar and word count stay fixed.
+
+The preview toolbar switches between Writing and the shared interactive Interface
+specimen without losing either surface's state. Compare native switch/slider,
+mixed selection, validation and pending actions in all five treatments. Theme &
+interface also controls the UI font/size, density, corner radius and shadows;
+reading settings use precise numeric fields, visible units and per-control Reset
+alongside the same filled-track sliders as production.
 
 Preferences apply immediately and save locally; **Done closes**, rather than
 committing an account-level preference draft. Each category's reset button restores

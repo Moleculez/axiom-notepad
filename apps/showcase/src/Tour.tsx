@@ -1,3 +1,4 @@
+import { Button } from "../../web/components/ui/controls";
 import {
   ArrowRight,
   Braces,
@@ -94,19 +95,19 @@ export default function Tour() {
           Make room for the work that matters.
         </p>
         <div className="demo-hero-actions">
-          <button
-            className="button"
+          <Button
+            variant="primary"
             onClick={() => navigate("editor", researchId)}
           >
             Start writing <ArrowRight size={16} />
-          </button>
-          <button
+          </Button>
+          <Button
             className="button secondary"
             onClick={() => navigate("canvas", canvasId)}
           >
             <Network size={16} />
             Open Canvas
-          </button>
+          </Button>
         </div>
         <small>Real Axiom editor and Canvas · no account required</small>
       </section>
@@ -159,12 +160,12 @@ export default function Tour() {
             one document. Make an equation, edit a table or follow a footnote.
             Nothing is simulated.
           </p>
-          <button
+          <Button
             className="button secondary"
             onClick={() => navigate("editor", researchId)}
           >
             Try a research notebook <ArrowRight size={15} />
-          </button>
+          </Button>
         </div>
         <button
           className="demo-screenshot-button"

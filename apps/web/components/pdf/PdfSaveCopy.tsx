@@ -1,4 +1,5 @@
 "use client";
+import { Button, Checkbox, NativeSelect, TextInput } from "../ui/controls";
 import { useEffect, useRef, useState } from "react";
 import type { Annotation } from "@axiom/shared/research";
 import type { PdfPageChoice } from "@axiom/shared/pdf-reader";
@@ -250,7 +251,7 @@ export default function PdfSaveCopy({
     >
       <label>
         Save as
-        <select
+        <NativeSelect
           disabled={busy || locked || !!saved}
           value={mode}
           onChange={(e) => setMode(e.target.value)}
@@ -265,11 +266,11 @@ export default function PdfSaveCopy({
           >
             New version of this file
           </option>
-        </select>
+        </NativeSelect>
       </label>
       <label>
         File name
-        <input
+        <TextInput
           value={name}
           disabled={busy || locked || !!saved}
           onChange={(e) => setName(e.target.value)}
@@ -280,7 +281,7 @@ export default function PdfSaveCopy({
           <legend>Destination</legend>
           <label>
             Space
-            <select
+            <NativeSelect
               value={space}
               onChange={(e) => {
                 setSpace(e.target.value);
@@ -292,7 +293,7 @@ export default function PdfSaveCopy({
                   {s.name}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </label>
           <div className="pdf-save-folders">
             <button onClick={() => setTrail([])}>Root</button>
@@ -305,7 +306,7 @@ export default function PdfSaveCopy({
               </button>
             ))}
           </div>
-          <input
+          <TextInput
             aria-label="Filter destination folders"
             placeholder="Find a folder…"
             value={filter}
@@ -329,8 +330,7 @@ export default function PdfSaveCopy({
       )}
       {!!annotations.length && (
         <label className="pdf-save-option">
-          <input
-            type="checkbox"
+          <Checkbox
             checked={include}
             disabled={busy || locked || annotations.length > 500 || !!saved}
             onChange={(e) => setInclude(e.target.checked)}
@@ -346,8 +346,7 @@ export default function PdfSaveCopy({
       )}
       {include && omitted > 0 && (
         <label className="pdf-save-option">
-          <input
-            type="checkbox"
+          <Checkbox
             checked={ack}
             disabled={busy || locked}
             onChange={(e) => setAck(e.target.checked)}
@@ -371,16 +370,16 @@ export default function PdfSaveCopy({
       )}
       <p role="status">{status}</p>
       <div className="dialog-footer">
-        <button className="button secondary" onClick={onClose}>
+        <Button className="button secondary" onClick={onClose}>
           {busy ? "Close (upload may continue)" : "Close"}
-        </button>
+        </Button>
         {saved ? (
           <a className="button primary" href={`/workbench/notes/${saved}`}>
             Open saved PDF
           </a>
         ) : (
           <>
-            <button
+            <Button
               className="button primary"
               disabled={
                 busy ||
@@ -392,15 +391,15 @@ export default function PdfSaveCopy({
               onClick={() => void save()}
             >
               {busy ? "Saving…" : locked ? "Retry / check save" : "Save PDF"}
-            </button>
+            </Button>
             {recoverable && upload.current && mode === "version" && (
-              <button
+              <Button
                 className="button secondary"
                 onClick={() => void save(true)}
                 disabled={busy}
               >
                 Recover as separate copy
-              </button>
+              </Button>
             )}
           </>
         )}
