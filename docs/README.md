@@ -9,14 +9,15 @@ not installation instructions or proof of today's test results.
 
 - [Interactive static showcase](STATIC_SHOWCASE.md) — try the real editor and Canvas, local drafts/uploads, themes, exports and GitHub Pages deployment
 
-- [In-app Docs and evidence workbench](PRODUCT_GUIDE.md) — 30 guides, safe editor/Canvas examples, reading queues and previewed synthesis
+- [In-app Docs and evidence workbench](PRODUCT_GUIDE.md) — 31 guides, safe editor/Canvas examples, reading queues and previewed synthesis
 - [Workspace guide](WORKSPACE.md) — navigation, sharing, files and everyday limits
 - [Workspace websites](WORKSPACE_WEBSITES.md) — LaTeX-first themes, reviewed publishing, reading/discovery tools, private author analytics, static export and custom domains
-- [Workspace planning](WORKSPACE_PLANNING.md) — tasks, Gantt, baselines, critical paths, group portfolios and capacity
+- [Workspace planning](WORKSPACE_PLANNING.md) — tasks, Gantt, baselines, capacity and searchable research request/decision archives
 - [Editor and shortcuts](EDITOR.md) — visual/source editing and research blocks
 - [Document export and Read mode](DOCUMENT_EXPORT.md) — styled snapshots, portable HTML/PDF, Markdown bundles and focused reading
 - [Version history and review](VERSION_REVIEW.md) — comparisons, suggestions, milestones, assigned reviews and cloud drafts
 - [Workspace research assistant](WORKSPACE_ASSISTANT.md) — selected group-workspace evidence, Office/Canvas/planning context, reviewed suggestions and schedule changes
+- [Workspace extensions](EXTENSIONS.md) — optional pilots, SDK, native panels, scoped consent, reviewed proposals and isolation limits
 - [Reading and references](READING.md) — paper reading, bibliography and appearance
 - [PDF research workbench](PDF_READER.md) — reader, annotations, task links, recoverable reply drafts, page copies and opt-in assistance
 - [Self-hosted CPU OCR](SELF_HOSTED_OCR.md) — private queue, reviewed text, searchable copies and operator acceptance
@@ -45,6 +46,7 @@ their own deployment-specific acceptance checks.
 ## For contributors
 
 - [Repository structure and contribution workflow](../CONTRIBUTING.md)
+- [Extension development and acceptance](EXTENSIONS.md#package-format-and-sdk)
 - [Architecture and data boundaries](ARCHITECTURE.md)
 - [Current editor architecture](EDITOR_VNEXT.md), [typing contracts](TYPING_INTEGRITY.md)
   and [editor acceptance checklist](EDITOR_VNEXT_ACCEPTANCE.md)

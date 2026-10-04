@@ -2,6 +2,8 @@
 import { Button, IconButton } from "../ui/controls";
 import BrandMark from "../BrandMark";
 import AssistantHost from "../assistant/AssistantHost";
+import PluginProvider from "../plugins/PluginProvider";
+import { WorkspaceCommandProvider } from "../../lib/workspace-commands";
 import { openAssistant } from "../../lib/assistant";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -553,327 +555,344 @@ export default function WorkspaceApp() {
       }}
     >
       <WorkspaceSessionsContext.Provider value={workSessions}>
-        <DialogFocusBoundary
-          className={`ws-app ${page === "settings" ? "settings-open" : ""} ${(page === "settings" ? settingsRail : sidebar) ? "sidebar-open" : ""}`}
-        >
-          <ManagementProvider>
-            <VisualViewerHost />
-            <FileCreationHost />
-            <a className="ws-skip-link" href="#workspace-content">
-              Skip to workspace content
-            </a>
-            <header className="ws-appbar">
-              <WorkspaceProgress />
-              <div className="ws-brand-area">
-                <IconButton
-                  className="icon-button"
-                  aria-label={
-                    page === "settings"
-                      ? "Toggle settings navigation"
-                      : "Toggle workspace sidebar"
-                  }
-                  aria-expanded={page === "settings" ? settingsRail : sidebar}
-                  onClick={() =>
-                    page === "settings"
-                      ? setSettingsRail(!settingsRail)
-                      : setSidebar(!sidebar)
-                  }
-                >
-                  <Menu size={19} />
-                </IconButton>
-                <WorkspaceLink
-                  to="/home"
-                  className="brand"
-                  aria-label="Axiom home"
-                >
-                  <BrandMark />
-                  <span>
-                    Axiom<span className="brand-dot">.</span>
-                  </span>
-                </WorkspaceLink>
-              </div>
-              <WorkspaceLocation />
-              <WorkspaceLink
-                className="workspace-docs-trigger"
-                to="/docs"
-                title="Product guide"
-                aria-label="Open Docs"
-              >
-                <BookOpen size={16} />
-                <span>Docs</span>
-              </WorkspaceLink>
-              <button
-                className="workspace-command-trigger"
-                aria-label="Search workspace"
-                title="Search & commands · ⌘/Ctrl K"
-                onClick={() => setSearchOpen(true)}
-              >
-                <Search size={16} />
-                <span>Search & commands</span>
-                <kbd>⌘/Ctrl K</kbd>
-              </button>
-              <div className="ws-app-tools">
-                <IconButton
-                  className="icon-button"
-                  aria-label="Open research assistant"
-                  title="Research assistant"
-                  onClick={() => openAssistant()}
-                >
-                  <MessageSquare size={18} />
-                </IconButton>
-                <WorkspaceStatus offline={offline} />
-                <WorkspaceLink
-                  className="icon-button"
-                  to="/inbox"
-                  aria-label="Open inbox"
-                  title="Inbox · Mentions and reviews"
-                >
-                  <Bell size={18} />
-                </WorkspaceLink>
-                <IconButton
-                  className="icon-button"
-                  aria-label="File transfers"
-                  onClick={() => transfers.setShown(!transfers.shown)}
-                >
-                  <Upload size={18} />
-                  {transfers.transfers.some((item) =>
-                    ["uploading", "queued", "verifying"].includes(item.status),
-                  ) && <span className="ws-notification-dot" />}
-                </IconButton>
-                <details
-                  ref={accountMenu}
-                  className="ws-menu ws-account-menu"
-                  name="workspace-toolbar-popover"
-                >
-                  <summary aria-label="Account menu">
-                    <Avatar
-                      person={session.user}
-                      className="ws-account-avatar"
-                    />
-                    <ChevronDown size={12} />
-                  </summary>
+        <WorkspaceCommandProvider>
+          <DialogFocusBoundary
+            className={`ws-app ${page === "settings" ? "settings-open" : ""} ${(page === "settings" ? settingsRail : sidebar) ? "sidebar-open" : ""}`}
+          >
+            <PluginProvider>
+              <ManagementProvider>
+                <VisualViewerHost />
+                <FileCreationHost />
+                <a className="ws-skip-link" href="#workspace-content">
+                  Skip to workspace content
+                </a>
+                <header className="ws-appbar">
+                  <WorkspaceProgress />
+                  <div className="ws-brand-area">
+                    <IconButton
+                      className="icon-button"
+                      aria-label={
+                        page === "settings"
+                          ? "Toggle settings navigation"
+                          : "Toggle workspace sidebar"
+                      }
+                      aria-expanded={
+                        page === "settings" ? settingsRail : sidebar
+                      }
+                      onClick={() =>
+                        page === "settings"
+                          ? setSettingsRail(!settingsRail)
+                          : setSidebar(!sidebar)
+                      }
+                    >
+                      <Menu size={19} />
+                    </IconButton>
+                    <WorkspaceLink
+                      to="/home"
+                      className="brand"
+                      aria-label="Axiom home"
+                    >
+                      <BrandMark />
+                      <span>
+                        Axiom<span className="brand-dot">.</span>
+                      </span>
+                    </WorkspaceLink>
+                  </div>
+                  <WorkspaceLocation />
+                  <WorkspaceLink
+                    className="workspace-docs-trigger"
+                    to="/docs"
+                    title="Product guide"
+                    aria-label="Open Docs"
+                  >
+                    <BookOpen size={16} />
+                    <span>Docs</span>
+                  </WorkspaceLink>
+                  <button
+                    className="workspace-command-trigger"
+                    aria-label="Search workspace"
+                    title="Search & commands · ⌘/Ctrl K"
+                    onClick={() => setSearchOpen(true)}
+                  >
+                    <Search size={16} />
+                    <span>Search & commands</span>
+                    <kbd>⌘/Ctrl K</kbd>
+                  </button>
+                  <div className="ws-app-tools">
+                    <IconButton
+                      className="icon-button"
+                      aria-label="Open research assistant"
+                      title="Research assistant"
+                      onClick={() => openAssistant()}
+                    >
+                      <MessageSquare size={18} />
+                    </IconButton>
+                    <WorkspaceStatus offline={offline} />
+                    <WorkspaceLink
+                      className="icon-button"
+                      to="/inbox"
+                      aria-label="Open inbox"
+                      title="Inbox · Mentions and reviews"
+                    >
+                      <Bell size={18} />
+                    </WorkspaceLink>
+                    <IconButton
+                      className="icon-button"
+                      aria-label="Activity & recovery"
+                      title="Uploads and background work"
+                      onClick={() => transfers.setShown(!transfers.shown)}
+                    >
+                      <Upload size={18} />
+                      {transfers.transfers.some((item) =>
+                        ["uploading", "queued", "verifying"].includes(
+                          item.status,
+                        ),
+                      ) && <span className="ws-notification-dot" />}
+                    </IconButton>
+                    <details
+                      ref={accountMenu}
+                      className="ws-menu ws-account-menu"
+                      name="workspace-toolbar-popover"
+                    >
+                      <summary aria-label="Account menu">
+                        <Avatar
+                          person={session.user}
+                          className="ws-account-avatar"
+                        />
+                        <ChevronDown size={12} />
+                      </summary>
+                      <div
+                        onClick={(event) => {
+                          // The shell stays mounted across navigation, including
+                          // selecting the current page. Dismiss on activation too.
+                          if (
+                            event.target instanceof Element &&
+                            event.target.closest("a, button")
+                          )
+                            closeAccountMenu(true);
+                        }}
+                      >
+                        <p>
+                          <strong>{session.user.name}</strong>
+                          <small>{session.user.email}</small>
+                        </p>
+                        <WorkspaceLink to="/settings/profile">
+                          <UserRound size={16} />
+                          Account settings
+                        </WorkspaceLink>
+                        <WorkspaceLink to="/settings/appearance">
+                          <Palette size={16} />
+                          Appearance & editor
+                        </WorkspaceLink>
+                        {session.groups.some((group) =>
+                          ["owner", "admin"].includes(group.role),
+                        ) && (
+                          <WorkspaceLink to="/workspaces">
+                            <Users size={16} />
+                            Manage workspaces
+                          </WorkspaceLink>
+                        )}
+                        <div
+                          className="action-menu-separator"
+                          role="separator"
+                        />
+                        <button type="button" onClick={() => setSignout(true)}>
+                          <LogOut size={16} />
+                          Sign out
+                        </button>
+                      </div>
+                    </details>
+                  </div>
+                </header>
+                {offline && (
+                  <div className="ws-offline" role="status">
+                    Offline · Open cached notes remain available. File
+                    management and planning changes need a connection.
+                  </div>
+                )}
+                <div className="ws-body">
+                  {page === "settings" && settingsRail && (
+                    <aside
+                      className="settings-rail"
+                      aria-label="Settings navigation"
+                    >
+                      <div className="ws-sidebar-heading">
+                        <strong>Settings</strong>
+                      </div>
+                      <SettingsRail />
+                    </aside>
+                  )}
+                  {sidebar && page !== "settings" && (
+                    <>
+                      <button
+                        className="ws-sidebar-scrim"
+                        tabIndex={-1}
+                        aria-label="Close navigation"
+                        onClick={() => setSidebar(false)}
+                      />
+                      <ResizablePanel
+                        className="ws-sidebar"
+                        label="Workspace navigation"
+                        account={session.user.id}
+                        name="sidebar"
+                        edge="right"
+                      >
+                        <div className="ws-sidebar-heading">
+                          <span>Workspace</span>
+                          <IconButton
+                            className="icon-button"
+                            aria-label="Collapse sidebar"
+                            onClick={() => setSidebar(false)}
+                          >
+                            <Menu size={16} />
+                          </IconButton>
+                        </div>
+                        <div className="ws-sidebar-scroll">
+                          <WorkspaceSidebar key={session.user.id} />
+                        </div>
+                      </ResizablePanel>
+                    </>
+                  )}
                   <div
-                    onClick={(event) => {
-                      // The shell stays mounted across navigation, including
-                      // selecting the current page. Dismiss on activation too.
-                      if (
-                        event.target instanceof Element &&
-                        event.target.closest("a, button")
+                    id="workspace-content"
+                    className="ws-content"
+                    tabIndex={-1}
+                  >
+                    <ErrorNotice
+                      message={error || data.error}
+                      retry={
+                        data.error
+                          ? data.reload
+                          : error
+                            ? () => setError("")
+                            : undefined
+                      }
+                    />
+                    {(page === "settings" ||
+                      settingsVisit === session.user.id) && (
+                      <SettingsPage
+                        active={page === "settings"}
+                        section={
+                          page === "settings"
+                            ? parts[1]
+                            : workSessions.state.sessions
+                                .find((tab) => tab.path.startsWith("/settings"))
+                                ?.path.split(/[/?]/)[2]
+                        }
+                      />
+                    )}
+                    {page === "settings" ? null : page === "new" ? (
+                      <WorkspaceLauncher />
+                    ) : workbench ? (
+                      <Workbench
+                        key={session.user.id}
+                        resource={{
+                          kind: page === "notes" ? "note" : "file",
+                          id: parts[1],
+                          viewId: workSessions.state.active,
+                          versionId: params.get("version") ?? undefined,
+                          route:
+                            location.pathname.slice(BASE.length) +
+                            location.search +
+                            location.hash,
+                        }}
+                        splitTarget={splitTarget}
+                        onSplitHandled={() => setSplitTarget(null)}
+                      />
+                    ) : page === "tools" ? (
+                      <Loading label="Opening Explorer…" />
+                    ) : page === "home" ? (
+                      <HomePage />
+                    ) : page === "explorer" ? (
+                      <Explorer />
+                    ) : page === "projects" ? (
+                      <ProjectsPage id={parts[1]} section={parts[2]} />
+                    ) : page === "docs" ? (
+                      <Documentation />
+                    ) : page === "research" ? (
+                      <ResearchPage />
+                    ) : page === "inbox" ? (
+                      <InboxPage />
+                    ) : page === "people" ? (
+                      <PeoplePage />
+                    ) : page === "groups" ? (
+                      parts[1] && parts[2] === "planning" ? (
+                        <GroupPlanning id={parts[1]} />
+                      ) : (
+                        <GroupsHub />
                       )
-                        closeAccountMenu(true);
-                    }}
+                    ) : page === "workspaces" ? (
+                      <WorkspacesPage
+                        id={parts[1]}
+                        section={parts[2]}
+                        setting={parts[3]}
+                      />
+                    ) : page === "audit" ? (
+                      <AuditPage />
+                    ) : page === "trash" ? (
+                      <TrashPage />
+                    ) : page === "admin" ? (
+                      <LegacyAdministrationRedirect
+                        groupId={parts[1]}
+                        section={parts[2]}
+                      />
+                    ) : (
+                      <HomePage />
+                    )}
+                  </div>
+                  <AssistantHost />
+                </div>
+                {notice && (
+                  <div className="ws-notice" role="status">
+                    <span>{notice}</span>
+                    <IconButton
+                      className="icon-button"
+                      aria-label="Dismiss notification"
+                      onClick={() => setNotice("")}
+                    >
+                      <X size={15} />
+                    </IconButton>
+                  </div>
+                )}
+                <Uploads controller={transfers} />
+                {searchOpen && (
+                  <WorkspaceSearch onClose={() => setSearchOpen(false)} />
+                )}
+                {signout && (
+                  <Dialog
+                    title="Sign out of this device?"
+                    subtitle="Account caches and offline copies will be removed from this browser."
+                    onClose={() => setSignout(false)}
                   >
                     <p>
-                      <strong>{session.user.name}</strong>
-                      <small>{session.user.email}</small>
+                      Make sure your notes show “Saved” first. If you have
+                      unsynchronized work, cancel and export it before signing
+                      out. Other devices’ offline copies are not affected.
                     </p>
-                    <WorkspaceLink to="/settings/profile">
-                      <UserRound size={16} />
-                      Account settings
-                    </WorkspaceLink>
-                    <WorkspaceLink to="/settings/appearance">
-                      <Palette size={16} />
-                      Appearance & editor
-                    </WorkspaceLink>
-                    {session.groups.some((group) =>
-                      ["owner", "admin"].includes(group.role),
-                    ) && (
-                      <WorkspaceLink to="/workspaces">
-                        <Users size={16} />
-                        Manage workspaces
-                      </WorkspaceLink>
-                    )}
-                    <div className="action-menu-separator" role="separator" />
-                    <button type="button" onClick={() => setSignout(true)}>
-                      <LogOut size={16} />
-                      Sign out
-                    </button>
-                  </div>
-                </details>
-              </div>
-            </header>
-            {offline && (
-              <div className="ws-offline" role="status">
-                Offline · Open cached notes remain available. File management
-                and planning changes need a connection.
-              </div>
-            )}
-            <div className="ws-body">
-              {page === "settings" && settingsRail && (
-                <aside
-                  className="settings-rail"
-                  aria-label="Settings navigation"
-                >
-                  <div className="ws-sidebar-heading">
-                    <strong>Settings</strong>
-                  </div>
-                  <SettingsRail />
-                </aside>
-              )}
-              {sidebar && page !== "settings" && (
-                <>
-                  <button
-                    className="ws-sidebar-scrim"
-                    tabIndex={-1}
-                    aria-label="Close navigation"
-                    onClick={() => setSidebar(false)}
-                  />
-                  <ResizablePanel
-                    className="ws-sidebar"
-                    label="Workspace navigation"
-                    account={session.user.id}
-                    name="sidebar"
-                    edge="right"
-                  >
-                    <div className="ws-sidebar-heading">
-                      <span>Workspace</span>
-                      <IconButton
-                        className="icon-button"
-                        aria-label="Collapse sidebar"
-                        onClick={() => setSidebar(false)}
+                    <div className="dialog-footer">
+                      <Button
+                        className="button secondary"
+                        onClick={() => setSignout(false)}
                       >
-                        <Menu size={16} />
-                      </IconButton>
+                        Cancel
+                      </Button>
+                      <Button
+                        className="button primary"
+                        onClick={() =>
+                          void finishSignout().catch((error) =>
+                            setError(error.message),
+                          )
+                        }
+                      >
+                        Sign out and clear caches
+                      </Button>
                     </div>
-                    <div className="ws-sidebar-scroll">
-                      <WorkspaceSidebar key={session.user.id} />
-                    </div>
-                  </ResizablePanel>
-                </>
-              )}
-              <div id="workspace-content" className="ws-content" tabIndex={-1}>
-                <ErrorNotice
-                  message={error || data.error}
-                  retry={
-                    data.error
-                      ? data.reload
-                      : error
-                        ? () => setError("")
-                        : undefined
-                  }
-                />
-                {(page === "settings" || settingsVisit === session.user.id) && (
-                  <SettingsPage
-                    active={page === "settings"}
-                    section={
-                      page === "settings"
-                        ? parts[1]
-                        : workSessions.state.sessions
-                            .find((tab) => tab.path.startsWith("/settings"))
-                            ?.path.split(/[/?]/)[2]
-                    }
-                  />
+                  </Dialog>
                 )}
-                {page === "settings" ? null : page === "new" ? (
-                  <WorkspaceLauncher />
-                ) : workbench ? (
-                  <Workbench
-                    key={session.user.id}
-                    resource={{
-                      kind: page === "notes" ? "note" : "file",
-                      id: parts[1],
-                      viewId: workSessions.state.active,
-                      versionId: params.get("version") ?? undefined,
-                      route:
-                        location.pathname.slice(BASE.length) +
-                        location.search +
-                        location.hash,
-                    }}
-                    splitTarget={splitTarget}
-                    onSplitHandled={() => setSplitTarget(null)}
-                  />
-                ) : page === "tools" ? (
-                  <Loading label="Opening Explorer…" />
-                ) : page === "home" ? (
-                  <HomePage />
-                ) : page === "explorer" ? (
-                  <Explorer />
-                ) : page === "projects" ? (
-                  <ProjectsPage id={parts[1]} section={parts[2]} />
-                ) : page === "docs" ? (
-                  <Documentation />
-                ) : page === "research" ? (
-                  <ResearchPage />
-                ) : page === "inbox" ? (
-                  <InboxPage />
-                ) : page === "people" ? (
-                  <PeoplePage />
-                ) : page === "groups" ? (
-                  parts[1] && parts[2] === "planning" ? (
-                    <GroupPlanning id={parts[1]} />
-                  ) : (
-                    <GroupsHub />
-                  )
-                ) : page === "workspaces" ? (
-                  <WorkspacesPage
-                    id={parts[1]}
-                    section={parts[2]}
-                    setting={parts[3]}
-                  />
-                ) : page === "audit" ? (
-                  <AuditPage />
-                ) : page === "trash" ? (
-                  <TrashPage />
-                ) : page === "admin" ? (
-                  <LegacyAdministrationRedirect
-                    groupId={parts[1]}
-                    section={parts[2]}
-                  />
-                ) : (
-                  <HomePage />
-                )}
-              </div>
-              <AssistantHost />
-            </div>
-            {notice && (
-              <div className="ws-notice" role="status">
-                <span>{notice}</span>
-                <IconButton
-                  className="icon-button"
-                  aria-label="Dismiss notification"
-                  onClick={() => setNotice("")}
-                >
-                  <X size={15} />
-                </IconButton>
-              </div>
-            )}
-            <Uploads controller={transfers} />
-            {searchOpen && (
-              <WorkspaceSearch onClose={() => setSearchOpen(false)} />
-            )}
-            {signout && (
-              <Dialog
-                title="Sign out of this device?"
-                subtitle="Account caches and offline copies will be removed from this browser."
-                onClose={() => setSignout(false)}
-              >
-                <p>
-                  Make sure your notes show “Saved” first. If you have
-                  unsynchronized work, cancel and export it before signing out.
-                  Other devices’ offline copies are not affected.
-                </p>
-                <div className="dialog-footer">
-                  <Button
-                    className="button secondary"
-                    onClick={() => setSignout(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    className="button primary"
-                    onClick={() =>
-                      void finishSignout().catch((error) =>
-                        setError(error.message),
-                      )
-                    }
-                  >
-                    Sign out and clear caches
-                  </Button>
-                </div>
-              </Dialog>
-            )}
-          </ManagementProvider>
-        </DialogFocusBoundary>
+              </ManagementProvider>
+            </PluginProvider>
+          </DialogFocusBoundary>
+        </WorkspaceCommandProvider>
       </WorkspaceSessionsContext.Provider>
     </WorkspaceContext.Provider>
   );

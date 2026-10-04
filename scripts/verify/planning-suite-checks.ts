@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import type pg from "pg";
 import { addDays } from "../../packages/shared/src/planning";
+import { forwardMigrations } from "../../packages/shared/src/migrations";
+import { verifyIntakePagination } from "./planning-intake-checks";
 
 type Call = (
   path: string,
@@ -30,7 +32,7 @@ export async function verifyPlanningSuite(
   assert.equal(
     (await db.query("SELECT max(version) AS version FROM schema_migrations"))
       .rows[0].version,
-    39,
+    Math.max(...forwardMigrations.map((migration) => migration.version)),
   );
   const audit = (
     await db.query(
@@ -140,6 +142,15 @@ export async function verifyPlanningSuite(
     accepted.task_id,
   );
   assert.equal((await call(`${base}/planning?q=Research%20intake`)).total, 1);
+  await verifyIntakePagination(
+    db,
+    call,
+    space,
+    owner,
+    collaborator,
+    viewer,
+    outsider,
+  );
   const today = new Date().toISOString().slice(0, 10),
     routine = await call(`${base}/recurrences`, "POST", {
       rule: { frequency: "daily", start: today, until: addDays(today, 7) },

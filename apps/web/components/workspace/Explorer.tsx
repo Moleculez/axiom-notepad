@@ -11,6 +11,7 @@ import {
   SearchField,
 } from "../ui/controls";
 import { beginExplorerMarquee } from "../../lib/explorer-marquee";
+import { useInspectorOwner } from "../../lib/workspace-commands";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import dynamic from "next/dynamic";
 import {
@@ -88,6 +89,7 @@ export default function Explorer() {
   );
 }
 function ResourceExplorer() {
+  const inspectorOwner = useInspectorOwner();
   const management = useManagement();
   const tabs = useWorkSessions(),
     tabId = tabs?.state.active;
@@ -118,8 +120,12 @@ function ResourceExplorer() {
     [selection, setSelection] = useState<string[]>(
       (tabs?.active?.view?.selection as string[]) ?? [],
     ),
-    [inspector, setInspector] = useState<Resource | null>(null),
+    [inspector, setInspectorState] = useState<Resource | null>(null),
     [modal, setModal] = useState<"note" | "folder" | "save" | null>(null);
+  const setInspector = (value: Resource | null) => {
+    if (value) inspectorOwner.claim("document");
+    setInspectorState(value);
+  };
   const action = useAction(),
     fileInput = useRef<HTMLInputElement>(null),
     folderInput = useRef<HTMLInputElement>(null),

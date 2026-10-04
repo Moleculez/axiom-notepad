@@ -297,7 +297,25 @@ INSERT INTO app_instance(singleton,setup_completed_at) SELECT true,CASE WHEN EXI
     name: "research-planning-suite-and-dependency-lag",
     sql: planningSuiteMigration,
   },
+  {
+    version: 40,
+    name: "sandboxed-workspace-extensions",
+    sql: pluginsMigration,
+  },
+  {
+    version: 41,
+    name: "extension-configuration-rollback",
+    sql: pluginConfigurationMigration,
+  },
+  {
+    version: 42,
+    name: "paginated-research-intake",
+    sql: planningIntakeMigration,
+  },
 ];
+import { planningIntakeMigration } from "./planning-intake-migration";
+import { pluginConfigurationMigration } from "./plugin-configuration-migration";
+import { pluginsMigration } from "./plugins-migration";
 import { planningSuiteMigration } from "./planning-suite-migration";
 import { workspaceResearchMigration } from "./workspace-research-migration";
 import { researchIndexInvalidationMigration } from "./research-index-invalidation-migration";

@@ -5,7 +5,6 @@ import {
   ArrowUpRight,
   Command,
   BookOpen,
-  Download,
   FileSearch,
   History,
   Search,
@@ -15,15 +14,11 @@ import { tabTitle } from "@axiom/shared/application-tabs";
 import { fileRouteId } from "@axiom/shared/file-routes";
 import { docRoute, searchDocumentation } from "@axiom/shared/documentation";
 import { timeAgo } from "../../lib/client";
+import { useWorkspaceCommands } from "../../lib/workspace-commands";
 import { useWorkSessions } from "../../lib/workspace-sessions";
 import Dialog, { DialogFooter } from "../Dialog";
-import { openAssistant } from "../../lib/assistant";
 import { ErrorNotice, ResourceIcon, useData, useWorkspace } from "./ui";
-import {
-  destinations,
-  locationIcon,
-  useDestinationRoute,
-} from "./WorkspaceToolbar";
+import { locationIcon } from "./WorkspaceToolbar";
 
 type Entry = {
   id: string;
@@ -32,6 +27,7 @@ type Entry = {
   icon: ReactNode;
   kind: string;
   action: () => void;
+  disabledReason?: string;
 };
 function Match({ text, query }: { text: string; query: string }) {
   const at = query
@@ -51,7 +47,7 @@ function Match({ text, query }: { text: string; query: string }) {
 export default function WorkspaceSearch({ onClose }: { onClose: () => void }) {
   const { revision, open, navigate, spaces, session } = useWorkspace(),
     sessions = useWorkSessions(),
-    destinationRoute = useDestinationRoute();
+    commandRegistry = useWorkspaceCommands();
   const [query, setQuery] = useState(""),
     [debounced, setDebounced] = useState(""),
     [scope, setScope] = useState<"all" | "files" | "commands">("all"),
@@ -132,46 +128,33 @@ export default function WorkspaceSearch({ onClose }: { onClose: () => void }) {
     });
   }
   if (scope !== "files" || commandsOnly) {
-    const matches = destinations.filter(
-      ([, name, description]) =>
+    const matches = commandRegistry.commands.filter(
+      ({ title: name, description }) =>
         !term ||
         `${name} ${description}`.toLowerCase().includes(term.toLowerCase()),
     );
     groups.push({
       name: "Commands",
-      entries: (term || commandsOnly ? matches : matches.slice(0, 4)).map(
-        ([path, title, detail, Icon]) => ({
-          id: `command:${path}`,
+      entries: (term || commandsOnly ? matches : matches.slice(0, 6)).map(
+        ({
+          id: commandId,
           title,
-          detail,
+          description: detail,
+          icon: Icon,
+          group,
+          run,
+          disabledReason,
+        }) => ({
+          id: `command:${commandId}`,
+          title,
           icon: <Icon size={18} />,
-          kind: "Go to",
-          action: () => navigate(destinationRoute(path)),
+          kind: group,
+          detail: disabledReason ?? detail,
+          disabledReason,
+          action: run,
         }),
       ),
     });
-    if (!term || /assistant|research|ask/i.test(term))
-      groups.at(-1)!.entries.unshift({
-        id: "command:assistant",
-        title: "Research assistant",
-        detail: "Cited answers and reviewed proposals",
-        kind: "Open",
-        icon: <FileSearch size={18} />,
-        action: () => openAssistant(),
-      });
-    if (
-      (!term || /export|print|pdf|html|markdown/i.test(term)) &&
-      typeof document !== "undefined" &&
-      document.querySelector(".ws-document")
-    )
-      groups.at(-1)!.entries.unshift({
-        id: "command:export-document",
-        title: "Export document",
-        detail: "HTML, Print / Save PDF, Markdown and assets",
-        kind: "Open",
-        icon: <Download size={18} />,
-        action: () => window.dispatchEvent(new Event("axiom:export-document")),
-      });
   }
   if (endpoint && !pending && !data.error)
     groups.push({
@@ -274,7 +257,7 @@ export default function WorkspaceSearch({ onClose }: { onClose: () => void }) {
             );
           } else if (event.key === "Enter") {
             event.preventDefault();
-            if (selected) finish(selected.action);
+            if (selected && !selected.disabledReason) finish(selected.action);
           }
         }}
       />
@@ -340,7 +323,10 @@ export default function WorkspaceSearch({ onClose }: { onClose: () => void }) {
                     title={entry.title}
                     onMouseMove={() => setActive(start + index)}
                     onMouseDown={(event) => event.preventDefault()}
-                    onClick={() => finish(entry.action)}
+                    aria-disabled={!!entry.disabledReason}
+                    onClick={() => {
+                      if (!entry.disabledReason) finish(entry.action);
+                    }}
                   >
                     <span className="discovery-result-icon">{entry.icon}</span>
                     <span className="discovery-result-copy">

@@ -68,9 +68,9 @@ reconfigure the existing sample view; hiding it preserves the session. Profile
 and notification forms use independent saved baselines and their existing APIs,
 not the Appearance/Writing draft controller. See [settings behavior](SETTINGS.md).
 
-Current appearance preferences use **schema 9**; Writing uses **schema 2** and
+Current appearance preferences use **schema 11**; Writing uses **schema 2** and
 portable palette JSON remains **version 1**. Clients advertise
-`X-Axiom-Appearance-Schema: 9` on bundle requests. Readers normalize older saved
+`X-Axiom-Appearance-Schema: 11` on bundle requests. Readers normalize older saved
 profiles without dropping authored choices. Older clients receive a representable
 shape or HTTP 426; stale writes cannot silently erase new settings. The optional
 `savePrevious` snapshot and preference revision commit in the same compare-and-swap
@@ -78,18 +78,26 @@ statement. Restoring uses the same conflict/idempotency path, not a privileged e
 
 Earlier schema additions were materials/restore points (2), Latin Modern (3),
 document decorations (4), theme packs (5), block guides (6), reading marks (7) and
-the minimap (8), followed by PDF-reader defaults (9). These are preference-format revisions, not database versions.
+the minimap (8), followed by PDF-reader defaults (9) and independent interface
+styles (10–11). These are preference-format revisions, not database versions.
 Theme packs are statically registered, scoped CSS; arbitrary user CSS and remote
 font URLs are not accepted. User overrides and high-contrast choices stay
 authoritative. Fonts are bundled local WOFF2 assets; personal HTML embeds the
 required fonts and licenses. See [settings](SETTINGS.md) and [theme authoring](THEME_AUTHORING.md).
 
-The database migration sequence currently ends at **37**. Migrations 19–20 add
+The database migration sequence currently ends at **42**. Migrations 19–20 add
 annotation threads and visual placement; 21–24 add resource revisions, review,
 draft retention, bounded visits and reversible decision evidence. Migration 25
 unifies workspace planning and separates group/workspace lifecycle. Fresh
 initialization, 18 → 25 and seeded 24 → 25 upgrades are rehearsed on disposable
-databases. These receipts are not a backup or a production rollout.
+databases. Migrations 40–41 add optional extension authority/activity and one
+configuration rollback slot. Migration 42 adds stable scope/status/author Intake
+page indexes without rewriting requests or history. The migration runner flushes deferred FK checks
+between numbered migrations before subsequent DDL, then restores deferred checks
+for circular resource/version inserts. The caller still owns one atomic migration
+transaction. Fresh installation and upgrades from 18, 27, 28 and 39 to 41 are
+rehearsed without rewriting existing notes/Yjs state. These receipts are not a
+backup or a production rollout.
 
 Research is embedded in `UnifiedWorkspace`, between Overview and Files, with one
 secondary tabbed shell (`ResearchWorkspace`) and lazy library, details/import/merge
@@ -123,6 +131,14 @@ receipts. Scheduling uses date-only values, a validated dependency DAG and the
 workspace working calendar; preview never writes task dates. Apply and guarded
 Undo are atomic. Gantt/List virtualize rows and fetch description bodies only
 when needed. See [planning architecture and limits](WORKSPACE_PLANNING.md).
+
+Intake browsing uses typed bounded filters and exact microsecond timestamp/UUID
+keyset positions, bound to account/workspace/search filters. One SQL snapshot returns
+counts and a limited summary page without full Markdown bodies; details reauthorize
+and load separately. Cursor expiry and access checks never confer mutation authority.
+Request/review forms capture the original version and retain drafts through peer
+invalidations. Existing transactional decisions, audit and idempotent task creation
+remain the only mutation path; MCP detail reads reuse the same service.
 
 Canvas now uses internal schema v1 with explicit JSON Canvas interchange, modular
 geometry/sizing/preview/export boundaries and nested collaborative text. Migration
@@ -165,6 +181,42 @@ DOI/arXiv lookup occurs only after a user's explicit request. The server sends t
 Cached worker scripts use synthetic responses to retain their original bootstrap URL, including Turbopack's fragment configuration. Forwarding a cached response URL changes a worker's location; see [service-worker response URL behavior](https://developer.mozilla.org/en-US/docs/Web/API/FetchEvent/respondWith). Offline tests assert that the Markdown worker still runs, not just that cached text appears.
 
 ## Scope and operations
+
+### Extensions and native command ownership
+
+The optional [extension platform](EXTENSIONS.md) separates immutable packages,
+account installations, exact-hash group approvals, individual workspace grants
+and metadata-only activity. Both server gates default off, including in Compose
+and native-install templates. A grant is an authorization fence, not a bearer
+credential: every broker call still requires the authenticated owner, current
+workspace role, enabled installation, package hash and current grant/approval
+revision. Management approval never substitutes for content access or consent.
+
+Packages execute lazily in an opaque iframe's dedicated worker, not the app or
+server realm. The host loads a validated local ESM bundle under a restrictive CSP
+and owns the MessageChannel broker, deadlines and cleanup. Native declarative
+panels use the shared controls; package HTML/CSS, DOM/editor instances, arbitrary
+network requests and server hooks are not APIs. Imported-code security acceptance
+remains separate from the shipped pilots; a watchdog is not an OS resource quota.
+
+Writes produce private native change sets. Human review freezes a preview; Apply
+uses the existing permission checks, source/Yjs commands, version fences, audit
+attribution and guarded inverses. Revocation also fences queued execution and
+retry. Cancellation of one's pending proposal remains available after revocation;
+it does not undo committed work. Updates/rollback disable the package and revoke
+grants, project compatible configuration and require renewed consent.
+
+`WorkspaceCommandProvider` owns command identity, active-pane context and native
+shortcut priority. Document context, file details, assistant and extensions share
+one inspector owner; switching it retains mounted drafts instead of creating
+competing rails. Extension configuration caches live above package selection and
+participate in the settings page's single aggregate navigation guard.
+
+Activity & recovery reads bounded metadata from existing upload/file-operation,
+export, tool/OCR, assistant and extension ledgers. Inspect opens those native
+controllers. It is neither a second queue nor an autonomous retry mechanism;
+idle/hidden/offline states avoid unnecessary job polling. See
+[verification](VERIFICATION.md) for executed tests and remaining acceptance gates.
 
 The [static showcase](STATIC_SHOWCASE.md) is an independent React/Vite build in
 `apps/showcase`, hosted on GitHub Pages. It reuses `AxiomEditorView` and the shared

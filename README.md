@@ -41,7 +41,7 @@ See [showcase storage, settings and GitHub Pages deployment](docs/STATIC_SHOWCAS
   <img src="docs/assets/showcase/static-canvas-light.webp" alt="The browser-local Canvas showcase: connected rich-text cards with mathematics, a linked notebook and a research checklist, sharing Axiom's production interaction surface." width="1440" loading="lazy">
 </picture>
 
-- **Learn in place.** Docs beside Search & commands provides 30 searchable guides,
+- **Learn in place.** Docs beside Search & commands provides 31 searchable guides,
   your current keyboard shortcuts, and disposable examples using the real editor
   and Canvas engine. No example creates or synchronizes a file.
 - **Turn reading into a draft.** The [evidence workbench](docs/PRODUCT_GUIDE.md)
@@ -92,6 +92,7 @@ See [showcase storage, settings and GitHub Pages deployment](docs/STATIC_SHOWCAS
   estimate-based capacity connect the individual workspace plans.
   See [workspace planning](docs/WORKSPACE_PLANNING.md).
   Planning also includes linked/manual Goals, member-only research Intake,
+  searchable paginated request/decision archives with lazy full-body loading,
   recurring templates/history, private/shared saved views, bulk changes,
   signed working-day dependency offsets, Quarter/Year timelines and enriched
   CSV/SVG/print exports. Capacity previews include accessible group commitments;
@@ -102,6 +103,15 @@ See [showcase storage, settings and GitHub Pages deployment](docs/STATIC_SHOWCAS
   separate from workspace settings.
   A theme-aware toolbar progress bar handles loading without replacing already
   loaded panels; quick requests stay quiet and reduced motion uses a static line.
+- **Extend deliberately.** An opt-in [extension platform](docs/EXTENSIONS.md) with
+  a TypeScript SDK, immutable packages, native themed panels, exact group approval
+  and individual workspace consent. Research Journal, Document Health and Planning
+  Brief run in isolated workers; changes use the existing human-reviewed pipeline.
+  Installation starts disabled; third-party imports have a separate default-off
+  gate. Updates, configuration rollback, revocation, safe mode and activity are included.
+  Search & commands shares active-pane context and one retained inspector slot.
+  Toolbar Activity & recovery opens existing upload/file/export/OCR/assistant
+  controllers without automatically retrying work.
 - **Make it yours.** Semantic light/dark themes, Paper Research and Technical Slate
   packs, separate reading/interface/code typography, device overrides and a live
   settings scratchpad. Axiom, Material Tonal, Fluent Studio, Editorial and macOS Studio component

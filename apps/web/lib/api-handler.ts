@@ -1,6 +1,8 @@
 import { randomBytes, createHash, randomUUID } from "node:crypto";
 import { assistantApi } from "@axiom/shared/assistant-api";
 import { productivityApi } from "@axiom/shared/productivity-api";
+import { pluginsApi } from "@axiom/shared/plugins-api";
+import { recoveryActivityApi } from "@axiom/shared/recovery-activity-api";
 import { sitesApi } from "@axiom/shared/sites-api";
 import {
   initializeDocument,
@@ -212,6 +214,10 @@ async function handleRequest(
     );
     if (revisionResponse) return revisionResponse;
     if (!principal) {
+      const recovery = await recoveryActivityApi(request, path, user.id);
+      if (recovery) return recovery;
+      const plugins = await pluginsApi(request, path, user.id);
+      if (plugins) return plugins;
       const sites = await sitesApi(request, path, user.id);
       if (sites) return sites;
       const productivity = await productivityApi(request, path, user.id);
@@ -1152,7 +1158,8 @@ async function handleRequest(
       }
       if (method === "DELETE" && id) {
         const reference = await referenceAccess(user.id, uuid.parse(id));
-        if (reference.group_id !== groupId) throw new HttpError(404, "Reference unavailable.");
+        if (reference.group_id !== groupId)
+          throw new HttpError(404, "Reference unavailable.");
         await requireLibraryEditor(user.id, groupId, reference.space_id);
         await libraryQuery(
           user.id,

@@ -18,7 +18,8 @@ import {
   usePlanningRowSize,
 } from "./PlanningFields";
 import { PlanningBulkActions, PlanningViewActions } from "./PlanningActions";
-import { PlanningGoals, PlanningIntake } from "./PlanningSuitePanels";
+import { PlanningGoals } from "./PlanningSuitePanels";
+import { PlanningIntake } from "./PlanningIntake";
 const PlanningRoutines = dynamic(() => import("./PlanningRoutines"));
 import ScheduleCapacityPreview from "./ScheduleCapacityPreview";
 import { openAssistant } from "../../lib/assistant";

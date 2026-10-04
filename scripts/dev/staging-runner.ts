@@ -124,8 +124,10 @@ export async function runStaging(
   else if (command === "worker")
     await run(ts("scripts/ops/workspace-worker.ts"));
   else if (command === "admin") await run(ts("scripts/ops/admin.ts", extra));
+  else if (command === "verify-plugins")
+    await run(ts("scripts/verify/verify-plugins.ts", extra));
   else
     throw new Error(
-      "Choose init, migrate, build, dev, web, sync, worker or admin.",
+      "Choose init, migrate, build, dev, web, sync, worker, admin or verify-plugins.",
     );
 }

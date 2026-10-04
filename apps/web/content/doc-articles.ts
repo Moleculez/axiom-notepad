@@ -9,6 +9,28 @@ const guide = (sections: [string, string][], sample?: string): GuideBody => ({
   sample,
 });
 export const guideBodies: Record<string, GuideBody> = {
+  extensions: guide([
+    [
+      "Opt in, one workspace at a time",
+      "Open Settings → Extensions. Install a package, enable it for your account, then review permissions for one active workspace. Team/project workspaces require manager approval of the exact package hash before each member grants their own access. All packages start disabled; third-party imports have a separate server security gate.",
+    ],
+    [
+      "Native research helpers",
+      "Research Journal prepares daily, laboratory and meeting notes. Document Health checks a saved Markdown snapshot and links findings to unchanged source. Planning Brief summarizes current tasks and milestones, not historical accomplishments. Panels use Axiom's shared controls and theme. Extensions require an online session; downloaded Markdown editing remains available offline.",
+    ],
+    [
+      "Review changes separately",
+      "Extensions can prepare Markdown-file, document-edit and task proposals, never apply them automatically. Inspect the exact native preview and destinations before Apply. Existing source transactions, audit attribution, retries and guarded Undo remain authoritative. Disabling/revoking access blocks future calls, queued actions and Undo; it does not reverse completed work.",
+    ],
+    [
+      "Keep control",
+      "Safe mode stops extensions on this device. Stop or Close ends a worker. Search & commands → Show extension inspector returns to a hidden retained panel; restarting explicitly reloads it. Settings drafts survive category/package switches and stale saves are blocked. Updates disable the package and require renewed consent; rollback restores one prior package/configuration without rewriting files.",
+    ],
+    [
+      "Activity and authoring",
+      "Extensions → Activity shows method/outcome metadata and pending proposal controls, including cancellation after disable. Toolbar → Activity & recovery links existing job controllers and never automatically retries work. The local TypeScript SDK and packaging command are documented in docs/EXTENSIONS.md. Packages run in opaque browser workers, without app DOM, arbitrary network or server execution. This controlled beta is not certification of hostile third-party plugins.",
+    ],
+  ]),
   "start/overview": guide([
     [
       "A file-first workspace",
@@ -444,6 +466,10 @@ export const guideBodies: Record<string, GuideBody> = {
     [
       "Review schedule changes",
       "Use immutable baselines to compare plans. Critical-path/slack overlays are working-day calculations, not forecasts. Preview dependency-aware scheduling before applying it, with revision-checked Undo.",
+    ],
+    [
+      "Review research requests",
+      "Planning → Intake keeps open requests and decision history in one workspace. Search request contents and review notes, choose a status/type or My requests, and page through older submissions. Opening a request loads its full Markdown; peer changes retain your draft but block stale resubmission or decisions. Acceptance creates one linked task, even on retry.",
     ],
     [
       "Coordinate the group",

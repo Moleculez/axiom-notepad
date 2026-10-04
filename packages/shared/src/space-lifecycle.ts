@@ -236,7 +236,7 @@ export async function spaceLifecycleApi(
     const management = url.searchParams.get("manage") === "1";
     const summary = url.searchParams.get("summary") === "1";
     const rows = await query<Space>(
-      `SELECT ${spaceFields}${summary ? ", (SELECT coalesce(sum(a.bytes),0)::float8 FROM resources r JOIN file_versions v ON v.resource_id=r.id JOIN attachments a ON a.id=v.id WHERE r.space_id=s.id) AS stored_bytes" : ""} FROM spaces s ${spaceJoin}
+      `SELECT ${spaceFields}${summary ? ", (SELECT coalesce(sum(a.bytes),0)::float8 FROM resources r JOIN file_versions v ON v.resource_id=r.id JOIN attachments a ON a.id=v.id WHERE r.space_id=s.id) AS stored_bytes,CASE WHEN axiom_space_role($1,s.id) IS NOT NULL THEN (SELECT count(*)::int FROM resources r WHERE r.space_id=s.id AND r.deleted_at IS NULL) END AS item_count" : ""} FROM spaces s ${spaceJoin}
       WHERE (axiom_space_role($1,s.id) IS NOT NULL OR ($3 AND axiom_manage_space($1,s.id)))
       AND ($2='all' OR axiom_space_state(s.id)=$2 OR ($2='trashed' AND axiom_space_state(s.id)='purging'))
       ORDER BY CASE s.kind WHEN 'personal' THEN 0 WHEN 'team' THEN 1 ELSE 2 END,g.name,p.name`,
@@ -424,7 +424,10 @@ export async function purgeSpace(id: string, userId: string, version: number) {
         impact.blockers.map((item) => item.label).join("; "),
       );
     const { scope, ids, notes, versions } = impact;
-    await client.query("DELETE FROM bibliography WHERE space_id=ANY($1::uuid[])", [scope.spaces]);
+    await client.query(
+      "DELETE FROM bibliography WHERE space_id=ANY($1::uuid[])",
+      [scope.spaces],
+    );
     await client.query(
       "DELETE FROM task_resources WHERE task_id IN (SELECT id FROM tasks WHERE space_id=$1)",
       [id],

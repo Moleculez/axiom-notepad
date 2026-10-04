@@ -28,6 +28,8 @@ try {
     "upgrade",
     "assistant_upgrade",
     "planning_upgrade",
+    "extensions_upgrade",
+    "intake_upgrade",
   ] as const) {
     const name = `axiom_${mode}_test_${stamp}`;
     assert(configured.pathname !== `/${name}`);
@@ -48,6 +50,7 @@ try {
       const state = Buffer.from(Y.encodeStateAsUpdate(document));
       document.destroy();
       let before: unknown;
+      let beforeIntake: unknown;
       if (mode !== "fresh") {
         await db.query(migration);
         await db.query(
@@ -56,12 +59,18 @@ try {
         for (const item of forwardMigrations.filter(
           (m) =>
             m.version <=
-            (mode === "planning_upgrade"
-              ? 28
-              : mode === "assistant_upgrade"
-                ? 27
-                : 18),
+            (mode === "intake_upgrade"
+              ? 41
+              : mode === "extensions_upgrade"
+                ? 39
+                : mode === "planning_upgrade"
+                  ? 28
+                  : mode === "assistant_upgrade"
+                    ? 27
+                    : 18),
         )) {
+          await db.query("SET CONSTRAINTS ALL IMMEDIATE");
+          await db.query("SET CONSTRAINTS ALL DEFERRED");
           await db.query(item.sql);
           await db.query(
             "INSERT INTO schema_migrations(version,name) VALUES($1,$2)",
@@ -104,6 +113,19 @@ try {
             "INSERT INTO assistant_conversations(id,owner_id,space_id,title) SELECT $1,'rehearsal',id,'Preserved assistant' FROM spaces WHERE group_id=$2 AND kind='team'",
             [commentId, groupId],
           );
+        }
+        if (mode === "intake_upgrade") {
+          await db.query(
+            `INSERT INTO planning_intake(id,space_id,created_by,kind,title,body,status,decision_note,version,created_at)
+            SELECT $1,id,'rehearsal','experiment','Existing research request','> Keep multiline source\n\n$$E=mc^2$$','needs-changes','Original decision',7,'2026-10-04T03:01:02.123456Z' FROM spaces WHERE group_id=$2 AND kind='team'`,
+            [commentId, groupId],
+          );
+          beforeIntake = (
+            await db.query(
+              "SELECT to_jsonb(i) AS request FROM planning_intake i WHERE id=$1",
+              [commentId],
+            )
+          ).rows;
         }
       }
       await migrateDatabase(db);
@@ -164,6 +186,32 @@ try {
             )
           ).rows[0];
           assert.deepEqual(row.space_ids, [row.space_id]);
+        }
+        if (mode === "intake_upgrade") {
+          assert.deepEqual(
+            (
+              await db.query(
+                "SELECT to_jsonb(i) AS request FROM planning_intake i WHERE id=$1",
+                [commentId],
+              )
+            ).rows,
+            beforeIntake,
+          );
+          assert.equal(
+            (
+              await db.query(
+                "SELECT count(*)::int AS count FROM pg_indexes WHERE tablename='planning_intake' AND indexname=ANY($1::text[])",
+                [
+                  [
+                    "planning_intake_created_page",
+                    "planning_intake_status_page",
+                    "planning_intake_author_page",
+                  ],
+                ],
+              )
+            ).rows[0].count,
+            3,
+          );
         }
       }
       await db.query("COMMIT");

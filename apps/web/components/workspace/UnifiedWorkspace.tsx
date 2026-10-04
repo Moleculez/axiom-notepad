@@ -24,6 +24,7 @@ import {
   History,
   MessageSquare,
   Plus,
+  Puzzle,
   Settings2,
   Users,
 } from "lucide-react";
@@ -737,17 +738,38 @@ function WorkspaceSettings({
         ) : section === "lifecycle" ? (
           <Lifecycle space={space} parentId={null} />
         ) : section === "integrations" ? (
-          space.group_id &&
-          ["owner", "admin"].includes(space.group_role ?? "") ? (
-            <ProviderSettings groupId={space.group_id} />
-          ) : (
-            <Empty title="Workspace connections">
-              <WorkspaceLink to="/settings/connections">
-                Manage your approved MCP connections
+          <>
+            <section className="settings-form-section">
+              <h3>Workspace extensions</h3>
+              <p>
+                Approve exact packages for team workspaces and grant your own
+                scoped access. Extensions cannot expand workspace permissions or
+                apply changes without review.
+              </p>
+              <WorkspaceLink
+                className="button secondary"
+                to={
+                  "/settings/extensions?space=" +
+                  space.id +
+                  (space.group_id ? "&group=" + space.group_id : "")
+                }
+              >
+                <Puzzle size={16} />
+                Manage extensions
               </WorkspaceLink>
-              . Group provider credentials require administrator access.
-            </Empty>
-          )
+            </section>
+            {space.group_id &&
+            ["owner", "admin"].includes(space.group_role ?? "") ? (
+              <ProviderSettings groupId={space.group_id} />
+            ) : (
+              <Empty title="Workspace connections">
+                <WorkspaceLink to="/settings/connections">
+                  Manage your approved MCP connections
+                </WorkspaceLink>
+                . Group provider credentials require administrator access.
+              </Empty>
+            )}
+          </>
         ) : null}
       </div>
     </div>

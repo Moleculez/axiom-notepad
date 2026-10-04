@@ -1,7 +1,131 @@
 # Current verification and beta release gates
 
-Updated October 3, 2026. Historical logs are [archived separately](archive/VERIFICATION-2026-09-11.md).
+Updated October 4, 2026. Historical logs are [archived separately](archive/VERIFICATION-2026-09-11.md).
 Do not treat historical browser totals or local build IDs as current release evidence.
+
+## October 4 research Intake archives and review ergonomics
+
+- Replaced the latest-200 request cutoff with authorized, server-paginated Intake
+  summaries, exact filtered/status counts and literal title/body/review-note search.
+  Open requests, decision history, exact statuses, request type, author and
+  oldest/newest order share one query contract. Details load the full saved Markdown
+  only when opened; the MCP catalog exposes the same scoped read boundaries.
+- Timestamp/UUID keysets preserve PostgreSQL microseconds. Cursors bind the account,
+  workspace and query and expire after 24 hours; every page/detail read rechecks
+  access. Rows and counts share one SQL statement snapshot. This is a live archive,
+  not an immutable export: status changes and already-in-flight commits can affect
+  later pages. Existing reviewed decisions, task creation, version fences and audit
+  remain authoritative.
+- Primary search/status fields stay visible; type/author/order use a compact Filters
+  dialog. Results own the scrollport while counts and pagination remain stationary.
+  Long titles align with their metadata. Review/request forms retain local drafts
+  after peer updates, disable stale saves and guard dirty/busy closure. Read-only
+  request contents use the native editor's Preview/Source projection; fixed footers
+  are owned by the form, not nested inside its scrolling body. Native checkbox,
+  radio and switch props now reject children/HTML content at compile time, preventing
+  a reproduced React void-input crash.
+- **2,126 unit tests / 113 files**, TypeScript, ESLint, shared UI validation
+  (**182 JSX files**), trusted theme-pack checks, documentation checks and an
+  isolated optimized **Next.js 16.3.8** build passed (**958 offline assets**).
+  The disposable planning API suite passed existing native/MCP reviewed changes,
+  recurrence/idempotency and access checks alongside **1,250 Intake fixtures**:
+  tied and microsecond timestamps, full exact traversal, concurrent submissions,
+  literal wildcard text, changed-query/cross-account cursors, unauthorized detail
+  reads and access revocation. A 37-row fixture response was **15,904 bytes** versus
+  **105,074 bytes** with those same saved bodies; this is a fixture payload comparison,
+  not a production latency benchmark.
+- Four planning workflows passed in Chromium, Firefox and WebKit (**12 runs**),
+  including archives beyond 200, lazy details, stale-draft preservation, archived
+  Preview/Source, filters, native review/create actions and existing bulk/outcome/
+  capacity fences. Layout checks cover all five interface styles in both modes,
+  22px UI text, square controls, no shadows, a 1280 × 720 desktop, keyboard access,
+  forced colors and reduced motion. Fresh captures were visually reviewed for
+  field/title alignment, list scrolling and action-footer visibility. Artifacts
+  remain ignored under `test-results/planning/`; traces are disabled.
+- Fresh initialization and **18/27/28/39/41 → 42** upgrade rehearsals passed with
+  idempotent reruns and preserved original note/Yjs/discussion records. The explicit
+  **41 → 42** fixture retained Intake source, decision text, IDs, versions and exact
+  timestamps while adding three paging indexes. Migration 42 is additive; the
+  working database and environment were not migrated, reset or changed.
+- This increment does not recertify all historical editor/PDF/Canvas/offline
+  acceptance, physical IME/clipboard behavior, real provider/OCR quality or imported
+  extension security. Goal and metadata-history pagination, independent extension
+  review and the other remaining stages stay explicit in the
+  [roadmap](PRODUCTIVITY_ROADMAP.md). Real deployment still requires a backup,
+  migration and restart with matching code; the working development dataset was
+  not silently upgraded for these tests.
+
+## October 4 controlled extensions and everyday workflow integration
+
+- Added the optional [extension API v1](EXTENSIONS.md), local TypeScript SDK and
+  packaging example. Immutable bounded ZIPs, disabled personal installations,
+  exact-hash group approval and individual workspace consent separate package
+  availability from execution authority. Research Journal, Document Health and
+  Planning Brief use native themed panels and saved snapshots. Human-reviewed
+  native change sets, not package code, apply source/task/file proposals.
+- Configuration retains its original revision and survives package/category
+  switches. Updates and one-version package/configuration rollback revoke grants
+  and disable execution until renewed consent. Safe mode, uninstall cleanup,
+  metadata activity, owner-only pending-proposal cancellation after revocation
+  and native guarded inverses are implemented. New-file creation is not falsely
+  described as automatically undoable; already committed work is retained.
+- Shared command identity/active-pane targeting and one inspector owner preserve
+  document, assistant and extension drafts without competing rails. Settings
+  forms participate in one aggregate exit guard. Directory cards show readable
+  access/count/storage metadata. Activity & recovery adapts existing controllers;
+  idle/hidden/offline polling is quiet and no work is automatically retried.
+- **2,101 unit tests / 112 files**, TypeScript, ESLint, shared UI validation
+  (**181 JSX files**), both trusted theme-pack checks, documentation checks and
+  an isolated optimized **Next.js 16.3.8** build passed (**958 offline assets**).
+  The real SDK example compiled and passed independent ZIP validation without
+  being executed or installed. Compose configuration validates with the explicit
+  placeholder production template. Both extension flags remain default-off in
+  development, Docker and native-install examples; Compose forwards them to the
+  web/worker services. The working environment file was not changed.
+- The isolated API acceptance script passed exact reviewed Apply/audit, owner,
+  capability, workspace and group-approval fences; queued revocation; disabled
+  proposal cancellation; authoritative source/planning/reference reads; private
+  state compare-and-swap; immutable package identity; shortcut collisions;
+  configuration update/rollback and uninstall cleanup. Tests use
+  `axiom_plugins_test`, separate attachments and ports **3004/1236**, never
+  working research data. The assistant uses only the deterministic local fixture
+  provider at 8096; this does not establish external-model quality or billing.
+- Seven extension/assistant workflows passed in Chromium, Firefox and WebKit
+  against the optimized build (**21 runs**). They cover opaque DOM/storage,
+  CSP network/import enforcement, unavailable streaming/child-worker APIs,
+  runaway-worker termination, native review, revocation, retained drafts, stale
+  saves, single inspector ownership and history-to-exact-outgoing-context review.
+  Back/reset consent does not send provider data. Geometry checks cover all five
+  interface styles in both modes, 20px UI text, square controls and no shadows;
+  keyboard/forced-color/reduced-motion captures are included. Fresh settings and
+  assistant captures were visually reviewed. Artifacts stay in ignored
+  `test-results/plugins/`; traces do not store authentication or outgoing context.
+- Five focused authenticated editor workflows also passed in Chromium: exact
+  source round-tripping, rich/source peer convergence and offline reconnection,
+  heading typography, editable tables/code/math, stable footer, source-anchored
+  discussions and quoted-equation/offline export. This is not a broad recertification
+  of all historical editor/PDF/Canvas/MCP or physical IME/clipboard behavior.
+- Production Firefox reloads initially stalled after repeated theme changes.
+  The PWA worker had wrapped the long-lived refresh stream in its offline fetch
+  path. Excluding EventSource streams reproduced a passing ten-theme reload
+  matrix in 14 seconds, followed by the full cross-browser pass. Unit checks also
+  prove streams bypass interception while ordinary API reads remain network-first
+  and private responses are not placed in the shell cache.
+- Fresh initialization, **18 → 41**, **27 → 41**, **28 → 41** and **39 → 41**
+  migration rehearsals passed, including idempotent reruns and preserved original
+  note, Yjs-state and discussion records. The old upgrade rehearsal exposed
+  deferred FK trigger events before later DDL. The runner now checks them at
+  numbered migration boundaries while retaining one atomic transaction. Applied
+  migration SQL was not rewritten. Disposable databases remain for inspection;
+  the working database was not migrated or reset for this increment.
+- Narrow dependency updates address the previously reported audit findings:
+  Next.js 16.3.8, resolved Nodemailer 10.0.14, DOMPurify 3.4.16 and patched
+  brace-expansion lockfile entries. Both full and production-only `npm audit`
+  report **zero known vulnerabilities** at this checkpoint. This is not a security
+  certification: independent imported-code/resource-exhaustion review, publisher
+  identity, package/activity reclamation, real provider/OCR acceptance and
+  physical keyboard/assistive-technology checks remain explicit gates in the
+  [next-stage roadmap](PRODUCTIVITY_ROADMAP.md).
 
 ## October 3 interactive static showcase
 
@@ -62,8 +186,8 @@ Do not treat historical browser totals or local build IDs as current release evi
   shared math startup handshake and separate remote acceptance budgets address
   that finding; the static HTML exporter now refuses still-loading snapshots.
   This is not a latency benchmark or a guarantee for every network.
-- Production security remains a separate release gate: the current dependency
-  audit reports existing advisories in Next.js (critical), Nodemailer and
+- Production security remained a separate release gate at this checkpoint: the
+  dependency audit reported existing advisories in Next.js (critical), Nodemailer and
   brace-expansion (high), and DOMPurify (low). This increment does not upgrade
   those dependencies or certify the authenticated application for public release.
   GitHub Pages does not run the Next.js or mail server.

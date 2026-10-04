@@ -11,6 +11,9 @@ and Markdown task nodes keep their transparent, source-backed editor treatment.
 Import from `apps/web/components/ui/controls.tsx`. Do not draw another checkbox,
 switch, slider or general action button in a page stylesheet. These components
 forward native props/events/refs; they do not replace controls with clickable divs.
+Checkbox/Switch/Radio are void native inputs, not label wrappers. Place label text
+in a surrounding label or an associated Field; content/HTML props are rejected by
+their TypeScript contracts to prevent page-wide React rendering failures.
 
 | Component                | Use                                                        | Important contract                                                                                                       |
 | ------------------------ | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
@@ -101,6 +104,21 @@ Do not style Markdown source/property/code/math inputs as application forms.
 Those fields remain explicitly `data-editor-field`, transparent and source-backed.
 Time-zone completion retains its existing validated native autocomplete.
 
+### Server-filtered archives
+
+Use shared SearchField/NativeSelect/Checkbox for filters, native named pagination
+actions and an announced result count. Debounce only search reads, never mutations
+or draft typing. Reset page positions when result-affecting filters change. A failed
+read is not an empty archive; retain same-target transient data and expose Retry.
+Keep full rich bodies out of summary responses and load authorized details explicitly.
+Do not replace an open form's source/version on a peer refresh. Fixed DialogFooter
+actions must remain outside the scroll body and inside their native form owner.
+Short row actions wrap as whole controls beside long titles rather than clipping
+labels or forcing page-wide horizontal scrolling. Record whether positions are live
+or frozen; a cursor is neither a permission grant nor a stale-save workaround.
+Own the results scrollport; filters, counts and pagination stay reachable outside
+it. Reserve focus space and scrollbar geometry without moving the page footer.
+
 ## Numeric and color preferences
 
 Use `NumberPreference` for appearance controls: slider plus precise native number
@@ -178,6 +196,28 @@ outside scrollable fields. Production preferences remain transactional; the stat
 showcase remains browser-local and immediate-save.
 
 ## Interface styles are independent of palettes
+
+### Extension and inspector UI
+
+Extension packages contribute validated data, never HTML/CSS/React or their own
+control drawing. The host owns identity, permission dialogs, source links,
+review controls, escape behavior and focus. Render declarative fields with the
+shared native controls; paginate tables and preserve field drafts on an inspector
+owner switch. Background extension execution must never focus or rewrite source.
+
+Document context, file details, assistant and extension inspectors share one
+explicit owner. Hiding a pane retains its draft; stopping/restarting a worker is
+an explicit lifecycle action. Commands target the active pane's registered
+resource/workspace, not whichever DOM editor was most recently queried. Native
+shortcuts have priority; extensions never steal typing/composition/dialog keys.
+
+Settings directories use stationary matching frames, interior scrollports and
+unboxed metadata, not a full-page nested scroller. Cache configuration drafts
+above the selected package projection and keep the surface mounted across
+category switches. Use the central retained-form exit guard: never stack another
+confirmation dialog on top of the settings guard. Save the original revision;
+display a conflict without dropping the draft. Activity surfaces link existing
+job controllers, preserve permission/failure states and never auto-retry work.
 
 The typed registry `packages/shared/src/interface-styles.ts` owns IDs and labels;
 production and showcase consume the same registry. Presentation belongs to

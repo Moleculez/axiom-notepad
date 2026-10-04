@@ -157,8 +157,27 @@ estimates, not tracked time.
   priority. Authors edit/resubmit undecided requests and withdraw them. Managers
   accept, reject or request changes with a review note. Acceptance creates exactly
   one linked task atomically; retries return the original result.
-- Goals are bounded to 200; Intake shows the latest 200 requests and history the
-  latest 100 events/occurrences. These limits are explicit, not full-text archives.
+- Intake browses **all** accessible requests with server-side pages, not a latest-200
+  cutoff. Choose Open requests, Decision history, All requests or an exact status;
+  use **Filters** for request type, My requests and submission order; search literal
+  title/body/review-note text and sort
+  by oldest/newest submission. Status counts follow the search/type/author scope.
+  Pages offer 15/30/60/100 rows and Previous/Next; changing filters resets the position.
+  Empty, loading, unavailable and Retry states distinguish failures from no matches.
+- List responses omit full Markdown bodies. Opening details/review fetches one
+  currently authorized request; the original version remains the save fence. Peer
+  changes disable stale decisions/resubmission without overwriting local drafts.
+  Review and request dialogs have fixed action footers, busy/dirty closure guards
+  and native field validation. Accepted requests link to their task; decision notes
+  and withdraw/accept history remain available rather than being deleted.
+- Cursors retain exact timestamp/UUID positions, are tied to account/workspace and
+  filters, and expire after 24 hours. Newer submissions do not shift older pages;
+  Refresh returns to the first page. Counts and rows use one SQL statement snapshot.
+  These are live requests, not immutable historical exports: status/author edits and
+  commits of previously in-flight submissions can affect later pages. Reauthorization
+  happens on every page/detail read; an old cursor does not retain revoked access.
+- Goals are still bounded to 200; per-entity metadata history and routine occurrences
+  show the latest 100. These remaining limits are explicit, not full-text archives.
   Goal/intake/routine forms guard unsaved closure and disable edits during saves.
 
 ## Group coordination and schedule analysis
@@ -204,6 +223,14 @@ with its original single-workspace boundary. Back up, stop old writers, migrate,
 then restart matching web/sync/worker builds; do not run mixed schema versions.
 
 ## Upgrade and verification
+
+Forward migration **42** adds scope/status/author keyset indexes for Intake.
+It does not rewrite request content, IDs, timestamps, decisions, tasks or history.
+The local API rehearsal traverses 1,250 tied/microsecond positions, concurrent
+submissions/edits, literal wildcard searches, filters/counts and membership revocation.
+`npm run test:planning` runs isolated port-3004 browser acceptance (never the working
+database); its new Intake fixtures cover more than 200 records, lazy details, stale
+draft retention, all five styles, both modes, large text and fixed dialog actions.
 
 Forward migration **39** adds relationship offsets, leaf progress, saved views,
 Goals, Intake, metadata history, routine archive state and capacity receipt fences.

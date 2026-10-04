@@ -1,7 +1,8 @@
 import type { PoolClient } from "pg";
 import { migration, forwardMigrations } from "./migrations";
 
-/** Caller owns a transaction. Used by normal migrations and the guarded reset. */
+/** Caller owns a dedicated migration transaction. Used by normal migrations and
+ * the guarded reset. Each numbered migration must leave valid foreign keys. */
 export async function migrateDatabase(client: Pick<PoolClient, "query">) {
   await client.query("SELECT pg_advisory_xact_lock(17012026)");
   const {
@@ -29,6 +30,13 @@ export async function migrateDatabase(client: Pick<PoolClient, "query">) {
       ).rowCount
     )
       continue;
+    // Earlier backfills can queue deferred FK checks on resources. PostgreSQL
+    // refuses the next ALTER TABLE while those trigger events are pending.
+    // Check the previous migration's data before DDL, then restore deferred
+    // checks for the resource/file-version circular inserts inside this one.
+    // Keep the whole upgrade atomic; do not rewrite an applied migration.
+    await client.query("SET CONSTRAINTS ALL IMMEDIATE");
+    await client.query("SET CONSTRAINTS ALL DEFERRED");
     await client.query(item.sql);
     await client.query(
       "INSERT INTO schema_migrations(version,name) VALUES($1,$2)",

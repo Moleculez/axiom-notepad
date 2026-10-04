@@ -44,6 +44,7 @@ export interface Space {
   archived_at?: string | null;
   deleted_at?: string | null;
   stored_bytes?: number;
+  item_count?: number | null;
   owner_id: string | null;
   group_id: string | null;
   project_id: string | null;

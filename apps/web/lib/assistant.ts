@@ -6,6 +6,7 @@ export type AssistantIntent = {
   selection?: AssistantSelection;
   selectionLabel?: string;
   prompt?: string;
+  conversationId?: string;
 };
 export const assistantEvent = "axiom:assistant-open";
 export function openAssistant(intent: AssistantIntent = {}) {

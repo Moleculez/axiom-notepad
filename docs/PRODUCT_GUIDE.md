@@ -4,9 +4,9 @@
 
 **Docs** sits immediately to the left of **Search & commands** in the app toolbar.
 It opens `/workbench/docs` inside the authenticated workbench, keeping the workspace
-sidebar in place. Thirty guides cover the Markdown editor, Canvas, PDF research,
+sidebar in place. Thirty-one guides cover the Markdown editor, Canvas, PDF research,
 studios and viewers, files, groups, planning, publishing, the assistant, MCP,
-offline behavior and appearance. These are user guides, not public website pages.
+offline behavior, appearance and optional workspace extensions. These are user guides, not public website pages.
 
 Chapter navigation, full-text guide search, section links and breadcrumbs support
 direct article URLs such as `/workbench/docs/editor/math`. Search & commands also

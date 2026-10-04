@@ -253,6 +253,7 @@ export default function AssistantPanel({
   useEffect(() => {
     if (lastIntent.current === intent.serial) return;
     lastIntent.current = intent.serial;
+    if (intent.conversationId) setConversationId(intent.conversationId);
     if (intent.spaceIds) {
       setConversationId("");
       setConversation(null);

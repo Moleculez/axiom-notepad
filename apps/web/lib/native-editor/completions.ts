@@ -15,8 +15,15 @@ export type NativeCompletion = {
   to: number;
   value?: string;
   command?: EditorCommandId;
+  extensionId?: string;
   select?: [number, number];
   fields?: [number, number][];
+};
+export type EditorExtensionCommand = {
+  id: string;
+  label: string;
+  slash: boolean;
+  menu: boolean;
 };
 export function nativeCompletions(
   source: string,
@@ -24,29 +31,47 @@ export function nativeCompletions(
   preferences: EditorPreferences,
   context: RenderContext,
   notes: { id: string; title: string }[],
+  extensions: EditorExtensionCommand[] = [],
 ): NativeCompletion[] {
   const slash = preferences.slashCommands && slashQuery(source, position);
-  if (slash)
-    return editorCommands
+  if (slash) {
+    const contributions = extensions
       .filter(
         (c) =>
-          c.insert &&
-          (c.label + " " + c.keywords)
-            .toLowerCase()
-            .includes(slash.query.toLowerCase()),
+          c.slash && c.label.toLowerCase().includes(slash.query.toLowerCase()),
       )
-      .sort(
-        (a, b) =>
-          Number(b.id === slash.query.toLowerCase()) -
-          Number(a.id === slash.query.toLowerCase()),
-      )
-      .slice(0, 12)
+      .slice(0, 6)
       .map((c) => ({
         label: c.label,
-        command: c.id,
+        extensionId: c.id,
+        icon: "settings" as const,
         from: slash.from,
         to: slash.to,
       }));
+    return [
+      ...editorCommands
+        .filter(
+          (c) =>
+            c.insert &&
+            (c.label + " " + c.keywords)
+              .toLowerCase()
+              .includes(slash.query.toLowerCase()),
+        )
+        .sort(
+          (a, b) =>
+            Number(b.id === slash.query.toLowerCase()) -
+            Number(a.id === slash.query.toLowerCase()),
+        )
+        .slice(0, contributions.length ? 8 : 12)
+        .map((c) => ({
+          label: c.label,
+          command: c.id,
+          from: slash.from,
+          to: slash.to,
+        })),
+      ...contributions,
+    ];
+  }
   if (nodeAt(source, position, ["codeBlock", "code"])) return [];
   const before = source.slice(Math.max(0, position - 160), position);
   const math = nodeAt(source, position, ["mathBlock", "mathInline"]),

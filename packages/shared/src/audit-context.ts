@@ -12,6 +12,9 @@ export type AuditContext = {
   allowedSpaceIds?: string[];
   assistantContextId?: string;
   changeSetId?: string;
+  pluginGrantId?: string;
+  pluginPackageHash?: string;
+  pluginGrantRevision?: number;
 };
 const context = new AsyncLocalStorage<AuditContext>();
 export const withAuditContext = <T>(value: AuditContext, work: () => T): T =>
@@ -26,11 +29,47 @@ export async function installAuditContext(
   value = context.getStore(),
 ) {
   if (!value) return;
-  if (value.assistantContextId) {
-    const { assistantContext, assertAssistantAccess } = await import("./assistant-service");
-    await assertAssistantAccess(await assistantContext(value.assistantContextId,value.actorId,client),client);
+  if (value.pluginGrantId) {
+    const { activePluginGrant } = await import("./plugin-security");
+    if (
+      !value.actorId ||
+      !value.pluginPackageHash ||
+      !value.pluginGrantRevision ||
+      value.integrationId ||
+      value.assistantContextId
+    )
+      throw new Error("Invalid extension attribution.");
+    const grant = await activePluginGrant(
+      {
+        grantId: value.pluginGrantId,
+        userId: value.actorId,
+        packageHash: value.pluginPackageHash,
+        revision: value.pluginGrantRevision,
+      },
+      client,
+    );
+    if (
+      value.allowedSpaceIds?.length !== 1 ||
+      value.allowedSpaceIds[0] !== grant.space_id
+    )
+      throw new Error("Extension mutation scope changed.");
   }
-  if (value.changeSetId) await client.query("SELECT set_config('axiom.change_set_id',$1,true)",[value.changeSetId]);
+  await client.query(
+    "SELECT set_config('axiom.plugin_grant_id',$1,true),set_config('axiom.plugin_package_hash',$2,true)",
+    [value.pluginGrantId ?? "", value.pluginPackageHash ?? ""],
+  );
+  if (value.assistantContextId) {
+    const { assistantContext, assertAssistantAccess } =
+      await import("./assistant-service");
+    await assertAssistantAccess(
+      await assistantContext(value.assistantContextId, value.actorId, client),
+      client,
+    );
+  }
+  if (value.changeSetId)
+    await client.query("SELECT set_config('axiom.change_set_id',$1,true)", [
+      value.changeSetId,
+    ]);
   if (value.integrationId) {
     const {
       rows: [grant],

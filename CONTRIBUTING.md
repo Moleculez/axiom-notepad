@@ -12,6 +12,8 @@ apps/sync/         Single-process collaborative room service
 packages/editor/   Canonical-source editing/projection adapters
 packages/markdown/ Axiom Markdown parser and renderers
 packages/shared/   Server services, authorization, migrations and shared contracts
+packages/plugin-sdk/ Typed browser extension API (no server execution)
+examples/plugins/  First-party extension authoring examples
 scripts/dev/       Local setup, fixtures and isolated staging
 scripts/build/     Vendored assets, brand/showcase generation and offline manifests
 scripts/ops/       Administration, migration, backup, worker and safe cleanup
@@ -51,9 +53,23 @@ fresh/upgrade rehearsal against local PostgreSQL:
 npx tsx scripts/verify/rehearse-current-migrations.ts
 ```
 
-It creates and retains two uniquely named test databases; it never migrates or
+It creates and retains uniquely named test databases; it never migrates or
 resets the application database from `.env`. The configured local role needs
 permission to create databases. This tests schema upgrades, not full backup recovery.
+
+Planning Intake mutations have a guarded local API rehearsal and browser suite:
+
+```sh
+npx tsx scripts/verify/verify-workspace-planning.ts
+npm run plugins:staging -- migrate
+npm run plugins:staging -- build
+npm run plugins:staging -- web
+# In another terminal, with the isolated profile running on 3004:
+npm run test:planning
+```
+
+The browser fixtures use only the fictional extension-staging account and the
+`axiom_plugins_test` database. Never point these tests at a real deployment.
 
 ## Documentation and visual assets
 
@@ -87,6 +103,12 @@ and dark artwork visually, including reduced-size readability, before committing
   Run `validate:ui` and inspect the real Interface specimen in every style.
 - Keep optional providers explicit and disabled until configured. Never transmit
   research content as a side effect of simply opening a document.
+- Extensions use the [API v1 contract](docs/EXTENSIONS.md): immutable package
+  identity, default-off gates, opaque workers, native declarative panels and
+  human-reviewed writes. Never import package code into the app/server realm,
+  grant same-origin privileges, add unreviewed CSS/HTML or expose native Apply to
+  a worker. Run `npm run plugins:staging` / `npm run test:plugins` only against
+  the guarded isolated profile. Package examples with `npm run plugin:pack`.
 - Do not claim upstream editor internals are first-party code. Retain third-party
   licenses/notices and document actual dependency boundaries.
 

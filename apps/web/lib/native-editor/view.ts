@@ -39,7 +39,7 @@ import { footnoteTooltips } from "../footnote-tooltips";
 import { footnoteAt } from "@axiom/editor/footnotes";
 import { preserveLineEndings } from "@axiom/editor/line-endings";
 import { installEditorLinkNavigation } from "../editor-links";
-import { nativeCompletions } from "./completions";
+import { nativeCompletions, type EditorExtensionCommand } from "./completions";
 import { mathSymbolIcon } from "../icons/math-symbols";
 import { literalBody, literalPrefix } from "./literal";
 import { htmlMarkdown, htmlTableGrid } from "./clipboard";
@@ -95,6 +95,8 @@ export type NativeEditorOptions = {
   exit?: () => void;
   annotations?: () => import("@axiom/editor/annotations").SourceAnnotation[];
   annotation?: (id: string) => void;
+  extensions?: () => EditorExtensionCommand[];
+  extension?: (id: string) => void;
 };
 type Composition = {
   before: ReturnType<SourceDOMMap["capture"]>;
@@ -2612,56 +2614,68 @@ export class NativeEditorView {
         this.menuDismiss = null;
       },
       restore: () => this.focus(this.selection.anchor, this.selection.head),
-      items: ids.map((id) => ({
-        id,
-        icon: editorCommandIcons[id],
-        label: commandById[id].label,
-        ...(block?.type === "codeBlock" &&
-        (id === "codeWrap" || id === "codeLineNumbers")
-          ? {
-              checked:
-                id === "codeWrap"
-                  ? (this.codeOverrides.get(block.from)?.wrap ?? p.codeWrap)
-                  : (this.codeOverrides.get(block.from)?.numbers ??
-                    p.codeLineNumbers),
+      items: [
+        ...ids.map((id) => ({
+          id,
+          icon: editorCommandIcons[id],
+          label: commandById[id].label,
+          ...(block?.type === "codeBlock" &&
+          (id === "codeWrap" || id === "codeLineNumbers")
+            ? {
+                checked:
+                  id === "codeWrap"
+                    ? (this.codeOverrides.get(block.from)?.wrap ?? p.codeWrap)
+                    : (this.codeOverrides.get(block.from)?.numbers ??
+                      p.codeLineNumbers),
+              }
+            : {}),
+          group:
+            id.startsWith("row") || ["duplicateRow", "deleteRow"].includes(id)
+              ? "Rows"
+              : /column/i.test(id)
+                ? "Columns"
+                : id.startsWith("align")
+                  ? "Alignment"
+                  : commandById[id].category,
+          shortcut: keysFor(id, p, shortcutPlatform())
+            .map((key) => shortcutLabel(key, shortcutPlatform()))
+            .join(" / "),
+          disabled:
+            !!current &&
+            ((["deleteRow", "rowUp"].includes(id) && current.row === 0) ||
+              (id === "deleteColumn" && current.model.columns === 1)),
+          action: () => {
+            const selection = this.binding.absolute(bookmark),
+              range = target && this.binding.absolute(target);
+            if (
+              !selection ||
+              (target &&
+                (!range ||
+                  range.head <= range.anchor ||
+                  !nodeAt(this.source, range.anchor, [block!.type])))
+            ) {
+              this.options.message(
+                "This block was removed or changed while its menu was open. Open its menu again.",
+              );
+              return;
             }
-          : {}),
-        group:
-          id.startsWith("row") || ["duplicateRow", "deleteRow"].includes(id)
-            ? "Rows"
-            : /column/i.test(id)
-              ? "Columns"
-              : id.startsWith("align")
-                ? "Alignment"
-                : commandById[id].category,
-        shortcut: keysFor(id, p, shortcutPlatform())
-          .map((key) => shortcutLabel(key, shortcutPlatform()))
-          .join(" / "),
-        disabled:
-          !!current &&
-          ((["deleteRow", "rowUp"].includes(id) && current.row === 0) ||
-            (id === "deleteColumn" && current.model.columns === 1)),
-        action: () => {
-          const selection = this.binding.absolute(bookmark),
-            range = target && this.binding.absolute(target);
-          if (
-            !selection ||
-            (target &&
-              (!range ||
-                range.head <= range.anchor ||
-                !nodeAt(this.source, range.anchor, [block!.type])))
-          ) {
-            this.options.message(
-              "This block was removed or changed while its menu was open. Open its menu again.",
-            );
-            return;
-          }
-          this.selection = selection;
-          this.execute(id, { wholeBlock: true });
-          if (!document.querySelector("dialog[open]"))
-            this.focus(this.selection.anchor, this.selection.head);
-        },
-      })),
+            this.selection = selection;
+            this.execute(id, { wholeBlock: true });
+            if (!document.querySelector("dialog[open]"))
+              this.focus(this.selection.anchor, this.selection.head);
+          },
+        })),
+        ...(this.options.extensions?.() ?? [])
+          .filter((c) => c.menu)
+          .slice(0, 6)
+          .map((c) => ({
+            id: c.id,
+            label: c.label,
+            icon: "settings" as const,
+            group: "Extensions",
+            action: () => this.options.extension?.(c.id),
+          })),
+      ],
     });
   }
   private updateSourceChrome() {
@@ -2821,6 +2835,7 @@ export class NativeEditorView {
             this.options.preferences(),
             this.options.context(),
             this.options.notes(),
+            this.options.extensions?.(),
           )
         : [];
     if (!matches.length) {
@@ -2845,11 +2860,16 @@ export class NativeEditorView {
             this.options.preferences(),
             this.options.context(),
             this.options.notes(),
+            this.options.extensions?.(),
           ).find((c) => c.label === item.label);
           if (!current) {
             this.options.message(
               "The completion target changed. Type the query again.",
             );
+            return;
+          }
+          if (current.extensionId) {
+            this.options.extension?.(current.extensionId);
             return;
           }
           if (current.command)

@@ -212,7 +212,8 @@ export const docArticles: readonly DocArticle[] = [
     section: "workspace",
     title: "Planning & Gantt",
     summary: "Connect tasks, milestones, dependencies and capacity.",
-    keywords: "task board calendar gantt workload portfolio baseline capacity",
+    keywords:
+      "task board calendar gantt workload portfolio baseline capacity goals intake requests decision archive",
   },
   {
     id: "workspace/websites",
@@ -249,6 +250,15 @@ export const docArticles: readonly DocArticle[] = [
     summary: "Tune typography, themes, guides and editing behavior.",
     keywords:
       "settings appearance theme font color typography material fluent size minimap",
+  },
+  {
+    id: "extensions",
+    section: "workspace",
+    title: "Workspace extensions",
+    summary:
+      "Run native research helpers with explicit permissions and reviewed changes.",
+    keywords:
+      "extension plugin sdk sandbox journal document health planning brief grant safe mode rollback activity",
   },
 ] as const;
 export function docArticle(id: string) {

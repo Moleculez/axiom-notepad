@@ -52,12 +52,32 @@ group-admin features remain in place. No new Office editing engine is introduced
   current/baseline comparison, critical-path/slack analysis and explicit weekly
   availability support estimate-based capacity reporting. Manual and assistant
   scheduling share preview/apply/guarded Undo; impact previews remain workspace-only.
+- Research Intake has server-paginated open requests and decision history, literal
+  title/body/review-note search, type/status/author filters, per-status counts and
+  oldest/newest submission order. Summaries omit Markdown bodies; opening a request
+  explicitly loads its authorized detail. Peer changes retain and fence drafts.
 - Assistant context includes selected same-group workspaces, immutable Office
   excerpts, selected Canvas cards and planning snapshots. Scope is explicit; it
   does not authorize whole-workspace crawling or automatic transmission.
 - A theme-aware toolbar progress line aggregates requests, actions and lazy pages.
   Already loaded panels remain visible during same-target refreshes; fast requests
   avoid flicker and reduced-motion preferences receive a static indicator.
+- [Workspace extensions](EXTENSIONS.md): TypeScript SDK/packaging example,
+  immutable ZIPs, default-disabled personal installs, exact-hash group approval,
+  individual workspace grants, opaque browser workers and native declarative
+  panels. Research Journal, Document Health and Planning Brief use saved snapshots
+  and human-reviewed changes. Updates/configuration rollback, shortcut collision
+  checks, revocation, device safe mode, uninstall cleanup and proposal activity
+  are implemented. Imports stay behind a separate default-off security gate.
+- Shared Search & commands registry, active-pane targeting and single inspector
+  ownership retain assistant/extension/document context without competing rails.
+  Extension commands can contribute declared slash/context entries without
+  changing Markdown or native editor shortcuts.
+- Activity & recovery adapts authoritative uploads/file operations/exports/OCR/
+  assistant/extension ledgers. Idle polling stays quiet, inspection opens existing
+  controllers, and cancel-after-revocation narrows pending proposal authority.
+  Workspace directory cards show readable access/count/storage metadata. Settings
+  retains extension drafts across categories and uses one aggregate exit guard.
 
 ## Remaining implementation stages
 
@@ -70,8 +90,10 @@ group-admin features remain in place. No new Office editing engine is introduced
    provider's limits, output quality, billing/retention and cancellation behavior;
    broader long-conversation/accessibility acceptance. Office/Canvas/planning
    context, selected same-group scopes and reviewed date proposals are implemented.
-   Investigate the conversation-history/outgoing-review UI walkthrough noted in
-   the [documentation capture results](VERIFICATION.md); it is not passed acceptance.
+   A dedicated isolated history-to-outgoing-review regression now exercises saved
+   conversations, previous-answer context, Back/reset consent and no send before
+   approval. See the scoped results in [verification](VERIFICATION.md); this does
+   not establish real-provider quality or general long-history acceptance.
    Web retrieval and autonomous operations remain excluded.
 3. **Planning refinements:** signed working-day dependency offsets, quarter/year
    timelines, grouping/columns, leaf/derived progress, private/shared saved views,
@@ -82,13 +104,39 @@ group-admin features remain in place. No new Office editing engine is introduced
 4. **Team and research operations:** linked/manual Goals, member-only Intake with
    exactly-once task acceptance, editable future recurring templates, occurrence
    history and archive/pause controls are implemented. Their AI/MCP writes use
-   existing human-reviewed change sets. Richer custom forms/metrics, paginated
-   intake archives and safe administrator-configured non-AI automations remain.
+   existing human-reviewed change sets. Paginated searchable intake archives are
+   implemented. Richer custom forms/metrics, goal archive pagination and safe
+   administrator-configured non-AI automations remain.
 5. **Menu follow-through:** audit custom inline/dropdown surfaces not backed by the
    shared context menu, and expose secondary actions through Search & commands.
    Account/recent-work popovers are now mutually exclusive; planning surfaces use
-   shared tokens, modal layout and text-scaled capacity rows. A complete inspector
-   ownership system and shared command registry remain future work.
+   shared tokens, modal layout and text-scaled capacity rows. A shared command
+   registry and one inspector owner are implemented; custom inline dropdown
+   follow-through and broader keyboard/accessibility acceptance still remain.
+
+## Next essential development stage
+
+Prioritize trustworthy everyday workflows before adding another editor engine or
+an unrestricted marketplace. The following are **next-stage candidates**, not
+delivered features or permission to enable them automatically:
+
+1. **Extension security and operations (release blocker for broad imports):**
+   independent adversarial review, resource/clone budgets, permission
+   expiry/revocation rehearsals, package catalog reclamation and publisher identity.
+   Native admin approval should remain exact-hash and must not become content access.
+2. **Research reliability:** real mixed/CJK/password/large PDF fixtures and configured
+   private OCR/conversion acceptance; source-linked research reports and durable
+   evidence handoffs. Resolve existing provider/export/offline failures through
+   Activity & recovery without introducing autonomous retries or transmissions.
+3. **Planning at lab scale:** larger portfolios, goal/metadata-history archive
+   pagination, saved-view/capacity accessibility and measured Gantt/workload performance.
+   Intake pagination, exact filtered counts and lazy full-body loading are implemented;
+   status/content stay live rather than claiming a frozen historical snapshot.
+   Reuse reviewed schedule previews and frozen revision fences rather than adding
+   automatic resource leveling or silently rewritten task dates.
+4. **UI/accessibility acceptance:** physical keyboard/IME/clipboard and screen-reader
+   passes, long-label/large-font inspector layouts, dense settings and plugin field
+   validation. Extend the shared components/criteria instead of local visual fixes.
 
 Each stage needs authorization, stale-version and failure-path tests as well as
 browser acceptance. Replacement uploads now require expectedVersionId and

@@ -98,6 +98,12 @@ import {
 import { openExternalEditorLink } from "../../lib/editor-links";
 import { sectionAtPosition, type OutlineHeading } from "../../lib/outline";
 import type { EditorHandle, EditorMode, CommentAnchor } from "../Editor";
+import {
+  useActiveCommandPane,
+  useInspectorOwner,
+  useWorkspaceCommands,
+} from "../../lib/workspace-commands";
+import { useEditorExtensions } from "../plugins/PluginProvider";
 import Dialog from "../Dialog";
 import TableOfContents from "../TableOfContents";
 import NoteTitle from "../NoteTitle";
@@ -400,6 +406,22 @@ function ResourcePane({
       session.user.id,
       revision,
     );
+  useActiveCommandPane(
+    active &&
+      !!data.data &&
+      !(
+        data.data.kind === "note" &&
+        (!data.data.document_type || data.data.document_type === "markdown")
+      ),
+    {
+      owner: "resource:" + tab.id,
+      spaceId: data.data?.space_id ?? "",
+      resourceId: tab.id,
+      format: data.data?.document_type ?? undefined,
+      canEdit: data.data?.role === "editor",
+      title: data.data?.name,
+    },
+  );
   useEffect(() => {
     if (data.data) onName(tab.id, data.data.name);
   }, [data.data, tab.id]);
@@ -522,7 +544,7 @@ function DocumentPane({
     ),
     [status, setStatus] = useState("Connecting…"),
     [presence, setPresence] = useState<any[]>([]),
-    [panel, setPanel] = useState<string | null>(
+    [panel, setPanelState] = useState<string | null>(
       savedView ? savedView.panel : "outline",
     ),
     [collapsed, setCollapsed] = useState<string[]>(savedView?.collapsed ?? []),
@@ -557,6 +579,22 @@ function DocumentPane({
     [markOpen, setMarkOpen] = useState<string | null>(null),
     [unresolvedComments, setUnresolvedComments] = useState<string[]>([]),
     [activeDiscussion, setActiveDiscussion] = useState<string | null>(null);
+  const inspector = useInspectorOwner(),
+    registry = useWorkspaceCommands();
+  const editorExtensions = useEditorExtensions(note.space_id);
+  const setPanel = (value: React.SetStateAction<string | null>) => {
+    setPanelState(value);
+    inspector.claim("document");
+  };
+  useActiveCommandPane(active, {
+    owner: key,
+    spaceId: note.space_id ?? "",
+    resourceId: note.id,
+    format: "markdown",
+    mode,
+    canEdit: metadata.role === "editor",
+    title: note.title,
+  });
   const [readingSize, setReadingSize] = useState<number | null>(null);
   const [readingWidth, setReadingWidth] = useState<number | null>(null);
   useEffect(() => {
@@ -616,6 +654,47 @@ function DocumentPane({
   const readonly = metadata.role !== "editor" || !!metadata.deleted_at,
     canComment = metadata.role === "editor" || metadata.role === "commenter",
     remoteVersion = metadata.generation !== note.generation;
+  useEffect(() => {
+    if (!active) return;
+    return registry.register(
+      "active-editor",
+      editorCommands
+        .filter((c) => c.scope !== "table")
+        .map((c) => ({
+          id: "editor:" + c.id,
+          title: c.label,
+          description: c.category + " · " + note.title,
+          icon: FileText,
+          group: "Editor",
+          disabledReason:
+            readonly && c.scope === "editor"
+              ? "This note is read-only."
+              : undefined,
+          run: () => commandRef.current(c.id),
+        })),
+    );
+  }, [active, readonly, note.title, registry.register]);
+  const sourceLine = reviewLocation.params.get("line"),
+    lineVisit = useRef("");
+  useEffect(() => {
+    const visit = note.id + ":" + sourceLine;
+    if (
+      !active ||
+      !sourceLine ||
+      !/^\d{1,7}$/.test(sourceLine) ||
+      lineVisit.current === visit ||
+      !editor.current ||
+      !/Saved|Synced|Up to date/i.test(status)
+    )
+      return;
+    lineVisit.current = visit;
+    const text = editor.current.text(),
+      lines = text.split("\n"),
+      line = Math.max(1, Math.min(Number(sourceLine), lines.length));
+    editor.current.focus(
+      lines.slice(0, line - 1).reduce((sum, l) => sum + l.length + 1, 0),
+    );
+  }, [active, sourceLine, note.id, status]);
   const [mathReturn, setMathReturn] = useState<MathNoteBridge | null>(null),
     [mathReturnError, setMathReturnError] = useState("");
   const openingMath = useRef(false);
@@ -1391,6 +1470,8 @@ function DocumentPane({
                     mode={mode}
                     appearance={appearance.effective}
                     preferences={editorSettings.effective}
+                    extensions={editorExtensions.items}
+                    onExtension={editorExtensions.run}
                     readOnly={
                       readonly ||
                       mode === "read" ||
@@ -2130,6 +2211,7 @@ function FilePane({
     ),
     [error, setError] = useState(""),
     [permission, setPermission] = useState(false);
+  const inspector = useInspectorOwner();
   const data = useData<any[]>(`files/${resource.id}/versions`),
     current = data.data?.find((item) => item.id === version),
     space = useData<{ space: Space }>(`spaces/${resource.space_id}`),
@@ -2169,7 +2251,11 @@ function FilePane({
         <IconButton
           className="icon-button"
           aria-label="File details"
-          onClick={() => setDetails(!details)}
+          onClick={() => {
+            inspector.claim("document");
+            setDetails(!details);
+            setDiscussion(false);
+          }}
         >
           <PanelRightOpen size={17} />
         </IconButton>
@@ -2177,6 +2263,7 @@ function FilePane({
           className="button secondary"
           onClick={() => {
             setDiscussion(!discussion);
+            inspector.claim("document");
             setDetails(false);
           }}
         >

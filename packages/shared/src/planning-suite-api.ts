@@ -27,6 +27,7 @@ import {
 } from "./planning-suite";
 import { recurrenceSchema } from "./workspace";
 import { notifyWorkspace } from "./documents";
+import { readIntakeDetail, readIntakePage } from "./planning-intake-api";
 const uuid = z.uuid(),
   name = z.string().trim().min(1).max(120);
 const date = (value: unknown) =>
@@ -124,7 +125,7 @@ export async function planningSuiteApi(
   if (method === "GET")
     return json(
       await transaction(async (db) => {
-        await requireScope(db, user, spaceId);
+        const currentScope = await requireScope(db, user, spaceId);
         if (section === "planning-options") {
           const kind = z
               .enum(["task", "file", "milestone"])
@@ -195,16 +196,18 @@ export async function planningSuiteApi(
             progress: goalProgress(g, tasks, milestones, progressContext),
           }));
         }
-        if (section === "intake")
-          return {
-            canReview: scope.can_manage,
-            items: (
-              await db.query(
-                'SELECT i.*,u.name AS author_name FROM planning_intake i LEFT JOIN "user" u ON u.id=i.created_by WHERE i.space_id=$1 ORDER BY i.updated_at DESC LIMIT 200',
-                [spaceId],
-              )
-            ).rows,
-          };
+        if (section === "intake") {
+          if (action) throw new HttpError(404, "Unknown request operation.");
+          return id
+            ? readIntakeDetail(db, spaceId, uuid.parse(id), currentScope.manage)
+            : readIntakePage(
+                db,
+                url.searchParams,
+                spaceId,
+                user,
+                currentScope.manage,
+              );
+        }
         if (recurring) {
           const row = (
             await db.query(

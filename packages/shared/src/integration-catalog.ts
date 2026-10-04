@@ -57,7 +57,13 @@ export const integrationActions: Action[] = [
     "workspace_intake",
     "spaces/:id/intake",
     "workspace",
-    "Read private member-only research requests and review state; no anonymous or public submissions.",
+    "Read paginated private request summaries (without body), counts and nextCursor. query: filter (all/open/history/pending/needs-changes/accepted/rejected/withdrawn), q, kind, mine=1, sort (newest/oldest), limit (1–100), cursor. No anonymous or public submissions.",
+  ),
+  read(
+    "workspace_intake_detail",
+    "spaces/:id/intake/:entity",
+    "workspace",
+    "Read one authorized research request, including its full Markdown body, review note and accepted task link. Rechecks current workspace access.",
   ),
   read(
     "workspace_planning_views",

@@ -18,6 +18,10 @@ self.addEventListener('activate', event => event.waitUntil(caches.keys().then(ke
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
   if (event.request.method !== 'GET' || url.origin !== self.location.origin) return;
+  // EventSource must own its streaming connection and cancellation lifetime.
+  // Wrapping it in worker fetch can retain streams after page reloads and
+  // exhaust HTTP/1 connection slots in Firefox. It has no offline/cache value.
+  if (url.pathname === '/api/v1/events' || event.request.headers.get('accept')?.includes('text/event-stream')) return;
   if (url.pathname.startsWith('/api/v1/')) {
     // Never automatically cache an authenticated response. On a network failure
     // only, serve explicitly downloaded entries for this window's active account.

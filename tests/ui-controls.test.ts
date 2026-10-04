@@ -22,6 +22,28 @@ import {
 } from "../apps/web/components/ui/controls";
 
 describe("native-compatible controls", () => {
+  it("keeps checkbox labels outside void inputs and rejects content props at compile time", () => {
+    // These elements are never rendered. Typecheck must reject void-input content.
+    // @ts-expect-error Native checkbox inputs cannot contain children.
+    const invalidCheckbox = h(Checkbox, { children: "My requests" });
+    // @ts-expect-error Native switches cannot contain children.
+    const invalidSwitch = h(Switch, { children: "Enable" });
+    const invalidRadio = h(Radio, {
+      // @ts-expect-error Native radios cannot contain HTML content.
+      dangerouslySetInnerHTML: { __html: "Label" },
+    });
+    expect([
+      invalidCheckbox.type,
+      invalidSwitch.type,
+      invalidRadio.type,
+    ]).toEqual([Checkbox, Switch, Radio]);
+    const html = renderToStaticMarkup(
+      h("label", null, h(Checkbox, { defaultChecked: true }), "My requests"),
+    );
+    expect(html).toMatch(
+      /<label><input[^>]*type="checkbox"[^>]*\/>My requests<\/label>/,
+    );
+  });
   it("keeps native application fields and form values without touching editor opt-outs", () => {
     const html = renderToStaticMarkup(
       h(

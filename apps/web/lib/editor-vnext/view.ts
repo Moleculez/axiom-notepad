@@ -3340,6 +3340,16 @@ export class AxiomEditorView {
       },
       items: [
         ...this.contextFields(target.head),
+        ...(this.options.extensions?.() ?? [])
+          .filter((c) => c.menu)
+          .slice(0, 6)
+          .map((c) => ({
+            id: c.id,
+            label: c.label,
+            icon: "settings" as const,
+            group: "Extensions",
+            action: () => this.options.extension?.(c.id),
+          })),
         ...ids.map((id) => ({
           id,
           label: commandById[id].label,
@@ -3780,6 +3790,7 @@ export class AxiomEditorView {
       this.options.preferences(),
       this.options.context(),
       this.options.notes(),
+      this.options.extensions?.(),
     );
   }
   private completions() {
@@ -3946,6 +3957,10 @@ export class AxiomEditorView {
     );
     if (!current || this.options.readOnly()) return;
     choice = current;
+    if (choice.extensionId) {
+      this.options.extension?.(choice.extensionId);
+      return;
+    }
     if (choice.language && choice.value !== undefined) {
       const edit: SourceEdit = {
         changes: [{ from: choice.from, to: choice.to, insert: choice.value }],

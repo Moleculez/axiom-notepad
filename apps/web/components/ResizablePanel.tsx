@@ -10,6 +10,7 @@ export default function ResizablePanel({
   className,
   label,
   children,
+  hidden = false,
 }: {
   account: string;
   name: "sidebar" | "document-context" | "research-details";
@@ -17,6 +18,7 @@ export default function ResizablePanel({
   className: string;
   label: string;
   children: ReactNode;
+  hidden?: boolean;
 }) {
   const min = 220,
     max = name === "sidebar" ? 420 : 480;
@@ -113,7 +115,8 @@ export default function ResizablePanel({
       id={id}
       className={`${className} resizable-workspace-panel`}
       aria-label={label}
-      style={{ width }}
+      hidden={hidden}
+      style={{ width, ...(hidden ? { display: "none" } : {}) }}
     >
       {children}
       <div

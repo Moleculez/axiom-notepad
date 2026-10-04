@@ -1,0 +1,24 @@
+{
+  "format": "axiom-plugin",
+  "apiVersion": 1,
+  "id": "example.document-summary",
+  "name": "Saved document summary",
+  "version": "1.0.0",
+  "description": "An SDK example that counts words and headings in a saved Markdown snapshot without modifying it.",
+  "author": "Axiom SDK example",
+  "license": "MIT",
+  "entry": "main.js",
+  "capabilities": ["documents:read"],
+  "commands": [
+    {
+      "id": "example.document-summary.inspect",
+      "title": "Inspect saved document",
+      "description": "Count words and headings in the active saved note",
+      "icon": "FileText",
+      "context": "document",
+      "slash": true,
+      "menu": true
+    }
+  ],
+  "settings": []
+}

@@ -5,12 +5,14 @@ import { assistantEvent, type AssistantIntent } from "../../lib/assistant";
 import { useWorkspace, useLocation } from "../workspace/ui";
 import { api } from "../../lib/client";
 import { locationResourceId } from "@axiom/shared/workspace-location";
+import { useWorkspaceCommands } from "../../lib/workspace-commands";
 const AssistantPanel = dynamic(() => import("./AssistantPanel"), {
   ssr: false,
 });
 export default function AssistantHost() {
   const { session, spaces, notify } = useWorkspace(),
     { path, params } = useLocation();
+  const commands = useWorkspaceCommands();
   const [intent, setIntent] = useState<
     (AssistantIntent & { spaceId: string; serial: number }) | null
   >(null);
@@ -47,8 +49,10 @@ export default function AssistantHost() {
           spaces.find((s) => s.kind === "personal")?.id ?? spaces[0]?.id;
         if (!spaceId)
           throw new Error("Open a workspace before starting the assistant.");
-        if (sequence.current === serial)
+        if (sequence.current === serial) {
           setIntent({ ...value, spaceId, serial });
+          commands.claimInspector("assistant");
+        }
       })().catch((e) => current.current.notify(e.message));
     };
     window.addEventListener(assistantEvent, open);
@@ -56,18 +60,26 @@ export default function AssistantHost() {
       sequence.current++;
       window.removeEventListener(assistantEvent, open);
     };
-  }, [session.user.id]);
+  }, [session.user.id, commands.claimInspector]);
   return intent ? (
-    <AssistantPanel
-      key={session.user.id + intent.spaceId}
-      intent={intent}
-      onWorkspace={(spaceId) =>
-        setIntent({ spaceId, serial: ++sequence.current })
-      }
-      onClose={() => {
-        restoreFocus.current = true;
-        setIntent(null);
+    <div
+      className="assistant-inspector-slot"
+      style={{
+        display: commands.inspector === "assistant" ? "contents" : "none",
       }}
-    />
+    >
+      <AssistantPanel
+        key={session.user.id + intent.spaceId}
+        intent={intent}
+        onWorkspace={(spaceId) =>
+          setIntent({ spaceId, serial: ++sequence.current })
+        }
+        onClose={() => {
+          restoreFocus.current = true;
+          setIntent(null);
+          commands.claimInspector("document");
+        }}
+      />
+    </div>
   ) : null;
 }

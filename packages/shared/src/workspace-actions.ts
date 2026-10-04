@@ -33,12 +33,16 @@ import {
   planningBulkInputSchema,
 } from "./planning-suite";
 import { recurrenceSchema } from "./workspace";
+import { authorizePluginAction } from "./plugin-security";
 
 export type ActionActor = {
   userId: string;
   spaceIds: string[];
   connectionId?: string | null;
   grantVersion?: string | null;
+  pluginGrantId?: string | null;
+  pluginPackageHash?: string | null;
+  pluginGrantRevision?: number | null;
 };
 export type PreparedAction = {
   data: ChangeAction;
@@ -84,6 +88,7 @@ export async function authorizeAction(actor: ActionActor, a: ChangeAction) {
     throw new HttpError(400, "Unknown action.");
   if (
     !actor.connectionId &&
+    !actor.pluginGrantId &&
     !(productivityWrites as readonly string[]).includes(a.action)
   )
     throw new HttpError(
@@ -92,6 +97,23 @@ export async function authorizeAction(actor: ActionActor, a: ChangeAction) {
     );
   if (!actor.spaceIds.includes(a.spaceId))
     throw new HttpError(403, "Action is outside the approved workspace scope.");
+  if (actor.pluginGrantId) {
+    if (
+      actor.connectionId ||
+      !actor.pluginPackageHash ||
+      !actor.pluginGrantRevision
+    )
+      throw new HttpError(403, "Invalid extension authority.");
+    await authorizePluginAction(
+      {
+        grantId: actor.pluginGrantId,
+        userId: actor.userId,
+        packageHash: actor.pluginPackageHash,
+        revision: actor.pluginGrantRevision,
+      },
+      a,
+    );
+  }
   if (actor.connectionId) {
     const grant = await activeConnection(
       actor.connectionId,

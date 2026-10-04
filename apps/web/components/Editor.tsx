@@ -43,6 +43,7 @@ import type {
   NavigationPosition,
 } from "@axiom/editor/minimap";
 import { editorAppearanceKey } from "@axiom/shared/minimap";
+import type { EditorExtensionCommand } from "../lib/native-editor/completions";
 export type EditorMode = "write" | "source" | "read";
 export type CommentAnchor = {
   start: number[];
@@ -89,6 +90,8 @@ interface Props {
   appearance: Preferences;
   preferences: EditorPreferences;
   onCommand: (command: EditorCommandId) => void;
+  extensions?: EditorExtensionCommand[];
+  onExtension?: (id: string) => void;
   onRecover: (text: string) => void | boolean;
   renderContext: RenderContext;
   notes: { id: string; title: string }[];
@@ -745,6 +748,8 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(props, ref) {
       context: () => propsRef.current.renderContext,
       readOnly: () => !!propsRef.current.readOnly || serverReadOnly.current,
       workspace: (id) => propsRef.current.onCommand(id),
+      extensions: () => propsRef.current.extensions ?? [],
+      extension: (id) => propsRef.current.onExtension?.(id),
       message: (message) => propsRef.current.onError(message),
       recover: (source) => propsRef.current.onRecover(source),
       prepare: prepareInsert,

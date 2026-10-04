@@ -282,6 +282,7 @@ export default function WorkspacesPage({
                       : "A shared home for research and collaboration.")}
                 </p>
                 <div className="console-card-meta">
+                  {s.item_count != null && <span>{s.item_count} items</span>}
                   <span>{bytes(s.stored_bytes ?? 0)} stored</span>
                   <span>
                     {s.kind}
@@ -290,7 +291,14 @@ export default function WorkspacesPage({
                       : ""}
                   </span>
                   <span>
-                    {s.can_manage ? "Manager" : s.role || "No content access"}
+                    {s.role === "editor"
+                      ? "Can edit"
+                      : s.role === "commenter"
+                        ? "Can comment"
+                        : s.role === "viewer"
+                          ? "Read only"
+                          : "No content access"}
+                    {s.can_manage ? " · Manager" : ""}
                   </span>
                 </div>
               </article>

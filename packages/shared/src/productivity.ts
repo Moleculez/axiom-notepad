@@ -240,6 +240,8 @@ export type WorkspaceChangeSet = {
   version: number;
   space_ids: string[];
   connection_id?: string;
+  plugin_grant_id?: string;
+  plugin_package_hash?: string;
   actions: ChangeActionView[];
   preview?: { fingerprint: string; expiresAt: string };
   error?: string;

@@ -133,6 +133,108 @@
   font-weight: 500;
   margin-bottom: 6px;
 }
+.ws-app .planning-request-title.button {
+  justify-content: flex-start;
+  text-align: left;
+  font-weight: 500;
+  padding: 2px 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+.planning-intake-filters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.planning-intake {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.planning-intake > header {
+  margin-bottom: 16px;
+}
+.planning-intake > header,
+.planning-intake-filters,
+.planning-intake-summary,
+.planning-intake-pagination {
+  flex: none;
+}
+.planning-intake > .planning-request-list {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  scrollbar-gutter: stable;
+  padding-inline: 2px 8px;
+}
+.planning-intake-filters > .ui-search-field {
+  flex: 1 1 16em;
+  min-width: 12em;
+}
+.planning-intake-filters > .button {
+  flex: none;
+}
+.planning-intake-filters > .ui-select,
+.planning-intake-pagination > .ui-select {
+  --field-width: auto;
+  flex: none;
+}
+.planning-intake-summary,
+.planning-intake-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding-block: 12px;
+}
+.planning-intake-summary > .ui-help,
+.planning-intake-pagination > .ui-help {
+  flex: 1 1 15em;
+}
+.planning-intake-pagination {
+  border-top: 1px solid var(--line);
+  margin-top: 16px;
+}
+.planning-request-metadata {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  font-size: var(--size-ui-small);
+  color: var(--muted);
+}
+.planning-request-state {
+  color: var(--text);
+  font-weight: 500;
+}
+.planning-request-state[data-status="accepted"] {
+  color: var(--green);
+}
+.planning-request-state[data-status="needs-changes"] {
+  color: var(--warning);
+}
+.planning-request-decision {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--muted);
+  font-size: var(--size-ui-small);
+  line-height: 1.6;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+.planning-intake .planning-request-list > article {
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.planning-intake .planning-request-list > article > div:first-child {
+  flex-basis: 24em;
+}
+.planning-intake .planning-request-list > article > .ui-actions {
+  max-width: 100%;
+}
 .planning-request-list small {
   display: block;
 }

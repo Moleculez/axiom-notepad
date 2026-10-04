@@ -1,6 +1,10 @@
 # Trusted theme packs · contract v1
 
 Theme packs are reviewed source code compiled into Axiom, not uploaded plugins.
+The [extension API](EXTENSIONS.md) accepts only declarative native panel data.
+Imported extensions cannot supply theme selectors, fonts, controls or arbitrary
+HTML. Their panels, permission/review dialogs and activity views inherit the
+same host tokens, radius, shadow, motion, contrast and typography preferences.
 The JSON palette importer remains color-only (`axiom-theme`, v1). It never accepts
 CSS, HTML, JavaScript, font URLs, or executable expressions. A saved pack ID only
 selects an entry in the static registry; it never becomes a filesystem/import URL.

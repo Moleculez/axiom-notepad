@@ -7,6 +7,7 @@ import { api, post, SIGN_OUT_PENDING } from "../../lib/client";
 import { bytes, ErrorNotice, useWorkspace } from "./ui";
 import { uploadRelativePath } from "@axiom/shared/file-workflows";
 import Dialog from "../Dialog";
+import RecoveryActivity from "./RecoveryActivity";
 import type {
   UploadBatch,
   UploadResult,
@@ -581,7 +582,8 @@ export default function Uploads({
   controller: ReturnType<typeof useUploads>;
 }) {
   const { open } = useWorkspace(),
-    [error, setError] = useState("");
+    [error, setError] = useState(""),
+    [view, setView] = useState<"uploads" | "activity">("uploads");
   const input = useRef<HTMLInputElement>(null),
     reselect = useRef<Transfer | null>(null);
   if (controller.folderBatch)
@@ -639,137 +641,166 @@ export default function Uploads({
     );
   if (!controller.shown) return null;
   return (
-    <section className="ws-transfers" aria-label="File transfers">
+    <section className="ws-transfers" aria-label="Activity & recovery">
       <header>
         <h2>
           <Upload size={17} />
-          File transfers
+          Activity & recovery
         </h2>
         <IconButton
           className="icon-button"
-          aria-label="Hide file transfers"
+          aria-label="Hide activity & recovery"
           onClick={() => controller.setShown(false)}
         >
           <X size={17} />
         </IconButton>
       </header>
-      <p className="ws-small muted">
-        Up to 1 GB per file. Interrupted uploads can be resumed for seven days.
-        Completed files are never auto-deleted.
-      </p>
-      <ErrorNotice message={error} />
-      <input
-        ref={input}
-        hidden
-        type="file"
-        onChange={(event) => {
-          const file = event.target.files?.[0];
-          if (file && reselect.current)
-            controller.resume(reselect.current, file);
-          event.target.value = "";
-        }}
-      />
-      <div className="ws-transfer-list">
-        {!controller.transfers.length && (
-          <p className="muted">Your uploads will appear here.</p>
-        )}
-        {controller.transfers.map((item) => (
-          <div className="ws-transfer" key={item.id}>
-            <FileUp size={19} />
-            <div className="ws-transfer-body">
-              <strong>{item.name}</strong>
-              <span>
-                {bytes(item.received)} / {bytes(item.bytes)} ·{" "}
-                {item.status === "verifying"
-                  ? "Verifying file on server…"
-                  : item.status}
-              </span>
-              <progress
-                max={Math.max(1, item.bytes)}
-                value={item.received}
-                aria-label={`${item.name} uploaded bytes`}
-              />
-              <ErrorNotice message={item.error} />
-            </div>
-            {item.status === "uploading" && (
-              <IconButton
-                className="icon-button"
-                onClick={() => controller.pause(item.id)}
-                aria-label={`Pause ${item.name}`}
-              >
-                <Pause size={16} />
-              </IconButton>
+      <nav className="recovery-filter" aria-label="Activity views">
+        <Button
+          size="compact"
+          variant="ghost"
+          aria-pressed={view === "uploads"}
+          onClick={() => setView("uploads")}
+        >
+          Uploads{" "}
+          {controller.transfers.length
+            ? "(" + controller.transfers.length + ")"
+            : ""}
+        </Button>
+        <Button
+          size="compact"
+          variant="ghost"
+          aria-pressed={view === "activity"}
+          onClick={() => setView("activity")}
+        >
+          Background work
+        </Button>
+      </nav>
+      {view === "activity" ? (
+        <RecoveryActivity onClose={() => controller.setShown(false)} />
+      ) : (
+        <>
+          <p className="ws-small muted">
+            Up to 1 GB per file. Interrupted uploads can be resumed for seven
+            days. Completed files are never auto-deleted.
+          </p>
+          <ErrorNotice message={error} />
+          <input
+            ref={input}
+            hidden
+            type="file"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file && reselect.current)
+                controller.resume(reselect.current, file);
+              event.target.value = "";
+            }}
+          />
+          <div className="ws-transfer-list">
+            {!controller.transfers.length && (
+              <p className="muted">Your uploads will appear here.</p>
             )}
-            {item.status === "paused" && (
-              <IconButton
-                className="icon-button"
-                onClick={() => {
-                  if (controller.hasFile(item.id)) controller.resume(item);
-                  else {
-                    reselect.current = item;
-                    input.current?.click();
-                  }
-                }}
-                aria-label={`Resume ${item.name}`}
-              >
-                <Play size={16} />
-              </IconButton>
-            )}
-            {item.status === "failed" && (
-              <>
-                <Button
-                  className="button secondary"
-                  onClick={() =>
-                    void controller
-                      .retryVerification(item)
-                      .catch((e) => setError(e.message))
-                  }
-                >
-                  Retry verification
-                </Button>
-                {item.resource_id && (
-                  <Button
-                    className="button secondary"
+            {controller.transfers.map((item) => (
+              <div className="ws-transfer" key={item.id}>
+                <FileUp size={19} />
+                <div className="ws-transfer-body">
+                  <strong>{item.name}</strong>
+                  <span>
+                    {bytes(item.received)} / {bytes(item.bytes)} ·{" "}
+                    {item.status === "verifying"
+                      ? "Verifying file on server…"
+                      : item.status}
+                  </span>
+                  <progress
+                    max={Math.max(1, item.bytes)}
+                    value={item.received}
+                    aria-label={`${item.name} uploaded bytes`}
+                  />
+                  <ErrorNotice message={item.error} />
+                </div>
+                {item.status === "uploading" && (
+                  <IconButton
+                    className="icon-button"
+                    onClick={() => controller.pause(item.id)}
+                    aria-label={`Pause ${item.name}`}
+                  >
+                    <Pause size={16} />
+                  </IconButton>
+                )}
+                {item.status === "paused" && (
+                  <IconButton
+                    className="icon-button"
+                    onClick={() => {
+                      if (controller.hasFile(item.id)) controller.resume(item);
+                      else {
+                        reselect.current = item;
+                        input.current?.click();
+                      }
+                    }}
+                    aria-label={`Resume ${item.name}`}
+                  >
+                    <Play size={16} />
+                  </IconButton>
+                )}
+                {item.status === "failed" && (
+                  <>
+                    <Button
+                      className="button secondary"
+                      onClick={() =>
+                        void controller
+                          .retryVerification(item)
+                          .catch((e) => setError(e.message))
+                      }
+                    >
+                      Retry verification
+                    </Button>
+                    {item.resource_id && (
+                      <Button
+                        className="button secondary"
+                        onClick={() =>
+                          void controller
+                            .saveCopy(item)
+                            .catch((e) => setError(e.message))
+                        }
+                      >
+                        Save as a separate copy
+                      </Button>
+                    )}
+                  </>
+                )}
+                {item.status === "complete" && item.completed_resource_id && (
+                  <IconButton
+                    className="icon-button"
+                    aria-label={`Open ${item.name}`}
                     onClick={() =>
-                      void controller
-                        .saveCopy(item)
-                        .catch((e) => setError(e.message))
+                      open({ id: item.completed_resource_id!, kind: "file" })
                     }
                   >
-                    Save as a separate copy
-                  </Button>
+                    <Check size={17} />
+                  </IconButton>
                 )}
-              </>
-            )}
-            {item.status === "complete" && item.completed_resource_id && (
-              <IconButton
-                className="icon-button"
-                aria-label={`Open ${item.name}`}
-                onClick={() =>
-                  open({ id: item.completed_resource_id!, kind: "file" })
-                }
-              >
-                <Check size={17} />
-              </IconButton>
-            )}
-            {!["uploading", "verifying", "queued"].includes(item.status) && (
-              <IconButton
-                className="icon-button"
-                aria-label={`${["paused", "failed"].includes(item.status) ? "Cancel" : "Dismiss"} ${item.name}`}
-                onClick={() => {
-                  if (["paused", "failed"].includes(item.status))
-                    void controller
-                      .cancel(item)
-                      .catch((e) => setError(e.message));
-                  else controller.dismiss(item.id);
-                }}
-              >
-                <X size={16} />
-              </IconButton>
-            )}
+                {!["uploading", "verifying", "queued"].includes(
+                  item.status,
+                ) && (
+                  <IconButton
+                    className="icon-button"
+                    aria-label={`${["paused", "failed"].includes(item.status) ? "Cancel" : "Dismiss"} ${item.name}`}
+                    onClick={() => {
+                      if (["paused", "failed"].includes(item.status))
+                        void controller
+                          .cancel(item)
+                          .catch((e) => setError(e.message));
+                      else controller.dismiss(item.id);
+                    }}
+                  >
+                    <X size={16} />
+                  </IconButton>
+                )}
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </>
+      )}
     </section>
   );
 }

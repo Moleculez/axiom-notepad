@@ -631,7 +631,7 @@ export const IconButton = forwardRef<
 
 export type CheckboxProps = Omit<
   InputHTMLAttributes<HTMLInputElement>,
-  "type"
+  "type" | "children" | "dangerouslySetInnerHTML"
 > & { indeterminate?: boolean };
 
 export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
@@ -657,7 +657,10 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
 
 export const Switch = forwardRef<
   HTMLInputElement,
-  Omit<InputHTMLAttributes<HTMLInputElement>, "type" | "role">
+  Omit<
+    InputHTMLAttributes<HTMLInputElement>,
+    "type" | "role" | "children" | "dangerouslySetInnerHTML"
+  >
 >(function Switch({ className, ...props }, ref) {
   return (
     <input
@@ -672,7 +675,10 @@ export const Switch = forwardRef<
 
 export const Radio = forwardRef<
   HTMLInputElement,
-  Omit<InputHTMLAttributes<HTMLInputElement>, "type">
+  Omit<
+    InputHTMLAttributes<HTMLInputElement>,
+    "type" | "children" | "dangerouslySetInnerHTML"
+  >
 >(function Radio({ className, ...props }, ref) {
   return (
     <input

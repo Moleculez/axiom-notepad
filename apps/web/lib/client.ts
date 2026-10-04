@@ -122,6 +122,11 @@ export async function api<T = any>(
       navigator.onLine === false &&
       typeof indexedDB !== "undefined"
     ) {
+      if (/^(?:plugins(?:\/|$)|recovery-activity(?:\?|$))/.test(path))
+        throw new ApiError(
+          "Extensions and background activity require an online session. Your local editor remains available.",
+          503,
+        );
       const offline = await import("./offline-files");
       if (offline.offlineAccount()) {
         if (["GET", "HEAD"].includes(options.method ?? "GET")) {

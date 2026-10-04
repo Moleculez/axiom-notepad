@@ -11,7 +11,7 @@ import {
   SearchField,
 } from "../ui/controls";
 import TimeZoneInput from "../TimeZoneInput";
-import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import {
   Check,
@@ -35,6 +35,7 @@ import {
   Sigma,
   Keyboard,
   Database,
+  Puzzle,
 } from "lucide-react";
 import { api, authRequest, download, post, timeAgo } from "../../lib/client";
 import { ExportsPage } from "./AccountPages";
@@ -43,6 +44,7 @@ import { useResearch } from "../../lib/research-store";
 import AppearanceSettings from "../AppearanceSettings";
 import ResearchDataSettings from "../ResearchDataSettings";
 import ConnectionsSettings from "./ConnectionsSettings";
+import ExtensionsSettings from "../plugins/ExtensionsSettings";
 import OfflineSettings from "./OfflineSettings";
 import InstallControls from "./InstallControls";
 import Dialog from "../Dialog";
@@ -61,17 +63,11 @@ const AvatarCropDialog = dynamic(() => import("./AvatarCropDialog"), {
   ssr: false,
 });
 
-type RetainedForm = { dirty: boolean; discard: () => void };
-const SettingsForms = createContext<Map<string, RetainedForm> | null>(null);
-function useRetainedForm(id: string, dirty: boolean, discard: () => void) {
-  const forms = useContext(SettingsForms);
-  useEffect(() => {
-    forms?.set(id, { dirty, discard });
-    return () => {
-      forms?.delete(id);
-    };
-  }, [forms, id, dirty, discard]);
-}
+import {
+  SettingsForms,
+  useRetainedSettingsForm as useRetainedForm,
+  type RetainedSettingsForm as RetainedForm,
+} from "../../lib/settings-forms";
 import {
   Badge,
   bytes,
@@ -94,6 +90,7 @@ export function SettingsNavigation() {
   const selected = settingsCategory(parts[1], params.get("section"));
   const [search, setSearch] = useState("");
   const icons: Record<SettingsCategory, typeof Monitor> = {
+    extensions: Puzzle,
     connections: ShieldCheck,
     profile: UserRound,
     security: ShieldCheck,
@@ -140,28 +137,32 @@ export function SettingsNavigation() {
           No matching categories. Try “font”, “code”, or “storage”.
         </p>
       )}
-      {["Account", "Appearance", "Writing", "Storage"].map((group) => {
-        const entries = matches.filter((category) => category.group === group);
-        return entries.length ? (
-          <section key={group}>
-            <h3>{group}</h3>
-            {entries.map((category) => {
-              const Icon = icons[category.id];
-              return (
-                <WorkspaceLink
-                  key={category.id}
-                  to={`/settings/${category.id}`}
-                  className={`ws-side-link ${selected === category.id ? "active" : ""}`}
-                  aria-current={selected === category.id ? "page" : undefined}
-                >
-                  <Icon size={16} aria-hidden="true" />
-                  {category.label}
-                </WorkspaceLink>
-              );
-            })}
-          </section>
-        ) : null;
-      })}
+      {["Account", "Appearance", "Writing", "Storage", "Extensions"].map(
+        (group) => {
+          const entries = matches.filter(
+            (category) => category.group === group,
+          );
+          return entries.length ? (
+            <section key={group}>
+              <h3>{group}</h3>
+              {entries.map((category) => {
+                const Icon = icons[category.id];
+                return (
+                  <WorkspaceLink
+                    key={category.id}
+                    to={`/settings/${category.id}`}
+                    className={`ws-side-link ${selected === category.id ? "active" : ""}`}
+                    aria-current={selected === category.id ? "page" : undefined}
+                  >
+                    <Icon size={16} aria-hidden="true" />
+                    {category.label}
+                  </WorkspaceLink>
+                );
+              })}
+            </section>
+          ) : null;
+        },
+      )}
     </nav>
   );
 }
@@ -195,12 +196,14 @@ function SettingsReady({
   const draft = useSettingsDraft(appearance, editorSettings, active);
   const forms = useRef(new Map<string, RetainedForm>()),
     visitedForms = useRef(new Set<string>());
-  if (active && ["profile", "notifications"].includes(section))
+  if (active && ["profile", "notifications", "extensions"].includes(section))
     visitedForms.current.add(section);
   const formsDirty = () =>
     [...forms.current.values()].some((form) => form.dirty);
   const draftRef = useRef(draft);
+  const activeRef = useRef(active);
   draftRef.current = draft;
+  activeRef.current = active;
   const returnPath = useRef(
     typeof history !== "undefined"
       ? (history.state?.axiomSettingsReturn ?? BASE + "/home")
@@ -217,10 +220,17 @@ function SettingsReady({
         destination: string;
         proceed: () => void;
       }>;
+      if (!activeRef.current || event.defaultPrevented) return;
+      if (
+        event.type === "axiom:before-navigate" &&
+        navigation.detail.destination.startsWith(BASE + "/settings")
+      )
+        return;
       if (!draftRef.current.dirty && !formsDirty()) return;
       event.preventDefault();
       setLeaving({ proceed: navigation.detail.proceed });
-      queueMicrotask(() => go(currentPath.current, false, true));
+      if (event.type === "axiom:close-settings")
+        queueMicrotask(() => go(currentPath.current, false, true));
     };
     const unload = (event: BeforeUnloadEvent) => {
       if (draftRef.current.dirty || formsDirty()) {
@@ -229,9 +239,11 @@ function SettingsReady({
       }
     };
     window.addEventListener("axiom:close-settings", before);
+    window.addEventListener("axiom:before-navigate", before);
     window.addEventListener("beforeunload", unload);
     return () => {
       window.removeEventListener("axiom:close-settings", before);
+      window.removeEventListener("axiom:before-navigate", before);
       window.removeEventListener("beforeunload", unload);
     };
   }, []);
@@ -256,13 +268,14 @@ function SettingsReady({
     connections: "Connected applications",
     groups: "Your research groups",
     exports: "Portable exports",
+    extensions: "Extensions",
   };
   return (
     <SettingsForms.Provider value={forms.current}>
       <main
         hidden={!active}
         style={!active ? { display: "none" } : undefined}
-        className={`ws-page ws-settings-page ${preference ? "ws-appearance-page" : ""}`}
+        className={`ws-page ws-settings-page ${preference ? "ws-appearance-page" : ""} ${section === "extensions" ? "ws-extensions-page" : ""}`}
         data-settings-section={section}
       >
         <div className="settings-center-heading">
@@ -319,7 +332,7 @@ function SettingsReady({
             onWorkspace={() => navigate("/settings/profile")}
             onData={() => navigate("/settings/data")}
           />
-        ) : section === "connections" ? (
+        ) : section === "extensions" ? null : section === "connections" ? (
           <ConnectionsSettings />
         ) : section === "profile" ? null : section === "security" ? (
           <SecuritySettings />
@@ -396,6 +409,14 @@ function SettingsReady({
             <NotificationSettings />
           </div>
         )}
+        {visitedForms.current.has("extensions") && (
+          <div
+            className="settings-retained-extension"
+            hidden={section !== "extensions"}
+          >
+            <ExtensionsSettings />
+          </div>
+        )}
         {active && leaving && (
           <Dialog
             title={
@@ -405,7 +426,7 @@ function SettingsReady({
             }
             subtitle={
               formsDirty()
-                ? "Profile or notification changes are unsaved. Stay to save those forms, or discard all changes before closing this tab."
+                ? "Some settings forms are unsaved. Stay to save them, or discard all changes before leaving settings."
                 : "Your appearance and writing preferences are in live preview. Choose what to keep before leaving."
             }
             onClose={() => setLeaving(null)}

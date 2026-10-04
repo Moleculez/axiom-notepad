@@ -10,10 +10,14 @@ export default function PlanningMarkdown({
   initial,
   onChange,
   readOnly = false,
+  preview = false,
+  label = "Description",
 }: {
   initial: string;
   onChange: (value: string) => void;
   readOnly?: boolean;
+  preview?: boolean;
+  label?: string;
 }) {
   const { appearance, editorSettings, notify, open } = useWorkspace(),
     [mode, setMode] = useState<"write" | "source">("write");
@@ -24,6 +28,7 @@ export default function PlanningMarkdown({
       editorSettings,
       mode,
       readOnly,
+      preview,
       onChange,
       notify,
       open,
@@ -33,6 +38,7 @@ export default function PlanningMarkdown({
     editorSettings,
     mode,
     readOnly,
+    preview,
     onChange,
     notify,
     open,
@@ -45,7 +51,10 @@ export default function PlanningMarkdown({
     const undo = new Y.UndoManager(text),
       binding = new NativeBinding(doc, undo, null);
     const editor = new EditorView(mount.current, binding, {
-      mode: () => current.current.mode,
+      mode: () =>
+        current.current.preview && current.current.mode === "write"
+          ? "read"
+          : current.current.mode,
       preferences: () => ({
         ...current.current.editorSettings.effective,
         typewriter: false,
@@ -54,7 +63,7 @@ export default function PlanningMarkdown({
       context: () => ({
         theme: current.current.appearance.dark ? "dark" : "light",
       }),
-      readOnly: () => current.current.readOnly,
+      readOnly: () => current.current.readOnly || current.current.preview,
       workspace: (command) => {
         if (command === "source")
           setMode((old) => (old === "source" ? "write" : "source"));
@@ -78,7 +87,10 @@ export default function PlanningMarkdown({
         ),
     });
     if ("setLabel" in editor)
-      editor.setLabel("Task description", "task-description");
+      editor.setLabel(
+        label === "Description" ? "Task description" : label,
+        "task-description",
+      );
     view.current = editor;
     return () => {
       view.current = null;
@@ -89,11 +101,11 @@ export default function PlanningMarkdown({
   }, []);
   useEffect(() => {
     view.current?.configure();
-  }, [appearance.effective, editorSettings.effective, mode, readOnly]);
+  }, [appearance.effective, editorSettings.effective, mode, readOnly, preview]);
   return (
-    <div className="planning-markdown">
+    <div className="planning-markdown" data-preview={preview || undefined}>
       <div className="scratchpad-toolbar">
-        <span>Description</span>
+        <span>{label}</span>
         <div className="scratchpad-modes">
           {(["write", "source"] as const).map((value) => (
             <button
@@ -102,7 +114,7 @@ export default function PlanningMarkdown({
               aria-pressed={mode === value}
               onClick={() => setMode(value)}
             >
-              {value === "write" ? "Write" : "Source"}
+              {value === "write" ? (preview ? "Preview" : "Write") : "Source"}
             </button>
           ))}
         </div>

@@ -3,6 +3,13 @@ import type { EditorPreferences } from "@axiom/shared/editor";
 
 export const settingsCategories = [
   {
+    id: "extensions",
+    group: "Extensions",
+    label: "Extensions",
+    description:
+      "Sandboxed packages, scoped workspace permissions, group approval and reviewed changes.",
+  },
+  {
     id: "connections",
     group: "Account",
     label: "Connected apps",

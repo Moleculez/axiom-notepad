@@ -169,6 +169,14 @@ export default function ChangeSetReview({
       <ErrorNotice message={error || value?.error || ""} />
       {value && (
         <>
+          {value.plugin_package_hash && (
+            <Notice tone="info">
+              Extension proposal · package{" "}
+              {value.plugin_package_hash.slice(0, 12)}. Nothing applies
+              automatically. Disabling the extension or revoking its permissions
+              also blocks Apply and Undo.
+            </Notice>
+          )}
           <div className="change-set-summary">
             <ShieldCheck size={17} />
             <span>

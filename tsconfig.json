@@ -17,6 +17,7 @@
       "@axiom/editor": ["./packages/editor/src/index.ts"],
       "@axiom/editor/*": ["./packages/editor/src/*"],
       "@axiom/markdown": ["./packages/markdown/src/index.ts"],
+      "@axiom/plugin-sdk": ["./packages/plugin-sdk/src/index.ts"],
       "@axiom/shared/*": ["./packages/shared/src/*"]
     }
   },
@@ -26,6 +27,7 @@
     "packages/**/*.ts",
     "scripts/**/*.ts",
     "tests/**/*.ts",
+    "examples/**/*.ts",
     "*.ts"
   ],
   "exclude": [

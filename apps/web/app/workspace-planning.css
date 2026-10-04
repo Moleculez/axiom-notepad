@@ -1031,6 +1031,20 @@
 .planning-markdown .native-editor-content {
   min-height: 100px;
 }
+.planning-markdown .axiom-editor {
+  height: auto;
+  overflow: visible;
+}
+.planning-markdown .axiom-prose {
+  min-height: 0;
+  padding: 16px;
+  max-width: none;
+  margin: 0;
+}
+.planning-markdown[data-preview="true"] .planning-markdown-scroll,
+.planning-markdown[data-preview="true"] .native-editor-content {
+  min-height: 0;
+}
 .planning-evidence {
   max-height: 220px;
   overflow: auto;

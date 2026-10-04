@@ -384,12 +384,13 @@ export function FileOperationActivity({
     ? ["queued", "running"].includes(op.status)
     : data.data?.some((o) => ["queued", "running"].includes(o.status));
   useEffect(() => {
+    if (!busy) return;
     const timer = setInterval(() => {
+      if (document.hidden || !navigator.onLine) return;
       setTick((v) => v + 1);
-      if (busy) refresh();
     }, 2500);
     return () => clearInterval(timer);
-  }, [busy, refresh]);
+  }, [busy]);
   useEffect(() => {
     if (!op || !["queued", "running"].includes(op.status) || running.current)
       return;

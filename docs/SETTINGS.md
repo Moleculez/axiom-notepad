@@ -181,3 +181,13 @@ retry and stale-version protection on the isolated port-3004 candidate.
 and canceled account edits, without saving live preferences or changing notes.
 See [editor verification](EDITOR_VNEXT.md) and the
 [interface verification guide](INTERFACE_ACCEPTANCE.md).
+
+## Extensions and retained forms
+
+[Extensions](EXTENSIONS.md) has matching directory/detail frames, independent
+scrollers, default-disabled installs, workspace consent, exact group approval,
+configuration/shortcuts, package update/rollback and activity. Configuration
+drafts survive package and settings-category switches; stale revisions are never
+silently overwritten. Profile, notification and extension forms use one settings
+exit guard, alongside appearance/writing preview. Native Save/Discard stays with
+the responsible form. Safe mode is a device/account runtime switch, not a grant.

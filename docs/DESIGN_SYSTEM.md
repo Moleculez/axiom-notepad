@@ -255,6 +255,14 @@ Each document pane owns its scroll area and a footer outside that area. Statisti
 
 ## Review checklist
 
+Extensions never define a competing interface. Their native inspector, settings
+directory and dialogs follow the [control contract](UI_CONTROLS.md#extension-and-inspector-ui)
+and [extension boundary](EXTENSIONS.md). One explicit owner chooses the auxiliary
+inspector; inactive panes retain draft state without drawing another sidebar.
+File/workspace cards show readable access labels and ordinary item/storage metadata,
+not raw roles or JSON. Background work opens authoritative existing controllers,
+not another queue or an automatic retry action.
+
 For the current desktop phase, check Frost/Graphite and custom themes; large fonts; long names; empty, loading and denied states; keyboard-only interaction; reduced motion; and forced colors. Mobile layout development and device certification are deferred. Text contrast target is 4.5:1 and essential control/focus contrast 3:1. Test overflow within tables/math/code rather than allowing whole-page horizontal scrolling.
 
 Inspect actual screenshots as well as passing interaction assertions: footer visibility, label/control alignment, pointer hit regions and comfortable mathematical spacing need their own geometry checks.
