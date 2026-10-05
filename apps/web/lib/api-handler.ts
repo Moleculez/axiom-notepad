@@ -69,6 +69,7 @@ import { resourceTransferApi } from "@axiom/shared/resource-transfer";
 import { fileWorkflowsApi } from "@axiom/shared/file-workflows-api";
 import { workspaceEvents } from "@axiom/shared/workspace-events";
 import { uploadsApi } from "@axiom/shared/uploads-api";
+import { workspaceImportApi } from "@axiom/shared/workspace-import-api";
 import { editorMediaApi } from "@axiom/shared/editor-media-api";
 import { filePreviewApi } from "@axiom/shared/file-preview-api";
 import { canvasPreviewApi } from "@axiom/shared/canvas-preview-api";
@@ -300,6 +301,8 @@ async function handleRequest(
     if (previewResponse) return previewResponse;
     const mediaResponse = await editorMediaApi(request, path, user.id);
     if (mediaResponse) return mediaResponse;
+    const importResponse = await workspaceImportApi(request, path, user.id);
+    if (importResponse) return importResponse;
     const uploadResponse = await uploadsApi(request, path, user.id);
     if (uploadResponse) return uploadResponse;
     const trashResponse = await trashApi(request, path, user.id);

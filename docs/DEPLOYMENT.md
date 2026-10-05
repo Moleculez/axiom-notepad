@@ -172,11 +172,14 @@ and attachment volume; do not point the live stack at half of a recovered pair.
 
 ## Upgrade discipline
 
-Current features require migrations through **37** (31: reviewed assistant
+Current features require migrations through **43** (31: reviewed assistant
 productivity operations; 32: workspace websites; 33: publication reading metadata,
 stable publication dates and opt-in aggregate analytics; 34: editor media;
 35–37: personal reference libraries, citation backfill, integrity/indexes and
-derived-index invalidation for file creation/import/restore). Publication files are included
+derived-index invalidation for file creation/import/restore; 38: workspace-owned
+research; 39: planning suite/dependency offsets; 40–41: controlled extensions and
+configuration rollback; 42: paginated Intake; 43: private atomic Markdown/folder
+imports). Publication files are included
 in storage quotas and the paired backup manifest. Upgrade the operations image
 too so backup/restore includes them. Run matching web/sync/worker/publish versions.
 
@@ -278,5 +281,13 @@ before any separate Docker cleanup, and never use a global prune on a shared hos
 
 The legacy import limit is 50 MiB by default; Explorer allows files up to 1,000,000,000
 bytes in resumable 8 MiB requests. The proxy limit is per request, not per complete file.
+The [workspace Markdown/folder/ZIP importer](WORKSPACE_IMPORTS.md) uses those same
+bounded requests and requires migration 43 plus matching web/worker code. Native
+notes and supporting files publish together after private preparation; do not stop
+the worker permanently or treat the transfer dialog as a backup. Verify empty
+files, interrupted parts and cancellation on your actual S3 provider.
+Unfinished private import staging is not in the backup. Restore cancels those
+batches and their incomplete uploads, including verified-but-unpublished staging;
+reselect originals for a new import. Completed notes, files and receipts remain.
 Physical disk usage includes staged uploads, previews/exports and backups in addition
 to logical quotas. No cloud deployment or external integration certification is implied.

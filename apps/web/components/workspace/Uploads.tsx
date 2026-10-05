@@ -2,12 +2,14 @@
 import { Button, IconButton, NativeSelect } from "../ui/controls";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Check, FileUp, Pause, Play, Upload, X } from "lucide-react";
-import { MAX_FILE_BYTES, UPLOAD_CHUNK_BYTES } from "@axiom/shared/workspace";
+import { MAX_FILE_BYTES } from "@axiom/shared/workspace";
+import { transferUpload } from "../../lib/upload-transfer";
 import { api, post, SIGN_OUT_PENDING } from "../../lib/client";
 import { bytes, ErrorNotice, useWorkspace } from "./ui";
 import { uploadRelativePath } from "@axiom/shared/file-workflows";
 import Dialog from "../Dialog";
 import RecoveryActivity from "./RecoveryActivity";
+import { ImportTransfers } from "./WorkspaceImports";
 import type {
   UploadBatch,
   UploadResult,
@@ -160,7 +162,11 @@ export function useUploads(userId: string | undefined, onComplete: () => void) {
           expectedResourceVersion: item.expected_resource_version,
         }),
       });
-      const remote = await api(`uploads/${item.id}`, { signal });
+      const remote = await transferUpload(file, `uploads/${item.id}`, {
+        signal,
+        valid,
+        progress: (received) => update(item.id, { received }),
+      });
       valid();
       if (remote.status === "complete") {
         update(item.id, {
@@ -179,59 +185,6 @@ export function useUploads(userId: string | undefined, onComplete: () => void) {
         update(item.id, { status: "verifying", received: file.size });
         return;
       }
-      const present = new Map<number, string>(
-        remote.chunks.map((chunk: any) => [Number(chunk.part), chunk.sha256]),
-      );
-      const hash = async (part: number) => {
-        const chunk = await file
-          .slice((part - 1) * UPLOAD_CHUNK_BYTES, part * UPLOAD_CHUNK_BYTES)
-          .arrayBuffer();
-        valid();
-        const checksum = Array.from(
-          new Uint8Array(await crypto.subtle.digest("SHA-256", chunk)),
-        )
-          .map((value) => value.toString(16).padStart(2, "0"))
-          .join("");
-        return { chunk, checksum };
-      };
-      // Validate all previously accepted parts before sending any new bytes.
-      for (const [part, checksum] of present)
-        if ((await hash(part)).checksum !== checksum)
-          throw new Error(
-            "This is not the original file. Its saved parts have different checksums. No existing file was changed.",
-          );
-      let received = remote.chunks.reduce(
-        (total: number, chunk: any) => total + Number(chunk.bytes),
-        0,
-      );
-      update(item.id, { received });
-      for (
-        let part = 1;
-        part <= Math.ceil(file.size / UPLOAD_CHUNK_BYTES);
-        part++
-      ) {
-        valid();
-        if (present.has(part)) continue;
-        const { chunk, checksum } = await hash(part);
-        await api(`uploads/${item.id}/chunks/${part}`, {
-          method: "PUT",
-          signal,
-          headers: {
-            "content-type": "application/octet-stream",
-            "x-content-sha256": checksum,
-          },
-          body: chunk,
-        });
-        received += chunk.byteLength;
-        valid();
-        update(item.id, { received });
-      }
-      await api(`uploads/${item.id}/complete`, {
-        method: "POST",
-        signal,
-        body: "{}",
-      });
-      valid();
       update(item.id, { status: "verifying" });
     } catch (error) {
       if (owner.current === userId)
@@ -581,7 +534,7 @@ export default function Uploads({
 }: {
   controller: ReturnType<typeof useUploads>;
 }) {
-  const { open } = useWorkspace(),
+  const { open, imports } = useWorkspace(),
     [error, setError] = useState(""),
     [view, setView] = useState<"uploads" | "activity">("uploads");
   const input = useRef<HTMLInputElement>(null),
@@ -685,6 +638,12 @@ export default function Uploads({
             days. Completed files are never auto-deleted.
           </p>
           <ErrorNotice message={error} />
+          {imports && (
+            <ImportTransfers
+              controller={imports}
+              closeUploads={() => controller.setShown(false)}
+            />
+          )}
           <input
             ref={input}
             hidden

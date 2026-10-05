@@ -25,7 +25,6 @@ import {
   Download,
   FileText,
   Folder,
-  FolderPlus,
   Grid2X2,
   Info,
   List,
@@ -37,6 +36,7 @@ import {
   Copy,
   Pencil,
   FolderInput,
+  ChevronDown,
   X,
 } from "lucide-react";
 import type {
@@ -93,7 +93,7 @@ function ResourceExplorer() {
   const management = useManagement();
   const tabs = useWorkSessions(),
     tabId = tabs?.state.active;
-  const { spaces, revision, navigate, open, upload, refresh } = useWorkspace(),
+  const { spaces, revision, navigate, open, refresh } = useWorkspace(),
     { params, parts } = useLocation();
   const view = params.get("view") ?? "folder",
     spaceId =
@@ -127,8 +127,6 @@ function ResourceExplorer() {
     setInspectorState(value);
   };
   const action = useAction(),
-    fileInput = useRef<HTMLInputElement>(null),
-    folderInput = useRef<HTMLInputElement>(null),
     anchor = useRef<string | null>(null),
     endMarquee = useRef<(() => void) | null>(null),
     scrollRoot = useRef<HTMLElement>(null),
@@ -336,17 +334,17 @@ function ResourceExplorer() {
                 <>
                   <Button
                     className="button secondary"
-                    onClick={() => fileInput.current?.click()}
+                    aria-haspopup="menu"
+                    onClick={(event) =>
+                      management.addFilesMenu(event, {
+                        spaceId: spaceId!,
+                        parentId,
+                      })
+                    }
                   >
                     <Upload size={16} />
-                    Upload
-                  </Button>
-                  <Button
-                    className="button secondary"
-                    onClick={() => folderInput.current?.click()}
-                  >
-                    <FolderPlus size={16} />
-                    Upload folder
+                    Add files
+                    <ChevronDown size={14} />
                   </Button>
                   <Button
                     type="button"
@@ -366,29 +364,6 @@ function ResourceExplorer() {
               )}
             </>
           }
-        />
-        <input
-          ref={fileInput}
-          hidden
-          type="file"
-          multiple
-          onChange={(event) => {
-            if (spaceId)
-              upload(Array.from(event.target.files ?? []), spaceId, parentId);
-            event.target.value = "";
-          }}
-        />
-        <input
-          ref={folderInput}
-          hidden
-          type="file"
-          multiple
-          {...{ webkitdirectory: "" }}
-          onChange={(event) => {
-            if (spaceId)
-              upload(Array.from(event.target.files ?? []), spaceId, parentId);
-            event.target.value = "";
-          }}
         />
         {space && (
           <nav className="ws-breadcrumbs" aria-label="Folder breadcrumbs">

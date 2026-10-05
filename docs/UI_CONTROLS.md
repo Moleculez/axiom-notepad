@@ -45,6 +45,9 @@ consume the same CSS base without adding React wrappers to the editable DOM.
   compact/icon controls have a minimum 32px. They grow with UI text, wrap long
   labels, and never use a fixed height that clips content. Compact is for dense
   toolbars, not permission/consent forms.
+- Single-line native selectors also use the shared text-scaled control height:
+  Safari ignores their minimum height in native popup mode. Keep the native arrow
+  and keyboard behavior; never replace them with a hardcoded-pixel page workaround.
 - Use the UI font and shared `--size-ui`, `--size-ui-small`, `--control-text-size`,
   `--control-height` and `--control-height-compact` roles. No fixed 10px text in a
   settings section; prose and equations do not inherit these form roles.
@@ -103,6 +106,20 @@ search must be bounded, abortable and retryable; stale results cannot win a race
 Do not style Markdown source/property/code/math inputs as application forms.
 Those fields remain explicitly `data-editor-field`, transparent and source-backed.
 Time-zone completion retains its existing validated native autocomplete.
+
+### Collection review and transfers
+
+Reuse the shared workspace-import host for Add files, directory menus and commands.
+Use a searchable Picker for destination workspaces, native selectors for small
+policy sets, and existing Dialog body/footer slots. Hierarchy and local Preview/Source
+own their scrollports; do not put actions inside either. Keep destination audience,
+exclusions and non-overwrite names visible before confirmation. Local preview must
+not open external images/URLs, persistence or collaboration. Quiet recovery polling
+must never reset loaded content or trigger the app's foreground progress line.
+Files over one part use bounded checksum slices in a pure worker module, not a
+page/API-client dependency graph. See [import contracts](WORKSPACE_IMPORTS.md).
+Load the preview editor on demand, not through an unconditional app-shell import;
+its pending surface must preserve the allocated pane and action-footer geometry.
 
 ### Server-filtered archives
 

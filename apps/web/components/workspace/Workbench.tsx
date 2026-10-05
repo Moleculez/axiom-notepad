@@ -826,7 +826,12 @@ function DocumentPane({
               href: `/workbench/notes/${matches[0].id}${heading ? "#" + encodeURIComponent(slug(heading)) : ""}`,
               title: matches[0].title,
             }
-          : undefined;
+          : /^[\da-f-]{36}$/i.test(identity)
+            ? {
+                href: `/workbench/notes/${identity}${heading ? "#" + encodeURIComponent(slug(heading)) : ""}`,
+                title: "Linked note",
+              }
+            : undefined;
       },
     }),
     [context.data, appearance.dark],
@@ -875,7 +880,9 @@ function DocumentPane({
       return;
     }
     if (/^[\da-f-]{36}$/.test(identity)) {
-      navigate(`/notes/${identity}`);
+      navigate(
+        `/notes/${identity}${target.includes("#") ? "#" + encodeURIComponent(slug(target.split("#")[1])) : ""}`,
+      );
       return;
     }
     navigate(`/explorer?view=all&kind=note&q=${encodeURIComponent(identity)}`);

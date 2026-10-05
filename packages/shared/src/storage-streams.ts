@@ -214,6 +214,27 @@ export async function completeMultipart(
   },
   chunks: { part: number; etag: string | null; sha256: string }[],
 ) {
+  if (Number(upload.bytes) === 0) {
+    try {
+      await putAttachmentStream(
+        upload.storage_key,
+        Readable.from([]),
+        0,
+        "application/octet-stream",
+      );
+    } catch (error) {
+      if (
+        !["EEXIST", "PreconditionFailed"].includes(
+          String(
+            (error as { code?: string; name?: string }).code ??
+              (error as Error).name,
+          ),
+        )
+      )
+        throw error;
+    }
+    return;
+  }
   if (cloud()) {
     try {
       await s3().send(

@@ -9,7 +9,7 @@ type Line = {
   column?: number;
   lazy?: boolean;
 };
-type Ref = { href: string; title?: string };
+type Ref = { href: string; title?: string; hrefFrom?: number; hrefTo?: number };
 type Context = {
   dialect: Dialect;
   refs: Map<string, Ref>;
@@ -68,8 +68,15 @@ function linesOf(source: string): Line[] {
   const result: Line[] = [];
   const re = /([^\r\n]*)(\r\n|\r|\n|$)/g;
   let m: RegExpExecArray | null;
-  while ((m = re.exec(source)) && m[0])
-    result.push({ text: m[1], from: m.index, to: m.index + m[0].length });
+  while ((m = re.exec(source)) && m[0]) {
+    // A UTF-8 BOM belongs to canonical source, not the first block's grammar.
+    const bom = m.index === 0 && m[1].startsWith("\ufeff") ? 1 : 0;
+    result.push({
+      text: m[1].slice(bom),
+      from: m.index + bom,
+      to: m.index + m[0].length,
+    });
+  }
   return result;
 }
 function combine(
@@ -174,7 +181,7 @@ function interrupts(s: string, paragraph = true) {
 function destination(
   s: string,
   pos: number,
-): { href: string; end: number } | null {
+): { href: string; end: number; from: number; to: number } | null {
   const start = pos;
   if (s[pos] === "<") {
     pos++;
@@ -184,7 +191,12 @@ function destination(
         continue;
       }
       if (s[pos] === ">")
-        return { href: unescape(s.slice(start + 1, pos)), end: pos + 1 };
+        return {
+          href: unescape(s.slice(start + 1, pos)),
+          end: pos + 1,
+          from: start + 1,
+          to: pos,
+        };
       if (s[pos] === "\n" || s[pos] === "<") return null;
       pos++;
     }
@@ -210,7 +222,9 @@ function destination(
     }
     pos++;
   }
-  return depth ? null : { href: unescape(s.slice(start, pos)), end: pos };
+  return depth
+    ? null
+    : { href: unescape(s.slice(start, pos)), end: pos, from: start, to: pos };
 }
 function readTitle(
   s: string,
@@ -233,10 +247,8 @@ function readTitle(
   return null;
 }
 function definition(lines: Line[], index: number, ctx: Context): number {
-  const s = lines
-    .slice(index, index + 8)
-    .map((l) => l.text)
-    .join("\n");
+  const combined = combine(lines.slice(index, index + 8), false),
+    s = combined.text;
   const m = /^ {0,3}\[((?:\\.|[^\]\\]){1,999})\]:[ \t]*(?:\n[ \t]*)?/.exec(s);
   if (
     !m ||
@@ -260,14 +272,25 @@ function definition(lines: Line[], index: number, ctx: Context): number {
   if (!/^[ \t]*(?:\n|$)/.test(s.slice(end))) return 0;
   const count = s.slice(0, end).split("\n").length;
   if (!ctx.refs.has(normalize(m[1])))
-    ctx.refs.set(normalize(m[1]), { href: dest.href, title });
+    ctx.refs.set(normalize(m[1]), {
+      href: dest.href,
+      title,
+      hrefFrom: combined.positions[dest.from],
+      hrefTo: combined.positions[dest.to],
+    });
   if (ctx.depth === 0)
     ctx.definitions.push(
       node(
         "referenceDefinition",
         lines[index].from,
         lines[index + count - 1].to,
-        { key: m[1], href: dest.href, title },
+        {
+          key: m[1],
+          href: dest.href,
+          title,
+          hrefFrom: combined.positions[dest.from],
+          hrefTo: combined.positions[dest.to],
+        },
       ),
     );
   return count;
@@ -1135,6 +1158,8 @@ function inlines(
         const [target, ...label] = wiki[1].split("|");
         add("wikiLink", i, i + wiki[0].length, {
           href: target,
+          hrefFrom: p(i + 2),
+          hrefTo: p(i + 2 + target.length),
           text: label.join("|") || target,
         });
         i += wiki[0].length;
@@ -1209,7 +1234,12 @@ function inlines(
               }
             }
             if (s[k] === ")") {
-              ref = { href: d.href, title };
+              ref = {
+                href: d.href,
+                title,
+                hrefFrom: p(d.from),
+                hrefTo: p(d.to),
+              };
               end = k + 1;
             }
           }

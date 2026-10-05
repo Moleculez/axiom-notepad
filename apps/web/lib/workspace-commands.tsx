@@ -14,6 +14,7 @@ import {
   Download,
   FileSearch,
   Puzzle,
+  Import,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -87,7 +88,10 @@ export function WorkspaceCommandProvider({
   }, []);
   const fallbackSpace = path.startsWith("/workspaces/")
     ? path.split("/")[2]
-    : params.get("space");
+    : (params.get("space") ??
+      (path === "/explorer"
+        ? workspace.spaces.find((s) => s.kind === "personal")?.id
+        : null));
   const context =
     /^\/(?:notes|files|canvas|math|image|text|pdf|document)\//.test(path)
       ? pane
@@ -121,6 +125,29 @@ export function WorkspaceCommandProvider({
       run: () =>
         openAssistant(context?.spaceId ? { spaceId: context.spaceId } : {}),
     });
+    if (context?.spaceId)
+      for (const source of ["markdown", "folder", "zip"] as const)
+        core.push({
+          id: "workspace:import:" + source,
+          title:
+            source === "markdown"
+              ? "Import Markdown files"
+              : source === "folder"
+                ? "Import folder"
+                : "Import ZIP archive",
+          description:
+            "Editable notes and supporting files · review before publishing",
+          icon: Import,
+          group: "Files",
+          disabledReason: context.canEdit
+            ? undefined
+            : "This workspace is read-only.",
+          run: () =>
+            workspace.importFiles?.(source, {
+              spaceId: context.spaceId,
+              parentId: params.get("folder"),
+            }),
+        });
     if (context?.resourceId && context.format === "markdown")
       core.push({
         id: "document:export",
@@ -163,6 +190,9 @@ export function WorkspaceCommandProvider({
     context?.resourceId,
     context?.format,
     context?.spaceId,
+    context?.canEdit,
+    workspace.importFiles,
+    params.get("folder"),
   ]);
   const bindingConflict = useCallback(
     (key: string, except?: string) => {

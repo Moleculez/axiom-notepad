@@ -58,6 +58,7 @@ import { ManagementProvider } from "./ManagementActions";
 import { FileCreationHost } from "./NewFileDialog";
 import VisualViewerHost from "../VisualViewerHost";
 import Uploads, { useUploads } from "./Uploads";
+import WorkspaceImportsHost, { useWorkspaceImports } from "./WorkspaceImports";
 import dynamic from "next/dynamic";
 const Workbench = dynamic(() => import("./Workbench"), {
   loading: () => <Loading label="Opening file…" />,
@@ -164,6 +165,7 @@ export default function WorkspaceApp() {
       data.data ??
       (cachedSpacesAccount === session?.user.id ? cachedSpaces : []),
     transfers = useUploads(session?.user.id, refresh),
+    imports = useWorkspaceImports(session?.user.id, refresh),
     [splitTarget, setSplitTarget] = useState<OpenResource | null>(null);
   const closeAccountMenu = useCallback((restoreFocus = false) => {
     const menu = accountMenu.current;
@@ -549,6 +551,11 @@ export default function WorkspaceApp() {
         uploadBatch: transfers.addBatch,
         transfers: transfers.transfers,
         showUploads: () => transfers.setShown(true),
+        imports,
+        importFiles: (source, target) => {
+          transfers.setShown(false);
+          imports.open(source, target);
+        },
         appearance,
         editorSettings,
         notify: setNotice,
@@ -647,7 +654,14 @@ export default function WorkspaceApp() {
                         ["uploading", "queued", "verifying"].includes(
                           item.status,
                         ),
-                      ) && <span className="ws-notification-dot" />}
+                      ) ||
+                      imports.batches.some((batch) =>
+                        ["preparing", "publishing", "blocked"].includes(
+                          batch.status,
+                        ),
+                      ) ? (
+                        <span className="ws-notification-dot" />
+                      ) : null}
                     </IconButton>
                     <details
                       ref={accountMenu}
@@ -855,6 +869,7 @@ export default function WorkspaceApp() {
                   </div>
                 )}
                 <Uploads controller={transfers} />
+                <WorkspaceImportsHost controller={imports} />
                 {searchOpen && (
                   <WorkspaceSearch onClose={() => setSearchOpen(false)} />
                 )}

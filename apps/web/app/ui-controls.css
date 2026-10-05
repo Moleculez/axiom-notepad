@@ -103,6 +103,11 @@
   cursor: pointer;
   padding-inline-end: 2em;
 }
+.ui-select:not([multiple]):not([size]) {
+  /* Safari ignores min-height on its native popup selector. This is a shared,
+     text-scaled single-line size, not a fixed-pixel or page-specific workaround. */
+  height: var(--control-height);
+}
 .ui-select[multiple] {
   padding: 0.5em;
 }

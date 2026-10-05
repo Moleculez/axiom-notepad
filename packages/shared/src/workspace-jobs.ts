@@ -22,6 +22,12 @@ import { withAuditContext } from "./audit-context";
 import { activeConnection } from "./integration-security";
 import { pruneImageDraftAssets } from "./image-cloud-api";
 import { HttpError } from "./access";
+import {
+  finishWorkspaceImport,
+  blockWorkspaceImport,
+  expireWorkspaceImports,
+  clearImportUploadStaging,
+} from "./workspace-import-api";
 
 export async function processRecurrences() {
   const rules = await query(
@@ -237,7 +243,8 @@ export async function processWorkspaceJob() {
     const [attribution] = await query(
       `SELECT user_id FROM file_operations WHERE id=$1 AND $2='file-operation'
        UNION ALL SELECT user_id FROM trash_operations WHERE id=$1 AND $2='trash-operation'
-       UNION ALL SELECT owner_id AS user_id FROM upload_sessions WHERE id=$1 AND $2='complete-upload'`,
+       UNION ALL SELECT owner_id AS user_id FROM upload_sessions WHERE id=$1 AND $2='complete-upload'
+       UNION ALL SELECT owner_id AS user_id FROM workspace_imports WHERE id=$1 AND $2='finalize-import'`,
       [job.payload.id ?? null, job.kind],
     );
     await withAuditContext(
@@ -251,6 +258,10 @@ export async function processWorkspaceJob() {
       },
       async () => {
         if (job.kind === "complete-upload") await finishUpload(job.payload.id);
+        else if (job.kind === "finalize-import")
+          await finishWorkspaceImport(job.payload.id);
+        else if (job.kind === "clear-import-staging")
+          await clearImportUploadStaging(job.payload.id);
         else if (job.kind === "thumbnail")
           await thumbnail(job.payload.versionId);
         else if (job.kind === "notification")
@@ -282,7 +293,7 @@ export async function processWorkspaceJob() {
     ).slice(0, 500);
     const exhausted =
       job.attempts >= 5 ||
-      (job.kind === "complete-upload" &&
+      (["complete-upload", "finalize-import"].includes(job.kind) &&
         error instanceof HttpError &&
         [400, 403, 404, 409, 413].includes(error.status));
     const updated = await query(
@@ -297,9 +308,11 @@ export async function processWorkspaceJob() {
     );
     if (updated.length && job.kind === "complete-upload")
       await query(
-        "UPDATE upload_sessions SET error=$2,status=CASE WHEN $3 THEN 'failed' ELSE status END,updated_at=now() WHERE id=$1 AND status<>'complete'",
+        "UPDATE upload_sessions SET error=$2,status=CASE WHEN $3 THEN 'failed' ELSE status END,updated_at=now() WHERE id=$1 AND status NOT IN ('complete','cancelled','staged')",
         [job.payload.id, message, exhausted],
       );
+    if (updated.length && exhausted && job.kind === "finalize-import")
+      await blockWorkspaceImport(job.payload.id, message);
     if (updated.length && exhausted && job.kind === "trash-operation")
       await transaction(async (client) => {
         const {
@@ -325,12 +338,13 @@ export async function processWorkspaceJob() {
   return true;
 }
 export async function workspaceMaintenance() {
+  await expireWorkspaceImports();
   await assistantMaintenance();
   await query("DELETE FROM pdf_ocr_jobs WHERE expires_at<now()");
   await pruneImageDraftAssets();
   await processRecurrences();
   const expired = await query(
-    "UPDATE upload_sessions SET status='cancelled',error='The upload expired after seven days.' WHERE status IN ('uploading','failed') AND expires_at<now() RETURNING *",
+    "UPDATE upload_sessions SET status='cancelled',error='The upload expired after seven days.' WHERE import_entry_id IS NULL AND status IN ('uploading','failed') AND expires_at<now() RETURNING *",
   );
   for (const item of expired) {
     await clearUploadStaging(

@@ -24,6 +24,7 @@ import { notifyWorkspace } from "./documents";
 import { uploadInputSchema, uploadHeadMatches } from "./upload-contract";
 import { mapPdfAnnotation } from "./pdf-annotations";
 import type { Annotation } from "./research";
+import { lockImportUpload } from "./workspace-import-access";
 
 const uuid = z.uuid();
 type Upload = {
@@ -46,6 +47,7 @@ type Upload = {
   expected_resource_version: number | null;
   provenance:
     import("zod").infer<typeof uploadInputSchema>["provenance"] | null;
+  import_entry_id: string | null;
 };
 async function uploadAccess(userId: string, id: string) {
   const [upload] = await query<Upload>(
@@ -80,7 +82,7 @@ export async function reserveCapacity(
     const {
       rows: [usage],
     } = await client.query(
-      `SELECT (SELECT coalesce(sum(a.bytes),0) FROM attachments a JOIN file_versions v ON v.id=a.id JOIN resources r ON r.id=v.resource_id JOIN spaces s ON s.id=r.space_id WHERE CASE WHEN $2::uuid IS NULL THEN s.id=$1::uuid ELSE s.group_id=$2 END)+(SELECT coalesce(sum(d.bytes),0) FROM file_derivatives d JOIN file_versions v ON v.id=d.version_id JOIN resources r ON r.id=v.resource_id JOIN spaces s ON s.id=r.space_id WHERE CASE WHEN $2::uuid IS NULL THEN s.id=$1::uuid ELSE s.group_id=$2 END)+(SELECT coalesce(sum(u.bytes),0) FROM upload_sessions u JOIN spaces s ON s.id=u.space_id WHERE u.status IN ('uploading','verifying','failed') AND u.expires_at>now() AND u.id IS DISTINCT FROM $3::uuid AND CASE WHEN $2::uuid IS NULL THEN s.id=$1::uuid ELSE s.group_id=$2 END)+(SELECT coalesce(sum(j.output_bytes+j.text_bytes),0) FROM pdf_ocr_jobs j JOIN file_versions v ON v.id=j.version_id JOIN resources r ON r.id=v.resource_id JOIN spaces s ON s.id=r.space_id WHERE CASE WHEN $2::uuid IS NULL THEN s.id=$1::uuid ELSE s.group_id=$2 END)+(SELECT coalesce(sum(a.bytes),0) FROM image_draft_assets a JOIN resources r ON r.id=a.resource_id JOIN spaces s ON s.id=r.space_id WHERE CASE WHEN $2::uuid IS NULL THEN s.id=$1::uuid ELSE s.group_id=$2 END)+(SELECT coalesce(sum(f.bytes),0) FROM site_release_files f JOIN site_releases r ON r.id=f.release_id JOIN workspace_sites w ON w.id=r.site_id JOIN spaces s ON s.id=w.space_id WHERE CASE WHEN $2::uuid IS NULL THEN s.id=$1::uuid ELSE s.group_id=$2 END) AS bytes`,
+      `SELECT (SELECT coalesce(sum(a.bytes),0) FROM attachments a JOIN file_versions v ON v.id=a.id JOIN resources r ON r.id=v.resource_id JOIN spaces s ON s.id=r.space_id WHERE CASE WHEN $2::uuid IS NULL THEN s.id=$1::uuid ELSE s.group_id=$2 END)+(SELECT coalesce(sum(d.bytes),0) FROM file_derivatives d JOIN file_versions v ON v.id=d.version_id JOIN resources r ON r.id=v.resource_id JOIN spaces s ON s.id=r.space_id WHERE CASE WHEN $2::uuid IS NULL THEN s.id=$1::uuid ELSE s.group_id=$2 END)+(SELECT coalesce(sum(u.bytes),0) FROM upload_sessions u JOIN spaces s ON s.id=u.space_id WHERE u.status IN ('uploading','verifying','failed','staged') AND u.expires_at>now() AND u.id IS DISTINCT FROM $3::uuid AND CASE WHEN $2::uuid IS NULL THEN s.id=$1::uuid ELSE s.group_id=$2 END)+(SELECT coalesce(sum(j.output_bytes+j.text_bytes),0) FROM pdf_ocr_jobs j JOIN file_versions v ON v.id=j.version_id JOIN resources r ON r.id=v.resource_id JOIN spaces s ON s.id=r.space_id WHERE CASE WHEN $2::uuid IS NULL THEN s.id=$1::uuid ELSE s.group_id=$2 END)+(SELECT coalesce(sum(a.bytes),0) FROM image_draft_assets a JOIN resources r ON r.id=a.resource_id JOIN spaces s ON s.id=r.space_id WHERE CASE WHEN $2::uuid IS NULL THEN s.id=$1::uuid ELSE s.group_id=$2 END)+(SELECT coalesce(sum(f.bytes),0) FROM site_release_files f JOIN site_releases r ON r.id=f.release_id JOIN workspace_sites w ON w.id=r.site_id JOIN spaces s ON s.id=w.space_id WHERE CASE WHEN $2::uuid IS NULL THEN s.id=$1::uuid ELSE s.group_id=$2 END) AS bytes`,
       [spaceId, scope.group_id, excludeUploadId],
     );
     if (Number(usage.bytes) + newBytes > Number(budget.quota_bytes))
@@ -94,7 +96,7 @@ export async function reserveCapacity(
     const {
       rows: [reservations],
     } = await client.query(
-      "SELECT coalesce(sum(bytes),0) AS bytes FROM upload_sessions WHERE status IN ('uploading','verifying','failed') AND expires_at>now() AND id IS DISTINCT FROM $1::uuid",
+      "SELECT coalesce(sum(bytes),0) AS bytes FROM upload_sessions WHERE status IN ('uploading','verifying','failed','staged') AND expires_at>now() AND id IS DISTINCT FROM $1::uuid",
       [excludeUploadId],
     );
     if (free < (newBytes + Number(reservations.bytes)) * 2 + 256 * 1024 * 1024)
@@ -108,13 +110,14 @@ export async function uploadsApi(
   request: Request,
   path: string[],
   userId: string,
+  importEntryId?: string,
 ): Promise<Response | null> {
   const [endpoint, id, action, partId] = path,
     method = request.method;
   if (endpoint === "uploads" && !id && method === "GET")
     return json(
       await query(
-        "SELECT u.id,u.space_id,u.parent_id,u.resource_id,u.expected_version_id,u.expected_resource_version,u.name,u.bytes,u.status,u.error,u.completed_resource_id,u.completed_version_id,u.created_at,u.expires_at,coalesce((SELECT sum(c.bytes) FROM upload_chunks c WHERE c.upload_id=u.id),0) AS received FROM upload_sessions u WHERE u.owner_id=$1 AND axiom_space_role($1,u.space_id)='editor' ORDER BY u.created_at DESC LIMIT 100",
+        "SELECT u.id,u.space_id,u.parent_id,u.resource_id,u.expected_version_id,u.expected_resource_version,u.name,u.bytes,u.status,u.error,u.completed_resource_id,u.completed_version_id,u.created_at,u.expires_at,coalesce((SELECT sum(c.bytes) FROM upload_chunks c WHERE c.upload_id=u.id),0) AS received FROM upload_sessions u WHERE u.owner_id=$1 AND u.import_entry_id IS NULL AND axiom_space_role($1,u.space_id)='editor' ORDER BY u.created_at DESC LIMIT 100",
         [userId],
       ),
     );
@@ -133,6 +136,7 @@ export async function uploadsApi(
       );
       if (existing) {
         if (
+          existing.import_entry_id ||
           existing.owner_id !== userId ||
           existing.space_id !== input.spaceId ||
           existing.parent_id !== input.parentId ||
@@ -237,6 +241,16 @@ export async function uploadsApi(
   }
   if (endpoint === "uploads" && id) {
     const upload = await uploadAccess(userId, id);
+    if (upload.import_entry_id !== (importEntryId ?? null))
+      throw new HttpError(
+        404,
+        "Upload unavailable. Use the owning import to manage its private transfers.",
+      );
+    if (upload.import_entry_id && ["save-copy", "cancel"].includes(action))
+      throw new HttpError(
+        409,
+        "Manage this transfer through its import. It cannot be published or retargeted separately.",
+      );
     if (!action && method === "GET") {
       const chunks = await query(
         "SELECT part,bytes,sha256 FROM upload_chunks WHERE upload_id=$1 ORDER BY part",
@@ -344,6 +358,7 @@ export async function uploadsApi(
       if (claimed && claimed !== sha256)
         throw new HttpError(400, "Upload part checksum mismatch.");
       await transaction(async (client) => {
+        await lockImportUpload(client, upload);
         const {
           rows: [current],
         } = await client.query<Upload>(
@@ -353,6 +368,15 @@ export async function uploadsApi(
         await requireScope(client, userId, current.space_id, "edit");
         if (current.status !== "uploading")
           throw new HttpError(409, "This upload is no longer accepting parts.");
+        if (
+          current.import_entry_id &&
+          process.env.STORAGE_DRIVER === "s3" &&
+          !current.multipart_id
+        )
+          throw new HttpError(
+            409,
+            "Prepare this import entry before uploading its parts.",
+          );
         const {
           rows: [previous],
         } = await client.query(
@@ -381,6 +405,7 @@ export async function uploadsApi(
     }
     if (action === "complete" && method === "POST") {
       await transaction(async (client) => {
+        await lockImportUpload(client, upload);
         const {
           rows: [current],
         } = await client.query<Upload>(
@@ -388,7 +413,7 @@ export async function uploadsApi(
           [id],
         );
         await requireScope(client, userId, current.space_id, "edit");
-        if (current.status === "complete" || current.status === "verifying")
+        if (["complete", "verifying", "staged"].includes(current.status))
           return;
         if (
           !["uploading", "failed"].includes(current.status) ||
@@ -418,7 +443,9 @@ export async function uploadsApi(
       });
       return json(
         {
-          status: upload.status === "complete" ? "complete" : "verifying",
+          status: ["complete", "staged"].includes(upload.status)
+            ? upload.status
+            : "verifying",
           resourceId: upload.completed_resource_id,
         },
         202,
@@ -496,6 +523,10 @@ export async function finishUpload(id: string) {
   );
   if (!upload || upload.status === "complete" || upload.status === "cancelled")
     return;
+  if (upload.import_entry_id) {
+    await finishImportUpload(upload);
+    return;
+  }
   await spaceAccess(upload.owner_id, upload.space_id, "edit");
   const chunks = await query<{ part: number; etag: string; sha256: string }>(
     "SELECT * FROM upload_chunks WHERE upload_id=$1 ORDER BY part",
@@ -694,4 +725,71 @@ export async function finishUpload(id: string) {
   });
   await clearUploadStaging(upload);
   await notifyWorkspace();
+}
+
+async function finishImportUpload(upload: Upload) {
+  if (upload.status === "staged") return;
+  // Keep the batch lock through object assembly/verification: cancellation cannot
+  // remove staged parts while a verifier is using them or leave a late orphan.
+  await transaction(async (client) => {
+    await lockImportUpload(client, upload);
+    const {
+      rows: [current],
+    } = await client.query<Upload>(
+      "SELECT * FROM upload_sessions WHERE id=$1 FOR UPDATE",
+      [upload.id],
+    );
+    if (current.status === "staged") return;
+    if (current.status !== "verifying")
+      throw new HttpError(409, "Import transfer is not awaiting verification.");
+    const { rows: chunks } = await client.query<{
+      part: number;
+      etag: string;
+      sha256: string;
+    }>("SELECT * FROM upload_chunks WHERE upload_id=$1 ORDER BY part", [
+      upload.id,
+    ]);
+    const {
+      rows: [entry],
+    } = await client.query(
+      "SELECT * FROM workspace_import_entries WHERE id=$1",
+      [upload.import_entry_id],
+    );
+    const digest = createHash("sha256")
+      .update(chunks.map((c) => c.sha256).join(""))
+      .digest("hex");
+    if (digest !== entry.digest)
+      throw new HttpError(
+        400,
+        "This is not the selected original file. Its part checksums do not match the reviewed inventory.",
+      );
+    await completeMultipart(current, chunks);
+    const verified = await verifyStoredFile(current.storage_key, current.name);
+    if (verified.bytes !== Number(current.bytes))
+      throw new HttpError(400, "The prepared import failed size verification.");
+    if (entry.kind === "note") {
+      const { validateStagedMarkdown } = await import("./workspace-import-api");
+      await validateStagedMarkdown(current.storage_key, verified.bytes);
+    }
+    await client.query(
+      "UPDATE workspace_import_entries SET mime=$2,sha256=$3 WHERE id=$1",
+      [entry.id, verified.mime, verified.sha256],
+    );
+    await client.query(
+      "UPDATE upload_sessions SET status='staged',sha256=$2,error=NULL,updated_at=now() WHERE id=$1",
+      [upload.id, verified.sha256],
+    );
+    const { queueReadyWorkspaceImport } =
+      await import("./workspace-import-api");
+    await queueReadyWorkspaceImport(client, entry.batch_id);
+    await enqueueJob(
+      "clear-import-staging",
+      "verified-import-staging:" + upload.id,
+      { id: upload.id },
+      client,
+    );
+  });
+  // Atomic publication also uses this same batch lock. Retain chunk receipts for
+  // resumable identity checks; only physical temporary parts can be discarded.
+  await clearUploadStaging(upload);
 }

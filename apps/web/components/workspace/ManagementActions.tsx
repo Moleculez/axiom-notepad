@@ -171,6 +171,7 @@ type Management = {
   workspaceMenu: (event: MenuEvent, space: Space) => void;
   backgroundMenu: (event: MenuEvent, target?: Target) => void;
   createMenu: (event: MenuEvent, target: Target) => void;
+  addFilesMenu: (event: MenuEvent, target: Target) => void;
   manage: () => void;
   fileActivity: () => void;
   beginDrag: (event: React.DragEvent<HTMLElement>, items: Resource[]) => void;
@@ -214,8 +215,16 @@ export function ManagementProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const { spaces, refresh, navigate, open, upload, notify, session } =
-    useWorkspace();
+  const {
+    spaces,
+    refresh,
+    navigate,
+    open,
+    upload,
+    notify,
+    session,
+    importFiles,
+  } = useWorkspace();
   const liveSpaces = useRef(spaces);
   liveSpaces.current = spaces;
   const deletion = useMemo(() => {
@@ -657,6 +666,43 @@ export function ManagementProvider({
       ...actions.filter((action) => action.id === "trash"),
     ];
   };
+  const fileItems = (target: Target): ContextAction[] => [
+    ...(["markdown", "folder", "zip"] as const).map((source) => ({
+      label:
+        source === "markdown"
+          ? "Import Markdown…"
+          : source === "folder"
+            ? "Import folder…"
+            : "Import ZIP…",
+      icon: (source === "folder"
+        ? "folder"
+        : source === "markdown"
+          ? "source"
+          : "upload") as ActionIconName,
+      group: "Editable notes & supporting files",
+      action: () => importFiles?.(source, target),
+    })),
+    {
+      label: "Upload files as attachments…",
+      icon: "upload",
+      group: "Raw files",
+      action: () => {
+        uploadTarget.current = target;
+        fileInput.current?.removeAttribute("webkitdirectory");
+        fileInput.current?.click();
+      },
+    },
+    {
+      label: "Upload folder as attachments…",
+      icon: "folder",
+      group: "Raw files",
+      action: () => {
+        uploadTarget.current = target;
+        fileInput.current?.setAttribute("webkitdirectory", "");
+        fileInput.current?.click();
+      },
+    },
+  ];
   const newItems = (
     target: Target,
     createActions: ContextAction[] = [],
@@ -685,14 +731,12 @@ export function ManagementProvider({
           setModal({ kind: "create", resourceKind: "folder", target }),
       },
       {
-        label: "Upload files…",
+        label: "Add files",
         icon: "upload",
         disabled: !enabled,
         hidden: !enabled,
-        action: () => {
-          uploadTarget.current = target;
-          fileInput.current?.click();
-        },
+        action: () => {},
+        children: fileItems(target),
       },
       ...["Text & data", "Office"].map((group) => ({
         label: group === "Research" ? "Research file" : group,
@@ -828,6 +872,8 @@ export function ManagementProvider({
     },
   ];
   const management: Management = {
+    addFilesMenu: (event, target) =>
+      place(event, fileItems(target), "Add files"),
     registerSecondaryView: deletion.registerSecondary,
     execute,
     fileActivity: () => navigate("/audit?view=operations"),

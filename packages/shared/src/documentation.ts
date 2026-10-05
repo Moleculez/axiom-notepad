@@ -196,9 +196,9 @@ export const docArticles: readonly DocArticle[] = [
     id: "workspace/files",
     section: "workspace",
     title: "Explorer, file identity & Trash",
-    summary: "Move files, inspect versions and recover deleted work.",
+    summary: "Import notes and folders, organize files and recover deleted work.",
     keywords:
-      "explorer directory move drag copy trash audit storage versions folder",
+      "explorer directory move drag copy trash audit storage versions folder import markdown zip resume",
   },
   {
     id: "workspace/groups",

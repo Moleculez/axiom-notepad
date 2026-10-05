@@ -12,12 +12,14 @@ export default function PlanningMarkdown({
   readOnly = false,
   preview = false,
   label = "Description",
+  isolated = false,
 }: {
   initial: string;
   onChange: (value: string) => void;
   readOnly?: boolean;
   preview?: boolean;
   label?: string;
+  isolated?: boolean;
 }) {
   const { appearance, editorSettings, notify, open } = useWorkspace(),
     [mode, setMode] = useState<"write" | "source">("write");
@@ -62,6 +64,7 @@ export default function PlanningMarkdown({
       appearance: () => current.current.appearance.effective,
       context: () => ({
         theme: current.current.appearance.dark ? "dark" : "light",
+        disableImages: isolated,
       }),
       readOnly: () => current.current.readOnly || current.current.preview,
       workspace: (command) => {
@@ -76,6 +79,7 @@ export default function PlanningMarkdown({
       prepare: () => {},
       navigate: () => {},
       link: (target) => {
+        if (isolated) return;
         if (/^[\da-f-]{36}$/i.test(target))
           current.current.open({ id: target, kind: "note" });
       },

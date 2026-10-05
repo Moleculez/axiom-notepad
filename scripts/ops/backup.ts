@@ -7,6 +7,7 @@ import { createReadStream, createWriteStream } from "node:fs";
 import { Readable, Transform } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import pg from "pg";
+import { retireRestoredTransfers } from "../../packages/shared/src/restore-transfers";
 import {
   attachmentStream,
   putAttachmentStream,
@@ -299,30 +300,17 @@ else {
     // Backups contain committed immutable blobs, never local multipart staging
     // directories. Do not advertise resumable chunks that were not restored, or
     // abort S3 uploads which may still belong to the original installation.
-    const {
-      rows: [uploads],
-    } = await client.query("SELECT to_regclass('upload_sessions') AS name");
-    if (uploads.name) {
-      await client.query("BEGIN");
-      try {
-        await client.query(
-          "UPDATE workspace_jobs SET status='failed',leased_until=NULL,error='Restart this incomplete upload after restoring the backup.' WHERE kind='complete-upload' AND status IN ('queued','running')",
+    await client.query("BEGIN");
+    try {
+      const cancelled = await retireRestoredTransfers(client);
+      await client.query("COMMIT");
+      if (cancelled.uploads || cancelled.imports)
+        console.log(
+          `Cancelled ${cancelled.uploads} incomplete transfers and ${cancelled.imports} private imports in the restored database only; completed files are preserved. Select the originals for a new import.`,
         );
-        const cancelled = await client.query(
-          "UPDATE upload_sessions SET status='cancelled',error='Incomplete upload parts are not included in a backup. Upload the original file again.',updated_at=now() WHERE status IN ('uploading','verifying','failed') RETURNING id",
-        );
-        await client.query(
-          "DELETE FROM upload_chunks WHERE upload_id IN (SELECT id FROM upload_sessions WHERE status='cancelled')",
-        );
-        await client.query("COMMIT");
-        if (cancelled.rowCount)
-          console.log(
-            `Cancelled ${cancelled.rowCount} incomplete transfers in the restored database only; completed files are preserved.`,
-          );
-      } catch (error) {
-        await client.query("ROLLBACK");
-        throw error;
-      }
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
     }
     const counts = (
       await client.query(

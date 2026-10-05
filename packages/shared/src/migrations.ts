@@ -312,7 +312,13 @@ INSERT INTO app_instance(singleton,setup_completed_at) SELECT true,CASE WHEN EXI
     name: "paginated-research-intake",
     sql: planningIntakeMigration,
   },
+  {
+    version: 43,
+    name: "atomic-workspace-markdown-imports",
+    sql: workspaceImportMigration,
+  },
 ];
+import { workspaceImportMigration } from "./workspace-import-migration";
 import { planningIntakeMigration } from "./planning-intake-migration";
 import { pluginConfigurationMigration } from "./plugin-configuration-migration";
 import { pluginsMigration } from "./plugins-migration";

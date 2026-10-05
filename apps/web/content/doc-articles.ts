@@ -436,6 +436,14 @@ export const guideBodies: Record<string, GuideBody> = {
       "Explorer offers list/grid layouts, search, sorting, folder navigation, right-click blank-space creation, multi-selection and drag/move/copy workflows. Click blank space to clear selection. Permission and destination checks remain authoritative.",
     ],
     [
+      "Import editable notes and collections",
+      "In Files or Explorer, open Add files and choose Import Markdown, Import folder or Import ZIP. Review the destination, audience, hierarchy and local Preview/Source before confirming. Markdown becomes editable collaborative notes; other files stay attachments. Local relative links between included notes and files are rewritten to their new identities without reformatting the source. Keep both, Merge folders or Skip matching never overwrite existing contents. Raw Upload files/folder remains separate. Search & commands and folder context menus open the same importer.",
+    ],
+    [
+      "Recover an interrupted import",
+      "Activity & recovery retains private import preparation for seven days. Pause, resume or reselect the same original collection; accepted checksummed parts are reused. Nothing appears in the shared workspace until the whole collection publishes atomically. If the destination, quota or access changed, review the new plan explicitly. Only the author can discard their preparation, even after losing destination access. Canceling an already published import never deletes its files. Folder pickers cannot report empty directories; ZIP and dropped folders retain known empty directories. Import requires connectivity and the workspace worker.",
+    ],
+    [
       "Inspect identity",
       "The details panel shows file identity, location, versions and supported previews. Human-readable reference codes survive renames and moves; UUIDs remain canonical. Deleting the current file returns navigation to its parent instead of leaving an unusable file URL.",
     ],

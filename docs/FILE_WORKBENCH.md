@@ -132,7 +132,9 @@ All readers release their own reference; the request aborts after the final read
 leaves, and account/document closure clears outstanding requests.
 
 Markdown collaboration, resource IDs, storage formats, local recovery and immutable
-file versions remain authoritative. No data migration or reset is required.
+file versions remain authoritative. The original route consolidation needed no
+reset. The new [workspace importer](WORKSPACE_IMPORTS.md) requires additive migration
+43 and matching server/worker code; it does not rewrite existing resources.
 
 ## Acceptance
 

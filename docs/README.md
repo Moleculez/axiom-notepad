@@ -11,6 +11,7 @@ not installation instructions or proof of today's test results.
 
 - [In-app Docs and evidence workbench](PRODUCT_GUIDE.md) — 31 guides, safe editor/Canvas examples, reading queues and previewed synthesis
 - [Workspace guide](WORKSPACE.md) — navigation, sharing, files and everyday limits
+- [Import Markdown and folders](WORKSPACE_IMPORTS.md) — local review, ZIP safety, source-preserving links and atomic resumable publication
 - [Workspace websites](WORKSPACE_WEBSITES.md) — LaTeX-first themes, reviewed publishing, reading/discovery tools, private author analytics, static export and custom domains
 - [Workspace planning](WORKSPACE_PLANNING.md) — tasks, Gantt, baselines, capacity and searchable research request/decision archives
 - [Editor and shortcuts](EDITOR.md) — visual/source editing and research blocks

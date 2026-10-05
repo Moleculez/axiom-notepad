@@ -103,6 +103,12 @@ See [showcase storage, settings and GitHub Pages deployment](docs/STATIC_SHOWCAS
   separate from workspace settings.
   A theme-aware toolbar progress bar handles loading without replacing already
   loaded panels; quick requests stay quiet and reduced motion uses a static line.
+- **Bring your notes with you.** [Import Markdown, folders or ZIP collections](docs/WORKSPACE_IMPORTS.md)
+  from Files → Add files. Review local Preview/Source, hierarchy and matching names;
+  Markdown becomes editable collaborative notes and supporting files retain their
+  folders. Relative links resolve to imported identities without reformatting the
+  source. Private resumable preparation publishes the whole collection atomically,
+  never overwrites originals, and stays recoverable in Activity & recovery.
 - **Extend deliberately.** An opt-in [extension platform](docs/EXTENSIONS.md) with
   a TypeScript SDK, immutable packages, native themed panels, exact group approval
   and individual workspace consent. Research Journal, Document Health and Planning
@@ -251,8 +257,8 @@ docker compose --env-file .env.production exec web node --import tsx scripts/ops
 ```
 
 Read [deployment, backups and upgrades](docs/DEPLOYMENT.md) before using real data.
-Current features require database migrations through **37**, including personal
-reference libraries, citation indexing and duplicate-detection indexes.
+Current features require database migrations through **43**, including workspace
+research/planning, controlled extensions, searchable Intake and atomic imports.
 Back up database and stored files, stop old writers, migrate, and restart matching
 web/sync/worker/publish versions; do not mix old services with the new schema.
 Production configuration never loads the development `.env` into containers.

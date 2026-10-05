@@ -355,7 +355,7 @@ export async function accountsApi(
           )
         : [];
       const [reserved] = await query(
-        "SELECT coalesce(sum(bytes),0) AS bytes FROM upload_sessions WHERE space_id=$1 AND status IN ('uploading','verifying') AND expires_at>now()",
+        "SELECT coalesce(sum(bytes),0) AS bytes FROM upload_sessions WHERE space_id=$1 AND status IN ('uploading','verifying','failed','staged') AND expires_at>now()",
         [id],
       );
       const [drafts] = await query(

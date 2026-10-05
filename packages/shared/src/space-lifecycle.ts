@@ -101,7 +101,7 @@ export async function spaceImpact(client: pg.PoolClient, space: Space) {
    (SELECT count(*)::int FROM paper_annotations WHERE attachment_id=ANY($2::uuid[]) AND NOT deleted) AS annotations,
    (SELECT count(*)::int FROM reference_attachments l JOIN bibliography b ON b.id=l.reference_id WHERE l.attachment_id=ANY($2::uuid[]) AND NOT(b.space_id=ANY($5::uuid[]))) AS citations,
    (SELECT count(*)::int FROM reading_items WHERE target_id=ANY($2::uuid[]) AND target_type='attachment' AND NOT deleted) AS reading,
-   (SELECT count(*)::int FROM upload_sessions WHERE space_id=ANY($5::uuid[]) AND status IN ('uploading','verifying','failed')) AS transfers,
+   ((SELECT count(*)::int FROM upload_sessions WHERE space_id=ANY($5::uuid[]) AND import_entry_id IS NULL AND status IN ('uploading','verifying','failed','staged')) + (SELECT count(*)::int FROM workspace_imports WHERE space_id=ANY($5::uuid[]) AND status IN ('preparing','publishing','blocked'))) AS transfers,
    (SELECT count(*)::int FROM workspace_exports WHERE space_id=ANY($5::uuid[]) AND status IN ('queued','running')) AS exports`,
     [notes, versions, ids, scope.projects, scope.spaces],
   );
@@ -113,7 +113,7 @@ export async function spaceImpact(client: pg.PoolClient, space: Space) {
     annotations: "Retained paper annotations",
     citations: "Linked citation evidence",
     reading: "Files in reading records",
-    transfers: "Unfinished uploads",
+    transfers: "Unfinished uploads or imports",
     exports: "Unfinished exports",
   };
   return {
@@ -467,6 +467,12 @@ export async function purgeSpace(id: string, userId: string, version: number) {
       );
     await client.query(
       "DELETE FROM upload_sessions WHERE space_id=ANY($1::uuid[])",
+      [scope.spaces],
+    );
+    // Finished/cancelled preparation must not retain a permanently removed scope.
+    // Active transfers are already protected by the impact check above.
+    await client.query(
+      "DELETE FROM workspace_imports WHERE space_id=ANY($1::uuid[])",
       [scope.spaces],
     );
     await client.query(

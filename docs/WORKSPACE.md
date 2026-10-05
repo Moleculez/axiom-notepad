@@ -57,6 +57,13 @@ The document panel holds the outline, comments, references and bookmarks. Readin
 
 ## Files and storage
 
+Use **Add files → Import Markdown / folder / ZIP** to create editable collaborative
+notes and supporting files together. Review the local preview, hierarchy and
+audience before confirming; Keep both, Merge folders and Skip matching never
+overwrite existing contents. Activity & recovery resumes private preparation;
+the complete collection appears together after verification. Raw uploads remain
+separate. See [import workflows, links and limits](WORKSPACE_IMPORTS.md).
+
 Explorer accepts files up to **1,000,000,000 bytes (1 GB)** in resumable 8 MiB parts. Transfers are checksummed before publishing. Pause, resume/reselect the original, retry verification or cancel in the transfer panel. Interrupted uploads expire after seven days. Keep the workspace worker running: it completes uploads and prepares previews/exports/reminders.
 
 Replacing a file creates an immutable version. Pinned links, annotations and
@@ -77,7 +84,7 @@ Prepare a ZIP from selected Explorer items, then track it under **Settings → P
 
 Export limits: 1,000 resources, 25 MB Markdown, 100 GB total file data and two active exports per account. Copy/move limits: 1,000 items, 200 notes and 10 MB Markdown per operation. These are bounded operations, not whole-account replication.
 
-Portable ZIPs are readable without Axiom; they are not a full-fidelity account restore format. The original notebook's Markdown/ZIP importer remains at `/?classic=1` (50 MB input, 100 MB expanded). Accounts, history, preferences and permissions require the paired database/blob backup utility. Incomplete multipart parts are not backed up and must be uploaded again after restore. See [deployment and recovery](DEPLOYMENT.md).
+Portable ZIPs are readable without Axiom; they are not a full-fidelity account restore format. The workspace importer accepts Markdown/folder/ZIP collections as new records, not original account identities or history. The original notebook's legacy importer remains at `/?classic=1`. Accounts, history, preferences and permissions require the paired database/blob backup utility. Incomplete multipart parts are not backed up and must be uploaded again after restore. See [deployment and recovery](DEPLOYMENT.md).
 
 ## Accounts and customization
 

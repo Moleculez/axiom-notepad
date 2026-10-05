@@ -35,6 +35,11 @@ export type Session = {
   groups: { id: string; name: string; description: string; role: string }[];
 };
 export type WorkspaceContextValue = {
+  imports?: import("./WorkspaceImports").WorkspaceImportsController;
+  importFiles?: (
+    source: import("@axiom/shared/workspace-import").ImportSource,
+    target: { spaceId: string; parentId?: string | null },
+  ) => void;
   uploadBatch?: (
     files: File[],
     spaceId: string,

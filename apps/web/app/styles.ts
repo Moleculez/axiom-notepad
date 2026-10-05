@@ -79,3 +79,4 @@ import "./research-workbench.css";
 import "./research-workspace.css";
 import "./trash.css";
 import "./extensions.css";
+import "./workspace-import.css";

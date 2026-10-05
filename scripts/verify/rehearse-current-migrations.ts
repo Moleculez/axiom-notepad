@@ -8,6 +8,7 @@ import {
   forwardMigrations,
 } from "../../packages/shared/src/migrations";
 import { migrateDatabase } from "../../packages/shared/src/migrate-database";
+import { verifyRestoredImportTransfers } from "./restore-import-fixture";
 
 // Fresh disposable databases only. Never restore, reset or migrate the configured
 // application database. Retain receipts/databases for operator inspection.
@@ -30,6 +31,7 @@ try {
     "planning_upgrade",
     "extensions_upgrade",
     "intake_upgrade",
+    "import_upgrade",
   ] as const) {
     const name = `axiom_${mode}_test_${stamp}`;
     assert(configured.pathname !== `/${name}`);
@@ -51,6 +53,8 @@ try {
       document.destroy();
       let before: unknown;
       let beforeIntake: unknown;
+      let beforeUpload: unknown;
+      const uploadId = randomUUID();
       if (mode !== "fresh") {
         await db.query(migration);
         await db.query(
@@ -59,15 +63,17 @@ try {
         for (const item of forwardMigrations.filter(
           (m) =>
             m.version <=
-            (mode === "intake_upgrade"
-              ? 41
-              : mode === "extensions_upgrade"
-                ? 39
-                : mode === "planning_upgrade"
-                  ? 28
-                  : mode === "assistant_upgrade"
-                    ? 27
-                    : 18),
+            (mode === "import_upgrade"
+              ? 42
+              : mode === "intake_upgrade"
+                ? 41
+                : mode === "extensions_upgrade"
+                  ? 39
+                  : mode === "planning_upgrade"
+                    ? 28
+                    : mode === "assistant_upgrade"
+                      ? 27
+                      : 18),
         )) {
           await db.query("SET CONSTRAINTS ALL IMMEDIATE");
           await db.query("SET CONSTRAINTS ALL DEFERRED");
@@ -108,6 +114,22 @@ try {
             [noteId],
           )
         ).rows;
+        if (mode === "import_upgrade") {
+          await db.query(
+            "INSERT INTO upload_sessions(id,owner_id,space_id,name,bytes,storage_key) SELECT $1,'rehearsal',id,'Preserved.csv',4,$2 FROM spaces WHERE group_id=$3 AND kind='team'",
+            [uploadId, randomUUID(), groupId],
+          );
+          await db.query(
+            "INSERT INTO upload_chunks(upload_id,part,bytes,sha256,etag) VALUES($1,1,4,$2,'retained-etag')",
+            [uploadId, "a".repeat(64)],
+          );
+          beforeUpload = (
+            await db.query(
+              "SELECT to_jsonb(u)-'import_entry_id' AS upload,to_jsonb(c) AS chunk FROM upload_sessions u JOIN upload_chunks c ON c.upload_id=u.id WHERE u.id=$1",
+              [uploadId],
+            )
+          ).rows;
+        }
         if (mode === "planning_upgrade") {
           await db.query(
             "INSERT INTO assistant_conversations(id,owner_id,space_id,title) SELECT $1,'rehearsal',id,'Preserved assistant' FROM spaces WHERE group_id=$2 AND kind='team'",
@@ -211,6 +233,44 @@ try {
               )
             ).rows[0].count,
             3,
+          );
+        }
+        if (mode === "import_upgrade") {
+          assert.deepEqual(
+            (
+              await db.query(
+                "SELECT to_jsonb(u)-'import_entry_id' AS upload,to_jsonb(c) AS chunk FROM upload_sessions u JOIN upload_chunks c ON c.upload_id=u.id WHERE u.id=$1",
+                [uploadId],
+              )
+            ).rows,
+            beforeUpload,
+          );
+          assert.equal(
+            (
+              await db.query(
+                "SELECT import_entry_id FROM upload_sessions WHERE id=$1",
+                [uploadId],
+              )
+            ).rows[0].import_entry_id,
+            null,
+          );
+          assert.equal(
+            (
+              await db.query(
+                "SELECT count(*)::int AS count FROM workspace_imports",
+              )
+            ).rows[0].count,
+            0,
+          );
+          await verifyRestoredImportTransfers(db, groupId);
+          assert.deepEqual(
+            (
+              await db.query(
+                "SELECT to_jsonb(n) AS note,encode(d.state,'hex') AS state FROM notes n JOIN documents d ON d.note_id=n.id WHERE n.id=$1",
+                [noteId],
+              )
+            ).rows,
+            before,
           );
         }
       }

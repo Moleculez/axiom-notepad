@@ -1,7 +1,68 @@
 # Current verification and beta release gates
 
-Updated October 4, 2026. Historical logs are [archived separately](archive/VERIFICATION-2026-09-11.md).
+Updated October 5, 2026. Historical logs are [archived separately](archive/VERIFICATION-2026-09-11.md).
 Do not treat historical browser totals or local build IDs as current release evidence.
+
+## October 5 native Markdown and folder imports
+
+- The shared [workspace importer](WORKSPACE_IMPORTS.md) accepts Markdown files,
+  folders and bounded ZIP collections through Files/Explorer, directory menus and
+  Search & commands. Markdown becomes native editable notes with Yjs state;
+  supporting files retain their hierarchy and immutable checksummed versions.
+  Known empty directories and empty Markdown are preserved. Keep both, Merge
+  folders and Skip matching never overwrite existing notes or files.
+- Local inventory and bounded part checksums run in a dedicated pure worker;
+  the preview editor loads on demand rather than through the app shell. Paused
+  preparations have no idle status timer; offline/hidden pages skip interval reads.
+  Archive preflight examines original names before library normalization; streamed
+  extraction checks actual sizes and CRC. UTF-8, traversal, Unicode/case ambiguity,
+  entry/depth/expanded-size limits and likely-secret exclusions have independent
+  tests. Source-span link rewriting preserves labels, titles, code, CRLF and BOM;
+  included notes/attachments receive exact new identities and native indexes.
+- Owned private preparation reuses the existing 8 MiB upload pipeline. Every
+  required item is verified before one transaction publishes resources, notes,
+  CRDT state, versions, indexes, audit and a retry-safe receipt. Ordinary upload
+  routes cannot publish or retarget import sessions. Fresh role, destination and
+  quota checks retain a blocked batch for explicit review, not partial files.
+  Cancellation after revocation is owner-only; cancellation racing publication
+  never deletes already committed work. Cleanup jobs and seven-day expiry retain
+  shared-blob protection. Folder-only preparations also protect workspace removal;
+  completed/cancelled batches do not retain a permanently removed workspace.
+- **2,161 unit tests / 116 files**, TypeScript, ESLint, shared UI validation
+  (**183 JSX files**), both trusted theme-pack checks, documentation checks and an
+  isolated optimized **Next.js 16.3.8** build passed (**963 offline assets**).
+  The isolated API acceptance passed SELECT-only preview, native/empty-note Yjs
+  persistence, personal/shared/restricted scopes, upload-route bypass rejection,
+  exact identity/retry, interrupted multipart/new-client resume, wrong-original
+  rejection, changed destination, quota/access changes, strict UTF-8, expiry,
+  a real database-failure rollback, cancellation races and workspace-purge cleanup.
+- Five workflows passed in Chromium, Firefox and WebKit (**15 runs**) against
+  the final optimized build: native publication, hierarchy, offline preview,
+  UUID anchors beyond the latest 200 notes, folder-targeted command/context-menu
+  entry, reload/reselection, checksum reuse and private cancellation.
+  Geometry coverage includes all five interface styles in both modes, 22px UI
+  text, square controls, no shadows, a 1280 × 720 desktop, keyboard, forced colors
+  and reduced motion. Native Safari popup sizing and an old preview selector
+  collision were corrected; previews own their scrollport and fixed action footer.
+  Fresh light/dark, large-text and completion captures were visually reviewed for
+  alignment, reading insets, scroll ownership and footer visibility. Artifacts
+  stay ignored under `test-results/imports/`; authentication traces are disabled.
+- Fresh initialization and **18/27/28/39/41/42 → 43** upgrade rehearsals passed
+  idempotent reruns and preserved original note/Yjs/discussion records. The
+  explicit **42 → 43** fixture retained ordinary upload/session/chunk data exactly
+  and left its new private-import binding null. A separate metadata-only restore
+  fixture cancels unfinished batches (including folder-only and staged uploads),
+  invalidates only their jobs/part receipts and preserves completed transfer/batch/
+  job rows and original note/Yjs state across idempotent reruns. It performs no
+  storage aborts or deletion and does not recertify full backup-file IO or S3.
+  Only synthetic staging data changed;
+  the working database, attachment directory and environment were not migrated,
+  reset or used for mutation tests.
+- This does not certify actual S3 multipart behavior, physical picker/drop or
+  assistive technology, nor broadly recertify historical editor/PDF/Canvas/offline
+  behavior. Import is not account/permission/history backup restoration, an
+  offline outbox or end-to-end encryption. A deployment needs a paired backup,
+  migration **43** and matching restarted web/sync/worker code.
 
 ## October 4 research Intake archives and review ergonomics
 

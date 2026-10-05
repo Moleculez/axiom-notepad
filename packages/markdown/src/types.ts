@@ -7,6 +7,9 @@ export interface MarkdownNode {
   text?: string;
   level?: number;
   href?: string;
+  /** Exact destination span in canonical source; reference uses do not duplicate it. */
+  hrefFrom?: number;
+  hrefTo?: number;
   title?: string;
   lang?: string;
   ordered?: boolean;

@@ -38,6 +38,11 @@ Restoration creates a fresh generation and CRDT. Existing clients retain their o
 - Metadata edits use optimistic versions. Note nesting must remain acyclic and share project/visibility boundaries.
 - Explorer files are limited to 1 GB decimal, with checksummed 8 MiB resumable parts and streamed completion/verification. The legacy attachment/import endpoint retains its 50 MB bound. MIME is determined from bytes; unknown types download as opaque attachments. Raw SVG/HTML are never trusted images.
 - Import previews perform no database or blob writes. Archives have path, file-count, expanded-size, UTF-8, hierarchy, and checksum checks. Successful imports create new records transactionally; conflicts never overwrite existing notes.
+- Workspace [Markdown/folder imports](WORKSPACE_IMPORTS.md) use account-owned batch
+  preparation and private bindings to the existing 8 MiB upload pipeline. Native
+  notes/Yjs state, supporting file versions, folders, source-preserving local links,
+  indexes and receipts publish atomically. Ordinary uploads cannot publish these
+  sessions; cancellation/expiry cleans preparation without deleting completed work.
 
 This is a trusted-group application, not an end-to-end encrypted vault. The server administrator can read research and backups. TLS and disk/bucket encryption are deployment responsibilities. Removing access cannot erase copies already downloaded to someone else's device. Use trusted devices; signing out clears this account's browser note caches. An offline browser cannot revoke its server session until it reconnects.
 
@@ -85,14 +90,16 @@ font URLs are not accepted. User overrides and high-contrast choices stay
 authoritative. Fonts are bundled local WOFF2 assets; personal HTML embeds the
 required fonts and licenses. See [settings](SETTINGS.md) and [theme authoring](THEME_AUTHORING.md).
 
-The database migration sequence currently ends at **42**. Migrations 19–20 add
+The database migration sequence currently ends at **43**. Migrations 19–20 add
 annotation threads and visual placement; 21–24 add resource revisions, review,
 draft retention, bounded visits and reversible decision evidence. Migration 25
 unifies workspace planning and separates group/workspace lifecycle. Fresh
 initialization, 18 → 25 and seeded 24 → 25 upgrades are rehearsed on disposable
 databases. Migrations 40–41 add optional extension authority/activity and one
 configuration rollback slot. Migration 42 adds stable scope/status/author Intake
-page indexes without rewriting requests or history. The migration runner flushes deferred FK checks
+page indexes without rewriting requests or history. Migration 43 adds owned import
+batches/entries and private staged uploads without rewriting existing notes or
+ordinary uploads. The migration runner flushes deferred FK checks
 between numbered migrations before subsequent DDL, then restores deferred checks
 for circular resource/version inserts. The caller still owns one atomic migration
 transaction. Fresh installation and upgrades from 18, 27, 28 and 39 to 41 are

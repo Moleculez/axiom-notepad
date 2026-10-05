@@ -301,6 +301,14 @@ export function renderDocument(
       }
       case "link":
         if (
+          !exact &&
+          context.resolveLink &&
+          /^[\da-f-]{36}(?:#.*)?$/i.test(n.href ?? "")
+        ) {
+          const link = context.resolveLink(n.href!);
+          return `<a class="wiki-link" href="${attr(link ? safeUrl(link.href) : "#")}" data-note-target="${attr(n.href!)}"${n.title !== undefined ? ` title="${attr(n.title)}"` : ""}>${children(n)}</a>`;
+        }
+        if (
           n.href?.startsWith("#fig-") &&
           plainText(n) === "Figure" &&
           whole.figures?.[n.href.slice(1)]

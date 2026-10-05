@@ -6,6 +6,10 @@ group-admin features remain in place. No new Office editing engine is introduced
 
 ## Implemented in this increment
 
+- [Workspace import](WORKSPACE_IMPORTS.md): Markdown, folder and ZIP collections,
+  local Preview/Source, preserved hierarchy/relative links, non-overwrite name
+  policies, private resumable preparation and atomic native publication. S3,
+  physical picker/drop and assistive-technology acceptance remain separate gates.
 - [Workspace websites](WORKSPACE_WEBSITES.md): personal/team identities, selected
   research content, template/section design, frozen private review, manager-approved
   publication/rollback, static ZIP export and verified-domain routing. Real DNS/TLS,

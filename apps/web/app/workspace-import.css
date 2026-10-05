@@ -1,0 +1,263 @@
+.workspace-import-dialog {
+  width: min(1060px, calc(100vw - 48px));
+}
+.import-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.3fr);
+  gap: var(--space-3, 12px);
+}
+.import-destination {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-block: 12px;
+  color: var(--muted);
+  font-size: var(--size-ui-small);
+}
+.import-destination > span {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  flex: 1;
+  min-width: 0;
+  gap: 6px;
+  color: var(--text);
+}
+.import-destination > span > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.import-destination small {
+  color: var(--muted);
+}
+.import-dropzone {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.import-dropzone > span {
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+}
+.import-dropzone > div {
+  flex: 1;
+  min-width: 0;
+}
+.import-dropzone p,
+.import-progress-summary p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: var(--size-ui-small);
+}
+.import-counts {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-block: 14px;
+  font-size: var(--size-ui-small);
+  color: var(--muted);
+}
+.import-counts strong {
+  color: var(--text);
+}
+.import-review {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.8fr) minmax(0, 1.4fr);
+  height: min(440px, 43vh);
+  min-height: 230px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.import-entry-list {
+  min-height: 0;
+  min-width: 0;
+  max-height: 340px;
+  overflow: auto;
+  scrollbar-gutter: stable;
+}
+.import-review > .import-entry-list {
+  border-inline-end: 1px solid var(--line);
+  max-height: none;
+}
+.import-entry-row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 10px;
+  padding: 10px 12px;
+  text-align: start;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text);
+  min-width: 0;
+  box-shadow: none;
+}
+.import-entry-row > span {
+  flex: 1;
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.import-entry-row strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+  font-size: var(--size-ui-small);
+}
+.import-entry-row small {
+  color: var(--muted);
+  font-size: var(--size-ui-caption);
+}
+button.import-entry-row:hover {
+  background: var(--hover);
+}
+button.import-entry-row[aria-pressed="true"] {
+  background: var(--selection);
+}
+button.import-entry-row:disabled {
+  opacity: 1;
+  cursor: default;
+}
+.workspace-import-preview {
+  min-width: 0;
+  min-height: 0;
+  background: var(--paper);
+}
+.workspace-import-preview .planning-markdown {
+  height: 100%;
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+.workspace-import-preview .planning-markdown-scroll {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+  overflow: auto;
+}
+.workspace-import-preview .axiom-editor-content.prose {
+  padding: 24px;
+}
+.workspace-import-preview .axiom-editor-content.prose > :first-child {
+  margin-block-start: 0;
+}
+.import-preview-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 28px;
+  color: var(--muted);
+  text-align: center;
+  font-size: var(--size-ui-small);
+}
+.import-warnings {
+  padding-block: 10px;
+  color: var(--muted);
+  font-size: var(--size-ui-small);
+}
+.import-warnings ul {
+  max-height: 160px;
+  overflow: auto;
+  padding-inline-start: 22px;
+  overflow-wrap: anywhere;
+}
+.import-local-progress {
+  color: var(--muted);
+  font-size: var(--size-ui-small);
+  overflow-wrap: anywhere;
+}
+.import-progress-summary {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding-block: 6px 14px;
+}
+.import-progress-summary > span {
+  display: grid;
+  place-items: center;
+  color: var(--accent);
+  padding-top: 2px;
+}
+.import-meter {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 16px;
+  color: var(--muted);
+  font-size: var(--size-ui-small);
+}
+.import-meter progress {
+  width: 100%;
+  height: 7px;
+  accent-color: var(--accent);
+}
+.import-transfers {
+  border-top: 1px solid var(--line);
+  margin-top: 20px;
+  padding-top: 12px;
+}
+.import-transfers header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.import-transfers h3 {
+  margin: 0;
+  font-size: var(--size-ui);
+}
+.import-transfers header span {
+  color: var(--muted);
+  font-size: var(--size-ui-small);
+}
+.import-transfer-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 4px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--text);
+  text-align: start;
+  box-shadow: none;
+}
+.import-transfer-row > span {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+.import-transfer-row strong {
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.import-transfer-row small {
+  color: var(--muted);
+}
+@media (forced-colors: active) {
+  .import-meter progress {
+    forced-color-adjust: auto;
+  }
+  button.import-entry-row[aria-pressed="true"] {
+    outline: 1px solid Highlight;
+    outline-offset: -2px;
+  }
+}
