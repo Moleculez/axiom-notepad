@@ -3,6 +3,34 @@
 Updated October 5, 2026. Historical logs are [archived separately](archive/VERIFICATION-2026-09-11.md).
 Do not treat historical browser totals or local build IDs as current release evidence.
 
+## October 5 showcase outline parity
+
+- The browser-local showcase now uses production's `TableOfContents`, shared
+  stylesheet and right-hand `ResizablePanel`; the separate flat outline and
+  resizing styles were removed. Real ancestry, skipped levels, duplicate titles,
+  branch/all collapse, empty states, caret navigation and reading position retain
+  one section-navigation contract. Width is device-local and clearing the guest
+  demo removes only its own panel-width key alongside existing demo preferences.
+- Explicit section navigation aligns mapped headings in Write/Source/Read without
+  changing Markdown. Read highlights reuse the shared measured navigation index
+  after rendering, font/theme changes and scroll anchoring, instead of scanning
+  heading DOM for every scroll. The reset-example action remains in the toolbar.
+- **2,162 unit tests / 116 files**, typecheck, ESLint, shared UI validation
+  (**183 JSX files**), both theme-pack checks, documentation checks and the
+  repository-prefix showcase build passed (`Editor-DrZkQN5n.js`). Seven focused
+  workflows passed in Chromium, Firefox and WebKit (**21 runs**), covering the
+  outline, exact source/undo/mode changes, table/folding/minimap, local-data reset
+  and independent document scrolling. Layout checks include all five interface
+  styles in light/dark, 22px UI text, radius zero, no shadows, 1280 × 720 desktop,
+  keyboard resizing, drag cancellation, forced colors and reduced motion. Fresh
+  screenshots were visually reviewed for alignment, wrapping, scroll ownership
+  and footer visibility; artifacts remain ignored under
+  `data/showcase-outline-geometry-final/`.
+- Acceptance used only disposable guest browser data and a built localhost
+  showcase. No working account/database/files were changed, and no GitHub Pages
+  deployment was performed. This does not recertify all production application
+  workflows, physical IME/clipboard behavior or assistive technology.
+
 ## October 5 native Markdown and folder imports
 
 - The shared [workspace importer](WORKSPACE_IMPORTS.md) accepts Markdown files,

@@ -511,98 +511,6 @@ body {
   min-height: 0;
   overflow: hidden;
 }
-.demo-outline {
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  background: color-mix(in srgb, var(--sidebar) 50%, var(--paper));
-  padding-top: 27px;
-}
-.demo-outline > header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 20px 17px;
-  color: var(--subtle);
-  font-size: 9px;
-  letter-spacing: 0.1em;
-}
-.demo-outline > nav {
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
-  padding: 0 10px;
-}
-.demo-outline > nav button {
-  text-align: start;
-  display: flex;
-  align-items: baseline;
-  gap: 9px;
-  padding: 7px 10px;
-  border: 0;
-  background: none;
-  border-radius: var(--control-radius-small);
-  color: var(--muted);
-  font: 12px/1.55 var(--font-ui);
-}
-.demo-outline > nav button:hover {
-  background: var(--hover);
-  color: var(--text);
-}
-.demo-outline-level {
-  width: 10px;
-  flex: 0 0 10px;
-  color: var(--subtle);
-}
-.demo-outline-help {
-  padding: 22px 21px;
-  margin-top: auto;
-  font-size: 11px;
-  color: var(--muted);
-}
-.demo-outline-help > strong {
-  font-weight: 500;
-}
-.demo-outline-help p {
-  line-height: 2;
-  margin-top: 9px;
-}
-.demo-outline-help kbd {
-  font: 10px var(--font-ui);
-  padding: 2px 4px;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 3px;
-}
-.demo-outline-help button {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  border: 0;
-  padding: 0;
-  background: none;
-  font-size: 10px;
-  color: var(--subtle);
-}
-.demo-panel-resizer {
-  width: 5px;
-  flex-shrink: 0;
-  position: relative;
-  cursor: col-resize;
-  touch-action: none;
-  background: transparent;
-}
-.demo-panel-resizer::before {
-  content: "";
-  position: absolute;
-  inset: 0 2px;
-  background: color-mix(in srgb, var(--line) 50%, transparent);
-  transition: background 120ms ease;
-}
-.demo-panel-resizer:is(:hover, :focus-visible)::before {
-  background: var(--accent);
-}
 .demo-writing-row {
   flex: 1 1 0;
 }
@@ -985,7 +893,7 @@ body {
 .showcase-app
   :is(
     .demo-content.is-tour,
-    .demo-outline > nav,
+    .ws-context-content,
     .dialog-body,
     .demo-settings-navigation,
     .demo-settings-fields,

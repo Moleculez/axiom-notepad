@@ -1,6 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
+import { interfaceStyles } from "../../packages/shared/src/interface-styles";
 const { PDFDocument }: typeof import("pdf-lib") = createRequire(
   import.meta.url,
 )("pdf-lib");
@@ -75,6 +76,300 @@ async function setSource(page: Page, value: string) {
   else await page.keyboard.press("Backspace");
   await expect.poll(() => savedSource(page)).toBe(value);
 }
+
+test("production outline hierarchy, collapse and active navigation work in every editor mode", async ({
+  page,
+}, info) => {
+  await start(page);
+  const prose =
+    // Make the final section taller than the viewport in Source as well as Read;
+    // scrolling to the bottom should then put that section at the top of the pane.
+    "An observation belongs to its section, not a new heading. ".repeat(40);
+  const source = [
+    "## Research",
+    "#### Detail",
+    "##### Evidence",
+    "### Results",
+    "## Methods",
+    "#### Detail",
+    "# Appendix",
+    "### Supplement",
+    "## References",
+  ]
+    .map((heading) => `${heading}\n\n${prose}\n\n${prose}\n`)
+    .join("\n");
+  await setSource(page, source);
+  const panel = page.getByRole("complementary", { name: "Document context" });
+  const toc = panel.getByRole("navigation", { name: "Table of contents" });
+  const link = (name: string) => toc.getByRole("button", { name, exact: true });
+  await expect(toc.locator(".toc-link")).toHaveCount(9);
+  await expect(toc.getByLabel("9 headings")).toHaveText("9");
+  const root = (await link("Research").boundingBox())!,
+    child = (await link("Detail").first().boundingBox())!,
+    grandchild = (await link("Evidence").boundingBox())!,
+    sibling = (await link("Methods").boundingBox())!,
+    nextRoot = (await link("Appendix").boundingBox())!;
+  expect(child.x - root.x).toBe(16);
+  expect(grandchild.x - child.x).toBe(16);
+  expect(sibling.x).toBe(root.x);
+  expect(nextRoot.x).toBe(root.x);
+  expect((await panel.boundingBox())!.x).toBeGreaterThan(
+    (await page.locator(".demo-document-scroll").boundingBox())!.x,
+  );
+  await link("Evidence").click();
+  await expect(toc.locator('[aria-current="location"]')).toHaveText("Evidence");
+  await toc
+    .getByRole("button", { name: "Collapse Research", exact: true })
+    .click();
+  await expect(
+    toc.getByRole("button", { name: "Expand Research", exact: true }),
+  ).toHaveAttribute("aria-expanded", "false");
+  await expect(link("Evidence")).toBeHidden();
+  await toc.getByRole("button", { name: "Expand all", exact: true }).click();
+  await expect(link("Evidence")).toBeVisible();
+  await toc.getByRole("button", { name: "Collapse all", exact: true }).click();
+  const cm = page.locator(".demo-document-scroll .cm-content");
+  await cm.focus();
+  await cm.press("ControlOrMeta+Home");
+  await expect(toc.locator('[aria-current="location"]')).toHaveText("Research");
+  await cm.press("ControlOrMeta+End");
+  await expect(toc.locator('[aria-current="location"]')).toHaveText(
+    "References",
+  );
+  await expect(link("References")).toBeVisible();
+  await expect(
+    toc.getByRole("button", { name: "Collapse Appendix", exact: true }),
+  ).toHaveAttribute("aria-expanded", "true");
+  for (const mode of ["Write", "Source", "Read"]) {
+    await page.getByRole("button", { name: mode, exact: true }).click();
+    const expand = toc.getByRole("button", { name: "Expand all", exact: true });
+    if (await expand.isEnabled()) await expand.click();
+    await link("Research").click();
+    await expect(toc.locator('[aria-current="location"]')).toHaveText(
+      "Research",
+    );
+    const scroller = page.locator(".demo-document-scroll");
+    await scroller.hover({ position: { x: 100, y: 150 } });
+    await expect
+      .poll(
+        async () => {
+          await page.mouse.wheel(0, 10000);
+          return toc.locator('[aria-current="location"]').textContent();
+        },
+        { intervals: [100, 200, 300] },
+      )
+      .toBe("References");
+    await link("Detail").last().click();
+    await expect(link("Detail").last()).toHaveAttribute(
+      "aria-current",
+      "location",
+    );
+    await expect(link("Detail").first()).not.toHaveAttribute("aria-current");
+  }
+  expect(await savedSource(page)).toBe(source);
+  await page.screenshot({
+    path: info.outputPath("outline-hierarchy-light.png"),
+  });
+  await setSource(page, "A note without headings.");
+  await expect(toc.locator(".toc-link")).toHaveCount(0);
+  await expect(toc).toContainText("A map of your thinking");
+  await expect(toc.getByLabel("0 headings")).toHaveText("0");
+});
+
+test("production outline stays contained across themes, large text and accessibility preferences", async ({
+  page,
+}, info) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await start(page);
+  const title =
+    "A long research section with 数学, physics and reproducibility assumptions";
+  const source =
+    `## ${title}\n\nAn introduction.\n\n#### Nested evidence\n\nDetails.\n\n` +
+    Array.from(
+      { length: 40 },
+      (_, i) => `## Observation ${i + 1}\n\nEvidence ${i + 1}.`,
+    ).join("\n\n");
+  await setSource(page, source);
+  await page.getByRole("button", { name: "Read", exact: true }).click();
+  const panel = page.getByRole("complementary", { name: "Document context" }),
+    content = panel.locator(".ws-context-content"),
+    toc = panel.getByRole("navigation", { name: "Table of contents" });
+  for (const { id } of interfaceStyles) {
+    for (const mode of ["light", "dark"] as const) {
+      await page
+        .getByRole("button", { name: "Appearance", exact: true })
+        .click();
+      const settings = page.getByRole("dialog", {
+        name: "Appearance & editor",
+      });
+      await settings.getByLabel("Interface design").selectOption(id);
+      await settings.getByRole("button", { name: mode, exact: true }).click();
+      const size = settings.getByLabel("Interface font size value", {
+        exact: true,
+      });
+      await size.fill("22");
+      await size.press("Enter");
+      const radius = settings.getByLabel("Corner radius value", {
+        exact: true,
+      });
+      await radius.fill("0");
+      await radius.press("Enter");
+      await settings
+        .getByLabel("Shadows", { exact: true })
+        .selectOption("none");
+      await settings.getByRole("button", { name: "Done", exact: true }).click();
+      await expect(page.locator("html")).toHaveAttribute(
+        "data-interface-style",
+        id,
+      );
+      await expect(page.locator("html")).toHaveAttribute("data-theme", mode);
+      await expect
+        .poll(async () => {
+          const visible = await page
+            .locator(".demo-document-scroll")
+            .evaluate((root) => {
+              const top = root.getBoundingClientRect().top + 50;
+              const headings = Array.from(
+                root.querySelectorAll<HTMLElement>(
+                  ".axiom-editor-content :is(h1,h2,h3,h4,h5,h6)[id]",
+                ),
+              );
+              let selected = headings[0]?.textContent?.trim();
+              for (const heading of headings) {
+                if (heading.getBoundingClientRect().top > top) break;
+                selected = heading.textContent?.trim();
+              }
+              return selected;
+            });
+          return (
+            (await toc.locator('[aria-current="location"]').textContent()) ===
+            visible
+          );
+        })
+        .toBe(true);
+      await content.evaluate((element) => {
+        element.scrollTop = 0;
+      });
+      const geometry = await panel.evaluate((element) => {
+        const rect = element.getBoundingClientRect(),
+          link = element.querySelector<HTMLElement>(".toc-link")!,
+          style = getComputedStyle(link),
+          row = link.parentElement!,
+          content = element.querySelector<HTMLElement>(".ws-context-content")!;
+        return {
+          right: rect.right,
+          bottom: rect.bottom,
+          viewport: [innerWidth, innerHeight],
+          font: parseFloat(style.fontSize),
+          rowRadius: getComputedStyle(row).borderRadius,
+          overflow: content.scrollWidth - content.clientWidth,
+          wraps: link.offsetHeight > parseFloat(style.lineHeight) * 2,
+          scrollable: content.scrollHeight > content.clientHeight,
+          pageOverflow: document.documentElement.scrollWidth - innerWidth,
+        };
+      });
+      expect(geometry.right).toBeLessThanOrEqual(geometry.viewport[0]);
+      expect(geometry.bottom).toBeLessThanOrEqual(geometry.viewport[1]);
+      expect(geometry.font).toBeGreaterThanOrEqual(18);
+      expect(geometry.rowRadius).toBe("0px");
+      expect(geometry.overflow).toBeLessThanOrEqual(1);
+      expect(geometry.pageOverflow).toBeLessThanOrEqual(1);
+      expect(geometry.wraps).toBe(true);
+      expect(geometry.scrollable).toBe(true);
+      const toolbar = await page
+          .locator(".demo-document-toolbar")
+          .boundingBox(),
+        footer = await page.locator(".demo-document-status").boundingBox(),
+        documentScroll = await page
+          .locator(".demo-document-scroll")
+          .evaluate((el) => el.scrollTop);
+      await content.evaluate((element) => {
+        element.scrollTop = element.scrollHeight;
+      });
+      await expect(
+        toc.getByRole("button", { name: "Observation 40", exact: true }),
+      ).toBeVisible();
+      expect(
+        await page.locator(".demo-document-toolbar").boundingBox(),
+      ).toEqual(toolbar);
+      expect(await page.locator(".demo-document-status").boundingBox()).toEqual(
+        footer,
+      );
+      expect(
+        await page
+          .locator(".demo-document-scroll")
+          .evaluate((el) => el.scrollTop),
+      ).toBe(documentScroll);
+      await expect(page.locator(".demo-document-status")).toBeInViewport();
+      if (id === "editorial" || (id === "axiom" && mode === "light")) {
+        await content.evaluate((element) => {
+          element.scrollTop = 0;
+        });
+        await page.screenshot({
+          path: info.outputPath(`outline-${id}-${mode}-large.png`),
+        });
+      }
+    }
+  }
+  await page.emulateMedia({ forcedColors: "active", reducedMotion: "reduce" });
+  await content.evaluate((element) => {
+    element.scrollTop = 0;
+  });
+  const heading = toc.getByRole("button", { name: title, exact: true });
+  await page.keyboard.press("Tab");
+  await heading.focus();
+  await page.keyboard.press("Enter");
+  await expect(heading).toHaveAttribute("aria-current", "location");
+  await expect(heading).toBeFocused();
+  expect(
+    await heading.evaluate((element) => getComputedStyle(element).outlineStyle),
+  ).not.toBe("none");
+  expect(await savedSource(page)).toBe(source);
+  await page.screenshot({ path: info.outputPath("outline-forced-colors.png") });
+});
+
+test("production outline resizing is reversible, persistent and keyboard accessible", async ({
+  page,
+}) => {
+  await start(page);
+  const original = await savedSource(page),
+    panel = page.getByRole("complementary", { name: "Document context" }),
+    resize = panel.getByRole("separator", { name: "Resize document context" });
+  await expect(resize).toHaveAttribute("aria-valuenow", "270");
+  await resize.focus();
+  await resize.press("Home");
+  await expect(resize).toHaveAttribute("aria-valuenow", "220");
+  await resize.press("Shift+ArrowLeft");
+  await expect(resize).toHaveAttribute("aria-valuenow", "260");
+  await resize.press("End");
+  await expect(resize).toHaveAttribute("aria-valuenow", "480");
+  await resize.press("Enter");
+  await expect(resize).toHaveAttribute("aria-valuenow", "270");
+  await resize.press("Shift+ArrowLeft");
+  await resize.press("Shift+ArrowLeft");
+  await expect(resize).toHaveAttribute("aria-valuenow", "350");
+  const box = (await resize.boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + 50);
+  await page.mouse.down();
+  await page.mouse.move(box.x + 60, box.y + 50);
+  await expect(resize).not.toHaveAttribute("aria-valuenow", "350");
+  await page.keyboard.press("Escape");
+  await page.mouse.up();
+  await expect(resize).toHaveAttribute("aria-valuenow", "350");
+  await panel
+    .getByRole("button", { name: "Close document panel", exact: true })
+    .click();
+  await expect(panel).toHaveCount(0);
+  await page
+    .getByRole("button", { name: "Toggle outline", exact: true })
+    .click();
+  await expect(resize).toHaveAttribute("aria-valuenow", "350");
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await expect(resize).toHaveAttribute("aria-valuenow", "350");
+  await resize.dblclick();
+  await expect(resize).toHaveAttribute("aria-valuenow", "270");
+  expect(await savedSource(page)).toBe(original);
+});
 
 test("tour, cold hash routes and shared appearance stay contained under the repository prefix", async ({
   page,
@@ -278,10 +573,12 @@ test("table edge operations, folding and minimap work without changing modes une
     el.scrollTop = el.scrollHeight;
   });
   await expect(page.locator(".document-minimap")).toBeVisible();
-  const separator = page.getByRole("separator", { name: "Outline width" });
+  const separator = page.getByRole("separator", {
+    name: "Resize document context",
+  });
   await separator.focus();
-  await page.keyboard.press("ArrowRight");
-  await expect(separator).toHaveAttribute("aria-valuenow", "238");
+  await page.keyboard.press("ArrowLeft");
+  await expect(separator).toHaveAttribute("aria-valuenow", "280");
   await page.screenshot({ path: info.outputPath("table-minimap.png") });
 });
 
@@ -803,6 +1100,10 @@ test("Local data backs up drafts, cancels safely, imports additively and clears 
   await setSource(page, source);
   await page.evaluate(async () => {
     localStorage.setItem("unrelated-workbench-preference", "keep");
+    localStorage.setItem(
+      "axiom:panel-width:showcase-local:document-context",
+      "350",
+    );
     await new Promise<void>((resolve, reject) => {
       const opening = indexedDB.open("axiom-acceptance-unrelated", 1);
       opening.onupgradeneeded = () => opening.result.createObjectStore("proof");
@@ -881,6 +1182,11 @@ test("Local data backs up drafts, cancels safely, imports additively and clears 
       localStorage.getItem("unrelated-workbench-preference"),
     ),
   ).toBe("keep");
+  expect(
+    await page.evaluate(() =>
+      localStorage.getItem("axiom:panel-width:showcase-local:document-context"),
+    ),
+  ).toBeNull();
   expect(
     await page.evaluate(
       () =>

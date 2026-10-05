@@ -132,6 +132,16 @@ navigation and stale background refreshes cannot overwrite them.
 
 ## Writing and preferences
 
+Production and showcase use the same `TableOfContents` and right-hand
+`ResizablePanel`, with no demo-specific outline drawing. Indent by actual heading
+ancestry, not absolute heading level: the first H2/H3 can be a flush root and
+skipped levels create no phantom parents. Branch collapse, active-section cues,
+count and empty states share their implementation and stylesheet. Navigation and
+resizing are view operations, never Markdown edits. Keep read-mode highlighting
+aligned with settled document geometry after font/theme changes, not a stale
+source-mode viewport. Preserve independent outline/document scrolling and the
+fixed document footer.
+
 Reading marks use a separate out-of-flow right margin and a quiet overview rail.
 Hover previews are passive; clicking explicitly navigates or opens a card. One
 pinned card fits beside the page or docks in the existing inspector—never squeeze

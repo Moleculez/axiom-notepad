@@ -11,8 +11,12 @@ uses the reviewed fictional Spectral Lab screenshots.
 
 - **Editor:** choose a notebook, or create a new one. Write, Source and Read modes
   share canonical Markdown. Try `/`, math, tables, highlighted code, nested lists,
-  tasks, images, Mermaid, footnotes, metadata and local note links. The outline
-  resizes, folding remains available, and Appearance controls the minimap.
+  tasks, images, Mermaid, footnotes, metadata and local note links. The right-hand
+  outline uses the production section navigator and resizer: real heading ancestry,
+  collapsible branches, Expand/Collapse all, and a current-section indicator that
+  follows the caret and reading scroll. Resize with drag/arrow keys or reset with
+  double-click/Enter; its width stays on this device. Folding remains available,
+  and Appearance controls the minimap. Reset this example is in the editor toolbar.
 - **Canvas:** edit rich-text cards, move/resize them, drag connection ports, name
   and group cards, change properties, use templates, arrange selections and undo.
   File cards can reference local notes, images, PDFs, audio, video and other
@@ -59,7 +63,8 @@ width temporarily disables the narrower reading-width control.
 **Local data** separates everyday backup/import from destructive reset. Download
 a ZIP before clearing. Import is additive and opens the imported document after
 closing settings. Clear local demo requires confirmation, restores the examples,
-and touches only this demo's guest database and two preference-cache keys.
+and touches only this demo's guest database, two preference-cache keys and its
+local document-panel width. Unrelated workbench preferences remain untouched.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/showcase/static-settings-dark.webp">

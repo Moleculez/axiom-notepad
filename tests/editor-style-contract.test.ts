@@ -40,4 +40,25 @@ describe("production editor stylesheet contract", () => {
       sheets.indexOf("./editor-paper.css"),
     );
   });
+  it("shares the production outline and panel instead of drawing a showcase copy", () => {
+    const production = readFileSync(
+      "apps/web/components/workspace/Workbench.tsx",
+      "utf8",
+    );
+    const showcase = readFileSync("apps/showcase/src/Editor.tsx", "utf8");
+    for (const surface of [production, showcase]) {
+      expect(surface).toContain("<TableOfContents");
+      expect(surface).toContain("headings={parsed.outline}");
+      expect(surface).toContain("<ResizablePanel");
+      expect(surface).toContain('className="ws-document-context"');
+      expect(surface).toContain('edge="left"');
+    }
+    expect(showcase).not.toContain("parsed.outline.map");
+    expect(readFileSync("apps/showcase/src/showcase.css", "utf8")).not.toMatch(
+      /\.demo-(?:outline|panel-resizer)/,
+    );
+    expect(readFileSync("apps/showcase/src/main.tsx", "utf8")).toContain(
+      'import "../../web/app/styles";',
+    );
+  });
 });

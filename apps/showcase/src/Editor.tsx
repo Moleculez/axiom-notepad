@@ -11,13 +11,13 @@ import { NativeBinding } from "@axiom/editor/binding";
 import { documentStatistics, parseMarkdown } from "@axiom/markdown";
 import { editorAppearanceKey } from "@axiom/shared/minimap";
 import { AxiomEditorView } from "../../web/lib/editor-vnext/view";
-import {
-  useDocumentNavigation,
-  scrollToSource,
-} from "../../web/lib/document-navigation";
+import { useDocumentNavigation } from "../../web/lib/document-navigation";
+import { sectionAtPosition, type OutlineHeading } from "../../web/lib/outline";
 import { installMarkdownVisuals } from "../../web/lib/visual-surface";
 import DocumentMinimap from "../../web/components/DocumentMinimap";
 import ReadingView from "../../web/components/ReadingView";
+import TableOfContents from "../../web/components/TableOfContents";
+import ResizablePanel from "../../web/components/ResizablePanel";
 import Dialog, { DialogFooter } from "../../web/components/Dialog";
 import { confirmAction } from "../../web/lib/app-prompt";
 import { downloadText } from "../../web/lib/tools/download";
@@ -36,6 +36,7 @@ import {
   FileText,
   Undo2,
   Redo2,
+  X,
 } from "lucide-react";
 import { store, useDemo, useSnapshot } from "./context";
 import { safeName, markdownPath, type LocalDocument } from "./store";
@@ -55,7 +56,8 @@ export default function Editor({
   const [source, setSource] = useState(doc.source),
     [mode, setMode] = useState<Mode>(doc.kind === "text" ? "source" : "write"),
     [outline, setOutline] = useState(true),
-    [width, setWidth] = useState(228),
+    [section, setSection] = useState<string | null>(null),
+    [collapsed, setCollapsed] = useState<string[]>([]),
     [assetDialog, setAssetDialog] = useState(false),
     [assetQuery, setAssetQuery] = useState(""),
     [tableDialog, setTableDialog] = useState(false),
@@ -68,14 +70,19 @@ export default function Editor({
     bindingRef = useRef<NativeBinding | null>(null),
     prepared = useRef<Bookmark | null>(null),
     uploadInput = useRef<HTMLInputElement>(null),
-    exportStage = useRef<HTMLDivElement>(null),
-    resizing = useRef<{ start: number; width: number } | null>(null);
+    exportStage = useRef<HTMLDivElement>(null);
+  const parsed = useMemo(() => parseMarkdown(source), [source]),
+    statistics = useMemo(
+      () => documentStatistics(parsed, source),
+      [parsed, source],
+    );
   const current = useRef({
     appearance,
     mode,
     renderContext,
     notify,
     preferences: snapshot.editor,
+    headings: parsed.outline,
   });
   current.current = {
     appearance,
@@ -83,12 +90,8 @@ export default function Editor({
     renderContext,
     notify,
     preferences: snapshot.editor,
+    headings: parsed.outline,
   };
-  const parsed = useMemo(() => parseMarkdown(source), [source]),
-    statistics = useMemo(
-      () => documentStatistics(parsed, source),
-      [parsed, source],
-    );
   const adapter = useMemo(
     () => ({
       geometry: () => view.current?.navigationGeometry() ?? [],
@@ -152,7 +155,8 @@ export default function Editor({
           range ? { anchor: range.from, head: range.to } : editor.selection,
         );
       },
-      navigate: () => {},
+      navigate: (position) =>
+        setSection(sectionAtPosition(current.current.headings, position)),
       link: (target) => {
         const local = store
           .getSnapshot()
@@ -230,6 +234,53 @@ export default function Editor({
     snapshot.assets.length,
     snapshot.editor,
   ]);
+  useEffect(() => {
+    setSection(
+      sectionAtPosition(parsed.outline, view.current?.selection.head ?? 0),
+    );
+  }, [parsed]);
+  const navigateSection = (heading: OutlineHeading) => {
+    setSection(heading.id);
+    const root = mount.current;
+    if (!root) return;
+    if (mode !== "read") adapter.focus(heading.from);
+    // Focus may put the caret at the bottom; scrollIntoView can instead stack
+    // document scroll-margin and pane scroll-padding (differently in Firefox).
+    // Use the actual mapped heading and one inset in all three projections.
+    const point =
+      mode === "read"
+        ? root
+            .querySelector(
+              `.axiom-editor-content [id="${CSS.escape(heading.id)}"]`,
+            )
+            ?.getBoundingClientRect()
+        : view.current?.navigationPosition(heading.from);
+    if (point)
+      root.scrollTo({
+        top: root.scrollTop + point.top - root.getBoundingClientRect().top - 32,
+        behavior: "instant",
+      });
+  };
+  const followScroll = () => {
+    const root = mount.current;
+    if (!root || mode === "read") return;
+    const top = root.getBoundingClientRect().top + 50;
+    const position = view.current?.visiblePosition(top);
+    if (position != null)
+      setSection(sectionAtPosition(parsed.outline, position));
+  };
+  useEffect(() => {
+    if (mode === "read" && navigation.blocks.length)
+      setSection(
+        sectionAtPosition(
+          parsed.outline,
+          navigation.index.sourceAt(navigation.scroll + 50),
+        ),
+      );
+    // The shared geometry subscription settles after rendering, fonts and theme
+    // changes, including scroll anchoring that precedes the ordinary scroll event.
+    // Reuse its index rather than scanning heading DOM for every reading scroll.
+  }, [mode, parsed.outline, navigation.index, navigation.scroll]);
   const prepare = () => {
     const binding = bindingRef.current;
     if (binding && view.current)
@@ -434,6 +485,14 @@ export default function Editor({
         </IconButton>
         <IconButton
           className="icon-button"
+          aria-label="Reset this example"
+          title="Reset this example"
+          onClick={() => void reset()}
+        >
+          <RotateCcw size={16} />
+        </IconButton>
+        <IconButton
+          className="icon-button"
           aria-label="Export document"
           title="Export document"
           onClick={() => setExporting(true)}
@@ -442,104 +501,12 @@ export default function Editor({
         </IconButton>
       </header>
       <div className="demo-editor-layout">
-        {outline && (
-          <>
-            <aside className="demo-outline" style={{ width }}>
-              <header>
-                <span>IN THIS NOTE</span>
-                <span>{parsed.outline.length}</span>
-              </header>
-              <nav aria-label="Document outline">
-                {parsed.outline.map((h) => (
-                  <button
-                    key={`${h.id}:${h.from}`}
-                    style={{ paddingInlineStart: 16 + (h.level - 1) * 14 }}
-                    onClick={() => {
-                      scrollToSource(mount.current, navigation, h.from);
-                      if (mode !== "read") adapter.focus(h.from);
-                      if (mode === "read")
-                        mount.current
-                          ?.querySelector(`[id="${CSS.escape(h.id)}"]`)
-                          ?.scrollIntoView({
-                            block: "start",
-                            behavior: "smooth",
-                          });
-                    }}
-                  >
-                    <span className="demo-outline-level">
-                      {h.level === 1 ? "§" : "·"}
-                    </span>
-                    {h.text}
-                  </button>
-                ))}
-              </nav>
-              <div className="demo-outline-help">
-                <strong>A few things to try</strong>
-                <p>
-                  Type <kbd>/</kbd> for a block.
-                  <br />
-                  <kbd>⌘ /</kbd> or <kbd>Ctrl /</kbd> for source.
-                  <br />
-                  Hover a table, equation or code block for its controls.
-                </p>
-                <button onClick={() => void reset()}>
-                  <RotateCcw size={13} />
-                  Reset this example
-                </button>
-              </div>
-            </aside>
-            <div
-              className="demo-panel-resizer"
-              role="separator"
-              aria-orientation="vertical"
-              aria-label="Outline width"
-              aria-valuenow={width}
-              aria-valuemin={170}
-              aria-valuemax={360}
-              tabIndex={0}
-              onPointerDown={(event) => {
-                resizing.current = { start: event.clientX, width };
-                event.currentTarget.setPointerCapture(event.pointerId);
-              }}
-              onPointerMove={(event) => {
-                if (resizing.current)
-                  setWidth(
-                    Math.min(
-                      360,
-                      Math.max(
-                        170,
-                        resizing.current.width +
-                          event.clientX -
-                          resizing.current.start,
-                      ),
-                    ),
-                  );
-              }}
-              onPointerUp={() => {
-                resizing.current = null;
-              }}
-              onPointerCancel={() => {
-                resizing.current = null;
-              }}
-              onKeyDown={(e) => {
-                if (["ArrowLeft", "ArrowRight"].includes(e.key)) {
-                  e.preventDefault();
-                  setWidth((old) =>
-                    Math.min(
-                      360,
-                      Math.max(170, old + (e.key === "ArrowRight" ? 10 : -10)),
-                    ),
-                  );
-                }
-              }}
-            />
-          </>
-        )}
         <div className="document-navigation-row demo-writing-row">
           <div
             ref={mount}
             className="demo-document-scroll ws-document-scroll document-scroll"
             tabIndex={-1}
+            onScroll={followScroll}
           />
           <div className="minimap-slot">
             <DocumentMinimap
@@ -556,6 +523,44 @@ export default function Editor({
             />
           </div>
         </div>
+        {outline && (
+          <ResizablePanel
+            className="ws-document-context"
+            label="Document context"
+            account="showcase-local"
+            name="document-context"
+            edge="left"
+          >
+            <div className="ws-context-content">
+              <nav className="ws-context-tabs" aria-label="Document panel">
+                <IconButton
+                  className="icon-button"
+                  aria-label="outline panel"
+                  title="Outline"
+                  aria-pressed
+                >
+                  <List size={16} />
+                </IconButton>
+                <IconButton
+                  className="icon-button"
+                  aria-label="Close document panel"
+                  title="Close document panel"
+                  onClick={() => setOutline(false)}
+                >
+                  <X size={15} />
+                </IconButton>
+              </nav>
+              <TableOfContents
+                headings={parsed.outline}
+                activeId={section}
+                collapsed={collapsed}
+                onCollapsedChange={setCollapsed}
+                onNavigate={navigateSection}
+                reveal={0}
+              />
+            </div>
+          </ResizablePanel>
+        )}
       </div>
       <footer className="demo-document-status">
         <span>

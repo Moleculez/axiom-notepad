@@ -773,6 +773,9 @@ export class ShowcaseStore {
     try {
       localStorage.removeItem("axiom-showcase:appearance");
       localStorage.removeItem("axiom-showcase:editor");
+      localStorage.removeItem(
+        "axiom:panel-width:showcase-local:document-context",
+      );
     } catch {
       /* Optional quick preference cache. */
     }
