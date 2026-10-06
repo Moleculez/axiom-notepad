@@ -317,7 +317,43 @@ INSERT INTO app_instance(singleton,setup_completed_at) SELECT true,CASE WHEN EXI
     name: "atomic-workspace-markdown-imports",
     sql: workspaceImportMigration,
   },
+  {
+    version: 44,
+    name: "research-writing-and-paper-handoffs",
+    sql: researchWritingMigration,
+  },
+  {
+    version: 45,
+    name: "paginated-planning-archives",
+    sql: planningArchiveMigration,
+  },
+  {
+    version: 46,
+    name: "workspace-lab-fields-time-and-reviewed-rules",
+    sql: planningLabMigration,
+  },
+  {
+    version: 47,
+    name: "grounded-assistant-and-exact-batch-consent",
+    sql: assistantGroundingMigration,
+  },
+  {
+    version: 48,
+    name: "portable-collections-and-expiring-extension-consent",
+    sql: stagePortabilityMigration,
+  },
+  {
+    version: 49,
+    name: "native-markdown-mind-map-profile",
+    sql: mindmapMigration,
+  },
 ];
+import { mindmapMigration } from "./mindmap-migration";
+import { stagePortabilityMigration } from "./stage-portability-migration";
+import { assistantGroundingMigration } from "./assistant-grounding-migration";
+import { planningLabMigration } from "./planning-lab-migration";
+import { planningArchiveMigration } from "./planning-archive-migration";
+import { researchWritingMigration } from "./research-writing-migration";
 import { workspaceImportMigration } from "./workspace-import-migration";
 import { planningIntakeMigration } from "./planning-intake-migration";
 import { pluginConfigurationMigration } from "./plugin-configuration-migration";

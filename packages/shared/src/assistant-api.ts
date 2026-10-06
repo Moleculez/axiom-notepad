@@ -26,12 +26,24 @@ import {
 } from "./assistant-service";
 import { assistantProposalApi } from "./assistant-proposals";
 import { agentConfigSchema, agentInstruction } from "./productivity";
+import {
+  searchAssistantEvidence,
+  readAssistantEvidence,
+} from "./assistant-evidence-service";
+import {
+  assistantRunReviewApi,
+  assistantRunSummary,
+  createInitialAssistantReview,
+} from "./assistant-run-review";
+import { assistantCapturedEvidence } from "./assistant-evidence-api";
 
 export async function assistantApi(
   request: Request,
   path: string[],
   user: string,
 ): Promise<Response | null> {
+  const runReview = await assistantRunReviewApi(request, path, user);
+  if (runReview) return runReview;
   const extraction = await assistantOfficeApi(request, path, user);
   if (extraction) return extraction;
   const url = new URL(request.url),
@@ -48,39 +60,36 @@ export async function assistantApi(
         ),
       );
     if (action === "search" && method === "GET") {
-      const scope = await assistantScopes(
-        user,
-        spaceId,
-        z
-          .array(z.uuid())
-          .max(20)
-          .parse(url.searchParams.get("spaceIds")?.split(",") ?? [spaceId]),
+      return json(
+        await searchAssistantEvidence(
+          user,
+          spaceId,
+          url.searchParams.get("spaceIds")?.split(",") ?? [spaceId],
+          {
+            q: url.searchParams.get("q") ?? "",
+            limit: url.searchParams.get("limit") ?? 30,
+            offset: url.searchParams.get("offset") ?? 0,
+            ...(url.searchParams.has("cursor")
+              ? { cursor: url.searchParams.get("cursor") }
+              : {}),
+          },
+        ),
       );
-      const q = z
-          .string()
-          .max(200)
-          .parse(url.searchParams.get("q") ?? ""),
-        offset = z.coerce
-          .number()
-          .int()
-          .min(0)
-          .max(10000)
-          .parse(url.searchParams.get("offset") ?? 0);
-      const items = await query(
-        `SELECT * FROM (
-        SELECT r.id,r.name AS title,CASE WHEN n.source_format IN ('markdown','latex','text') THEN 'document' WHEN lower(a.name) ~ '[.](docx|pptx|xlsx)$' THEN 'office' ELSE 'pdf' END AS kind,
-        left(coalesce(n.plain_text,r.description,''),220) AS excerpt,coalesce(n.source_format,substring(lower(a.name) from '[.]([^.]+)$')) AS format,r.current_version_id AS version_id,r.updated_at
-        FROM resources r LEFT JOIN notes n ON n.id=r.note_id LEFT JOIN attachments a ON a.id=r.current_version_id
-        WHERE r.space_id=ANY($1::uuid[]) AND r.deleted_at IS NULL AND (n.source_format IN ('markdown','latex','text') OR a.mime='application/pdf' OR lower(a.name) ~ '[.](docx|pptx|xlsx)$')
-        AND (r.name ILIKE '%'||$2||'%' OR n.plain_text ILIKE '%'||$2||'%' OR r.description ILIKE '%'||$2||'%')
-        UNION ALL SELECT id,title,'task',left(body,220),NULL,NULL,updated_at FROM tasks WHERE space_id=ANY($1::uuid[]) AND deleted_at IS NULL AND (title ILIKE '%'||$2||'%' OR body ILIKE '%'||$2||'%')
-      ) s ORDER BY updated_at DESC,id LIMIT 31 OFFSET $3`,
-        [scope, q, offset],
-      );
-      return json({
-        items: items.slice(0, 30),
-        nextOffset: items.length > 30 ? offset + 30 : null,
-      });
+    }
+    if (action === "evidence" && method === "GET") {
+      const scope = await assistantScopes(user, spaceId, [spaceId]);
+      const read = {
+        kind: "document",
+        id: url.searchParams.get("id"),
+        ...(url.searchParams.has("from")
+          ? {
+              from: Number(url.searchParams.get("from")),
+              to: Number(url.searchParams.get("to")),
+              hash: url.searchParams.get("hash"),
+            }
+          : {}),
+      };
+      return json((await readAssistantEvidence(user, scope, read)).output);
     }
     if (action === "conversations") {
       if (method === "GET")
@@ -174,7 +183,11 @@ export async function assistantApi(
         "SELECT x.id,j.status,j.result FROM assistant_contexts x JOIN tool_jobs j ON j.assistant_context_id=x.id WHERE x.conversation_id=$1 ORDER BY x.submitted_at,x.id LIMIT 101",
         [c.id],
       );
-      if (history.some((t) => ["queued", "running"].includes(t.status)))
+      if (
+        history.some((t) =>
+          ["queued", "running", "awaiting-review"].includes(t.status),
+        )
+      )
         throw new HttpError(
           409,
           "Wait for or cancel the current response first.",
@@ -185,7 +198,10 @@ export async function assistantApi(
           "Start a new conversation. This one reached its turn limit.",
         );
       const messages: AssistantMessage[] = [
-          { role: "system", content: input.agent ? agentInstruction : assistantInstruction },
+          {
+            role: "system",
+            content: input.agent ? agentInstruction : assistantInstruction,
+          },
         ],
         historyIds: string[] = [];
       for (const turn of history.filter((t) => t.status === "complete")) {
@@ -212,11 +228,16 @@ export async function assistantApi(
       );
       messages.push({
         role: "user",
-        content: input.agent ? JSON.stringify({ request:input.prompt, ...input.agent, spaceIds:c.space_ids, primaryWorkspace:spaceId, evidence, today:new Date().toISOString().slice(0,10) }) : assistantUserMessage(
-          input.prompt,
-          evidence,
-          input.allowTaskCreate,
-        ),
+        content: input.agent
+          ? JSON.stringify({
+              request: input.prompt,
+              ...input.agent,
+              spaceIds: c.space_ids,
+              primaryWorkspace: spaceId,
+              evidence,
+              today: new Date().toISOString().slice(0, 10),
+            })
+          : assistantUserMessage(input.prompt, evidence, input.allowTaskCreate),
       });
       try {
         validateAssistantBudget(evidence, messages);
@@ -228,6 +249,7 @@ export async function assistantApi(
         version: p.version,
         messages,
         conversationVersion: c.version,
+        agent: input.agent ?? null,
       });
       const created = await transaction(async (client) => {
         await assistantScopes(user, spaceId, c.space_ids, client);
@@ -292,6 +314,13 @@ export async function assistantApi(
   const id = z.uuid().parse(path[2]),
     action = path[3],
     c = await assistantConversation(id, user);
+  if (
+    action === "turns" &&
+    path[5] === "evidence" &&
+    path[6] &&
+    method === "GET"
+  )
+    return json(await assistantCapturedEvidence(user, id, path[4], path[6]));
   if (!action && method === "PATCH") {
     const input = z
       .object({
@@ -383,11 +412,13 @@ export async function assistantApi(
         turns.push({
           id: j.id,
           changeSetId: j.result?.changeSetId,
-          ...(x.agent_config ? (await query("SELECT activity,round FROM assistant_runs WHERE id=$1",[j.id]))[0] : {}),
+          ...(x.agent_config ? await assistantRunSummary(j.id, x) : {}),
           status: j.status,
           prompt: x.prompt,
           answer: j.result?.answer,
           warning: j.result?.warning,
+          grounding: j.result?.grounding,
+          ...(!x.agent_config ? { usage: j.result?.runUsage } : {}),
           error: j.error,
           created_at: j.created_at,
           evidence: [...historyEvidence, ...x.evidence],
@@ -396,7 +427,7 @@ export async function assistantApi(
       } catch (e) {
         if (!(e instanceof HttpError)) throw e;
         await query(
-          "UPDATE tool_jobs SET status='cancelled',input='{}' WHERE id=$1 AND status IN ('queued','running')",
+          "UPDATE tool_jobs SET status='cancelled',input='{}' WHERE id=$1 AND status IN ('queued','running','awaiting-review')",
           [j.id],
         );
         turns.push({
@@ -474,9 +505,6 @@ export async function assistantApi(
           await assertAssistantAccess(x, client);
           return { id: existing.id, status: existing.status };
         }
-        await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [
-          x.provider_id,
-        ]);
         const {
           rows: [current],
         } = await client.query(
@@ -501,6 +529,10 @@ export async function assistantApi(
             "This preview expired or the conversation changed. Review a fresh preview.",
           );
         await assertAssistantAccess(x, client);
+        // Conversation/context before provider quota, matching round dispatch.
+        await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [
+          x.provider_id,
+        ]);
         const provider = await assistantProvider(
           user,
           c.space_id,
@@ -511,7 +543,7 @@ export async function assistantApi(
         const {
           rows: [usage],
         } = await client.query(
-          "SELECT count(*) FILTER(WHERE owner_id=$1 AND status IN ('queued','running'))::int AS pending,count(*) FILTER(WHERE provider_id=$2 AND created_at>=(date_trunc('day',now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'))::int+(SELECT count(*)::int FROM assistant_run_steps WHERE provider_id=$2 AND ordinal>1 AND dispatched_at>=(date_trunc('day',now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC')) AS used FROM tool_jobs",
+          "SELECT count(*) FILTER(WHERE owner_id=$1 AND status IN ('queued','running','awaiting-review'))::int AS pending,count(*) FILTER(WHERE provider_id=$2 AND created_at>=(date_trunc('day',now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'))::int+(SELECT count(*)::int FROM assistant_run_steps WHERE provider_id=$2 AND ordinal>1 AND dispatched_at>=(date_trunc('day',now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC')) AS used FROM tool_jobs",
           [user, provider.id],
         );
         if (usage.pending >= 5 || usage.used >= provider.daily_limit)
@@ -520,7 +552,7 @@ export async function assistantApi(
             "The account pending-request or provider daily limit has been reached.",
           );
         const { rowCount } = await client.query(
-          "SELECT 1 FROM tool_jobs j JOIN assistant_contexts x ON x.id=j.assistant_context_id WHERE x.conversation_id=$1 AND j.status IN ('queued','running')",
+          "SELECT 1 FROM tool_jobs j JOIN assistant_contexts x ON x.id=j.assistant_context_id WHERE x.conversation_id=$1 AND j.status IN ('queued','running','awaiting-review')",
           [id],
         );
         if (rowCount)
@@ -536,7 +568,18 @@ export async function assistantApi(
           "UPDATE assistant_contexts SET submitted_at=now() WHERE id=$1",
           [x.id],
         );
-        if (x.agent_config) await client.query("INSERT INTO assistant_runs(id,context_id) VALUES($1,$2)",[input.mutationId,x.id]);
+        if (x.agent_config)
+          await client.query(
+            "INSERT INTO assistant_runs(id,context_id) VALUES($1,$2)",
+            [input.mutationId, x.id],
+          );
+        if (x.agent_config)
+          await createInitialAssistantReview(
+            client,
+            x,
+            input.mutationId,
+            input.mutationId,
+          );
         await client.query(
           "UPDATE assistant_conversations SET version=version+1,updated_at=now() WHERE id=$1",
           [id],
@@ -549,8 +592,12 @@ export async function assistantApi(
   if (action === "turns" && path[5] === "cancel" && method === "POST") {
     const jobId = z.uuid().parse(path[4]);
     await query(
-      "UPDATE tool_jobs j SET status='cancelled',input='{}',updated_at=now() FROM assistant_contexts x WHERE j.id=$1 AND j.owner_id=$2 AND j.assistant_context_id=x.id AND x.conversation_id=$3 AND j.status IN ('queued','running')",
+      "UPDATE tool_jobs j SET status='cancelled',input='{}',updated_at=now() FROM assistant_contexts x WHERE j.id=$1 AND j.owner_id=$2 AND j.assistant_context_id=x.id AND x.conversation_id=$3 AND j.status IN ('queued','running','awaiting-review')",
       [jobId, user, id],
+    );
+    await query(
+      "UPDATE assistant_run_reviews v SET state='superseded' FROM tool_jobs j WHERE v.run_id=j.id AND j.id=$1 AND j.owner_id=$2 AND j.status='cancelled' AND v.state='pending'",
+      [jobId, user],
     );
     return json({
       ok: true,

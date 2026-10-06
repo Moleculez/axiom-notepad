@@ -61,7 +61,8 @@ export async function verifyPlanningSuite(
     taskIds: [a.id, child.id, b.id],
   });
   assert.deepEqual(
-    (await call(`${base}/goals`)).find((g: any) => g.id === goal.id).progress,
+    (await call(`${base}/goals`)).items.find((g: any) => g.id === goal.id)
+      .progress,
     { tracked: 2, completed: 1.5, percent: 75, unavailable: 0 },
   );
   await assert.rejects(
@@ -168,8 +169,8 @@ export async function verifyPlanningSuite(
   const occurrences = await call(
     `${base}/recurrences/${routine.id}/occurrences`,
   );
-  assert.equal(occurrences.length, 1);
-  const generated = await call(`${base}/tasks/${occurrences[0].id}`);
+  assert.equal(occurrences.total, 1);
+  const generated = await call(`${base}/tasks/${occurrences.items[0].id}`);
   assert.equal(generated.progress_percent, 25);
   assert.deepEqual(generated.labels, ["lab", "review"]);
   const changed = await call(`${base}/recurrences/${routine.id}`, "PATCH", {
@@ -195,10 +196,10 @@ export async function verifyPlanningSuite(
   });
   await processRecurrences();
   assert.equal(
-    (await call(`${base}/recurrences/${routine.id}/occurrences`)).length,
+    (await call(`${base}/recurrences/${routine.id}/occurrences`)).total,
     1,
   );
-  assert((await call(`${base}/planning-history/${routine.id}`)).length >= 3);
+  assert((await call(`${base}/planning-history/${routine.id}`)).total >= 3);
 
   // The real connection/change-set services must not write before human review.
   const clientId = `suite-client-${randomUUID()}`,
@@ -266,7 +267,7 @@ export async function verifyPlanningSuite(
   );
   assert.equal(pending.requiresApproval, true);
   assert(
-    !(await call(`${base}/goals`)).some(
+    !(await call(`${base}/goals`)).items.some(
       (g: any) => g.title === "MCP reviewed outcome",
     ),
   );
@@ -301,7 +302,7 @@ export async function verifyPlanningSuite(
   });
   assert.equal((await changeSetView(token, owner)).status, "complete");
   assert.equal(
-    (await call(`${base}/goals`)).filter(
+    (await call(`${base}/goals`)).items.filter(
       (g: any) => g.title === "MCP reviewed outcome",
     ).length,
     1,

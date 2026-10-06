@@ -5,6 +5,7 @@ import {
   pluginCapabilityLabels,
   pluginCommandId,
   pluginLimits,
+  pluginPermissionActive,
   type PluginInstallation,
 } from "@axiom/shared/plugins";
 import { api, timeAgo } from "../../lib/client";
@@ -502,7 +503,12 @@ export default function ExtensionsSettings() {
                                 {grant &&
                                 !grant.revoked_at &&
                                 grant.package_hash === installation.package_hash
-                                  ? "Permissions recorded. Group policy and content access are rechecked on every call."
+                                  ? pluginPermissionActive(
+                                      grant.effective_expires_at ??
+                                        grant.expires_at,
+                                    )
+                                    ? `Access expires ${new Date(grant.effective_expires_at ?? grant.expires_at).toLocaleString()}. Every call rechecks current access.`
+                                    : "Access expired. Renew permissions; team approval must also be current."
                                   : "No current grant. Team workspaces require manager approval of this exact package first."}
                               </HelpText>
                               <ActionRow>
@@ -511,7 +517,9 @@ export default function ExtensionsSettings() {
                                   disabled={!installation.enabled || busy}
                                   onClick={() => setConsent(true)}
                                 >
-                                  Review permissions
+                                  {grant && !grant.revoked_at
+                                    ? "Renew permissions"
+                                    : "Review permissions"}
                                 </Button>
                                 {grant && !grant.revoked_at && (
                                   <Button
@@ -584,6 +592,11 @@ export default function ExtensionsSettings() {
                                       </label>
                                     ))}
                                 </div>
+                                <HelpText>
+                                  {approval?.enabled
+                                    ? `${pluginPermissionActive(approval.expires_at) ? "Approval expires" : "Approval expired"} ${new Date(approval.expires_at).toLocaleString()}.`
+                                    : "Approval lasts 30 days and never grants content access."}
+                                </HelpText>
                                 <ActionRow>
                                   <Button
                                     variant="secondary"
@@ -604,7 +617,7 @@ export default function ExtensionsSettings() {
                                     }
                                   >
                                     {approval?.enabled
-                                      ? "Update approval"
+                                      ? "Renew approval"
                                       : "Approve package"}
                                   </Button>
                                   {approval?.enabled && (
@@ -745,7 +758,9 @@ export default function ExtensionsSettings() {
         >
           <Notice>
             Only this workspace is in scope. Proposed research changes require a
-            separate preview and explicit Apply.
+            separate preview and explicit Apply. Permissions expire after 30
+            days, or earlier when group approval expires. Renewal invalidates
+            stale proposals.
           </Notice>
           <div className="extension-permission-options">
             {manifest.capabilities.map((c) => (
@@ -788,7 +803,9 @@ export default function ExtensionsSettings() {
                 })
               }
             >
-              Grant selected permissions
+              {grant && !grant.revoked_at
+                ? "Renew selected permissions"
+                : "Grant for 30 days"}
             </Button>
           </div>
         </Dialog>

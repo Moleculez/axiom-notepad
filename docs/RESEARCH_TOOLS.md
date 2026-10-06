@@ -4,9 +4,8 @@ Desktop studios are file views. Open a math, image, text or canvas resource from
 Explorer, or create one through **New** alongside Markdown notes. Canonical routes
 are `/workbench/math/:id`, `/image/:id`, `/text/:id` and `/canvas/:id` under the
 same workbench prefix. Legacy Tools links redirect; the Tools landing and separate
-creation page are removed. See [file navigation](FILE_WORKBENCH.md). These are
-integrated research tools, not a claim of complete LaTeXLive, Photoshop, Office or
-Typora parity.
+creation page are removed. See [file navigation](FILE_WORKBENCH.md) for the
+shared navigation and creation workflow.
 
 ## Available now
 
@@ -142,7 +141,7 @@ Typora parity.
   editable PSD text and full effects/adjustment fidelity are not supported. Import
   reports compatibility warnings; export rasterizes transforms/masks into each
   layer's appearance. Nested groups flatten to one level. Group rotation/scaling,
-  free-transform handles, arbitrary nested groups and Photoshop-grade healing are
+  free-transform handles, arbitrary nested groups and content-aware healing are
   unfinished; the current healing brush is a softened sampled-clone operation.
 - Canvas resize/crop is destructive but undoable, not a live adjustment layer.
   Plain text stays editable through cropping or uniform resizing. Transformed

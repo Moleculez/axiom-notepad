@@ -9,6 +9,11 @@ documents the larger self-hosted workbench, not active cloud services in the dem
 
 ### Live browser-local surfaces
 
+The latest source adds a shared native [mind-map surface](MINDMAP.md), a fictional
+research-map fixture and a Map/Document switch for existing notes. It reuses local
+Markdown/Yjs/undo without a backend. This increment has not been deployed or
+visually accepted; the dated captures below are unchanged, not map screenshots.
+
 The static editor and Canvas are interactive, not screenshots: try the fictional
 notebooks, create a local draft, import files or export a portable copy. Seven
 settings categories share a stable dialog with a persistent document preview,
@@ -33,7 +38,7 @@ The README and this tour show Axiom's actual workbench, populated with fictional
 **Spectral Lab** research. Mira Chen, Elias Ray, their tasks, notes and annotations
 are demonstration content. The gallery covers collaborative writing, Canvas,
 planning, group capacity, scoped assistant context and toolbar loading feedback.
-It is not a mockup or a claim of complete third-party app parity.
+The gallery captures the running application, not a mockup.
 
 The assistant demonstration selects context but **does not prepare or send a
 request to a provider**. Loading is captured during a deliberately delayed local response, not

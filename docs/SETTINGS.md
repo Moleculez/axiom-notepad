@@ -40,7 +40,7 @@ focus indicators; scrollbars never displace the other pane or shared actions.
   This category has a nested-list/quote sample; other Appearance categories share
   their existing appearance sample.
 
-- The editor's Monaco-inspired folding gutter offers chevrons for multiline code,
+- The editor's folding gutter offers chevrons for multiline code,
   math, list groups, quotes, callouts, tables, metadata and rich footnotes. Click
   a chevron (or press Left/Right while it has keyboard focus) to collapse/expand;
   collapsed blocks show a compact summary with an expand ellipsis. Folds remain

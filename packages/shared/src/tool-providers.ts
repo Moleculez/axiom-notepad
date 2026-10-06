@@ -1,6 +1,7 @@
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 import { HttpError } from "./access";
 import type { AssistantMessage } from "./assistant";
+import { providerUsage } from "./assistant-grounding";
 export function providerKey() {
   const value = process.env.TOOL_PROVIDER_KEY ?? "";
   const key = Buffer.from(value, "base64");
@@ -161,7 +162,15 @@ export async function callAssistantProvider(
   },
   messages: AssistantMessage[],
   signal: AbortSignal,
+  options: { maxOutputTokens?: number } = {},
 ) {
+  const maxOutputTokens = options.maxOutputTokens ?? 4096;
+  if (
+    !Number.isInteger(maxOutputTokens) ||
+    maxOutputTokens < 128 ||
+    maxOutputTokens > 4096
+  )
+    throw new Error("Invalid reviewed output-token limit.");
   const endpoint = providerEndpoint(provider.kind, provider.endpoint);
   const response = await fetch(new URL("chat/completions", endpoint), {
     method: "POST",
@@ -174,7 +183,7 @@ export async function callAssistantProvider(
     body: JSON.stringify({
       model: provider.model,
       messages,
-      max_tokens: 4096,
+      max_tokens: maxOutputTokens,
       stream: false,
     }),
   });
@@ -214,13 +223,8 @@ export async function callAssistantProvider(
     throw new Error(
       "The provider response was incomplete or too large. Narrow the request and submit again explicitly.",
     );
-  const finite = (n: unknown) =>
-    typeof n === "number" && Number.isFinite(n) && n >= 0 ? n : 0;
   return {
     text,
-    usage: {
-      input: finite(data.usage?.prompt_tokens),
-      output: finite(data.usage?.completion_tokens),
-    },
+    usage: providerUsage(data.usage),
   };
 }

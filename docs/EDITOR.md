@@ -2,6 +2,10 @@
 
 Write, Source and Read share one canonical Markdown document. Switching modes, changing appearance or rebinding keys does not reserialize it or create a new collaborative session. Editing commands apply source-range transactions; undo is local to the author, including table operations.
 
+**Mind map** adds a structural view of the same source, binding and undo stack.
+Explorer also creates dedicated Markdown-backed maps. See [mind-map interactions
+and acceptance](MINDMAP.md) for search/folds, editing, guarded moves and exports.
+
 Development and production both default to Axiom's customized editor, built on
 Milkdown/ProseMirror and CodeMirror. The older native engine requires an explicit
 build-time rollback choice. It is not a separate user-facing product or the
@@ -220,7 +224,7 @@ silently decoded or moved. See [typing integrity](TYPING_INTEGRITY.md) for the f
 - **Tables:** edit directly in semantic table cells, with complete inline Markdown revealed in the active cell. Cells share the document surface and author-local undo; there is no nested editor. Tab/Shift-Tab navigate, optionally adding a row at the end. Enter moves to the next row; Shift-Enter inserts a safe `<br>`. Shift-click or Alt-Shift-arrows selects a rectangle. Copy/Clear operates on that rectangle; Delete clears without removing structure. In vNext, move near the right/bottom edge for a small add-column/add-row button; it targets that table even if your caret was elsewhere and focuses the new cell. The top-right hover toolbar offers alignment, TSV copy and more. More, right-click and Shift-F10 open one icon panel with Row/Column/Table tabs and explanatory tooltips. Arrow keys switch tabs; Escape restores the caret. Insert, duplicate, delete, move, alignment, select and clear commands retain source-based undo and peer-edit guards. Pointer-resize cell borders; double-click to reset local widths. Read-mode tables scroll within their own frame. Quoted TSV and sanitized HTML-table paste expand the grid in one undo step. Short rows gain missing cells only when edited. Header/final-column protections and LF/CRLF/unterminated-EOF preservation apply to structural edits.
 - **Quotes and callouts:** styled while editing, with automatic continuation and empty-line exit. Exiting a nested prose quote inserts the required parent-depth separator so subsequent typing or paste remains in the parent, not a lazy continuation of the child. Repeated exits, quotes inside lists, LF/CRLF and peer edits retain the correct source and caret. Callouts have type/title controls. Source mode remains available for arbitrary syntax.
 
-Tables remain Markdown tables, not spreadsheets: up to 100 columns and 1,000 rows, no merged cells, formulas or nested multiline blocks. Quoted tabs/newlines round-trip through TSV; only attribute-free `<br>` renders as a cell break. Other raw HTML remains inert. Code is not executed. Mathematics remains editable LaTeX, not a graphical equation builder or complete Typora compatibility layer.
+Tables remain Markdown tables, not spreadsheets: up to 100 columns and 1,000 rows, no merged cells, formulas or nested multiline blocks. Quoted tabs/newlines round-trip through TSV; only attribute-free `<br>` renders as a cell break. Other raw HTML remains inert. Code is not executed. Mathematics remains editable LaTeX, not a graphical equation builder.
 
 Code-language autocomplete uses one research-first catalog for both the hover
 language field and typed opening fences. Type three backticks (or tildes) to show

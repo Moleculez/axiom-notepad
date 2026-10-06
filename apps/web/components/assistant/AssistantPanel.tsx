@@ -8,6 +8,8 @@ import {
   NativeSelect,
   TextArea,
   SearchField,
+  Field,
+  TextInput,
 } from "../ui/controls";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -45,6 +47,8 @@ import AssistantExcerpt from "./AssistantExcerpt";
 import AssistantOfficeExcerpt from "./AssistantOfficeExcerpt";
 import ChangeSetReview from "./ChangeSetReview";
 import AssistantWorkflows from "./AssistantWorkflows";
+import AssistantContextReview from "./AssistantContextReview";
+import { assistantRunBudgetSchema } from "@axiom/shared/assistant-grounding";
 type Provider = {
   id: string;
   name: string;
@@ -100,6 +104,9 @@ export default function AssistantPanel({
       "ask" | "prepare" | "suggest"
     >("ask"),
     [discover, setDiscover] = useState(false),
+    [maxRounds, setMaxRounds] = useState("8"),
+    [maxOutputTokens, setMaxOutputTokens] = useState("4096"),
+    [batchReview, setBatchReview] = useState<AssistantTurn | null>(null),
     [changeSet, setChangeSet] = useState<string | null>(null);
   const scope = conversation?.spaceIds ?? scopeIds;
   const [prompt, setPrompt] = useState(""),
@@ -132,6 +139,7 @@ export default function AssistantPanel({
   const draftKey = `axiom:${session.user.id}:assistant:${spaceId}`,
     serial = useRef(0),
     submission = useRef(crypto.randomUUID()),
+    recoveryReceipts = useRef(new Map<string, string>()),
     creating = useRef<string | null>(null),
     promptRef = useRef<HTMLTextAreaElement>(null),
     lastIntent = useRef(-1),
@@ -142,6 +150,8 @@ export default function AssistantPanel({
     prompt,
     assistantMode,
     discover,
+    maxRounds,
+    maxOutputTokens,
     picked,
     providerId,
     allowTasks,
@@ -159,8 +169,11 @@ export default function AssistantPanel({
       : null,
   );
   const selectedProvider = providers.data?.find((p) => p.id === providerId),
-    active = conversation?.turns.some((t) =>
+    dispatching = conversation?.turns.some((t) =>
       ["queued", "running"].includes(t.status),
+    ),
+    active = conversation?.turns.some((t) =>
+      ["queued", "running", "awaiting-review"].includes(t.status),
     );
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -183,6 +196,11 @@ export default function AssistantPanel({
         if (["ask", "prepare", "suggest"].includes(d.mode))
           setAssistantMode(d.mode);
         setDiscover(d.discover === true);
+        const budget = assistantRunBudgetSchema.safeParse(d.budget);
+        if (budget.success) {
+          setMaxRounds(String(budget.data.maxRounds));
+          setMaxOutputTokens(String(budget.data.maxOutputTokens));
+        }
         setPicked(
           Array.isArray(d.selections)
             ? d.selections
@@ -286,6 +304,10 @@ export default function AssistantPanel({
           prompt,
           mode: assistantMode,
           discover,
+          budget: {
+            maxRounds: Number(maxRounds),
+            maxOutputTokens: Number(maxOutputTokens),
+          },
           conversationId,
           spaceIds: scopeIds,
           selections: picked.filter((s) => s.kind !== "pdf"),
@@ -305,6 +327,8 @@ export default function AssistantPanel({
     scopeIds,
     assistantMode,
     discover,
+    maxRounds,
+    maxOutputTokens,
   ]);
   useEffect(() => {
     setPrepared(null);
@@ -314,6 +338,8 @@ export default function AssistantPanel({
     prompt,
     assistantMode,
     discover,
+    maxRounds,
+    maxOutputTokens,
     picked,
     providerId,
     allowTasks,
@@ -337,6 +363,7 @@ export default function AssistantPanel({
           if (value.turns.some((t) => t.unavailable)) {
             setPrepared(null);
             setReview(null);
+            setBatchReview(null);
           }
         }
       })
@@ -346,6 +373,7 @@ export default function AssistantPanel({
           setPrepared(null);
           setReview(null);
           setLoadError(e.message);
+          setBatchReview(null);
         }
       });
     return () => controller.abort();
@@ -360,7 +388,7 @@ export default function AssistantPanel({
         )
           setTick((t) => t + 1);
       },
-      active ? 1500 : 10000,
+      dispatching ? 1500 : 10000,
     );
     const visible = () => {
       if (document.visibilityState === "visible") setTick((t) => t + 1);
@@ -372,7 +400,7 @@ export default function AssistantPanel({
       document.removeEventListener("visibilitychange", visible);
       window.removeEventListener("online", visible);
     };
-  }, [active, conversationId]);
+  }, [dispatching, conversationId]);
   const run = async (fn: () => Promise<void>) => {
     if (busy) return;
     setBusy(true);
@@ -394,6 +422,7 @@ export default function AssistantPanel({
     setConversation(null);
     setPrepared(null);
     setReview(null);
+    setBatchReview(null);
     setLoadError("");
     setPrompt("");
     setPicked([]);
@@ -410,6 +439,14 @@ export default function AssistantPanel({
         );
       if (!selectedProvider)
         throw new Error("Choose an enabled assistant provider.");
+      const budget = assistantRunBudgetSchema.safeParse({
+        maxRounds: maxRounds.trim() ? Number(maxRounds) : NaN,
+        maxOutputTokens: maxOutputTokens.trim() ? Number(maxOutputTokens) : NaN,
+      });
+      if (assistantMode !== "suggest" && !budget.success)
+        throw new Error(
+          "Choose 1–8 model calls and 128–4,096 output tokens per call.",
+        );
       let id = conversationId;
       if (!id) {
         creating.current ??= crypto.randomUUID();
@@ -433,7 +470,7 @@ export default function AssistantPanel({
           selections: picked.map(stripLabel),
           allowTaskCreate: allowTasks,
           ...(assistantMode !== "suggest"
-            ? { agent: { mode: assistantMode, discover } }
+            ? { agent: { mode: assistantMode, discover, budget: budget.data } }
             : {}),
         },
       );
@@ -448,6 +485,14 @@ export default function AssistantPanel({
       submission.current = crypto.randomUUID();
     });
   const add = async (item: SearchResult) => {
+    if (item.format === "canvas") {
+      navigate(`/notes/${item.id}`);
+      notify(
+        "Select the Canvas cards you want to share, then choose Ask workspace assistant.",
+      );
+      setSearchOpen(false);
+      return;
+    }
     if (item.kind === "office") {
       setOffice(item);
       setSearchOpen(false);
@@ -579,7 +624,7 @@ export default function AssistantPanel({
           </summary>
           <HelpText>
             {discover
-              ? "Relevant excerpts may be retrieved and sent from these workspaces after consent."
+              ? "Excerpts may be retrieved locally from these workspaces. Review each exact batch before it is sent."
               : "Only selected evidence is sent."}{" "}
             Start a new conversation to change this boundary.
           </HelpText>
@@ -772,6 +817,8 @@ export default function AssistantPanel({
                   source={turn.answer}
                   evidence={turn.evidence ?? []}
                   spaceId={spaceId}
+                  conversationId={conversation.id}
+                  turnId={turn.id}
                 />
                 <button
                   className="assistant-copy"
@@ -789,10 +836,85 @@ export default function AssistantPanel({
               </>
             )}
             {turn.warning && <Notice tone="warning">{turn.warning}</Notice>}
+            {turn.usage && (
+              <HelpText>
+                {turn.usage.requests} request(s) · input{" "}
+                {turn.usage.inputTokens ?? "unknown"}, output{" "}
+                {turn.usage.outputTokens ?? "unknown"} tokens
+                {turn.usage.missingUsage
+                  ? " · Some usage was not reported"
+                  : ""}
+              </HelpText>
+            )}
+            {turn.status === "failed" && turn.recoveryFingerprint && (
+              <section
+                className="assistant-awaiting"
+                aria-label="Local response recovery"
+              >
+                <HelpText>
+                  The provider response is saved. Finish local processing
+                  without another provider call.
+                </HelpText>
+                <Button
+                  type="button"
+                  disabled={busy}
+                  onClick={() =>
+                    void run(async () => {
+                      const key = turn.id + turn.recoveryFingerprint;
+                      const mutationId =
+                        recoveryReceipts.current.get(key) ??
+                        crypto.randomUUID();
+                      recoveryReceipts.current.set(key, mutationId);
+                      await post(`assistant/runs/${turn.id}/review/recover`, {
+                        fingerprint: turn.recoveryFingerprint,
+                        mutationId,
+                      });
+                      reload();
+                    })
+                  }
+                >
+                  Finish saved response
+                </Button>
+              </section>
+            )}
+            {turn.status === "awaiting-review" && (
+              <section
+                className="assistant-awaiting"
+                aria-label="Awaiting context approval"
+              >
+                <HelpText>
+                  New context is held locally. Review it before the next model
+                  call.
+                </HelpText>
+                <Button
+                  type="button"
+                  variant="primary"
+                  onClick={() => setBatchReview(turn)}
+                >
+                  Review next batch
+                </Button>
+                <Button
+                  type="button"
+                  disabled={busy}
+                  onClick={() =>
+                    void run(async () => {
+                      await post(
+                        `assistant/conversations/${conversationId}/turns/${turn.id}/cancel`,
+                        {},
+                      );
+                      reload();
+                    })
+                  }
+                >
+                  Stop this run
+                </Button>
+              </section>
+            )}
             {!!turn.activity?.length && (
               <details className="assistant-activity">
                 <summary>
-                  {turn.activity.at(-1)?.message} · {turn.round}/8 rounds
+                  {turn.activity.at(-1)?.message} · {turn.round}/
+                  {turn.budget?.maxRounds ?? 8} rounds
                 </summary>
                 <ol>
                   {turn.activity.map((item, i) => (
@@ -819,7 +941,9 @@ export default function AssistantPanel({
                 </Button>
               </section>
             )}
-            {turn.error && <p className="form-error">{turn.error}</p>}
+            {turn.error && turn.status !== "awaiting-review" && (
+              <p className="form-error">{turn.error}</p>
+            )}
             {["queued", "running"].includes(turn.status) ? (
               <div className="assistant-progress" role="status">
                 <LoaderCircle size={15} />
@@ -842,9 +966,12 @@ export default function AssistantPanel({
                   <Square size={12} /> Cancel
                 </button>
               </div>
-            ) : !turn.answer && !turn.error ? (
+            ) : turn.status !== "awaiting-review" &&
+              !turn.answer &&
+              !turn.error ? (
               <HelpText>
-                {turn.status}. Nothing is automatically resubmitted.
+                {turn.status.replaceAll("-", " ")}. Nothing is automatically
+                resubmitted.
               </HelpText>
             ) : null}
             {turn.proposals?.map((item) => (
@@ -1066,6 +1193,37 @@ export default function AssistantPanel({
             }
           }}
         />
+        {assistantMode !== "suggest" && (
+          <details className="assistant-run-limits">
+            <summary>Run limits</summary>
+            <div className="assistant-review-range">
+              <Field label="Maximum model calls">
+                <TextInput
+                  type="number"
+                  min={1}
+                  max={8}
+                  step={1}
+                  value={maxRounds}
+                  onChange={(e) => setMaxRounds(e.target.value)}
+                />
+              </Field>
+              <Field label="Output tokens per call">
+                <TextInput
+                  type="number"
+                  min={128}
+                  max={4096}
+                  step={1}
+                  value={maxOutputTokens}
+                  onChange={(e) => setMaxOutputTokens(e.target.value)}
+                />
+              </Field>
+            </div>
+            <HelpText>
+              Each additional call requires exact-content review. These limits
+              do not guarantee provider billing.
+            </HelpText>
+          </details>
+        )}
         <div className="assistant-compose-footer">
           <small>
             {recovered ? "Device draft recovered · " : ""}⌘/Ctrl Enter to review
@@ -1095,13 +1253,21 @@ export default function AssistantPanel({
             {prepared.evidence.length} current excerpts · expires{" "}
             {new Date(prepared.expiresAt).toLocaleTimeString()}
           </HelpText>
+          <HelpText>
+            Output ceiling: {prepared.budget?.maxOutputTokens ?? 4096} tokens
+            per call.{" "}
+            {prepared.agent
+              ? `${prepared.budget?.maxRounds ?? 8} calls maximum; every additional batch needs review.`
+              : "One model call."}{" "}
+            Monetary cost is not configured.
+          </HelpText>
           {prepared.agent?.discover && (
             <p className="assistant-scope-consent">
-              This run may search and send additional relevant excerpts from the{" "}
-              {scope.length} selected workspace{scope.length === 1 ? "" : "s"}{" "}
-              to this provider, for at most eight model rounds. Captured sources
-              appear in the conversation. No workspace changes are applied
-              without a separate review.
+              This run may search and capture relevant excerpts locally from the{" "}
+              {scope.length} selected workspace{scope.length === 1 ? "" : "s"} .
+              Each additional outgoing batch pauses for exact-content review.
+              Nothing is sent under blanket discovery consent. Workspace changes
+              require separate review.
             </p>
           )}
           <div className="assistant-outgoing">
@@ -1124,7 +1290,7 @@ export default function AssistantPanel({
               onChange={(e) => setConsent(e.target.checked)}
             />
             {prepared.agent?.discover
-              ? "I approve this context and scoped retrieval of additional excerpts for this run. The provider's billing and retention policies apply."
+              ? "I approve this exact context and local retrieval in the selected scope, not future model calls. The provider's billing and retention policies apply."
               : "I approve sending this exact context to this provider. Its billing and retention policies apply."}
           </label>
           <ErrorNotice message={error} />
@@ -1163,6 +1329,14 @@ export default function AssistantPanel({
             </Button>
           </div>
         </Dialog>
+      )}
+      {batchReview && (
+        <AssistantContextReview
+          runId={batchReview.id}
+          legacyFingerprint={batchReview.legacyFingerprint}
+          onClose={() => setBatchReview(null)}
+          onChange={reload}
+        />
       )}
       {review && (
         <AssistantProposalReview

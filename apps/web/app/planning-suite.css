@@ -79,7 +79,7 @@
 }
 .planning-outcome-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20em), 1fr));
   gap: 16px;
 }
 .planning-outcome-grid > article {
@@ -256,20 +256,19 @@
 .planning-suite-form .planning-field-grid {
   margin: 0;
 }
-.planning-history ol {
+.planning-history-list,
+.planning-occurrence-list {
   list-style: none;
   padding: 0;
   margin: 0;
 }
-.planning-history li {
+.planning-history-list > li,
+.planning-occurrence-list > li {
   display: flex;
   flex-direction: column;
   gap: 6px;
   padding: 14px 0;
   border-bottom: 1px solid var(--line);
-}
-.planning-history small {
-  color: var(--muted);
 }
 .planning-routine-list > article {
   padding: 14px 0;
@@ -288,15 +287,249 @@
   color: var(--muted);
   margin-top: 6px;
 }
-.planning-occurrence {
-  padding: 10px 0;
+.planning-goals {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 16px;
+}
+.planning-goals > header {
+  margin-bottom: 12px;
+}
+.planning-goals h2 {
+  margin: 0;
+}
+.planning-goals > :not(.planning-goal-results),
+.planning-archive-content > :not(.planning-archive-results) {
+  flex: none;
+}
+.planning-goal-results,
+.planning-archive-results {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  scrollbar-gutter: stable;
+  padding: 2px 8px 2px 2px;
+}
+.planning-goal-results .planning-outcome-grid {
+  align-items: start;
+}
+.planning-lab-settings {
+  display: flex;
+  flex-direction: column;
   gap: 16px;
+  min-width: 0;
+}
+.planning-lab-settings h2,
+.planning-lab-settings h3,
+.planning-time h2,
+.planning-automation-queue h2 {
+  margin: 0;
+}
+.planning-lab-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0;
+}
+.planning-lab-list > article,
+.planning-lab-list > .planning-lab-row {
+  padding-block: 12px;
   border-bottom: 1px solid var(--line);
 }
-.planning-occurrence small {
-  color: var(--muted);
+.planning-lab-row,
+.planning-time-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+.planning-lab-row > div:first-child,
+.planning-time-row > div:first-child {
+  flex: 1 1 14em;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.planning-lab-row > .ui-actions {
+  flex: none;
+}
+.planning-lab-row .button.ghost,
+.planning-time-row .button.ghost {
+  text-align: start;
+  justify-content: start;
+  white-space: normal;
+}
+.planning-custom-control {
+  min-width: 0;
+}
+.planning-custom-fields,
+.planning-time-report {
+  display: grid;
+  gap: 12px;
+}
+.planning-rule-clause {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12em), 1fr));
+  align-items: start;
+  gap: 12px;
+  padding-block: 12px;
+  border-bottom: 1px solid var(--line);
+}
+.planning-rule-clause > .icon-button {
+  justify-self: end;
+}
+.planning-rule-clause .planning-custom-control {
+  grid-column: 1 / -1;
+}
+.planning-choice-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-block: 8px;
+}
+.planning-choice-row > .ui-input {
+  flex: 1 1 14em;
+}
+.planning-time h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.planning-time-note {
+  margin: 4px 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.planning-time-report {
+  padding-block: 16px;
+}
+.planning-time-report p {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.planning-inspector-time {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  padding: 16px;
+  overflow: hidden;
+}
+.planning-inspector-time > .planning-time {
+  min-width: 0;
+  flex: 1;
+  padding: 0;
+}
+.planning-automation-queue {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 22em;
+  max-height: 70vh;
+}
+.planning-lab-settings dl,
+.planning-time dl,
+.planning-proposal-change dl,
+.planning-time-history-entry dl {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0;
+}
+.planning-lab-settings dl > div,
+.planning-time dl > div,
+.planning-proposal-change dl > div,
+.planning-time-history-entry dl > div {
+  display: grid;
+  grid-template-columns: minmax(5em, 1fr) minmax(0, 3fr);
+  gap: 12px;
+}
+.planning-lab-settings dd,
+.planning-time dd,
+.planning-proposal-change dd,
+.planning-time-history-entry dd {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.planning-proposal-change dd p {
+  margin: 0;
+}
+.planning-property-cell {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.planning-list {
+  min-width: 0;
+  overflow: hidden;
+}
+.planning-archive-search,
+.planning-archive-filters,
+.planning-archive-summary,
+.planning-archive-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.planning-archive-search > .ui-search-field {
+  flex: 1 1 16em;
+  min-width: 12em;
+}
+.planning-archive-search > .ui-select,
+.planning-archive-filters > .ui-select,
+.planning-archive-pagination > .ui-select {
+  --field-width: auto;
+  flex: none;
+}
+.planning-archive-search > .button {
+  flex: none;
+}
+.planning-archive-filters {
+  padding-top: 12px;
+}
+.planning-archive-summary {
+  padding-block: 12px;
+}
+.planning-archive-summary > .ui-help,
+.planning-archive-pagination > .ui-help {
+  flex: 1 1 12em;
+}
+.planning-goals > .planning-archive-pagination {
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+  margin-top: 16px;
+}
+.planning-archive-dialog .dialog-body {
+  display: flex;
+  overflow: hidden;
+  min-height: 0;
+}
+.planning-archive-dialog .dialog-footer > .planning-archive-pagination {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+}
+.planning-archive-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  height: min(60vh, 640px);
+}
+.planning-archive-content .planning-archive-summary {
+  padding: 0;
+}
+.planning-history-list strong,
+.planning-occurrence-list a {
+  overflow-wrap: anywhere;
 }
 .planning-weekdays {
   display: flex;

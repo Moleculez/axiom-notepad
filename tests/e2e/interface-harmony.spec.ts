@@ -24,6 +24,10 @@ test("matched settings frames keep every edge visible while their contents scrol
   const f = await fixture(browser, "# Unchanged research\n");
   try {
     await f.page.goto("/workbench/settings/typography");
+    await f.page
+      .locator(".settings-scratchpad [data-math-request]")
+      .first()
+      .scrollIntoViewIfNeeded();
     await expect(
       f.page.locator('.settings-scratchpad [data-math-state="ready"]').first(),
     ).toBeVisible();
@@ -130,7 +134,7 @@ test("one preview toolbar preserves both surfaces, writing mode and undo without
       toolbar.getByRole("button", { name: "Source", exact: true }),
     ).toBeHidden();
     await preview
-      .getByLabel("Specimen search")
+      .getByLabel("Specimen search", { exact: true })
       .fill("Boundary conditions — α, β");
     await preview.getByLabel("Select specimen paper").uncheck();
     await preview.getByRole("button", { name: "Specimen actions" }).click();
@@ -153,9 +157,9 @@ test("one preview toolbar preserves both surfaces, writing mode and undo without
     await toolbar
       .getByRole("button", { name: "Interface", exact: true })
       .click();
-    await expect(preview.getByLabel("Specimen search")).toHaveValue(
-      "Boundary conditions — α, β",
-    );
+    await expect(
+      preview.getByLabel("Specimen search", { exact: true }),
+    ).toHaveValue("Boundary conditions — α, β");
     await expect(preview.getByLabel("Select specimen paper")).not.toBeChecked();
     await expect(
       preview.getByRole("group", { name: "Sample action menu" }),
@@ -170,9 +174,9 @@ test("one preview toolbar preserves both surfaces, writing mode and undo without
     expect(await specimen.evaluate((el) => el.scrollTop)).toBe(specimenScroll);
     await f.page.getByRole("button", { name: "Hide live preview" }).click();
     await f.page.getByRole("button", { name: "Show live preview" }).click();
-    await expect(preview.getByLabel("Specimen search")).toHaveValue(
-      "Boundary conditions — α, β",
-    );
+    await expect(
+      preview.getByLabel("Specimen search", { exact: true }),
+    ).toHaveValue("Boundary conditions — α, β");
     await f.page.screenshot({
       path: info.outputPath("settings-interface-toolbar.png"),
     });

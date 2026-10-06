@@ -28,7 +28,7 @@ The final isolated production candidate is `NTdTJXpDjJXGIoeybR6Ed` in `.next/des
 
 Cross-browser application testing reproduced an equation activation race: Firefox can omit click when the asynchronously rendered math descendant changes between mouse-down and mouse-up. Activation now resolves from the stable equation source map on mouse-down. A deterministic preview-replacement regression failed before the fix and passes in all three engines afterward. The preserved failure trace is under `data/verification-r9/math-click-before-fix`; it is not counted as a passing attempt.
 
-Light/dark desktop screenshots were inspected with real STEM content: nested lists/tasks, indented outline, SVG mathematics, tables, code controls, centered workspace management, file menus and the pinned footer. Canonical source remained unchanged. No mobile styling work was added. Installed Typora 1.11.7 was observed visually without sending global keystrokes or modifying the user's open document; this is not physical Typora parity certification.
+Light/dark desktop screenshots were inspected with real STEM content: nested lists/tasks, indented outline, SVG mathematics, tables, code controls, centered workspace management, file menus and the pinned footer. Canonical source remained unchanged. No mobile styling work was added.
 
 The isolated lifecycle verification passed reference-blocked removal, purge idempotence, durable tombstones, private Markdown/CRDT preservation, detached private citation metadata, moved-file survival and reference-safe blob cleanup. All four durability fault checks passed: acknowledged edits survive process loss, failed snapshot writes do not acknowledge, the binary journal recovers missing snapshot content, and shutdown drains persistence. Generated/destructive fixtures remain isolated from live research.
 
@@ -82,7 +82,7 @@ Validated on September 8, 2026 on macOS arm64, Node.js 22.17, PostgreSQL 18.1 em
 
 ## First-party native editor replacement
 
-The installed Typora 1.11.7 was inspected using disposable scratch Markdown, including lists, tables, code and mathematics. The user's documents, clipboard and pre-existing windows were preserved. Axiom now owns its input transactions, source/DOM mapping, selection, composition, rendering, clipboard and completion layers. CodeMirror and its Yjs adapter are removed; no Tiptap, ProseMirror, Lexical or Monaco runtime was introduced. The existing parser, Yjs/Hocuspocus, MathJax, Mermaid and syntax highlighting remain specialized infrastructure. There is no document-format or database migration.
+Axiom now owns its input transactions, source/DOM mapping, selection, composition, rendering, clipboard and completion layers. CodeMirror and its Yjs adapter are removed; no replacement editor-framework runtime was introduced. The existing parser, Yjs/Hocuspocus, MathJax, Mermaid and syntax highlighting remain specialized infrastructure. There is no document-format or database migration. The user's documents, clipboard and pre-existing windows were preserved.
 
 Production acceptance uses `axiom_refinement_test_20260908`, the separate attachment root, web port 3002 and sync port 1235. The verified production build is `9N5Dt2i_7-Nv6J3Vqs9A5` in `.next/native-verification-v7-20260908`. All generated accounts, notes, uploads and preference changes remain in that isolated environment.
 
@@ -121,7 +121,7 @@ The read-only live smoke visited Home, Explorer, Projects, Research, Inbox and P
 
 Reconnecting existing clients refreshed document persistence timestamps, as expected. A dump-backed post-smoke comparison confirmed **all 12 CRDT byte states and revisions match the fresh backup**, and **every other audited table remains unchanged**. Private ownership and attachment-version mappings also passed. No live research data was deleted, restored or replaced. The isolated test web/sync/worker services were stopped after acceptance; their data and evidence remain available.
 
-This is a shipped first-party editor, not a claim of complete Typora parity. Physical operating-system IMEs/clipboard, assistive technologies, native printing, real Safari/iOS offline behavior and external cloud infrastructure still require their intended environments. Existing limits for Markdown tables, non-executable code and LaTeX editing are described in [the editor guide](../EDITOR.md). Historical release evidence follows.
+Physical operating-system IMEs/clipboard, assistive technologies, native printing, real Safari/iOS offline behavior and external cloud infrastructure still require their intended environments. Existing limits for Markdown tables, non-executable code and LaTeX editing are described in [the editor guide](../EDITOR.md). Historical release evidence follows.
 
 ## Previous editor and preferences refinement
 

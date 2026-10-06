@@ -11,12 +11,51 @@ import {
 } from "./workspace-service";
 import { lockRevisionResource, revisionAudit } from "./revision-audit";
 import { notifyWorkspace } from "./documents";
+import {
+  preparePaperReview,
+  paperReviewSummary,
+  paperReviewSummarySql,
+  reviewRecordSummary,
+  safeReviewRecord,
+} from "./paper-review";
+import { fileAccess } from "./access";
 export async function resourceReviewApi(
   request: Request,
   path: string[],
   userId: string,
 ): Promise<Response | null> {
   const [endpoint, id, action] = path;
+  if (
+    endpoint === "reviews" &&
+    id &&
+    action === "paper-context" &&
+    request.method === "GET"
+  ) {
+    const [review] = await query("SELECT * FROM review_requests WHERE id=$1", [
+      z.uuid().parse(id),
+    ]);
+    if (!review) throw new HttpError(404, "Review unavailable.");
+    const resourceId = review.resource_id ?? review.note_id;
+    await resourceAccess(userId, resourceId);
+    const safe = await safeReviewRecord(userId, review);
+    await resourceAccess(userId, resourceId);
+    return json(safe.paper_context ?? null);
+  }
+  if (
+    endpoint === "resources" &&
+    action === "paper-review-preview" &&
+    request.method === "POST"
+  ) {
+    const input = z
+      .object({ reference: z.string().max(100) })
+      .strict()
+      .parse(await request.json());
+    return json(
+      paperReviewSummary(
+        await preparePaperReview(userId, z.uuid().parse(id), input.reference),
+      ),
+    );
+  }
   if (endpoint === "reviews" && id === "inbox" && request.method === "GET") {
     const scope = z
       .uuid()
@@ -24,14 +63,17 @@ export async function resourceReviewApi(
       .parse(new URL(request.url).searchParams.get("spaceId"));
     if (scope) await spaceAccess(userId, scope);
     const requests = await query(
-      "SELECT q.*,r.name AS title,r.id AS resource_id,u.name AS reviewer,a.name AS requester,s.name AS space FROM review_requests q JOIN resources r ON r.id=coalesce(q.resource_id,q.note_id) JOIN spaces s ON s.id=r.space_id JOIN \"user\" u ON u.id=q.reviewer_id JOIN \"user\" a ON a.id=q.requested_by WHERE (($2::uuid IS NULL AND (q.reviewer_id=$1 OR q.requested_by=$1)) OR r.space_id=$2) AND r.deleted_at IS NULL AND axiom_space_state(r.space_id) IN ('active','archived') AND axiom_space_role($1,r.space_id) IS NOT NULL ORDER BY q.created_at DESC LIMIT 200",
+      `SELECT to_jsonb(q)-'paper_context' AS review,${paperReviewSummarySql("q")} AS paper_context,r.name AS title,r.id AS resource_id,u.name AS reviewer,a.name AS requester,s.name AS space FROM review_requests q JOIN resources r ON r.id=coalesce(q.resource_id,q.note_id) JOIN spaces s ON s.id=r.space_id JOIN "user" u ON u.id=q.reviewer_id JOIN "user" a ON a.id=q.requested_by WHERE (($2::uuid IS NULL AND (q.reviewer_id=$1 OR q.requested_by=$1)) OR r.space_id=$2) AND r.deleted_at IS NULL AND axiom_space_state(r.space_id) IN ('active','archived') AND axiom_space_role($1,r.space_id) IS NOT NULL ORDER BY q.created_at DESC LIMIT 200`,
       [userId, scope],
     );
     const proposals = await query(
       "SELECT p.id,p.note_id AS resource_id,p.status,p.message,p.created_at,r.name AS title,s.name AS space,u.name AS author,axiom_space_role($1,r.space_id) AS role,n.generation FROM revision_suggestions p JOIN resources r ON r.note_id=p.note_id JOIN notes n ON n.id=p.note_id JOIN spaces s ON s.id=r.space_id JOIN \"user\" u ON u.id=p.author_id WHERE p.status='pending' AND r.deleted_at IS NULL AND axiom_space_state(r.space_id)='active' AND ($2::uuid IS NULL OR r.space_id=$2) AND (p.author_id=$1 OR axiom_space_role($1,r.space_id)='editor') AND axiom_space_role($1,r.space_id) IS NOT NULL ORDER BY p.updated_at DESC LIMIT 200",
       [userId, scope],
     );
-    return json({ requests, proposals });
+    return json({
+      requests: requests.map(({ review, ...row }) => ({ ...review, ...row })),
+      proposals,
+    });
   }
   if (endpoint === "reviews" && id && request.method === "PATCH") {
     const [review] = await query("SELECT * FROM review_requests WHERE id=$1", [
@@ -109,20 +151,23 @@ export async function resourceReviewApi(
       },
     );
     await notifyWorkspace();
-    return json(result);
+    return json(reviewRecordSummary(result));
   }
   if (endpoint !== "resources" || action !== "review-requests") return null;
   const { resource, space } = await resourceAccess(userId, z.uuid().parse(id));
   if (request.method === "GET") {
     const items = await query(
-      'SELECT q.*,u.name AS reviewer FROM review_requests q JOIN "user" u ON u.id=q.reviewer_id WHERE coalesce(resource_id,note_id)=$1 ORDER BY created_at DESC LIMIT 100',
+      `SELECT to_jsonb(q)-'paper_context' AS review,${paperReviewSummarySql("q")} AS paper_context,u.name AS reviewer FROM review_requests q JOIN "user" u ON u.id=q.reviewer_id WHERE coalesce(resource_id,note_id)=$1 ORDER BY q.created_at DESC LIMIT 100`,
       [id],
     );
     const reviewers = await query(
       "SELECT u.id,u.name FROM \"user\" u WHERE (u.id=$2 OR EXISTS(SELECT 1 FROM members m WHERE m.user_id=u.id AND m.group_id=$3)) AND axiom_space_role(u.id,$1) IN ('editor','commenter') ORDER BY u.name LIMIT 500",
       [space.id, space.owner_id, space.group_id],
     );
-    return json({ items, reviewers });
+    return json({
+      items: items.map(({ review, ...row }) => ({ ...review, ...row })),
+      reviewers,
+    });
   }
   if (request.method === "POST") {
     const input = z
@@ -131,6 +176,10 @@ export async function resourceReviewApi(
         reference: z.string().max(100),
         reviewerId: z.string().min(1).max(200),
         message: z.string().max(5000).default(""),
+        paperFingerprint: z
+          .string()
+          .regex(/^[a-f\d]{64}$/)
+          .optional(),
       })
       .parse(await request.json());
     const revision = await readResourceRevision(userId, id, input.reference);
@@ -158,10 +207,34 @@ export async function resourceReviewApi(
             400,
             "The reviewer needs commenter or editor access to this file.",
           );
+        let paperContext = null;
+        if (input.paperFingerprint) {
+          const preview = await preparePaperReview(
+            userId,
+            id,
+            input.reference,
+            client,
+          );
+          if (preview.fingerprint !== input.paperFingerprint)
+            throw new HttpError(
+              409,
+              "Paper dependencies changed after review. Refresh before assigning.",
+            );
+          for (const asset of preview.assets)
+            await fileAccess(input.reviewerId, asset.id);
+          paperContext = {
+            version: 1,
+            fingerprint: preview.fingerprint,
+            sourceHash: preview.sourceHash,
+            references: preview.references,
+            assets: preview.assets,
+            diagnostics: preview.diagnostics,
+          };
+        }
         const {
           rows: [saved],
         } = await client.query(
-          "INSERT INTO review_requests(project_id,resource_id,note_id,snapshot_id,file_version_id,requested_by,reviewer_id,message) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *",
+          "INSERT INTO review_requests(project_id,resource_id,note_id,snapshot_id,file_version_id,requested_by,reviewer_id,message,paper_context) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *",
           [
             space.project_id,
             id,
@@ -171,6 +244,7 @@ export async function resourceReviewApi(
             userId,
             input.reviewerId,
             input.message,
+            paperContext ? JSON.stringify(paperContext) : null,
           ],
         );
         await revisionAudit(
@@ -197,7 +271,7 @@ export async function resourceReviewApi(
       },
     );
     await notifyWorkspace();
-    return json(result, 201);
+    return json(reviewRecordSummary(result), 201);
   }
   throw new HttpError(405, "Unsupported review action.");
 }

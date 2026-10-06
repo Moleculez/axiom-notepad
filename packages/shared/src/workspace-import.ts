@@ -1,44 +1,27 @@
 import { z } from "zod";
 import { MAX_FILE_BYTES } from "./workspace";
+import {
+  IMPORT_LIMITS,
+  importPath,
+  importPathKey,
+  importExclusion,
+} from "./collection-path";
+export {
+  IMPORT_LIMITS,
+  importPath,
+  importPathKey,
+  importExclusion,
+} from "./collection-path";
+import {
+  portableMetadataSchema,
+  collectionDiagnosticSchema,
+  type CollectionDiagnostic,
+} from "./portable-collection";
+import { parseCanvas } from "./canvas";
 
-export const IMPORT_LIMITS = {
-  entries: 2000,
-  depth: 32,
-  noteChars: 1_000_000,
-  markdownBytes: 25_000_000,
-  zipBytes: 50_000_000,
-  zipExpandedBytes: 100_000_000,
-  zipEntries: 1000,
-} as const;
-export type ImportSource = "markdown" | "folder" | "zip";
+export type ImportSource = "markdown" | "canvas" | "folder" | "zip";
 export type ImportConflict = "keepBoth" | "merge" | "skip";
 
-/** Relative paths are data, never filesystem paths. Reject rather than repair unsafe input. */
-export function importPath(value: string): string {
-  const path = value.normalize("NFC");
-  const parts = path.split("/");
-  if (
-    !path ||
-    path.length > 4096 ||
-    /^[\\/]|^[a-z]:/i.test(path) ||
-    /[\\\u0000-\u001f\u007f]/.test(path) ||
-    parts.length > IMPORT_LIMITS.depth + 1 ||
-    parts.some(
-      (part) =>
-        !part ||
-        part === "." ||
-        part === ".." ||
-        part.trim() !== part ||
-        part.length > 200,
-    )
-  )
-    throw new Error(
-      "Use safe relative paths with names up to 200 characters and 32 folder levels.",
-    );
-  return path;
-}
-export const importPathKey = (path: string) =>
-  path.normalize("NFC").toLowerCase();
 /** JSONB and browser objects need the same identity, regardless of property order. */
 export function canonicalImportJson(value: unknown) {
   return JSON.stringify(value, (_key, item) =>
@@ -51,32 +34,12 @@ export function canonicalImportJson(value: unknown) {
       : item,
   );
 }
-export function importExclusion(path: string): string | null {
-  const parts = path.split("/");
-  if (
-    parts.some(
-      (p) =>
-        /^(?:\.git|\.svn|\.hg|node_modules|__MACOSX|\.DS_Store|Thumbs\.db|desktop\.ini|\.next|\.uploads)$/i.test(
-          p,
-        ) || p.startsWith("._"),
-    )
-  )
-    return "System or development file";
-  if (
-    parts.some((p) =>
-      /^(?:\.env(?:\..*)?|\.ssh|\.aws|credentials|id_rsa|id_ed25519)$/i.test(p),
-    ) ||
-    /\.(?:pem|key|p12|pfx)$/i.test(path)
-  )
-    return "Likely credentials or private key";
-  return null;
-}
 export const isImportMarkdown = (path: string) =>
   /\.(?:md|markdown)$/i.test(path);
 export function importName(path: string, kind: "folder" | "note" | "file") {
   const name = path.split("/").at(-1)!;
   return kind === "note"
-    ? name.replace(/\.(?:md|markdown)$/i, "") || "Untitled"
+    ? name.replace(/\.(?:md|markdown|canvas|tex|txt)$/i, "") || "Untitled"
     : name;
 }
 export const importManifestEntrySchema = z
@@ -84,6 +47,13 @@ export const importManifestEntrySchema = z
     id: z.uuid(),
     path: z.string().max(4096),
     kind: z.enum(["folder", "note", "file"]),
+    sourceFormat: z.enum(["markdown", "latex", "text", "canvas"]).optional(),
+    metadata: portableMetadataSchema.optional(),
+    expectedSha256: z
+      .string()
+      .regex(/^[a-f0-9]{64}$/)
+      .optional(),
+    asAttachment: z.boolean().optional(),
     bytes: z.number().int().min(0).max(MAX_FILE_BYTES),
     // SHA-256 of the concatenated, lowercase SHA-256 part digests. Empty files hash the empty string.
     digest: z
@@ -94,13 +64,14 @@ export const importManifestEntrySchema = z
   .strict();
 export const importManifestSchema = z
   .object({
-    source: z.enum(["markdown", "folder", "zip"]),
+    source: z.enum(["markdown", "canvas", "folder", "zip"]),
     parentId: z.uuid().nullable().default(null),
     conflict: z.enum(["keepBoth", "merge", "skip"]).default("keepBoth"),
     entries: z
       .array(importManifestEntrySchema)
       .min(1)
       .max(IMPORT_LIMITS.entries),
+    diagnostics: z.array(collectionDiagnosticSchema).max(2000).optional(),
   })
   .strict();
 export type ImportManifest = z.infer<typeof importManifestSchema>;
@@ -129,18 +100,68 @@ export function validateImportManifest(input: unknown): ImportManifest {
         : !entry.digest
     )
       throw new Error(`Invalid file inventory: ${entry.path}`);
+    const format =
+      entry.sourceFormat ?? (entry.kind === "note" ? "markdown" : undefined);
+    if (entry.sourceFormat && entry.kind !== "note")
+      throw new Error("Only native notes declare a source format.");
+    if (entry.kind === "note" && !format)
+      throw new Error("Native documents need a source format.");
     if (
-      (entry.kind === "note") !==
-      (entry.kind !== "folder" && isImportMarkdown(entry.path))
+      isImportMarkdown(entry.path) &&
+      entry.kind !== "folder" &&
+      entry.kind !== "note" &&
+      !entry.asAttachment
     )
       throw new Error(`Markdown must become a native note: ${entry.path}`);
+    if (
+      entry.kind === "note" &&
+      !entry.metadata?.originId &&
+      !new RegExp(
+        format === "canvas"
+          ? "\\.canvas$"
+          : format === "latex"
+            ? "\\.tex$"
+            : format === "text"
+              ? "\\.txt$"
+              : "\\.(md|markdown)$",
+        "i",
+      ).test(entry.path)
+    )
+      throw new Error(
+        `The document format does not match its path: ${entry.path}`,
+      );
+    if (
+      entry.metadata?.toolKind &&
+      (entry.metadata.toolKind === "image"
+        ? entry.kind !== "file"
+        : format !==
+          (
+            {
+              math: "latex",
+              canvas: "canvas",
+              text: "text",
+              mindmap: "markdown",
+            } as const
+          )[entry.metadata.toolKind])
+    )
+      throw new Error("Tool kind does not match the imported document.");
     if (entry.kind === "note") markdownBytes += entry.bytes;
     if (
       manifest.source === "markdown" &&
-      (entry.kind !== "note" || entry.path.includes("/"))
+      (entry.kind !== "note" ||
+        format !== "markdown" ||
+        entry.path.includes("/"))
     )
       throw new Error(
         "Select Markdown files, or use Import folder for a mixed collection.",
+      );
+    if (
+      manifest.source === "canvas" &&
+      entry.kind === "note" &&
+      format !== "canvas"
+    )
+      throw new Error(
+        "Choose Canvas files, or import a folder for supporting files.",
       );
   }
   if (
@@ -148,7 +169,7 @@ export function validateImportManifest(input: unknown): ImportManifest {
   )
     throw new Error("Import entry identifiers must be unique.");
   if (markdownBytes > IMPORT_LIMITS.markdownBytes)
-    throw new Error("Import up to 25 MB of Markdown at a time.");
+    throw new Error("Import up to 25 MB of native source at a time.");
   const folders = new Set(
     manifest.entries.filter((e) => e.kind === "folder").map((e) => e.path),
   );
@@ -188,6 +209,7 @@ export type WorkspaceImportEntry = ImportManifestEntry & {
 export type WorkspaceImportPreview = {
   entries: WorkspaceImportEntry[];
   fingerprint: string;
+  diagnostics?: CollectionDiagnostic[];
   destination: {
     spaceId: string;
     spaceName: string;
@@ -212,6 +234,7 @@ export type WorkspaceImportBatch = {
   status: "preparing" | "publishing" | "blocked" | "complete" | "cancelled";
   error: string | null;
   expiresAt: string;
+  diagnostics?: CollectionDiagnostic[];
   entries: WorkspaceImportEntry[];
   result: {
     resources: {
@@ -221,6 +244,7 @@ export type WorkspaceImportBatch = {
       parentId: string | null;
     }[];
     warnings: string[];
+    diagnostics?: CollectionDiagnostic[];
   } | null;
 };
 export type WorkspaceImportPoll = Omit<
@@ -265,7 +289,7 @@ export function planImport(
     const parentPath = entry.path.split("/").slice(0, -1).join("/"),
       parent = planned.get(parentPath);
     const parentId = parent?.resourceId ?? manifest.parentId,
-      name = importName(entry.path, entry.kind);
+      name = entry.metadata?.name ?? importName(entry.path, entry.kind);
     const siblings =
       children.get(parentId ?? "") ?? new Map<string, ImportExisting[]>();
     const matches = siblings.get(importPathKey(name)) ?? [];
@@ -316,7 +340,10 @@ export function planImport(
   });
 }
 
-export function decodeImportMarkdown(bytes: Uint8Array) {
+export function decodeImportMarkdown(
+  bytes: Uint8Array,
+  format: "markdown" | "canvas" | "latex" | "text" = "markdown",
+) {
   let source: string;
   try {
     source = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(
@@ -329,7 +356,14 @@ export function decodeImportMarkdown(bytes: Uint8Array) {
   }
   if (source.includes("\u0000"))
     throw new Error("Markdown contains binary data.");
-  if (source.length > IMPORT_LIMITS.noteChars)
-    throw new Error("A Markdown note may contain up to 1,000,000 characters.");
+  if (
+    source.length > (format === "canvas" ? 5_000_000 : IMPORT_LIMITS.noteChars)
+  )
+    throw new Error(
+      format === "canvas"
+        ? "A Canvas project may contain up to 5,000,000 characters."
+        : "A native document may contain up to 1,000,000 characters.",
+    );
+  if (format === "canvas") parseCanvas(source.replace(/^\ufeff/, ""));
   return source;
 }

@@ -398,7 +398,7 @@ export function ResourceIcon({
   size?: number;
 }) {
   const Icon =
-    resource.document_type === "canvas"
+    resource.document_type === "canvas" || resource.document_type === "mindmap"
       ? Network
       : resource.document_type === "math"
         ? Sigma

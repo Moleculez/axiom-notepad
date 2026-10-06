@@ -13,6 +13,7 @@ import {
 } from "./assistant-service";
 import { withAuditContext, installAuditContext } from "./audit-context";
 import { integrationActions } from "./integration-catalog";
+import { remainingChangeActions } from "./change-set-recovery";
 import { notifyWorkspace } from "./documents";
 import {
   changeSetInput,
@@ -159,6 +160,7 @@ export async function changeSetView(
     connection_id: s.connection_id,
     plugin_package_hash: s.plugin_package_hash,
     plugin_grant_id: s.plugin_grant_id,
+    recovery_of: s.recovery_of,
     error: s.error,
     preview: s.preview
       ? { fingerprint: s.preview.fingerprint, expiresAt: s.preview.expiresAt }
@@ -190,6 +192,7 @@ export async function createChangeSet(
   raw: unknown,
   contextId?: string,
   runId?: string,
+  recoveryOf?: string,
 ) {
   const input = changeSetInput.parse(raw);
   if (JSON.stringify(input).length > 1_500_000)
@@ -226,7 +229,7 @@ export async function createChangeSet(
         "Put initial content in the file creation action instead of editing a not-yet-created file.",
       );
   }
-  const requestHash = assistantHash(input);
+  const requestHash = assistantHash(recoveryOf ? { input, recoveryOf } : input);
   await transaction(async (db) => {
     if (actor.pluginGrantId)
       for (const action of actions)
@@ -276,7 +279,7 @@ export async function createChangeSet(
         "Dismiss an older change set before preparing another.",
       );
     await db.query(
-      "INSERT INTO workspace_change_sets(id,owner_id,connection_id,grant_version,context_id,run_id,title,space_ids,request_hash,plugin_grant_id,plugin_package_hash,plugin_grant_revision) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)",
+      "INSERT INTO workspace_change_sets(id,owner_id,connection_id,grant_version,context_id,run_id,title,space_ids,request_hash,plugin_grant_id,plugin_package_hash,plugin_grant_revision,recovery_of) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)",
       [
         input.mutationId,
         actor.userId,
@@ -290,6 +293,7 @@ export async function createChangeSet(
         actor.pluginGrantId ?? null,
         actor.pluginPackageHash ?? null,
         actor.pluginGrantRevision ?? null,
+        recoveryOf ?? null,
       ],
     );
     for (const [i, a] of actions.entries())
@@ -302,6 +306,44 @@ export async function createChangeSet(
     input.mutationId,
     actor.userId,
     actor.connectionId ?? undefined,
+  );
+}
+export async function reprepareRemainingChangeSet(
+  id: string,
+  user: string,
+  version: number,
+  keys: string[],
+  mutationId: string,
+) {
+  const s = await loadChangeSet(id, user);
+  if (!["partial", "cancelled"].includes(s.status) || s.version !== version)
+    throw new HttpError(
+      409,
+      "Refresh the completed/failed receipts before preparing remaining work.",
+    );
+  await assertChangeSetAccess(s);
+  const rows = await query<ActionRow>(
+    "SELECT * FROM workspace_change_actions WHERE set_id=$1 ORDER BY position",
+    [id],
+  );
+  let actions: ChangeAction[];
+  try {
+    actions = remainingChangeActions(rows, keys);
+  } catch (e) {
+    throw new HttpError(409, (e as Error).message);
+  }
+  // Original preconditions remain: recovery does not silently rebase stale edits.
+  return createChangeSet(
+    actorFor(s),
+    {
+      mutationId,
+      title: "Remaining · " + s.title.slice(0, 145),
+      spaceIds: s.space_ids,
+      actions,
+    },
+    s.context_id,
+    s.run_id,
+    id,
   );
 }
 export async function reviseChangeSet(

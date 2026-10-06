@@ -1,7 +1,7 @@
 # Canvas, Explorer, connections and selected offline work
 
-Current file-first workbench contract. This extends the research workspace; it is not a
-claim of complete Obsidian Canvas, Google Drive or Office parity.
+The file-first workbench brings Canvas, file management, connections and selected
+offline workflows into the research workspace.
 
 ## Creation and application tabs
 
@@ -51,8 +51,8 @@ PNG/JPG/SVG/PDF, Markdown, JSON Canvas and snapshot-bound portable ZIP bundles.
 See [the implementation boundaries](CANVAS_ARCHITECTURE.md).
 
 Current limits: 2,000 nodes, 8,000 edges and bounded text/dimensions; visual export
-is limited to 120 cards and 32 megapixels per raster. Group background images,
-arbitrary embedded app permissions and every Obsidian interaction are not implemented.
+is limited to 120 cards and 32 megapixels per raster. Group background images
+and arbitrary embedded app permissions are not implemented.
 Physical OS IME and large, real research boards need further acceptance testing.
 
 ## Explorer and native file formats

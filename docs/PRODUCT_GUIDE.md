@@ -4,7 +4,7 @@
 
 **Docs** sits immediately to the left of **Search & commands** in the app toolbar.
 It opens `/workbench/docs` inside the authenticated workbench, keeping the workspace
-sidebar in place. Thirty-one guides cover the Markdown editor, Canvas, PDF research,
+sidebar in place. Thirty-two guides cover the Markdown editor, mind maps, Canvas, PDF research,
 studios and viewers, files, groups, planning, publishing, the assistant, MCP,
 offline behavior, appearance and optional workspace extensions. These are user guides, not public website pages.
 

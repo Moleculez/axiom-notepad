@@ -16,6 +16,7 @@ import { reserveCapacity } from "./uploads-api";
 import { putAttachment, removeAttachment } from "./storage";
 import JSZip from "jszip";
 import { blankImageProject } from "./blank-image";
+import { mindmapSettingsSchema } from "./mindmap";
 import {
   mathProjectSettings,
   imageProjectManifest,
@@ -47,7 +48,7 @@ export async function researchToolsApi(
       .object({
         spaceId: uuid,
         name: resourceNameSchema,
-        kind: z.enum(["math", "image", "canvas", "text"]),
+        kind: z.enum(["math", "image", "canvas", "text", "mindmap"]),
         mutationId: uuid,
         source: z.string().max(5_000_000).default(""),
         parentId: uuid.nullable().default(null),
@@ -112,7 +113,10 @@ export async function researchToolsApi(
                 413,
                 "Math projects are limited to 30,000 characters at creation.",
               );
-            if (input.kind === "text" && input.source.length > 1_000_000)
+            if (
+              ["text", "mindmap"].includes(input.kind) &&
+              input.source.length > 1_000_000
+            )
               throw new HttpError(413, "Text exceeds one million characters.");
             await createNote(
               {
@@ -122,7 +126,12 @@ export async function researchToolsApi(
                 userId,
                 title: input.name,
                 body: input.source,
-                sourceFormat: input.kind === "math" ? "latex" : input.kind,
+                sourceFormat:
+                  input.kind === "math"
+                    ? "latex"
+                    : input.kind === "mindmap"
+                      ? "markdown"
+                      : input.kind,
                 initialState: input.initialState,
                 visibility: space.kind === "personal" ? "private" : "shared",
               },
@@ -183,7 +192,9 @@ export async function researchToolsApi(
               input.kind,
               input.kind === "math"
                 ? mathProjectSettings.parse(input.settings ?? {})
-                : (input.settings ?? {}),
+                : input.kind === "mindmap"
+                  ? mindmapSettingsSchema.parse(input.settings ?? {})
+                  : (input.settings ?? {}),
             ],
           );
           await recordActivity(client, {
@@ -249,7 +260,9 @@ export async function researchToolsApi(
           JSON.stringify(
             project.kind === "math"
               ? mathProjectSettings.parse(input.settings)
-              : input.settings,
+              : project.kind === "mindmap"
+                ? mindmapSettingsSchema.parse(input.settings)
+                : input.settings,
           ),
           input.version,
         ],

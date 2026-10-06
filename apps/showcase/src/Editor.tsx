@@ -5,7 +5,10 @@ import {
   TextInput,
   SearchField,
 } from "../../web/components/ui/controls";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, lazy, Suspense } from "react";
+const MindmapSurface = lazy(
+  () => import("../../web/components/mindmap/MindmapSurface"),
+);
 import * as Y from "yjs";
 import { NativeBinding } from "@axiom/editor/binding";
 import { documentStatistics, parseMarkdown } from "@axiom/markdown";
@@ -46,14 +49,19 @@ type Mode = "write" | "source" | "read";
 type Bookmark = ReturnType<NativeBinding["relative"]>;
 export default function Editor({
   document: initial,
+  defaultMap = false,
 }: {
   document: LocalDocument;
+  defaultMap?: boolean;
 }) {
   const snapshot = useSnapshot(),
-    { dark, notify, open, renderContext, changeAppearance } = useDemo(),
+    { dark, notify, open, navigate, renderContext, changeAppearance } =
+      useDemo(),
     appearance = snapshot.appearance;
   const doc = snapshot.documents.find((d) => d.id === initial.id) ?? initial;
   const [source, setSource] = useState(doc.source),
+    [mapBinding, setMapBinding] = useState<NativeBinding | null>(null),
+    [map, setMap] = useState(defaultMap),
     [mode, setMode] = useState<Mode>(doc.kind === "text" ? "source" : "write"),
     [outline, setOutline] = useState(true),
     [section, setSection] = useState<string | null>(null),
@@ -109,8 +117,9 @@ export default function Editor({
     doc.id,
     source,
     mode,
-    appearance.minimap.enabled || outline,
+    !map && (appearance.minimap.enabled || outline),
   );
+  useEffect(() => setMap(defaultMap), [defaultMap]);
   useEffect(() => {
     if (!mount.current) return;
     const ydoc = new Y.Doc(),
@@ -119,6 +128,7 @@ export default function Editor({
     const undo = new Y.UndoManager(text),
       binding = new NativeBinding(ydoc, undo, null);
     bindingRef.current = binding;
+    setMapBinding(binding);
     const editor = new AxiomEditorView(mount.current, binding, {
       mode: () => current.current.mode,
       preferences: () => current.current.preferences,
@@ -201,6 +211,10 @@ export default function Editor({
     });
     editor.setLabel("Research Markdown editor", "showcase-editor");
     view.current = editor;
+    const changed = binding.subscribe((value) => {
+      setSource(value);
+      store.update(initial.id, value);
+    });
     const closeVisuals = installMarkdownVisuals(editor.dom, {
       parsed: () => editor.parsed,
       source: () => editor.source,
@@ -217,6 +231,8 @@ export default function Editor({
         editor.openBlockMenu(x, y, { anchor: at, head: at }),
     });
     return () => {
+      changed();
+      setMapBinding(null);
       closeVisuals();
       view.current = null;
       bindingRef.current = null;
@@ -412,7 +428,19 @@ export default function Editor({
           <Plus size={16} />
         </IconButton>
         <span className="tool-spacer" />
-        <div className="scratchpad-modes" role="group" aria-label="Editor mode">
+        <Button
+          variant="ghost"
+          aria-pressed={map}
+          onClick={() => navigate(map ? "editor" : "mindmap", doc.id)}
+        >
+          {map ? "Document" : "Mind map"}
+        </Button>
+        <div
+          className="scratchpad-modes"
+          role="group"
+          aria-label="Editor mode"
+          hidden={map}
+        >
           {(["write", "source", "read"] as const).map((value) => (
             <button
               key={value}
@@ -461,6 +489,7 @@ export default function Editor({
         <IconButton
           className="icon-button"
           aria-label="Toggle outline"
+          disabled={map}
           title="Outline"
           aria-pressed={outline}
           onClick={() => setOutline((value) => !value)}
@@ -470,6 +499,7 @@ export default function Editor({
         <IconButton
           className="icon-button"
           aria-label="Toggle minimap"
+          disabled={map}
           title="Minimap"
           aria-pressed={appearance.minimap.enabled}
           onClick={() =>
@@ -500,8 +530,37 @@ export default function Editor({
           <Download size={16} />
         </IconButton>
       </header>
-      <div className="demo-editor-layout">
-        <div className="document-navigation-row demo-writing-row">
+      <div className="demo-editor-layout" data-mindmap={map || undefined}>
+        {map && mapBinding && (
+          <Suspense fallback={<p role="status">Opening mind map…</p>}>
+            <MindmapSurface
+              binding={mapBinding}
+              account="showcase-local"
+              scope={`showcase:${doc.id}:1`}
+              title={doc.title}
+              readOnly={mode === "read"}
+              canEdit={() => current.current.mode !== "read"}
+              context={renderContext()}
+              onAuxiliary={() => setOutline(false)}
+              onDocument={(at) => {
+                navigate("editor", doc.id);
+                requestAnimationFrame(() =>
+                  requestAnimationFrame(() => view.current?.focus(at)),
+                );
+              }}
+              onLink={(target) => {
+                const linked = store
+                  .getSnapshot()
+                  .documents.find((d) => d.id === target || d.title === target);
+                if (linked) open(linked.id);
+                else if (/^https?:\/\//i.test(target))
+                  window.open(target, "_blank", "noopener,noreferrer");
+                else notify("Import the linked note to open it here.");
+              }}
+            />
+          </Suspense>
+        )}
+        <div className="document-navigation-row demo-writing-row" hidden={map}>
           <div
             ref={mount}
             className="demo-document-scroll ws-document-scroll document-scroll"
@@ -523,7 +582,7 @@ export default function Editor({
             />
           </div>
         </div>
-        {outline && (
+        {outline && !map && (
           <ResizablePanel
             className="ws-document-context"
             label="Document context"

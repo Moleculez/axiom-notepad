@@ -3,7 +3,7 @@
 Axiom's editor adapters are first-party code. The application links the following
 upstream MIT-licensed packages; their exact versions and transitive dependencies
 are recorded in the root lockfile. This is integration, not a vendored fork of
-Milkdown/CodeMirror and not a copy of Typora.
+Milkdown/CodeMirror.
 
 - Milkdown Kit 7.22.1 and its Milkdown packages: Copyright (c) 2020-present Mirone.
   https://github.com/Milkdown/milkdown

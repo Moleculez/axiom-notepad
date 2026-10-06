@@ -44,6 +44,11 @@ import type {
 } from "@axiom/editor/minimap";
 import { editorAppearanceKey } from "@axiom/shared/minimap";
 import type { EditorExtensionCommand } from "../lib/native-editor/completions";
+import dynamic from "next/dynamic";
+import type { MindmapHandle, MindmapProps } from "./mindmap/MindmapSurface";
+const MindmapSurface = dynamic(() => import("./mindmap/MindmapSurface"), {
+  ssr: false,
+});
 export type EditorMode = "write" | "source" | "read";
 export type CommentAnchor = {
   start: number[];
@@ -87,6 +92,7 @@ interface Props {
   retainSession?: boolean;
   user: { id: string; name: string };
   mode: EditorMode;
+  mindmap?: Omit<MindmapProps, "binding" | "ref" | "readOnly" | "canEdit">;
   appearance: Preferences;
   preferences: EditorPreferences;
   onCommand: (command: EditorCommandId) => void;
@@ -124,6 +130,9 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(props, ref) {
     id: currentCache(scope),
   }));
   const cacheId = cache.scope === scope ? cache.id : currentCache(scope);
+  const [mapBinding, setMapBinding] = useState<NativeBinding | null>(null);
+  const [mapLocked, setMapLocked] = useState(!!props.readOnly);
+  const mapView = useRef<MindmapHandle | null>(null);
   const container = useRef<HTMLDivElement>(null),
     viewRef = useRef<EditorView | null>(null),
     serverReadOnly = useRef(false),
@@ -145,7 +154,11 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(props, ref) {
     const view = viewRef.current,
       doc = docRef.current;
     if (!view || !doc) return;
-    const { from, to } = range ?? selectionRange(view.selection);
+    const { from, to } =
+      range ??
+      selectionRange(
+        propsRef.current.mindmap ? view.binding.selection() : view.selection,
+      );
     if (pendingInsert.current)
       insertionSessions.current.cancel(pendingInsert.current);
     const token = insertionSessions.current.create(doc, from, to);
@@ -157,6 +170,10 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(props, ref) {
     args: CommandArguments = {},
     token?: string,
   ) => {
+    if (propsRef.current.mindmap && id === "source") {
+      mapView.current?.toggleSource();
+      return true;
+    }
     const view = viewRef.current,
       doc = docRef.current;
     if (!view || !doc) return false;
@@ -172,7 +189,8 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(props, ref) {
         return false;
       }
       args = { ...args, ...range };
-    }
+    } else if (propsRef.current.mindmap)
+      args = { ...selectionRange(view.binding.selection()), ...args };
     return view.execute(id, args);
   };
   useImperativeHandle(
@@ -181,7 +199,16 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(props, ref) {
       reviewBinding: () => viewRef.current?.binding ?? null,
       execute,
       jumpToCollaborator: (clientId) =>
-        viewRef.current?.jumpToPeer(clientId) ?? false,
+        propsRef.current.mindmap
+          ? (() => {
+              const peer = viewRef.current?.binding
+                .peers()
+                .find((p) => p.clientId === clientId);
+              if (!peer?.selection) return false;
+              mapView.current?.focus(peer.selection.head);
+              return true;
+            })()
+          : (viewRef.current?.jumpToPeer(clientId) ?? false),
       tableActive: () => viewRef.current?.tableActive() ?? false,
       prepareInsert,
       cancelInsert() {
@@ -210,6 +237,10 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(props, ref) {
         );
       },
       focus(position) {
+        if (propsRef.current.mindmap) {
+          mapView.current?.focus(position);
+          return;
+        }
         const view = viewRef.current;
         if (view)
           view.focus(
@@ -239,22 +270,26 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(props, ref) {
           : null;
       },
       markGeometry() {
+        if (propsRef.current.mindmap) return [];
         const view = viewRef.current;
         return view && "markGeometry" in view ? view.markGeometry() : [];
       },
       navigationGeometry() {
+        if (propsRef.current.mindmap) return [];
         const view = viewRef.current;
         return view && "navigationGeometry" in view
           ? view.navigationGeometry()
           : [];
       },
       navigationSnapshot() {
+        if (propsRef.current.mindmap) return null;
         const view = viewRef.current;
         return view && "navigationSnapshot" in view
           ? view.navigationSnapshot()
           : null;
       },
       navigationPosition(position) {
+        if (propsRef.current.mindmap) return null;
         const view = viewRef.current;
         return view && "navigationPosition" in view
           ? view.navigationPosition(position)
@@ -264,7 +299,11 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(props, ref) {
         const view = viewRef.current,
           doc = docRef.current;
         if (!view || !doc) return null;
-        const { from, to } = selectionRange(view.selection),
+        const { from, to } = selectionRange(
+            propsRef.current.mindmap
+              ? view.binding.selection()
+              : view.selection,
+          ),
           text = doc.getText("markdown");
         if (from === to) return null;
         return {
@@ -370,7 +409,8 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(props, ref) {
             a.index === b.index
           )
             return false;
-          view.focus(a.index, b.index);
+          if (propsRef.current.mindmap) mapView.current?.focus(a.index);
+          else view.focus(a.index, b.index);
           return true;
         } catch {
           return false;
@@ -378,8 +418,14 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(props, ref) {
       },
       flush: () => flushRef.current(),
       text: () => docRef.current?.getText("markdown").toString() ?? "",
-      position: () => viewRef.current?.position() ?? 0,
-      visiblePosition: (y) => viewRef.current?.visiblePosition(y) ?? null,
+      position: () =>
+        propsRef.current.mindmap
+          ? (viewRef.current?.binding.selection().head ?? 0)
+          : (viewRef.current?.position() ?? 0),
+      visiblePosition: (y) =>
+        propsRef.current.mindmap
+          ? null
+          : (viewRef.current?.visiblePosition(y) ?? null),
     }),
     [],
   );
@@ -435,7 +481,10 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(props, ref) {
         },
       ),
       undoManager = retained?.undo ?? new Y.UndoManager(ytext);
-    const setAccess = () => viewRef.current?.configure();
+    const setAccess = () => {
+      viewRef.current?.configure();
+      if (alive) setMapLocked(serverReadOnly.current);
+    };
     serverReadOnly.current = !!props.readOnly;
     const retainRecovery = () => {
       const source = ytext.toString();
@@ -737,6 +786,8 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(props, ref) {
     provider.attach();
 
     const binding = new NativeBinding(doc, undoManager, provider.awareness);
+    setMapBinding(binding);
+    setMapLocked(serverReadOnly.current);
     // A cached thread may arrive before persistence hydrates this view. Strict
     // Mode remounts must not reuse a notification signature whose callback was
     // discarded by the previous lifecycle's cleanup.
@@ -999,6 +1050,7 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(props, ref) {
         waiter.reject(new Error("Document closed."));
       waiters.current.clear();
       viewRef.current = null;
+      setMapBinding(null);
       providerRef.current = null;
       docRef.current = null;
     };
@@ -1014,7 +1066,26 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(props, ref) {
     props.annotations,
   ]);
   return (
-    <div className={`research-editor mode-${props.mode}`} ref={container} />
+    <div
+      className="research-editor-shell"
+      data-presentation={props.mindmap ? "mindmap" : "document"}
+    >
+      <div
+        className={`research-editor mode-${props.mode}`}
+        ref={container}
+        hidden={!!props.mindmap}
+      />
+      {props.mindmap && mapBinding && (
+        <MindmapSurface
+          key={scope}
+          {...props.mindmap}
+          ref={mapView}
+          binding={mapBinding}
+          readOnly={!!props.readOnly || mapLocked}
+          canEdit={() => !propsRef.current.readOnly && !serverReadOnly.current}
+        />
+      )}
+    </div>
   );
 });
 export default Editor;

@@ -115,6 +115,11 @@ import { ImageView, type ImageCacheEntry } from "./image-view";
 import { ImageSourceSession } from "./image-source";
 import { tablePanel, type TablePanelState } from "./table-panel";
 import { paintMathPreview } from "./math-preview";
+import {
+  alignedNodeDecorations,
+  addIndexedDecorations,
+  type AlignedNodeDecoration,
+} from "../../../../packages/editor/src/decoration-index";
 import { MetadataView } from "./metadata-view";
 import { LinkDefinitionView } from "./link-definition-view";
 import { BlockFolds } from "@axiom/editor/folding";
@@ -4087,6 +4092,7 @@ export class AxiomEditorView {
     )
       return DecorationSet.empty;
     const decorations: Decoration[] = [];
+    const guides: AlignedNodeDecoration[] = [];
     if (this.options.appearance().blockGuides) {
       const ranges: {
         from: number;
@@ -4135,15 +4141,17 @@ export class AxiomEditorView {
           (a, b) => b.depth - a.depth || a.to - a.from - (b.to - b.from),
         )[0];
       for (const range of ranges)
-        decorations.push(
-          Decoration.node(range.from, range.to, {
+        guides.push({
+          from: range.from,
+          to: range.to,
+          attrs: {
             class:
               "axiom-block-guide" +
               (range === active ? " axiom-block-guide-active" : ""),
             "data-block-depth": String(range.depth),
             "data-block-type": range.type,
-          }),
-        );
+          },
+        });
     }
     const activeImage = this.imageSource;
     if (activeImage && this.projection.imageSource) {
@@ -4272,7 +4280,11 @@ export class AxiomEditorView {
             }),
           );
       }
-    return DecorationSet.create(doc, decorations);
+    return addIndexedDecorations(
+      doc,
+      alignedNodeDecorations(doc, guides),
+      decorations,
+    );
   }
   private paintPresence() {
     this.navigationChanged();

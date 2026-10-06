@@ -100,6 +100,14 @@ export const docArticles: readonly DocArticle[] = [
       "toc outline minimap bookmark annotation search folding block range",
   },
   {
+    id: "editor/mindmap",
+    section: "editor",
+    title: "Native mind maps",
+    summary: "Explore and edit the hierarchy of the same Markdown document.",
+    keywords:
+      "mindmap mind map branch hierarchy fold source export collaboration",
+  },
+  {
     id: "editor/snippets",
     section: "editor",
     title: "Templates & reusable snippets",
@@ -196,7 +204,8 @@ export const docArticles: readonly DocArticle[] = [
     id: "workspace/files",
     section: "workspace",
     title: "Explorer, file identity & Trash",
-    summary: "Import notes and folders, organize files and recover deleted work.",
+    summary:
+      "Import notes and folders, organize files and recover deleted work.",
     keywords:
       "explorer directory move drag copy trash audit storage versions folder import markdown zip resume",
   },

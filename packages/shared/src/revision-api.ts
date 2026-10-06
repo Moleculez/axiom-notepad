@@ -440,6 +440,10 @@ export async function revisionApi(
       const input = z
         .object({
           label: z.string().trim().min(1).max(120),
+          expectedHash: z
+            .string()
+            .regex(/^[a-f\d]{64}$/)
+            .optional(),
           mutationId: z.uuid(),
         })
         .parse(await request.json());

@@ -1,70 +1,51 @@
 import "dotenv/config";
 import { spawn } from "node:child_process";
 import { resolve } from "node:path";
+import { lstat, mkdir } from "node:fs/promises";
 import pg from "pg";
+import { mutationTestTarget } from "../../packages/shared/src/test-target";
+import {
+  stagingEnvironment,
+  type StagingProfile,
+} from "../../packages/shared/src/test-staging";
 
-export type StagingProfile = {
-  database: string;
-  storage: string;
-  dist: string;
-  devDist: string;
-  webPort: number;
-  syncPort: number;
-};
+export type { StagingProfile };
 export async function runStaging(
   profile: StagingProfile,
   command: string,
   extra: string[] = [],
 ) {
-  if (process.env.NODE_ENV === "production")
-    throw new Error(
-      "Staging helpers must not run in a production environment.",
-    );
-  if (!/^axiom_[a-z0-9_]*test[a-z0-9_]*$/.test(profile.database))
-    throw new Error("Use an isolated axiom_*test* database name.");
-  const target = new URL(process.env.DATABASE_URL ?? "");
-  if (!["localhost", "127.0.0.1"].includes(target.hostname))
-    throw new Error("Staging requires a local PostgreSQL server.");
-  if (target.pathname.slice(1) === profile.database)
-    throw new Error(
-      "Staging must not reuse the configured application database.",
-    );
-  if (
-    resolve(profile.storage) ===
-    resolve(process.env.STORAGE_PATH ?? "data/attachments")
-  )
-    throw new Error(
-      "Staging must not reuse the configured attachment directory.",
-    );
-  if (
-    ![profile.webPort, profile.syncPort].every(
-      (port) => Number.isInteger(port) && port > 0 && port <= 65535,
-    ) ||
-    profile.webPort === profile.syncPort
-  )
-    throw new Error(
-      "Staging web and sync ports must be distinct valid port numbers.",
-    );
-  target.pathname = `/${profile.database}`;
-  const env = {
-    ...process.env,
-    DATABASE_URL: target.href,
-    APP_URL: `http://localhost:${profile.webPort}`,
-    BETTER_AUTH_URL: `http://localhost:${profile.webPort}`,
-    PORT: String(profile.webPort),
-    SYNC_PORT: String(profile.syncPort),
-    SYNC_INTERNAL_URL: `http://127.0.0.1:${profile.syncPort}`,
-    NEXT_PUBLIC_SYNC_URL: `ws://localhost:${profile.syncPort}`,
-    STORAGE_DRIVER: "local",
-    STORAGE_PATH: resolve(profile.storage),
-    AXIOM_DIST_DIR: profile.dist,
-    AXIOM_DEV_DIST_DIR: profile.devDist,
-    NEXT_PUBLIC_AXIOM_EDITOR_ENGINE: "milkdown",
-  };
+  const env = stagingEnvironment(profile, process.env);
+  const target = new URL(env.DATABASE_URL);
+  // A familiar test path must not redirect into real attachment storage.
+  let ancestor = resolve(profile.storage);
+  while (ancestor !== resolve("/")) {
+    try {
+      if ((await lstat(ancestor)).isSymbolicLink())
+        throw new Error("Staging attachment paths must not contain symlinks.");
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    }
+    ancestor = resolve(ancestor, "..");
+  }
+  await mkdir(resolve(profile.storage), { recursive: true });
   const run = (args: string[]) =>
     new Promise<void>((done, fail) => {
-      const child = spawn(process.execPath, args, { env, stdio: "inherit" });
-      const stop = () => child.kill("SIGTERM");
+      const child = spawn(process.execPath, args, {
+        env: {
+          ...env,
+          NODE_ENV:
+            command === "web" || command === "build"
+              ? "production"
+              : "development",
+        },
+        stdio: "inherit",
+      });
+      let interrupted = false;
+      const stop = () => {
+        interrupted = true;
+        child.kill("SIGTERM");
+      };
       process.once("SIGINT", stop);
       process.once("SIGTERM", stop);
       const cleanup = () => {
@@ -77,7 +58,7 @@ export async function runStaging(
       });
       child.on("exit", (code) => {
         cleanup();
-        if (code === 0) done();
+        if (code === 0 || interrupted) done();
         else
           fail(new Error(`Staging child exited with ${code ?? "a signal"}.`));
       });
@@ -128,8 +109,13 @@ export async function runStaging(
     await run(ts("scripts/verify/verify-plugins.ts", extra));
   else if (command === "verify-imports")
     await run(ts("scripts/verify/verify-workspace-imports.ts", extra));
+  else if (command === "test") {
+    mutationTestTarget(env);
+    await run(["node_modules/@playwright/test/cli.js", "test", ...extra]);
+  } else if (command === "verify-durability")
+    await run(ts("scripts/verify/verify-durability.ts", extra));
   else
     throw new Error(
-      "Choose init, migrate, build, dev, web, sync, worker, admin, verify-plugins or verify-imports.",
+      "Choose init, migrate, build, dev, web, sync, worker, admin, test, verify-durability, verify-plugins or verify-imports.",
     );
 }

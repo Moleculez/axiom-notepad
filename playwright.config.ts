@@ -1,7 +1,9 @@
 import { defineConfig } from "@playwright/test";
-import "dotenv/config";
+import { mutationTestTarget } from "./packages/shared/src/test-target";
+const target = mutationTestTarget(process.env, process.env.AXIOM_TEST_ROOT);
 export default defineConfig({
   testDir: "./tests/e2e",
+  globalSetup: "./tests/e2e/global-setup.ts",
   timeout: 60000,
   expect: { timeout: 15000 },
   fullyParallel: false,
@@ -10,16 +12,13 @@ export default defineConfig({
   use: {
     browserName: (process.env.TEST_BROWSER || "chromium") as
       "chromium" | "firefox" | "webkit",
-    baseURL:
-      process.env.TEST_APP_URL ||
-      process.env.APP_URL ||
-      "http://localhost:8080",
+    baseURL: target.origin,
     launchOptions:
       process.env.TEST_BROWSER === "firefox"
         ? { firefoxUserPrefs: { "network.proxy.type": 0 } }
         : {},
     viewport: { width: 1440, height: 1000 },
-    trace: "retain-on-failure",
+    trace: "off",
     screenshot: "only-on-failure",
   },
 });

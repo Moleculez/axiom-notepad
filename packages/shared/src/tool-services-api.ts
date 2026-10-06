@@ -41,7 +41,7 @@ export async function toolServicesApi(
       return json({
         configured,
         providers: await query(
-          `SELECT ${publicFields},(SELECT count(*)::int FROM tool_jobs j WHERE j.provider_id=p.id AND j.created_at>=(date_trunc('day',now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC')) AS used_today FROM tool_providers p WHERE group_id=$1 ORDER BY created_at`,
+          `SELECT ${publicFields},(SELECT count(*)::int FROM tool_jobs j WHERE j.provider_id=p.id AND j.created_at>=(date_trunc('day',now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'))+(SELECT count(*)::int FROM assistant_run_steps s WHERE s.provider_id=p.id AND s.ordinal>1 AND s.dispatched_at>=(date_trunc('day',now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC')) AS used_today FROM tool_providers p WHERE group_id=$1 ORDER BY created_at`,
           [id],
         ),
       });
@@ -243,7 +243,7 @@ export async function toolServicesApi(
           const {
             rows: [pending],
           } = await client.query(
-            "SELECT count(*)::int AS count FROM tool_jobs WHERE owner_id=$1 AND status IN ('queued','running')",
+            "SELECT count(*)::int AS count FROM tool_jobs WHERE owner_id=$1 AND status IN ('queued','running','awaiting-review')",
             [userId],
           );
           if (pending.count >= 5)

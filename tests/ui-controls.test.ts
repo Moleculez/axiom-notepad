@@ -224,6 +224,22 @@ describe("native-compatible controls", () => {
     expect(html).toContain('type="url"');
     expect(html).toContain('name="url"');
   });
+  it("aligns a field action with the control while retaining its native label", () => {
+    const html = renderToStaticMarkup(
+      h(Field, {
+        id: "mass",
+        label: "A long wrapping property label",
+        hint: "Unit: mg",
+        action: h(IconButton, { type: "button", label: "Clear mass" }, "Clear"),
+        children: h(TextInput, { name: "mass", defaultValue: "4" }),
+      }),
+    );
+    expect(html).toContain('for="mass"');
+    expect(html).toMatch(/<input[^>]*id="mass"/);
+    expect(html).toContain('class="ui-field-control-row"');
+    expect(html).toContain('aria-describedby="mass-hint"');
+    expect(html).toContain('type="button"');
+  });
   it("uses a single search surface and explicit non-submit clear action", () => {
     const html = renderToStaticMarkup(
       h(SearchField, {

@@ -24,7 +24,8 @@ export function isFileView(value: string): value is FileViewKind {
 }
 export function fileViewKind(resource: FileRouteResource): FileViewKind {
   if (resource.document_type) {
-    return resource.document_type === "markdown"
+    return resource.document_type === "markdown" ||
+      resource.document_type === "mindmap"
       ? "notes"
       : resource.document_type;
   }
@@ -48,6 +49,7 @@ export function fileRoute(
     return `/explorer?${params}`;
   }
   const params = new URLSearchParams();
+  if (resource.document_type === "mindmap") params.set("view", "mindmap");
   if (versionId) params.set("version", versionId);
   return `/${fileViewKind(resource)}/${resource.id}${params.size ? `?${params}` : ""}`;
 }

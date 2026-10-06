@@ -12,7 +12,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type Pg from "pg";
 import { createRequire } from "node:module";
-import { config } from "dotenv";
+import { mutationTestTarget } from "../../packages/shared/src/test-target";
 import * as Y from "yjs";
 import { signInOwner } from "./auth";
 import { APPEARANCE_SCHEMA } from "../../packages/shared/src/appearance";
@@ -30,7 +30,9 @@ import type {
   WorkspaceImportBatch,
   WorkspaceImportPreview,
 } from "../../packages/shared/src/workspace-import";
-config({ quiet: true });
+import { portableCollectionZip } from "../fixtures/portable-collection";
+import { portableCollectionSchema } from "../../packages/shared/src/portable-collection";
+import { parseCanvas } from "../../packages/shared/src/canvas";
 const pg = createRequire(import.meta.url)("pg") as typeof import("pg");
 const JSZip = createRequire(import.meta.url)("jszip") as typeof import("jszip");
 const origin = "http://localhost:3004";
@@ -140,14 +142,11 @@ async function appearance(
   );
 }
 async function dbFixture(work: (db: Pg.Client) => Promise<void>) {
-  const target = new URL(process.env.DATABASE_URL ?? "");
-  if (
-    !["localhost", "127.0.0.1"].includes(target.hostname) ||
-    target.pathname === "/axiom_plugins_test" ||
-    process.env.NODE_ENV === "production"
-  )
-    throw new Error("Never seed the configured or production database.");
-  target.pathname = "/axiom_plugins_test";
+  const target = new URL(
+    mutationTestTarget(process.env, process.env.AXIOM_TEST_ROOT).databaseUrl,
+  );
+  if (target.pathname !== "/axiom_plugins_test")
+    throw new Error("Use the extension test profile.");
   const db = new pg.Client({ connectionString: target.href });
   await db.connect();
   try {
@@ -156,6 +155,158 @@ async function dbFixture(work: (db: Pg.Client) => Promise<void>) {
     await db.end();
   }
 }
+
+test("mixed native collection previews, publishes atomically and exports an importable manifest", async ({
+  browser,
+}, info) => {
+  const f = await fixture(browser),
+    collection = await portableCollectionZip(),
+    errors: string[] = [];
+  f.page.on("pageerror", (error) => errors.push(error.message));
+  try {
+    const modal = await dialog(f.page, "ZIP");
+    await modal
+      .locator('input[type="file"]')
+      .setInputFiles({
+        name: "Research.zip",
+        mimeType: "application/zip",
+        buffer: Buffer.from(collection.bytes),
+      });
+    await expect(modal.locator(".import-counts")).toContainText("5 notes");
+    await expect(modal).toContainText("Restores files and safe metadata");
+    await modal
+      .locator(".import-entry-row")
+      .filter({ hasText: "Lab/Paper.md" })
+      .click();
+    await modal.getByRole("button", { name: "Source", exact: true }).click();
+    await expect(modal.locator(".workspace-import-preview")).toContainText(
+      "Methods.md",
+    );
+    await layout(f.page, modal);
+    await f.page.screenshot({
+      path: info.outputPath("collection-preview.png"),
+      fullPage: true,
+    });
+    await modal
+      .getByRole("button", { name: "Import collection", exact: true })
+      .click();
+    const complete = f.page.getByRole("dialog", {
+      name: "Import complete",
+      exact: true,
+    });
+    await expect(complete).toBeVisible({ timeout: 35000 });
+    const batches = await call<WorkspaceImportBatch[]>(
+        f.context.request,
+        "me/imports",
+        undefined,
+        "GET",
+      ),
+      batch = batches.find((b) => b.spaceId === f.id)!;
+    const native = new Map(
+      batch.entries
+        .filter((e) => e.metadata?.originId)
+        .map((e) => [e.metadata!.originId!, e]),
+    );
+    const paper = native.get(collection.ids.paper)!,
+      plot = native.get(collection.ids.plot)!,
+      canvas = native.get(collection.ids.canvas)!;
+    expect(paper.resourceId).not.toBe(collection.ids.paper);
+    await dbFixture(async (db) => {
+      const notes = (
+        await db.query(
+          "SELECT id,body,source_format FROM notes WHERE id=ANY($1::uuid[])",
+          [[paper.resourceId, canvas.resourceId]],
+        )
+      ).rows;
+      const board = parseCanvas(
+        notes.find((row) => row.id === canvas.resourceId).body,
+      );
+      expect(board.nodes[1]).toMatchObject({
+        resourceId: plot.resourceId,
+        versionId: plot.resourceId,
+      });
+      expect(board.edges[0].fromNode).toBe(board.nodes[0].id);
+      expect(notes.find((row) => row.id === paper.resourceId).body).toContain(
+        native.get(collection.ids.methods)!.resourceId,
+      );
+      expect(
+        (
+          await db.query(
+            "SELECT settings FROM tool_projects WHERE resource_id=$1",
+            [native.get(collection.ids.math)!.resourceId],
+          )
+        ).rows[0].settings.fontSize,
+      ).toBe(32);
+      expect(
+        (
+          await db.query(
+            "SELECT room FROM documents WHERE note_id=ANY($1::uuid[])",
+            [[paper.resourceId, canvas.resourceId]],
+          )
+        ).rowCount,
+      ).toBe(2);
+    });
+    await complete.getByRole("button", { name: "Close dialog" }).click();
+    const folder = batch.result!.resources.find(
+      (r) => r.kind === "folder" && r.parentId === null,
+    )!;
+    await f.page
+      .getByRole("checkbox", { name: `Select ${folder.name}`, exact: true })
+      .check();
+    await f.page
+      .getByRole("button", { name: "Export selection", exact: true })
+      .click();
+    const exporting = f.page.getByRole("dialog", {
+      name: "Export collection",
+      exact: true,
+    });
+    await expect(exporting.getByLabel("Archive profile")).toHaveValue(
+      "portable",
+    );
+    await expect(exporting).toContainText("50 MB compressed");
+    await f.page.screenshot({
+      path: info.outputPath("collection-export.png"),
+      fullPage: true,
+    });
+    await exporting
+      .getByRole("button", { name: "Prepare archive", exact: true })
+      .click();
+    await expect(exporting).toBeHidden();
+    let job: Record<string, any> | undefined;
+    await expect
+      .poll(
+        async () => {
+          job = (
+            await call<Record<string, any>[]>(
+              f.context.request,
+              "exports",
+              undefined,
+              "GET",
+            )
+          ).find((item) => item.space_id === f.id);
+          if (job?.status === "failed") throw new Error(job.error);
+          return job?.status;
+        },
+        { timeout: 35000 },
+      )
+      .toBe("ready");
+    const response = await f.context.request.get(
+      `/api/v1/exports/${job!.id}/download`,
+    );
+    expect(response.ok()).toBe(true);
+    const zip = await JSZip.loadAsync(await response.body()),
+      manifest = portableCollectionSchema.parse(
+        JSON.parse(await zip.file("axiom-manifest.json")!.async("string")),
+      );
+    expect(manifest.resources.filter((r) => r.kind === "note")).toHaveLength(5);
+    expect(
+      manifest.resources.find((r) => r.id === plot.resourceId)?.parentId,
+    ).toBe(native.get(collection.ids.folder)!.resourceId);
+    expect(errors).toEqual([]);
+  } finally {
+    await f.context.close();
+  }
+});
 
 test("Markdown preview is local, publication is native, and UUID anchors work beyond context's latest 200", async ({
   browser,
@@ -524,7 +675,9 @@ test("reloaded imports reject changed originals, resume only missing parts, and 
 }, info) => {
   const f = await fixture(browser),
     temp = await mkdtemp(join(tmpdir(), "axiom-import-resume-")),
-    collection = join(temp, "ResumeLab"),
+    collectionName = `ResumeLab-${randomUUID().slice(0, 8)}`,
+    cancelledName = `Cancelled-${randomUUID().slice(0, 8)}`,
+    collection = join(temp, collectionName),
     note = Buffer.from("# Resumed research\n\n[Data](Data.bin)\n"),
     data = Buffer.alloc(UPLOAD_CHUNK_BYTES + 19, 42),
     hash = (bytes: Buffer | string) =>
@@ -548,13 +701,13 @@ test("reloaded imports reject changed originals, resume only missing parts, and 
     entries: [
       {
         id: randomUUID(),
-        path: "ResumeLab",
+        path: collectionName,
         kind: "folder",
         bytes: 0,
         digest: null,
       },
-      fileEntry("ResumeLab/Paper.md", note),
-      fileEntry("ResumeLab/Data.bin", data),
+      fileEntry(`${collectionName}/Paper.md`, note),
+      fileEntry(`${collectionName}/Data.bin`, data),
     ],
   };
   const start = async (manifest: ImportManifest) => {
@@ -611,7 +764,7 @@ test("reloaded imports reject changed originals, resume only missing parts, and 
     await ledger.getByRole("button", { name: new RegExp(name) }).click();
     return f.page.getByRole("dialog", { name: "Import progress", exact: true });
   };
-  const progress = await openBatch("ResumeLab");
+  const progress = await openBatch(collectionName);
   await expect(
     progress.getByRole("button", { name: "Resume import", exact: true }),
   ).toBeVisible();
@@ -652,7 +805,7 @@ test("reloaded imports reject changed originals, resume only missing parts, and 
   await expect(submit).toBeEnabled();
   await submit.click();
   await expect(resume).toContainText(
-    "This is not the reviewed original: ResumeLab/Data.bin",
+    `This is not the reviewed original: ${collectionName}/Data.bin`,
   );
   expect(chunks).toEqual([]);
   expect(
@@ -699,16 +852,16 @@ test("reloaded imports reject changed originals, resume only missing parts, and 
     entries: [
       {
         id: randomUUID(),
-        path: "Cancelled",
+        path: cancelledName,
         kind: "folder",
         bytes: 0,
         digest: null,
       },
-      fileEntry("Cancelled/Private.md", Buffer.from("Never published")),
+      fileEntry(`${cancelledName}/Private.md`, Buffer.from("Never published")),
     ],
   });
   await f.page.reload();
-  const pending = await openBatch("Cancelled");
+  const pending = await openBatch(cancelledName);
   await pending
     .getByRole("button", { name: "Cancel import", exact: true })
     .click();

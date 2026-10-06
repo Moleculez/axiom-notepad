@@ -508,7 +508,7 @@ export async function queueOffline(
     if (
       extension &&
       !name.toLowerCase().endsWith("." + extension) &&
-      !["markdown", "math", "canvas"].includes(type)
+      !["markdown", "math", "canvas", "mindmap"].includes(type)
     )
       name += "." + extension;
     resource = {
@@ -527,7 +527,8 @@ export async function queueOffline(
       updated_at: now,
       deleted_at: null,
       role: "editor",
-      document_type: format === "latex" ? "math" : format,
+      document_type:
+        type === "mindmap" ? "mindmap" : format === "latex" ? "math" : format,
     };
     Object.assign(payload, { id: resourceId, name });
     if (!isFolder) {
@@ -576,7 +577,7 @@ export async function queueOffline(
         packageId: pkg.id,
         value: { space, notes: [], references: [], members: [], links: [] },
       });
-      if (format !== "markdown")
+      if (format !== "markdown" || type === "mindmap")
         entries.push({
           key: `tools/${resourceId}`,
           packageId: pkg.id,
@@ -584,7 +585,12 @@ export async function queueOffline(
             resource_id: resourceId,
             space_id: spaceId,
             parent_id: resource.parent_id,
-            kind: format === "latex" ? "math" : format,
+            kind:
+              type === "mindmap"
+                ? "mindmap"
+                : format === "latex"
+                  ? "math"
+                  : format,
             name,
             generation: 1,
             role: "editor",

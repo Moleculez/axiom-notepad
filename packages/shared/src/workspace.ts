@@ -101,7 +101,7 @@ export function spaceLifecycleActions(
 }
 export interface Resource {
   reference_code?: string | null;
-  document_type?: "markdown" | "math" | "text" | "canvas" | "image";
+  document_type?: "markdown" | "math" | "text" | "canvas" | "image" | "mindmap";
   id: string;
   space_id: string;
   parent_id: string | null;

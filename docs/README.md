@@ -9,15 +9,19 @@ not installation instructions or proof of today's test results.
 
 - [Interactive static showcase](STATIC_SHOWCASE.md) — try the real editor and Canvas, local drafts/uploads, themes, exports and GitHub Pages deployment
 
-- [In-app Docs and evidence workbench](PRODUCT_GUIDE.md) — 31 guides, safe editor/Canvas examples, reading queues and previewed synthesis
+- [In-app Docs and evidence workbench](PRODUCT_GUIDE.md) — 32 guides, safe editor/Canvas examples, reading queues and previewed synthesis
 - [Workspace guide](WORKSPACE.md) — navigation, sharing, files and everyday limits
 - [Import Markdown and folders](WORKSPACE_IMPORTS.md) — local review, ZIP safety, source-preserving links and atomic resumable publication
+- [Portable research collections](PORTABLE_COLLECTIONS.md) — native projects, checksummed manifests, legacy migration and expiring extension consent
 - [Workspace websites](WORKSPACE_WEBSITES.md) — LaTeX-first themes, reviewed publishing, reading/discovery tools, private author analytics, static export and custom domains
 - [Workspace planning](WORKSPACE_PLANNING.md) — tasks, Gantt, baselines, capacity and searchable research request/decision archives
+- [Lab planning](PLANNING_LAB.md) — typed properties, shared manual time, reviewed non-AI rules and Stage 3 acceptance limits
 - [Editor and shortcuts](EDITOR.md) — visual/source editing and research blocks
+- [Native mind maps](MINDMAP.md) — Markdown hierarchy, branch editing, collaboration and portable exports
 - [Document export and Read mode](DOCUMENT_EXPORT.md) — styled snapshots, portable HTML/PDF, Markdown bundles and focused reading
+- [Research writing](RESEARCH_WRITING.md) — editable LaTeX/BibTeX/Biber projects, reviewed merges, reference provenance and frozen paper/task handoffs
 - [Version history and review](VERSION_REVIEW.md) — comparisons, suggestions, milestones, assigned reviews and cloud drafts
-- [Workspace research assistant](WORKSPACE_ASSISTANT.md) — selected group-workspace evidence, Office/Canvas/planning context, reviewed suggestions and schedule changes
+- [Workspace research assistant](WORKSPACE_ASSISTANT.md) — exact-batch outgoing approval, bounded MCP evidence, source identity, usage limits and confirmed-only recovery
 - [Workspace extensions](EXTENSIONS.md) — optional pilots, SDK, native panels, scoped consent, reviewed proposals and isolation limits
 - [Reading and references](READING.md) — paper reading, bibliography and appearance
 - [PDF research workbench](PDF_READER.md) — reader, annotations, task links, recoverable reply drafts, page copies and opt-in assistance
@@ -37,6 +41,8 @@ not installation instructions or proof of today's test results.
 - [Docker Compose deployment](DEPLOYMENT.md) — primary path, HTTPS, sync, upgrades and backups
 - [Native Linux/systemd deployment](NATIVE_DEPLOYMENT.md) — secondary installation path
 - [Verification and remaining release gates](VERIFICATION.md) — current, scoped evidence
+- [Daily-use reliability acceptance](RELIABILITY.md) — isolated authenticated CI, fail-closed fixtures, crash/recovery rehearsal and performance evidence
+- [Stage 3–4 acceptance](STAGE_ACCEPTANCE.md) — local coordinator, real worker races, populated recovery, same-host scale budget and operator review
 - [Maintenance](MAINTENANCE.md) — generated files, storage and safe cleanup
 - [Development reset and first run](DEVELOPMENT_RESET.md) — guarded development-only recovery
 

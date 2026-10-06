@@ -39,6 +39,9 @@ const FileOperationDialog = dynamic(() =>
 const ShortcutDialog = dynamic(() =>
   import("./FileOperations").then((module) => module.ShortcutDialog),
 );
+const CollectionExportDialog = dynamic(
+  () => import("./CollectionExportDialog"),
+);
 import {
   folderColors,
   type FileOperation,
@@ -130,6 +133,7 @@ type ResourceOperation = {
 };
 type Modal =
   | { kind: "newFile"; type: FileType; target: Target }
+  | { kind: "export"; items: Resource[] }
   | {
       kind: "files";
       command: FileOperationInput["command"];
@@ -440,15 +444,11 @@ export function ManagementProvider({
       return;
     }
     if (command === "export") {
-      report(async () => {
-        if (!items.every((item) => item.space_id === first.space_id))
-          throw new Error("Export one workspace at a time.");
-        await mutate("exports", {
-          spaceId: first.space_id,
-          resourceIds: items.map((item) => item.id),
-        });
-        navigate("/settings/exports");
-      });
+      if (!items.every((item) => item.space_id === first.space_id)) {
+        notify("Export one workspace at a time.");
+        return;
+      }
+      setModal({ kind: "export", items });
       return;
     }
     if (command === "duplicate") {
@@ -667,18 +667,22 @@ export function ManagementProvider({
     ];
   };
   const fileItems = (target: Target): ContextAction[] => [
-    ...(["markdown", "folder", "zip"] as const).map((source) => ({
+    ...(["markdown", "canvas", "folder", "zip"] as const).map((source) => ({
       label:
         source === "markdown"
           ? "Import Markdown…"
-          : source === "folder"
-            ? "Import folder…"
-            : "Import ZIP…",
+          : source === "canvas"
+            ? "Import Canvas…"
+            : source === "folder"
+              ? "Import folder…"
+              : "Import ZIP…",
       icon: (source === "folder"
         ? "folder"
-        : source === "markdown"
-          ? "source"
-          : "upload") as ActionIconName,
+        : source === "canvas"
+          ? "canvas"
+          : source === "markdown"
+            ? "source"
+            : "upload") as ActionIconName,
       group: "Editable notes & supporting files",
       action: () => importFiles?.(source, target),
     })),
@@ -1036,6 +1040,16 @@ export function ManagementProvider({
   return (
     <Context.Provider value={management}>
       {children}
+      {modal?.kind === "export" && (
+        <CollectionExportDialog
+          items={modal.items}
+          onClose={closed}
+          onQueued={() => {
+            closed();
+            navigate("/settings/exports");
+          }}
+        />
+      )}
       {modal?.kind === "files" && (
         <FileOperationDialog
           command={modal.command}

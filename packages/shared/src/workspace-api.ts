@@ -99,7 +99,7 @@ export async function workspaceApi(
         [userId],
       ),
       query(
-        `SELECT v.*,n.title AS note_title FROM review_requests v JOIN notes n ON n.id=v.note_id WHERE v.reviewer_id=$1 AND v.status='pending' AND axiom_can_read_note($1,n.id) ORDER BY v.created_at DESC LIMIT 10`,
+        `SELECT v.id,v.note_id,v.resource_id,v.snapshot_id,v.file_version_id,v.reviewer_id,v.requested_by,v.status,v.message,v.response,v.version,v.created_at,v.updated_at,n.title AS note_title FROM review_requests v JOIN notes n ON n.id=v.note_id WHERE v.reviewer_id=$1 AND v.status='pending' AND axiom_can_read_note($1,n.id) ORDER BY v.created_at DESC LIMIT 10`,
         [userId],
       ),
       query(

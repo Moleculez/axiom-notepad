@@ -6,14 +6,13 @@ import {
 } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import { createRequire } from "node:module";
-import { config } from "dotenv";
+import { mutationTestTarget } from "../../packages/shared/src/test-target";
 import { signInOwner } from "./auth";
 import { APPEARANCE_SCHEMA } from "../../packages/shared/src/appearance";
 import {
   interfaceStyleIds,
   type InterfaceStyleId,
 } from "../../packages/shared/src/interface-styles";
-config({ quiet: true });
 const pg = createRequire(import.meta.url)("pg") as typeof import("pg");
 const origin = "http://localhost:3004";
 test.use({
@@ -52,14 +51,11 @@ async function fixture(request: APIRequestContext) {
     name: "Research requests · field studies",
     audience: "group",
   });
-  const configured = new URL(process.env.DATABASE_URL ?? "");
-  if (
-    !["127.0.0.1", "localhost"].includes(configured.hostname) ||
-    configured.pathname === "/axiom_plugins_test" ||
-    process.env.NODE_ENV === "production"
-  )
-    throw new Error("Never seed the configured or production dataset.");
-  configured.pathname = "/axiom_plugins_test";
+  const configured = new URL(
+    mutationTestTarget(process.env, process.env.AXIOM_TEST_ROOT).databaseUrl,
+  );
+  if (configured.pathname !== "/axiom_plugins_test")
+    throw new Error("Use the extension test profile.");
   const db = new pg.Client({ connectionString: configured.href });
   await db.connect();
   try {

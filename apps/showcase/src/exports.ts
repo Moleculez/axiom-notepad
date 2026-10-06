@@ -58,6 +58,7 @@ export async function portableBundle(
           id: d.id,
           title: d.title,
           kind: d.kind,
+          ...(d.view ? { view: d.view } : {}),
           path: notePath(d),
         })),
         assets: assets.map((a) => ({

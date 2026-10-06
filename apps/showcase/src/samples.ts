@@ -13,6 +13,48 @@ export const paperAppearance: Preferences = {
 };
 export const researchId = "3f000000-0000-4000-8000-000000000001";
 export const canvasId = "3f000000-0000-4000-8000-000000000002";
+export const mindmapId = "3f000000-0000-4000-8000-000000000007";
+export const mindmapSample = {
+  id: mindmapId,
+  title: "Research mind map",
+  kind: "markdown" as const,
+  view: "mindmap" as const,
+  source: `# Research programme
+
+## Question
+
+- How does structure shape learning?
+  - Hypothesis: **stable representations** transfer better
+  - Evidence
+    - Spectral measurements
+    - Replication studies
+
+## Methods
+
+- [x] Literature review
+- [ ] Reproduce the baseline
+  - Record seeds and data versions
+  - Compare $L = D - A$
+- [ ] Evaluate robustness
+
+$$
+L u_k = \\lambda_k u_k
+$$
+
+## Discussion
+
+> [!NOTE] Research diary
+> Separate observations from interpretation.
+> - Open questions
+> - Competing explanations
+
+## Next steps
+
+- Write the protocol
+- Collect evidence
+- Draft the paper
+`,
+};
 export const imageId = "3f000000-0000-4000-8000-000000000003";
 export const imagePath = `assets/${imageId}/spectral-model.svg`;
 export const figure = `<svg xmlns="http://www.w3.org/2000/svg" width="900" height="360" viewBox="0 0 900 360"><rect width="900" height="360" fill="#f5f0e5"/><g stroke="#9ea59c" stroke-width="2"><path d="M135 180L285 90 435 180 285 275ZM435 180L595 90 755 180 595 275ZM285 90L595 90M285 275L595 275M135 180L755 180" fill="none"/></g><g fill="#447869">${[

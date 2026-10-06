@@ -996,3 +996,58 @@
     transition: opacity 120ms ease;
   }
 }
+.reference-history article {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--line);
+}
+.reference-history article header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.reference-history article header span {
+  color: var(--muted);
+  font-size: var(--size-ui-small);
+}
+.reference-history dl {
+  margin: 12px 0;
+}
+.reference-history dl div {
+  padding: 8px 0;
+}
+.reference-history dt {
+  color: var(--muted);
+  font-size: var(--size-ui-small);
+  text-transform: capitalize;
+}
+.reference-history dd {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+}
+.library-merge-matrix {
+  overflow: auto;
+  max-width: 100%;
+}
+.library-merge-matrix table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--size-ui-small);
+}
+.library-merge-matrix :is(th, td) {
+  padding: 10px 12px;
+  text-align: start;
+  vertical-align: top;
+  border-bottom: 1px solid var(--line);
+  overflow-wrap: anywhere;
+}
+.library-merge-matrix td small {
+  color: var(--muted);
+}
+.library-merge-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}

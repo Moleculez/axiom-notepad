@@ -25,8 +25,9 @@ import {
   previewExportHtml,
 } from "../lib/document-export";
 import Dialog, { DialogFooter } from "./Dialog";
+import LatexExportDialog from "./LatexExportDialog";
 
-type Format = "html" | "pdf" | "md" | "zip";
+type Format = "html" | "pdf" | "md" | "zip" | "latex";
 export default function DocumentExportDialog({
   noteId,
   spaceId,
@@ -74,6 +75,12 @@ export default function DocumentExportDialog({
     value: DocumentExportOptions[K],
   ) => setOptions((old) => ({ ...old, [key]: value }));
   useEffect(() => {
+    if (format !== "html" && format !== "pdf") {
+      setPrepared(null);
+      setReady(false);
+      setProgress("");
+      return;
+    }
     const abort = new AbortController();
     setReady(false);
     setError("");
@@ -142,7 +149,7 @@ export default function DocumentExportDialog({
       clearTimeout(timer);
       abort.abort();
     };
-  }, [noteId, snapshot, appearance, options, attempt]);
+  }, [noteId, snapshot, appearance, options, attempt, format]);
   useEffect(
     () => () => {
       jobController.current?.abort();
@@ -222,6 +229,19 @@ export default function DocumentExportDialog({
       frame.current.contentWindow.print();
     }
   };
+  if (format === "latex")
+    return (
+      <LatexExportDialog
+        noteId={noteId}
+        spaceId={spaceId}
+        snapshot={snapshot}
+        preferences={appearance}
+        changed={changed}
+        onRefresh={refresh}
+        onFormat={setFormat}
+        onClose={onClose}
+      />
+    );
   return (
     <Dialog
       title="Export document"
@@ -247,6 +267,7 @@ export default function DocumentExportDialog({
               <option value="pdf">Print / Save as PDF</option>
               <option value="md">Markdown source</option>
               <option value="zip">Markdown + assets (ZIP)</option>
+              <option value="latex">LaTeX research project (ZIP)</option>
             </NativeSelect>
           </label>
           <label>
@@ -436,6 +457,9 @@ export default function DocumentExportDialog({
                   });
               }}
             />
+          )}
+          {(format === "md" || format === "zip") && (
+            <pre className="latex-review-content">{snapshot.source}</pre>
           )}
         </section>
       </div>

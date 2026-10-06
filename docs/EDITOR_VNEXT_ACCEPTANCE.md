@@ -2,15 +2,33 @@
 
 Status: **pending a human using the macOS input method and system clipboard**.
 Automated browser composition and clipboard handlers have separate tests. Do not
-mark this checklist complete from those results or promote the default engine yet.
+mark this checklist complete from those results. The current source-backed
+Milkdown/ProseMirror + CodeMirror editor is already the default; this checklist is
+still a release gate, not a historical proposal to switch engines.
 
 ## Safe setup
 
-Open `http://localhost:3002/workbench/home` in a private browser window. This is
-the isolated candidate database, not the live notes. Ports on localhost can share
-cookies, so do not mix live and candidate accounts in one browser profile. Create
-a disposable test note. Record macOS version, browser/version, input source, test
-date and the candidate build name with the results.
+Provision and start a registered isolated release profile on **3004/1236**, not
+working data on 8080. See [reliability isolation](RELIABILITY.md). With a local
+PostgreSQL control connection and separate working storage configured:
+
+```sh
+npm run staging -- init
+npm run staging -- build
+AXIOM_ADMIN_PASSWORD='AxiomResearch2026!' npm run staging -- admin \
+  --email researcher@axiom.local --name 'Physical acceptance'
+npm run staging -- web    # terminal 1
+npm run staging -- sync   # terminal 2
+npm run staging -- worker # terminal 3
+```
+
+Use those fictional credentials only in the test profile. Open
+`http://localhost:3004/workbench/home` in a private browser window; do not mix live
+and test accounts in one profile because localhost cookies can cross ports.
+Create disposable test notes. Record macOS version, browser/version, input source,
+test date and `apps/web/.next/release-test/BUILD_ID`. The automated one-command
+runner closes its services after acceptance; it is not a persistent manual-test
+server.
 
 ## Native Chinese and Japanese input
 
@@ -20,6 +38,9 @@ Use macOS Pinyin and Japanese input sources, not pasted text or automation.
   list, a task, a quote, a table cell, fenced code and display mathematics.
 - Active ordinary prose must retain every literal marker while composing/typing;
   move to another paragraph/item to render it, then return and edit the source.
+  Heading hashes retain heading typography; completed list/task markers remain
+  rendered while their editable bodies retain source. Bare unspaced markers do
+  not activate structure. Check Enter, Mod+Enter and empty-item nesting exits.
   Check repeated Enter/Shift-Enter in empty notes and in notes using CRLF endings.
 - Try both collapsed carets and selected text, including a selection crossing
   paragraph/code/table boundaries. Keep neighboring text and markers unchanged.
@@ -56,7 +77,8 @@ For every failure, record the smallest starting Markdown, exact keys/actions,
 expected/actual behavior and whether recovery contained the complete draft. Use
 test content only; avoid recordings/traces containing private notes or session tokens.
 
-Before promotion, also finish the remaining native-editor regression port, verify
-the current candidate build, take a fresh live database/attachment backup, retain
-old assets, then perform a deliberate release and read-only smoke. Rollback changes
-the engine flag/build only; it must not restore an old database over newer notes.
+Before a release, verify the current isolated build and required regression matrix,
+complete these human checks, take a fresh live database/attachment backup, retain
+old assets, then perform a deliberate deployment and read-only smoke. Rollback
+changes the engine flag/build only; it must not restore an old database over newer
+notes. A successful automation run is not physical-input certification.

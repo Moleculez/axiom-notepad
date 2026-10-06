@@ -21,6 +21,7 @@ import {
   NativeSelect,
   Notice,
   Picker,
+  ActionRow,
 } from "../ui/controls";
 import Dialog, { DialogFooter } from "../Dialog";
 import { api, errorMessage, SIGN_OUT_PENDING } from "../../lib/client";
@@ -49,6 +50,13 @@ const PlanningMarkdown = dynamic(() => import("./PlanningMarkdown"), {
     </div>
   ),
 });
+const CanvasPlayground = dynamic(() => import("../tools/CanvasPlayground"), {
+  loading: () => (
+    <div className="import-preview-empty" role="status">
+      Loading local Canvas preview…
+    </div>
+  ),
+});
 
 type ImportTarget = { spaceId: string; parentId?: string | null };
 type Draft = ImportTarget & {
@@ -61,13 +69,30 @@ const manifestFor = (batch: WorkspaceImportBatch): ImportManifest => ({
   source: batch.source,
   parentId: batch.parentId,
   conflict: batch.conflict,
-  entries: batch.entries.map(({ id, path, kind, bytes, digest }) => ({
-    id,
-    path,
-    kind,
-    bytes,
-    digest,
-  })),
+  diagnostics: batch.diagnostics,
+  entries: batch.entries.map(
+    ({
+      id,
+      path,
+      kind,
+      bytes,
+      digest,
+      sourceFormat,
+      metadata,
+      expectedSha256,
+      asAttachment,
+    }) => ({
+      id,
+      path,
+      kind,
+      bytes,
+      digest,
+      sourceFormat,
+      metadata,
+      expectedSha256,
+      asAttachment,
+    }),
+  ),
 });
 
 export function useWorkspaceImports(
@@ -577,7 +602,7 @@ export default function WorkspaceImportsHost({
           </strong>
           <p>
             {complete
-              ? "Markdown is now editable and collaborative. Supporting files retain their hierarchy."
+              ? "Native documents are now editable and collaborative. Supporting files and safe metadata retain their reviewed hierarchy."
               : cancelled
                 ? "No files were published by this import. Existing contents are unchanged."
                 : "Nothing is visible to other members until every item is ready. You can close this dialog and keep working."}
@@ -728,6 +753,10 @@ function ImportDialog({
     [checking, setChecking] = useState(false),
     [label, setLabel] = useState(""),
     [revision, setRevision] = useState(0);
+  const [previewMode, setPreviewMode] = useState<"preview" | "source">(
+    "preview",
+  );
+  const lastInput = useRef<ImportInventoryInput | null>(null);
   const picker = useRef<HTMLInputElement>(null),
     worker = useRef<Worker | null>(null),
     sequence = useRef(0),
@@ -738,7 +767,13 @@ function ImportDialog({
       draft.resume
         ? manifestFor(draft.resume)
         : inventory
-          ? { source, parentId, conflict, entries: inventory.entries }
+          ? {
+              source,
+              parentId,
+              conflict,
+              entries: inventory.entries,
+              diagnostics: inventory.diagnostics,
+            }
           : null,
     [draft.resume, inventory, source, parentId, conflict],
   );
@@ -777,10 +812,21 @@ function ImportDialog({
     return () => abort.abort();
   }, [manifest, spaceId, revision]);
   const read = (input: ImportInventoryInput) => {
+    // A resume reuses frozen conversion choices; bytes still need to match.
+    if (draft.resume && !input.decisions)
+      input = {
+        ...input,
+        decisions: Object.fromEntries(
+          draft.resume.entries
+            .filter((entry) => entry.asAttachment)
+            .map((entry) => [entry.path, "attachment" as const]),
+        ),
+      };
+    lastInput.current = input;
     const token = ++sequence.current;
     worker.current?.terminate();
     localActivity.current?.();
-    setInventory(null);
+    if (!input.decisions) setInventory(null);
     setError("");
     setBusy(true);
     setLabel("Reading local files…");
@@ -811,7 +857,14 @@ function ImportDialog({
         setLabel("");
         if (event.data.error) setError(event.data.error);
         else if (event.data.inventory) {
-          setInventory(event.data.inventory);
+          setInventory(
+            draft.resume
+              ? {
+                  ...event.data.inventory,
+                  diagnostics: draft.resume.diagnostics ?? [],
+                }
+              : event.data.inventory,
+          );
           setSelectedPath(
             event.data.inventory.entries.find((entry) => entry.kind === "note")
               ?.path ?? "",
@@ -869,7 +922,7 @@ function ImportDialog({
             ? "Resume import"
             : "Import into workspace"
       }
-      subtitle="Editable Markdown notes and supporting files — one complete collection."
+      subtitle="Native documents, canvases and supporting files — one reviewed collection."
       className="workspace-import-dialog"
       onClose={controller.closeDraft}
     >
@@ -888,6 +941,7 @@ function ImportDialog({
             }}
           >
             <option value="markdown">Markdown files</option>
+            <option value="canvas">Canvas files</option>
             <option value="folder">Folder with notes & files</option>
             <option value="zip">ZIP archive</option>
           </NativeSelect>
@@ -986,9 +1040,11 @@ function ImportDialog({
             <p>
               {source === "markdown"
                 ? ".md and .markdown become editable notes"
-                : source === "folder"
-                  ? "Keep folders, notes and supporting files together"
-                  : "One ZIP · 50 MB compressed / 100 MB expanded"}
+                : source === "canvas"
+                  ? ".canvas becomes an editable board; originals are retained"
+                  : source === "folder"
+                    ? "Keep folders, notes and supporting files together"
+                    : "One ZIP · 50 MB compressed / 100 MB expanded"}
             </p>
           </div>
           <Button
@@ -1014,9 +1070,11 @@ function ImportDialog({
         accept={
           source === "markdown"
             ? ".md,.markdown"
-            : source === "zip"
-              ? ".zip"
-              : undefined
+            : source === "canvas"
+              ? ".canvas,application/json"
+              : source === "zip"
+                ? ".zip"
+                : undefined
         }
         multiple={source !== "zip"}
         {...(source === "folder" ? { webkitdirectory: "" } : {})}
@@ -1096,7 +1154,13 @@ function ImportDialog({
                           : entry.conflict
                             ? `Keep as ${entry.name}`
                             : entry.kind === "note"
-                              ? "Editable note"
+                              ? entry.sourceFormat === "canvas"
+                                ? "Editable Canvas"
+                                : entry.sourceFormat === "latex"
+                                  ? "Math project"
+                                  : entry.sourceFormat === "text"
+                                    ? "Text project"
+                                    : "Editable note"
                               : entry.kind === "folder"
                                 ? "Folder"
                                 : bytes(entry.bytes)}
@@ -1107,16 +1171,64 @@ function ImportDialog({
               ))}
             </div>
             <div className="workspace-import-preview">
+              <ActionRow className="import-preview-toolbar" align="between">
+                <HelpText as="span">
+                  Local preview · no uploads or remote media
+                </HelpText>
+                <div>
+                  <Button
+                    variant="ghost"
+                    size="compact"
+                    aria-pressed={previewMode === "preview"}
+                    onClick={() => setPreviewMode("preview")}
+                  >
+                    Preview
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="compact"
+                    aria-pressed={previewMode === "source"}
+                    onClick={() => setPreviewMode("source")}
+                  >
+                    Source
+                  </Button>
+                </div>
+              </ActionRow>
               {inventory && selectedPath in inventory.previews ? (
-                <PlanningMarkdown
-                  key={selectedPath}
-                  initial={inventory.previews[selectedPath]}
-                  onChange={() => {}}
-                  readOnly
-                  preview
-                  isolated
-                  label="Selected note"
-                />
+                previewMode === "source" ||
+                !["markdown", "canvas", undefined].includes(
+                  inventory.entries.find((e) => e.path === selectedPath)
+                    ?.sourceFormat,
+                ) ? (
+                  <pre
+                    className="import-source-preview"
+                    tabIndex={0}
+                    aria-label="Selected source"
+                  >
+                    {inventory.previews[selectedPath]}
+                  </pre>
+                ) : inventory.entries.find((e) => e.path === selectedPath)
+                    ?.sourceFormat === "canvas" ? (
+                  <CanvasPlayground
+                    key={selectedPath}
+                    source={inventory.previews[selectedPath].replace(
+                      /^\ufeff/,
+                      "",
+                    )}
+                    title="Local Canvas preview"
+                    readOnly
+                  />
+                ) : (
+                  <PlanningMarkdown
+                    key={selectedPath}
+                    initial={inventory.previews[selectedPath]}
+                    onChange={() => {}}
+                    readOnly
+                    preview
+                    isolated
+                    label="Selected note"
+                  />
+                )
               ) : (
                 <div className="import-preview-empty">
                   <FileText size={24} />
@@ -1148,6 +1260,53 @@ function ImportDialog({
       {inventory?.warnings.map((warning) => (
         <HelpText key={warning}>{warning}</HelpText>
       ))}
+      {!!inventory?.diagnostics.length && (
+        <details
+          className="import-warnings"
+          open={inventory.diagnostics.some((d) => d.severity === "error")}
+        >
+          <summary>
+            Preservation & conversion review · {inventory.diagnostics.length}{" "}
+            messages
+          </summary>
+          <ul>
+            {inventory.diagnostics.map((diagnostic, index) => (
+              <li
+                key={`${diagnostic.path ?? "collection"}:${diagnostic.code}:${index}`}
+              >
+                {diagnostic.path && <strong>{diagnostic.path} — </strong>}
+                {diagnostic.message}
+                {diagnostic.severity === "error" &&
+                  diagnostic.path &&
+                  diagnostic.code === "conversion-choice" && (
+                    <Field label={`Action for ${diagnostic.path}`}>
+                      <NativeSelect
+                        value=""
+                        disabled={busy}
+                        onChange={(event) => {
+                          const choice = event.target.value as
+                            "attachment" | "skip";
+                          if (choice && lastInput.current)
+                            read({
+                              ...lastInput.current,
+                              decisions: {
+                                ...lastInput.current.decisions,
+                                [diagnostic.path!]: choice,
+                              },
+                            });
+                        }}
+                      >
+                        <option value="">Choose an action…</option>
+                        <option value="attachment">Keep as attachment</option>
+                        <option value="skip">Skip file</option>
+                      </NativeSelect>
+                    </Field>
+                  )}
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
       <HelpText>
         Existing contents are never overwritten. Imports do not restore
         permissions, plugins or version history.
@@ -1157,7 +1316,13 @@ function ImportDialog({
           Close
         </Button>
         <Button
-          disabled={busy || checking || !preview || (!reviewOnly && !inventory)}
+          disabled={
+            busy ||
+            checking ||
+            !preview ||
+            (!reviewOnly && !inventory) ||
+            inventory?.diagnostics.some((d) => d.severity === "error")
+          }
           onClick={() => void execute()}
         >
           <Import size={16} />

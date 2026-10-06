@@ -1,7 +1,456 @@
 # Current verification and beta release gates
 
-Updated October 5, 2026. Historical logs are [archived separately](archive/VERIFICATION-2026-09-11.md).
+Updated October 7, 2026. Historical logs are [archived separately](archive/VERIFICATION-2026-09-11.md).
 Do not treat historical browser totals or local build IDs as current release evidence.
+
+## October 7 native mind maps — source implemented, runtime acceptance pending
+
+- [Native mind maps](MINDMAP.md) add a Markdown-backed file profile and alternate
+  note view, sharing the host NativeBinding/Y.Text/journal/author undo. Native
+  projection, variable-size right/left/balanced layout, source-preserving commands,
+  relative draft/drag anchors, research actions, presence, folding/search and
+  resizable source/details panes use one production/showcase surface. No external
+  hierarchy/layout dependency, second document store or new write authority was
+  added. Typed presentation preferences remain independent of themes/fonts.
+- Markdown/SVG/PNG/PDF/offline HTML exports use frozen source snapshots, explicit
+  bounded rich capture, scoped equation rendering, cancellation and access
+  rechecks. Labels are escaped or inert PNGs; media is summarized and private
+  comments/presence/reading data are excluded. Native profiles are included in
+  reviewed file creation, offline caches and portable collections/showcase ZIPs.
+- **2,458 unit tests / 140 files** passed, including **34 mind-map regressions**.
+  Coverage includes heading/list/container projection, BOM/CRLF/fence preservation,
+  guarded moves, author undo/peer anchors, retained conflicts, label grammar,
+  current-only projection caching, typed settings/routes/collections, unique guest
+  fixtures, 5,000-node fitting and escaped exports. VM tests execute offline HTML
+  fold/expand/pan/zoom logic. These are not authenticated multi-user browser tests.
+- TypeScript, whole-repository ESLint, shared UI validation (**199 JSX files**),
+  both trusted theme packs, docs references and whitespace checks passed. The
+  `.env`-free static showcase built successfully. The final isolated optimized
+  production build **`Dgq3xvzGwJXHS8N5wSvsm`** passed compile, generated types and
+  routing, with **979 offline assets**, in `.next/mindmap-build`. The user's dirty
+  generated type-selection file was restored byte-for-byte. Checks used Node
+  **22.17.0**, not Node 24 coordinated release acceptance.
+- **SQL acceptance is not passed.** Migration **49** only expands the existing
+  tool-kind constraint. Its fresh/48→49/rerun/source/Yjs/profile preservation gate
+  stopped at `initdb`'s `shmget: Operation not permitted`, before assertions.
+  Private failed receipt: `data/mindmap-migration-7loa3Q/result.json`. It has not
+  been applied to working data. Creation/access/offline publication still require
+  disposable authenticated acceptance with the normal migration chain.
+- **Browser/visual acceptance is not passed.** The focused showcase run failed
+  before opening a browser because preview listen on `127.0.0.1:3010` returned
+  `EPERM`. A separate server-free Chromium launch was also denied by macOS
+  bootstrap/Mach-port permission, so it could not provide alternative screenshots.
+  Six implemented scenarios are collected for each of Chromium, Firefox
+  and WebKit: source/undo/persistence, branch/fold/search/draft/pane logic,
+  read-only/reorder, offline export, and both color modes with large text,
+  keyboard, forced colors and reduced motion. No screenshots were captured or
+  visually inspected; physical drag/IME, rich font/math/PDF capture, assistive
+  technology and real simultaneous-peer/revocation/recovery checks remain gates.
+
+Working data and services were not migrated, restarted or mutated. No commit,
+push or deployment was requested or performed. This increment does not promote
+the unresolved Stage 3–5 runtime gates below. The published showcase and dated
+gallery remain unchanged; the new fictional map is in the source build only.
+
+## October 6 portable collections and controlled extensions — source implementation, acceptance pending
+
+- [Portable research collections](PORTABLE_COLLECTIONS.md) add a shared
+  reimportable export profile and manifest-aware import for folders, native
+  Markdown/Canvas/math/text/image projects and exact included assets. Safe
+  metadata/settings, original Canvas bytes, local conversion choices and frozen
+  resume identity use the existing atomic publication and durable job ledgers.
+  Standard larger exports remain available; the new profile does not force ZIP64
+  or enlarge the existing compressed/expanded/entry/source import limits. It is
+  file-level interoperability, not account, permission or full-workspace restore.
+- Whole-file SHA-256 is checked locally and against staged bytes. Export streams
+  check actual bytes/hashes, propagate corruption and terminate owned streams
+  when compressed output exceeds its cap. Destination-only rewrites preserve
+  Markdown syntax, BOM and CRLF. Asset pins and Canvas node/edge/file identities
+  are remapped; unbound references do not retain old workspace authority.
+  Verbose diagnostics retain blocking conversion choices within preview bounds.
+- Migration **48** adds 30-day member consent/group approval with upgrade grace
+  and explicit renewal. Current server authority fences broker calls, review and
+  queued writes; renewal does not revive stale proposals or restart workers. The
+  trusted relay bounds bytes, depth/nodes, sparse arrays, request/rate/lifetime
+  identities and aggregate command transfer before forwarding into the app.
+  Payload-free health checks remain rate-bounded without consuming an idle
+  command budget. These are protocol limits, not OS resource quotas or prevention
+  of the first worker-to-frame structured clone.
+- **2,424 unit tests / 138 files** passed, including **30 new collection,
+  streamed-archive, relay and expiry tests**. Actual in-memory ZIP round-trips
+  cover mixed sources, CRC/SHA mismatch, legacy manifests, asset hierarchy/pins,
+  unsupported projects and exact Canvas originals. Fake-time/DOM tests cover long
+  expiry timers and immediate host rejection; VM tests execute the embedded relay
+  guards. These tests are not PostgreSQL concurrency or live-browser acceptance.
+  TypeScript, ESLint, shared UI validation (**196 JSX files**), both trusted theme
+  packs, documentation references (**61 documents / 504 local references**) and
+  whitespace validation passed. UI/theme/docs entrypoints used `node --import tsx`
+  because the `tsx` CLI's IPC listener is denied in this environment. Checks used
+  **Node 22.17.0**, not the Node 24 coordinated Stage 3–4 acceptance runtime.
+- The final separate `.env`-free optimized build **`9fC-Bhq64GlxF0C4Eemxb`** passed
+  compilation, generated type checks, static routing and **969 offline assets**.
+  The pre-existing dirty `.next/plugins-test` type-import selection was restored
+  byte-for-byte. The build did not start or update working services.
+- Real SQL acceptance is **not passed**. The fresh/47→48/rerun/preservation/grace
+  gate stopped at PostgreSQL initialization's `shmget: Operation not permitted`,
+  before any migration assertions executed. Retained failed receipt:
+  `data/portability-migration-nOJp5j/result.json`. Migration 48 has **not** been
+  applied to working data. Real queued-expiry/renewal and worker races remain gates.
+- Desktop/browser acceptance is **not passed**: isolated port 3004 reservation
+  returned `EPERM` before services or fixtures started. Mixed collection
+  publication/export, hostile relay and layout/keyboard/large-text/color-mode/
+  forced-color/reduced-motion checks are implemented in the isolated import and
+  extension suites but **have not executed** in this increment. No new screenshot
+  was captured or visually inspected. Physical picker/drop, assistive technology
+  and independent adversarial review remain required.
+
+Stage 5 is implemented in source, not accepted for release. Stages 3–4 also remain
+unaccepted; both extension gates stay default-off. Working data/services were not
+migrated or restarted. No commit, push or deployment was performed. Run the
+[isolated collection acceptance commands](PORTABLE_COLLECTIONS.md#developer-acceptance)
+in a local terminal permitting PostgreSQL/listeners before promoting this stage.
+
+## October 6 Stage 3–4 acceptance coordinator — implemented, runtime still pending
+
+- [Stage acceptance](STAGE_ACCEPTANCE.md) adds
+  `npm run verify:stages:acceptance`: credential-free preflight, both migration
+  gates, all three desktop engines, actual PostgreSQL worker/checkpoint barriers,
+  populated paired recovery and the 20% p95 planning budget against archived
+  shared-server source at commit `7cd2cc5`. Focused/preflight runs cannot become a
+  complete pass. Receipts retain source/build identity, exact phase states and
+  artifact paths; operator review is never automatically signed off.
+- Real runtime assertions are implemented for automation duplication/coalescing,
+  overlapping writes, crash rollback, DST, access loss and another member's time
+  corrections/cursors; assistant approval/quota competition, consent expiry,
+  provider changes, confirmed/uncertain outcomes, local checkpoints and retention;
+  and native MCP SQL grants/cursors/revocation. Partial-receipt recovery uses
+  explicitly labeled saved fixtures, not a fabricated application crash result.
+  These assertions have **not executed** in this increment.
+- Recovery now rejects empty required ledgers/blob manifests, seeds held/confirmed/
+  uncertain assistant work and partial change receipts after draining services,
+  and compares complete lab/assistant data in the real new-pair restore. Scale
+  code retains 3 warmups/20 samples per source, exact required cases, semantic
+  hashes, query counts, RSS and current dependency-lock identity. New-only field
+  summaries are separate. A new browser gate uses real 5,000-row SQL data rather
+  than intercepted planning responses. No recovery, timing or screenshot result
+  is claimed from implementing these gates.
+- **2,394 unit tests / 134 files** passed, including **17 coordinator contract/
+  process tests** for credential stripping, no partial promotion, populated
+  coverage, timing budgets, artifact escapes, lock ownership, interrupted commands,
+  descendant cleanup and exact dirty generated-file restoration. TypeScript,
+  ESLint, shared UI validation (**195 JSX files**), both trusted theme-pack checks,
+  documentation links and whitespace validation passed. These local checks used
+  **Node 22.17.0**, not the required Node 24 coordinated runtime.
+- The separate `.env`-free isolated optimized build
+  **`zA5zyQ28c-DO4rbpWmzRN`** passed compilation, build type generation and static
+  routing with **969 offline assets**. The existing `.next/plugins-test` generated
+  type-import selection was restored byte-for-byte. This increment changed
+  verification tooling/docs, not application UI; working services were not restarted.
+- CLI help and preflight-only refusal were executed. The latest preflight stopped
+  at the **Node 24 prerequisite**; it did not start database fixtures, services,
+  provider calls, browsers or scale measurements. Retained blocked receipt:
+  `data/stage-acceptance-A1WGqv/receipt.json`. Earlier listener/shared-memory
+  refusals below are not resolved or relabeled by this new runner.
+
+Stages 3 and 4 remain **unaccepted**. Use Node 24 in a local terminal permitting
+listeners/PostgreSQL to run the complete command, then inspect its actual images
+and complete keyboard/screen-reader/operator review. No live provider, working
+data migration, commit, push, deployment or Stage 5 advancement was performed.
+
+## October 6 grounded assistant and MCP — source implementation, acceptance pending
+
+- Stage 4 adds immutable, fingerprinted **per-batch** outgoing review with local
+  discovery, excerpt removal/narrowing, expiry and exact provider/scope/round/output
+  limits. The worker dispatches once per approved envelope, never automatically
+  sends later context, and rechecks permission/configuration before submission.
+  Shared read-only MCP search/evidence tools cannot broaden workspace grants or
+  self-approve changes. Search summaries remain distinct from captured evidence.
+- Native evidence retains full-source and excerpt hashes, generation/version and
+  ranges. Source inspection rechecks access and reports matching/changed/unknown
+  freshness. Server diagnostics check citation-key membership, not truth. Invented
+  references keep that response's proposed actions inert. Planning snapshots omit
+  implicit lab-field/time/future-property contents.
+- Every dispatch retains usage, including explicit unknowns. Shared queue limits
+  include held batches across assistant, math and extraction flows. Round/token
+  ceilings and daily quotas are checked before dispatch; counts are reservations,
+  not certification of billable provider calls. Confirmed responses can finish
+  locally without another external request. Remaining-only change-set review
+  retains completed IDs, dependencies and stale fences, excluding uncertain work.
+  Context deletion/retention redacts duplicate envelopes and raw responses while
+  keeping usage receipts. Lock-order tests are mocked, not concurrency acceptance.
+- **2,377 unit tests / 133 files**, TypeScript, ESLint, shared UI validation
+  (**195 JSX files**), both trusted theme-pack validations, docs and whitespace
+  checks passed. This includes **50 focused new tests** covering review identity,
+  expiry/revocation, same-receipt retries, local recovery before/after checkpoints,
+  bounded evidence, MCP scope, CRDT hashes, unknown usage and incomplete actions.
+  The final isolated optimized build **`8yNeQ2NCTwLeROYbA020D`** passed with
+  **969 offline assets**. Pre-existing generated type-import selections were
+  restored. No runtime service or data migration is implied by the build.
+- Additive migration **47** and its fresh/46→current/rerun/preservation/legacy-pause/
+  uniqueness/cleanup gate are in source, but SQL acceptance is **not passed**.
+  PostgreSQL initialization stopped at `shmget: Operation not permitted` before
+  any migration assertions executed. Failed receipt:
+  `data/assistant-grounding-migration-2qlUKP/result.json`.
+- Authenticated browser, screenshot and populated paired-recovery acceptance is
+  **not passed**: isolated port 3004 reservation failed with `EPERM` before services
+  or fixtures started. Failed receipt: `data/reliability-H6hDc7/receipt.json`.
+  The reliability/CI definitions now include exact-message/cap checks, held batches,
+  narrowing/exclusion, access loss, malformed/invented output, missing usage and
+  uncertain outcomes. Five interface styles, both color modes, 22px UI, keyboard,
+  forced colors/reduced motion and footer/overflow screenshots are specified,
+  **not executed or visually inspected**. Real permission/cursor/concurrent-worker
+  races, crash recovery and paired assistant-ledger/blob restoration remain gates.
+- The optional live-provider CLI's help, synthetic preview preparation and missing
+  consent refusal executed locally, with **zero provider calls**. Pure tests cover
+  exact endpoints/models/prices/spending consent, immutable synthetic messages,
+  lifetime and unknown cost. No live dispatch, provider billing/retention, external
+  cancellation or model quality was accepted. The configured-price input estimate
+  is not a tokenizer or external billing cap; a real provider-side limit is required.
+
+Working data/services were not migrated, restarted or promoted. No commit, push
+or deployment was performed. Stages 3 and 4 remain unaccepted on the
+[roadmap](PRODUCTIVITY_ROADMAP.md). See [batch review, recovery and gate commands](WORKSPACE_ASSISTANT.md).
+
+## October 6 lab planning — source implementation, acceptance pending
+
+- [Lab planning](PLANNING_LAB.md) implements eight typed task-property kinds,
+  atomic reviewed field presets, selected List/Gantt columns and saved filters,
+  shared manual time/history/reports and human-reviewed metadata-only automations.
+  Additive migration **46** leaves the document/CRDT engine unchanged. Native
+  configuration, time corrections and approval are not unattended AI/MCP writes;
+  scoped read tools and existing reviewed task updates retain their boundaries.
+- Numeric controls preserve unfinished signs/decimals, negative-zero drafts and
+  scientific notation. Shared draft/server checks explain invalid filters and
+  rules; archived or malformed conditions never silently widen a view. Choice
+  equality is order-independent. Automation reviews label skipped changes,
+  preserve exact selected previews and allow expired previews to be reviewed
+  again. Time-history search/order/My changes keep exact paged positions and full
+  notes. Shared native labels, errors and control-row actions retain app/editor
+  style separation; no new theme, editor or mobile certification is claimed.
+- Metadata-only batches use one bounded task read and one update, omit whole
+  custom maps from that read and merge only typed set/clear deltas in SQL.
+  Worker source now locks the workspace before event/rule rows to address a
+  potential coalescing-write deadlock. Mocked query-order tests support this
+  ordering; they do **not** prove PostgreSQL concurrency or failure recovery.
+- **2,327 unit tests / 127 files**, TypeScript, ESLint, shared UI validation
+  (**194 JSX files**), both trusted theme-pack checks and documentation checks
+  passed. The isolated optimized build (`79ZBuOFvfoxEJr0wX-Y5r`,
+  **967 offline assets**) passed compilation, type generation and static routing.
+  No authenticated services, migrations or provider connections are implied by
+  this build result. Pre-existing generated type-import paths were restored.
+- Runtime acceptance is **not passed**. Loopback listeners are denied with
+  `EPERM`; even offline PostgreSQL initialization is denied shared memory
+  (`shmget: Operation not permitted`). The isolated SQL attempt stopped before
+  migration/trigger execution; its failed receipt is
+  `data/planning-lab-migration-7jyyBR/result.json`. It is not passing evidence.
+  The SQL gate now covers the shared batch query and remembered choice identities;
+  these subsequent assertions have not executed either.
+- The fail-closed reliability browser suite was added, including signed/scientific
+  typing, stale fences, selected Apply/Undo, retained drafts and native controls
+  across five styles/color modes/large text. It has **not run** and no Stage 3
+  screenshots have been visually inspected. Fresh/45→46/rerun SQL, permission
+  matrices, worker crash/lease/revocation/DST races, HTTP/cursor races, populated
+  paired recovery, accessibility and same-host 5,000-row/100,000-task performance
+  comparisons remain required. Recovery snapshot definitions now include full
+  task/property/projection records, field-schema revisions and all new lab tables.
+
+Working data and services were not upgraded or restarted. No commit, push or
+deployment was performed. Stage 3 remains unaccepted on the
+[roadmap](PRODUCTIVITY_ROADMAP.md); earlier Stage 2 receipts below cannot certify it.
+
+## October 6 planning archives and lab operations
+
+- Goals now have bounded server-side search, active/archive, kind, owner and
+  creation-order filters. Lists transfer summaries, not Markdown or dependency
+  arrays; authorized descriptions load only when opened. Manual-metric and empty
+  pages no longer fetch the workspace task graph. The existing **200 total goals
+  per workspace, including archived goals**, remains enforced. Metadata history
+  and generated routine tasks are paged across all retained entries, replacing
+  the old latest-100 cutoff. Cursor positions retain PostgreSQL microseconds and
+  bind workspace, account, entity and filters; current access is checked again
+  on every read. The creation ceiling is not an immutable content snapshot.
+- Compact secondary filters, owned result scrollports and fixed pagination retain
+  usable space at 1280 × 720 with 22px UI text. Loaded page controls remain usable
+  while a peer refresh is held between pointerdown and pointerup. Open drafts
+  keep their captured version; stale saves fail without replacing typed content.
+  Generated-task navigation dismisses the archive and routine overlays, including
+  links to recoverable deleted tasks. Native keyboard and modified-link behavior
+  are preserved. App form changes do not alter canonical Markdown or editor undo.
+- The final optimized build (`sYzd9t5L74leB9gHRxUf_`, **964 offline assets**) passed
+  **21 authenticated checks**: seven archive, intake and planning-suite workflows
+  in Chromium, Firefox and WebKit against that same build. Fixtures include 200
+  goals, 1,250 tied/microsecond history entries, 215 generated tasks and request
+  archives beyond 200. Checks cover both sort directions, literal search, lazy
+  detail, total-cap enforcement, stale writes, revoked reads and the held-refresh
+  pagination regression. All five interface styles, both color modes, large text,
+  radius zero, no shadows, keyboard and reduced motion were checked; Chromium
+  forced-color checks and fresh visual captures retain reachable controls and
+  footers. Evidence: `data/reliability-9t5r0p/receipt.json` and its private
+  `browser-results/` directory.
+- A separate preceding optimized build (`VJZqIAiU0k52m74uHse8_`) passed **21
+  planning/archive/Gantt checks** across the three engines, including 5,000-row
+  virtualization, draft recovery, preview/apply/Undo and calendar/legacy contracts.
+  Evidence: `data/reliability-NqOgXG/receipt.json`. It predates the final
+  generated-task overlay-navigation adjustment; it is not presented as another
+  full run of that last build or every historical application suite.
+- Both isolated runners passed actual sync crash, failed-save acknowledgement,
+  journal recovery and graceful drain. Paired recovery preserved **15 record
+  sets**, including goals, metadata history and routines/occurrences, and refused
+  repeat restore without modifying either pair. These planning fixtures contain
+  **zero blobs**; this result is not new attachment-byte acceptance or a replacement
+  for the earlier research-writing run's 21-blob evidence.
+- **2,299 unit tests / 124 files**, TypeScript, ESLint, shared UI validation
+  (**191 JSX files**), both trusted theme-pack checks and documentation checks
+  passed. Pure tests cover bounded contracts, cursor precision/context/expiry,
+  summary projection, scoped detail and conditional task-graph work.
+- Additive **migration 45** indexes goal creation pages and entity history pages.
+  The isolated **44→45** rehearsal preserved six record sets, fictional CRLF/Yjs
+  content and existing goal/routine versions, verified valid indexes and exact
+  tied-page navigation, and passed idempotent rerun. Evidence:
+  `data/planning-archives-migration-5GoG1Y/receipt.json`. The research-writing
+  upgrade gate also passed **43→45**, preserving exact source and bibliography,
+  provenance baseline and later edit: `data/research-writing-migration-19F1XN/receipt.json`.
+  Goal/history/occurrence collection reads now return page objects; documented
+  application, verification and scoped AI/MCP read consumers were updated.
+
+The working database and attachments were not migrated or used for mutation
+tests. Migration 45 still requires a backed-up operator upgrade. No commit, push
+or deployment was performed. At this Stage 2 checkpoint, typed workspace custom
+fields, explicit time/effort logs and reviewed non-AI automation were not yet
+implemented. Their later source implementation and unverified acceptance gates
+are recorded above; broader portfolio/Gantt/workload scale and accessibility
+remain on the [roadmap](PRODUCTIVITY_ROADMAP.md). Physical assistive-technology and production
+recovery acceptance remain separate gates.
+
+## October 6 research writing and frozen evidence
+
+- [Research writing](RESEARCH_WRITING.md) adds an editable, single-note LaTeX ZIP
+  from the exact captured Markdown, including unsaved text and CRLF line endings.
+  Both natbib/BibTeX and BibLaTeX/Biber support numbered and author–year citations.
+  TeX/Reading/Bibliography/Files/Checks share reviewed dependency identities;
+  Reading loads on demand and is explicitly an HTML approximation, not a compiled
+  PDF. Authorized original assets stream with size/checksum verification, bounded
+  image conversions and browser-local Mermaid PNGs. Errors block preparation;
+  warnings require acknowledgement. Export neither saves the draft nor fetches or
+  uploads external images.
+- Lossless BibTeX editing preserves unknown fields, string definitions and original
+  records. Duplicate merges require reviewed field/extra-field decisions and a
+  complete version/impact fingerprint. Paged provenance records an honest upgrade
+  baseline, explicit lookups/imports/edits and retained merge decisions. Frozen
+  paper reviews and milestone/reference-event task links reuse current access and
+  existing workflows; stale source/task/dependency versions fail closed. Review
+  listings transfer summaries, while expanded evidence loads its authorized exact
+  context. These links add no forced Trash hold and never substitute latest text.
+- The final optimized build (`Xaz5U3sqaUKO6GLoDQOs7`, **965 offline assets**) passed
+  **33 authenticated checks**: all eleven export/research-writing/review workflows
+  in Chromium, Firefox and WebKit against that same build. They cover exact unsaved
+  source, local diagram preparation, original asset checksums, both bibliography
+  backends, lazy Reading review, lossless merges/history, immutable handoffs,
+  paper-context privacy, stale-write rejection, viewer exports and revoked
+  downloads. Light/dark, 22px UI text, keyboard, reduced-motion and forced-color
+  checks retain owned scrollports and reachable footers; fresh captures were
+  visually reviewed. Actual sync crash, failed-save acknowledgement, journal
+  recovery and graceful drain passed. Paired backup/restore preserved **eleven
+  record sets and 21 unique blobs**, verified by bytes/SHA-256; repeated restore
+  was refused with both pairs unchanged. Evidence:
+  `data/reliability-qJND2l/receipt.json` and its private `browser-results/`. This
+  focused matrix does not relabel every historical suite as rerun.
+- **2,247 unit tests / 122 files**, TypeScript, ESLint, shared UI validation
+  (**189 JSX files**), both trusted theme-pack checks and documentation checks
+  passed. New pure tests cover bibliography lexical edits, citation aliases, math
+  macro hoisting and rejection, native block mappings, diagnostics and navigation
+  request lifetimes.
+- The local compile gate passed **all four bibliography/style profiles** using
+  trusted fictional Markdown, CJK, shared macros, equations/references, nested
+  lists/tasks, tables, footnotes, code and synthetic image/diagram PNG paths. All
+  **eight compiled PDF pages** were rasterized and visually reviewed for type,
+  table/figure layout, code-label placement, references and margins. The check
+  rejects undefined citations/references, missing characters and overfull
+  horizontal boxes.
+  A private architecture-specific Biber copy worked around the installed macOS
+  universal launcher's `lipo` incompatibility; no installed tools were modified.
+  Evidence: `data/research-writing-compile-nJBxzP/receipt.json`. This is local
+  verification, not a delivered server compiler or arbitrary-document parity.
+- The isolated **43→44 migration rehearsal** preserved fictional CRLF Markdown,
+  Yjs state and existing bibliography exactly, created an honest actor-free history
+  baseline, captured a later edit and passed idempotent rerun. Fresh migration 44
+  is also covered by authenticated staging. Evidence:
+  `data/research-writing-migration-eSLM1s/receipt.json`. The working development
+  database and attachments were not upgraded, reset or used for mutation tests.
+- The uncontended browser-local benchmark still passed: the default editor's p95
+  was **15.2–15.5 ms at 100k characters** and **114.5–115.7 ms at 980k**, with a
+  source peer and 50 edits at top/middle/end. Raw samples and host/browser metadata
+  remain in `data/editor-performance-results/**/editor-performance.json`. This
+  measures input-to-animation-frame including layout, not physical keystroke
+  latency or general application/PDF/Canvas performance.
+- The broader review regression caught an ambiguous SQL timestamp after summary
+  projection; it is now qualified to the review record. A traced WebKit failure
+  also exposed a late sync-token request between `beforeunload` and `pagehide`.
+  The request guard now blocks newly started reads in that gap, preserves writes
+  and resumes reads on returning focus/interaction or `pageshow`. Five repeated
+  WebKit runs of all three review/leave-prompt scenarios passed (**15 checks**),
+  including real prompt dismissal, continued editing, server save and history
+  reads. Fault injection and paired recovery also passed for that fixture set.
+  Evidence: `data/reliability-IFr31Q/receipt.json`. Failed diagnostic runs remain
+  private; this narrow fix does not certify physical Safari or every older suite.
+
+Physical IME/clipboard/assistive-technology checks, real providers/S3/DNS and
+production-domain recovery remain separate operator gates. Migration 44 still
+requires a normal backed-up operator upgrade. No commit, push or deployment was
+performed for this stage; unrestricted production readiness is not claimed.
+
+## October 5 daily-use reliability foundation
+
+- Added [one-command authenticated acceptance](RELIABILITY.md) with its own
+  PostgreSQL cluster, registered storage/build paths, fictional account and
+  web/sync/worker processes. The runner does not load application `.env`, refuses
+  occupied ports and stops only its own children. Protected browser configurations
+  attest the actual server database and real attachment path before mutation;
+  missing identities, working targets, mismatches and symlink redirects fail closed.
+  Ordinary deployment health exposes no test identity or database credentials.
+- Removed obsolete Trash/management form overrides competing with shared controls
+  and corrected Settings header wrapping. Preview/search labels and repeated import
+  collection names now have unambiguous test identities. Visible lazy equations are
+  deliberately scrolled into view before rendering assertions; revoked task access
+  distinguishes an authorized read-only response from denied resource discovery.
+- Indexed ephemeral block-guide decorations eliminate quadratic sibling scans in
+  large notes. A narrow, runtime-checked compatibility adapter isolates the pinned
+  editor foundation's internal decoration tree; stock-equivalence tests and browser
+  gates are required on upgrades. Markdown, persisted schema, source anchors and
+  collaborative undo are unchanged.
+- The isolated, single-worker same-machine benchmark passed the default editor's
+  p95 budgets at top/middle/end of 100k- and 980k-character notes, with a source peer
+  and 50 edits per location. The earlier 980k regression was about 2.79 seconds;
+  the final uncontended post-fix run was **99–116 ms**, with **15–16 ms** at 100k.
+  Raw samples and browser/Node/host metadata are explicitly saved to
+  `data/editor-performance-results/**/editor-performance.json`. This measures
+  beforeinput-to-animation-frame including layout, not physical keystroke latency
+  or general PDF/Canvas/application performance.
+- **2,217 unit tests / 120 files**, TypeScript, ESLint, shared UI validation
+  (**183 JSX files**), both trusted theme-pack checks and documentation checks passed.
+  The full browser-local editor suite passed **1,337 checks** in Chromium, Firefox
+  and WebKit, with **28 explicitly skipped checks** retained as skips rather than
+  acceptance evidence. Mixed-block LF/CRLF fixtures cover repeated mode changes,
+  empty specialized-block removal, peer edits and author-local undo. Opt-in
+  performance and engine-specific simulated composition are separate from physical
+  IME/clipboard and assistive-technology acceptance.
+- The optimized application build passed with **963 offline assets**. All
+  **123 authenticated workflows** passed in Chromium, Firefox and WebKit against
+  the same optimized application. Actual sync-process crash, failed-save
+  acknowledgment, binary-journal recovery and graceful drain checks passed.
+  Paired backup/restore into a new database/storage pair preserved eight record
+  sets and **45 unique blobs**, verified by bytes and SHA-256. Repeat restore was
+  refused, with both source and recovered data checked unchanged. A focused
+  export/recovery follow-up passed after replacing deprecated concurrent queries
+  on one PostgreSQL client with sequential snapshots; it is not a second full
+  browser-matrix claim. Each runner now owns its screenshot directory so another
+  invocation cannot erase its evidence. CI was added locally, not pushed or run
+  on GitHub.
+- Fresh light/dark, large-text and forced-color captures were visually reviewed for
+  field alignment, wrapping, scroll ownership and footer visibility. Mutation
+  acceptance uses synthetic staging fixtures only. Real S3/provider/DNS behavior,
+  physical editor checks, broad PDF/Canvas/portfolio performance and production
+  recovery remain release gates; this is not blanket production certification.
 
 ## October 5 showcase outline parity
 
@@ -1090,7 +1539,7 @@ application-wide browser suite remain outside this acceptance pass.
 ## September 20 PDF reader redesign
 
 The [PDF reader guide](PDF_READER.md) separates implemented workflows from the
-remaining Zotero-style features. Existing Workspace/Gantt changes and research
+planned reader improvements. Existing Workspace/Gantt changes and research
 data were preserved; no commit, push, provider call or external deployment was
 performed.
 
@@ -1122,8 +1571,8 @@ complete offline/revocation rehearsal remain acceptance gates. Richer annotation
 tools, collaborative side notes, application-managed page-copy/version saving,
 whole-paper assistant batching were not implemented at this checkpoint. Native
 annotation import/export and other subsequent work are recorded in the newer
-entry above. The implementation is a substantial reader update, not full Zotero
-parity or completion of every item in the larger plan.
+entry above. The implementation is a substantial reader update; the remaining
+items in the larger plan are listed above.
 
 The Workspace → Files overflow regression is also fixed: its flex rule now targets
 the actual Explorer wrapper, with a bounded, independently scrollable file pane
@@ -1590,7 +2039,7 @@ limits and migration instructions.
 ## September 13 folding-gutter follow-up
 
 - **1,610 unit tests in 63 files**, TypeScript, ESLint, theme validation and the
-  isolated production build pass. Folding adds no Monaco runtime dependency.
+  isolated production build pass. Folding adds no editor-framework runtime dependency.
 - **400 Chromium editor-lab checks pass**, with the opt-in benchmark skipped,
   plus **76 focused Firefox/WebKit checks**. A **54-case three-engine focused
   rerun** passes after final control-order/geometry and caret-boundary fixes.
@@ -1715,5 +2164,5 @@ arbitrary user CSS are not delivered by this release preparation.
 The earlier Canvas WebKit run had an intermittent navigation access-control diagnostic;
 the traced repeat passed. The original failure and repeat traces remain private under
 `test-results/canvas-release-webkit` and `test-results/canvas-webkit-diagnostic`.
-Its root cause is not proven, and cleanup does not relabel it fixed. Complete Typora
-parity and unrestricted production readiness are not claimed.
+Its root cause is not proven, and cleanup does not relabel it fixed. Unrestricted
+production readiness is not claimed.

@@ -17,6 +17,14 @@ export const fileTypes = [
     description: "A collaborative space for connected ideas and files.",
   },
   {
+    id: "mindmap",
+    label: "Mind map",
+    extension: "md",
+    group: "Research",
+    icon: "graph",
+    description: "A native, collaborative map backed by ordinary Markdown.",
+  },
+  {
     id: "math",
     label: "Math project",
     extension: "tex",
@@ -97,12 +105,14 @@ export const fileTypeIds = fileTypes.map((t) => t.id) as [
   ...FileType[],
 ];
 export const sourceForNewFile = (type: FileType) =>
-  type === "json"
-    ? "{}\n"
-    : type === "csv"
-      ? "Column A,Column B\n"
-      : type === "yaml"
-        ? "# Research data\n"
-        : type === "canvas"
-          ? '{"nodes":[],"edges":[]}'
-          : "";
+  type === "mindmap"
+    ? "# Mind map\n\n- Research question\n  - Hypothesis\n  - Evidence\n- Next steps\n"
+    : type === "json"
+      ? "{}\n"
+      : type === "csv"
+        ? "Column A,Column B\n"
+        : type === "yaml"
+          ? "# Research data\n"
+          : type === "canvas"
+            ? '{"nodes":[],"edges":[]}'
+            : "";

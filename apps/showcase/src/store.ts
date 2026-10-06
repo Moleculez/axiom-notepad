@@ -10,6 +10,7 @@ import type { ResourceCardPreview } from "@axiom/shared/canvas-preview";
 import { z } from "zod";
 import {
   samples,
+  mindmapSample,
   sampleCanvas,
   canvasId,
   researchId,
@@ -23,6 +24,7 @@ export type LocalDocument = {
   id: string;
   title: string;
   kind: "markdown" | "canvas" | "text";
+  view?: "mindmap";
   source: string;
   modified: string;
 };
@@ -230,6 +232,7 @@ export class ShowcaseStore {
   private seed() {
     const documents: LocalDocument[] = [
       ...samples.map((doc) => ({ ...doc, modified: timestamp() })),
+      { ...mindmapSample, modified: timestamp() },
       {
         id: canvasId,
         title: "A question and its evidence",
@@ -378,12 +381,14 @@ export class ShowcaseStore {
     title = "Untitled research note",
     kind: LocalDocument["kind"] = "markdown",
     source = "",
+    view?: "mindmap",
   ) {
     const doc = {
       id: crypto.randomUUID(),
       title,
       kind,
       source,
+      ...(view ? { view } : {}),
       modified: timestamp(),
     };
     this.dirty.add(doc.id);
@@ -392,7 +397,7 @@ export class ShowcaseStore {
     return doc;
   }
   reset(id: string) {
-    const sample = samples.find((d) => d.id === id);
+    const sample = [...samples, mindmapSample].find((d) => d.id === id);
     this.update(
       id,
       sample?.source ??
@@ -443,13 +448,15 @@ export class ShowcaseStore {
       updated_at: doc?.modified ?? "",
       deleted_at: null,
       document_type:
-        doc?.kind === "canvas"
-          ? "canvas"
-          : doc?.kind === "text"
-            ? "text"
-            : doc
-              ? "markdown"
-              : undefined,
+        doc?.view === "mindmap"
+          ? "mindmap"
+          : doc?.kind === "canvas"
+            ? "canvas"
+            : doc?.kind === "text"
+              ? "text"
+              : doc
+                ? "markdown"
+                : undefined,
       mime: asset?.mime,
       bytes: asset?.blob.size,
       role: "editor",
@@ -642,6 +649,7 @@ export class ShowcaseStore {
               id: z.uuid(),
               title: z.string().max(200),
               kind: z.enum(["markdown", "text", "canvas"]),
+              view: z.literal("mindmap").optional(),
               path,
             }),
           )
@@ -706,6 +714,7 @@ export class ShowcaseStore {
         id,
         title: item.title,
         kind: item.kind,
+        ...(item.view ? { view: item.view } : {}),
         source,
         modified: timestamp(),
       };

@@ -11,14 +11,19 @@ research data.
 
 ## Choose a format
 
-| Format                  | What it contains                                                                                                                                   |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Standalone HTML         | Script-free document, embedded fonts and authorized raster images, rendered math and supported Mermaid SVG, tables, tasks, footnotes and citations |
-| Print / Save as PDF     | The same prepared document on light paper, using the browser's print dialog; ordinary text remains selectable                                      |
-| Markdown source         | The exact source snapshot, without presentation settings or bundled files                                                                          |
-| Markdown + assets (ZIP) | That same source snapshot, accessible referenced file versions and bibliography, with relative attachment links                                    |
+| Format                       | What it contains                                                                                                                                   |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Standalone HTML              | Script-free document, embedded fonts and authorized raster images, rendered math and supported Mermaid SVG, tables, tasks, footnotes and citations |
+| Print / Save as PDF          | The same prepared document on light paper, using the browser's print dialog; ordinary text remains selectable                                      |
+| Markdown source              | The exact source snapshot, without presentation settings or bundled files                                                                          |
+| Markdown + assets (ZIP)      | That same source snapshot, accessible referenced file versions and bibliography, with relative attachment links                                    |
+| LaTeX research project (ZIP) | Editable academic article, BibTeX/Biber bibliography, exact originals, figure copies, diagnostics and local compile instructions                   |
 
-**Match document** retains your typography and section decorations. **Academic**
+The [research-project guide](RESEARCH_WRITING.md) covers its TeX/Reading/Bibliography/
+Files/Checks review, citation aliases and bibliography backend choices. Reading is
+an approximation; final TeX page breaks are checked by a local compiler.
+
+For HTML/PDF, **Match document** retains your typography and section decorations. **Academic**
 uses Latin Modern with LaTeX-style headings; **Minimal** uses restrained sans-serif
 typography. HTML can retain document colors or use light paper. PDF uses light
 paper even when the application is dark.
@@ -63,8 +68,8 @@ selected research material. Revocation cannot retract a file already downloaded.
   HTML/PDF; the Markdown ZIP can include accessible referenced attachments.
 - Preview source is limited to one million UTF-16 code units. Existing archive
   storage and concurrency limits also apply. A running worker is required for ZIP.
-- DOCX, LaTeX source conversion and server-side/headless-browser PDF generation
-  are not part of this export feature.
+- DOCX and server-side/headless-browser PDF generation are not included. LaTeX
+  project export is editable-source conversion, not an automatic compiled PDF.
 
 ## Read mode
 

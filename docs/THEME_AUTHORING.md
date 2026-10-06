@@ -16,6 +16,15 @@ Do not replace it with an upstream editor mark or add a remote font for letterin
 
 ## Authoring a pack
 
+Mind-map presentation inherits existing paper/text/accent, interface and reading
+font/size tokens. Branch colors must use semantic theme values, not a separate
+hardcoded palette. Layout/spacing/width preferences are independent of palettes
+and fonts. Label/source fields keep `data-editor-field` transparency; selection,
+drop targets and folding must retain keyboard/forced-color visibility. Do not add
+card chrome per node, global form resets or animation that overrides motion
+preferences. Production and showcase share the same native surface. See
+[mind-map contributor contracts](MINDMAP.md#contributor-and-acceptance-contracts).
+
 ### Interface styles and public website templates
 
 Appearance schema 11 separates `interfaceStyle` from `themePack`. The five trusted
@@ -167,7 +176,7 @@ nested quote. Neutral `--text` mixes supply quiet tracks and stronger hover/care
 guides; reserve theme accent colors for interactive controls.
 Caret emphasis disappears when the editor loses focus. The base stylesheet owns
 these geometry/state rules, reduced-motion handling and forced system colors.
-Monaco-inspired folding chevrons occupy the same gutter, outside the editable DOM.
+Folding chevrons occupy the same gutter, outside the editable DOM.
 They appear on hover/keyboard focus and stay visible for collapsed blocks. Retain
 their 20px hit area, visible keyboard focus, `aria-expanded` state and compact
 ellipsis summaries. Folding is local projection state, never another document or

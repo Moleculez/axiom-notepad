@@ -17,6 +17,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@axiom/markdown": resolve("packages/markdown/src/index.ts"),
+      "@axiom/mindmap": resolve("packages/mindmap/src"),
       "@axiom/shared": resolve("packages/shared/src"),
       "@axiom/editor": resolve("packages/editor/src"),
     },

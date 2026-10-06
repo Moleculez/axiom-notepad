@@ -5,6 +5,9 @@ import { query } from "./db";
 import { getAttachment, attachmentMime } from "./storage";
 import { appUrl } from "./auth";
 import { MathExportLimitError } from "../../markdown/src/math-server";
+import { z } from "zod";
+import { latexOptionsSchema } from "./latex-export";
+import { prepareLatexExport } from "./latex-export-api";
 
 /** Read-authorized, non-persisting preview. The regular API origin check still
  * applies to this POST; accepting a snapshot must never imply edit authority. */
@@ -13,7 +16,17 @@ export async function documentExportPreview(
   userId: string,
   id: string,
 ) {
-  const input = documentExportRequestSchema.parse(await request.json());
+  const input = documentExportRequestSchema
+    .extend({
+      latex: z
+        .object({
+          options: latexOptionsSchema,
+          fingerprint: z.string().regex(/^[a-f\d]{64}$/),
+        })
+        .strict()
+        .optional(),
+    })
+    .parse(await request.json());
   const check = async () => {
     const note = await noteAccess(userId, id);
     if (note.source_format && note.source_format !== "markdown")
@@ -26,10 +39,19 @@ export async function documentExportPreview(
     return note;
   };
   const note = await check();
+  const manuscript = input.latex
+    ? await prepareLatexExport(userId, id, input.snapshot, input.latex.options)
+    : null;
+  if (manuscript && manuscript.fingerprint !== input.latex?.fingerprint)
+    throw new HttpError(
+      409,
+      "Paper dependencies changed. Refresh the project review.",
+    );
   const references = Object.fromEntries(
-    (await query("SELECT * FROM axiom_note_bibliography($1)", [id])).map(
-      (r) => [r.cite_key, r],
-    ),
+    (
+      manuscript?.references ??
+      (await query("SELECT * FROM axiom_note_bibliography($1)", [id]))
+    ).map((r) => [r.cite_key, r]),
   );
   const targets = await query(
     "SELECT id,title FROM notes WHERE group_id=$1 AND deleted_at IS NULL AND axiom_can_read_note($2,id)",

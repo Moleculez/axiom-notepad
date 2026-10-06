@@ -34,7 +34,8 @@ export async function executeIntegrationAction(
 ) {
   const action = integrationActions.find((a) => a.name === name);
   if (!action) throw new HttpError(404, "Unknown workspace action.");
-  if (isWorkspaceMutation(name)) return prepareIntegrationChange(connection, name, raw);
+  if (isWorkspaceMutation(name))
+    return prepareIntegrationChange(connection, name, raw);
   const input = integrationActionInput.parse(raw),
     live = await activeConnection(
       connection.id,
@@ -202,12 +203,16 @@ export async function executeIntegrationAction(
           await verifyTargets();
           return { ...current, contentHash: sourceHash(current.body) };
         }
-        const path = integrationPath(action,input.spaceId,input.id);
+        const path = integrationPath(action, input.spaceId, input.id);
         if (path.includes(":id") || path.endsWith("//"))
           throw new HttpError(400, "This action needs a target ID.");
         const url = new URL(`${appUrl}/api/v1/${path}`);
         for (const [k, v] of Object.entries(input.query))
           url.searchParams.set(k, v);
+        // Assistant discovery supports multiple same-group workspaces in its
+        // native UI. A connected client's query must never broaden its grant.
+        if (name === "workspace_evidence_search")
+          url.searchParams.set("spaceIds", input.spaceId);
         url.searchParams.set("spaceId", input.spaceId);
         url.searchParams.set("space", input.spaceId);
         url.searchParams.set("spaces", input.spaceId);

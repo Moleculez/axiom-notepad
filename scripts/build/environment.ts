@@ -3,7 +3,7 @@ export function buildEnvironment(input: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
   const env = { ...input };
   for (const key of Object.keys(env))
     if (
-      /^(?:DATABASE_URL|RESTORE_DATABASE_URL|PG[A-Z_]*|POSTGRES_[A-Z_]*|SMTP_URL|OIDC_[A-Z_]*|TOOL_PROVIDER_[A-Z_]*|OFFICE_CONVERTER_[A-Z_]*|AWS_[A-Z_]*|S3_[A-Z_]*|AXIOM_ADMIN_PASSWORD|AXIOM_DATABASE_PASSWORD)$/.test(
+      /^(?:DATABASE_URL|RESTORE_DATABASE_URL|PG[A-Z_]*|POSTGRES_[A-Z_]*|SMTP_URL|OIDC_[A-Z_]*|TOOL_PROVIDER_[A-Z_]*|OFFICE_CONVERTER_[A-Z_]*|AWS_[A-Z_]*|S3_[A-Z_]*|AXIOM_ADMIN_PASSWORD|AXIOM_DATABASE_PASSWORD|AXIOM_LIVE_PROVIDER_CREDENTIAL)$/.test(
         key,
       )
     )

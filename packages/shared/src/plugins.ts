@@ -11,7 +11,16 @@ export const pluginLimits = {
   concurrentCalls: 8,
   packagesPerAccount: 32,
   packageBytesPerAccount: 64 * 1024 * 1024,
+  commandTransferBytes: 32 * 1024 * 1024,
+  protocolMessagesPerSecond: 100,
+  protocolDepth: 32,
+  protocolNodes: 100_000,
+  permissionDays: 30,
 } as const;
+export const pluginPermissionActive = (
+  expiresAt: string | Date | undefined,
+  now = Date.now(),
+) => !!expiresAt && new Date(expiresAt).valueOf() > now;
 export const pluginCapabilities = [
   "resources:read",
   "documents:read",
@@ -286,6 +295,7 @@ export type PluginRegistry = {
     space_ids: string[];
     revision: number;
     enabled: boolean;
+    expires_at: string;
   }[];
   activity: {
     id: string;
@@ -309,6 +319,8 @@ export type PluginGrant = {
   authorized?: boolean;
   capabilities: PluginCapability[];
   revoked_at: string | null;
+  expires_at: string;
+  effective_expires_at?: string;
 };
 export type PluginContext = {
   spaceId: string;

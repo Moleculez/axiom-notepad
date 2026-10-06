@@ -23,14 +23,14 @@
   border-inline-end: 1px solid var(--line);
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
 }
 .document-export-settings label {
   margin: 0;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  font-size: 0.85rem;
+  font-size: var(--size-ui-small);
 }
 .reading-update-status {
   position: absolute;
@@ -63,13 +63,11 @@
 }
 .document-export-settings .document-export-check {
   flex-direction: row;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
 }
 .document-export-check input {
   margin: 0;
-  width: 15px;
-  height: 15px;
   flex: 0 0 auto;
 }
 .document-export-settings
@@ -78,7 +76,7 @@
   min-width: 0;
 }
 .document-export-settings .muted {
-  font-size: 0.78rem;
+  font-size: var(--size-ui-small);
   line-height: 1.6;
   margin: 0;
 }
@@ -100,7 +98,7 @@
   justify-content: space-between;
   gap: 12px;
   padding: 12px 18px;
-  font-size: 0.8rem;
+  font-size: var(--size-ui-small);
   color: var(--muted);
   border-bottom: 1px solid var(--line);
 }
@@ -110,6 +108,65 @@
   min-height: 180px;
   border: 0;
   background: var(--paper);
+}
+.latex-review-tabs {
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--line);
+  flex: 0 0 auto;
+}
+.latex-review-tabs [aria-pressed="true"] {
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+.latex-review-content {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 20px;
+  background: var(--paper);
+  color: var(--text);
+  scrollbar-gutter: stable;
+}
+.latex-review-content pre {
+  margin: 0;
+  font: var(--size-code)/1.65 var(--font-code);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.latex-review-content ul {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+.latex-review-content li {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+  overflow-wrap: anywhere;
+}
+.latex-review-content li small {
+  color: var(--muted);
+  font-size: var(--size-ui-small);
+}
+.latex-review-content [data-severity="error"] strong {
+  color: var(--danger);
+}
+.latex-review-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 20px;
+  margin: 0;
+  border-top: 1px solid var(--line);
+  font-size: var(--size-ui-small);
+}
+.latex-review-consent input {
+  flex-shrink: 0;
+}
+.document-export-dialog .dialog-footer > .ui-help {
+  margin-inline-end: auto;
 }
 .document-export-preview progress {
   width: 100%;
@@ -202,4 +259,14 @@
   .reading-code-copy {
     display: none;
   }
+}
+.latex-reading-preview {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.latex-reading-preview iframe {
+  flex: 1;
+  min-height: 420px;
 }

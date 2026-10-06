@@ -15,6 +15,17 @@ import {
   importCrc32,
 } from "@axiom/shared/workspace-import-zip";
 import { importFileDigest } from "./file-checksum";
+import {
+  inspectCollectionFiles,
+  collectionPathIdentity,
+} from "./collection-inventory";
+import { parseCanvas } from "@axiom/shared/canvas";
+import { validateImportedImageProject } from "@axiom/shared/image-project-import";
+import {
+  boundedCollectionDiagnostics,
+  type CollectionDiagnostic,
+} from "@axiom/shared/portable-collection";
+import { z } from "zod";
 
 export type ImportLocalFile = { path: string; file: File };
 export type ImportInventory = {
@@ -23,11 +34,13 @@ export type ImportInventory = {
   previews: Record<string, string>;
   exclusions: { path: string; reason: string }[];
   warnings: string[];
+  diagnostics: CollectionDiagnostic[];
 };
 export type ImportInventoryInput = {
   source: ImportSource;
   files: ImportLocalFile[];
   directories?: string[];
+  decisions?: Record<string, "attachment" | "skip">;
 };
 
 export async function prepareImportInventory(
@@ -121,11 +134,35 @@ export async function prepareImportInventory(
       "Folder pickers cannot report empty directories. Dropped folders and ZIP archives preserve known empty directories.",
     );
   }
+  const collection = await inspectCollectionFiles(files);
+  directories.push(...collection.directories);
+  const diagnostics = [...collection.diagnostics];
   const entries: ImportManifestEntry[] = [],
     accepted: ImportLocalFile[] = [],
     previews: Record<string, string> = {},
     seen = new Set<string>(),
     folders = new Set<string>();
+  const hashes = new WeakMap<Blob, Promise<string>>();
+  const digest = (file: Blob) => {
+    let value = hashes.get(file);
+    if (!value) {
+      value = importFileDigest(file);
+      hashes.set(file, value);
+    }
+    return value;
+  };
+  const problem = (error: unknown) =>
+    (error instanceof z.ZodError
+      ? error.issues
+          .slice(0, 3)
+          .map(
+            (issue) => `${issue.path.join(".") || "Project"}: ${issue.message}`,
+          )
+          .join("; ")
+      : error instanceof Error
+        ? error.message
+        : "Unsupported project"
+    ).slice(0, 1800);
   const folder = (value: string) => {
     const path = importPath(value);
     const reason = importExclusion(path);
@@ -150,26 +187,126 @@ export async function prepareImportInventory(
       exclusions.push({ path, reason });
       continue;
     }
+    if (collection.ignored.has(key)) {
+      exclusions.push({
+        path,
+        reason:
+          "Collection manifest or derived/supporting sidecar; not restored as a file",
+      });
+      continue;
+    }
+    if (input.decisions?.[path] === "skip") {
+      exclusions.push({ path, reason: "Skipped by your conversion choice" });
+      continue;
+    }
     if (seen.has(key))
       throw new Error(`Duplicate or ambiguous file path: ${path}`);
     seen.add(key);
-    const note = isImportMarkdown(path);
-    if (input.source === "markdown" && !note)
+    const descriptor = collection.descriptors.get(key);
+    const format =
+      descriptor?.sourceFormat ??
+      (/\.canvas$/i.test(path) ? "canvas" : "markdown");
+    let note = descriptor
+        ? descriptor.kind === "note"
+        : isImportMarkdown(path) || /\.canvas$/i.test(path),
+      metadata = descriptor?.metadata,
+      asAttachment =
+        input.decisions?.[path] === "attachment" ||
+        (descriptor?.kind === "file" && isImportMarkdown(path));
+    if (input.source === "markdown" && !isImportMarkdown(path))
       throw new Error(
         "Choose .md or .markdown files, or import a folder for attachments.",
+      );
+    if (input.source === "canvas" && !/\.canvas$/i.test(path))
+      throw new Error(
+        "Choose .canvas files, or import a folder for supporting files.",
       );
     if (original.file.size > 1_000_000_000)
       throw new Error(`File exceeds the 1 GB limit: ${path}`);
     const parent = path.split("/").slice(0, -1).join("/");
     if (parent) folder(parent);
-    if (note) {
+    if (note && !asAttachment) {
+      try {
+        const source = decodeImportMarkdown(
+          new Uint8Array(await original.file.arrayBuffer()),
+          format,
+        );
+        previews[path] = source;
+        if (format === "canvas") {
+          parseCanvas(source.replace(/^\ufeff/, ""));
+          metadata = { ...metadata, toolKind: "canvas" };
+          // Keep exact original bytes as a visible supporting file, not an
+          // alternate editable document or invisible revision history.
+          const originals = (parent ? parent + "/" : "") + "_originals";
+          const originalPath = importPath(
+            `${originals}/${collectionPathIdentity(path)}.canvas.json`,
+          );
+          folder(originals);
+          entries.push({
+            id: crypto.randomUUID(),
+            path: originalPath,
+            kind: "file",
+            bytes: original.file.size,
+            digest: await digest(original.file),
+            asAttachment: true,
+            metadata: {
+              name: `Original · ${original.file.name}`.slice(0, 200),
+            },
+          });
+          accepted.push({ path: originalPath, file: original.file });
+          diagnostics.push({
+            severity: "info",
+            code: "canvas-original",
+            path,
+            message:
+              "Canvas IDs are remapped. Exact original bytes are retained as a supporting file in _originals.",
+          });
+        }
+      } catch (error) {
+        if (format !== "canvas" && !descriptor?.sourceFormat) throw error;
+        note = false;
+        asAttachment = true;
+        diagnostics.push({
+          severity: "error",
+          code: "conversion-choice",
+          path,
+          message: `${problem(error)} Choose Keep as attachment or Skip.`,
+        });
+      }
+    }
+    if (note && !asAttachment) {
       markdownBytes += original.file.size;
       if (markdownBytes > IMPORT_LIMITS.markdownBytes)
-        throw new Error("Import up to 25 MB of Markdown at a time.");
-      const source = decodeImportMarkdown(
-        new Uint8Array(await original.file.arrayBuffer()),
-      );
-      previews[path] = source;
+        throw new Error("Import up to 25 MB of native source at a time.");
+    }
+    if (metadata?.toolKind === "image" && !asAttachment) {
+      try {
+        await validateImportedImageProject(
+          new Uint8Array(await original.file.arrayBuffer()),
+        );
+      } catch (error) {
+        asAttachment = true;
+        diagnostics.push({
+          severity: "error",
+          code: "conversion-choice",
+          path,
+          message: `${problem(error)} Choose Keep as attachment or Skip.`,
+        });
+      }
+    }
+    if (input.decisions?.[path] === "attachment") {
+      note = false;
+      diagnostics.push({
+        severity: "warning",
+        code: "attachment-choice",
+        path,
+        message:
+          "Original imported as an attachment; no native project settings are applied.",
+      });
+    }
+    if (asAttachment && metadata) {
+      const { toolKind: _kind, settings: _settings, ...safe } = metadata;
+      metadata = safe;
     }
     if (entries.length + folders.size >= IMPORT_LIMITS.entries)
       throw new Error("Import up to 2,000 files and folders at a time.");
@@ -179,7 +316,13 @@ export async function prepareImportInventory(
       path,
       kind: note ? "note" : "file",
       bytes: original.file.size,
-      digest: await importFileDigest(original.file),
+      digest: await digest(original.file),
+      ...(note ? { sourceFormat: format } : {}),
+      ...(metadata ? { metadata } : {}),
+      ...(descriptor?.expectedSha256
+        ? { expectedSha256: descriptor.expectedSha256 }
+        : {}),
+      ...(asAttachment ? { asAttachment: true } : {}),
     });
     accepted.push({ path, file: original.file });
   }
@@ -190,12 +333,18 @@ export async function prepareImportInventory(
       kind: "folder",
       bytes: 0,
       digest: null,
+      ...(collection.descriptors.get(importPathKey(path))?.metadata
+        ? {
+            metadata: collection.descriptors.get(importPathKey(path))!.metadata,
+          }
+        : {}),
     });
   const manifest = validateImportManifest({
     source: input.source,
     entries,
     parentId: null,
     conflict: "keepBoth",
+    diagnostics: boundedCollectionDiagnostics(diagnostics),
   });
   return {
     entries: manifest.entries,
@@ -203,5 +352,6 @@ export async function prepareImportInventory(
     previews,
     exclusions,
     warnings,
+    diagnostics: manifest.diagnostics ?? [],
   };
 }

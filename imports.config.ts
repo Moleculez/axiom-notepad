@@ -1,5 +1,9 @@
 import { defineConfig, devices } from "@playwright/test";
-const baseURL = process.env.TEST_APP_URL || "http://localhost:3004";
+import { mutationTestTarget } from "./packages/shared/src/test-target";
+const baseURL = mutationTestTarget(
+  process.env,
+  process.env.AXIOM_TEST_ROOT,
+).origin;
 if (
   new URL(baseURL).port !== "3004" ||
   !["localhost", "127.0.0.1"].includes(new URL(baseURL).hostname)
@@ -10,6 +14,7 @@ process.env.TEST_OWNER_EMAIL = "extensions@axiom.local";
 process.env.TEST_OWNER_PASSWORD = "ExtensionsTest2026!";
 export default defineConfig({
   testDir: "./tests/e2e",
+  globalSetup: "./tests/e2e/global-setup.ts",
   testMatch: "workspace-imports.spec.ts",
   timeout: 120000,
   workers: 1,

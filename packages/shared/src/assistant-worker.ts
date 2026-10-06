@@ -7,6 +7,15 @@ import {
 import { parseAssistantResponse } from "./assistant";
 import { callAssistantProvider } from "./tool-providers";
 import { executeProductivityRound } from "./productivity-worker";
+import {
+  assistantAllEvidence,
+  lockAssistantRunContext,
+} from "./assistant-run-review";
+import {
+  assistantGroundingReport,
+  invalidActionEvidence,
+  aggregateAssistantUsage,
+} from "./assistant-grounding";
 
 /** The outer tool worker owns the durable lease, cancellation and deadline. */
 export async function executeAssistantJob(
@@ -18,7 +27,8 @@ export async function executeAssistantJob(
     job.assistant_context_id,
     job.owner_id,
   );
-  if (context.agent_config) return executeProductivityRound(job,signal,submitted);
+  if (context.agent_config)
+    return executeProductivityRound(job, signal, submitted);
   await assertAssistantAccess(context);
   const p = await assistantProvider(
     job.owner_id,
@@ -38,7 +48,18 @@ export async function executeAssistantJob(
     context.evidence,
     context.allow_task_create,
   );
+  const evidence = await assistantAllEvidence(context);
+  const grounding = assistantGroundingReport(output.answer, evidence);
+  if (
+    grounding.unknownKeys.length ||
+    output.proposals.some((p) => invalidActionEvidence(p, evidence).length)
+  ) {
+    output.proposals = [];
+    output.warning =
+      "Unknown source references were returned. Proposed actions are inert; verify the answer.";
+  }
   await transaction(async (client) => {
+    await lockAssistantRunContext(client, context);
     await assertAssistantAccess(context, client);
     await assistantProvider(
       job.owner_id,
@@ -87,6 +108,8 @@ export async function executeAssistantJob(
           answer: output.answer,
           warning: output.warning,
           usage: response.usage,
+          runUsage: aggregateAssistantUsage([{ usage: response.usage }]),
+          grounding,
         }),
       ],
     );
@@ -97,11 +120,19 @@ export async function assistantJobStillAuthorized(job: Record<string, any>) {
   if (job.kind !== "assistant") return;
   const c = await assistantContext(job.assistant_context_id, job.owner_id);
   await assertAssistantAccess(c);
+  // Local recovery has no provider dispatch and may finish after its configuration changes.
+  if (job.input?.recoverConfirmed) return;
+  const [review] = c.agent_config
+    ? await query(
+        "SELECT v.envelope FROM assistant_runs r JOIN assistant_run_reviews v ON v.id=r.review_id WHERE r.id=$1",
+        [job.id],
+      )
+    : [];
   await assistantProvider(
     job.owner_id,
     c.space_id,
     c.provider_id,
-    c.provider_version,
+    review?.envelope.provider.version ?? c.provider_version,
   );
   const [conversation] = await query(
     "SELECT deleted_at FROM assistant_conversations WHERE id=$1",

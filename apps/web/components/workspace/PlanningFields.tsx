@@ -1,5 +1,12 @@
 "use client";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type InputHTMLAttributes,
+} from "react";
 import { Picker, TextInput, HelpText, type PickerOption } from "../ui/controls";
 import { api } from "../../lib/client";
 import { confirmAction } from "../../lib/app-prompt";
@@ -36,6 +43,7 @@ export function PlanningEntityPicker({
   exclude = [],
   id,
   "aria-describedby": described,
+  "aria-invalid": invalid,
 }: {
   spaceId: string;
   kind: "task" | "file" | "milestone";
@@ -46,6 +54,7 @@ export function PlanningEntityPicker({
   exclude?: string[];
   id?: string;
   "aria-describedby"?: string;
+  "aria-invalid"?: InputHTMLAttributes<HTMLInputElement>["aria-invalid"];
 }) {
   const [selected, setSelected] = useState<PickerOption[]>([]);
   const key = Array.isArray(value) ? value.join(",") : value;
@@ -81,6 +90,7 @@ export function PlanningEntityPicker({
     <Picker
       id={id}
       aria-describedby={described}
+      aria-invalid={invalid}
       label={label}
       value={value}
       onChange={onChange}
@@ -100,6 +110,7 @@ export function PersonPicker({
   disabled = false,
   id,
   "aria-describedby": described,
+  "aria-invalid": invalid,
 }: {
   people: Array<{ id: string; name: string }>;
   value: string;
@@ -108,6 +119,7 @@ export function PersonPicker({
   disabled?: boolean;
   id?: string;
   "aria-describedby"?: string;
+  "aria-invalid"?: InputHTMLAttributes<HTMLInputElement>["aria-invalid"];
 }) {
   const options = useMemo(
     () => people.map((p) => ({ value: p.id, label: p.name })),
@@ -117,6 +129,7 @@ export function PersonPicker({
     <Picker
       id={id}
       aria-describedby={described}
+      aria-invalid={invalid}
       label={label}
       value={value}
       onChange={(v) => onChange(String(v))}

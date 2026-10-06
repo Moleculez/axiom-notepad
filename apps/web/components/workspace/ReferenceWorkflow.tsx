@@ -1,10 +1,18 @@
 "use client";
-import { Button, Checkbox, NativeSelect, TextArea } from "../ui/controls";
+import {
+  Button,
+  Checkbox,
+  NativeSelect,
+  TextArea,
+  TextInput,
+  HelpText,
+} from "../ui/controls";
 import { useRef, useState } from "react";
 import type {
   LibraryReference,
   LibraryScope,
   LibraryPreview,
+  MergeReview,
 } from "@axiom/shared/research-library";
 import type { ReferenceDetails } from "@axiom/shared/research";
 import { api } from "../../lib/client";
@@ -44,9 +52,11 @@ export default function ReferenceWorkflow({
       referenceDraft(selected[0]),
     );
   const [preview, setPreview] = useState<
-      (LibraryPreview & { keys?: string[] }) | null
+      (LibraryPreview & Partial<MergeReview>) | null
     >(null),
     identity = useRef(crypto.randomUUID());
+  const [extraFields, setExtraFields] = useState<Record<string, string>>({});
+  const [reviewedInput, setReviewedInput] = useState("");
   const reset = () => {
     setPreview(null);
     setConsent(false);
@@ -76,6 +86,7 @@ export default function ReferenceWorkflow({
               selected.map((r) => [r.id, r.version]),
             ),
             draft,
+            extraFields,
           };
   return (
     <Dialog
@@ -213,23 +224,35 @@ export default function ReferenceWorkflow({
           <div className="library-property-grid">
             {(Object.keys(referenceLabels) as (keyof ReferenceDetails)[]).map(
               (k) => (
-                <label key={k}>
-                  <span>{referenceLabels[k]}</span>
-                  <NativeSelect
-                    aria-label={`Merge ${k}`}
+                <div key={k} className="library-merge-field">
+                  <label>
+                    <span>{referenceLabels[k]}</span>
+                    <NativeSelect
+                      aria-label={`Merge ${k}`}
+                      value={draft[k]}
+                      onChange={(e) => {
+                        setDraft({ ...draft, [k]: e.target.value });
+                        reset();
+                      }}
+                    >
+                      {[
+                        ...new Set([...selected.map((r) => r[k]), draft[k]]),
+                      ].map((v) => (
+                        <option key={v} value={v}>
+                          {v || "Empty"}
+                        </option>
+                      ))}
+                    </NativeSelect>
+                  </label>
+                  <TextInput
+                    aria-label={`Custom merge ${k}`}
                     value={draft[k]}
                     onChange={(e) => {
                       setDraft({ ...draft, [k]: e.target.value });
                       reset();
                     }}
-                  >
-                    {[...new Set(selected.map((r) => r[k]))].map((v) => (
-                      <option key={v} value={v}>
-                        {v || "Empty"}
-                      </option>
-                    ))}
-                  </NativeSelect>
-                </label>
+                  />
+                </div>
               ),
             )}
           </div>
@@ -244,6 +267,101 @@ export default function ReferenceWorkflow({
             <>
               <h3>Keys retained after merging</h3>
               <p>{preview.keys?.join(" · ")}</p>
+              <h3>Why these records match</h3>
+              <ul>
+                {preview.matches?.map((match) => (
+                  <li key={`${match.left}:${match.right}`}>
+                    <strong>
+                      {match.left} · {match.right}
+                    </strong>
+                    <span>
+                      {match.reasons.length
+                        ? match.reasons.join("; ")
+                        : "No conservative identity match. This is a manual merge; verify both sources."}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              {preview.impact && (
+                <HelpText>
+                  {preview.impact.notes} accessible notes ·{" "}
+                  {preview.impact.files} accessible PDFs ·{" "}
+                  {preview.impact.collections} collections. Existing citation
+                  keys remain valid.
+                </HelpText>
+              )}
+              <h3>Field decisions</h3>
+              <div className="library-merge-matrix">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Field</th>
+                      <th>Retained value</th>
+                      <th>Original values</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(
+                      Object.keys(referenceLabels) as (keyof ReferenceDetails)[]
+                    ).map((key) => (
+                      <tr key={key}>
+                        <th scope="row">{referenceLabels[key]}</th>
+                        <td>{draft[key] || "Empty"}</td>
+                        <td>
+                          {selected.map((r) => (
+                            <div key={r.id}>
+                              <small>{r.cite_key}</small> {r[key] || "Empty"}
+                            </div>
+                          ))}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {!!preview.extraFields?.length && (
+                <>
+                  <h3>Additional BibTeX fields</h3>
+                  <HelpText>
+                    Keep the retained record's value by default. Choose an
+                    alternative before refreshing the merge review; every
+                    original record remains in history.
+                  </HelpText>
+                  <div className="library-property-grid">
+                    {preview.extraFields.map((field) => (
+                      <label key={field.name}>
+                        <span>{field.name}</span>
+                        <NativeSelect
+                          aria-label={`Merge extra ${field.name}`}
+                          value={extraFields[field.name] ?? "__retain__"}
+                          onChange={(e) => {
+                            const next = e.target.value;
+                            setExtraFields((old) => {
+                              const result = { ...old };
+                              if (next === "__retain__")
+                                delete result[field.name];
+                              else result[field.name] = next;
+                              return result;
+                            });
+                            identity.current = crypto.randomUUID();
+                          }}
+                        >
+                          <option value="__retain__">
+                            Keep retained record
+                          </option>
+                          {[...new Set(field.values.map((v) => v.value))].map(
+                            (value) => (
+                              <option key={value} value={value}>
+                                {value}
+                              </option>
+                            ),
+                          )}
+                        </NativeSelect>
+                      </label>
+                    ))}
+                  </div>
+                </>
+              )}
               <p>
                 Links, collection membership and tags are combined. Each reader
                 keeps their own most recently updated reading status.
@@ -315,6 +433,7 @@ export default function ReferenceWorkflow({
                 }),
               );
               identity.current = crypto.randomUUID();
+              setReviewedInput(JSON.stringify(input()));
             })
           }
         >
@@ -323,7 +442,10 @@ export default function ReferenceWorkflow({
         <Button
           className="button primary"
           disabled={
-            action.busy || !preview || (preview.privateCopy && !consent)
+            action.busy ||
+            !preview ||
+            (preview.privateCopy && !consent) ||
+            JSON.stringify(input()) !== reviewedInput
           }
           onClick={() =>
             void action.run(async () => {

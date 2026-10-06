@@ -462,11 +462,11 @@ export async function pluginsApi(
       [user],
     );
     const grants = await query(
-      "SELECT g.id,g.installation_id,g.space_id,g.package_hash,g.revision,g.approval_revision,g.capabilities,g.revoked_at,(g.revoked_at IS NULL AND i.enabled AND i.uninstalled_at IS NULL AND i.package_hash=g.package_hash AND axiom_space_role($1,g.space_id) IS NOT NULL AND axiom_space_state(g.space_id)='active' AND (s.kind='personal' OR EXISTS(SELECT 1 FROM plugin_group_approvals a WHERE a.group_id=s.group_id AND a.plugin_id=i.plugin_id AND a.enabled AND a.package_hash=g.package_hash AND a.revision=g.approval_revision AND g.space_id=ANY(a.space_ids)))) AS authorized FROM plugin_grants g JOIN plugin_installations i ON i.id=g.installation_id JOIN spaces s ON s.id=g.space_id WHERE g.user_id=$1",
+      "SELECT g.id,g.installation_id,g.space_id,g.package_hash,g.revision,g.approval_revision,g.capabilities,g.revoked_at,g.expires_at,least(g.expires_at,(SELECT a.expires_at FROM plugin_group_approvals a WHERE a.group_id=s.group_id AND a.plugin_id=i.plugin_id)) AS effective_expires_at,(g.revoked_at IS NULL AND g.expires_at>clock_timestamp() AND i.enabled AND i.uninstalled_at IS NULL AND i.package_hash=g.package_hash AND axiom_space_role($1,g.space_id) IS NOT NULL AND axiom_space_state(g.space_id)='active' AND (s.kind='personal' OR EXISTS(SELECT 1 FROM plugin_group_approvals a WHERE a.group_id=s.group_id AND a.plugin_id=i.plugin_id AND a.enabled AND a.expires_at>clock_timestamp() AND a.package_hash=g.package_hash AND a.revision=g.approval_revision AND g.space_id=ANY(a.space_ids)))) AS authorized FROM plugin_grants g JOIN plugin_installations i ON i.id=g.installation_id JOIN spaces s ON s.id=g.space_id WHERE g.user_id=$1",
       [user],
     );
     const approvals = await query(
-      "SELECT a.group_id,g.name AS group_name,a.plugin_id,a.package_hash,a.space_ids,a.revision,a.enabled FROM plugin_group_approvals a JOIN groups g ON g.id=a.group_id JOIN members m ON m.group_id=g.id WHERE m.user_id=$1 AND m.role IN ('owner','admin') ORDER BY g.name,a.plugin_id",
+      "SELECT a.group_id,g.name AS group_name,a.plugin_id,a.package_hash,a.space_ids,a.revision,a.enabled,a.expires_at FROM plugin_group_approvals a JOIN groups g ON g.id=a.group_id JOIN members m ON m.group_id=g.id WHERE m.user_id=$1 AND m.role IN ('owner','admin') ORDER BY g.name,a.plugin_id",
       [user],
     );
     const activity = await query(
@@ -865,7 +865,7 @@ export async function pluginsApi(
         const {
           rows: [a],
         } = await db.query(
-          "SELECT revision FROM plugin_group_approvals WHERE group_id=$1 AND plugin_id=$2 AND package_hash=$3 AND enabled AND $4=ANY(space_ids) FOR SHARE",
+          "SELECT revision FROM plugin_group_approvals WHERE group_id=$1 AND plugin_id=$2 AND package_hash=$3 AND enabled AND expires_at>clock_timestamp() AND $4=ANY(space_ids) FOR SHARE",
           [space.group_id, i.plugin_id, i.package_hash, space.id],
         );
         if (!a)
@@ -889,7 +889,7 @@ export async function pluginsApi(
       const {
         rows: [g],
       } = await db.query(
-        "INSERT INTO plugin_grants(installation_id,user_id,space_id,package_hash,capabilities,approval_revision) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(installation_id,space_id) DO UPDATE SET package_hash=EXCLUDED.package_hash,capabilities=EXCLUDED.capabilities,approval_revision=EXCLUDED.approval_revision,revoked_at=NULL,revision=plugin_grants.revision+1,updated_at=now() RETURNING *",
+        "INSERT INTO plugin_grants(installation_id,user_id,space_id,package_hash,capabilities,approval_revision) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(installation_id,space_id) DO UPDATE SET package_hash=EXCLUDED.package_hash,capabilities=EXCLUDED.capabilities,approval_revision=EXCLUDED.approval_revision,revoked_at=NULL,expires_at=clock_timestamp()+interval '720 hours',revision=plugin_grants.revision+1,updated_at=now() RETURNING *",
         [
           i.id,
           user,
@@ -1003,7 +1003,7 @@ export async function pluginsApi(
           "Group approval changed. Refresh before updating it.",
         );
       await db.query(
-        "INSERT INTO plugin_group_approvals(group_id,plugin_id,package_hash,space_ids,enabled,approved_by) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(group_id,plugin_id) DO UPDATE SET package_hash=EXCLUDED.package_hash,space_ids=EXCLUDED.space_ids,enabled=EXCLUDED.enabled,approved_by=EXCLUDED.approved_by,revision=plugin_group_approvals.revision+1,updated_at=now()",
+        "INSERT INTO plugin_group_approvals(group_id,plugin_id,package_hash,space_ids,enabled,approved_by) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(group_id,plugin_id) DO UPDATE SET package_hash=EXCLUDED.package_hash,space_ids=EXCLUDED.space_ids,enabled=EXCLUDED.enabled,approved_by=EXCLUDED.approved_by,expires_at=clock_timestamp()+interval '720 hours',revision=plugin_group_approvals.revision+1,updated_at=now()",
         [
           input.groupId,
           p.plugin_id,
@@ -1074,6 +1074,7 @@ export async function pluginsApi(
       grantId: g.id,
       grantRevision: g.revision,
       packageHash: g.package_hash,
+      expiresAt: grant.effective_expires_at,
       context: {
         spaceId: grant.space_id,
         spaceName: grant.space_name,

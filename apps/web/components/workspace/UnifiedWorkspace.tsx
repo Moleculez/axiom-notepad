@@ -57,6 +57,7 @@ import {
 const Explorer = dynamic(() => import("./Explorer"));
 const Research = dynamic(() => import("./ResearchWorkspace"));
 const Planning = dynamic(() => import("./WorkspacePlanning"));
+const PlanningLabSettings = dynamic(() => import("./PlanningAutomations"));
 const Discussion = dynamic(() =>
   import("./WorkspacePlanning").then((m) => m.WorkspaceDiscussion),
 );
@@ -84,6 +85,7 @@ const sections = [
 ] as const;
 const settingsSections = [
   "general",
+  "planning",
   "people",
   "storage",
   "integrations",
@@ -163,7 +165,7 @@ export default function UnifiedWorkspace({
       go(workspaceDestination(session.user.id, id), true);
       return;
     }
-    if (settingsSections.includes(section) || section === "invitations") {
+    if ((settingsSections.includes(section) && !sections.some(([key])=>key===section)) || section === "invitations") {
       go(
         `/workspaces/${id}/settings/${section === "invitations" ? "people" : section}`,
         true,
@@ -695,6 +697,8 @@ function WorkspaceSettings({
             <ReferencePrefix key={space.id + ":prefix"} space={space} />
             {space.role && <WorkspaceCalendar space={space} />}
           </>
+        ) : section === "planning" ? (
+          <PlanningLabSettings space={space}/>
         ) : section === "people" ? (
           space.project_id ? (
             <ProjectMembers

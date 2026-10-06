@@ -1,5 +1,5 @@
 "use client";
-import { Button, HelpText } from "../ui/controls";
+import { Button, HelpText, Notice } from "../ui/controls";
 import { useMemo, useState } from "react";
 import {
   parseMarkdown,
@@ -12,6 +12,7 @@ import {
 } from "@axiom/shared/assistant";
 import Dialog from "../Dialog";
 import { useWorkspace } from "../workspace/ui";
+import { api } from "../../lib/client";
 
 /** No provider-controlled HTML, image requests, diagram execution or navigation. */
 export function assistantAnswerHtml(source: string) {
@@ -56,17 +57,49 @@ export default function AssistantAnswer({
   source,
   evidence,
   spaceId,
+  conversationId,
+  turnId,
 }: {
   source: string;
   evidence: AssistantEvidence[];
   spaceId: string;
+  conversationId?: string;
+  turnId?: string;
 }) {
   const { navigate } = useWorkspace(),
     [selected, setSelected] = useState<AssistantEvidence | null>(null);
+  const [freshness, setFreshness] = useState("snapshot-only"),
+    [error, setError] = useState(""),
+    [loading, setLoading] = useState(false);
+  const inspect = async (e: AssistantEvidence) => {
+    setError("");
+    setLoading(true);
+    try {
+      if (conversationId && turnId) {
+        const value = await api<{
+          evidence: AssistantEvidence;
+          freshness: string;
+        }>(
+          `assistant/conversations/${conversationId}/turns/${turnId}/evidence/${encodeURIComponent(e.key)}`,
+        );
+        setFreshness(value.freshness);
+        setSelected(value.evidence);
+      } else {
+        setFreshness("snapshot-only");
+        setSelected(e);
+      }
+    } catch (e) {
+      setSelected(null);
+      setError((e as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  };
   const html = useMemo(() => assistantAnswerHtml(source), [source]);
   const keys = assistantCitationKeys(source);
   return (
     <>
+      {error && <Notice tone="warning">{error}</Notice>}
       <div
         className="assistant-answer markdown-body"
         dangerouslySetInnerHTML={{ __html: html }}
@@ -76,14 +109,16 @@ export default function AssistantAnswer({
           {keys.map((key, index) => {
             const e = evidence.find((e) => e.key === key);
             return e ? (
-              <button
+              <Button
                 key={key}
-                onClick={() => setSelected(e)}
+                type="button"
+                disabled={loading}
+                onClick={() => void inspect(e)}
                 title={`Captured ${new Date(e.capturedAt).toLocaleString()}`}
               >
                 {index + 1} · {e.title}
                 {e.page ? ` · p. ${e.page}` : ""}
-              </button>
+              </Button>
             ) : (
               <span key={key} className="muted">
                 {index + 1} · Unverified citation
@@ -101,6 +136,22 @@ export default function AssistantAnswer({
           <HelpText>
             This is the exact excerpt sent. The current file or task may have
             changed. Citation membership does not verify the answer.
+          </HelpText>
+          <HelpText>
+            {freshness === "changed"
+              ? "Current source differs from this captured version."
+              : freshness === "current"
+                ? "Source matches this snapshot at inspection time."
+                : "Captured snapshot; freshness has not been established."}{" "}
+            {selected.locator ? `Location: ${selected.locator}. ` : ""}
+            {selected.from !== undefined
+              ? `Characters ${selected.from}–${selected.to}. `
+              : ""}
+            {selected.generation !== undefined
+              ? `Generation ${selected.generation}. `
+              : ""}
+            {selected.versionId ? `File version ${selected.versionId}. ` : ""}
+            Source hash {selected.hash.slice(0, 12)}.
           </HelpText>
           <pre className="assistant-excerpt">{selected.source}</pre>
           <div className="dialog-footer">

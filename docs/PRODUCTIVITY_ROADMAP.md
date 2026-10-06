@@ -60,6 +60,11 @@ group-admin features remain in place. No new Office editing engine is introduced
   title/body/review-note search, type/status/author filters, per-status counts and
   oldest/newest submission order. Summaries omit Markdown bodies; opening a request
   explicitly loads its authorized detail. Peer changes retain and fence drafts.
+- Goals, per-entity metadata changes and generated routine tasks have searchable
+  server-side pages. Goal descriptions/linked IDs load explicitly, metric-only
+  pages skip the task graph, and the total 200-goal cap includes archives. Routine
+  history separates changes from generated tasks, with deleted-task/date/status
+  filters and fixed navigation; loaded drafts retain their original version fences.
 - Assistant context includes selected same-group workspaces, immutable Office
   excerpts, selected Canvas cards and planning snapshots. Scope is explicit; it
   does not authorize whole-workspace crawling or automatic transmission.
@@ -83,7 +88,68 @@ group-admin features remain in place. No new Office editing engine is introduced
   Workspace directory cards show readable access/count/storage metadata. Settings
   retains extension drafts across categories and uses one aggregate exit guard.
 
-## Remaining implementation stages
+## Agreed release sequence · October 5, 2026
+
+Implement in this order; each stage has its own acceptance gate. Research writing
+starts with **LaTeX + BibTeX**, not DOCX. Feature additions do not replace
+reliability, source fidelity or the shared UI contract.
+
+1. **Reliable daily-use beta — active.** Added fail-closed mutation targets and
+   runtime database/storage attestation, an `.env`-free authenticated acceptance
+   runner/desktop CI matrix, mixed-block LF/CRLF/undo regressions, reproducible
+   editor performance reports and paired recovery rehearsal. Fixed shared field
+   alignment drift in Trash and constrained Settings action wrapping. Executed
+   results belong in [Verification](VERIFICATION.md), not this feature list.
+   Physical IME/clipboard/Safari/screen-reader checks, broader PDF/Canvas/portfolio
+   load evidence and deployment-specific external services still gate release.
+2. **Research writing — implemented, locally verified.** [Editable LaTeX projects](RESEARCH_WRITING.md)
+   include both BibTeX/natbib and Biber/BibLaTeX citation profiles, reviewed exact
+   source/assets, diagnostics and local compile instructions. Reviewed merge field
+   choices, paged provenance, frozen paper evidence and immutable task handoffs reuse
+   existing library/history/review/planning workflows. Migration 44 is forward-only;
+   verification does not upgrade the working dataset. DOCX and journal-specific
+   templates follow only after the LaTeX/BibTeX contract is accepted. Private TeX
+   compilation is a separate optional operator feature, never automatic upload.
+3. **Lab planning and management — implementation awaiting acceptance.** Searchable
+   server-paginated Goals (including the existing 200-item total cap), lazy goal
+   details and metadata/recurrence history are implemented. [Typed workspace
+   fields, shared manual time and reviewed automations](PLANNING_LAB.md) are now
+   implemented in source with additive migration 46. Database/browser/worker
+   acceptance is blocked by the current execution environment; do not mark this
+   stage accepted. The [Stage 3–4 coordinator](STAGE_ACCEPTANCE.md) implements
+   real-worker, populated-recovery and 5,000-row/100,000-task same-host gates;
+   execution and operator review remain required. Keep dependency-aware previews, revision fences
+   and guarded Undo; do not silently level resources or rewrite task dates.
+4. **Grounded assistant and MCP — implementation awaiting acceptance.** Additive
+   migration 47 introduces immutable per-batch outgoing review, exact native
+   source/excerpt identities, shared scoped read tools, key-membership diagnostics,
+   reviewed round/output limits and per-dispatch usage with explicit unknowns.
+   Confirmed responses can finish locally without another provider call; partial
+   change sets prepare only eligible remaining work, never uncertain operations.
+   New local evidence/history stays held until that exact batch is approved.
+   Migration/browser/concurrency/paired-recovery acceptance remains blocked by the
+   current execution environment. The same coordinator adds expiry/quota/access/
+   checkpoint and native MCP grant checks without public fault APIs. An opt-in synthetic live-provider runner is
+   available but has not contacted any live provider. Real retention, billing,
+   model quality and physical/accessibility acceptance remain separate gates.
+   Stage 3 is still unaccepted; no unrestricted web/edit/admin authority is added.
+5. **Interoperability and controlled extensions — implementation awaiting acceptance.**
+   [Portable research collections](PORTABLE_COLLECTIONS.md) add native Markdown,
+   Canvas/math/text/image projects and exact assets, SHA-256 manifests, explicit
+   conversion choices, original Canvas files and legacy migration previews through
+   the atomic resumable importer. A bounded, non-ZIP64 export profile is separate
+   from existing larger archives. Migration 48 adds 30-day grant/approval expiry,
+   explicit renewal and trusted relay transfer/structure/rate budgets. Real SQL,
+   queued-expiry, browser/layout and independent adversarial acceptance remain
+   required; implementation does not accept Stages 3–4 or enable extension gates.
+   This is files/metadata interoperability, not full workspace backup restore.
+
+Stage 1 does not claim later features are delivered. All stages preserve existing
+canonical Markdown, Yjs collaboration/anchors, local drafts, permission scopes,
+shared native controls and independent style/palette/font preferences. There is no
+mobile certification or new editor engine in this release sequence.
+
+## Detailed remaining work by area
 
 1. **PDF acceptance and refinements:** provision/test real CPU OCR images/models,
    verify drawing export in desktop readers, expand real mixed/CJK/password/large
@@ -104,13 +170,14 @@ group-admin features remain in place. No new Office editing engine is introduced
    atomic selection operations and enriched exports are implemented. Reviewed
    capacity previews now include accessible active group workspaces and fence
    cohort changes. Larger real-world portfolio/accessibility acceptance remains;
-   no automatic resource leveling, time tracking or extra dependency types.
+   no automatic resource leveling, inferred time tracking or extra dependency types.
 4. **Team and research operations:** linked/manual Goals, member-only Intake with
    exactly-once task acceptance, editable future recurring templates, occurrence
    history and archive/pause controls are implemented. Their AI/MCP writes use
    existing human-reviewed change sets. Paginated searchable intake archives are
-   implemented. Richer custom forms/metrics, goal archive pagination and safe
-   administrator-configured non-AI automations remain.
+   implemented for Intake, Goals, metadata and generated occurrences. Richer custom forms/metrics and safe
+   administrator-configured non-AI automations are implemented in source; their
+   HTTP, permission/race/recovery and practical scale acceptance remain.
 5. **Menu follow-through:** audit custom inline/dropdown surfaces not backed by the
    shared context menu, and expose secondary actions through Search & commands.
    Account/recent-work popovers are now mutually exclusive; planning surfaces use
@@ -132,9 +199,10 @@ delivered features or permission to enable them automatically:
    private OCR/conversion acceptance; source-linked research reports and durable
    evidence handoffs. Resolve existing provider/export/offline failures through
    Activity & recovery without introducing autonomous retries or transmissions.
-3. **Planning at lab scale:** larger portfolios, goal/metadata-history archive
-   pagination, saved-view/capacity accessibility and measured Gantt/workload performance.
-   Intake pagination, exact filtered counts and lazy full-body loading are implemented;
+3. **Planning at lab scale:** acceptance for typed custom fields, time/effort logs, reviewed
+   non-AI automations, larger portfolios, saved-view/capacity accessibility and
+   measured Gantt/workload performance. Intake/Goal/history/occurrence pagination,
+   exact filtered counts and lazy full-body loading are implemented;
    status/content stay live rather than claiming a frozen historical snapshot.
    Reuse reviewed schedule previews and frozen revision fences rather than adding
    automatic resource leveling or silently rewritten task dates.
@@ -150,8 +218,8 @@ Do not silently refresh those values to overwrite a concurrent version.
 ## Acceptance boundaries
 
 The [verification log](VERIFICATION.md) records executed checks. Use isolated test
-storage/database on port 3004, never working research data on 8080. Do not claim
-Microsoft Office, Zotero or ClickUp parity. Real private LibreOffice conversion,
-external AI providers, actual CPU OCR containers/model quality, physical
+storage/database on port 3004, never working research data on 8080.
+Real private LibreOffice conversion, external AI providers, actual CPU OCR
+containers/model quality, physical
 clipboard/assistive technology and full offline/revocation rehearsal still require
 separate acceptance. See [self-hosted OCR](SELF_HOSTED_OCR.md).

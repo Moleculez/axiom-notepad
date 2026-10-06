@@ -135,7 +135,9 @@ test("offset compatibility, atomic bulk changes, outcomes, intake retry, saved v
       taskIds: [a.id, child.id, b.id],
     })
   ).json();
-  expect((await read(request, `${base}/goals`))[0].progress).toMatchObject({
+  expect(
+    (await read(request, `${base}/goals`)).items[0].progress,
+  ).toMatchObject({
     tracked: 2,
     percent: 70,
   });
@@ -149,7 +151,7 @@ test("offset compatibility, atomic bulk changes, outcomes, intake retry, saved v
   ).json();
   expect(archived.archived).toBe(true);
   expect(
-    (await read(request, `${base}/planning-history/${goal.id}`)).length,
+    (await read(request, `${base}/planning-history/${goal.id}`)).total,
   ).toBe(2);
   const intake = await (
       await write(request, `${base}/intake`, {

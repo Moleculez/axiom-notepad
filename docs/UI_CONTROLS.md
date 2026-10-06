@@ -80,6 +80,14 @@ global label's column layout. Never put an icon before a raw application field.
 to the native input. Choose either a label icon or an input prefix when they convey
 the same information, not both. Keep guidance/errors in their own aligned rows.
 
+Legacy toolbar selectors must exclude shared `.ui-input` fields. Never impose a
+second fixed height or padding on a SearchField's child input: the wrapper owns
+the border and shared tokens own height. Align adjacent labeled SearchField and
+NativeSelect shells, including labels and centers, in all styles. Settings header
+actions must retain intrinsic non-shrinking label widths; wrap whole search/action
+groups instead of breaking “Preview” into fragments. Inspect 1024/1280px desktops
+and enlarged UI text.
+
 Clear buttons are named, non-submit actions. Reserve their slot so typing or
 clearing does not move the field text; clearing restores input focus. Multi-select
 labels wrap without pushing remove actions out of view. Grid columns need enough
@@ -88,6 +96,12 @@ columns instead of always dividing a narrow inspector in two. At large UI sizes,
 wrap the toolbar's controls as units. Short actions such as “Manage groups” must
 not be compressed by a 100%-wide selector; size static selectors intrinsically
 and keep those action labels on one line.
+
+`Field.action` places a named non-submit action alongside its actual control,
+below the full-width label and above guidance/errors. Use this for property Clear
+actions; never position them with a fixed label-height margin. The original native
+child still owns the linked ID and ARIA descriptions. Wrapping labels, long picker
+values and enlarged UI text must not move the action to the label's baseline.
 
 Use native selectors for small static sets. People, tasks, files, milestones and
 other long choices use the shared Picker. Search authorized server data rather
@@ -135,6 +149,12 @@ labels or forcing page-wide horizontal scrolling. Record whether positions are l
 or frozen; a cursor is neither a permission grant nor a stale-save workaround.
 Own the results scrollport; filters, counts and pagination stay reachable outside
 it. Reserve focus space and scrollbar geometry without moving the page footer.
+Secondary archive/date/status filters belong in a compact shared dialog when
+inline expansion would starve results at enlarged text or on a short desktop.
+Do not disable a loaded page action merely for background revalidation: disabling
+between pointerdown and pointerup can cancel a user's click. Foreground page
+changes (no current-target data), writes and denied access retain their own gates.
+Page/filter changes reset only the results scroll, not the document or its draft.
 
 ## Numeric and color preferences
 
@@ -243,12 +263,10 @@ inherit the chosen style. The default stays **Axiom**.
 
 - **Axiom:** quiet research surfaces and balanced controls.
 - **Material Tonal:** rounded tonal buttons, expressive slider handles and soft
-  selection. Inspired by [Material 3](https://m3.material.io/), not its library.
+  selection.
 - **Fluent Studio:** precise borders, layered panels and restrained selection.
-  Inspired by [Fluent 2](https://fluent2.microsoft.design/components/web/react/).
 - **Editorial:** flat paper, minimal elevation and straight, understated rules.
-- **macOS Studio:** softly grouped controls and restrained desktop chrome,
-  inspired by [Apple interaction guidance](https://developer.apple.com/design/human-interface-guidelines/toggles).
+- **macOS Studio:** softly grouped controls and restrained desktop chrome.
 
 Each treatment covers controls, selection, navigation and overlays. It must honor
 palette overrides, independent font roles, density, radius, motion and shadow

@@ -10,6 +10,7 @@ import { processSiteRelease } from "../../packages/shared/src/site-worker";
 import { executeReviewedAction } from "../../apps/web/lib/reviewed-actions";
 import { analyticsMaintenance } from "../../packages/shared/src/site-analytics";
 import { backfillResearchIndex } from "../../packages/shared/src/documents";
+import { processPlanningAutomation } from "../../packages/shared/src/planning-automation-api";
 
 let stopping = false;
 process.on("SIGTERM", () => {
@@ -41,12 +42,13 @@ try {
     const changesWorked = await processChangeSet(executeReviewedAction);
     const siteWorked = await processSiteRelease();
     const researchWorked = await backfillResearchIndex();
+    const planningWorked = await processPlanningAutomation();
     const worked =
       workspaceWorked ||
       toolsWorked ||
       changesWorked ||
       siteWorked ||
-      researchWorked;
+      researchWorked || planningWorked;
     if (once && !worked) break;
     if (!worked) await new Promise((resolve) => setTimeout(resolve, 1000));
   } while (!stopping);

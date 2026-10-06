@@ -12,9 +12,12 @@ import {
 } from "./assistant-worker";
 
 export async function processToolJob() {
+  await query(
+    "UPDATE assistant_run_steps s SET outcome='uncertain' FROM tool_jobs j WHERE s.run_id=j.id AND s.completed_at IS NULL AND j.status='running' AND j.lease_until<now()",
+  );
   // Never replay an externally submitted request after a crash or unknown outcome.
   await query(
-    "UPDATE tool_jobs SET status=CASE WHEN kind IN ('office-preview','assistant-evidence') THEN 'failed' ELSE 'uncertain' END,error='Processing stopped before its outcome was confirmed. Review before explicitly submitting again.',input='{}',updated_at=now() WHERE status='running' AND lease_until<now()",
+    "UPDATE tool_jobs j SET status=CASE WHEN kind IN ('office-preview','assistant-evidence') OR (kind='assistant' AND (SELECT completed_at IS NOT NULL FROM assistant_run_steps WHERE run_id=j.id ORDER BY ordinal DESC LIMIT 1)) THEN 'failed' ELSE 'uncertain' END,error='Processing stopped. Confirmed responses can finish locally; uncertain provider requests are never retried.',input='{}',updated_at=now() WHERE status='running' AND lease_until<now()",
   );
   const job = await transaction(async (client) => {
     const {
@@ -224,11 +227,18 @@ export async function processToolJob() {
       ],
     );
   } catch (e) {
+    const [confirmed] =
+      job.kind === "assistant"
+        ? await query(
+            "SELECT completed_at FROM assistant_run_steps WHERE run_id=$1 ORDER BY ordinal DESC LIMIT 1",
+            [job.id],
+          )
+        : [];
     await query(
       "UPDATE tool_jobs SET status=$2,error=$3,input='{}',updated_at=now() WHERE id=$1 AND status='running'",
       [
         job.id,
-        submitted ? "uncertain" : "failed",
+        submitted && !confirmed?.completed_at ? "uncertain" : "failed",
         e instanceof HttpError
           ? e.message
           : e instanceof Error

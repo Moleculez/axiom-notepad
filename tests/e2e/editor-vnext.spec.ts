@@ -300,10 +300,13 @@ test("quoted equations render, retain discussion anchors across peer edits, and 
     await candidate(f.page);
     const math = f.page.locator('.axiom-embedded[data-kind="mathBlock"]');
     await expect(math).toHaveCount(2);
-    for (const block of await math.all())
+    for (const block of await math.all()) {
+      // Math is intentionally rendered lazily in the owning scrollport.
+      await block.scrollIntoViewIfNeeded();
       await expect(
         block.locator('[data-math-state="ready"] svg'),
       ).toBeVisible();
+    }
     await expect(
       f.page.locator('.axiom-callout blockquote [data-math-state="ready"] svg'),
     ).toBeVisible();

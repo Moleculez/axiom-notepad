@@ -5,10 +5,9 @@
 > contracts are in [the workbench guide](FILE_WORKBENCH.md),
 > [Settings](SETTINGS.md) and [Verification](VERIFICATION.md).
 
-Desktop implementation and verification, 2026-09-10. This is an everyday
-research-workspace release, not a claim of complete Google Drive or Chrome
-feature parity. Research permissions, Markdown, file identities/versions and
-recovery artifacts are preserved.
+Desktop implementation and verification, 2026-09-10. This release covers everyday
+research-workspace workflows. Research permissions, Markdown, file
+identities/versions and recovery artifacts are preserved.
 
 | Capability                                  | Baseline                                                         | Current acceptance                                                                                                                                                                |
 | ------------------------------------------- | ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -70,12 +69,12 @@ functional under Advanced appearance as Navigation surfaces.
 
 ## Deliberate limits / follow-up acceptance
 
-- Native Finder/Explorer dragging, external clipboard, IME and browser-specific
+- Native operating-system file dragging, external clipboard, IME and browser-specific
   interactions still need human acceptance on supported desktop systems.
 - Folder uploads are bounded to 2,000 files/folders and 32 levels per batch;
   empty-only directories require New → Folder. File batches are bounded to 200
   selected roots. Large-transfer interruption/worker-crash soak testing remains.
-- Tab groups are named labels, not Chrome's collapsible/color-coded group system.
+- Tab groups are named labels; collapsing and color coding are not implemented.
   Per-location history does not retain a full independent editor caret/selection
   snapshot for every entry; Explorer pagination starts from the first page when
   reopening. Settings scratchpad contents are disposable when its tab is inactive.

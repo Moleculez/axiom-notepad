@@ -31,10 +31,12 @@ import {
   mutate,
   useAction,
   useWorkspace,
+  useData,
 } from "../workspace/ui";
 import Dialog from "../Dialog";
 import RevisionDiff from "./RevisionDiff";
 import RequestReview from "./RequestReview";
+import ResearchTaskHandoff from "../workspace/ResearchTaskHandoff";
 import { UserRoundCheck } from "lucide-react";
 
 type Props = {
@@ -95,6 +97,7 @@ export default function ResourceHistory({
     [label, setLabel] = useState(""),
     [revision, setRevision] = useState(0),
     [requestReview, setRequestReview] = useState(false);
+  const [handoff, setHandoff] = useState(false);
   const host = useRef<HTMLDivElement>(null),
     callbacks = useRef({ capture, previousVisit });
   callbacks.current = { capture, previousVisit };
@@ -238,7 +241,12 @@ export default function ResourceHistory({
         );
       if (dialog === "milestone") {
         await flush();
-        const saved = await mutate<{ id: string }>(base, { label });
+        const saved = await mutate<{ id: string }>(base, {
+          label,
+          ...(current?.format !== "image" && current?.hash
+            ? { expectedHash: current.hash }
+            : {}),
+        });
         setBeforeId(saved.id);
         refresh();
         notify("Milestone saved.");
@@ -456,6 +464,13 @@ export default function ResourceHistory({
           )}
           <footer className="revision-actions">
             {canEdit &&
+              selected?.kind === "snapshot" &&
+              selected.format === "markdown" && (
+                <Button variant="ghost" onClick={() => setHandoff(true)}>
+                  Follow-up task
+                </Button>
+              )}
+            {canEdit &&
               selected &&
               ["snapshot", "file"].includes(selected.kind) && (
                 <Button
@@ -619,8 +634,46 @@ export default function ResourceHistory({
           resourceId={resourceId}
           reference={selected.id}
           onClose={() => setRequestReview(false)}
+          markdown={
+            selected?.format === "markdown" && selected.kind === "snapshot"
+          }
+        />
+      )}
+      {handoff && selected && (
+        <ManuscriptHandoff
+          resourceId={resourceId}
+          snapshotId={selected.id.split(":")[1]}
+          title={selected.title}
+          onClose={() => setHandoff(false)}
         />
       )}
     </div>
+  );
+}
+function ManuscriptHandoff({
+  resourceId,
+  snapshotId,
+  title,
+  onClose,
+}: {
+  resourceId: string;
+  snapshotId: string;
+  title: string;
+  onClose: () => void;
+}) {
+  const data = useData<{ space_id: string }>(`resources/${resourceId}`);
+  return data.data ? (
+    <ResearchTaskHandoff
+      spaceId={data.data.space_id}
+      endpoint={`resources/${resourceId}/research-tasks`}
+      anchor={{ snapshotId }}
+      title={title}
+      onClose={onClose}
+    />
+  ) : (
+    <Dialog title="Research follow-up" onClose={onClose}>
+      <Loading label="Finding the manuscript workspace…" />
+      <ErrorNotice message={data.error} retry={data.reload} />
+    </Dialog>
   );
 }

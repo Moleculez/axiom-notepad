@@ -57,14 +57,14 @@ export async function activePluginGrant(
     FROM plugin_grants g JOIN plugin_installations i ON i.id=g.installation_id JOIN plugin_packages p ON p.hash=g.package_hash
     JOIN spaces s ON s.id=g.space_id
     WHERE g.id=$1 AND g.user_id=$2 AND i.user_id=$2 AND g.package_hash=$3 AND g.revision=$4
-    AND g.revoked_at IS NULL AND i.enabled AND i.uninstalled_at IS NULL AND i.package_hash=g.package_hash
+    AND g.revoked_at IS NULL AND g.expires_at>clock_timestamp() AND i.enabled AND i.uninstalled_at IS NULL AND i.package_hash=g.package_hash
     ${db ? "FOR SHARE OF g,i,s" : ""}`,
     [input.grantId, input.userId, input.packageHash, input.revision],
   );
   if (!grant || (input.spaceId && input.spaceId !== grant.space_id))
     throw new HttpError(
       403,
-      "Extension access changed. Review its permissions again.",
+      "Extension access changed or expired. Review and renew its permissions.",
     );
   if (!grant.builtin && !pluginImportsEnabled())
     throw new HttpError(
@@ -102,17 +102,24 @@ export async function activePluginGrant(
       403,
       "The approved workspace is unavailable or read-only.",
     );
+  let effectiveExpiry = new Date(grant.expires_at);
   if (grant.kind !== "personal") {
     const [approval] = await read(
-      `SELECT revision FROM plugin_group_approvals WHERE group_id=$1 AND plugin_id=$2 AND enabled
-      AND package_hash=$3 AND $4=ANY(space_ids) ${db ? "FOR SHARE" : ""}`,
+      `SELECT revision,expires_at FROM plugin_group_approvals WHERE group_id=$1 AND plugin_id=$2 AND enabled
+      AND package_hash=$3 AND $4=ANY(space_ids) AND expires_at>clock_timestamp() ${db ? "FOR SHARE" : ""}`,
       [grant.group_id, grant.plugin_id, grant.package_hash, grant.space_id],
     );
     if (!approval || approval.revision !== grant.approval_revision)
       throw new HttpError(
         403,
-        "Group approval changed. Ask a manager to approve this package, then review permissions again.",
+        "Group approval changed or expired. Ask a manager to renew this exact package, then review permissions again.",
       );
+    effectiveExpiry = new Date(
+      Math.min(
+        effectiveExpiry.valueOf(),
+        new Date(approval.expires_at).valueOf(),
+      ),
+    );
   } else if (grant.owner_id !== input.userId)
     throw new HttpError(403, "This personal workspace is unavailable.");
   const manifest = pluginManifestSchema.parse(grant.manifest);
@@ -127,7 +134,12 @@ export async function activePluginGrant(
       403,
       "This extension has not been granted the required permission.",
     );
-  return { ...grant, manifest, role: access.role };
+  return {
+    ...grant,
+    manifest,
+    role: access.role,
+    effective_expires_at: effectiveExpiry.toISOString(),
+  };
 }
 
 export function pluginActionCapability(action: ChangeAction): PluginCapability {

@@ -197,6 +197,15 @@ export default function MathRendering() {
     };
     window.addEventListener("beforeprint", printing);
     window.addEventListener("axiom:prepare-print", printing);
+    const prepareSurface = (event: Event) => {
+      const root = (event as CustomEvent).detail;
+      if (!(root instanceof Element) || !root.isConnected) return;
+      if (root.matches("[data-math-request]")) enqueue(root as HTMLElement);
+      root
+        .querySelectorAll<HTMLElement>("[data-math-request]")
+        .forEach(enqueue);
+    };
+    window.addEventListener("axiom:prepare-math", prepareSurface);
     scan(document.body);
     return () => {
       alive = false;
@@ -206,6 +215,7 @@ export default function MathRendering() {
       visibility.disconnect();
       window.removeEventListener("beforeprint", printing);
       window.removeEventListener("axiom:prepare-print", printing);
+      window.removeEventListener("axiom:prepare-math", prepareSurface);
     };
   }, []);
   return null;

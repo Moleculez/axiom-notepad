@@ -34,6 +34,9 @@ import {
 } from "./planning-suite";
 import { recurrenceSchema } from "./workspace";
 import { authorizePluginAction } from "./plugin-security";
+import { validateCustomPatch } from "./planning-field-service";
+import { requireScope } from "./workspace-service";
+import { fileTypeIds } from "./file-types";
 
 export type ActionActor = {
   userId: string;
@@ -213,19 +216,7 @@ export async function prepareAction(
   } else if (a.action === "file_create") {
     const input = z
       .object({
-        type: z.enum([
-          "markdown",
-          "text",
-          "csv",
-          "json",
-          "yaml",
-          "math",
-          "canvas",
-          "image",
-          "docx",
-          "xlsx",
-          "pptx",
-        ]),
+        type: z.enum(fileTypeIds),
         name: resourceNameSchema,
         source: z.string().max(1_000_000).optional(),
         parentId: z.uuid().nullable().optional(),
@@ -326,6 +317,16 @@ export async function prepareAction(
     before = { items: rows };
   } else if (a.action === "workspace_task_create") {
     taskInput.parse(p);
+    if (Object.hasOwn(p, "customFields"))
+      await transaction(async (db) => {
+        await requireScope(db, actor.userId, a.spaceId, "edit");
+        await validateCustomPatch(
+          db,
+          a.spaceId,
+          p.customFields,
+          p.fieldsVersion,
+        );
+      });
   } else if (a.action === "workspace_task_update") {
     const [task] = await query(
       "SELECT t.*,(SELECT coalesce(jsonb_agg(depends_on),'[]'::jsonb) FROM task_dependencies WHERE task_id=t.id) AS dependencies,(SELECT coalesce(jsonb_agg(jsonb_build_object('taskId',depends_on,'lagDays',lag_days)),'[]'::jsonb) FROM task_dependencies WHERE task_id=t.id) AS \"dependencyLinks\",(SELECT coalesce(jsonb_agg(resource_id),'[]'::jsonb) FROM task_resources WHERE task_id=t.id) AS resource_ids FROM tasks t WHERE id=$1",
@@ -343,6 +344,17 @@ export async function prepareAction(
       );
     before = task;
     taskInput.partial().parse(p);
+    if (Object.hasOwn(p, "customFields"))
+      await transaction(async (db) => {
+        await requireScope(db, actor.userId, a.spaceId, "edit");
+        await validateCustomPatch(
+          db,
+          a.spaceId,
+          p.customFields,
+          p.fieldsVersion,
+          task.custom_fields ?? {},
+        );
+      });
   } else if (a.action === "workspace_milestone_create") {
     z.object({
       title: resourceNameSchema,

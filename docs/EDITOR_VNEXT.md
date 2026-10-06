@@ -12,7 +12,7 @@ editing surface and CodeMirror 6 provides source and embedded text surfaces. Tho
 libraries are runtime dependencies. Axiom owns the Markdown parser, canonical-source
 transactions, projection/mapping, collaboration integration, specialized block views,
 commands and product styling. It is **not** an entirely first-party replacement of
-Milkdown/ProseMirror or CodeMirror, nor a copy of Typora's proprietary implementation.
+Milkdown/ProseMirror or CodeMirror.
 
 `NEXT_PUBLIC_AXIOM_EDITOR_ENGINE=native` selects the older first-party DOM engine for
 explicit rollback/testing. This is a build-time deployment switch, not a user-facing
@@ -73,8 +73,6 @@ source and embedded editing, and the legacy engine uses the same document contra
 - Shared theme tokens, local fonts, quiet hover/focus controls, keyboard menus and
   pinned editor status. Theme authoring follows [the same UI criteria](THEME_AUTHORING.md).
 
-These are implemented workflows, not a claim of complete Typora feature parity.
-
 ## September 13 interaction refinements
 
 - [Reading marks](READING_MARKS.md) adds editable/deletable private bookmarks,
@@ -108,7 +106,15 @@ These are implemented workflows, not a claim of complete Typora feature parity.
   Guides are view-only: no source changes, extra selection targets, layout shifts
   or exported marks. Preference schema 6 migrates older choices and protects them
   from stale-client writes.
-- A Monaco-inspired folding gutter uses hover chevrons and compact one-line
+  `packages/editor/src/decoration-index.ts` assembles aligned guide ranges in one
+  tree walk and indexes child/inline lookups, avoiding repeated sibling-wide scans
+  on large notes. Search, peer and discussion spans retain stock validity/mapping
+  semantics. This adapter isolates a narrow **internal** ProseMirror tree boundary
+  behind runtime shape checks; it changes neither upstream code nor the editing
+  schema. Dependency upgrades must pass stock drawing/mapping equivalence tests,
+  the desktop editor matrix and the same-machine performance gate. Do not spread
+  these internal casts into app code or persist the decoration tree as content.
+- A folding gutter uses hover chevrons and compact one-line
   summaries for multiline code/math, list groups, quotes/callouts, tables,
   metadata and footnotes. Fold ranges are author-local and rebase through actual
   edit deltas; replacing their opening identity invalidates the fold. Source,

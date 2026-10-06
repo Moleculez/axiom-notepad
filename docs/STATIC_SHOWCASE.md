@@ -9,6 +9,13 @@ uses the reviewed fictional Spectral Lab screenshots.
 
 ## Try it
 
+The new **mind-map surface** is available in the latest source build, not yet
+verified or published by this increment. Choose Mind map for the research fixture
+or an existing notebook: edit/search/fold branches, move representable structure,
+open Source/Block details and export Markdown/SVG/PNG/PDF/offline HTML. It shares
+the editor's local source, undo and persistence, adding no sync/API/provider calls.
+ZIP backups retain the profile. See [mind-map limits and acceptance](MINDMAP.md).
+
 - **Editor:** choose a notebook, or create a new one. Write, Source and Read modes
   share canonical Markdown. Try `/`, math, tables, highlighted code, nested lists,
   tasks, images, Mermaid, footnotes, metadata and local note links. The right-hand

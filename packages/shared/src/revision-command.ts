@@ -123,6 +123,11 @@ export async function executeRevisionCommand(
     let result: Record<string, unknown>,
       restored = false;
     if (command.kind === "snapshot") {
+      if (command.expectedHash && sourceHash(before) !== command.expectedHash)
+        throw new HttpError(
+          409,
+          "The document changed before the milestone was saved. Review the latest edits and try again.",
+        );
       result = { id: "snapshot:" + (await snapshot(command.label)) };
     } else if (command.kind === "restore") {
       if (

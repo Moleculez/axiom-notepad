@@ -486,7 +486,7 @@ try {
     spaceIds: [space.id],
     enabled: true,
   });
-  const all = await api(
+  let all = await api(
     "/api/v1/plugins/grants",
     "POST",
     {
@@ -515,6 +515,105 @@ try {
       },
       status,
     );
+  assert(new Date(all.expires_at).valueOf() > Date.now() + 29 * 86400000);
+  const renew = (g: any) =>
+    api(
+      "/api/v1/plugins/grants",
+      "POST",
+      {
+        installationId: i.id,
+        installationRevision: i.revision,
+        spaceId: space.id,
+        capabilities: m1.capabilities,
+        grantRevision: g.revision,
+      },
+      201,
+    );
+  const expiredName = name + " expired queue";
+  const expiring = await rpc(all, "changes.prepare", {
+    ...proposal,
+    mutationId: randomUUID(),
+    title: "Queue then expire",
+    actions: [
+      {
+        ...proposal.actions[0],
+        payload: { ...proposal.actions[0].payload, name: expiredName },
+      },
+    ],
+  });
+  const expiryPreview = await api(
+    `/api/v1/assistant/change-sets/${expiring.id}/preview`,
+    "POST",
+    { version: expiring.version, keys: ["journal"] },
+  );
+  await api(
+    `/api/v1/assistant/change-sets/${expiring.id}/apply`,
+    "POST",
+    { fingerprint: expiryPreview.preview.fingerprint, consent: true },
+    202,
+  );
+  await query(
+    "UPDATE plugin_grants SET expires_at=clock_timestamp()-interval '1 second' WHERE id=$1",
+    [all.id],
+  );
+  await rpc(all, "resources.list", {}, 403);
+  await api(
+    "/api/v1/plugins/runtime/start",
+    "POST",
+    { installationId: i.id, spaceId: space.id, command: id + ".run" },
+    403,
+  );
+  await processChangeSet(executeReviewedAction);
+  assert.equal(
+    (
+      await query("SELECT id FROM resources WHERE space_id=$1 AND name=$2", [
+        space.id,
+        expiredName,
+      ])
+    ).length,
+    0,
+    "A queued write must recheck expiry.",
+  );
+  const expiredAuthority = all;
+  all = await renew(all);
+  assert.equal(all.revision, expiredAuthority.revision + 1);
+  await rpc(expiredAuthority, "resources.list", {}, 403);
+  await api(
+    `/api/v1/assistant/change-sets/${expiring.id}/preview`,
+    "POST",
+    { version: expiring.version, keys: ["journal"] },
+    403,
+  );
+  const groupApproval = (await api("/api/v1/plugins")).approvals.find(
+    (a: any) => a.group_id === group.id && a.plugin_id === id,
+  );
+  await query(
+    "UPDATE plugin_group_approvals SET expires_at=clock_timestamp()-interval '1 second' WHERE group_id=$1 AND plugin_id=$2",
+    [group.id, id],
+  );
+  await rpc(all, "resources.list", {}, 403);
+  await api(
+    "/api/v1/plugins/grants",
+    "POST",
+    {
+      installationId: i.id,
+      installationRevision: i.revision,
+      spaceId: space.id,
+      capabilities: m1.capabilities,
+      grantRevision: all.revision,
+    },
+    403,
+  );
+  await api("/api/v1/plugins/approvals", "POST", {
+    groupId: group.id,
+    packageHash: p1.hash,
+    spaceIds: [space.id],
+    enabled: true,
+    revision: groupApproval.revision,
+  });
+  await rpc(all, "resources.list", {}, 403);
+  all = await renew(all);
+  await rpc(all, "resources.list");
   assert.equal(
     (await rpc(all, "documents.read", { resourceId: file.id })).source,
     proposal.actions[0].payload.source,
@@ -686,7 +785,7 @@ try {
   assert(Array.isArray(activity.items));
   assert(!JSON.stringify(activity).includes("Private retained value"));
   console.log(
-    "Extension API acceptance passed: exact reviewed Apply/audit, owner/workspace/capability fences, queued revocation, cancel-after-disable, saved snapshots/planning/references, private-state CAS, package identity, update/rollback configuration, shortcut collisions and uninstall cleanup.",
+    "Extension API acceptance passed: exact reviewed Apply/audit, owner/workspace/capability fences, queued revocation/expiry, 30-day renewal and expired group approvals without proposal revival, cancel-after-disable, saved snapshots/planning/references, private-state CAS, package identity, update/rollback configuration, shortcut collisions and uninstall cleanup.",
   );
 } finally {
   await pool.end();

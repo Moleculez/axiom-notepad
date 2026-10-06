@@ -4,7 +4,7 @@ A workspace can publish a small research website without exposing its private
 workbench. Open **Workspace → Website** to create a private draft. Personal
 workspaces use a researcher identity; group workspaces use a team identity.
 There is no commerce, public account registration, plugin installation or arbitrary
-HTML/JavaScript injection. This is a structured publishing system, not WordPress parity.
+HTML/JavaScript injection. Publishing uses structured, reviewed content.
 
 ## Draft, review, publish
 
@@ -100,8 +100,8 @@ proportions, restrained section rules, booktabs-inspired tables and mathematical
 typography. Existing configurations without a theme retain **Original**. Additional
 styles are **LaTeX Monograph**, **Tufte Essay**, **Material Research**, **Fluent Studio**
 and **Minimal Journal**. These change component shape, spacing and typography, not
-just accent colors. They are Axiom implementations inspired by those design
-traditions, not integrations with Material or Fluent component libraries.
+just accent colors. Each theme uses Axiom's shared components and presentation
+tokens.
 
 Design → Reading & discovery controls text size (16–24px), line height, line length,
 section numbers, word count, estimated reading time, TOC and progress. The TOC

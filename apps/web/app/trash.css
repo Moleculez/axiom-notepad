@@ -274,26 +274,6 @@
 .ws-app .trash-toolbar > .console-search {
   flex: 1 1 18rem;
 }
-.trash-search-field {
-  position: relative;
-  display: flex;
-  align-items: center;
-  min-width: 0;
-}
-.trash-search-field > svg {
-  position: absolute;
-  inset-inline-start: 0.75rem;
-  color: var(--muted);
-  pointer-events: none;
-}
-.ws-app .trash-search-field > input {
-  padding-inline-start: 2.25rem;
-}
-.ws-app .trash-toolbar :is(input, select),
-.ws-app .trash-toolbar > button {
-  min-height: 2.6rem;
-  height: 2.6rem;
-}
 .trash-filter-count {
   display: inline-flex;
   justify-content: center;

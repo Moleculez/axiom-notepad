@@ -14,8 +14,8 @@ billing or commerce.
 [Documentation](docs/README.md) · [Live editor & Canvas](https://moleculez.github.io/axiom-notepad/) · [Showcase](docs/SHOWCASE.md) ·
 [Contributing](CONTRIBUTING.md)
 
-This is a **controlled research-group beta**, not complete Typora, Google Drive or
-Photoshop parity. [Verification and release gates](docs/VERIFICATION.md) distinguish
+This is a **controlled research-group beta**.
+[Verification and release gates](docs/VERIFICATION.md) distinguish
 tested workflows from remaining device, accessibility and provider checks.
 
 ## Built for research
@@ -41,7 +41,7 @@ See [showcase storage, settings and GitHub Pages deployment](docs/STATIC_SHOWCAS
   <img src="docs/assets/showcase/static-canvas-light.webp" alt="The browser-local Canvas showcase: connected rich-text cards with mathematics, a linked notebook and a research checklist, sharing Axiom's production interaction surface." width="1440" loading="lazy">
 </picture>
 
-- **Learn in place.** Docs beside Search & commands provides 31 searchable guides,
+- **Learn in place.** Docs beside Search & commands provides 32 searchable guides,
   your current keyboard shortcuts, and disposable examples using the real editor
   and Canvas engine. No example creates or synchronizes a file.
 - **Turn reading into a draft.** The [evidence workbench](docs/PRODUCT_GUIDE.md)
@@ -67,7 +67,9 @@ See [showcase storage, settings and GitHub Pages deployment](docs/STATIC_SHOWCAS
   See [editor media workflows](docs/EDITOR_MEDIA.md).
 - **Read and share cleanly.** Focused Read mode and snapshot-based exports to
   styled HTML, Print / Save PDF, Markdown and Markdown-with-assets ZIP, with
-  embedded fonts, equations and diagrams. See [document export](docs/DOCUMENT_EXPORT.md).
+  embedded fonts, equations and diagrams. Editable [LaTeX research projects](docs/RESEARCH_WRITING.md)
+  add BibTeX/Biber profiles, original assets, source/check review and local compile
+  instructions. No server compiler or external upload runs. See [document export](docs/DOCUMENT_EXPORT.md).
 - **Publish reviewed research.** Each workspace can create a personal or team
   [website](docs/WORKSPACE_WEBSITES.md): four layouts, seven visual themes (including
   LaTeX Paper), floating TOC, reading statistics, topics, timeline archives, private
@@ -77,14 +79,27 @@ See [showcase storage, settings and GitHub Pages deployment](docs/STATIC_SHOWCAS
 - **Review deliberately.** Rendered/source version comparisons, named milestones,
   guarded restores, separate Markdown/math suggestions, assigned reviews and changes
   since your last visit. Image Studio adds shared cloud drafts and recovery heads.
+  Paper reviews freeze bibliography/figure versions; reference provenance and
+  immutable milestone/reference-to-task handoffs retain research decisions.
   See [version history and review](docs/VERSION_REVIEW.md).
 - **Connect the evidence.** Collaborative Canvas with rich text and file cards,
   labeled connections, embedded previews, layout controls and portable exports.
+- **Map the document.** [Native mind maps](docs/MINDMAP.md) turn headings and nested
+  lists into an editable hierarchy without copying Markdown. Dedicated files share
+  note routes, collaboration and author undo; search, folds, guarded moves,
+  source/details panes and visual exports reuse one production/showcase surface.
+  Browser/migration acceptance remains pending; this change has not updated the
+  published demo.
 - **Ask with evidence.** An opt-in [workspace research assistant](docs/WORKSPACE_ASSISTANT.md)
   with selected excerpts, exact outgoing-context review, source citations, private
   Markdown/math suggestions and reviewed task/schedule changes with guarded Undo.
   Select evidence across workspaces in one group, including Office excerpts,
   Canvas cards and planning snapshots; nothing is sent without context review.
+  Optional discovery now holds every additional batch for exact approval, with
+  excerpt narrowing/removal, source-key diagnostics, round/token caps and explicit
+  unknown usage. Scoped MCP evidence tools and confirmed-only local recovery retain
+  human review. Migration 47 and runtime acceptance remain pending release gates;
+  no live provider was certified by these source changes.
 - **Plan in your workspace.** Files, tasks, milestones, discussions and reviews in
   one place. Switch between List, Board, Calendar, Gantt and Workload; preview
   dependency-aware schedule changes before applying them, with guarded Undo.
@@ -92,29 +107,41 @@ See [showcase storage, settings and GitHub Pages deployment](docs/STATIC_SHOWCAS
   estimate-based capacity connect the individual workspace plans.
   See [workspace planning](docs/WORKSPACE_PLANNING.md).
   Planning also includes linked/manual Goals, member-only research Intake,
-  searchable paginated request/decision archives with lazy full-body loading,
-  recurring templates/history, private/shared saved views, bulk changes,
+  searchable paginated Goals/request/decision/change/occurrence archives with lazy
+  full-body loading, recurring templates and deleted-task history,
+  private/shared saved views, bulk changes,
   signed working-day dependency offsets, Quarter/Year timelines and enriched
   CSV/SVG/print exports. Capacity previews include accessible group commitments;
   AI/MCP changes still require explicit review.
+  [Lab planning](docs/PLANNING_LAB.md) adds typed task properties, shared manual
+  time/history/reports and metadata-only automations with selection previews,
+  explicit Apply and guarded Undo. Migration 46 and authenticated browser,
+  concurrent-worker/recovery and realistic scale acceptance remain release gates;
+  these new features are not yet certified for deployment.
 - **Work as a group.** Invitations, roles, personal and shared workspaces, a compact
   context toolbar with pinned recent work, Explorer drag/move/copy, immutable file
   versions, Audit and independent workspace Trash. Group administration stays
   separate from workspace settings.
   A theme-aware toolbar progress bar handles loading without replacing already
   loaded panels; quick requests stay quiet and reduced motion uses a static line.
-- **Bring your notes with you.** [Import Markdown, folders or ZIP collections](docs/WORKSPACE_IMPORTS.md)
+- **Bring your research with you.** [Import Markdown, Canvas, folders or ZIP collections](docs/WORKSPACE_IMPORTS.md)
   from Files → Add files. Review local Preview/Source, hierarchy and matching names;
   Markdown becomes editable collaborative notes and supporting files retain their
   folders. Relative links resolve to imported identities without reformatting the
   source. Private resumable preparation publishes the whole collection atomically,
   never overwrites originals, and stays recoverable in Activity & recovery.
+  [Reimportable collections](docs/PORTABLE_COLLECTIONS.md) include native math,
+  text/image projects, safe metadata and checksummed exact-version assets. Invalid
+  projects require an attachment/skip choice; Canvas originals remain available.
+  This file-level workflow does not restore permissions, planning or version history.
 - **Extend deliberately.** An opt-in [extension platform](docs/EXTENSIONS.md) with
   a TypeScript SDK, immutable packages, native themed panels, exact group approval
   and individual workspace consent. Research Journal, Document Health and Planning
   Brief run in isolated workers; changes use the existing human-reviewed pipeline.
   Installation starts disabled; third-party imports have a separate default-off
   gate. Updates, configuration rollback, revocation, safe mode and activity are included.
+  Consent and group approvals expire after 30 days and require explicit renewal;
+  trusted relay budgets stop oversized/flooded messages before native UI handling.
   Search & commands shares active-pane context and one retained inspector slot.
   Toolbar Activity & recovery opens existing upload/file/export/OCR/assistant
   controllers without automatically retrying work.
@@ -144,7 +171,7 @@ adds reviewed research text and searchable PDF copies; real-container acceptance
 remains gated. Read-only Office viewers add
 styled worksheet grids, Word reading outlines and PowerPoint speaker notes.
 Paper assistance is explicitly opt-in; the guide lists current limits and
-remaining Zotero-style features.
+planned reader improvements.
 The [productivity roadmap](docs/PRODUCTIVITY_ROADMAP.md) separates this increment
 from remaining provider acceptance, planning refinements and team-operation stages.
 
@@ -284,6 +311,18 @@ npm run clean:generated     # inventory only; add --apply after review
 Build separately from a running release and run browser mutation tests only in an
 isolated deployment. [Verification](docs/VERIFICATION.md) distinguishes fresh evidence
 from historical runs and lists remaining device/provider gates.
+[Daily-use reliability](docs/RELIABILITY.md) provides a safe acceptance runner:
+`npm run verify:reliability` builds a fresh isolated application, runs authenticated
+workflows, injects sync failures and verifies paired backup/restore without loading
+your `.env` or testing against working notes. Desktop-engine CI and browser-local
+editor regressions are defined separately from deployment. Physical input,
+assistive-technology and real-provider acceptance remain explicit beta gates.
+
+[Stage 3–4 acceptance](docs/STAGE_ACCEPTANCE.md) adds
+`npm run verify:stages:acceptance`: Node 24 preflight, migration gates, real worker
+races, all desktop engines, populated recovery and same-host planning benchmarks.
+It records blocked/failed phases explicitly and requires separate operator review.
+
 [Contributing](CONTRIBUTING.md) explains project structure and change contracts;
 [maintenance](docs/MAINTENANCE.md) explains safe cleanup and regeneration.
 

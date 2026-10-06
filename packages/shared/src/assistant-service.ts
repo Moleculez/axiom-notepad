@@ -1,4 +1,5 @@
-import { createHash, randomBytes } from "node:crypto";
+import { randomBytes } from "node:crypto";
+export { assistantHash } from "./assistant-hash";
 import * as Y from "yjs";
 import type { PoolClient } from "pg";
 import { query, transaction } from "./db";
@@ -10,6 +11,7 @@ import { sourceHash } from "./document-commands";
 import { planningTasks } from "./planning-api";
 import { analyzeSchedule, compareBaseline } from "./planning-analysis";
 import { calendarSchema } from "./planning";
+import { planningEvidenceTask } from "./assistant-grounding";
 import {
   assistantTaskSchema,
   type AssistantEvidence,
@@ -39,18 +41,6 @@ export type AssistantContext = {
   space_id: string;
   space_ids?: string[];
   agent_config?: import("./productivity").AgentConfig | null;
-};
-export const assistantHash = (value: unknown): string => {
-  const stable = (v: unknown): string =>
-    v === null || typeof v !== "object"
-      ? JSON.stringify(v)
-      : Array.isArray(v)
-        ? `[${v.map(stable).join(",")}]`
-        : `{${Object.entries(v)
-            .sort(([a], [b]) => a.localeCompare(b))
-            .map(([k, x]) => JSON.stringify(k) + ":" + stable(x))
-            .join(",")}}`;
-  return createHash("sha256").update(stable(value)).digest("hex");
 };
 export async function assistantConversation(id: string, userId: string) {
   const [c] = await query(
@@ -207,7 +197,9 @@ export async function captureAssistantEvidence(
           version: space.planning_version,
           source: JSON.stringify({
             calendar,
-            tasks: selected,
+            // Typed lab fields and time records require explicit selection in a
+            // future contract; they never enter provider context implicitly.
+            tasks: selected.map(planningEvidenceTask),
             analysis: {
               ...analysis,
               tasks: analysis.tasks.filter((t) => s.taskIds.includes(t.id)),
@@ -291,6 +283,7 @@ export async function captureAssistantEvidence(
           from: s.from,
           to: s.to,
           locator: location?.target,
+          hash: sourceHash(job.result.source),
           source: job.result.source.slice(s.from, s.to),
         };
       } else if (s.kind === "canvas") {
@@ -315,6 +308,7 @@ export async function captureAssistantEvidence(
             format: "canvas",
             generation: current.generation,
             locator: s.nodeIds.join(","),
+            hash: sourceHash(source),
             source: JSON.stringify({
               nodes: nodes.map((n: any) => ({
                 id: n.id,
@@ -367,6 +361,8 @@ export async function captureAssistantEvidence(
           e = {
             ...e,
             source: source.slice(from, to),
+            hash: sourceHash(source),
+            version: resource.version,
             format: current.format ?? "markdown",
             generation: current.generation,
             from,
@@ -417,7 +413,8 @@ export async function captureAssistantEvidence(
         };
       }
     }
-    e.hash = sourceHash(e.source);
+    e.hash ||= sourceHash(e.source);
+    e.excerptHash = sourceHash(e.source);
     evidence.push(e);
   }
   if (JSON.stringify(bases).length > 8_000_000)
@@ -451,7 +448,9 @@ export async function assertAssistantAccess(
         403,
         "Earlier context expired or became unavailable. Start a new conversation.",
       );
-    const evidence = contexts.flatMap((x) => x.evidence);
+    // Include freshly captured, not-yet-published review evidence. Callers must
+    // not have to mutate the accepted context merely to authorize a preview.
+    const evidence = [...contexts.flatMap((x) => x.evidence), ...c.evidence];
     const resources = [
       ...new Set(
         evidence
@@ -543,6 +542,7 @@ export function publicAssistantContext(
   p: Record<string, any>,
 ): AssistantPrepared {
   return {
+    budget: c.agent_config?.budget ?? { maxRounds: 8, maxOutputTokens: 4096 },
     id: c.id,
     fingerprint: c.fingerprint,
     expiresAt: c.expires_at,
@@ -561,7 +561,12 @@ export function publicAssistantContext(
   };
 }
 export async function assistantMaintenance() {
-  const [productivity] = await query("SELECT to_regclass('public.assistant_runs') AS present");
+  const [productivity] = await query(
+    "SELECT to_regclass('public.assistant_runs') AS present",
+  );
+  const [reviews] = await query(
+    "SELECT to_regclass('public.assistant_run_reviews') AS present",
+  );
   await query(
     "UPDATE tool_jobs SET result=NULL,input='{}',status=CASE WHEN status IN ('queued','running') THEN 'cancelled' ELSE status END WHERE kind='assistant-evidence' AND created_at<now()-interval '1 day' AND (result IS NOT NULL OR input<>'{}'::jsonb)",
   );
@@ -572,7 +577,7 @@ export async function assistantMaintenance() {
     );
     // Redact, don't delete quota receipts. Backup retention remains an operator policy.
     await client.query(
-      "UPDATE tool_jobs j SET status=CASE WHEN status IN ('queued','running') THEN 'cancelled' ELSE status END,input='{}',result='{\"deleted\":true}',error=NULL FROM assistant_contexts x JOIN assistant_conversations c ON c.id=x.conversation_id WHERE j.assistant_context_id=x.id AND (x.created_at<now()-interval '30 days' OR c.deleted_at IS NOT NULL OR x.cleared_at IS NOT NULL)",
+      "UPDATE tool_jobs j SET status=CASE WHEN status IN ('queued','running','awaiting-review') THEN 'cancelled' ELSE status END,input='{}',result='{\"deleted\":true}',error=NULL FROM assistant_contexts x JOIN assistant_conversations c ON c.id=x.conversation_id WHERE j.assistant_context_id=x.id AND (x.created_at<now()-interval '30 days' OR c.deleted_at IS NOT NULL OR x.cleared_at IS NOT NULL)",
     );
     await client.query(
       "DELETE FROM assistant_proposals WHERE job_id IN(SELECT id FROM tool_jobs WHERE kind='assistant' AND result->>'deleted'='true')",
@@ -584,9 +589,21 @@ export async function assistantMaintenance() {
       "UPDATE assistant_conversations SET title='Expired conversation',deleted_at=coalesce(deleted_at,now()) WHERE updated_at<now()-interval '30 days'",
     );
     if (productivity?.present) {
-      await client.query("UPDATE assistant_runs r SET messages='[]',actions='[]',activity='[]' FROM assistant_contexts x WHERE r.context_id=x.id AND x.cleared_at IS NOT NULL");
+      await client.query(
+        "UPDATE assistant_runs r SET messages='[]',actions='[]',activity='[]' FROM assistant_contexts x WHERE r.context_id=x.id AND x.cleared_at IS NOT NULL",
+      );
+      if (reviews?.present) {
+        await client.query(
+          "UPDATE assistant_run_reviews v SET envelope='{}',prefix_messages='[]',read_results='[]',state='superseded' FROM assistant_runs r JOIN assistant_contexts x ON x.id=r.context_id WHERE v.run_id=r.id AND x.cleared_at IS NOT NULL",
+        );
+        await client.query(
+          "UPDATE assistant_run_steps s SET response=NULL FROM assistant_runs r JOIN assistant_contexts x ON x.id=r.context_id WHERE s.run_id=r.id AND x.cleared_at IS NOT NULL",
+        );
+      }
       // Accepted files/tasks remain; private drafts and their captured before-images are erased.
-      await client.query("DELETE FROM workspace_change_sets s WHERE s.created_at<now()-interval '30 days' OR EXISTS(SELECT 1 FROM assistant_contexts x WHERE x.id=s.context_id AND x.cleared_at IS NOT NULL)");
+      await client.query(
+        "DELETE FROM workspace_change_sets s WHERE s.created_at<now()-interval '30 days' OR EXISTS(SELECT 1 FROM assistant_contexts x WHERE x.id=s.context_id AND x.cleared_at IS NOT NULL)",
+      );
     }
   });
 }

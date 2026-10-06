@@ -5,12 +5,17 @@ export default function config(phase: string): NextConfig {
   const development = phase === PHASE_DEVELOPMENT_SERVER;
   const requestedEngine = process.env.NEXT_PUBLIC_AXIOM_EDITOR_ENGINE;
   return {
-    devIndicators:false,
+    devIndicators: false,
     // Never let `next dev` overwrite a retained production release in .env.
     distDir: development
       ? process.env.AXIOM_DEV_DIST_DIR || ".next/dev-8080"
       : process.env.AXIOM_DIST_DIR || ".next",
-    transpilePackages: ["@axiom/markdown", "@axiom/shared", "@axiom/editor"],
+    transpilePackages: [
+      "@axiom/markdown",
+      "@axiom/shared",
+      "@axiom/editor",
+      "@axiom/mindmap",
+    ],
     poweredByHeader: false,
     // Publication directories and private preview directories need real trailing
     // slashes so their portable relative URLs resolve exactly as in static ZIPs.

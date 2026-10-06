@@ -95,6 +95,8 @@ export const assistantSelectionSchema = z.discriminatedUnion("kind", [
 ]);
 export type AssistantSelection = z.infer<typeof assistantSelectionSchema>;
 export type AssistantEvidence = {
+  /** Hash of the captured excerpt, independent of the whole-document hash. */
+  excerptHash?: string;
   spaceId?: string;
   locator?: string;
   planningVersion?: number;
@@ -175,6 +177,7 @@ export type AssistantMessage = {
   content: string;
 };
 export type AssistantPrepared = {
+  budget?: import("./assistant-grounding").AssistantRunBudget;
   agent?: import("./productivity").AgentConfig;
   id: string;
   fingerprint: string;
@@ -199,8 +202,19 @@ export type AssistantProposalItem = {
   result?: Record<string, unknown>;
 };
 export type AssistantTurn = {
+  recoveryFingerprint?: string;
+  legacyFingerprint?: string;
+  nextReview?: { id: string; ordinal: number; expiresAt: string };
+  budget?: import("./assistant-grounding").AssistantRunBudget;
+  usage?: import("./assistant-grounding").AssistantRunUsage;
+  grounding?: import("./assistant-grounding").AssistantGroundingReport;
   changeSetId?: string;
-  activity?: {kind:string;message:string;evidenceKey?:string;at:string}[];
+  activity?: {
+    kind: string;
+    message: string;
+    evidenceKey?: string;
+    at: string;
+  }[];
   round?: number;
   id: string;
   status: string;

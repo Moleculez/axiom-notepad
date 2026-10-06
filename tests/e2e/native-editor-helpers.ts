@@ -8,9 +8,12 @@ import {
 } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import { signInOwner } from "./auth";
+import { mutationTestTarget } from "../../packages/shared/src/test-target";
 
-export const origin =
-  process.env.TEST_APP_URL || process.env.APP_URL || "http://localhost:8080";
+export const origin = mutationTestTarget(
+  process.env,
+  process.env.AXIOM_TEST_ROOT,
+).origin;
 let ownerState: Awaited<ReturnType<BrowserContext["storageState"]>>;
 export async function fixture(browser: Browser, body: string) {
   const owner = await browser.newContext({

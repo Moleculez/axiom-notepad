@@ -13,6 +13,7 @@ import {
 } from "../workspace/ui";
 import Dialog from "../Dialog";
 import ResourceHistory from "./ResourceHistory";
+import PaperReviewEvidence from "./PaperReviewEvidence";
 import { timeAgo } from "../../lib/client";
 export default function ReviewInbox({ spaceId }: { spaceId?: string } = {}) {
   const { session, revision, notify } = useWorkspace(),
@@ -63,6 +64,9 @@ export default function ReviewInbox({ spaceId }: { spaceId?: string } = {}) {
             <p className="suggestion-explanation">{r.message}</p>
             {r.response && (
               <p className="suggestion-explanation">Response: {r.response}</p>
+            )}
+            {r.paper_context && (
+              <PaperReviewEvidence id={r.id} summary={r.paper_context} />
             )}
             <ActionRow>
               <Button

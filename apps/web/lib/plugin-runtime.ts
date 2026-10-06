@@ -2,6 +2,7 @@
 import {
   pluginInputValuesSchema,
   pluginLimits,
+  pluginPermissionActive,
   pluginMethods,
   validatePluginPanel,
   type PluginContext,
@@ -10,6 +11,7 @@ import {
   type PluginPanel,
 } from "@axiom/shared/plugins";
 import { api } from "./client";
+import { decodePluginMessage } from "@axiom/shared/plugin-transport";
 
 export type PluginRuntimeStart = {
   bundle: string;
@@ -17,6 +19,7 @@ export type PluginRuntimeStart = {
   grantId: string;
   grantRevision: number;
   packageHash: string;
+  expiresAt: string;
   context: PluginContext;
 };
 export type PluginRuntimeOptions = {
@@ -38,6 +41,7 @@ export class PluginRuntime {
   private inFlight = new Set<number>();
   private seen = new Set<number>();
   private timer: ReturnType<typeof setTimeout> | undefined;
+  private expiryTimer: ReturnType<typeof setTimeout> | undefined;
   private ready: (event: MessageEvent) => void;
   constructor(
     readonly start: PluginRuntimeStart,
@@ -77,10 +81,12 @@ export class PluginRuntime {
     window.addEventListener("message", this.ready);
     this.frame.src = "/plugin-sandbox?nonce=" + this.nonce;
     document.body.append(this.frame);
+    this.expiryDeadline();
     this.deadline();
   }
   private deadline() {
     clearTimeout(this.timer);
+    if (this.disposed) return;
     this.timer = setTimeout(
       () =>
         this.fail(
@@ -89,17 +95,31 @@ export class PluginRuntime {
       20000,
     );
   }
+  private expiryDeadline() {
+    if (this.disposed || !this.permissionActive()) return;
+    const remaining = new Date(this.start.expiresAt).valueOf() - Date.now();
+    this.expiryTimer = setTimeout(
+      () => this.expiryDeadline(),
+      Math.min(remaining, 2_147_483_647),
+    );
+  }
+  private permissionActive() {
+    if (pluginPermissionActive(this.start.expiresAt)) return true;
+    if (!this.disposed)
+      this.fail(
+        "Extension permissions expired. Renew access, then restart explicitly. Your files and drafts remain available.",
+      );
+    return false;
+  }
   private reply(id: number, result: unknown, error?: string) {
     if (!this.disposed)
       this.port?.postMessage({ type: "response", id, result, error });
   }
   private async receive(raw: unknown) {
-    if (this.disposed) return;
+    if (this.disposed || !this.permissionActive()) return;
     let value: any;
     try {
-      if (JSON.stringify(raw).length > pluginLimits.messageBytes)
-        throw new Error("Extension message is too large.");
-      value = raw;
+      value = decodePluginMessage(raw);
       if (!value || typeof value !== "object")
         throw new Error("Invalid extension message.");
       if (value.type === "heartbeat") return;
@@ -184,6 +204,8 @@ export class PluginRuntime {
     args: Record<string, unknown> = {},
   ) {
     if (this.disposed) throw new Error("Extension is stopped.");
+    if (!this.permissionActive())
+      throw new Error("Extension permissions expired.");
     return api<T>("plugins/rpc", {
       method: "POST",
       signal: this.abort.signal,
@@ -205,6 +227,8 @@ export class PluginRuntime {
     });
   }
   run(command: string, inputs: Record<string, string | number | boolean>) {
+    if (!this.permissionActive())
+      throw new Error("Extension permissions expired.");
     if (this.disposed || !this.loaded || this.busy)
       throw new Error("Wait for the current extension command to finish.");
     if (!this.start.manifest.commands.some((c) => c.id === command))
@@ -227,6 +251,7 @@ export class PluginRuntime {
     this.disposed = true;
     this.busy = false;
     clearTimeout(this.timer);
+    clearTimeout(this.expiryTimer);
     this.abort.abort();
     window.removeEventListener("message", this.ready);
     this.port?.postMessage({ type: "stop" });

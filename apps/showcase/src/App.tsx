@@ -43,7 +43,7 @@ import {
   useSnapshot,
   type Destination,
 } from "./context";
-import { canvasId, researchId } from "./samples";
+import { canvasId, researchId, mindmapId, mindmapSample } from "./samples";
 import Tour from "./Tour";
 import ShowcaseSettings from "./ShowcaseSettings";
 
@@ -55,6 +55,7 @@ const nav = [
   { id: "tour", label: "Discover", icon: BookOpen },
   { id: "editor", label: "Editor", icon: PenLine },
   { id: "canvas", label: "Canvas", icon: Network },
+  { id: "mindmap", label: "Mind map", icon: Network },
 ] as const;
 function route() {
   const [destination, ...params] = location.hash.slice(1).split("&");
@@ -112,7 +113,14 @@ export default function App() {
       const doc = store.document(id);
       if (doc) {
         store.select(id);
-        navigate(doc.kind === "canvas" ? "canvas" : "editor", id);
+        navigate(
+          doc.view === "mindmap"
+            ? "mindmap"
+            : doc.kind === "canvas"
+              ? "canvas"
+              : "editor",
+          id,
+        );
       } else if (store.getSnapshot().assets.some((a) => a.id === id))
         setFileId(id);
       else
@@ -189,7 +197,9 @@ export default function App() {
         d.id ===
           (locationState.destination === "canvas"
             ? canvasId
-            : snapshot.active) &&
+            : locationState.destination === "mindmap"
+              ? mindmapId
+              : snapshot.active) &&
         (locationState.destination === "canvas"
           ? d.kind === "canvas"
           : d.kind !== "canvas"),
@@ -302,7 +312,11 @@ export default function App() {
                   (locationState.destination === "canvas" ? (
                     <Canvas key={selected.id} document={selected} />
                   ) : (
-                    <Editor key={selected.id} document={selected} />
+                    <Editor
+                      key={selected.id}
+                      document={selected}
+                      defaultMap={locationState.destination === "mindmap"}
+                    />
                   ))}
               </Suspense>
             )}
@@ -378,6 +392,21 @@ export default function App() {
                 >
                   <Network size={15} />
                   New canvas
+                </Button>
+                <Button
+                  onClick={() => {
+                    const doc = store.create(
+                      "Untitled mind map",
+                      "markdown",
+                      mindmapSample.source,
+                      "mindmap",
+                    );
+                    setFiles(false);
+                    open(doc.id);
+                  }}
+                >
+                  <Network size={15} />
+                  New mind map
                 </Button>
               </div>
               <div className="demo-file-list">

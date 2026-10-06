@@ -43,7 +43,7 @@
   gap: 0.65em;
   align-self: center;
 }
-.console-toolbar :is(input:not([type="checkbox"]), select) {
+.console-toolbar :is(input:not([type="checkbox"]), select):not(.ui-input) {
   width: 100%;
   min-height: 2.65em;
   margin: 0;
@@ -51,7 +51,7 @@
 }
 /* Native macOS/WebKit menu buttons ignore the input height. Keep the native
    accessible selection behavior, but draw chrome with our semantic tokens. */
-.ws-app .console-page select {
+.ws-app .console-page select:not(.ui-select) {
   appearance: none;
   -webkit-appearance: none;
   padding-inline-end: 2.3em;
@@ -68,8 +68,7 @@
   margin: 0;
   flex-shrink: 0;
 }
-.console-toolbar :is(input:not([type="checkbox"]), select),
-.console-toolbar > .button {
+.console-toolbar :is(input:not([type="checkbox"]), select):not(.ui-input) {
   font-size: var(--size-ui-small);
   line-height: 1.4;
   min-height: 2.8em;

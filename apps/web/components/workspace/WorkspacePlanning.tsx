@@ -11,6 +11,7 @@ import {
   SearchField,
 } from "../ui/controls";
 import TaskPaperLinks from "./TaskPaperLinks";
+import TaskResearchLinks from "./TaskResearchLinks";
 import {
   PlanningIntegerInput,
   PlanningEntityPicker,
@@ -20,6 +21,8 @@ import {
 import { PlanningBulkActions, PlanningViewActions } from "./PlanningActions";
 import { PlanningGoals } from "./PlanningSuitePanels";
 import { PlanningIntake } from "./PlanningIntake";
+import { TaskCustomFields, PlanningPropertyView } from "./PlanningCustomFields";
+const PlanningTime = dynamic(() => import("./PlanningTime"));
 const PlanningRoutines = dynamic(() => import("./PlanningRoutines"));
 import ScheduleCapacityPreview from "./ScheduleCapacityPreview";
 import { openAssistant } from "../../lib/assistant";
@@ -41,6 +44,7 @@ import {
   X,
 } from "lucide-react";
 import type { Space } from "@axiom/shared/workspace";
+import {fieldSummaryText,type TaskField} from "@axiom/shared/planning-lab";
 import {
   dayNumber,
   dateFromDay,
@@ -105,6 +109,7 @@ type Person = {
   weekly_capacity?: number;
 };
 type PlanData = {
+  fields?:TaskField[];
   items: PlanningTask[];
   total: number;
   completed: number;
@@ -141,7 +146,7 @@ export default function WorkspacePlanning({ space }: { space: Space }) {
   const { revision, refresh, notify } = useWorkspace(),
     { params, path } = useLocation(),
     tabs = useWorkSessions();
-  const section = ["goals", "intake"].includes(params.get("section") ?? "")
+  const section = ["goals", "intake", "time"].includes(params.get("section") ?? "")
     ? params.get("section")!
     : "tasks";
   const online = useOnline(),
@@ -162,6 +167,7 @@ export default function WorkspacePlanning({ space }: { space: Space }) {
     "risk",
     "sort",
     "deleted",
+    "fieldFilters", "sortField", "sortDirection", "includeFields",
   ])
     if (params.get(name)) filter.set(name, params.get(name)!);
   const data = useData<PlanData>(
@@ -289,7 +295,7 @@ export default function WorkspacePlanning({ space }: { space: Space }) {
   return (
     <div className="workspace-planning">
       <nav className="planning-section-tabs" aria-label="Planning sections">
-        {["tasks", "goals", "intake"].map((key) => (
+        {["tasks", "goals", "intake", "time"].map((key) => (
           <button
             key={key}
             aria-pressed={section === key}
@@ -307,6 +313,8 @@ export default function WorkspacePlanning({ space }: { space: Space }) {
           people={people.data ?? []}
           readOnly={readOnly}
         />
+      ) : section === "time" ? (
+        <PlanningTime space={space} people={people.data ?? []} readOnly={readOnly}/>
       ) : section === "intake" ? (
         <PlanningIntake
           space={space}
@@ -399,6 +407,7 @@ export default function WorkspacePlanning({ space }: { space: Space }) {
             </Button>
           </div>
           <div className="planning-filters">
+            <PlanningPropertyView spaceId={space.id} params={params} change={change} people={people.data??[]}/>
             <SearchField
               wrapperClassName="planning-search"
               aria-label="Find tasks"
@@ -560,6 +569,8 @@ export default function WorkspacePlanning({ space }: { space: Space }) {
                     columns={
                       params.get("columns")?.split(",").filter(Boolean) ?? []
                     }
+                    customFields={data.data.fields??[]}
+                    people={people.data??[]}
                     showDependencies={params.get("dependencies") !== "0"}
                     showBaseline={params.get("baseline") !== "0"}
                     showCritical={params.get("critical") !== "0"}
@@ -606,6 +617,8 @@ export default function WorkspacePlanning({ space }: { space: Space }) {
                 ) : (
                   <TaskList
                     tasks={tasks}
+                    fields={data.data.fields??[]}
+                    people={people.data??[]}
                     onOpen={(id) => change({ task: id })}
                     onStatus={updateStatus}
                     readOnly={readOnly || deleted}
@@ -750,6 +763,7 @@ export default function WorkspacePlanning({ space }: { space: Space }) {
                 download(
                   `${space.name}-tasks.csv`,
                   planningCsv(tasks, {
+                    fields: data.data?.fields, people:people.data??[],
                     milestones,
                     baseline,
                     criticalIds: analysis?.tasks
@@ -882,6 +896,7 @@ export default function WorkspacePlanning({ space }: { space: Space }) {
 
 function TaskList({
   tasks,
+  fields=[],people=[],
   onOpen,
   onStatus,
   readOnly,
@@ -890,6 +905,7 @@ function TaskList({
   onSelectAll,
 }: {
   tasks: PlanningTask[];
+  fields?:TaskField[];people?:Person[];
   onOpen: (id: string) => void;
   onStatus: (task: PlanningTask, status: string) => void;
   readOnly: boolean;
@@ -910,6 +926,7 @@ function TaskList({
     observer.observe(node);
     return () => observer.disconnect();
   }, []);
+  const width=fields.length?`${54+fields.length*12}em`:undefined,template=fields.length?`42px minmax(15em,1fr) 9em 10em 12em repeat(${fields.length},12em)`:undefined;
   return (
     <div
       className="planning-list"
@@ -917,7 +934,7 @@ function TaskList({
       aria-label="Tasks"
       aria-rowcount={tasks.length + 1}
     >
-      <div className="planning-list-head" role="row">
+      <div className="planning-list-head" role="row" style={{minWidth:width,gridTemplateColumns:template}}>
         <span role="columnheader">
           <Checkbox
             aria-label="Select all visible tasks"
@@ -932,13 +949,14 @@ function TaskList({
         <span role="columnheader">Status</span>
         <span role="columnheader">Assignee</span>
         <span role="columnheader">Dates</span>
+        {fields.map(f=><span role="columnheader" key={f.id}>{f.name}</span>)}
       </div>
       <div
         className="planning-list-scroll"
         ref={scroll}
-        onScroll={(e) => setTop(e.currentTarget.scrollTop)}
+        onScroll={(e) => {setTop(e.currentTarget.scrollTop);const head=e.currentTarget.parentElement?.querySelector<HTMLElement>(".planning-list-head");if(head)head.style.transform=`translateX(${-e.currentTarget.scrollLeft}px)`;}}
       >
-        <div style={{ height: tasks.length * row, position: "relative" }}>
+        <div style={{ height: tasks.length * row, position: "relative",minWidth:width }}>
           {visible.map((task, i) => (
             <div
               className="planning-task-row"
@@ -946,7 +964,7 @@ function TaskList({
               role="row"
               aria-rowindex={start + i + 2}
               aria-selected={selection.has(task.id)}
-              style={{ top: (start + i) * row, height: row }}
+              style={{ top: (start + i) * row, height: row,gridTemplateColumns:template }}
             >
               <span role="cell">
                 <Checkbox
@@ -988,6 +1006,7 @@ function TaskList({
               <button role="cell" onClick={() => onOpen(task.id)}>
                 {task.start_on ?? "—"} → {task.due_on ?? "—"}
               </button>
+              {fields.map(f=><span role="cell" className="planning-property-cell" key={f.id} title={fieldSummaryText(f,task.field_summaries,people)}>{fieldSummaryText(f,task.field_summaries,people)}</span>)}
             </div>
           ))}
         </div>
@@ -1205,6 +1224,7 @@ function taskDraft(task?: PlanningTask): Draft {
     dependencyLinks: task ? taskDependencyLinks(task) : [],
     progressPercent: task?.progress_percent ?? 0,
     version: task?.version,
+    fieldsVersion: task?.fields_version,
   };
 }
 function TaskInspector(props: {
@@ -1310,7 +1330,9 @@ function TaskForm({
     key = `axiom:task-draft:${session.user.id}:${space.id}:${id}`,
     baseline = useRef(taskDraft(task));
   const [recovered, setRecovered] = useState(false),
-    [storageError, setStorageError] = useState("");
+    [storageError, setStorageError] = useState(""),
+    [panel, setPanel] = useState<"properties"|"time">("properties"),
+    [fieldsValid, setFieldsValid] = useState(true);
   const [draft, setDraft] = useState<Draft>(() => {
     try {
       const saved = JSON.parse(localStorage.getItem(key) ?? "null");
@@ -1442,7 +1464,8 @@ function TaskForm({
           <X size={18} />
         </IconButton>
       </header>
-      <div className="planning-inspector-body">
+      {task&&<nav className="planning-section-tabs" aria-label="Task panels"><button aria-pressed={panel==="properties"} onClick={()=>setPanel("properties")}>Properties</button><button aria-pressed={panel==="time"} onClick={()=>setPanel("time")}>Time</button></nav>}
+      <div className="planning-inspector-body" style={{display:panel==="time"?"none":undefined}}>
         {(recovered || storageError) && (
           <p className="planning-notice">
             {storageError ||
@@ -1556,6 +1579,7 @@ function TaskForm({
               />
             </label>
           </div>
+          <TaskCustomFields spaceId={space.id} values={task?.custom_fields??{}} patch={draft.customFields??{}} people={people} onValidity={setFieldsValid} onChange={(customFields,version)=>set({customFields,fieldsVersion:draft.fieldsVersion??version})}/>
           <PlanningMarkdown
             key={`${id}:${baseline.current.version ?? "new"}`}
             initial={draft.body}
@@ -1677,6 +1701,7 @@ function TaskForm({
             </div>
           </details>
           {task && <TaskPaperLinks taskId={task.id} readOnly={readOnly} />}
+          {task && <TaskResearchLinks taskId={task.id} readOnly={readOnly} />}
           {!task && (
             <div className="planning-field-grid">
               <label>
@@ -1737,7 +1762,8 @@ function TaskForm({
           </small>
         )}
       </div>
-      <footer>
+      {task&&panel==="time"&&<div className="planning-inspector-time"><PlanningTime space={space} people={people} readOnly={readOnly} taskDeleted={removed} taskId={id}/></div>}
+      <footer style={{display:panel==="time"?"none":undefined}}>
         <span className="planning-draft-state">
           {dirty ? "Local draft · not yet shared" : "Saved"}
         </span>
@@ -1799,6 +1825,7 @@ function TaskForm({
             removed ||
             action.busy ||
             invalidOffsets.size > 0 ||
+            !fieldsValid ||
             !draft.title.trim() ||
             (!!task && !dirty)
           }

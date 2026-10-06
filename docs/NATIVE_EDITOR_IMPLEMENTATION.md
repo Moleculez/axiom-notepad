@@ -12,7 +12,6 @@ The approved direction is a first-party Markdown editing engine, not an editor-f
 
 ## Release gates
 
-- [x] Inspect installed Typora 1.11.7 with disposable scratch content; preserve the user's documents and clipboard.
 - [x] Verify a database and attachment backup before source changes (`data/before-native-editor-20260908`). Archive the original source alongside it.
 - [x] Native transactions, source/DOM selections, composition, clipboard, commands and author-local undo.
 - [x] Semantic nested lists and quotes; quiet code/math controls; context-menu table editing.

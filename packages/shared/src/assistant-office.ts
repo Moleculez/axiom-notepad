@@ -108,7 +108,7 @@ export async function assistantOfficeApi(
       await transaction(async (db) => {
         await requireScope(db, user, space.id);
         await db.query("SELECT pg_advisory_xact_lock(hashtext($1))", [
-          "assistant-previews:" + user,
+          "tool-queue:" + user,
         ]);
         const {
           rows: [old],
@@ -131,7 +131,7 @@ export async function assistantOfficeApi(
         const {
           rows: [count],
         } = await db.query(
-          "SELECT count(*)::int AS n,count(*) FILTER(WHERE status IN ('queued','running'))::int AS pending FROM tool_jobs WHERE owner_id=$1 AND created_at>now()-interval '1 day'",
+          "SELECT count(*) FILTER(WHERE created_at>now()-interval '1 day')::int AS n,count(*) FILTER(WHERE status IN ('queued','running','awaiting-review'))::int AS pending FROM tool_jobs WHERE owner_id=$1",
           [user],
         );
         if (count.pending >= 5 || count.n >= 100)

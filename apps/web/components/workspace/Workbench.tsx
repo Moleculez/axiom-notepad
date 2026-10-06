@@ -46,6 +46,7 @@ import {
   List,
   ListChecks,
   MessageSquare,
+  Network,
   PanelRightClose,
   PanelRightOpen,
   Plus,
@@ -64,6 +65,8 @@ import {
   type RenderContext,
 } from "@axiom/markdown";
 import type { Note } from "@axiom/shared/access";
+import type { ToolProject } from "@axiom/shared/research-tools";
+import { mindmapSettingsSchema } from "@axiom/shared/mindmap";
 import type { Resource, Space } from "@axiom/shared/workspace";
 import { fileRoute } from "@axiom/shared/file-routes";
 import { tabRoute } from "@axiom/shared/application-tabs";
@@ -411,7 +414,9 @@ function ResourcePane({
       !!data.data &&
       !(
         data.data.kind === "note" &&
-        (!data.data.document_type || data.data.document_type === "markdown")
+        (!data.data.document_type ||
+          data.data.document_type === "markdown" ||
+          data.data.document_type === "mindmap")
       ),
     {
       owner: "resource:" + tab.id,
@@ -452,6 +457,7 @@ function ResourcePane({
   return data.data ? (
     data.data.document_type &&
     data.data.document_type !== "markdown" &&
+    data.data.document_type !== "mindmap" &&
     !(
       data.data.kind === "file" &&
       tab.versionId &&
@@ -461,7 +467,11 @@ function ResourcePane({
     ) ? (
       <StudioFile resource={data.data} route={tab.route} />
     ) : data.data.kind === "note" ? (
-      <MarkdownFile tab={tab} active={active} />
+      <MarkdownFile
+        tab={tab}
+        active={active}
+        defaultMap={data.data.document_type === "mindmap"}
+      />
     ) : (
       <FilePane resource={data.data} requestedVersion={tab.versionId} />
     )
@@ -473,7 +483,15 @@ function ResourcePane({
   );
 }
 
-function MarkdownFile({ tab, active }: { tab: Tab; active: boolean }) {
+function MarkdownFile({
+  tab,
+  active,
+  defaultMap = false,
+}: {
+  tab: Tab;
+  active: boolean;
+  defaultMap?: boolean;
+}) {
   const { session, revision } = useWorkspace();
   const data = useCachedData<Note>(
     `notes/${tab.id}`,
@@ -483,6 +501,8 @@ function MarkdownFile({ tab, active }: { tab: Tab; active: boolean }) {
   return data.data ? (
     <DocumentPane
       metadata={data.data}
+      defaultMap={defaultMap}
+      route={tab.route}
       viewId={tab.viewId}
       active={active}
       reload={data.reload}
@@ -500,11 +520,15 @@ function DocumentPane({
   viewId,
   active,
   reload,
+  defaultMap = false,
+  route,
 }: {
   metadata: Note;
   viewId?: string;
   active: boolean;
   reload: () => void;
+  defaultMap?: boolean;
+  route?: string;
 }) {
   const tabs = useWorkSessions();
   const stored = tabs?.state.sessions.find((tab) => tab.id === viewId)?.view;
@@ -606,6 +630,25 @@ function DocumentPane({
   }, [active]);
   const reviewLocation = useLocation(),
     requestedReview = reviewLocation.params.get("review");
+  const viewParams = reviewLocation.path.endsWith("/" + note.id)
+    ? reviewLocation.params
+    : new URL(route ?? "/", "http://workspace.local").searchParams;
+  const mindmap =
+    viewParams.get("view") === "mindmap" ||
+    (defaultMap && viewParams.get("view") !== "document");
+  const mapProject = useData<ToolProject>(
+    defaultMap ? `tools/${note.id}` : null,
+    revision,
+  );
+  const documentView = (map: boolean, position?: number) => {
+    const params = new URLSearchParams(viewParams);
+    params.set("view", map ? "mindmap" : "document");
+    navigate(`/notes/${note.id}?${params}`);
+    if (!map && position !== undefined)
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => editor.current?.focus(position)),
+      );
+  };
   const previousVisit = useRevisionVisit(session.user.id, note.id, active);
   useEffect(() => {
     if (active)
@@ -889,6 +932,10 @@ function DocumentPane({
   };
   commandRef.current = (id: EditorCommandId, insertionPrepared = false) => {
     if (id === "source") {
+      if (mindmap) {
+        editor.current?.execute("source");
+        return;
+      }
       setMode((current) =>
         current === "source" ? (readonly ? "read" : "write") : "source",
       );
@@ -1070,6 +1117,7 @@ function DocumentPane({
   return (
     <section
       className={`ws-document ${appearance.effective.focusMode ? "focus-mode" : ""}`}
+      data-mindmap={mindmap || undefined}
       aria-label={`Document ${note.title}`}
     >
       {modal === "export" && (
@@ -1144,7 +1192,18 @@ function DocumentPane({
         </Dialog>
       )}
       <header className="ws-document-toolbar">
-        <div className="ws-segmented" aria-label="Editor mode">
+        <Button
+          variant="ghost"
+          aria-pressed={mindmap}
+          onClick={() => {
+            if (!mindmap) setPanel(null);
+            documentView(!mindmap);
+          }}
+        >
+          <Network size={16} />
+          {mindmap ? "Document" : "Mind map"}
+        </Button>
+        <div className="ws-segmented" aria-label="Editor mode" hidden={mindmap}>
           {[
             ["write", "Write"],
             ["source", "Source"],
@@ -1436,38 +1495,42 @@ function DocumentPane({
                     : undefined
                 }
               >
-                <HelpText as="div" className="ws-note-meta">
-                  <span>{context.data?.space.name}</span>
-                  <Badge>
-                    {note.visibility === "private" ? "Only you" : "Shared"}
-                  </Badge>
-                  <span>{parsed.outline.length} sections</span>
-                </HelpText>
-                {readonly || mode === "read" ? (
-                  <h1 className="document-title">{note.title}</h1>
-                ) : (
-                  <NoteTitle
-                    value={note.title}
-                    typography={appearance.effective}
-                    onContinue={() => editor.current?.focus()}
-                    onSave={(title) =>
-                      void action.run(async () => {
-                        const resource = await api<Resource>(
-                          `resources/${note.id}`,
-                        );
-                        await mutate(
-                          `resources/${note.id}`,
-                          { version: resource.version, name: title },
-                          "PATCH",
-                        );
-                        setNote((current) => ({ ...current, title }));
-                        refresh();
-                      })
-                    }
-                  />
+                {!mindmap && (
+                  <>
+                    <HelpText as="div" className="ws-note-meta">
+                      <span>{context.data?.space.name}</span>
+                      <Badge>
+                        {note.visibility === "private" ? "Only you" : "Shared"}
+                      </Badge>
+                      <span>{parsed.outline.length} sections</span>
+                    </HelpText>
+                    {readonly || mode === "read" ? (
+                      <h1 className="document-title">{note.title}</h1>
+                    ) : (
+                      <NoteTitle
+                        value={note.title}
+                        typography={appearance.effective}
+                        onContinue={() => editor.current?.focus()}
+                        onSave={(title) =>
+                          void action.run(async () => {
+                            const resource = await api<Resource>(
+                              `resources/${note.id}`,
+                            );
+                            await mutate(
+                              `resources/${note.id}`,
+                              { version: resource.version, name: title },
+                              "PATCH",
+                            );
+                            setNote((current) => ({ ...current, title }));
+                            refresh();
+                          })
+                        }
+                      />
+                    )}
+                  </>
                 )}
                 <div
-                  className={`editor-mount ${mode === "read" ? "hidden" : ""}`}
+                  className={`editor-mount ${mode === "read" && !mindmap ? "hidden" : ""}`}
                 >
                   <Editor
                     key={note.generation}
@@ -1475,6 +1538,90 @@ function DocumentPane({
                     note={note}
                     user={session.user}
                     mode={mode}
+                    mindmap={
+                      mindmap
+                        ? {
+                            account: session.user.id,
+                            scope: `${session.user.id}:${note.id}:${note.generation}`,
+                            title: note.title,
+                            context: renderContext,
+                            settings: mindmapSettingsSchema
+                              .catch(mindmapSettingsSchema.parse({}))
+                              .parse(mapProject.data?.settings ?? {}),
+                            onSaveDefaults:
+                              mapProject.data && metadata.role === "editor"
+                                ? async (settings) => {
+                                    await api(`tools/${note.id}/settings`, {
+                                      method: "PATCH",
+                                      body: JSON.stringify({
+                                        version: mapProject.data!.version,
+                                        settings,
+                                      }),
+                                    });
+                                    mapProject.reload();
+                                  }
+                                : undefined,
+                            onLink: (target) => void openLink(target),
+                            onDocument: (position) =>
+                              documentView(false, position),
+                            externalInspector: !!panel && panel !== "outline",
+                            onAuxiliary: () => setPanel(null),
+                            beforeExport: async () => {
+                              await editor.current?.flush();
+                              await api(`resources/${note.id}`);
+                            },
+                            onComment: canComment
+                              ? (from, to, annotation) => {
+                                  const mark =
+                                    editor.current?.captureSourceRange(
+                                      from,
+                                      to,
+                                    );
+                                  if (!mark) {
+                                    setError(
+                                      "This branch is no longer available. Select it again.",
+                                    );
+                                    return;
+                                  }
+                                  if (annotation) {
+                                    window.dispatchEvent(
+                                      new CustomEvent("axiom:reading-mark", {
+                                        detail: {
+                                          noteId: note.id,
+                                          action: "annotation",
+                                          anchor: { ...mark, kind: "block" },
+                                        },
+                                      }),
+                                    );
+                                  } else {
+                                    setAnchor(mark);
+                                    setPanel("comments");
+                                  }
+                                }
+                              : undefined,
+                            onBookmark: (from, to) => {
+                              const mark = editor.current?.markAnchor(
+                                from,
+                                to,
+                                "block",
+                              );
+                              if (!mark) {
+                                setError("The map is still connecting.");
+                                return;
+                              }
+                              window.dispatchEvent(
+                                new CustomEvent("axiom:reading-mark", {
+                                  detail: {
+                                    noteId: note.id,
+                                    action: "bookmark",
+                                    anchor: mark,
+                                  },
+                                }),
+                              );
+                            },
+                          }
+                        : undefined
+                    }
                     appearance={appearance.effective}
                     preferences={editorSettings.effective}
                     extensions={editorExtensions.items}
@@ -1588,11 +1735,11 @@ function DocumentPane({
                   />
                 </div>
                 <div
-                  className={`read-mount ${mode !== "read" ? "print-only" : ""}`}
+                  className={`read-mount ${mode !== "read" || mindmap ? "print-only" : ""}`}
                 >
                   <ReadingView
                     blockMarks
-                    active={mode === "read"}
+                    active={mode === "read" && !mindmap}
                     parsed={parsed}
                     source={source}
                     visual={{
@@ -1614,15 +1761,18 @@ function DocumentPane({
           <footer className="ws-note-footer">
             <DocumentStatistics source={source} parsed={parsed} />
             <span>
-              {mode === "source"
-                ? "Source"
-                : mode === "write"
-                  ? "Live preview"
-                  : "Reading"}
+              {mindmap
+                ? "Mind map"
+                : mode === "source"
+                  ? "Source"
+                  : mode === "write"
+                    ? "Live preview"
+                    : "Reading"}
             </span>
           </footer>
           <ReadingMarks
             active={active}
+            mindmap={mindmap}
             editor={editor}
             scroller={scroller}
             panelHost={marksHost}
@@ -1640,7 +1790,7 @@ function DocumentPane({
             onOpened={() => setMarkOpen(null)}
           />
         </div>
-        {panel && (
+        {panel && (!mindmap || panel !== "outline") && (
           <ResizablePanel
             className="ws-document-context"
             label="Document context"

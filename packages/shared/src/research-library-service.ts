@@ -106,6 +106,19 @@ export async function libraryWrite<T>(
         "library:" + scope.spaceId,
       ]);
       await requireLibraryScope(c, user, scope, true);
+      const provenanceKind =
+        action === "merge"
+          ? "merge"
+          : action.startsWith("edit:")
+            ? "edit"
+            : action === "copy"
+              ? "copy"
+              : action === "import"
+                ? "import"
+                : "";
+      await c.query("SELECT set_config('axiom.reference_operation',$1,true)", [
+        provenanceKind,
+      ]);
       return work(c);
     },
   );

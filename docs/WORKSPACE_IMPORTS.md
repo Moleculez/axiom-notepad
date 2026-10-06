@@ -3,7 +3,7 @@
 ## Everyday workflow
 
 Open a workspace's **Files** view or **Explorer → Add files**. Choose **Import
-Markdown…**, **Import folder…** or **Import ZIP…**. Folder context menus and
+Markdown…**, **Import Canvas…**, **Import folder…** or **Import ZIP…**. Folder context menus and
 Search & commands open the same dialog in the current destination.
 
 1. Choose a collection and an editable destination. Review its workspace audience
@@ -20,7 +20,13 @@ Search & commands open the same dialog in the current destination.
    in one database transaction, then the dialog offers **Open folder / file**.
 
 `.md` and `.markdown` become native, editable collaborative notes, including empty
-notes. Other files become immutable attachment versions with byte-detected MIME,
+notes. `.canvas` becomes a native board with fresh card/connection IDs and a visible
+exact-byte supporting original. A declared [portable collection](PORTABLE_COLLECTIONS.md)
+also restores native math/text/image projects and safe metadata. Plain `.tex`/`.txt`
+files without a collection declaration remain attachments; tools are not guessed
+from arbitrary configuration. Invalid Canvas or declared native project contents
+require **Keep as attachment** or **Skip**; unsafe manifests/versions are rejected.
+Other files become immutable attachment versions with byte-detected MIME,
 checksums and the existing protected viewers. Folder structure is retained. ZIP
 and dropped-folder imports preserve known empty directories; browser folder
 pickers cannot report them. Imports do not restore accounts, permissions, history,
@@ -44,7 +50,8 @@ through the same native persistence path as ordinary notes.
 Missing, ambiguous or skipped targets are not guessed: their source is retained
 and unresolved links appear in the completion receipt. Extensionless note links
 resolve only when exactly one included `.md`/`.markdown` target matches. Absolute
-paths, external URLs and existing UUID links are unchanged. Relative link query
+paths and external URLs are unchanged. Original UUID/version links bind only to
+included manifest identities; other UUID links are retained and reported. Relative link query
 parameters are not imported; hash fragments are retained. Viewer interpretation
 of attachment fragments depends on that viewer. A link never grants access.
 
@@ -74,16 +81,16 @@ blobs are cleaned by guarded worker jobs, not by deleting shared evidence.
 
 ## Bounds and archive safety
 
-| Bound | Current limit |
-| --- | --- |
-| Files and folders per collection | 2,000 combined |
-| Folder nesting | 32 levels |
-| Supporting file | 1,000,000,000 bytes (decimal 1 GB) |
-| Markdown | 1,000,000 characters per note; 25 MB of source per collection |
-| ZIP | 50 MB compressed; 100 MB expanded; 1,000 archive entries |
-| File names / relative paths | 200 / 4,096 characters |
-| Transfer part | 8 MiB; SHA-256 checked on both sides |
-| Preparation lifetime | Seven days |
+| Bound                            | Current limit                                                           |
+| -------------------------------- | ----------------------------------------------------------------------- |
+| Files and folders per collection | 2,000 combined                                                          |
+| Folder nesting                   | 32 levels                                                               |
+| Supporting file                  | 1,000,000,000 bytes (decimal 1 GB)                                      |
+| Native source                    | 1,000,000 characters per document; 5,000,000 for Canvas; 25 MB combined |
+| ZIP                              | 50 MB compressed; 100 MB expanded; 1,000 archive entries                |
+| File names / relative paths      | 200 / 4,096 characters                                                  |
+| Transfer part                    | 8 MiB; SHA-256 checked on both sides                                    |
+| Preparation lifetime             | Seven days                                                              |
 
 Markdown must be valid UTF-8 and cannot contain binary nulls. Paths normalize to
 Unicode NFC; absolute paths, traversal, backslashes, control characters, ambiguous
@@ -115,6 +122,11 @@ The inventory digest is SHA-256 of concatenated lowercase SHA-256 **part digests
 the whole-file SHA-256. The worker independently verifies actual stored bytes and
 records the true whole-file checksum for published attachments.
 
+Portable manifests additionally declare expected whole-file SHA-256 for sources
+and assets. Local inspection and server staging both verify these values; they
+do not replace the separate part-digest identity or grant access. Checksumming of
+duplicate Canvas/original blobs is reused within one worker inventory.
+
 The API lives below `/api/v1/spaces/:spaceId/imports`: read-only `POST /preview`,
 `POST /` with `{id, manifest, fingerprint}`, owned batch status, explicit `POST
 /:id/recheck`, `POST /:id/finalize` and `POST /:id/cancel`. Entry preparation,
@@ -141,7 +153,8 @@ checks private preparation, native persistence, hierarchy/links, retry/resume,
 auth/quota changes, expiry, actual database rollback, cancellation races and
 workspace-purge protection/cleanup. Folder-only private preparation protects
 workspace removal too; completed/cancelled receipts do not retain a deleted scope.
-`npm run test:imports` targets disposable ports **3004/1236**, with Chromium,
+`npm run plugins:staging -- test --config imports.config.ts` supplies the guarded
+database/storage identity for disposable ports **3004/1236**, with Chromium,
 Firefox and WebKit. `tests/workspace-import*.test.ts` exercises pure contracts,
 source-span rewriting and ZIP/inventory rejection. See the dated
 [verification record](VERIFICATION.md); these commands are not authorization to

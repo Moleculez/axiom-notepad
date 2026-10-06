@@ -10,6 +10,7 @@ import {
   Settings2,
 } from "lucide-react";
 import type { PlanningAnalysis } from "@axiom/shared/planning-analysis";
+import {fieldSummaryText,type TaskField} from "@axiom/shared/planning-lab";
 import {
   addDays,
   dayNumber,
@@ -129,6 +130,7 @@ export default function PlanningGantt({
   onSelect = () => {},
   grouping = "parent",
   columns = [],
+  customFields=[],people=[],
   showDependencies = true,
   showBaseline = true,
   showCritical = true,
@@ -137,6 +139,7 @@ export default function PlanningGantt({
 }: {
   spaceId?: string;
   tasks: PlanningTask[];
+  customFields?:TaskField[];people?:Array<{id:string;name:string}>;
   milestones: Milestone[];
   calendar: PlanningCalendar;
   readOnly: boolean;
@@ -260,7 +263,7 @@ export default function PlanningGantt({
       (Number.isFinite(high) ? high : first + 30) + 21,
     ),
     dayWidth = fit ?? scales[zoom] ?? 14,
-    labelWidth = tableWidth + columns.length * 110,
+    labelWidth = tableWidth + (columns.length+customFields.length) * 110,
     timelineWidth = (last - first + 1) * dayWidth;
   const start = Math.max(
       0,
@@ -584,6 +587,7 @@ export default function PlanningGantt({
               {columns.map((c) => (
                 <span key={c}>{columnLabels[c]}</span>
               ))}
+              {customFields.map(f=><span key={f.id} title={f.name}>{f.name}</span>)}
               <div
                 className="gantt-column-resizer"
                 role="separator"
@@ -936,6 +940,7 @@ export default function PlanningGantt({
                         : "—"}
                     </span>
                   ))}
+                  {customFields.map(f=><span className="gantt-data-cell" key={f.id} title={task?fieldSummaryText(f,task.field_summaries,people):""}>{task?fieldSummaryText(f,task.field_summaries,people):""}</span>)}
                 </div>
                 {base?.start_on && base.due_on && (
                   <span

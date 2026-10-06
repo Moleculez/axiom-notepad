@@ -37,21 +37,30 @@ export function planningState(params: URLSearchParams): PlanningViewState {
     zoom: params.get("zoom") ?? "week",
     grouping: params.get("grouping") ?? "parent",
     columns: params.get("columns")?.split(",").filter(Boolean) ?? [],
+    customColumns:
+      params.get("includeFields")?.split(",").filter(Boolean) ?? [],
     showDependencies: params.get("dependencies") !== "0",
     showBaseline: params.get("baseline") !== "0",
     showCritical: params.get("critical") !== "0",
-    filters: Object.fromEntries(
-      [
-        "q",
-        "status",
-        "priority",
-        "assignee",
-        "milestone",
-        "risk",
-        "sort",
-        "deleted",
-      ].flatMap((key) => (params.get(key) ? [[key, params.get(key)]] : [])),
-    ),
+    ...{
+      filters: {
+        ...Object.fromEntries(
+          [
+            "q",
+            "status",
+            "priority",
+            "assignee",
+            "milestone",
+            "risk",
+            "sort",
+            "deleted",
+          ].flatMap((key) => (params.get(key) ? [[key, params.get(key)]] : [])),
+        ),
+        fieldFilters: JSON.parse(params.get("fieldFilters") ?? "[]"),
+        sortField: params.get("sortField") ?? undefined,
+        sortDirection: params.get("sortDirection") ?? undefined,
+      },
+    },
   });
 }
 export function viewChanges(
@@ -70,7 +79,17 @@ export function viewChanges(
         "deleted",
       ].map((key) => [key, null]),
     ),
-    ...state.filters,
+    ...Object.fromEntries(
+      Object.entries(state.filters)
+        .filter(([key]) => key !== "fieldFilters")
+        .map(([key, value]) => [key, value == null ? null : String(value)]),
+    ),
+    fieldFilters: state.filters.fieldFilters?.length
+      ? JSON.stringify(state.filters.fieldFilters)
+      : null,
+    sortField: state.filters.sortField ?? null,
+    sortDirection: state.filters.sortDirection ?? null,
+    includeFields: state.customColumns.join(",") || null,
     view: state.view,
     zoom: state.zoom,
     grouping: state.grouping,

@@ -11,6 +11,7 @@ apps/web/          Next.js routes, first-party UI and browser adapters
 apps/sync/         Single-process collaborative room service
 packages/editor/   Canonical-source editing/projection adapters
 packages/markdown/ Axiom Markdown parser and renderers
+packages/mindmap/  Native Markdown hierarchy, guarded source commands, layout and export
 packages/shared/   Server services, authorization, migrations and shared contracts
 packages/plugin-sdk/ Typed browser extension API (no server execution)
 examples/plugins/  First-party extension authoring examples
@@ -43,8 +44,29 @@ npm run docs:check
 Build/test deployment separately from an active development build. Browser mutation
 tests require an isolated database, attachment root, origin and synchronization port.
 See [verification](docs/VERIFICATION.md); a passing unit suite is not browser acceptance.
+The [mind-map contract](docs/MINDMAP.md) documents shared production/showcase
+bindings, source-preserving moves, bounded exports and its disposable SQL/browser
+gates. A presentation view must not create a second collaborative document.
+The [reliability runner](docs/RELIABILITY.md) builds and exercises a fresh
+authenticated test installation without loading `.env`, then rehearses sync crash
+recovery and a real paired database/blob restore. Run `npm run verify:reliability`;
+never set a mutation suite's URL to 8080. Bare E2E configs now fail closed without
+both an isolated target identity and a matching server health attestation.
 Record actual results, skipped gates and build identity. Retain failure evidence until
 the cause is resolved. Keep private reports, `.env*`, backups and datasets out of Git.
+
+For Stage 3–4 work, use `npm run verify:stages:acceptance` from a Node 24 local
+terminal. The [stage acceptance contract](docs/STAGE_ACCEPTANCE.md) covers all
+desktop engines, real worker races, populated recovery and historical same-host
+scale measurements. A focused/preflight run or generated screenshot is not full
+acceptance; record operator review separately. The coordinator never upgrades or
+restarts the working installation.
+
+For Stage 5 file interoperability, use [portable collections](docs/PORTABLE_COLLECTIONS.md)
+and `npm run verify:collections:migration`. Import/export and queued extension
+expiry tests use the guarded extension profile. Do not migrate working data or
+enable third-party gates to obtain a passing test; independent security review
+and full desktop acceptance remain separate.
 
 For changes involving the current database sequence, run the non-destructive
 fresh/upgrade rehearsal against local PostgreSQL:
@@ -65,7 +87,7 @@ npm run plugins:staging -- migrate
 npm run plugins:staging -- build
 npm run plugins:staging -- web
 # In another terminal, with the isolated profile running on 3004:
-npm run test:planning
+npm run plugins:staging -- test --config planning.config.ts
 ```
 
 The browser fixtures use only the fictional extension-staging account and the
@@ -107,7 +129,7 @@ and dark artwork visually, including reduced-size readability, before committing
   identity, default-off gates, opaque workers, native declarative panels and
   human-reviewed writes. Never import package code into the app/server realm,
   grant same-origin privileges, add unreviewed CSS/HTML or expose native Apply to
-  a worker. Run `npm run plugins:staging` / `npm run test:plugins` only against
+  a worker. Run `npm run plugins:staging -- test --config plugins.config.ts` only against
   the guarded isolated profile. Package examples with `npm run plugin:pack`.
 - Do not claim upstream editor internals are first-party code. Retain third-party
   licenses/notices and document actual dependency boundaries.

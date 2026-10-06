@@ -1,10 +1,12 @@
 /** Deterministic, loopback-only provider for isolated 3004 acceptance. Never a deployed service. */
 import { createServer } from "node:http";
+import { createHash } from "node:crypto";
 import { assistantTaskSchema } from "../../packages/shared/src/assistant";
 let calls = 0;
+const requests: { hash: string; maxOutputTokens: number }[] = [];
 const server = createServer(async (req, res) => {
   if (req.url === "/calls") {
-    res.end(JSON.stringify({ calls }));
+    res.end(JSON.stringify({ calls, requests }));
     return;
   }
   if (req.method !== "POST" || req.url !== "/v1/chat/completions") {
@@ -25,29 +27,146 @@ const server = createServer(async (req, res) => {
   }
   calls++;
   const parsed = JSON.parse(body);
-  const initial = parsed.messages.filter((m:any)=>m.role === "user").map((m:any)=>{try{return JSON.parse(m.content);}catch{return {};}}).findLast((m:any)=>m.mode && m.request);
+  requests.push({
+    hash: createHash("sha256")
+      .update(JSON.stringify(parsed.messages))
+      .digest("hex"),
+    maxOutputTokens: parsed.max_tokens,
+  });
+  const initial = parsed.messages
+    .filter((m: any) => m.role === "user")
+    .map((m: any) => {
+      try {
+        return JSON.parse(m.content);
+      } catch {
+        return {};
+      }
+    })
+    .findLast((m: any) => m.mode && m.request);
   if (initial) {
-    const last = JSON.parse(parsed.messages.at(-1).content),spaceId=initial.primaryWorkspace;
-    const common=(key:string,action:string,title:string,payload:unknown)=>({key,action,title,spaceId,payload,explanation:"Fixture proposal; review before applying.",dependsOn:[]});
-    let actions:unknown[]=[];
-    let reads:unknown[]=[];
-    let done=true;
-    if(initial.discover && !last.toolResults) {reads=[{kind:"search",query:""},{kind:"planning",id:spaceId}];done=false;}
-    else if(initial.mode === "prepare") {
-      if(/productivity-edit/.test(initial.request)) {
-        const e=initial.evidence.find((e:any)=>e.kind==="document");
-        actions=[{...common("edit","document_edit","Clarify research note",{noteId:e.id,generation:e.generation,expectedHash:e.hash,source:e.source+"\n\nReviewed productivity edit.\n"}),targetId:e.id}];
-      } else actions=[
-        common("folder","folder_create","Create experiment folder",{kind:"folder",name:"Productivity experiment"}),
-        common("brief","file_create","Create research brief",{type:"markdown",name:"Research brief",parentId:"@{folder}",source:"# Research brief\n\nVerify the model assumptions.\n"}),
-        common("milestone","workspace_milestone_create","Define review milestone",{title:"Review evidence",dueOn:null}),
-        common("task","workspace_task_create","Review assumptions",{title:"Review assumptions",resourceIds:["@{brief}"],milestoneId:"@{milestone}",estimateHours:2}),
-        common("subtask","workspace_task_create","Record limitations",{title:"Record limitations",parentId:"@{task}",resourceIds:["@{brief}"]}),
+    const last = JSON.parse(parsed.messages.at(-1).content),
+      spaceId = initial.primaryWorkspace;
+    const common = (
+      key: string,
+      action: string,
+      title: string,
+      payload: unknown,
+    ) => ({
+      key,
+      action,
+      title,
+      spaceId,
+      payload,
+      explanation: "Fixture proposal; review before applying.",
+      dependsOn: [],
+    });
+    let actions: unknown[] = [];
+    let reads: unknown[] = [];
+    let done = true;
+    if (initial.discover && !last.toolResults) {
+      reads = [
+        { kind: "search", query: "" },
+        { kind: "planning", id: spaceId },
       ];
+      done = false;
+    } else if (initial.mode === "prepare") {
+      if (/productivity-edit/.test(initial.request)) {
+        const e = initial.evidence.find((e: any) => e.kind === "document");
+        actions = [
+          {
+            ...common("edit", "document_edit", "Clarify research note", {
+              noteId: e.id,
+              generation: e.generation,
+              expectedHash: e.hash,
+              source: e.source + "\n\nReviewed productivity edit.\n",
+            }),
+            targetId: e.id,
+          },
+        ];
+      } else
+        actions = [
+          common("folder", "folder_create", "Create experiment folder", {
+            kind: "folder",
+            name: "Productivity experiment",
+          }),
+          common("brief", "file_create", "Create research brief", {
+            type: "markdown",
+            name: "Research brief",
+            parentId: "@{folder}",
+            source: "# Research brief\n\nVerify the model assumptions.\n",
+          }),
+          common(
+            "milestone",
+            "workspace_milestone_create",
+            "Define review milestone",
+            { title: "Review evidence", dueOn: null },
+          ),
+          common("task", "workspace_task_create", "Review assumptions", {
+            title: "Review assumptions",
+            resourceIds: ["@{brief}"],
+            milestoneId: "@{milestone}",
+            estimateHours: 2,
+          }),
+          common("subtask", "workspace_task_create", "Record limitations", {
+            title: "Record limitations",
+            parentId: "@{task}",
+            resourceIds: ["@{brief}"],
+          }),
+        ];
     }
-    if(/productivity-slow/.test(initial.request)) await new Promise(r=>setTimeout(r,6000));
-    const content=/productivity-malformed/.test(initial.request)?"Plain inert response":JSON.stringify({answer:"A private productivity draft is ready for review; nothing has been applied.",reads,actions,done});
-    res.setHeader("content-type","application/json");res.end(JSON.stringify({choices:[{finish_reason:"stop",message:{content}}],usage:{prompt_tokens:100,completion_tokens:100}}));return;
+    if (/productivity-evidence/.test(initial.request)) {
+      actions = [];
+      if (!last.toolResults) {
+        reads = [
+          { kind: "document", id: /[a-f0-9-]{36}/.exec(initial.request)![0] },
+        ];
+        done = false;
+      } else {
+        reads = [];
+        done = true;
+      }
+    }
+    const cited = last.toolResults?.find((r: any) => r.result?.key)?.result;
+    if (/productivity-unknown/.test(initial.request))
+      actions = [
+        {
+          ...common("unknown", "file_create", "Inert invented source", {
+            type: "markdown",
+            name: "Inert",
+            source: "Invented [[Eunknown]]",
+          }),
+          evidenceKeys: ["Eunknown"],
+        },
+      ];
+    if (/productivity-slow/.test(initial.request))
+      await new Promise((r) => setTimeout(r, 6000));
+    if (/productivity-disconnect/.test(initial.request)) {
+      req.socket.destroy();
+      return;
+    }
+    const content = /productivity-malformed/.test(initial.request)
+      ? "Plain inert response"
+      : JSON.stringify({
+          answer:
+            "A private productivity draft is ready for review; nothing has been applied." +
+            (cited ? ` [[${cited.key}]]` : "") +
+            (/productivity-unknown/.test(initial.request)
+              ? " [[Eunknown]]"
+              : ""),
+          reads,
+          actions,
+          done,
+        });
+    res.setHeader("content-type", "application/json");
+    res.end(
+      JSON.stringify({
+        choices: [{ finish_reason: "stop", message: { content } }],
+        ...(/productivity-missing-usage/.test(initial.request)
+          ? {}
+          : { usage: { prompt_tokens: 100, completion_tokens: 100 } }),
+      }),
+    );
+    return;
   }
   const last = JSON.parse(parsed.messages.at(-1).content),
     e = last.evidence[0];

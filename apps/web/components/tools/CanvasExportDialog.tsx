@@ -121,13 +121,14 @@ export default function CanvasExportDialog({
         downloadText(canvasMarkdown(data), `${base}.md`);
         return;
       }
-      if (format === "zip") {
-        setProgress("Queueing portable bundle…");
+      if (format === "zip" || format === "collection") {
+        setProgress("Queueing collection…");
         const job = await post("exports", {
           mutationId: crypto.randomUUID(),
           spaceId,
           resourceIds: [resourceId],
           canvasSnapshot: data,
+          profile: format === "collection" ? "portable" : "standard",
         });
         setJob(job.id);
         return;
@@ -268,7 +269,10 @@ export default function CanvasExportDialog({
             <option value="pdf">PDF</option>
             <option value="canvas">JSON Canvas</option>
             <option value="markdown">Markdown outline</option>
-            <option value="zip">Portable ZIP bundle</option>
+            <option value="collection">
+              Reimportable research collection (ZIP)
+            </option>
+            <option value="zip">Standard Canvas bundle (ZIP)</option>
           </NativeSelect>
         </label>
         <label>
@@ -358,9 +362,11 @@ export default function CanvasExportDialog({
         {data.nodes.length} cards ·{" "}
         {visual
           ? `${Math.round(bounds.width * scale)} × ${Math.round(bounds.height * scale)} px. Webpages and media export as static cards. SVG keeps connection geometry, not editable rich text.`
-          : format === "zip"
-            ? "Includes a lossless canvas snapshot, portable .canvas, readable sources, accessible linked assets, and a checksummed manifest. Latest dependencies are captured when the job runs."
-            : "Source-only export. Linked assets are not embedded; choose ZIP to include them."}
+          : format === "collection"
+            ? "Native Canvas and accessible linked assets, safe metadata and checksums. Up to 50 MB compressed, 100 MB expanded, 25 MB of source and 1,000 entries. Import ZIP to review and restore. Original Canvas source is retained on import."
+            : format === "zip"
+              ? "Includes a lossless canvas snapshot, portable .canvas, readable sources, accessible linked assets, and a checksummed manifest. Latest dependencies are captured when the job runs."
+              : "Source-only export. Linked assets are not embedded; choose ZIP to include them."}
       </HelpText>
       <ErrorNotice message={error || jobs.error || currentJob?.error} />
       {warnings.length > 0 && (
@@ -414,7 +420,9 @@ export default function CanvasExportDialog({
             )}
             <Button className="button primary" onClick={() => void run()}>
               <Download size={15} />
-              {format === "zip" ? "Prepare bundle" : "Export"}
+              {format === "zip" || format === "collection"
+                ? "Prepare bundle"
+                : "Export"}
             </Button>
           </>
         )}

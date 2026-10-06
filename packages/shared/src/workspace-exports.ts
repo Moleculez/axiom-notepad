@@ -22,6 +22,17 @@ import { rewriteLinks } from "./archive";
 import { documentExtension } from "./document-format";
 import { canvasSchema, parseCanvas } from "./canvas";
 import { buildCanvasBundle } from "./canvas-bundle";
+import { buildPortableCollection } from "./portable-collection-worker";
+import { latexSubmissionSchema } from "./latex-export";
+import {
+  prepareLatexExport,
+  authorizeLatexDependencies,
+} from "./latex-export-api";
+import {
+  buildLatexBundle,
+  validateDiagramPayload,
+  type FrozenLatexExport,
+} from "./latex-export-worker";
 import {
   markdownExportAssetIds,
   markdownExportSnapshotSchema,
@@ -65,8 +76,10 @@ export async function workspaceExportsApi(
         mutationId: uuid.default(() => randomUUID()),
         spaceId: uuid,
         resourceIds: z.array(uuid).min(1).max(1000),
+        profile: z.enum(["standard", "portable"]).default("standard"),
         canvasSnapshot: canvasSchema.optional(),
         markdownSnapshot: markdownExportSnapshotSchema.optional(),
+        latex: latexSubmissionSchema.optional(),
       })
       .parse(await request.json());
     const result = await workspaceMutation(
@@ -91,6 +104,60 @@ export async function workspaceExportsApi(
             429,
             "Wait for your running exports to finish before starting another.",
           );
+        let latex: FrozenLatexExport | undefined;
+        if (input.latex) {
+          if (input.profile === "portable")
+            throw new HttpError(
+              400,
+              "LaTeX submission projects use their dedicated export profile.",
+            );
+          if (
+            !input.markdownSnapshot ||
+            input.canvasSnapshot ||
+            input.resourceIds.length !== 1
+          )
+            throw new HttpError(
+              400,
+              "Choose one Markdown snapshot for a LaTeX project.",
+            );
+          const preview = await prepareLatexExport(
+            userId,
+            input.resourceIds[0],
+            input.markdownSnapshot,
+            input.latex.options,
+            client,
+          );
+          if (preview.fingerprint !== input.latex.fingerprint)
+            throw new HttpError(
+              409,
+              "The references or attachments changed after review. Refresh the export.",
+            );
+          if (preview.diagnostics.some((d) => d.severity === "error"))
+            throw new HttpError(
+              400,
+              "Resolve export errors before preparing the project.",
+            );
+          if (
+            (preview.diagnostics.some((d) => d.severity === "warning") ||
+              preview.diagrams.some(
+                (diagram) =>
+                  !input.latex!.diagrams.some(
+                    (raster) => raster.from === diagram.from,
+                  ),
+              )) &&
+            !input.latex.acknowledgeWarnings
+          )
+            throw new HttpError(
+              400,
+              "Review and acknowledge the export warnings first.",
+            );
+          validateDiagramPayload(preview, input.latex.diagrams);
+          latex = {
+            preview,
+            options: input.latex.options,
+            diagrams: input.latex.diagrams,
+          };
+        }
         const { rows: roots } = await client.query(
           "SELECT id FROM resources WHERE id=ANY($1::uuid[]) AND space_id=$2 AND deleted_at IS NULL",
           [input.resourceIds, input.spaceId],
@@ -148,13 +215,16 @@ export async function workspaceExportsApi(
             input.canvasSnapshot || input.markdownSnapshot
               ? input.resourceIds
               : resources.map((r) => r.id),
-            JSON.stringify(
-              input.canvasSnapshot
-                ? { canvasSnapshot: input.canvasSnapshot }
-                : input.markdownSnapshot
-                  ? { markdownSnapshot: input.markdownSnapshot }
-                  : {},
-            ),
+            JSON.stringify({
+              profile: input.profile,
+              ...(latex
+                ? { markdownSnapshot: input.markdownSnapshot, latex }
+                : input.canvasSnapshot
+                  ? { canvasSnapshot: input.canvasSnapshot }
+                  : input.markdownSnapshot
+                    ? { markdownSnapshot: input.markdownSnapshot }
+                    : {}),
+            }),
           ],
         );
         await enqueueJob("export", "export:" + row.id, { id: row.id }, client);
@@ -171,6 +241,8 @@ export async function workspaceExportsApi(
     if (!record) throw new HttpError(404, "Export unavailable.");
     if (action === "download" && ["GET", "HEAD"].includes(request.method)) {
       await authorizeExport(userId, record);
+      if (record.options?.latex)
+        await authorizeLatexDependencies(userId, record.options.latex.preview);
       if (record.status !== "ready")
         throw new HttpError(409, "The export is not ready yet.");
       return fileResponse(
@@ -244,8 +316,21 @@ export async function buildWorkspaceExport(id: string) {
       "SELECT pg_advisory_lock_shared(hashtext('axiom:blob-backup'))",
     );
     await client.query("BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY");
-    if (record.options?.canvasSnapshot) {
-      const bundle = await buildCanvasBundle(client, record);
+    if (
+      record.options?.profile === "portable" ||
+      record.options?.canvasSnapshot ||
+      record.options?.latex
+    ) {
+      const bundle =
+        record.options.profile === "portable"
+          ? await buildPortableCollection(client, record)
+          : record.options.latex
+            ? await buildLatexBundle(
+                client,
+                record.user_id,
+                record.options.latex,
+              )
+            : await buildCanvasBundle(client, record);
       key = randomUUID();
       const stored = await putGeneratedStream(
         key,
@@ -253,12 +338,17 @@ export async function buildWorkspaceExport(id: string) {
         "application/zip",
       );
       await client.query("COMMIT");
+      if (record.options.latex)
+        await authorizeLatexDependencies(
+          record.user_id,
+          record.options.latex.preview,
+        );
       await authorizeExport(record.user_id, {
         ...record,
         resource_ids: bundle.requiredIds,
       });
       await client.query(
-        "UPDATE workspace_exports SET status='ready',resource_ids=$2,storage_key=$3,bytes=$4,sha256=$5,error=NULL WHERE id=$1",
+        "UPDATE workspace_exports SET status='ready',resource_ids=$2,storage_key=$3,bytes=$4,sha256=$5,error=NULL,options=CASE WHEN options ? 'latex' THEN jsonb_set(options,'{latex,diagrams}','[]'::jsonb) ELSE options END WHERE id=$1",
         [id, bundle.requiredIds, key, stored.bytes, stored.sha256],
       );
       key = null;

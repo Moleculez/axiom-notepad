@@ -41,11 +41,52 @@ test.each(["GET", "HEAD"])(
       "fetch",
       vi.fn(async () => Response.json({ ready: true })),
     );
+    // A canceled unsaved-work prompt returns focus to the retained page.
+    window.dispatchEvent(new Event("focus"));
     await expect(api("spaces")).resolves.toEqual({ ready: true });
     caller.abort();
     await expect(acknowledged).rejects.toMatchObject({ name: "AbortError" });
   },
 );
+
+test.each([
+  ["spaces", "GET"],
+  ["spaces", "HEAD"],
+  ["notes/example/sync-token", "POST"],
+])(
+  "navigation preparation also blocks a late %s %s request until the user returns",
+  async (path, method) => {
+    const fetcher = vi.fn(async () => Response.json({ ready: true }));
+    vi.stubGlobal("fetch", fetcher);
+    const { api } = await import("../apps/web/lib/client");
+    window.dispatchEvent(new Event("beforeunload"));
+    await expect(api(path, { method })).rejects.toMatchObject({
+      name: "AbortError",
+    });
+    expect(fetcher).not.toHaveBeenCalled();
+    // Ordinary writes, including final save operations, are not blocked.
+    await expect(api("spaces", { method: "POST" })).resolves.toEqual({
+      ready: true,
+    });
+    window.dispatchEvent(new Event("pointerdown"));
+    await expect(api(path, { method })).resolves.toEqual({ ready: true });
+    expect(fetcher).toHaveBeenCalledTimes(2);
+  },
+);
+
+test("interaction cannot revive a page that has already left", async () => {
+  const fetcher = vi.fn(async () => Response.json({ ready: true }));
+  vi.stubGlobal("fetch", fetcher);
+  const { api } = await import("../apps/web/lib/client");
+  window.dispatchEvent(new Event("beforeunload"));
+  window.dispatchEvent(new Event("pagehide"));
+  for (const name of ["focus", "pointerdown", "keydown"])
+    window.dispatchEvent(new Event(name));
+  await expect(api("spaces")).rejects.toMatchObject({ name: "AbortError" });
+  expect(fetcher).not.toHaveBeenCalled();
+  window.dispatchEvent(new Event("pageshow"));
+  await expect(api("spaces")).resolves.toEqual({ ready: true });
+});
 
 test("departing pages cancel requests and cannot launch delayed background reads", async () => {
   const fetcher = pendingFetch();

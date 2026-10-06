@@ -54,6 +54,7 @@ export default function ChangeSetReview({
     [confirmed, setConfirmed] = useState(false),
     [plan, setPlan] = useState(false);
   const alive = useRef(true),
+    recoveryReceipt = useRef(crypto.randomUUID()),
     selectedSignature = keys.join(","),
     reviewedSignature = useRef("");
   const accept = (next: WorkspaceChangeSet) => {
@@ -64,6 +65,7 @@ export default function ChangeSetReview({
   };
   useEffect(() => {
     alive.current = true;
+    recoveryReceipt.current = crypto.randomUUID();
     const controller = new AbortController();
     setValue(null);
     setEdited(null);
@@ -438,6 +440,40 @@ export default function ChangeSetReview({
             {running ? "Stop remaining actions" : "Dismiss"}
           </Button>
         )}
+        {value &&
+          ["partial", "cancelled"].includes(value.status) &&
+          value.actions.some(
+            (a) => a.selected && ["pending", "failed"].includes(a.state),
+          ) && (
+            <Button
+              type="button"
+              variant="primary"
+              pending={busy}
+              disabled={busy}
+              onClick={() =>
+                void run(async () => {
+                  const next: WorkspaceChangeSet = await post(
+                    `assistant/change-sets/${activeId}/reprepare`,
+                    {
+                      version: value.version,
+                      keys: value.actions
+                        .filter(
+                          (a) =>
+                            a.selected &&
+                            ["pending", "failed"].includes(a.state),
+                        )
+                        .map((a) => a.data.key),
+                      mutationId: recoveryReceipt.current,
+                    },
+                  );
+                  setActiveId(next.id);
+                  return next;
+                })
+              }
+            >
+              Review remaining changes
+            </Button>
+          )}
         <Button className="button secondary" onClick={onClose}>
           Close
         </Button>

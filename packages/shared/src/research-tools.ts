@@ -115,7 +115,7 @@ export function isProjectPng(bytes: Uint8Array, width: number, height: number) {
 }
 export type ToolProject = {
   resource_id: string;
-  kind: "math" | "image" | "canvas" | "text";
+  kind: "math" | "image" | "canvas" | "text" | "mindmap";
   parent_id?: string | null;
   name: string;
   space_id: string;

@@ -6,10 +6,11 @@ import { setTimeout as delay } from "node:timers/promises";
 import pg from "pg";
 import { HocuspocusProvider } from "@hocuspocus/provider";
 import * as Y from "yjs";
+import { verifyMutationTestServer } from "../../packages/shared/src/test-target";
 
 // Deliberate fault injection is permitted only against a local, disposable DB.
-const origin =
-  process.env.TEST_APP_URL ?? process.env.APP_URL ?? "http://localhost:8080";
+const isolated = await verifyMutationTestServer(process.env);
+const origin = isolated.origin;
 const database = new URL(process.env.DATABASE_URL!);
 for (const hostname of [new URL(origin).hostname, database.hostname])
   assert(
@@ -24,6 +25,10 @@ const syncDatabase = new URL(database);
 syncDatabase.username = role;
 syncDatabase.password = password;
 const port = Number(process.env.TEST_SYNC_PORT ?? 1235);
+assert(
+  ![1234, 1236].includes(port),
+  "Fault injection requires its own unused synchronization port.",
+);
 let processHandle: ChildProcess | undefined;
 let groupId: string | undefined;
 let cookie = "";
@@ -159,8 +164,8 @@ async function save(expected: "persisted" | "save-error") {
 
 try {
   await api("/api/auth/sign-in/email", {
-    email: "researcher@axiom.local",
-    password: "AxiomResearch2026!",
+    email: process.env.TEST_OWNER_EMAIL ?? "researcher@axiom.local",
+    password: process.env.TEST_OWNER_PASSWORD ?? "AxiomResearch2026!",
   });
   groupId = (
     await api("/api/v1/groups", {

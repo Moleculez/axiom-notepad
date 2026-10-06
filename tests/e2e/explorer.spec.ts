@@ -329,7 +329,9 @@ test("project roles protect listings, REST mutations, tasks and inherited resour
           data: { version: task.version, status: "done" },
         })
       ).status(),
-    ).toBe(404);
+    ).toBe(403);
+    // Read access remains, but the forbidden update must not have changed it.
+    expect((await api(member.request, `tasks/${task.id}`)).status).toBe("todo");
     await api(owner.request, `projects/${project.id}/members`, {
       userId: memberId,
       remove: true,

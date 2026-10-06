@@ -2,9 +2,8 @@
 
 Markdown, Math Studio and Image Studio share an in-file history workspace. It keeps
 the editor mounted but inactive beneath the comparison: inspecting history never
-rewrites the accepted document. This is a controlled-beta review workflow, not full
-Google Docs tracked-changes or Git branching parity. See [executed checks and
-remaining acceptance gates](VERIFICATION.md).
+rewrites the accepted document. This is a controlled-beta review workflow.
+See [executed checks and remaining acceptance gates](VERIFICATION.md).
 
 ## Compare and recover
 
@@ -78,11 +77,17 @@ retain their existing automatic outbox behavior.
 
 Proposals are shared with permitted collaborators, not private notes. The private
 part is their separate editing projection before publication. Review cards display
-insertions/deletions; accepted pages do not yet show a Google Docs-style inline
-tracked-changes overlay. Large cards abbreviate their preview and offer full JSON
+insertions/deletions; accepted pages do not yet show an inline tracked-changes
+overlay. Large cards abbreviate their preview and offer full JSON
 export. Image pixels use versions, not concurrent suggestions or collaborative paint.
 
 ## Research reviews and changes since a visit
+
+Markdown paper reviews can freeze the selected milestone's bibliography and exact
+figure versions. Review inbox summaries load full evidence only when expanded;
+later library edits never substitute newer records. Manuscript milestones and
+reference-history events also support same-workspace follow-up tasks without
+copying private text. See [research-writing boundaries](RESEARCH_WRITING.md).
 
 **Request review** assigns a saved Markdown/math milestone or immutable image version
 to a permitted collaborator with a message. **Review inbox** collects assignments,

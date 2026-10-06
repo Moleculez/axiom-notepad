@@ -23,6 +23,7 @@ const structural = {
   closeAll: "M4 8H2V2h16v2M6 6h16v16H6zM11 11l6 6m0-6-6 6",
   file: "M5 2h9l5 5v15H5zM14 2v6h5",
   canvas: "M2 3h8v6H2zM14 15h8v6h-8zM6 9v9h8M15 3h7v6h-7z",
+  graph: "M2 9h7v6H2zM15 2h7v5h-7zM15 10h7v5h-7zM15 18h7v5h-7zM9 12h3M12 4.5v16M12 4.5h3M12 12.5h3M12 20.5h3",
   source: "M8 5l-6 7 6 7M16 5l6 7-6 7M14 2l-4 20",
   chevronRight: "m9 5 7 7-7 7",
   link: "M10 13a5 5 0 0 0 7 0l4-4a5 5 0 0 0-7-7l-2 2M14 11a5 5 0 0 0-7 0l-4 4a5 5 0 0 0 7 7l2-2",

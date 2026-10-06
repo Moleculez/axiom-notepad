@@ -14,6 +14,8 @@ Third-party imports remain separately disabled by default.
 Apply numbered migrations through the normal backed-up upgrade process before
 running the new server. Migrations 40 and 41 add package/grant/activity records and
 a one-version configuration rollback slot; they do not rewrite research files.
+Migration 48 adds 30-day grant/approval expiry, including a full upgrade grace for
+existing consent. It does not enable an extension or change an existing revision.
 See [deployment](DEPLOYMENT.md) and [verification](VERIFICATION.md).
 
 ```dotenv
@@ -36,6 +38,7 @@ Markdown editing and downloaded-file behavior remain independent.
 2. Enable the package for your own account. Configure any required fields.
 3. Select one active workspace, review the requested capabilities and explicitly
    grant the subset you want. A grant is tied to its package hash and revision.
+   It expires after **30 days**, or earlier when its required group approval expires.
 4. For team/project workspaces a group manager must first approve that **exact
    hash and workspace set**. Approval does not enable a member's installation,
    consent on their behalf or grant the manager access to restricted content.
@@ -48,6 +51,13 @@ context and the assistant. Switching inspector owner retains drafts; **Show
 extension inspector** returns to the retained panel. Stop/Close ends its worker.
 Restart is explicit and reloads the panel, not an automatic recovery attempt.
 
+Settings shows effective expiry and **Renew permissions** / **Renew approval**.
+Renewal requires the existing exact-hash scope/capability review and advances the
+revision fence. Expired approvals cannot grant new member permissions. Renewal
+does not revive stale proposals, retry queued work or restart a stopped worker.
+The host stops idle/running workers at effective expiry; each broker/review/queued
+write also checks fresh server expiry. A migration rerun never extends old consent.
+
 Configuration drafts survive package/category switches. Save uses the revision
 on which editing began; a concurrent change displays a correction message rather
 than silently overwriting the draft. Leaving settings uses one shared unsaved-form
@@ -58,11 +68,11 @@ change document text before a reviewed action is applied.
 
 ## Shipped research pilots
 
-| Pilot | Behavior | Requested access |
-| --- | --- | --- |
-| Research Journal | Daily, laboratory and meeting templates; choose a folder, edit Markdown and prepare a new-file proposal | File metadata; propose Markdown files |
-| Document Health | Saved-snapshot findings for unresolved note/citation links, repeated equation/figure labels and images without descriptions | File metadata, saved documents, references |
-| Planning Brief | Current task counts, blocked/overdue work and upcoming milestones; prepare a Markdown report | Planning snapshots; propose Markdown files |
+| Pilot            | Behavior                                                                                                                    | Requested access                           |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| Research Journal | Daily, laboratory and meeting templates; choose a folder, edit Markdown and prepare a new-file proposal                     | File metadata; propose Markdown files      |
+| Document Health  | Saved-snapshot findings for unresolved note/citation links, repeated equation/figure labels and images without descriptions | File metadata, saved documents, references |
+| Planning Brief   | Current task counts, blocked/overdue work and upcoming milestones; prepare a Markdown report                                | Planning snapshots; propose Markdown files |
 
 The health check is a bounded heuristic, not an exhaustive parser or formal proof
 checker. It skips simple fenced code and uses returned workspace/reference data;
@@ -124,15 +134,15 @@ the versioned broker.
 
 ### Capabilities and broker methods
 
-| Method | Capability | Result / boundary |
-| --- | --- | --- |
-| `resources.list({search?, kind?})` | `resources:read` | Up to 100 accessible metadata rows, excluding trashed ancestors; `hasMore` |
-| `documents.read({resourceId})` | `documents:read` | Saved canonical source, format, generation and SHA-256; current scope/access rechecked |
-| `references.list({})` | `references:read` | Up to 1,000 local reference metadata rows; `hasMore` |
-| `planning.read({})` | `planning:read` | Authoritative summary, planning revision, up to 1,000 tasks and 100 upcoming milestones; `hasMore` |
-| `storage.get({})` | `storage:private` | Account/installation-private JSON and its version |
-| `storage.set({version, data})` | `storage:private` | Compare-and-swap; stale versions return 409 without overwriting |
-| `changes.prepare({...})` | Per-action proposal capability | Private native change set; no automatic Apply |
+| Method                             | Capability                     | Result / boundary                                                                                  |
+| ---------------------------------- | ------------------------------ | -------------------------------------------------------------------------------------------------- |
+| `resources.list({search?, kind?})` | `resources:read`               | Up to 100 accessible metadata rows, excluding trashed ancestors; `hasMore`                         |
+| `documents.read({resourceId})`     | `documents:read`               | Saved canonical source, format, generation and SHA-256; current scope/access rechecked             |
+| `references.list({})`              | `references:read`              | Up to 1,000 local reference metadata rows; `hasMore`                                               |
+| `planning.read({})`                | `planning:read`                | Authoritative summary, planning revision, up to 1,000 tasks and 100 upcoming milestones; `hasMore` |
+| `storage.get({})`                  | `storage:private`              | Account/installation-private JSON and its version                                                  |
+| `storage.set({version, data})`     | `storage:private`              | Compare-and-swap; stale versions return 409 without overwriting                                    |
+| `changes.prepare({...})`           | Per-action proposal capability | Private native change set; no automatic Apply                                                      |
 
 Reads are never unrestricted queries or cross-workspace URLs. Runtime authority
 is sealed by the host; package-supplied grant IDs cannot choose another account
@@ -179,7 +189,7 @@ The native pipeline does not make every action reversible: new-file creation
 does not receive an invented automatic inverse. Existing document/task Undo
 requires current unchanged targets and the original still-valid extension grant.
 Disabling, updating, rollback, uninstall, grant revocation, approval withdrawal
-or workspace access loss blocks subsequent calls and queued actions. Reapproval
+expiry or workspace access loss blocks subsequent calls and queued actions. Reapproval
 does not resurrect old grants. Already committed work remains.
 
 **Settings → Extensions → Activity** shows bounded method/outcome metadata and
@@ -207,7 +217,14 @@ or execute package code in the iframe/app realm.
 
 The frame/worker inherit a strict CSP: no external scripts, connections, images,
 styles, frames, forms, objects or unsafe evaluation. Parent/source/origin/nonce and
-MessageChannel handshakes are checked; messages and native panels are validated.
+MessageChannel handshakes are checked. The trusted frame bounds and serializes
+worker JSON before forwarding strings into the app; native panels are then validated.
+Depth, nodes, sparse arrays, string encoding, rate, pending requests and total
+command transfer are checked. A new command resets transfer accounting only;
+duplicate/lifetime request identities and rate fences remain. Invalid data disposes
+the worker/ports, without applying changes or discarding drafts.
+Payload-free heartbeats still obey message/structure/rate limits but do not spend
+the command transfer budget while idle. A heartbeat carrying extra fields is rejected.
 Streaming network constructors and child-worker constructors are unavailable and
 non-replaceable before package evaluation. API v1 has no child-worker capability;
 this also provides defense in depth for older engines with known
@@ -224,15 +241,23 @@ a hard operating-system CPU or memory quota. Malicious clone floods,
 resource exhaustion and the wider dependency/browser attack surface still require
 independent adversarial review before broad third-party imports.
 
-| Budget | Limit |
-| --- | --- |
-| ZIP / expanded archive | 5 MiB / 10 MiB, up to 32 entries |
-| Imported package ownership | 32 packages / 64 MiB per account |
-| Broker message / saved document snapshot | 8 MiB / 1 MB |
-| Settings or private state | 256 KiB per installation |
-| Broker calls | 100/minute per account; 8 concurrent per runtime |
-| Native panel | 100 blocks, 2,000 table rows, 16,000 characters per field/text |
-| Command / heartbeat deadline | 20 seconds / approximately 6–7 seconds |
+| Budget                                   | Limit                                                          |
+| ---------------------------------------- | -------------------------------------------------------------- |
+| ZIP / expanded archive                   | 5 MiB / 10 MiB, up to 32 entries                               |
+| Imported package ownership               | 32 packages / 64 MiB per account                               |
+| Broker message / saved document snapshot | 8 MiB / 1 MB                                                   |
+| Settings or private state                | 256 KiB per installation                                       |
+| Broker calls                             | 100/minute per account; 8 concurrent per runtime               |
+| Relay transfer / rate                    | 32 MiB per command; 100 protocol messages/second               |
+| Relay structure                          | Depth 32; 100,000 nodes; 1,000 lifetime request IDs            |
+| Member consent / group approval          | 30 days; earlier effective expiry wins                         |
+| Native panel                             | 100 blocks, 2,000 table rows, 16,000 characters per field/text |
+| Command / heartbeat deadline             | 20 seconds / approximately 6–7 seconds                         |
+
+The first worker-to-frame structured clone still belongs to the browser and cannot
+be stopped by the relay validator. Size checks prevent the second oversized clone
+into the application, not allocation in the package's own realm. These budgets
+and CSP do not replace independent security review or hard operating-system quotas.
 
 Activity screens return only the newest 100 metadata rows; this is **not** a claim
 that older activity/package bytes are automatically deleted. Immutable packages
@@ -258,7 +283,7 @@ npx tsx scripts/verify/assistant-provider-fixture.ts  # terminal 3
 # Keep the worker stopped during deterministic queue-revocation API tests:
 npm run plugins:staging -- verify-plugins
 npm run plugins:staging -- worker  # terminal 4, for browser assistant acceptance
-npm run test:plugins
+npm run plugins:staging -- test --config plugins.config.ts
 ```
 
 Provision the account once on a fresh profile; do not

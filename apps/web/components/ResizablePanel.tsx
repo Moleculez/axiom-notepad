@@ -13,7 +13,12 @@ export default function ResizablePanel({
   hidden = false,
 }: {
   account: string;
-  name: "sidebar" | "document-context" | "research-details";
+  name:
+    | "sidebar"
+    | "document-context"
+    | "research-details"
+    | "mindmap-source"
+    | "mindmap-details";
   edge: "left" | "right";
   className: string;
   label: string;

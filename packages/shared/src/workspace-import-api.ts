@@ -35,6 +35,8 @@ import {
   rewriteImportLinks,
   type ImportLinkTarget,
 } from "./workspace-import-links";
+import { rewriteImportedCanvas } from "./canvas-import";
+import { portableToolSettings } from "./portable-collection";
 
 const uuid = z.uuid(),
   hash = (value: unknown) =>
@@ -182,6 +184,7 @@ async function previewImport(
     created = entries.filter((e) => e.disposition === "create");
   return {
     entries,
+    diagnostics: manifest.diagnostics,
     fingerprint: hash({
       manifest,
       entries,
@@ -269,6 +272,7 @@ async function serializeBatch(batch: BatchRow): Promise<WorkspaceImportBatch> {
     status: batch.status,
     error: batch.error,
     expiresAt: batch.expires_at.toISOString(),
+    diagnostics: batch.manifest.diagnostics,
     result: batch.result,
     entries: batch.plan.map((entry) => {
       const u = uploads.get(entry.id);
@@ -300,7 +304,7 @@ export async function workspaceImportApi(
         batches.map(async (batch) => {
           const value = await serializeBatch(batch);
           if (!compact) return value;
-          const { result: _result, ...poll } = value;
+          const { result: _result, diagnostics: _diagnostics, ...poll } = value;
           return {
             ...poll,
             entries: value.entries.map(({ id, status, received, error }) => ({
@@ -350,6 +354,11 @@ export async function workspaceImportApi(
     const input = inputSchema.parse(await request.json()),
       manifest = await manifestInput(input.manifest),
       fingerprint = hash(manifest);
+    if (manifest.diagnostics?.some((d) => d.severity === "error"))
+      throw new HttpError(
+        400,
+        "Choose Keep as attachment or Skip for unsupported files before confirming.",
+      );
     const batch = await transaction(async (client) => {
       await requireScope(client, userId, spaceId, "edit");
       await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [
@@ -580,7 +589,11 @@ export async function queueReadyWorkspaceImport(
   await enqueueJob("finalize-import", "import:" + id, { id }, client);
 }
 
-async function importSource(key: string, expectedBytes: number) {
+async function importSource(
+  key: string,
+  expectedBytes: number,
+  format: "markdown" | "canvas" | "latex" | "text" = "markdown",
+) {
   const chunks: Buffer[] = [];
   let bytes = 0;
   for await (const chunk of await attachmentStream(key)) {
@@ -593,13 +606,17 @@ async function importSource(key: string, expectedBytes: number) {
   if (bytes !== expectedBytes)
     throw new HttpError(409, "The prepared Markdown file changed.");
   try {
-    return decodeImportMarkdown(Buffer.concat(chunks));
+    return decodeImportMarkdown(Buffer.concat(chunks), format);
   } catch (error) {
     throw new HttpError(400, (error as Error).message);
   }
 }
-export async function validateStagedMarkdown(key: string, bytes: number) {
-  await importSource(key, bytes);
+export async function validateStagedMarkdown(
+  key: string,
+  bytes: number,
+  format: "markdown" | "canvas" | "latex" | "text" = "markdown",
+) {
+  await importSource(key, bytes, format);
 }
 
 /** Single commit publishes the entire hierarchy, documents, file versions, indexes and receipt. */
@@ -624,6 +641,11 @@ export async function finishWorkspaceImport(id: string) {
       );
       if (["complete", "cancelled"].includes(batch.status)) return;
       activeBatch(batch);
+      if (batch.manifest.diagnostics?.some((d) => d.severity === "error"))
+        throw new HttpError(
+          400,
+          "Resolve collection conversion choices before publication.",
+        );
       if (batch.status !== "publishing")
         throw new HttpError(
           409,
@@ -653,6 +675,7 @@ export async function finishWorkspaceImport(id: string) {
       );
       const byId = new Map(uploads.map((u) => [u.id, u])),
         targets = new Map<string, ImportLinkTarget>(),
+        origins = new Map<string, ImportLinkTarget>(),
         bodies = new Map<string, string>(),
         warnings: string[] = [];
       for (const entry of batch.plan.filter(
@@ -664,14 +687,31 @@ export async function finishWorkspaceImport(id: string) {
             409,
             "An import transfer is not ready. Resume it before publishing.",
           );
-        targets.set(importPathKey(entry.path), {
+        if (
+          entry.expectedSha256 &&
+          upload.verified_sha256 !== entry.expectedSha256
+        )
+          throw new HttpError(
+            400,
+            "The stored bytes do not match the collection's declared SHA-256.",
+          );
+        const target: ImportLinkTarget = {
           kind: entry.kind as "note" | "file",
           id: entry.id,
-        });
+        };
+        targets.set(importPathKey(entry.path), target);
+        if (entry.metadata?.originId)
+          origins.set("resource:" + entry.metadata.originId, target);
+        if (entry.metadata?.originVersionId)
+          origins.set("version:" + entry.metadata.originVersionId, target);
         if (entry.kind === "note")
           bodies.set(
             entry.id,
-            await importSource(upload.storage_key, Number(upload.bytes)),
+            await importSource(
+              upload.storage_key,
+              Number(upload.bytes),
+              entry.sourceFormat,
+            ),
           );
       }
       const resources: NonNullable<
@@ -681,12 +721,29 @@ export async function finishWorkspaceImport(id: string) {
         (e) => e.disposition === "create",
       )) {
         if (entry.kind === "note") {
-          const rewritten = rewriteImportLinks(
-            bodies.get(entry.id)!,
-            entry.path,
-            targets,
-          );
-          if (rewritten.body.length > IMPORT_LIMITS.noteChars)
+          const rewritten =
+            entry.sourceFormat === "canvas"
+              ? rewriteImportedCanvas(
+                  bodies.get(entry.id)!,
+                  entry.path,
+                  targets,
+                  origins,
+                  randomUUID,
+                )
+              : entry.sourceFormat && entry.sourceFormat !== "markdown"
+                ? { body: bodies.get(entry.id)!, warnings: [] }
+                : rewriteImportLinks(
+                    bodies.get(entry.id)!,
+                    entry.path,
+                    targets,
+                    origins,
+                  );
+          if (
+            rewritten.body.length >
+            (entry.sourceFormat === "canvas"
+              ? 5_000_000
+              : IMPORT_LIMITS.noteChars)
+          )
             throw new HttpError(
               413,
               "Rewritten Markdown exceeds the note size limit.",
@@ -702,6 +759,7 @@ export async function finishWorkspaceImport(id: string) {
               title: entry.name,
               visibility: space.kind === "personal" ? "private" : "shared",
               body: rewritten.body,
+              sourceFormat: entry.sourceFormat,
             },
             client,
           );
@@ -728,7 +786,9 @@ export async function finishWorkspaceImport(id: string) {
               [
                 entry.id,
                 entry.name,
-                upload.mime,
+                entry.metadata?.toolKind === "image"
+                  ? "application/vnd.axiom.image+zip"
+                  : upload.mime,
                 upload.bytes,
                 upload.storage_key,
                 upload.verified_sha256,
@@ -751,6 +811,33 @@ export async function finishWorkspaceImport(id: string) {
               );
           }
         }
+        if (entry.metadata)
+          await client.query(
+            "UPDATE resources SET description=$2,tags=$3 WHERE id=$1",
+            [
+              entry.id,
+              entry.metadata.description ?? "",
+              entry.metadata.tags ?? [],
+            ],
+          );
+        const toolKind =
+          entry.metadata?.toolKind ??
+          (entry.sourceFormat === "canvas"
+            ? "canvas"
+            : entry.sourceFormat === "latex"
+              ? "math"
+              : entry.sourceFormat === "text"
+                ? "text"
+                : undefined);
+        if (toolKind)
+          await client.query(
+            "INSERT INTO tool_projects(resource_id,kind,settings) VALUES($1,$2,$3)",
+            [
+              entry.id,
+              toolKind,
+              portableToolSettings(toolKind, entry.metadata?.settings),
+            ],
+          );
         resources.push({
           id: entry.id,
           kind: entry.kind,
@@ -780,7 +867,14 @@ export async function finishWorkspaceImport(id: string) {
       }
       await client.query(
         "UPDATE workspace_imports SET status='complete',result=$2,error=NULL,updated_at=now() WHERE id=$1",
-        [id, JSON.stringify({ resources, warnings: warnings.slice(0, 2000) })],
+        [
+          id,
+          JSON.stringify({
+            resources,
+            warnings: warnings.slice(0, 2000),
+            diagnostics: batch.manifest.diagnostics ?? [],
+          }),
+        ],
       );
       await recordActivity(client, {
         spaceId: batch.space_id,

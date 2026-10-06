@@ -1,8 +1,10 @@
 import { test, expect } from "@playwright/test";
+import { writeFile } from "node:fs/promises";
 test.use({ trace: "off", screenshot: "off" });
 
 test("benchmark 50 edits at top, middle and end of large research notes", async ({
   page,
+  browser,
   browserName,
 }) => {
   test.skip(
@@ -95,8 +97,32 @@ test("benchmark 50 edits at top, middle and end of large research notes", async 
       expect(values[0].length).toBe(size + 150);
     }
   }
+  const reportPath = test.info().outputPath("editor-performance.json");
+  // Body-only attachments are not durable with the list reporter. Persist raw
+  // samples before attaching the file, including on a soft budget failure.
+  await writeFile(
+    reportPath,
+    JSON.stringify(
+      {
+        format: "axiom-editor-performance",
+        version: 1,
+        measuredAt: new Date().toISOString(),
+        browser: browser.version(),
+        host: {
+          platform: process.platform,
+          architecture: process.arch,
+          node: process.version,
+        },
+        metric:
+          "beforeinput to next animation frame including layout; 50 edits per location, same-machine source peer",
+        report,
+      },
+      null,
+      2,
+    ),
+  );
   await test.info().attach("editor-input-to-frame", {
-    body: JSON.stringify(report, null, 2),
+    path: reportPath,
     contentType: "application/json",
   });
 });

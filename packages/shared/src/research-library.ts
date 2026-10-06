@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { referenceDetailsSchema, type ReferenceDetails } from "./research";
 import { parseBibtex, updateBibtexEntry } from "./bibliography";
+import { scanBibtex } from "./bibtex-model";
 export const libraryScopeSchema = z.object({ spaceId: z.uuid() }).strict();
 export type LibraryScope = z.infer<typeof libraryScopeSchema>;
 export const referenceTagsSchema = z
@@ -122,6 +123,44 @@ export function duplicateReference(a: ReferenceDetails, b: ReferenceDetails) {
       x.year === y.year)
   );
 }
+export function duplicateReasons(a: ReferenceDetails, b: ReferenceDetails) {
+  const x = referenceIdentity(a),
+    y = referenceIdentity(b);
+  return [
+    x.doi && x.doi === y.doi ? "Same normalized DOI" : "",
+    x.arxiv && x.arxiv === y.arxiv
+      ? "Same arXiv identity (version ignored)"
+      : "",
+    x.title.length > 12 &&
+    x.title === y.title &&
+    x.authors &&
+    x.authors === y.authors &&
+    x.year &&
+    x.year === y.year
+      ? "Exact title, author order and year"
+      : "",
+  ].filter(Boolean);
+}
+export type ReferenceProvenance = {
+  id: string;
+  reference_id: string;
+  version: number;
+  kind: string;
+  actor: string | null;
+  created_at: string;
+  before_data: Record<string, unknown> | null;
+  after_data: Record<string, unknown>;
+  details: Record<string, unknown>;
+};
+export type MergeReview = {
+  hash: string;
+  targetId: string;
+  keys: string[];
+  draft: ReferenceDetails;
+  matches: { left: string; right: string; reasons: string[] }[];
+  impact: { notes: number; files: number; collections: number };
+  extraFields: { name: string; values: { key: string; value: string }[] }[];
+};
 export function referenceIdentityKeys(r: ReferenceDetails) {
   const { doi, arxiv, title, authors, year } = referenceIdentity(r);
   return [
@@ -139,6 +178,7 @@ export function parseReferenceImport(
   const warnings: string[] = [],
     items: ReferenceImportItem[] = [];
   if (format === "bib") {
+    warnings.push(...scanBibtex(source).warnings);
     for (const r of parseBibtex(source)) {
       const { bibtex: _bibtex, ...details } = r;
       const parsed = libraryDraftSchema.safeParse({

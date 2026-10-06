@@ -585,15 +585,7 @@ function ResourceExplorer() {
                       (item) => item.space_id !== selected[0].space_id,
                     )
                   }
-                  onClick={() =>
-                    void action.run(async () => {
-                      await mutate("exports", {
-                        spaceId: selected[0].space_id,
-                        resourceIds: selected.map((item) => item.id),
-                      });
-                      navigate("/settings/exports");
-                    })
-                  }
+                  onClick={() => management.execute("export", selected)}
                 >
                   <Download size={15} />
                   Export selection

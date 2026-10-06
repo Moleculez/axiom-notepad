@@ -1,0 +1,75 @@
+name: Authenticated application reliability
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: reliability-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  application:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: axiom_test
+          POSTGRES_PASSWORD: reliability-fixture-only
+          POSTGRES_DB: postgres
+        ports: [5432:5432]
+        options: >-
+          --health-cmd "pg_isready -U axiom_test"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck && npm run lint && npm run validate:ui && npm run validate:themes && npm run docs:check && npm test
+      - run: npx playwright install --with-deps ${{ matrix.browser }}
+      - run: sudo apt-get update && sudo apt-get install -y postgresql-client-16
+      - run: npm run verify:reliability -- --project=${{ matrix.browser }}
+        env:
+          AXIOM_RELIABILITY_DATABASE_URL: postgresql://axiom_test:reliability-fixture-only@127.0.0.1:5432/postgres
+          PG_BIN: /usr/lib/postgresql/16/bin
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: reliability-${{ matrix.browser }}
+          path: |
+            data/reliability-results/
+            data/reliability-*/browser-results/
+            data/reliability-*/receipt.json
+          retention-days: 7
+  editor:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium firefox webkit
+      - run: npm run test:editor
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: browser-local-editor-regressions
+          path: data/editor-lab-results/
+          retention-days: 7

@@ -35,7 +35,7 @@ import {
 import Dialog, { DialogBody, DialogFooter } from "../Dialog";
 import DraftGuard from "./DraftGuard";
 import { PersonPicker, closePlanningDraft } from "./PlanningFields";
-import { PlanningHistory } from "./PlanningSuitePanels";
+import { PlanningHistoryDialog } from "./PlanningArchives";
 import {
   Empty,
   ErrorNotice,
@@ -450,12 +450,12 @@ export function PlanningIntake({
         />
       )}
       {history && (
-        <Dialog title="Request history" onClose={() => setHistory(null)}>
-          <PlanningHistory spaceId={space.id} id={history} />
-          <DialogFooter>
-            <Button onClick={() => setHistory(null)}>Done</Button>
-          </DialogFooter>
-        </Dialog>
+        <PlanningHistoryDialog
+          spaceId={space.id}
+          id={history}
+          title="Request history"
+          onClose={() => setHistory(null)}
+        />
       )}
     </section>
   );

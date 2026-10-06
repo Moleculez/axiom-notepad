@@ -13,6 +13,7 @@ it("strips dataset/provider credentials, replaces secrets and preserves explicit
     SMTP_URL: "private-mail",
     AWS_SECRET_ACCESS_KEY: "private-s3",
     TOOL_PROVIDER_KEY: "private-key",
+    AXIOM_LIVE_PROVIDER_CREDENTIAL: "private-live-credential",
     OFFICE_CONVERTER_TOKEN: "private-office",
     BETTER_AUTH_SECRET: "private-auth",
     SYNC_SECRET: "private-sync",

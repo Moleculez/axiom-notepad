@@ -152,6 +152,12 @@ estimates, not tracked time.
   current/target metric, history and archive/reopen. Selecting both parent and
   child counts each leaf once. Missing targets are reported rather than counted
   complete. Workspace progress indexes are reused across the goal list.
+- Goals use server-side summary pages, literal title/description search, Active/
+  Archived/All filters and matching state counts. **Filters** contains tracking
+  type, My goals (owner) and oldest/newest creation order. Opening a goal explicitly
+  loads its authorized Markdown and linked IDs; the loaded version stays the save
+  fence. A peer refresh cannot replace an open draft, and a stale Save fails with
+  that draft retained. Metric-only pages do not fetch the task graph.
 - Intake is member-only, not an anonymous/public form. Research, Experiment,
   Paper review and Data request templates support Markdown and requested date/
   priority. Authors edit/resubmit undecided requests and withdraw them. Managers
@@ -176,9 +182,43 @@ estimates, not tracked time.
   These are live requests, not immutable historical exports: status/author edits and
   commits of previously in-flight submissions can affect later pages. Reauthorization
   happens on every page/detail read; an old cursor does not retain revoked access.
-- Goals are still bounded to 200; per-entity metadata history and routine occurrences
-  show the latest 100. These remaining limits are explicit, not full-text archives.
+- **History** pages through all retained per-entity metadata summaries, with literal
+  summary search, My changes (actor) and oldest/newest order. It is not a Markdown
+  diff or a complete field-change ledger. Routine history separates **Changes**
+  from **Generated tasks**, with title search, date/status/availability filters and
+  explicit deleted-task links. Occurrence dates remain calendar dates. Purging a
+  generated task can remove its occurrence; this is not an immutable task archive.
+- Goals, changes and generated tasks offer 15/30/60/100-row pages. Counts/rows share
+  one SQL statement snapshot; progress is a live calculation. Timestamp/UUID or
+  unique routine/date positions are exact, account/workspace/entity/filter-scoped
+  and expire after 24 hours. Changing filters resets the page and results scroll;
+  Refresh returns to the first page. A creation ceiling excludes newly created
+  records from later pages, not later edits or previously in-flight transactions.
+  Every read rechecks access; cursors are positions, never credentials.
+- Goals retain the **200 total workspace cap, including archived goals**. The
+  unfiltered live total controls creation capacity; searching or choosing another
+  owner does not grant additional slots. Existing goals can be edited or reopened.
   Goal/intake/routine forms guard unsaved closure and disable edits during saves.
+  Shared filters/actions stay outside result scrollports, and forms retain fixed
+  native-owned footers. Loaded page actions remain usable during peer refreshes.
+
+### Archive API contract
+
+`GET /api/v1/spaces/:id/goals` now returns `{items,total,stateCounts,workspaceTotal,
+goalLimit,asOf,nextCursor}`, not the former whole-collection array. Default is
+Active, newest **creation** first, 30 items; `filter=all` includes archives. Query
+fields are `q`, `filter=active|archived|all`, `kind=linked|metric`, `mine=0|1`,
+`sort=newest|oldest`, `limit=1..100` and `cursor`. Items omit Markdown and linked
+ID arrays. `GET /goals/:goalId` returns `{item}` including those details; writes
+retain mutation IDs and required original versions.
+
+`GET /planning-history/:entityId` and `GET /recurrences/:routineId/occurrences`
+return `{items,total,asOf,nextCursor}`, not latest-100 arrays. Both support `q`,
+`sort`, `limit` and `cursor`. History supports `mine=0|1`; occurrences support
+`state=all|active|deleted`, `status`, `from`/`to` (`YYYY-MM-DD`). Generated tasks
+default to All; descriptions are not transferred. Counts follow filters, not the
+current page. Connected AI/MCP reads use these same scoped summary/detail paths;
+writes still require existing review/authorization and version fences.
 
 ## Group coordination and schedule analysis
 
@@ -224,11 +264,32 @@ then restart matching web/sync/worker builds; do not run mixed schema versions.
 
 ## Upgrade and verification
 
+Forward migration **45** adds creation/UUID page indexes for Goals and per-entity
+history. Routine occurrences already have a unique routine/date index. The upgrade
+does not rewrite bodies, IDs, versions, histories, dates or CRDT state. Back up,
+stop old writers, migrate, then restart matching web/sync/worker builds. Never seed
+or reset an existing installation; local acceptance does not migrate working data.
+
+```sh
+npm run verify:planning-archives:migration
+npm run verify:reliability -- --grep='planning archives|goal details|complete bounded|planning controls|offset compatibility'
+```
+
+The first command owns a new embedded PostgreSQL cluster and rehearses 44→current
+plus idempotent rerun. The second owns isolated authenticated build/web/sync/worker
+services and tests 200 goals, 1,250 tied/microsecond metadata entries and 215 routine
+occurrences, both sort directions, search/filters, lazy detail, stale saves,
+permissions/revocation and large-text desktop layouts. The receipt records the
+actual engine/filter arguments. See [current evidence](VERIFICATION.md). [Stage 3
+lab planning](PLANNING_LAB.md) now implements typed fields, shared manual time and
+reviewed non-AI rules in source. Migration 46, authenticated browser/worker/recovery
+and broader portfolio/Gantt scale acceptance are still pending, not passed gates.
+
 Forward migration **42** adds scope/status/author keyset indexes for Intake.
 It does not rewrite request content, IDs, timestamps, decisions, tasks or history.
 The local API rehearsal traverses 1,250 tied/microsecond positions, concurrent
 submissions/edits, literal wildcard searches, filters/counts and membership revocation.
-`npm run test:planning` runs isolated port-3004 browser acceptance (never the working
+`npm run plugins:staging -- test --config planning.config.ts` runs isolated port-3004 browser acceptance (never the working
 database); its new Intake fixtures cover more than 200 records, lazy details, stale
 draft retention, all five styles, both modes, large text and fixed dialog actions.
 
@@ -259,7 +320,7 @@ npx tsx scripts/verify/rehearse-current-migrations.ts
 With isolated staging running on 3004 (never the working 8080 dataset):
 
 ```sh
-TEST_APP_URL=http://localhost:3004 npx playwright test tests/e2e/workspace-planning.spec.ts --trace off
+npm run plugins:staging -- test tests/e2e/workspace-planning.spec.ts --trace off
 ```
 
 Repeat with `TEST_BROWSER=firefox` and `TEST_BROWSER=webkit`. The acceptance cases

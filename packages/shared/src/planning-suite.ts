@@ -8,6 +8,7 @@ import {
   recurrenceSchema,
 } from "./workspace";
 import { planningViews, planningProgress, type PlanningTask } from "./planning";
+import { fieldFiltersSchema, customFieldsPatchSchema } from "./planning-lab";
 const uuid = z.uuid();
 export function nextRecurrenceDates(
   rule: z.infer<typeof recurrenceSchema>,
@@ -40,6 +41,7 @@ export const planningViewStateSchema = z.object({
   showDependencies: z.boolean().default(true),
   showBaseline: z.boolean().default(true),
   showCritical: z.boolean().default(true),
+  customColumns: z.array(z.uuid()).max(8).default([]),
   filters: z
     .object({
       q: z.string().max(200).optional(),
@@ -50,6 +52,9 @@ export const planningViewStateSchema = z.object({
       risk: z.enum(["overdue", "blocked", "upcoming"]).optional(),
       sort: z.enum(["position", "title", "due", "updated"]).optional(),
       deleted: z.literal("1").optional(),
+      fieldFilters: fieldFiltersSchema.optional(),
+      sortField: uuid.optional(),
+      sortDirection: z.enum(["asc", "desc"]).optional(),
     })
     .default({}),
 });
@@ -67,6 +72,7 @@ export const planningBulkInputSchema = z
         assigneeId: z.string().max(100).nullable().optional(),
         labels: z.array(z.string().trim().min(1).max(40)).max(20).optional(),
         deleted: z.boolean().optional(),
+    customFields: customFieldsPatchSchema.optional(),
       })
       .strict(),
   })

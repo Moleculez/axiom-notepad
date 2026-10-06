@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 const server = await createServer({
   configFile: false,
   root: process.cwd(),
-  envFile: false,
+  envDir: false,
   cacheDir: "data/editor-lab-vite-cache",
   server: {
     host: "127.0.0.1",

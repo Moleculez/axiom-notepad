@@ -36,6 +36,7 @@ import {
 import { blockLabel, type ReadingBlockRect } from "@axiom/editor/reading-marks";
 import {
   annotationCategories,
+  markAnchorSchema,
   exportReadingMarks,
   type MarkAnchor,
   type NoteComment,
@@ -81,6 +82,7 @@ type Props = {
   source: string;
   parsed: ParsedDocument;
   mode: EditorMode;
+  mindmap?: boolean;
   research: ResearchController;
   threads: NoteThreads;
   canComment: boolean;
@@ -145,6 +147,7 @@ export default function ReadingMarks(props: Props) {
   const current = useRef(props);
   current.current = props;
   const minimapActive =
+    !props.mindmap &&
     appearance.effective.minimap.enabled &&
     appearance.effective.minimap[props.mode];
   const minimapActiveRef = useRef(minimapActive);
@@ -176,7 +179,7 @@ export default function ReadingMarks(props: Props) {
     `${props.note.id}:${props.note.generation}:${minimapActive}`,
     props.source,
     props.mode,
-    props.active,
+    props.active && !props.mindmap,
   );
   const layout = navigation;
   const geometry = useMemo(
@@ -233,6 +236,7 @@ export default function ReadingMarks(props: Props) {
   const getGeometry = useCallback(() => {
     const p = current.current,
       root = p.scroller.current;
+    if (p.mindmap) return [];
     if (!root) return [];
     if (p.mode !== "read") return p.editor.current?.markGeometry() ?? [];
     const boxes = Array.from(
@@ -272,7 +276,7 @@ export default function ReadingMarks(props: Props) {
   }, []);
   useEffect(() => {
     const root = props.scroller.current;
-    if (!root || !props.active) return;
+    if (!root || !props.active || props.mindmap) return;
     const pointer = (event: PointerEvent) => {
       if (event.buttons || editorOverlayActive()) return;
       const candidates = targets.current
@@ -297,7 +301,7 @@ export default function ReadingMarks(props: Props) {
       root.removeEventListener("pointerleave", leave);
       clearTimeout(hoverTimer.current);
     };
-  }, [props.note.id, props.mode, props.active]);
+  }, [props.note.id, props.mode, props.active, props.mindmap]);
   useEffect(() => {
     if (!draft) return;
     let active = true;
@@ -477,7 +481,8 @@ export default function ReadingMarks(props: Props) {
         (root.scrollHeight - root.clientHeight);
       return;
     }
-    if (props.mode !== "read") props.editor.current?.focus(mark.from);
+    if (props.mode !== "read" || props.mindmap)
+      props.editor.current?.focus(mark.from);
     requestAnimationFrame(() => {
       const box = getGeometry()
         .filter((b) => mark.from! >= b.from && mark.from! <= b.to)
@@ -576,6 +581,24 @@ export default function ReadingMarks(props: Props) {
       });
       notify("Bookmarked privately.");
     });
+  useEffect(() => {
+    const requested = (event: Event) => {
+      const detail = (event as CustomEvent).detail;
+      const anchor = markAnchorSchema.safeParse(detail?.anchor);
+      if (
+        !props.active ||
+        detail?.noteId !== props.note.id ||
+        !anchor.success ||
+        !props.editor.current?.resolveMark(anchor.data)
+      )
+        return;
+      if (detail.action === "bookmark") void addBookmark(anchor.data);
+      else if (detail.action === "annotation" && props.canComment)
+        void begin(anchor.data);
+    };
+    window.addEventListener("axiom:reading-mark", requested);
+    return () => window.removeEventListener("axiom:reading-mark", requested);
+  });
   const attach = (anchor: MarkAnchor | null) =>
     work(async () => {
       if (!reattach) return;
@@ -1431,92 +1454,96 @@ export default function ReadingMarks(props: Props) {
           left: props.scroller.current?.offsetLeft ?? 0,
         }}
       >
-        {(appearance.effective.readingMarkMargin || reattach) && (
-          <>
-            {(hovered || reattach) &&
-              (() => {
-                const b = hovered ?? geometry.find((g) => g.top >= layout.top);
-                if (
-                  !b ||
-                  b.bottom < layout.top ||
-                  b.top > layout.top + layout.height
-                )
-                  return null;
-                return (
-                  <button
-                    className="reading-block-menu"
-                    style={{
-                      left: x,
-                      top: Math.max(4, b.top - layout.top + 3),
-                    }}
-                    aria-label={`${blockLabel(b.type)} reading actions`}
-                    title={`${blockLabel(b.type)} actions`}
-                    onPointerDown={(e) => e.preventDefault()}
-                    onClick={(e) => menu(e.currentTarget, b)}
-                  >
-                    <MoreHorizontal size={15} />
-                  </button>
-                );
-              })()}
-            {[...markGroups].map(([y, items]) => (
-              <button
-                key={y}
-                className="reading-margin-marker"
-                data-mark-color={items[0].color}
-                style={{ left: x + 24, top: y - 10 }}
-                aria-label={`${items.length > 1 ? items.length + " marks: " : ""}${items[0].label}`}
-                aria-describedby={
-                  preview?.mark.id === items[0].id
-                    ? `reading-mark-preview-${props.note.id}`
-                    : undefined
-                }
-                title={
-                  items[0].kind === "bookmark"
-                    ? "Reading bookmark"
-                    : "Annotation"
-                }
-                onPointerDown={(e) => e.preventDefault()}
-                onClick={(e) => selectMarks(e.currentTarget, items)}
-                onMouseEnter={(e) => showPreview(e.currentTarget, items[0])}
-                onFocus={(e) => showPreview(e.currentTarget, items[0])}
-                onBlur={() => {
-                  clearTimeout(hoverTimer.current);
-                  setPreview(null);
-                }}
-                onMouseLeave={() => {
-                  clearTimeout(hoverTimer.current);
-                  setPreview(null);
-                }}
-              >
-                {items[0].kind === "bookmark" ? (
-                  <Bookmark size={14} />
-                ) : (
-                  <MessageSquare size={14} />
-                )}{" "}
-                {items.length > 1 && <small>{items.length}</small>}
-              </button>
-            ))}
-          </>
-        )}
-        {appearance.effective.readingMarkOverview && !minimapEnabled && (
-          <nav
-            className="reading-mark-overview"
-            aria-label="Reading marks overview"
-            style={{ left: right + 6 }}
-          >
-            {[...overview].map(([y, items]) => (
-              <button
-                key={y}
-                style={{ top: y }}
-                data-mark-color={items[0].color}
-                aria-label={`Jump to ${items.length > 1 ? items.length + " reading marks" : items[0].label}`}
-                title={items.map((m) => m.label).join(" · ")}
-                onPointerDown={(e) => e.preventDefault()}
-                onClick={(e) => selectMarks(e.currentTarget, items)}
-              />
-            ))}
-          </nav>
-        )}
+        {!props.mindmap &&
+          (appearance.effective.readingMarkMargin || reattach) && (
+            <>
+              {(hovered || reattach) &&
+                (() => {
+                  const b =
+                    hovered ?? geometry.find((g) => g.top >= layout.top);
+                  if (
+                    !b ||
+                    b.bottom < layout.top ||
+                    b.top > layout.top + layout.height
+                  )
+                    return null;
+                  return (
+                    <button
+                      className="reading-block-menu"
+                      style={{
+                        left: x,
+                        top: Math.max(4, b.top - layout.top + 3),
+                      }}
+                      aria-label={`${blockLabel(b.type)} reading actions`}
+                      title={`${blockLabel(b.type)} actions`}
+                      onPointerDown={(e) => e.preventDefault()}
+                      onClick={(e) => menu(e.currentTarget, b)}
+                    >
+                      <MoreHorizontal size={15} />
+                    </button>
+                  );
+                })()}
+              {[...markGroups].map(([y, items]) => (
+                <button
+                  key={y}
+                  className="reading-margin-marker"
+                  data-mark-color={items[0].color}
+                  style={{ left: x + 24, top: y - 10 }}
+                  aria-label={`${items.length > 1 ? items.length + " marks: " : ""}${items[0].label}`}
+                  aria-describedby={
+                    preview?.mark.id === items[0].id
+                      ? `reading-mark-preview-${props.note.id}`
+                      : undefined
+                  }
+                  title={
+                    items[0].kind === "bookmark"
+                      ? "Reading bookmark"
+                      : "Annotation"
+                  }
+                  onPointerDown={(e) => e.preventDefault()}
+                  onClick={(e) => selectMarks(e.currentTarget, items)}
+                  onMouseEnter={(e) => showPreview(e.currentTarget, items[0])}
+                  onFocus={(e) => showPreview(e.currentTarget, items[0])}
+                  onBlur={() => {
+                    clearTimeout(hoverTimer.current);
+                    setPreview(null);
+                  }}
+                  onMouseLeave={() => {
+                    clearTimeout(hoverTimer.current);
+                    setPreview(null);
+                  }}
+                >
+                  {items[0].kind === "bookmark" ? (
+                    <Bookmark size={14} />
+                  ) : (
+                    <MessageSquare size={14} />
+                  )}{" "}
+                  {items.length > 1 && <small>{items.length}</small>}
+                </button>
+              ))}
+            </>
+          )}
+        {!props.mindmap &&
+          appearance.effective.readingMarkOverview &&
+          !minimapEnabled && (
+            <nav
+              className="reading-mark-overview"
+              aria-label="Reading marks overview"
+              style={{ left: right + 6 }}
+            >
+              {[...overview].map(([y, items]) => (
+                <button
+                  key={y}
+                  style={{ top: y }}
+                  data-mark-color={items[0].color}
+                  aria-label={`Jump to ${items.length > 1 ? items.length + " reading marks" : items[0].label}`}
+                  title={items.map((m) => m.label).join(" · ")}
+                  onPointerDown={(e) => e.preventDefault()}
+                  onClick={(e) => selectMarks(e.currentTarget, items)}
+                />
+              ))}
+            </nav>
+          )}
         {reattach && (
           <div className="reading-reattach-banner" role="status">
             Choose a block menu → Attach here
@@ -1532,7 +1559,7 @@ export default function ReadingMarks(props: Props) {
             root={props.scroller}
             navigation={navigation}
             adapter={adapter}
-            active={props.active}
+            active={props.active && !props.mindmap}
             source={props.source}
             parsed={props.parsed}
             mode={props.mode}

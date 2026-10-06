@@ -182,8 +182,7 @@ The production default remains native until the release gates below pass.
 
 The approved direction extends the MIT-licensed Milkdown 7.22.1 / ProseMirror
 and CodeMirror 6 cores, with first-party Axiom schema, source mapping, commands,
-collaboration adapters and UI. It does not copy Typora's proprietary code, and
-does not claim Typora uses Milkdown.
+collaboration adapters and UI.
 
 - One canonical `Y.Text("markdown")`; no ProseMirror fragment or document migration.
 - Rich state is a projection, never a serialization source. Preserve untouched
@@ -870,7 +869,7 @@ AXIOM_EDITOR_BENCHMARK=1 npx playwright test --config editor-lab.config.ts --pro
 
 ## Remaining work before default rollout
 
-This is an expanded gated implementation, not a claim of complete Typora parity.
+This implementation requires the remaining rollout checks below.
 
 - Physical Chinese/Japanese IME and system clipboard acceptance on macOS remain
   unverified. Synthetic browser events, CDP composition and supplied DataTransfer

@@ -697,6 +697,22 @@ input.ui-slider::-moz-range-thumb {
   min-width: 0;
   overflow-wrap: anywhere;
 }
+.ui-field-control-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.ui-field-control-row > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+.ui-field-control-row > .ui-checkbox {
+  flex: none;
+}
+.ui-field-control-row > .icon-button {
+  flex: none;
+}
 .ui-field-label-icon {
   display: inline-flex;
   align-items: center;

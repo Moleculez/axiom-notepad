@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { customFieldsPatchSchema, fieldSummaryText, type FieldValue, type TaskField } from "./planning-lab";
 import {
   dateOnlySchema,
   taskStatusSchema,
@@ -70,6 +71,8 @@ export const planningDraftSchema = z.object({
   dependencyLinks: z.array(dependencyLinkSchema).max(100).optional(),
   progressPercent: z.number().int().min(0).max(100).default(0),
   version: z.number().int().positive().optional(),
+  customFields: customFieldsPatchSchema.optional(),
+  fieldsVersion: z.number().int().positive().optional(),
 });
 export type PlanningDraft = z.infer<typeof planningDraftSchema>;
 
@@ -109,6 +112,9 @@ export type PlanningTask = Omit<Task, "project_id"> & {
   progress_percent?: number;
   derived_progress_percent?: number;
   has_children?: boolean;
+  custom_fields?: Record<string, FieldValue>;
+  fields_version?: number;
+  field_summaries?: Record<string, { value: FieldValue; truncated: boolean }>;
 };
 export type ScheduleChange = {
   id: string;
@@ -429,6 +435,8 @@ export function planningCsv(
     baseline?: PlanningTask[];
     criticalIds?: string[];
     scope?: string;
+    fields?:TaskField[];
+    people?:Array<{id:string;name:string}>;
   } = {},
 ) {
   const progress = planningProgress(tasks),
@@ -458,6 +466,7 @@ export function planningCsv(
       "Critical path",
       "Export scope",
       "Record type",
+      ...(options.fields??[]).map(f=>f.name+" (preview)"),
     ],
     ...tasks.map((t) => [
       t.title,
@@ -483,6 +492,7 @@ export function planningCsv(
       critical.has(t.id) ? "yes" : "",
       options.scope ?? "Loaded filtered tasks",
       "task",
+      ...(options.fields??[]).map(f=>fieldSummaryText(f,t.field_summaries,options.people)),
     ]),
     ...(options.milestones ?? []).map((m) => [
       m.title,
@@ -501,6 +511,7 @@ export function planningCsv(
       "",
       options.scope ?? "Loaded filtered tasks",
       "milestone",
+      ...(options.fields??[]).map(()=>""),
     ]),
   ]
     .map((row) => row.map(cell).join(","))

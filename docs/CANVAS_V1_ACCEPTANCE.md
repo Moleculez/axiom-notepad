@@ -1,7 +1,7 @@
 # Canvas v1, theme packs and clean development first run
 
-Verified September 11, 2026. This is a bounded feature release, not complete
-Obsidian/Typora/Google Drive parity or a production deployment.
+Verified September 11, 2026. This is a bounded feature release; production
+deployment is a separate step.
 
 ## Implemented
 

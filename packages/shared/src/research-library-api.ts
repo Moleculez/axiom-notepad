@@ -6,7 +6,8 @@ import { researchLocation } from "./research-location";
 import { HttpError, resourceAccess, fileAccess } from "./access";
 import { notifyWorkspace } from "./documents";
 import { updateBibtexEntry, formatBibtex } from "./bibliography";
-import { referenceDetailsSchema } from "./research";
+import { renameBibtexRecord, scanBibtex } from "./bibtex-model";
+import { referenceDetailsSchema, normalizeIdentifier } from "./research";
 import {
   workspaceJson as json,
   workspaceMutation,
@@ -18,6 +19,7 @@ import {
   referenceTagsSchema,
   parseReferenceImport,
   referenceIdentityKeys,
+  duplicateReasons,
   formatRis,
   type LibraryReference,
   type LibraryScope,
@@ -46,6 +48,24 @@ const selection = z
   .refine((v) => new Set(v).size === v.length, "Select each reference once.");
 const hash = (v: unknown) =>
   createHash("sha256").update(JSON.stringify(v)).digest("hex");
+async function lookupProvenance(client: pg.PoolClient, identifier: string) {
+  let source;
+  try {
+    source = normalizeIdentifier(identifier);
+  } catch (error) {
+    throw new HttpError(400, (error as Error).message);
+  }
+  await client.query(
+    "SELECT set_config('axiom.reference_operation','lookup',true)",
+  );
+  await client.query("SELECT set_config('axiom.reference_details',$1,true)", [
+    JSON.stringify({
+      ...source,
+      basis:
+        "User-reviewed provider metadata; may include manual edits, not a provider attestation",
+    }),
+  ]);
+}
 const scopeOf = (url: URL, user: string) =>
   resolveLibraryScope(
     user,
@@ -62,14 +82,35 @@ const fields = (r: z.infer<typeof referenceDetailsSchema>) => ({
   eprint: r.arxiv,
   journal: r.venue,
 });
-const renameBibtex = (source: string, key: string) =>
-  source.replace(/^(@\w+\s*\{\s*)[^,]+/, `$1${key}`);
+const renameBibtex = renameBibtexRecord;
 function editedBibtex(
   r: LibraryReference,
   d: z.infer<typeof referenceDetailsSchema>,
 ) {
   const before = fields(r),
     after = fields(d);
+  try {
+    const record = scanBibtex(r.bibtex).records.find((entry) => entry.key);
+    if (record?.fields.booktitle && !record.fields.journal) {
+      return updateBibtexEntry(
+        r.bibtex,
+        r.cite_key,
+        Object.fromEntries(
+          Object.entries(after)
+            .filter(
+              ([key, value]) =>
+                !r.bibtex || before[key as keyof typeof before] !== value,
+            )
+            .map(([key, value]) => [
+              key === "journal" ? "booktitle" : key,
+              value,
+            ]),
+        ),
+      );
+    }
+  } catch {
+    /* Preserve the standard fallback for legacy malformed records. */
+  }
   return updateBibtexEntry(
     r.bibtex,
     r.cite_key,
@@ -147,6 +188,53 @@ export async function researchLibraryApi(
     [, , section, item, action] = path;
   if (method === "GET" && section === "location")
     return json(await researchLocation(user, url.searchParams));
+  if (
+    method === "GET" &&
+    section === "items" &&
+    item &&
+    action === "provenance"
+  ) {
+    const ref = await referenceAccess(user, id.parse(item)),
+      canonical = ref.canonical_id ?? ref.id;
+    const eventId = path[5];
+    if (eventId) {
+      const [event] = await query(
+        'SELECT e.*,u.name AS actor FROM reference_provenance e LEFT JOIN "user" u ON u.id=e.actor_id WHERE e.id=$1 AND e.space_id=$2 AND e.reference_id IN (SELECT id FROM bibliography WHERE id=$3 OR merged_into=$3)',
+        [id.parse(eventId), ref.space_id, canonical],
+      );
+      if (!event)
+        throw new HttpError(404, "This provenance event is unavailable.");
+      await checkLibraryScope(user, { spaceId: ref.space_id });
+      return json(event);
+    }
+    const cursor = url.searchParams.get("cursor");
+    let boundary: { created_at: string; id: string } | undefined;
+    if (cursor) {
+      [boundary] = await query(
+        "SELECT id,created_at FROM reference_provenance WHERE id=$1 AND space_id=$2 AND reference_id IN (SELECT id FROM bibliography WHERE id=$3 OR merged_into=$3)",
+        [id.parse(cursor), ref.space_id, canonical],
+      );
+      if (!boundary)
+        throw new HttpError(
+          400,
+          "Refresh the reference history before loading this position.",
+        );
+    }
+    const events = await query(
+      "SELECT e.id,e.reference_id,e.version,e.kind,e.created_at,e.details,e.before_data-'bibtex' AS before_data,e.after_data-'bibtex' AS after_data,u.name AS actor FROM reference_provenance e LEFT JOIN \"user\" u ON u.id=e.actor_id WHERE e.space_id=$1 AND e.reference_id IN (SELECT id FROM bibliography WHERE id=$2 OR merged_into=$2) AND ($3::timestamptz IS NULL OR (e.created_at,e.id)<($3,$4::uuid)) ORDER BY e.created_at DESC,e.id DESC LIMIT 21",
+      [
+        ref.space_id,
+        canonical,
+        boundary?.created_at ?? null,
+        boundary?.id ?? null,
+      ],
+    );
+    await checkLibraryScope(user, { spaceId: ref.space_id });
+    return json({
+      items: events.slice(0, 20),
+      nextCursor: events.length > 20 ? events[19].id : null,
+    });
+  }
   if (method === "GET" && section === "collections") {
     const scope = await scopeOf(url, user);
     await checkLibraryScope(user, scope);
@@ -267,7 +355,10 @@ export async function researchLibraryApi(
   }
   if (section === "items" && !item && method === "POST") {
     const input = operationSchema
-      .extend({ draft: libraryDraftSchema })
+      .extend({
+        draft: libraryDraftSchema,
+        lookupIdentifier: z.string().trim().max(300).optional(),
+      })
       .strict()
       .parse(await libraryRequestInput(request, user));
     if (!input.mutationId)
@@ -278,7 +369,11 @@ export async function researchLibraryApi(
       input.mutationId,
       "create",
       input,
-      (c) => insertReference(c, user, input.scope, input.draft),
+      async (c) => {
+        if (input.lookupIdentifier)
+          await lookupProvenance(c, input.lookupIdentifier);
+        return insertReference(c, user, input.scope, input.draft);
+      },
     );
     await notifyWorkspace();
     return json(result, 201);
@@ -288,6 +383,7 @@ export async function researchLibraryApi(
       .extend({
         draft: referenceDetailsSchema.extend({ tags: referenceTagsSchema }),
         version: z.number().int().positive(),
+        lookupIdentifier: z.string().trim().max(300).optional(),
       })
       .strict()
       .parse(await libraryRequestInput(request, user));
@@ -310,6 +406,8 @@ export async function researchLibraryApi(
         if (r.deleted_at)
           throw new HttpError(409, "Restore the reference before editing.");
         const d = input.draft;
+        if (input.lookupIdentifier)
+          await lookupProvenance(c, input.lookupIdentifier);
         const {
           rows: [next],
         } = await c.query(
@@ -823,6 +921,9 @@ export async function researchLibraryApi(
         targetId: id,
         versions,
         draft: referenceDetailsSchema,
+        extraFields: z
+          .record(z.string().regex(/^[\w-]{1,100}$/), z.string().max(200000))
+          .default({}),
       })
       .strict()
       .parse(await libraryRequestInput(request, user));
@@ -842,9 +943,67 @@ export async function researchLibraryApi(
       );
       if (rows.some((r) => r.deleted_at))
         throw new HttpError(409, "Restore references before merging.");
+      const extras = new Map<string, { key: string; value: string }[]>();
+      for (const row of rows) {
+        try {
+          const record = scanBibtex(row.bibtex).records.find((r) => r.key);
+          for (const [name, field] of Object.entries(record?.fields ?? {}))
+            if (
+              ![
+                "title",
+                "author",
+                "year",
+                "url",
+                "doi",
+                "eprint",
+                "journal",
+                "booktitle",
+              ].includes(name)
+            )
+              extras.set(name, [
+                ...(extras.get(name) ?? []),
+                { key: row.cite_key, value: field.value },
+              ]);
+        } catch {
+          /* Existing raw records remain available; malformed extras are not invented. */
+        }
+      }
+      if (Object.keys(input.extraFields).some((key) => !extras.has(key)))
+        throw new HttpError(
+          400,
+          "Choose additional fields from the reviewed records.",
+        );
+      const linked: Awaited<ReturnType<typeof referenceLinks>>[] = [];
+      for (const row of rows)
+        linked.push(await referenceLinks(user, row.id, c));
+      const collections = await c.query(
+        "SELECT count(DISTINCT collection_id)::int AS n FROM reference_collection_items WHERE reference_id=ANY($1::uuid[])",
+        [input.ids],
+      );
+      const impact = {
+        notes: new Set(linked.flatMap((l) => l.notes.map((n) => n.id))).size,
+        files: new Set(linked.flatMap((l) => l.attachments.map((a) => a.id)))
+          .size,
+        collections: collections.rows[0].n,
+      };
       return {
         rows,
-        hash: hash({ rows, draft: input.draft, target: input.targetId }),
+        extraFields: [...extras].map(([name, values]) => ({ name, values })),
+        impact,
+        matches: rows.flatMap((left, i) =>
+          rows.slice(i + 1).map((right) => ({
+            left: left.cite_key,
+            right: right.cite_key,
+            reasons: duplicateReasons(left, right),
+          })),
+        ),
+        hash: hash({
+          rows,
+          draft: input.draft,
+          target: input.targetId,
+          extraFields: input.extraFields,
+          impact,
+        }),
       };
     };
     if (item === "preview") {
@@ -854,6 +1013,9 @@ export async function researchLibraryApi(
         targetId: input.targetId,
         keys: p.rows.map((r) => r.cite_key),
         draft: input.draft,
+        matches: p.matches,
+        impact: p.impact,
+        extraFields: p.extraFields,
       });
     }
     if (!input.mutationId || !input.hash)
@@ -874,6 +1036,14 @@ export async function researchLibraryApi(
         const others = input.ids.filter((v) => v !== input.targetId),
           target = p.rows.find((r) => r.id === input.targetId)!,
           d = input.draft;
+        await c.query("SELECT set_config('axiom.reference_details',$1,true)", [
+          JSON.stringify({
+            retainedKeys: p.rows.map((r) => r.cite_key),
+            fieldChoices: input.draft,
+            extraFieldChoices: input.extraFields,
+            impact: p.impact,
+          }),
+        ]);
         for (const [table, column] of [
           ["reference_notes", "note_id"],
           ["reference_attachments", "attachment_id"],
@@ -909,7 +1079,11 @@ export async function researchLibraryApi(
             referenceTagsSchema.parse([
               ...new Set(p.rows.flatMap((r) => r.tags)),
             ]),
-            editedBibtex(target, d),
+            updateBibtexEntry(
+              editedBibtex(target, d),
+              target.cite_key,
+              input.extraFields,
+            ),
           ],
         );
         await c.query(

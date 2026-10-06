@@ -19,6 +19,7 @@ import {
   clearUploadStaging,
   fileResponse,
   detectStoredMime,
+  attachmentStream,
 } from "./storage-streams";
 import { notifyWorkspace } from "./documents";
 import { uploadInputSchema, uploadHeadMatches } from "./upload-contract";
@@ -752,7 +753,7 @@ async function finishImportUpload(upload: Upload) {
     const {
       rows: [entry],
     } = await client.query(
-      "SELECT * FROM workspace_import_entries WHERE id=$1",
+      "SELECT e.*,i.manifest FROM workspace_import_entries e JOIN workspace_imports i ON i.id=e.batch_id WHERE e.id=$1",
       [upload.import_entry_id],
     );
     const digest = createHash("sha256")
@@ -765,11 +766,42 @@ async function finishImportUpload(upload: Upload) {
       );
     await completeMultipart(current, chunks);
     const verified = await verifyStoredFile(current.storage_key, current.name);
+    const descriptor = entry.manifest.entries.find(
+      (e: { id: string }) => e.id === entry.id,
+    );
+    if (
+      descriptor?.expectedSha256 &&
+      descriptor.expectedSha256 !== verified.sha256
+    )
+      throw new HttpError(
+        400,
+        "Collection checksum mismatch. Choose the original collection again.",
+      );
     if (verified.bytes !== Number(current.bytes))
       throw new HttpError(400, "The prepared import failed size verification.");
     if (entry.kind === "note") {
       const { validateStagedMarkdown } = await import("./workspace-import-api");
-      await validateStagedMarkdown(current.storage_key, verified.bytes);
+      await validateStagedMarkdown(
+        current.storage_key,
+        verified.bytes,
+        descriptor?.sourceFormat,
+      );
+    }
+    if (descriptor?.metadata?.toolKind === "image") {
+      const { validateImportedImageProject } =
+        await import("./image-project-import");
+      const pieces: Buffer[] = [];
+      let size = 0;
+      for await (const part of await attachmentStream(current.storage_key)) {
+        size += part.length;
+        if (size > 36_000_000)
+          throw new HttpError(
+            413,
+            "Image project exceeds the native save limit.",
+          );
+        pieces.push(Buffer.from(part));
+      }
+      await validateImportedImageProject(Buffer.concat(pieces));
     }
     await client.query(
       "UPDATE workspace_import_entries SET mime=$2,sha256=$3 WHERE id=$1",

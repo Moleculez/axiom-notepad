@@ -78,6 +78,10 @@ export const revisionCommandSchema = z.discriminatedUnion("kind", [
   z
     .object({
       kind: z.literal("snapshot"),
+      expectedHash: z
+        .string()
+        .regex(/^[a-f\d]{64}$/)
+        .optional(),
       label: z.string().trim().min(1).max(120),
       mutationId: z.uuid(),
       noteId: z.uuid(),

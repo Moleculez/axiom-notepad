@@ -167,3 +167,65 @@ test("commenters propose but only editors decide, with atomic overlap rejection 
     await f.close();
   }
 });
+
+test("canceling a leave prompt preserves editing and resumes document reads", async ({
+  browser,
+}) => {
+  const f = await fixture(browser, "Retained draft.\n");
+  try {
+    await f.page.getByTestId("note-editor").click();
+    await f.page.evaluate(() => {
+      const warn = (event: BeforeUnloadEvent) => {
+        event.preventDefault();
+        event.returnValue = "";
+      };
+      (
+        window as unknown as {
+          cancellationWarn: (event: BeforeUnloadEvent) => void;
+        }
+      ).cancellationWarn = warn;
+      window.addEventListener("beforeunload", warn);
+    });
+    const prompted = f.page.waitForEvent("dialog", { timeout: 10000 });
+    // Engines differ in whether canceled navigation rejects or returns null.
+    // The actual beforeunload dialog and retained document are the acceptance.
+    const navigating = f.page
+      .goto("about:blank", { waitUntil: "commit", timeout: 5000 })
+      .catch(() => null);
+    const dialog = await prompted;
+    expect(dialog.type()).toBe("beforeunload");
+    await dialog.dismiss();
+    await navigating;
+    await expect(f.page.getByTestId("note-editor")).toBeVisible();
+    await f.page.getByTestId("note-editor").click();
+    await f.page.getByRole("button", { name: "Source", exact: true }).click();
+    const editor = f.page.getByTestId("note-editor");
+    await editor.click();
+    await editor.press("ControlOrMeta+End");
+    await f.page.keyboard.insertText("Still writable.\n");
+    await expect.poll(f.source).toBe("Retained draft.\nStill writable.\n");
+    await expect(f.page.locator(".ws-document-status")).toContainText(
+      "Saved on server",
+    );
+    const read = f.page.waitForResponse(
+      (response) =>
+        response.url().endsWith(`/resources/${f.note.id}/history`) &&
+        response.request().method() === "GET",
+    );
+    await f.page.getByRole("button", { name: "Document history" }).click();
+    expect((await read).ok()).toBe(true);
+    await expect(
+      f.page.getByRole("region", { name: "Version history", exact: true }),
+    ).toBeVisible();
+  } finally {
+    await f.page.evaluate(() => {
+      const handler = (
+        window as unknown as {
+          cancellationWarn?: (event: BeforeUnloadEvent) => void;
+        }
+      ).cancellationWarn;
+      if (handler) window.removeEventListener("beforeunload", handler);
+    });
+    await f.close();
+  }
+});

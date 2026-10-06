@@ -9,10 +9,32 @@ const guide = (sections: [string, string][], sample?: string): GuideBody => ({
   sample,
 });
 export const guideBodies: Record<string, GuideBody> = {
+  "editor/mindmap": guide([
+    [
+      "One document, another view",
+      "Choose Mind map in a note's toolbar, or create a Mind map file from Explorer. Document returns to writing; both views share canonical Markdown, collaboration and author-local undo. A first, single document-wide H1 becomes the root; headings and nested bullet/number/task items form branches. Code, math, tables and media retain compact summaries and Block details. Definitions and metadata remain supporting source.",
+    ],
+    [
+      "Edit and navigate",
+      "Click to select, double-click or F2 to edit a heading/list label. Enter applies and Escape cancels. On a node, Enter adds a sibling and Command/Ctrl+Enter adds a child. Arrow keys navigate, Space folds, and Tab stays ordinary focus navigation. Task checkboxes update their Markdown marker. Search followed by Enter reveals and focuses matches. Source or Command/Ctrl+/ opens the resizable canonical pane.",
+    ],
+    [
+      "Move deliberately",
+      "Drag to another branch: its top/bottom edge means before/after, center means child. Alt+Up/Down reorders, Alt+Left outdents. Container crossings, implicit conversions, ambiguous indentation and headings below H6 require Source. Backspace/Delete confirms branch removal. Peer changes and current access are rechecked; conflicted label drafts stay copyable, not silently applied. Apply or copy drafts before switching file or view.",
+    ],
+    [
+      "Presentation and export",
+      "Display controls direction, spacing, theme-based colors, width, initial depth and all-branch folding. Your camera and preferences are account/file-local. Export a map or branch as exact Markdown, SVG, PNG, PDF or self-contained interactive HTML, excluding private comments, presence and reading records. Rich capture is capped at 120 nodes; larger maps may use vector text or Markdown. This source increment still requires browser, collaboration and migration acceptance; see docs/MINDMAP.md.",
+    ],
+  ]),
   extensions: guide([
     [
       "Opt in, one workspace at a time",
       "Open Settings → Extensions. Install a package, enable it for your account, then review permissions for one active workspace. Team/project workspaces require manager approval of the exact package hash before each member grants their own access. All packages start disabled; third-party imports have a separate server security gate.",
+    ],
+    [
+      "Expiring permissions",
+      "Individual permissions and group approvals last 30 days; the earlier expiry wins. Renew approval and Renew permissions require explicit review of the exact package and workspace scope. Renewal does not revive an old queued proposal or restart a worker. Files and completed work stay intact.",
     ],
     [
       "Native research helpers",
@@ -42,7 +64,7 @@ export const guideBodies: Record<string, GuideBody> = {
     ],
     [
       "Find your way",
-      "Quick access contains Recent, Favorites, Reference library, Review inbox, Audit and Trash. The sidebar is a directory: enter a workspace or folder to see its contents, then go Up to its parent. Search & commands finds files and destinations. Docs, immediately to its left, opens this guide.",
+      "Quick access contains Recent, Favorites, Review inbox, Audit and Trash. References live in each workspace's Research tab. The sidebar is a directory: enter a workspace or folder to see its contents, then go Up to its parent. Search & commands finds files and destinations. Docs, immediately to its left, opens this guide.",
     ],
     [
       "Try without changing files",
@@ -270,6 +292,10 @@ export const guideBodies: Record<string, GuideBody> = {
       "Suggest mode records proposals for deliberate review. Accept or reject with current permissions, and refresh a stale comparison before applying changes. Assigned workspace reviews pin the reviewed snapshot, so subsequent edits do not change what was approved.",
     ],
     [
+      "Frozen paper evidence and follow-up tasks",
+      "Request review on a Markdown milestone can freeze its bibliography and exact figure versions. The reviewer needs existing access; full evidence loads only when expanded in the inbox. Library edits do not replace it. Follow-up task links a specific milestone or reference-history event to a same-workspace task without copying private text. Removed sources show as unavailable, not the newest version.",
+    ],
+    [
       "Scope of sharing",
       "Document edits, personal bookmarks, private annotation cards and shared discussion threads have different storage and access boundaries. Moving a note to a shared space is not equivalent to sharing an individual private annotation. Check the destination and audience.",
     ],
@@ -281,7 +307,11 @@ export const guideBodies: Record<string, GuideBody> = {
     ],
     [
       "Choose an export",
-      "Export a styled HTML snapshot, Print / Save PDF, Markdown, or Markdown with assets ZIP. Review the export settings and selected assets. HTML/PDF are snapshots, not live collaborative views or embedded workspace players.",
+      "Export a styled HTML snapshot, Print / Save PDF, Markdown, Markdown with assets ZIP, or an editable LaTeX research project. Opening Export freezes current source, including unsaved edits; Refresh snapshot explicitly includes newer work. HTML/PDF are snapshots, not live collaborative views or embedded workspace players.",
+    ],
+    [
+      "Editable LaTeX research projects",
+      "Choose BibLaTeX/Biber or natbib/BibTeX, numbered or author–year citations, paper size, margins and optional authors/date. Review TeX, Reading, Bibliography, Files and Checks before preparing the ZIP. Reading is an HTML approximation, not a compiled PDF. Original Markdown, raw bibliography, code and authorized exact asset versions travel with local compile instructions. No server compiler, external upload or linked-note assembly runs. Review warnings and compile only trusted projects locally without shell escape.",
     ],
     [
       "What travels with a file",
@@ -335,7 +365,11 @@ export const guideBodies: Record<string, GuideBody> = {
     ],
     [
       "Review duplicates safely",
-      "Select 2–20 entries, choose the retained reference and review each field. Merge combines tags, collections and file associations; every old citation key and reference URL remains usable. Markdown is not rewritten. Each reader keeps their own latest status. If a source changes during review, refresh the preview.",
+      "Select 2–20 entries, choose the retained reference and review identity-match reasons, linked-source impact, each field/custom value and extra BibTeX fields. Refresh after changing decisions. Merge combines tags, collections and file associations; every old citation key and reference URL remains usable. Markdown is not rewritten. Each reader keeps their own latest status. If a source changes during review, refresh the preview.",
+    ],
+    [
+      "Reference history",
+      "Open Details → History for paged import, copy, reviewed lookup, edit and merge provenance. View source explicitly opens the original record for that event. Existing records receive an honest upgrade baseline, not invented earlier history. Follow-up task links an immutable event to workspace planning. History remains subject to current permissions and permanent deletion of its owning source.",
     ],
     [
       "Explore the knowledge graph",
@@ -357,7 +391,7 @@ export const guideBodies: Record<string, GuideBody> = {
     ],
     [
       "Optional processing",
-      "OCR and paper assistance require configured, permitted providers. Review outgoing context and OCR results before use. Office conversion and real provider/container acceptance depend on deployment; this reader is not complete Zotero parity.",
+      "OCR and paper assistance require configured, permitted providers. Review outgoing context and OCR results before use. Office conversion and real provider/container acceptance depend on deployment.",
     ],
   ]),
   "canvas/basics": guide([
@@ -413,7 +447,7 @@ export const guideBodies: Record<string, GuideBody> = {
     ],
     [
       "Export and limits",
-      "Choose a supported export format and inspect transparency, dimensions and color. This is not complete Photoshop compatibility; imported formats and large layers have limits. Profile image upload offers a crop step before saving the account picture.",
+      "Choose a supported export format and inspect transparency, dimensions and color. Imported formats and large layers have limits. Profile image upload offers a crop step before saving the account picture.",
     ],
   ]),
   "tools/viewers": guide([
@@ -468,6 +502,18 @@ export const guideBodies: Record<string, GuideBody> = {
   ]),
   "workspace/planning": guide([
     [
+      "Research properties",
+      "Workspace Settings → Planning → Task fields defines text, number/unit, date, checkbox, URL, choice and person properties. Review Experiment or Paper review presets before creating fields. Archive used choices/fields instead of deleting their identities. The planning Properties action adds filters, selected List/Gantt columns and sorting to saved views. Summary/CSV previews explicitly shorten long values; the task opens the complete property.",
+    ],
+    [
+      "Record actual work",
+      "Planning → Time, or a saved task’s Time panel, records manual work without changing dates, estimates or progress. Your entries can be corrected, withdrawn and restored with full history; management corrections to another person’s entry require a reason. Filter member/task/date, choose descendant rollup explicitly and export CSV. Task drafts survive Properties/Time switches. Logs are workspace-shared, not an inferred billing timesheet.",
+    ],
+    [
+      "Reviewed automations",
+      "Workspace Settings → Planning → Automations prepares metadata-only proposals from task events, a daily local schedule or Run now. Rules start paused and never apply themselves. In the shared Review queue, select tasks, preview and explicitly Apply; changed versions/configuration/access block the whole batch. Cancel leaves tasks alone, and Undo refuses intervening edits. No provider, script, body/date/dependency edits or automatic time creation. Stage 3 database/browser/concurrency/scale acceptance remains pending; consult docs/PLANNING_LAB.md before deploying it.",
+    ],
+    [
       "Plan beside your files",
       "Workspace Planning offers List, Board, Calendar, Gantt and Workload. Add tasks, owners, estimates, dates, dependencies and milestones; link evidence instead of copying private content into every task.",
     ],
@@ -476,12 +522,16 @@ export const guideBodies: Record<string, GuideBody> = {
       "Use immutable baselines to compare plans. Critical-path/slack overlays are working-day calculations, not forecasts. Preview dependency-aware scheduling before applying it, with revision-checked Undo.",
     ],
     [
+      "Track outcomes and browse history",
+      "Planning → Goals searches saved outcomes/descriptions and pages through Active, Archived or All goals. Filters includes tracking type, My goals and creation order. Opening a goal loads its full Markdown; the original version protects your draft from peer overwrites. The workspace limit remains 200 including archives. History searches all retained metadata summaries. Routine history separates Changes from Generated tasks; date/status/deleted-task filters live in a compact dialog, and deleted occurrences open the Deleted tasks view.",
+    ],
+    [
       "Review research requests",
       "Planning → Intake keeps open requests and decision history in one workspace. Search request contents and review notes, choose a status/type or My requests, and page through older submissions. Opening a request loads its full Markdown; peer changes retain your draft but block stale resubmission or decisions. Acceptance creates one linked task, even on retry.",
     ],
     [
       "Coordinate the group",
-      "Group portfolios summarize accessible workspace plans and weekly estimated effort against explicit availability. Unknown capacity is not zero. Schedule previews currently show workspace-only capacity impact; inspect group capacity for combined commitments.",
+      "Group portfolios summarize accessible workspace plans and weekly estimated effort against explicit availability. Unknown capacity is not zero. Reviewed capacity previews include accessible active group workspaces and retain cohort revision fences; inspect group capacity for combined commitments.",
     ],
   ]),
   "workspace/websites": guide([
@@ -504,8 +554,16 @@ export const guideBodies: Record<string, GuideBody> = {
       "The assistant is opt-in and needs an approved provider. Select accessible notes, excerpts, Canvas cards or planning snapshots. Review the exact outgoing context before sending; selecting a workspace is not permission to send all its contents.",
     ],
     [
+      "Review every batch",
+      "Additional discovery happens locally. Each later outgoing batch waits for fresh approval: inspect its complete messages, exclude or narrow new excerpts, then update the preview before consenting. Set the run's round/output caps up front. Missing usage and monetary costs remain unknown, never zero. Source chips check access and show the exact captured snapshot; citation membership does not establish correctness.",
+    ],
+    [
       "Review proposals",
       "Answers can cite selected evidence. Changes to documents, tasks or schedules use explicit reviewed proposals and guarded application/Undo. Model output is not authoritative research evidence, and stale proposals may require a fresh preview.",
+    ],
+    [
+      "Recover known outcomes",
+      "Finish saved response repeats local processing only, without contacting the provider. Review remaining changes prepares eligible unfinished work in a separate draft, preserving completed receipts and stale-version guards. Uncertain or cancelled requests are never automatically replayed; inspect their actual outcome first.",
     ],
     [
       "Provider boundary",
@@ -534,6 +592,10 @@ export const guideBodies: Record<string, GuideBody> = {
     [
       "Read versus change",
       "Read access is not write or management authority. Mutations follow the app's permissions and reviewed-action workflows where required. An external model cannot bypass a revoked grant or hidden resource by knowing an identifier.",
+    ],
+    [
+      "Scoped evidence reads",
+      "workspace_evidence_search returns bounded literal search previews; workspace_evidence_read captures exact native text or nonrecursive Canvas cards with source identity. Both use the existing workspace-read grant and recheck access. A search summary is not citable evidence, and neither tool can approve a model batch or its own changes.",
     ],
     [
       "Before using an agent",

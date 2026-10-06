@@ -126,15 +126,17 @@ export function WorkspaceCommandProvider({
         openAssistant(context?.spaceId ? { spaceId: context.spaceId } : {}),
     });
     if (context?.spaceId)
-      for (const source of ["markdown", "folder", "zip"] as const)
+      for (const source of ["markdown", "canvas", "folder", "zip"] as const)
         core.push({
           id: "workspace:import:" + source,
           title:
             source === "markdown"
               ? "Import Markdown files"
-              : source === "folder"
-                ? "Import folder"
-                : "Import ZIP archive",
+              : source === "canvas"
+                ? "Import Canvas files"
+                : source === "folder"
+                  ? "Import folder"
+                  : "Import ZIP archive",
           description:
             "Editable notes and supporting files · review before publishing",
           icon: Import,
@@ -152,7 +154,8 @@ export function WorkspaceCommandProvider({
       core.push({
         id: "document:export",
         title: "Export document",
-        description: "HTML, Print / Save PDF, Markdown and assets",
+        description:
+          "HTML, Print / Save PDF, Markdown, assets and LaTeX projects",
         icon: Download,
         group: "Document",
         run: () => window.dispatchEvent(new Event("axiom:export-document")),

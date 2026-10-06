@@ -12,7 +12,6 @@ import {
 import {
   lockPlanning,
   mutatePlanningTask,
-  planningTasks,
   taskInput,
   validateTask,
 } from "./planning-api";
@@ -20,14 +19,20 @@ import {
   goalInputSchema,
   intakeInputSchema,
   planningViewStateSchema,
-  goalProgress,
-  goalProgressContext,
   planningBulkInputSchema,
   nextRecurrenceDates,
 } from "./planning-suite";
 import { recurrenceSchema } from "./workspace";
 import { notifyWorkspace } from "./documents";
 import { readIntakeDetail, readIntakePage } from "./planning-intake-api";
+import {
+  readGoalDetail,
+  readGoalPage,
+  readHistoryPage,
+  readOccurrencePage,
+} from "./planning-archive-api";
+import { workspaceGoalLimit } from "./planning-archives";
+import { applyMetadataBatch } from "./planning-metadata-service";
 const uuid = z.uuid(),
   name = z.string().trim().min(1).max(120);
 const date = (value: unknown) =>
@@ -167,34 +172,21 @@ export async function planningSuiteApi(
               [spaceId, user],
             )
           ).rows;
-        if (section === "planning-history")
-          return (
-            await db.query(
-              `SELECT h.id,h.kind,h.summary,h.created_at,u.name AS actor_name FROM planning_history h LEFT JOIN "user" u ON u.id=h.actor_id WHERE space_id=$1 AND entity_id=$2 ORDER BY created_at DESC LIMIT 100`,
-              [spaceId, uuid.parse(id)],
-            )
-          ).rows;
+        if (section === "planning-history") {
+          if (action) throw new HttpError(404, "Unknown history operation.");
+          return readHistoryPage(
+            db,
+            url.searchParams,
+            spaceId,
+            user,
+            uuid.parse(id),
+          );
+        }
         if (section === "goals") {
-          const goals = (
-            await db.query(
-              "SELECT * FROM planning_goals WHERE space_id=$1 ORDER BY archived,updated_at DESC LIMIT 200",
-              [spaceId],
-            )
-          ).rows;
-          const tasks = await planningTasks(db, spaceId),
-            milestones = (
-              await db.query(
-                "SELECT id,completed_at FROM project_milestones WHERE space_id=$1",
-                [spaceId],
-              )
-            ).rows;
-          const progressContext = goalProgressContext(tasks, milestones);
-          return goals.map((g) => ({
-            ...g,
-            target: Number(g.target),
-            current_value: Number(g.current_value),
-            progress: goalProgress(g, tasks, milestones, progressContext),
-          }));
+          if (action) throw new HttpError(404, "Unknown goal operation.");
+          return id
+            ? readGoalDetail(db, spaceId, uuid.parse(id))
+            : readGoalPage(db, url.searchParams, spaceId, user);
         }
         if (section === "intake") {
           if (action) throw new HttpError(404, "Unknown request operation.");
@@ -217,12 +209,14 @@ export async function planningSuiteApi(
           ).rows[0];
           if (!row) throw new HttpError(404, "Routine unavailable.");
           if (action === "occurrences")
-            return (
-              await db.query(
-                "SELECT o.occurs_on,t.id,t.title,t.status FROM task_occurrences o JOIN tasks t ON t.id=o.task_id WHERE o.recurrence_id=$1 ORDER BY occurs_on DESC LIMIT 100",
-                [id],
-              )
-            ).rows;
+            return readOccurrencePage(
+              db,
+              url.searchParams,
+              spaceId,
+              user,
+              row.id,
+            );
+          if (action) throw new HttpError(404, "Unknown routine operation.");
           const rule = recurrenceSchema.parse(row.rule),
             today = new Intl.DateTimeFormat("sv-SE", {
               timeZone: scope.timezone,
@@ -373,7 +367,7 @@ export async function planningSuiteApi(
               "SELECT count(*)::int AS n FROM planning_goals WHERE space_id=$1",
               [spaceId],
             )
-          ).rows[0].n >= 200
+          ).rows[0].n >= workspaceGoalLimit
         )
           throw new HttpError(
             413,
@@ -549,6 +543,10 @@ export async function planningSuiteApi(
         if (method !== "POST")
           throw new HttpError(405, "Use a reviewed bulk update.");
         const input = planningBulkInputSchema.parse(raw);
+        if (input.patch.deleted === undefined) {
+          const rows = await applyMetadataBatch(db,user,spaceId,input.items.map(item=>({...item,patch:input.patch})),raw.fieldsVersion);
+          return {count:rows.length,items:rows};
+        }
         const tasks = (
           await db.query(
             "SELECT id,parent_id FROM tasks WHERE space_id=$1 LIMIT 50001",

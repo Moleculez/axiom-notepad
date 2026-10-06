@@ -401,6 +401,44 @@ test("runaway worker terminates without freezing application navigation", async 
   }
 });
 
+for (const [label, bundle, message] of [
+  [
+    "oversized payload",
+    "export default {run(){postMessage({type:'render',id:1,panel:'x'.repeat(9*1024*1024)});}}",
+    "Extension message is too large.",
+  ],
+  [
+    "sparse array",
+    "export default {run(){postMessage({type:'render',id:1,panel:new Array(100001)});}}",
+    "Extension array exceeds its structure budget.",
+  ],
+  [
+    "message flood",
+    "export default {run(){for(let i=0;i<120;i++)postMessage({type:'heartbeat'});}}",
+    "Extension message rate exceeded.",
+  ],
+] as const)
+  test(`trusted relay stops ${label} before native UI interpretation`, async ({
+    browser,
+  }) => {
+    const f = await fixture(browser, bundle);
+    try {
+      await expect(f.page.getByText(message, { exact: false })).toBeVisible({
+        timeout: 15000,
+      });
+      await expect(f.page.locator("iframe.plugin-sandbox-frame")).toHaveCount(
+        0,
+      );
+      await f.page.getByRole("button", { name: "Search workspace" }).click();
+      await expect(
+        f.page.getByRole("dialog", { name: /Search/ }),
+      ).toBeVisible();
+      expect(f.errors).toEqual([]);
+    } finally {
+      await f.context.close();
+    }
+  });
+
 test("matched frames keep footers visible in all interface styles and large text", async ({
   browser,
 }) => {

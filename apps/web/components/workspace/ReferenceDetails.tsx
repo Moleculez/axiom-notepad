@@ -21,6 +21,7 @@ import type { ReferenceDetails } from "@axiom/shared/research";
 import Dialog, { DialogFooter } from "../Dialog";
 import ResizablePanel from "../ResizablePanel";
 import InsertResource from "./InsertResource";
+import ReferenceHistory from "./ReferenceHistory";
 import { api } from "../../lib/client";
 import { ErrorNotice, useAction, useData, useWorkspace, mutate } from "./ui";
 const blank: ReferenceDetails = {
@@ -104,8 +105,10 @@ export function ReferenceForm({
     [citeKey, setKey] = useState(reference?.cite_key ?? ""),
     [tags, setTags] = useState(reference?.tags.join(", ") ?? ""),
     [identifier, setIdentifier] = useState(""),
+    [lookupIdentifier, setLookupIdentifier] = useState<string | undefined>(),
     [preview, setPreview] = useState<{
       provider: string;
+      identifier: string;
       details: ReferenceDetails;
     } | null>(null);
   const action = useAction();
@@ -157,6 +160,7 @@ export function ReferenceForm({
             className="button secondary"
             onClick={() => {
               setDraft(preview.details);
+              setLookupIdentifier(preview.identifier);
               if (!citeKey)
                 setKey(
                   (
@@ -222,6 +226,7 @@ export function ReferenceForm({
                   (reference ? "/" + reference.id : ""),
                 {
                   scope,
+                  ...(lookupIdentifier ? { lookupIdentifier } : {}),
                   ...(reference
                     ? { draft: details, version: reference.version }
                     : { draft: parsed }),
@@ -275,6 +280,7 @@ export default function ReferenceInspector({
     ),
     action = useAction(),
     [picker, setPicker] = useState<"note" | "file" | null>(null);
+  const [tab, setTab] = useState<"details" | "sources" | "history">("details");
   const r = data.data,
     allowed = spaces.filter((s) => s.id === scope.spaceId);
   const link = async (
@@ -315,158 +321,198 @@ export default function ReferenceInspector({
         <>
           <h2>{r.title}</h2>
           <p>{r.authors}</p>
-          <div className="research-tags">
-            {r.tags.map((t) => (
-              <span key={t}>{t}</span>
+          <ActionRow aria-label="Reference views">
+            {(["details", "sources", "history"] as const).map((view) => (
+              <Button
+                key={view}
+                variant="ghost"
+                aria-pressed={tab === view}
+                onClick={() => setTab(view)}
+              >
+                {view[0].toUpperCase() + view.slice(1)}
+              </Button>
             ))}
-          </div>
-          <ActionRow>
+          </ActionRow>
+          {tab === "history" && (
+            <ReferenceHistory
+              key={r.id}
+              referenceId={r.canonical_id ?? r.id}
+              spaceId={scope.spaceId}
+              canEdit={canEdit && !r.deleted_at}
+            />
+          )}
+          {tab === "sources" && (
+            <section className="reference-original">
+              <h3>Bibliographic source</h3>
+              <pre>{r.bibtex || "No original BibTeX record"}</pre>
+              {!!r.import_source?.format && (
+                <p className="muted">
+                  Imported as {String(r.import_source.format)}. Only this record
+                  and required bibliography strings are retained.
+                </p>
+              )}
+            </section>
+          )}
+          <section hidden={tab !== "details"}>
+            <div className="research-tags">
+              {r.tags.map((t) => (
+                <span key={t}>{t}</span>
+              ))}
+            </div>
+            <ActionRow>
+              <Button
+                className="button ghost"
+                title="Copy Markdown citation"
+                onClick={() =>
+                  void navigator.clipboard.writeText(`[@${r.cite_key}]`).then(
+                    () => notify("Citation copied."),
+                    () => notify("Clipboard unavailable."),
+                  )
+                }
+              >
+                <Copy size={14} />
+                {r.cite_key}
+              </Button>
+              {canEdit && !r.deleted_at && (
+                <IconButton
+                  className="icon-button"
+                  aria-label="Edit reference"
+                  title="Edit reference"
+                  onClick={() => onEdit({ ...r, id: r.canonical_id ?? r.id })}
+                >
+                  <Pencil size={15} />
+                </IconButton>
+              )}
+            </ActionRow>
+            {r.merged_into && (
+              <p className="research-notice">
+                This citation key redirects to the merged reference. Existing
+                citations still work.
+              </p>
+            )}
+            <dl className="reference-facts">
+              {(["year", "venue", "doi", "arxiv"] as const)
+                .filter((k) => r[k])
+                .map((k) => (
+                  <div key={k}>
+                    <dt>{referenceLabels[k]}</dt>
+                    <dd>{r[k]}</dd>
+                  </div>
+                ))}
+            </dl>
+            {r.url && (
+              <a
+                className="button ghost"
+                href={r.url}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <ExternalLink size={14} />
+                Visit source
+              </a>
+            )}
             <Button
               className="button ghost"
-              title="Copy Markdown citation"
               onClick={() =>
-                void navigator.clipboard.writeText(`[@${r.cite_key}]`).then(
-                  () => notify("Citation copied."),
-                  () => notify("Clipboard unavailable."),
+                navigate(
+                  `/workspaces/${scope.spaceId}/research?view=graph&focus=reference:${r.canonical_id ?? r.id}`,
                 )
               }
             >
-              <Copy size={14} />
-              {r.cite_key}
+              <Network size={14} />
+              Explore connections
             </Button>
-            {canEdit && !r.deleted_at && (
-              <IconButton
-                className="icon-button"
-                aria-label="Edit reference"
-                title="Edit reference"
-                onClick={() => onEdit({ ...r, id: r.canonical_id ?? r.id })}
-              >
-                <Pencil size={15} />
-              </IconButton>
-            )}
-          </ActionRow>
-          {r.merged_into && (
-            <p className="research-notice">
-              This citation key redirects to the merged reference. Existing
-              citations still work.
-            </p>
-          )}
-          <dl className="reference-facts">
-            {(["year", "venue", "doi", "arxiv"] as const)
-              .filter((k) => r[k])
-              .map((k) => (
-                <div key={k}>
-                  <dt>{referenceLabels[k]}</dt>
-                  <dd>{r[k]}</dd>
+            <h3>Linked PDFs</h3>
+            <div className="research-connections">
+              {r.attachments.map((p) => (
+                <div key={p.id}>
+                  <button
+                    onClick={() =>
+                      navigate(`/pdf/${p.resource_id}?version=${p.id}`)
+                    }
+                  >
+                    <FileText size={15} />
+                    <span>
+                      {p.name}
+                      <small>Version {p.ordinal}</small>
+                    </span>
+                  </button>
+                  {canEdit && !r.deleted_at && (
+                    <IconButton
+                      className="icon-button"
+                      aria-label={`Unlink ${p.name}`}
+                      title="Unlink PDF"
+                      onClick={() =>
+                        void action.run(() => link("attachment", p.id, true))
+                      }
+                    >
+                      <X size={13} />
+                    </IconButton>
+                  )}
                 </div>
               ))}
-          </dl>
-          {r.url && (
-            <a
-              className="button ghost"
-              href={r.url}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <ExternalLink size={14} />
-              Visit source
-            </a>
-          )}
-          <Button
-            className="button ghost"
-            onClick={() =>
-              navigate(
-                `/workspaces/${scope.spaceId}/research?view=graph&focus=reference:${r.canonical_id ?? r.id}`,
-              )
-            }
-          >
-            <Network size={14} />
-            Explore connections
-          </Button>
-          <h3>Linked PDFs</h3>
-          <div className="research-connections">
-            {r.attachments.map((p) => (
-              <div key={p.id}>
-                <button
-                  onClick={() =>
-                    navigate(`/pdf/${p.resource_id}?version=${p.id}`)
-                  }
-                >
-                  <FileText size={15} />
-                  <span>
-                    {p.name}
-                    <small>Version {p.ordinal}</small>
-                  </span>
-                </button>
-                {canEdit && !r.deleted_at && (
-                  <IconButton
-                    className="icon-button"
-                    aria-label={`Unlink ${p.name}`}
-                    title="Unlink PDF"
-                    onClick={() =>
-                      void action.run(() => link("attachment", p.id, true))
-                    }
-                  >
-                    <X size={13} />
-                  </IconButton>
-                )}
-              </div>
-            ))}
-          </div>
-          {!r.attachments.length && (
-            <p className="muted">
-              Link an existing PDF, including standalone files.
-            </p>
-          )}
-          {canEdit && !r.deleted_at && (
-            <Button className="button ghost" onClick={() => setPicker("file")}>
-              <Plus size={14} />
-              Link PDF
-            </Button>
-          )}
-          <h3>Notes & citation usage</h3>
-          <div className="research-connections">
-            {r.notes.map((n) => (
-              <div key={n.id}>
-                <button onClick={() => navigate("/notes/" + n.id)}>
-                  <Link2 size={15} />
-                  <span>
-                    {n.title}
-                    <small>
-                      {n.cited ? "Cited in Markdown" : "Linked note"}
-                    </small>
-                  </span>
-                </button>
-                {n.manual && canEdit && !r.deleted_at && (
-                  <IconButton
-                    className="icon-button"
-                    aria-label={`Unlink ${n.title}`}
-                    title="Remove association (citations remain)"
-                    onClick={() =>
-                      void action.run(() => link("note", n.id, true))
-                    }
-                  >
-                    <X size={13} />
-                  </IconButton>
-                )}
-              </div>
-            ))}
-          </div>
-          {!r.notes.length && (
-            <p className="muted">No linked or citing notes yet.</p>
-          )}
-          {canEdit && !r.deleted_at && (
-            <Button className="button ghost" onClick={() => setPicker("note")}>
-              <Plus size={14} />
-              Link note
-            </Button>
-          )}
-          {r.import_source && Object.keys(r.import_source).length > 0 && (
-            <details className="reference-original">
-              <summary>Original imported record</summary>
-              <pre>{String(r.import_source.raw ?? r.bibtex)}</pre>
-            </details>
-          )}
+            </div>
+            {!r.attachments.length && (
+              <p className="muted">
+                Link an existing PDF, including standalone files.
+              </p>
+            )}
+            {canEdit && !r.deleted_at && (
+              <Button
+                className="button ghost"
+                onClick={() => setPicker("file")}
+              >
+                <Plus size={14} />
+                Link PDF
+              </Button>
+            )}
+            <h3>Notes & citation usage</h3>
+            <div className="research-connections">
+              {r.notes.map((n) => (
+                <div key={n.id}>
+                  <button onClick={() => navigate("/notes/" + n.id)}>
+                    <Link2 size={15} />
+                    <span>
+                      {n.title}
+                      <small>
+                        {n.cited ? "Cited in Markdown" : "Linked note"}
+                      </small>
+                    </span>
+                  </button>
+                  {n.manual && canEdit && !r.deleted_at && (
+                    <IconButton
+                      className="icon-button"
+                      aria-label={`Unlink ${n.title}`}
+                      title="Remove association (citations remain)"
+                      onClick={() =>
+                        void action.run(() => link("note", n.id, true))
+                      }
+                    >
+                      <X size={13} />
+                    </IconButton>
+                  )}
+                </div>
+              ))}
+            </div>
+            {!r.notes.length && (
+              <p className="muted">No linked or citing notes yet.</p>
+            )}
+            {canEdit && !r.deleted_at && (
+              <Button
+                className="button ghost"
+                onClick={() => setPicker("note")}
+              >
+                <Plus size={14} />
+                Link note
+              </Button>
+            )}
+            {r.import_source && Object.keys(r.import_source).length > 0 && (
+              <details className="reference-original">
+                <summary>Original imported record</summary>
+                <pre>{String(r.import_source.raw ?? r.bibtex)}</pre>
+              </details>
+            )}
+          </section>
           {picker && (
             <InsertResource
               kind={picker}

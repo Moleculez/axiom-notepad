@@ -794,6 +794,7 @@ export function Field({
   children,
   id: suppliedId,
   className,
+  action,
 }: {
   label: ReactNode;
   icon?: ReactNode;
@@ -806,6 +807,7 @@ export function Field({
   }>;
   id?: string;
   className?: string;
+  action?: ReactNode;
 }) {
   const generated = useId(),
     id = suppliedId ?? children.props.id ?? generated;
@@ -816,6 +818,13 @@ export function Field({
   ]
     .filter(Boolean)
     .join(" ");
+  const control = isValidElement(children)
+    ? cloneElement(children, {
+        id,
+        "aria-describedby": described || undefined,
+        "aria-invalid": error ? true : children.props["aria-invalid"],
+      })
+    : null;
   return (
     <div className={classes("ui-field", className)}>
       <label htmlFor={id}>
@@ -826,12 +835,14 @@ export function Field({
         )}
         <span className="ui-field-label-text">{label}</span>
       </label>
-      {isValidElement(children) &&
-        cloneElement(children, {
-          id,
-          "aria-describedby": described || undefined,
-          "aria-invalid": error ? true : children.props["aria-invalid"],
-        })}
+      {action ? (
+        <div className="ui-field-control-row">
+          {control}
+          {action}
+        </div>
+      ) : (
+        control
+      )}
       {hint && (
         <HelpText as="small" id={`${id}-hint`}>
           {hint}

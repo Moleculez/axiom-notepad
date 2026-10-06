@@ -75,6 +75,7 @@ import { filePreviewApi } from "@axiom/shared/file-preview-api";
 import { canvasPreviewApi } from "@axiom/shared/canvas-preview-api";
 import { revisionApi } from "@axiom/shared/revision-api";
 import { imageCloudApi } from "@axiom/shared/image-cloud-api";
+import { latexExportPreview } from "@axiom/shared/latex-export-api";
 import { resourceReviewApi } from "@axiom/shared/resource-review-api";
 import { researchToolsApi } from "@axiom/shared/research-tools-api";
 import { fileCreateApi } from "@axiom/shared/file-create-api";
@@ -95,6 +96,7 @@ import { projectsApi } from "@axiom/shared/projects-api";
 import { planningApi } from "@axiom/shared/planning-api";
 import { planningExpansionApi } from "@axiom/shared/planning-expansion-api";
 import { paperTaskApi } from "@axiom/shared/paper-task-api";
+import { researchTaskApi } from "@axiom/shared/research-task-api";
 import { accountsApi } from "@axiom/shared/accounts-api";
 import { groupAdministrationApi } from "@axiom/shared/group-administration";
 import { trashApi } from "@axiom/shared/trash-api";
@@ -253,6 +255,8 @@ async function handleRequest(
     if (assistantResponse) return assistantResponse;
     const paperLinks = await paperTaskApi(request, path, user.id);
     if (paperLinks) return paperLinks;
+    const researchLinks = await researchTaskApi(request, path, user.id);
+    if (researchLinks) return researchLinks;
     const expandedPlanning = await planningExpansionApi(request, path, user.id);
     if (expandedPlanning) return expandedPlanning;
     const planningResponse = await planningApi(request, path, user.id);
@@ -624,11 +628,15 @@ async function handleRequest(
       );
       if (
         method !== "GET" &&
-        !["sync-token", "favorite", "export-preview"].includes(action)
+        !["sync-token", "favorite", "export-preview", "latex-preview"].includes(
+          action,
+        )
       )
         requireNoteCapability(note, action === "comments" ? "comment" : "edit");
       if (action === "export-preview" && method === "POST")
         return await documentExportPreview(request, user.id, id);
+      if (action === "latex-preview" && method === "POST")
+        return await latexExportPreview(request, user.id, id);
       if (!action && method === "GET") return json(note);
       if (!action && method === "PATCH") {
         const input = z

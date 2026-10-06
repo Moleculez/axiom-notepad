@@ -4,7 +4,7 @@ import type { Preferences } from "@axiom/shared/appearance";
 import { ShowcaseStore } from "./store";
 
 export const store = new ShowcaseStore();
-export type Destination = "tour" | "editor" | "canvas";
+export type Destination = "tour" | "editor" | "canvas" | "mindmap";
 export type DemoContext = {
   dark: boolean;
   notify: (message: string) => void;

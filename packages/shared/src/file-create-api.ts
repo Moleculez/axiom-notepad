@@ -38,7 +38,7 @@ export async function fileCreateApi(
     .parse(await request.json());
   const type = fileTypes.find((t) => t.id === input.type)!,
     name =
-      ["markdown", "math", "canvas"].includes(input.type) ||
+      ["markdown", "math", "canvas", "mindmap"].includes(input.type) ||
       input.name.toLowerCase().endsWith("." + type.extension)
         ? input.name
         : input.name + "." + type.extension;

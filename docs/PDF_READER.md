@@ -10,11 +10,9 @@ workspace, preserving file version/page/annotation identity. Private text is not
 copied into the task; link visibility follows current paper/annotation access.
 Deleted or pruned source versions never redirect to a different version.
 
-The PDF reader is a research-oriented workbench, inspired by Zotero's reading
-workflow, not a claim of feature parity. It opens immutable file versions inside
-the existing workbench and beside Markdown notes. Your source PDF is never edited
-by annotation or display controls. See [Zotero's reader guide](https://www.zotero.org/support/pdf_reader)
-for the reference workflow.
+The PDF reader opens immutable file versions inside the research workbench and
+beside Markdown notes. Your source PDF is never edited by annotation or display
+controls.
 
 ## Reading and navigation
 

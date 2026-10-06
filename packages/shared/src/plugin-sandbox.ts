@@ -1,3 +1,5 @@
+import { pluginLimits } from "./plugins";
+import { pluginTransportSource } from "./plugin-transport";
 /** Trusted bootstrap only. Untrusted package bytes never enter this document's
  * JavaScript realm. The classic Blob worker inherits the opaque frame's CSP. */
 export const pluginWorkerBootstrap = `
@@ -45,20 +47,24 @@ export function pluginSandboxDocument(
 ) {
   const bootstrap = `
 const nonce=${JSON.stringify(nonce)}, origin=${JSON.stringify(parentOrigin)}, source=${JSON.stringify(pluginWorkerBootstrap)};
+${pluginTransportSource}
+const transport=createTransport(${JSON.stringify(pluginLimits)});
 let port,worker,last=0,watchdog,started=false;
 function stop(){clearInterval(watchdog);worker?.terminate();worker=undefined;port?.close();}
+function fail(error){port?.postMessage(JSON.stringify({type:'error',message:String(error?.message||'Extension transport failed.').slice(0,2000)}));stop();}
 addEventListener('message',(event)=>{
  if(started||event.source!==parent||event.origin!==origin||event.data?.type!=='axiom-plugin-connect'||event.data?.nonce!==nonce||event.ports.length!==1)return;
  started=true;port=event.ports[0];
  try {
   const url=URL.createObjectURL(new Blob([source],{type:'text/javascript'}));
   worker=new Worker(url,{name:'Axiom isolated extension'});URL.revokeObjectURL(url);last=performance.now();
-  worker.onmessage=(e)=>{if(e.data?.type==='heartbeat')last=performance.now();port.postMessage(e.data);};
-  worker.onerror=(event)=>{port.postMessage({type:'error',message:'Extension worker failed. No changes were applied.'+(event.message?' '+String(event.message).slice(0,300):'')});stop();};
-  port.onmessage=(e)=>{if(e.data?.type==='stop'){stop();return;}worker?.postMessage(e.data);};port.start();
-  watchdog=setInterval(()=>{if(performance.now()-last>6000){port.postMessage({type:'error',message:'Extension stopped responding and was terminated.'});stop();}},1000);
-  port.postMessage({type:'connected'});
- }catch(error){port.postMessage({type:'error',message:'Isolated extension workers are unavailable in this browser.'});stop();}
+  worker.onmessage=(e)=>{try{const wire=transport.serialize(e.data,true);if(e.data.type==='heartbeat')last=performance.now();port.postMessage(wire);}catch(error){fail(error);}};
+  worker.onmessageerror=()=>fail(new Error('Extension sent an uncloneable message.'));
+  worker.onerror=(event)=>fail(new Error('Extension worker failed. No changes were applied.'+(event.message?' '+String(event.message).slice(0,300):'')));
+  port.onmessage=(e)=>{if(e.data?.type==='stop'){stop();return;}try{if(e.data?.type==='run')transport.reset();transport.serialize(e.data);worker?.postMessage(e.data);}catch(error){fail(error);}};port.start();
+  watchdog=setInterval(()=>{if(performance.now()-last>6000)fail(new Error('Extension stopped responding and was terminated.'));},1000);
+  port.postMessage(JSON.stringify({type:'connected'}));
+ }catch(error){fail(new Error('Isolated extension workers are unavailable in this browser.'));}
 });
 addEventListener('pagehide',stop);
 parent.postMessage({type:'axiom-plugin-ready',nonce},origin);

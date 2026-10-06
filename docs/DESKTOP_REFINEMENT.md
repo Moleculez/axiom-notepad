@@ -5,7 +5,7 @@
 > default. Use [the current editor architecture](EDITOR_VNEXT.md),
 > [typing contracts](TYPING_INTEGRITY.md) and [Verification](VERIFICATION.md).
 
-This release continues the first-party editor, without Tiptap, CodeMirror or another editor framework. The installed Typora was used as a visual reference; these are tested Typora-inspired interactions, not a claim of complete compatibility or physical-keyboard/IME certification. Mobile development is explicitly deferred.
+This historical release uses a first-party DOM editing engine. Physical-keyboard and IME certification remain separate acceptance gates. Mobile development is explicitly deferred.
 
 ## Editing
 
@@ -36,4 +36,4 @@ After a restrictive lifecycle transition, synchronization requires the recovery-
 
 Use the isolated helper in `data/editor-verification.mjs`; never run fixture mutations against live research. `tests/space-lifecycle.test.ts`, `tests/native-deletion.test.ts`, the three-engine native input harness, application editor/context-menu/lifecycle suites, `scripts/verify/verify-space-lifecycle.ts` and `scripts/verify/verify-durability.ts` cover these contracts. Final measured results and local deployment status belong in [VERIFICATION.md](VERIFICATION.md).
 
-Physical Typora keystroke parity, OS IME/assistive-technology certification, complete CommonMark nesting equivalence and every possible concurrent edit interleaving remain outside these automated checks. The earlier intermittent rapid WebKit settings-navigation report is not declared fixed solely because isolated repetitions pass.
+Physical keyboard, OS IME and assistive-technology certification, complete CommonMark nesting equivalence and every possible concurrent edit interleaving remain outside these automated checks. The earlier intermittent rapid WebKit settings-navigation report is not declared fixed solely because isolated repetitions pass.

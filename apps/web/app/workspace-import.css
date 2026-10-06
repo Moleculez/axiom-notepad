@@ -131,9 +131,40 @@ button.import-entry-row:disabled {
   min-width: 0;
   min-height: 0;
   background: var(--paper);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.import-preview-toolbar {
+  padding: 8px 12px;
+  border-block-end: 1px solid var(--line);
+  flex: none;
+}
+.import-preview-toolbar > div {
+  display: flex;
+  flex-wrap: wrap;
+}
+.import-source-preview {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: 16px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: var(--size-code)/1.6 var(--font-code);
+}
+.workspace-import-preview > .docs-canvas {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.workspace-import-preview .canvas-studio {
+  height: 100%;
+  min-height: 0;
 }
 .workspace-import-preview .planning-markdown {
-  height: 100%;
+  flex: 1;
   min-height: 0;
   border: 0;
   border-radius: 0;

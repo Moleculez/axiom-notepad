@@ -10,6 +10,13 @@ export type RecoveryActivityItem = {
   changeSetId?: string;
 };
 export const activityNeedsAttention = (status: string) =>
-  ["failed", "uncertain", "partial", "blocked", "paused"].includes(status);
+  [
+    "failed",
+    "uncertain",
+    "partial",
+    "blocked",
+    "paused",
+    "awaiting-review",
+  ].includes(status);
 export const activityIsRunning = (status: string) =>
   ["queued", "running", "applying", "uploading", "verifying"].includes(status);

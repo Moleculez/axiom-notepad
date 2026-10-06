@@ -120,6 +120,10 @@ export async function prepareChangeSetUndo(
         dependencyLinks: taskDependencyLinks(b),
         progressPercent: b.progress_percent ?? 0,
         position: b.position,
+        ...(Object.hasOwn(original.payload,"customFields") ? {
+          customFields:Object.fromEntries(Object.keys(original.payload.customFields as Record<string,unknown>).map(id=>[id,b.custom_fields?.[id]??null])),
+          fieldsVersion:(await query("SELECT planning_fields_version FROM spaces WHERE id=$1",[original.spaceId]))[0].planning_fields_version,
+        } : {}),
       };
   } else if (original.action === "file_update") {
     const [current] = await query("SELECT version FROM resources WHERE id=$1", [
