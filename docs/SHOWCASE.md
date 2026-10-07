@@ -9,10 +9,19 @@ documents the larger self-hosted workbench, not active cloud services in the dem
 
 ### Live browser-local surfaces
 
-The latest source adds a shared native [mind-map surface](MINDMAP.md), a fictional
-research-map fixture and a Map/Document switch for existing notes. It reuses local
-Markdown/Yjs/undo without a backend. This increment has not been deployed or
-visually accepted; the dated captures below are unchanged, not map screenshots.
+The latest source includes the shared native [mind-map surface](MINDMAP.md), a
+fictional research-map fixture and a Map/Document switch for existing notes. It
+reuses local Markdown/Yjs/undo without a backend. Rendered Mermaid/local-image
+research previews, paper-framed nodes, contextual fold controls, focused branches
+and multi-selection share production code. Research lenses filter equations,
+figures, code, tables, linked evidence or unfinished tasks, while Block/Evidence/Tasks
+tabs keep source context in one Details pane. The quieter toolbar, optional
+overview, resizable source pane and explicit image/diagram inspection use the same
+controls as production. Zoom survives typing and undo; map counts share the
+document footer, and navigation reviews unapplied labels rather than discarding
+them silently. Current local browser evidence is recorded
+in [Verification](VERIFICATION.md). This increment has not been deployed; the dated
+captures below are unchanged, not screenshots of this map usability update.
 
 The static editor and Canvas are interactive, not screenshots: try the fictional
 notebooks, create a local draft, import files or export a portable copy. Seven

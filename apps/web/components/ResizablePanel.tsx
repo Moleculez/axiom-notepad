@@ -11,6 +11,10 @@ export default function ResizablePanel({
   label,
   children,
   hidden = false,
+  minWidth = 220,
+  maxWidth,
+  defaultWidth,
+  reserveWidth,
 }: {
   account: string;
   name:
@@ -24,11 +28,17 @@ export default function ResizablePanel({
   label: string;
   children: ReactNode;
   hidden?: boolean;
+  minWidth?: number;
+  maxWidth?: number;
+  defaultWidth?: number;
+  reserveWidth?: number;
 }) {
-  const min = 220,
-    max = name === "sidebar" ? 420 : 480;
+  const min = minWidth,
+    max = maxWidth ?? (name === "sidebar" ? 420 : 480);
   const fallback =
-    name === "sidebar" ? 248 : name === "research-details" ? 340 : 270;
+    defaultWidth ??
+    (name === "sidebar" ? 248 : name === "research-details" ? 340 : 270);
+  const reserve = reserveWidth ?? (name === "sidebar" ? 600 : 360);
   const key = `axiom:panel-width:${account}:${name}`;
   const id = useId();
   const panel = useRef<HTMLElement>(null);
@@ -57,22 +67,17 @@ export default function ResizablePanel({
     } catch {
       setSaved({ key, width: fallback });
     }
-  }, [key, fallback, max]);
+  }, [key, fallback, min, max]);
   useEffect(() => {
     const parent = panel.current?.parentElement;
     if (!parent) return;
     const measure = () =>
-      setAvailable(
-        Math.max(
-          min,
-          Math.min(max, parent.clientWidth - (name === "sidebar" ? 600 : 360)),
-        ),
-      );
+      setAvailable(Math.max(min, Math.min(max, parent.clientWidth - reserve)));
     const observer = new ResizeObserver(measure);
     observer.observe(parent);
     measure();
     return () => observer.disconnect();
-  }, [max, name]);
+  }, [max, min, reserve]);
   const persist = (next: number) => {
     const bounded = clampPanelWidth(next, min, available);
     live.current = bounded;

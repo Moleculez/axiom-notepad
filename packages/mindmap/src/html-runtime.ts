@@ -37,12 +37,15 @@ export const mindmapHtmlScript = String.raw`(() => {
   document.getElementById('expand').onclick = () => { folds.clear(); refresh(); };
   for (const node of nodes) {
     const toggle = () => { folds.has(node.dataset.node) ? folds.delete(node.dataset.node) : folds.add(node.dataset.node); refresh(); };
-    node.onclick = () => { if (!drag?.moved) toggle(); };
+    node.onclick = () => {
+      if (!drag?.moved && !(typeof getSelection === 'function' && getSelection()?.type === 'Range')) toggle();
+    };
     node.onkeydown = event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); toggle(); } };
   }
   svg.onwheel = event => { event.preventDefault(); zoom(event.deltaY > 0 ? 1.1 : .9); };
   svg.onpointerdown = event => {
     if (event.button !== 0) return;
+    if (event.target?.closest?.('text')) return;
     drag = { x: event.clientX, y: event.clientY, box: box.slice(), moved: false };
     // Preserve node clicks: capture only after the drag threshold is crossed.
   };

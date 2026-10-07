@@ -5,6 +5,7 @@ import {
   useRef,
   useState,
   useImperativeHandle,
+  useLayoutEffect,
   type CSSProperties,
   type Ref,
   type KeyboardEvent,
@@ -13,20 +14,22 @@ import {
   Braces,
   ChevronLeft,
   ChevronRight,
-  Download,
   Focus,
   Info,
   Minus,
   MoreHorizontal,
   Plus,
-  SlidersHorizontal,
   Undo2,
   Redo2,
   X,
+  ArrowLeft,
+  Check,
+  Filter,
+  ListChecks,
 } from "lucide-react";
 import {
   parseMarkdown,
-  renderDocument,
+  type ParsedDocument,
   type RenderContext,
 } from "@axiom/markdown";
 import {
@@ -36,6 +39,21 @@ import {
   nodeAtMindmapPosition,
   fitMindmap,
   mindmapZoomLimits,
+  mindmapIndex,
+  visibleMindmapOrder,
+  ensureMindmapVisible,
+  selectedMindmapRoots,
+  batchMindmapCommand,
+  mindmapBlockPreview,
+  mindmapResearchIndex,
+  mindmapResearchMatches,
+  mindmapViewProjection,
+  mindmapAncestorIds,
+  mindmapResearchLenses,
+  mindmapTaskChecked,
+  mindmapBranchIds,
+  mindmapBranchColor as branchColor,
+  type MindmapResearchLens,
   type MindmapNode,
   type MindmapSettings,
   type MindmapEdit,
@@ -53,19 +71,27 @@ import {
   HelpText,
 } from "../ui/controls";
 import ResizablePanel from "../ResizablePanel";
-import StudioSource from "../tools/StudioSource";
-import ReadingView from "../ReadingView";
+import StudioSource, { type StudioSourceHandle } from "../tools/StudioSource";
+import MindmapDetails, { type MindmapDetailTab } from "./MindmapDetails";
+import { markdownVisuals, openVisual } from "../../lib/visual-assets";
+import { visualPlacement, type VisualContext } from "../../lib/visual-surface";
 import { openContextMenu, type ContextAction } from "../../lib/context-menu";
 import { confirmAction } from "../../lib/app-prompt";
 import { useMindmap } from "../../lib/use-mindmap";
 import MindmapExportDialog from "./MindmapExportDialog";
 import MindmapDisplayDialog from "./MindmapDisplayDialog";
-import { mindmapRichLabel } from "@axiom/mindmap/label";
+import MindmapPreview from "./MindmapPreview";
+import MindmapOverview from "./MindmapOverview";
+import { useMindmapIdentities } from "../../lib/use-mindmap-identities";
+import { useMindmapMeasurements } from "../../lib/use-mindmap-measurements";
+import Dialog, { DialogFooter } from "../Dialog";
 import {
   mindmapViewSchema,
   resolveMindmapDraft,
   type MindmapViewState,
   type MindmapDraft,
+  type MindmapStatus,
+  type MindmapPresentation,
 } from "../../lib/mindmap-state";
 
 type Bookmark = ReturnType<NativeBinding["relative"]>;
@@ -84,6 +110,8 @@ export type MindmapProps = {
   readOnly: boolean;
   canEdit: () => boolean;
   context: RenderContext;
+  document?: { source: string; parsed: ParsedDocument };
+  visual?: VisualContext;
   settings?: Partial<MindmapSettings>;
   onSaveDefaults?: (settings: MindmapSettings) => Promise<void>;
   onLink: (target: string) => void;
@@ -93,6 +121,7 @@ export type MindmapProps = {
   externalInspector?: boolean;
   onAuxiliary?: () => void;
   beforeExport?: () => Promise<void>;
+  onStatus?: (status: MindmapStatus) => void;
   ref?: Ref<MindmapHandle>;
 };
 
@@ -107,31 +136,61 @@ export default function MindmapSurface(props: MindmapProps) {
     [settings, setSettings] = useState<MindmapSettings>(initialSettings),
     [folds, setFolds] = useState<Fold[]>([]),
     [pane, setPane] = useState<"source" | "details" | null>(null),
+    [detailTab, setDetailTab] = useState<MindmapDetailTab>("block"),
     [selected, setSelected] = useState("root"),
     [query, setQuery] = useState(""),
+    [hovered, setHovered] = useState<string | null>(null),
+    [focusBranch, setFocusBranch] = useState<Fold | null>(null),
+    [selections, setSelections] = useState<Fold[]>([]),
+    [help, setHelp] = useState(false),
+    [dropHint, setDropHint] = useState(""),
     [camera, setCamera] = useState<Camera>({ x: 40, y: 40, scale: 1 }),
     [viewport, setViewport] = useState({ width: 900, height: 600 }),
     [sizes, setSizes] = useState<
       Record<string, { width: number; height: number }>
     >({}),
     [draft, setDraft] = useState<Draft | null>(null),
+    [leaving, setLeaving] = useState<(() => void) | null>(null),
     [message, setMessage] = useState(""),
     [display, setDisplay] = useState(false),
+    [presentation, setPresentation] = useState<MindmapPresentation>({
+      preview: "research",
+      minimap: false,
+      supporting: false,
+      lens: "all",
+      resultsOnly: false,
+    }),
     [exporting, setExporting] = useState<{
       source: string;
       projection: MindmapProjection;
       selected?: string;
       settings: MindmapSettings;
+      research: boolean;
     } | null>(null),
     [peers, setPeers] = useState(binding.peers());
   const host = useRef<HTMLDivElement>(null),
     stage = useRef<HTMLDivElement>(null),
     input = useRef<HTMLInputElement>(null),
+    sourceEditor = useRef<StudioSourceHandle>(null),
     selectedAnchor = useRef<Bookmark | null>(null),
     pendingNode = useRef<Bookmark | null>(null),
     pendingFocus = useRef<Bookmark | null>(null),
     initialized = useRef(false),
     fitPending = useRef(false),
+    viewportAnchor = useRef<{
+      bookmark: Bookmark;
+      type: string;
+      x: number;
+      y: number;
+    } | null>(null),
+    searchFolds = useRef<Fold[] | null>(null),
+    searchDirty = useRef(false),
+    rangeStart = useRef<string>("root"),
+    revealPending = useRef<{ from: number; to: number } | null>(null),
+    spaceDown = useRef(false),
+    hoverExpand = useRef<ReturnType<typeof setTimeout> | null>(null),
+    hoverTarget = useRef<string | null>(null),
+    hoverLeave = useRef<ReturnType<typeof setTimeout> | null>(null),
     stored = useRef<MindmapViewState | null>(null),
     localPreferences = useRef(false),
     dropTarget = useRef<HTMLElement | null>(null),
@@ -141,23 +200,84 @@ export default function MindmapSurface(props: MindmapProps) {
       original?: string;
       x: number;
       y: number;
+      clientX: number;
+      clientY: number;
+      source: string;
       camera: Camera;
       pointer: number;
       moved: boolean;
       target: HTMLDivElement;
+      drop?: {
+        id: string;
+        placement: "before" | "after" | "child";
+        source: string;
+        edit?: MindmapEdit;
+        error?: string;
+      };
     } | null>(null),
-    measurements = useRef(
-      new Map<string, { signature: string; width: number; height: number }>(),
-    );
+    gestureId = useRef(0),
+    edgeVelocity = useRef({ x: 0, y: 0 });
+  const refreshDrop = useRef<(x: number, y: number) => void>(() => {});
+  const pendingViewSave = useRef<(() => void) | null>(null);
+  const acceptedNavigationDraft = useRef<Draft | null>(null);
   const latest = useRef(props);
+  const hoverNode = (id: string) => {
+    if (hoverLeave.current) clearTimeout(hoverLeave.current);
+    hoverLeave.current = null;
+    setHovered(id);
+  };
+  const leaveNode = () => {
+    if (hoverLeave.current) clearTimeout(hoverLeave.current);
+    // Keep the unscaled control reachable across the small node/control gap.
+    hoverLeave.current = setTimeout(() => setHovered(null), 180);
+  };
   const clearDrop = () => {
     dropTarget.current?.removeAttribute("data-map-drop");
+    dropTarget.current?.removeAttribute("data-map-drop-invalid");
     dropTarget.current = null;
   };
-  const labelCache = useRef(
-    new Map<string, { key: string; html: string; context: RenderContext }>(),
-  );
+  const clearDrag = () => {
+    cancelAnimationFrame(gestureId.current);
+    gestureId.current = 0;
+    edgeVelocity.current = { x: 0, y: 0 };
+    if (drag.current) delete drag.current.target.dataset.draggingBranch;
+    drag.current = null;
+    clearDrop();
+    setDropHint("");
+    if (hoverExpand.current) clearTimeout(hoverExpand.current);
+    hoverExpand.current = null;
+    hoverTarget.current = null;
+  };
   latest.current = props;
+  useEffect(() => {
+    const cancel = () => {
+      cancelAnimationFrame(gestureId.current);
+      gestureId.current = 0;
+      if (hoverExpand.current) clearTimeout(hoverExpand.current);
+      if (hoverLeave.current) clearTimeout(hoverLeave.current);
+      hoverLeave.current = null;
+      hoverExpand.current = null;
+      hoverTarget.current = null;
+      edgeVelocity.current = { x: 0, y: 0 };
+      if (drag.current) delete drag.current.target.dataset.draggingBranch;
+      drag.current = null;
+      dropTarget.current?.removeAttribute("data-map-drop");
+      dropTarget.current?.removeAttribute("data-map-drop-invalid");
+      dropTarget.current = null;
+      spaceDown.current = false;
+    };
+    const blurred = () => {
+      cancel();
+      setDropHint("");
+      setHovered(null);
+    };
+    window.addEventListener("blur", blurred);
+    return () => {
+      window.removeEventListener("blur", blurred);
+      cancel();
+    };
+  }, []);
+  const focusPosition = focusBranch && binding.absolute(focusBranch.bookmark);
   const foldPositions = useMemo(
     () =>
       folds.flatMap((fold) => {
@@ -175,21 +295,179 @@ export default function MindmapSurface(props: MindmapProps) {
       settings,
       folds: foldPositions,
       sizes,
+      view: {
+        supporting: presentation.supporting,
+        research: {
+          lens: presentation.lens,
+          query,
+          resultsOnly: presentation.resultsOnly,
+        },
+        ...(focusBranch &&
+        focusPosition &&
+        focusPosition.anchor < focusPosition.head
+          ? {
+              focus: { position: focusPosition.anchor, type: focusBranch.type },
+            }
+          : {}),
+      },
     }),
-    [source, props.title, settings, foldPositions, sizes],
+    [
+      source,
+      props.title,
+      settings,
+      foldPositions,
+      sizes,
+      presentation.supporting,
+      presentation.lens,
+      presentation.resultsOnly,
+      query,
+      focusBranch,
+      focusPosition?.anchor,
+    ],
   );
   const result = useMindmap(request);
   const projection = result?.projection,
+    viewProjection = result?.viewProjection,
     layout = result?.layout;
-  const byId = useMemo(
-    () => new Map(projection?.nodes.map((n) => [n.id, n]) ?? []),
+  const displayedSource = result?.source ?? source;
+  const ownerDocument = useMemo(
+    () =>
+      props.document?.source === displayedSource
+        ? props.document.parsed
+        : parseMarkdown(displayedSource),
+    [displayedSource, props.document?.source, props.document?.parsed],
+  );
+  const previewContext = useMemo(
+    () => ({ ...props.context, document: ownerDocument }),
+    [props.context, ownerDocument],
+  );
+  const research = useMemo(
+    () => (projection ? mindmapResearchIndex(projection, ownerDocument) : null),
+    [projection, ownerDocument],
+  );
+  const focusedProjection = useMemo(
+    () =>
+      projection ? mindmapViewProjection(projection, request.view.focus) : null,
+    [projection, request.view.focus],
+  );
+  const researchActive = presentation.lens !== "all" || !!query.trim();
+  const matches = useMemo(
+    () =>
+      projection && research && researchActive
+        ? mindmapResearchMatches(
+            projection,
+            research,
+            presentation.lens,
+            query,
+            focusedProjection?.rootId ?? projection.rootId,
+          )
+        : [],
+    [
+      projection,
+      research,
+      researchActive,
+      presentation.lens,
+      query,
+      focusedProjection?.rootId,
+    ],
+  );
+  const matchIds = useMemo(() => new Set(matches.map((n) => n.id)), [matches]);
+  // Current focus/filter intent is synchronous. The worker's viewProjection
+  // remains the paint topology until its matching layout arrives.
+  const navigationProjection = useMemo(
+    () =>
+      projection && focusedProjection
+        ? presentation.resultsOnly && researchActive
+          ? mindmapViewProjection(projection, request.view.focus, matchIds)
+          : focusedProjection
+        : null,
+    [
+      projection,
+      focusedProjection,
+      presentation.resultsOnly,
+      researchActive,
+      request.view.focus,
+      matchIds,
+    ],
+  );
+  const navigationById = useMemo(
+    () => new Map(navigationProjection?.nodes.map((n) => [n.id, n]) ?? []),
+    [navigationProjection],
+  );
+  const matchContextIds = useMemo(
+    () =>
+      projection ? mindmapAncestorIds(projection, matchIds) : new Set<string>(),
+    [projection, matchIds],
+  );
+  const index = useMemo(
+    () => (projection ? mindmapIndex(projection) : null),
     [projection],
   );
+  const byId = index?.byId ?? new Map<string, MindmapNode>();
+  const nodeKeys = useMindmapIdentities(binding, projection);
+  const visibleOrder = useMemo(() => {
+    if (!projection || !navigationProjection || !layout) return [];
+    const positions = new Set(
+      foldPositions.map((f) => `${f.type}:${f.position}`),
+    );
+    const collapsed = projection.nodes
+      .filter(
+        (node) =>
+          node.kind !== "root" &&
+          positions.has(`${node.blockType}:${node.from}`),
+      )
+      .map((node) => node.id);
+    return visibleMindmapOrder(
+      navigationProjection,
+      layout,
+      collapsed,
+      navigationProjection.rootId,
+    );
+  }, [projection, navigationProjection, layout, foldPositions]);
+  const navigableIds = useMemo(() => new Set(visibleOrder), [visibleOrder]);
+  const rangeIndex = useMemo(
+    () =>
+      new Map(
+        projection?.nodes.map((n) => [`${n.blockType}:${n.from}`, n.id]) ?? [],
+      ),
+    [projection],
+  );
+  const selectionIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const item of selections) {
+      const at = binding.absolute(item.bookmark);
+      const id = at && rangeIndex.get(`${item.type}:${at.anchor}`);
+      if (id && at && at.anchor < at.head) ids.add(id);
+    }
+    if (!ids.size) ids.add(selected);
+    return ids;
+  }, [selections, selected, binding, rangeIndex]);
   const placements = useMemo(
     () => new Map(layout?.nodes.map((n) => [n.id, n]) ?? []),
     [layout],
   );
   const chosen = byId.get(selected) ?? projection?.nodes[0];
+  const activePath = useMemo(
+    () =>
+      projection
+        ? mindmapAncestorIds(projection, [selected])
+        : new Set<string>(),
+    [projection, selected],
+  );
+  const viewById = useMemo(
+    () => new Map(viewProjection?.nodes.map((n) => [n.id, n]) ?? []),
+    [viewProjection],
+  );
+  const peersByNode = useMemo(() => {
+    const found = new Map<string, typeof peers>();
+    if (projection)
+      for (const peer of peers)
+        if (peer.selection) {
+          const id = nodeAtMindmapPosition(projection, peer.selection.head).id;
+          found.set(id, [...(found.get(id) ?? []), peer]);
+        }
+    return found;
+  }, [projection, peers]);
   const selectedNow = () => {
     if (!projection || result?.source !== binding.source)
       throw new Error(
@@ -201,7 +479,69 @@ export default function MindmapSurface(props: MindmapProps) {
     setPane(next);
     if (next) latest.current.onAuxiliary?.();
   };
+  const revealSource = (node: MindmapNode) => {
+    if (!node.to) return;
+    if (result?.source !== binding.source) {
+      setMessage("Wait for the current map before revealing a source range.");
+      return;
+    }
+    if (pane === "source") {
+      sourceEditor.current?.reveal(node.from, node.to);
+      return;
+    }
+    revealPending.current = { from: node.from, to: node.to };
+    changePane("source");
+  };
+  useEffect(() => {
+    if (pane !== "source" || !revealPending.current) return;
+    const range = revealPending.current;
+    const frame = requestAnimationFrame(() => {
+      sourceEditor.current?.reveal(range.from, range.to);
+      revealPending.current = null;
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [pane, selected]);
+  const selectNode = (node: MindmapNode, modifier = false, extend = false) => {
+    let ids = new Set([node.id]);
+    if (extend) {
+      const start = visibleOrder.indexOf(rangeStart.current),
+        end = visibleOrder.indexOf(node.id);
+      if (start >= 0 && end >= 0)
+        ids = new Set(
+          visibleOrder.slice(Math.min(start, end), Math.max(start, end) + 1),
+        );
+    } else if (modifier) {
+      ids = new Set(selectionIds);
+      if (ids.has(node.id) && ids.size > 1) ids.delete(node.id);
+      else ids.add(node.id);
+    } else rangeStart.current = node.id;
+    setSelections(
+      ids.size > 1
+        ? [...ids].flatMap((id) => {
+            const n = byId.get(id);
+            return n
+              ? [
+                  {
+                    bookmark: binding.relative({ anchor: n.from, head: n.to }),
+                    type: n.blockType,
+                  },
+                ]
+              : [];
+          })
+        : [],
+    );
+    const active = ids.has(node.id)
+      ? node
+      : (byId.get([...ids].at(-1) ?? "") ?? node);
+    setSelected(active.id);
+    selectedAnchor.current = binding.relative({
+      anchor: active.from,
+      head: active.to,
+    });
+    return active;
+  };
   const focusNode = (node: MindmapNode, focus = true) => {
+    fitPending.current = false;
     setSelected(node.id);
     const from = node.kind === "root" && !node.level ? 0 : node.labelFrom;
     const to = node.kind === "root" && !node.level ? 0 : node.labelTo;
@@ -217,11 +557,9 @@ export default function MindmapSurface(props: MindmapProps) {
         head: node.to,
       });
     if (position)
-      setCamera((c) => ({
-        ...c,
-        x: viewport.width / 2 - (position.x + position.width / 2) * c.scale,
-        y: viewport.height / 2 - (position.y + position.height / 2) * c.scale,
-      }));
+      setCamera((c) =>
+        ensureMindmapVisible(c, position, viewport.width, viewport.height),
+      );
     if (focus)
       requestAnimationFrame(() =>
         stage.current
@@ -241,26 +579,48 @@ export default function MindmapSurface(props: MindmapProps) {
             position === undefined
               ? chosen!
               : nodeAtMindmapPosition(projection, position);
+          if (presentation.resultsOnly && !navigationById.has(node.id))
+            setPresentation((value) => ({ ...value, resultsOnly: false }));
+          if (
+            focusBranch &&
+            !mindmapBranchIds(projection, focusedProjection?.rootId).has(
+              node.id,
+            )
+          )
+            setFocusBranch(null);
           // Reveal the exact branch, not a similarly named node.
-          const ancestors = new Set<number>();
+          const ancestors = new Set<string>();
           let parent = node.parentId;
           while (parent) {
             const n = byId.get(parent);
             if (!n) break;
-            ancestors.add(n.from);
+            ancestors.add(`${n.blockType}:${n.from}`);
             parent = n.parentId;
           }
           setFolds((items) =>
             items.filter(
               (item) =>
-                !ancestors.has(binding.absolute(item.bookmark)?.anchor ?? -1),
+                !ancestors.has(
+                  `${item.type}:${binding.absolute(item.bookmark)?.anchor ?? -1}`,
+                ),
             ),
           );
           focusNode(node);
         } else host.current?.focus();
       },
     }),
-    [projection, chosen, placements, viewport, binding, pane],
+    [
+      projection,
+      chosen,
+      placements,
+      viewport,
+      binding,
+      pane,
+      presentation.resultsOnly,
+      focusBranch,
+      focusedProjection?.rootId,
+      navigationById,
+    ],
   );
   useEffect(() => binding.subscribe((value) => setSource(value)), [binding]);
   useEffect(() => binding.onPresence(setPeers), [binding]);
@@ -283,6 +643,7 @@ export default function MindmapSurface(props: MindmapProps) {
         localPreferences.current = true;
         setSettings(value.data.settings);
         setPane(value.data.pane);
+        setPresentation(value.data.presentation);
       }
     } catch {
       /* Private browsing still has a fully usable in-memory map. */
@@ -299,7 +660,70 @@ export default function MindmapSurface(props: MindmapProps) {
       event.preventDefault();
     };
     window.addEventListener("beforeunload", protect);
-    return () => window.removeEventListener("beforeunload", protect);
+    const before = (event: Event) => {
+      if (event.defaultPrevented || acceptedNavigationDraft.current === draft)
+        return;
+      event.preventDefault();
+      const detail = (
+        event as CustomEvent<{ destination: string; proceed: () => void }>
+      ).detail;
+      setLeaving(() => () => {
+        acceptedNavigationDraft.current = draft;
+        // Serialize retained editors: approving this draft does not approve
+        // another pane's draft or the settings exit guard.
+        if (
+          window.dispatchEvent(
+            new CustomEvent("axiom:before-navigate", {
+              cancelable: true,
+              detail,
+            }),
+          )
+        )
+          detail.proceed();
+      });
+    };
+    window.addEventListener("axiom:before-navigate", before);
+    let retainedUrl = location.href,
+      retainedState = history.state;
+    const historyNavigation = () => {
+      if (location.href === retainedUrl) return;
+      const destination = location.href;
+      const url = new URL(destination);
+      const route = url.pathname + url.search + url.hash;
+      const destinationState = history.state;
+      // Native history events cannot be cancelled. Restore the current URL
+      // before router subscribers read it, and review the proposed transition.
+      history.replaceState(retainedState, "", retainedUrl);
+      const proceed = () => {
+        retainedUrl = destination;
+        retainedState = destinationState;
+        history.replaceState(destinationState, "", destination);
+        window.dispatchEvent(
+          new CustomEvent("axiom:route", {
+            detail: { destination: route, replace: true },
+          }),
+        );
+        window.dispatchEvent(new Event("axiom:navigate"));
+        window.dispatchEvent(new Event("hashchange"));
+      };
+      if (
+        window.dispatchEvent(
+          new CustomEvent("axiom:before-navigate", {
+            cancelable: true,
+            detail: { destination: route, proceed },
+          }),
+        )
+      )
+        proceed();
+    };
+    window.addEventListener("popstate", historyNavigation, true);
+    window.addEventListener("hashchange", historyNavigation, true);
+    return () => {
+      window.removeEventListener("beforeunload", protect);
+      window.removeEventListener("axiom:before-navigate", before);
+      window.removeEventListener("popstate", historyNavigation, true);
+      window.removeEventListener("hashchange", historyNavigation, true);
+    };
   }, [draft]);
   useEffect(() => {
     if (props.externalInspector) setPane(null);
@@ -316,13 +740,9 @@ export default function MindmapSurface(props: MindmapProps) {
       const placement = node && layout.nodes.find((n) => n.id === node.id);
       if (placement) {
         pendingFocus.current = null;
-        setCamera((c) => ({
-          ...c,
-          x: viewport.width / 2 - (placement.x + placement.width / 2) * c.scale,
-          y:
-            viewport.height / 2 -
-            (placement.y + placement.height / 2) * c.scale,
-        }));
+        setCamera((c) =>
+          ensureMindmapVisible(c, placement, viewport.width, viewport.height),
+        );
         requestAnimationFrame(() =>
           stage.current
             ?.querySelector<HTMLElement>(
@@ -343,6 +763,9 @@ export default function MindmapSurface(props: MindmapProps) {
         setSelected("root");
         selectedAnchor.current = null;
       }
+    } else if (previous && selectedAnchor.current) {
+      setSelected(projection.rootId);
+      selectedAnchor.current = null;
     }
     if (pendingNode.current) {
       const at = binding.absolute(pendingNode.current);
@@ -366,15 +789,14 @@ export default function MindmapSurface(props: MindmapProps) {
           });
           const placement = layout.nodes.find((n) => n.id === node.id);
           if (placement)
-            setCamera((c) => ({
-              ...c,
-              x:
-                viewport.width / 2 -
-                (placement.x + placement.width / 2) * c.scale,
-              y:
-                viewport.height / 2 -
-                (placement.y + placement.height / 2) * c.scale,
-            }));
+            setCamera((c) =>
+              ensureMindmapVisible(
+                c,
+                placement,
+                viewport.width,
+                viewport.height,
+              ),
+            );
           requestAnimationFrame(() => input.current?.focus());
         }
       }
@@ -382,15 +804,14 @@ export default function MindmapSurface(props: MindmapProps) {
     if (!initialized.current) {
       initialized.current = true;
       const saved = stored.current;
+      const savedFolds = new Map(
+        saved?.folds.map((f) => [`${f.type}:${f.position}`, f.label]) ?? [],
+      );
       const collapsed =
         saved?.folds && Array.isArray(saved.folds)
-          ? projection.nodes.filter((n) =>
-              saved.folds.some(
-                (f) =>
-                  f.position === n.from &&
-                  f.label === n.labelSource &&
-                  f.type === n.blockType,
-              ),
+          ? projection.nodes.filter(
+              (n) =>
+                savedFolds.get(`${n.blockType}:${n.from}`) === n.labelSource,
             )
           : layout.nodes
               .filter((n) => n.depth >= settings.initialDepth)
@@ -418,6 +839,24 @@ export default function MindmapSurface(props: MindmapProps) {
       const initialNode = projection.nodes.find(
         (n) => n.from === saved?.selection && n.labelSource === saved?.label,
       );
+      const savedFocus = saved?.focus;
+      const focused =
+        savedFocus &&
+        projection.nodes.find(
+          (n) =>
+            n.from === savedFocus.position &&
+            n.blockType === savedFocus.type &&
+            n.labelSource === savedFocus.label &&
+            !n.presentationOnly,
+        );
+      if (focused && focused.kind !== "root")
+        setFocusBranch({
+          bookmark: binding.relative({
+            anchor: focused.from,
+            head: focused.to,
+          }),
+          type: focused.blockType,
+        });
       if (initialNode) {
         setSelected(initialNode.id);
         selectedAnchor.current = binding.relative({
@@ -425,9 +864,6 @@ export default function MindmapSurface(props: MindmapProps) {
           head: initialNode.to,
         });
       }
-    } else if (fitPending.current) {
-      fitPending.current = false;
-      setCamera(fitMindmap(layout.bounds, viewport.width, viewport.height));
     }
   }, [
     projection,
@@ -438,23 +874,95 @@ export default function MindmapSurface(props: MindmapProps) {
     byId,
     viewport,
   ]);
+  // Reflow may change positions, but must not change zoom or lose visible context.
+  useLayoutEffect(() => {
+    if (
+      !layout ||
+      !projection ||
+      result?.source !== binding.source ||
+      fitPending.current ||
+      drag.current
+    )
+      return;
+    const previous = viewportAnchor.current,
+      at = previous && binding.absolute(previous.bookmark);
+    const id = at && rangeIndex.get(`${previous!.type}:${at.anchor}`),
+      next = id && placements.get(id);
+    if (previous && next && next.id === selected)
+      setCamera((c) => ({
+        ...c,
+        x: c.x + (previous.x - next.x) * c.scale,
+        y: c.y + (previous.y - next.y) * c.scale,
+      }));
+    const box = placements.get(selected),
+      node = byId.get(selected);
+    viewportAnchor.current =
+      box && node && node.to > node.from
+        ? {
+            bookmark: binding.relative({ anchor: node.from, head: node.to }),
+            type: node.blockType,
+            x: box.x,
+            y: box.y,
+          }
+        : null;
+  }, [layout, projection, result?.source, binding, selected]);
+  useEffect(() => {
+    if (!layout || !fitPending.current || !viewport.width || !viewport.height)
+      return;
+    const timer = setTimeout(() => {
+      if (!fitPending.current) return;
+      fitPending.current = false;
+      setCamera(fitMindmap(layout.bounds, viewport.width, viewport.height));
+    }, 180);
+    return () => clearTimeout(timer);
+  }, [layout, viewport]);
+  useEffect(() => {
+    props.onStatus?.({
+      total: projection?.nodes.length ?? 0,
+      shown: layout?.nodes.length ?? 0,
+      supporting: projection?.supporting.length ?? 0,
+      selected: selectionIds.size,
+      readOnly: props.readOnly,
+    });
+  }, [
+    props.onStatus,
+    projection?.nodes.length,
+    layout?.nodes.length,
+    projection?.supporting.length,
+    props.readOnly,
+    selectionIds.size,
+  ]);
   useEffect(() => {
     if (!initialized.current || result?.source !== source) return;
-    const timer = setTimeout(() => {
+    const save = () => {
+      if (binding.source !== source) return;
       try {
         localStorage.setItem(
           key,
           JSON.stringify({
             settings,
+            presentation,
             camera,
             pane,
+            focus:
+              focusBranch && focusPosition
+                ? {
+                    position: focusPosition.anchor,
+                    type: focusBranch.type,
+                    label:
+                      projection?.nodes.find(
+                        (n) =>
+                          n.from === focusPosition.anchor &&
+                          n.blockType === focusBranch.type,
+                      )?.labelSource ?? "",
+                  }
+                : undefined,
             selection: chosen?.from,
             label: chosen?.labelSource,
             folds: folds.flatMap((f) => {
               const at = binding.absolute(f.bookmark);
-              const n = projection?.nodes.find(
-                (n) => n.from === at?.anchor && n.blockType === f.type,
-              );
+              const id = at && rangeIndex.get(`${f.type}:${at.anchor}`);
+              const n = id && byId.get(id);
               return n
                 ? [
                     {
@@ -470,102 +978,83 @@ export default function MindmapSurface(props: MindmapProps) {
       } catch {
         /* Content remains in the host's durable document journal. */
       }
-    }, 300);
+    };
+    pendingViewSave.current = save;
+    const timer = setTimeout(save, 300);
     return () => clearTimeout(timer);
   }, [
     key,
     settings,
+    presentation,
     camera,
     pane,
+    focusBranch,
+    focusPosition?.anchor,
     folds,
     chosen,
     binding,
     projection,
     result?.source,
     source,
+    rangeIndex,
+    byId,
   ]);
+  useEffect(
+    () => () => {
+      // Debounced view state must not revert when the host unmounts the map.
+      // The save closure rejects stale source offsets after a document change.
+      pendingViewSave.current?.();
+      pendingViewSave.current = null;
+    },
+    [key, binding],
+  );
   const visible = useMemo(
     () =>
       layout?.nodes.filter(
         (n) =>
-          n.id === selected ||
+          selectionIds.has(n.id) ||
           (n.x + n.width >= (-camera.x - 240) / camera.scale &&
             n.x <= (viewport.width - camera.x + 240) / camera.scale &&
             n.y + n.height >= (-camera.y - 240) / camera.scale &&
             n.y <= (viewport.height - camera.y + 240) / camera.scale),
       ) ?? [],
-    [layout, camera, viewport, selected],
+    [layout, camera, viewport, selectionIds],
   );
-  useEffect(() => {
-    const root = stage.current;
-    if (!root || !projection) return;
-    let frame = 0;
-    const update = () => {
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(() => {
-        const next: typeof sizes = {};
-        let changed = false;
-        for (const element of root.querySelectorAll<HTMLElement>(
-          ".mindmap-label",
-        )) {
-          const id =
-            element.closest<HTMLElement>("[data-map-node]")?.dataset.mapNode;
-          const node = id && byId.get(id);
-          if (
-            !id ||
-            !node ||
-            element.querySelector("input:not([type=checkbox])")
-          )
-            continue;
-          const signature = `${settings.nodeWidth}:${node.labelSource}:${props.context.theme}:${getComputedStyle(element).fontFamily}:${getComputedStyle(element).fontSize}`;
-          const width = Math.min(
-              settings.nodeWidth,
-              Math.max(80, Math.ceil(element.scrollWidth)),
-            ),
-            height = Math.max(40, Math.ceil(element.scrollHeight));
-          const prior = measurements.current.get(id);
-          if (
-            !prior ||
-            prior.signature !== signature ||
-            prior.width !== width ||
-            prior.height !== height
-          ) {
-            measurements.current.set(id, { signature, width, height });
-            changed = true;
-          }
-        }
-        if (changed) {
-          for (const n of projection.nodes) {
-            const m = measurements.current.get(n.id);
-            if (m) next[n.id] = { width: m.width, height: m.height };
-          }
-          for (const id of measurements.current.keys())
-            if (!byId.has(id)) measurements.current.delete(id);
-          setSizes(next);
-        }
-      });
-    };
-    const observer = new ResizeObserver(update);
-    root
-      .querySelectorAll(".mindmap-label")
-      .forEach((node) => observer.observe(node));
-    void document.fonts.ready.then(update);
-    update();
-    return () => {
-      observer.disconnect();
-      cancelAnimationFrame(frame);
-    };
-  }, [projection, byId, visible, settings.nodeWidth, props.context.theme]);
-  const folded = new Set(foldPositions.map((f) => f.position));
+  useMindmapMeasurements(
+    stage,
+    projection,
+    nodeKeys,
+    visible.map((n) => n.id).join("|"),
+    settings.nodeWidth,
+    `${presentation.preview}:${props.context.theme}`,
+    setSizes,
+  );
+  const folded = new Set(foldPositions.map((f) => `${f.type}:${f.position}`));
+  const isFolded = (node: MindmapNode) =>
+    node.kind !== "root" && folded.has(`${node.blockType}:${node.from}`);
   const toggle = (node: MindmapNode) => {
-    if (!node.children.length || node.kind === "root") {
-      if (node.kind === "root") setFolds([]);
+    if (!node.children.length || node.kind === "root" || node.presentationOnly)
       return;
+    if (searchFolds.current) searchDirty.current = true;
+    if (!isFolded(node)) {
+      const hiddenSelection = projection?.nodes.some(
+        (n) =>
+          selectionIds.has(n.id) &&
+          n.id !== node.id &&
+          n.from >= node.from &&
+          n.from < node.branchTo,
+      );
+      if (hiddenSelection && !draft) {
+        selectNode(node);
+        focusNode(node);
+      }
     }
     setFolds((items) =>
-      folded.has(node.from)
+      isFolded(node)
         ? items.filter(
-            (f) => binding.absolute(f.bookmark)?.anchor !== node.from,
+            (f) =>
+              f.type !== node.blockType ||
+              binding.absolute(f.bookmark)?.anchor !== node.from,
           )
         : [
             ...items,
@@ -609,8 +1098,7 @@ export default function MindmapSurface(props: MindmapProps) {
       !["heading", "item", "root"].includes(node.kind) ||
       (node.kind === "root" && !node.level)
     ) {
-      changePane("source");
-      binding.select({ anchor: node.from, head: node.to });
+      revealSource(node);
       return;
     }
     if (result?.source !== binding.source) {
@@ -632,7 +1120,7 @@ export default function MindmapSurface(props: MindmapProps) {
     requestAnimationFrame(() => input.current?.select());
   };
   const commit = () => {
-    if (!draft) return;
+    if (!draft) return false;
     const range = binding.absolute(draft.bookmark);
     if (
       !range ||
@@ -642,19 +1130,22 @@ export default function MindmapSurface(props: MindmapProps) {
       setMessage(
         "This label changed elsewhere or edit access ended. Your draft is retained; copy it or cancel and select the branch again.",
       );
-      return;
+      return false;
     }
     const node = projection && resolveMindmapDraft(binding, projection, draft);
     if (!node || result?.source !== binding.source) {
       setMessage(
         "The Markdown structure changed. Your draft is retained; review it in Source.",
       );
-      return;
+      return false;
     }
     if (
       mutate(() => mindmapCommand(binding.source, node, "rename", draft.value))
-    )
+    ) {
       setDraft(null);
+      return true;
+    }
+    return false;
   };
   const add = (node: MindmapNode, name: "child" | "sibling") => {
     if (draft && draft.value !== draft.original) {
@@ -664,17 +1155,33 @@ export default function MindmapSurface(props: MindmapProps) {
       return;
     }
     if (mutate(() => mindmapCommand(binding.source, node, name))) {
+      // A new empty label is not research evidence yet. Reveal its editing
+      // surface instead of stranding it outside a filtered result topology.
+      setPresentation((value) =>
+        value.resultsOnly ? { ...value, resultsOnly: false } : value,
+      );
+      if (name === "sibling" && focusBranch) setFocusBranch(null);
       pendingNode.current = binding.relative(binding.selection());
       if (name === "child")
         setFolds((items) =>
           items.filter(
-            (f) => binding.absolute(f.bookmark)?.anchor !== node.from,
+            (f) =>
+              f.type !== node.blockType ||
+              binding.absolute(f.bookmark)?.anchor !== node.from,
           ),
         );
     }
   };
   const command = (name: "child" | "sibling" | "delete" | "toggleTask") => {
+    const snapshot = binding.source;
+    const ids = [...selectionIds];
     const run = () => {
+      if (binding.source !== snapshot) {
+        setMessage(
+          "The selection changed while confirming. Select it again; nothing was removed.",
+        );
+        return;
+      }
       if (name === "child" || name === "sibling") {
         if (result?.source !== binding.source || !chosen) {
           setMessage("Wait for the current map before adding a branch.");
@@ -683,20 +1190,151 @@ export default function MindmapSurface(props: MindmapProps) {
         add(chosen, name);
         return;
       }
-      mutate(() => mindmapCommand(binding.source, selectedNow(), name));
+      mutate(() =>
+        name === "delete" && ids.length > 1 && projection
+          ? batchMindmapCommand(binding.source, projection, ids, "delete")
+          : mindmapCommand(binding.source, selectedNow(), name),
+      );
     };
     if (name === "delete")
       void confirmAction(
         "The branch and its descendants will be removed from Markdown. You can undo this edit.",
         {
-          title: "Remove this branch?",
-          confirmLabel: "Remove branch",
+          title:
+            ids.length > 1
+              ? "Remove selected branches?"
+              : "Remove this branch?",
+          confirmLabel: ids.length > 1 ? "Remove selection" : "Remove branch",
           destructive: true,
         },
       ).then((yes) => {
         if (yes) run();
       });
     else run();
+  };
+  const copyBranches = async (ids: Iterable<string>) => {
+    if (!projection || result?.source !== binding.source) {
+      setMessage("Wait for the current map before copying.");
+      return;
+    }
+    const roots = selectedMindmapRoots(projection, ids);
+    const text = roots
+      .map((n) =>
+        n.kind === "root"
+          ? binding.source
+          : binding.source.slice(n.from, n.branchTo),
+      )
+      .join("\n\n");
+    try {
+      await navigator.clipboard.writeText(text);
+      setMessage("Markdown copied.");
+    } catch {
+      setMessage(
+        "Clipboard access was denied. Reveal the selection in Source to copy it manually.",
+      );
+    }
+  };
+  const expandBranch = (node: MindmapNode) => {
+    if (searchFolds.current) searchDirty.current = true;
+    setFolds((items) =>
+      items.filter((item) => {
+        const at = binding.absolute(item.bookmark);
+        return (
+          !at ||
+          !(
+            node.kind === "root" ||
+            (at.anchor >= node.from && at.anchor < node.branchTo)
+          )
+        );
+      }),
+    );
+  };
+  const foldToDepth = (depth: number) => {
+    if (!projection || !layout) return;
+    if (searchFolds.current) searchDirty.current = true;
+    const levels = new Map<string, number>();
+    const pending = [
+      { id: layout.nodes[0]?.id ?? projection.rootId, depth: 0 },
+    ];
+    while (pending.length) {
+      const item = pending.pop()!;
+      levels.set(item.id, item.depth);
+      pending.push(
+        ...(byId.get(item.id)?.children ?? []).map((id) => ({
+          id,
+          depth: item.depth + 1,
+        })),
+      );
+    }
+    setFolds(
+      projection.nodes
+        .filter(
+          (n) =>
+            n.children.length &&
+            !n.presentationOnly &&
+            n.id !== layout.nodes[0]?.id &&
+            (levels.get(n.id) ?? -1) >= depth,
+        )
+        .map((n) => ({
+          bookmark: binding.relative({ anchor: n.from, head: n.to }),
+          type: n.blockType,
+        })),
+    );
+    if (!draft && depth < (levels.get(selected) ?? 0)) {
+      const root = byId.get(layout.nodes[0]?.id ?? projection.rootId)!;
+      selectNode(root);
+      focusNode(root);
+    }
+  };
+  const fitSelection = (node: MindmapNode) => {
+    fitPending.current = false;
+    const box = placements.get(node.id);
+    if (box)
+      setCamera((c) => ({
+        ...c,
+        x: viewport.width / 2 - (box.x + box.width / 2) * c.scale,
+        y: viewport.height / 2 - (box.y + box.height / 2) * c.scale,
+      }));
+  };
+  const fitBranch = (node: MindmapNode) => {
+    if (!layout) return;
+    const descendants = new Set<string>(),
+      pending = [node.id];
+    while (pending.length) {
+      const id = pending.pop()!;
+      descendants.add(id);
+      pending.push(...(byId.get(id)?.children ?? []));
+    }
+    const boxes = layout.nodes.filter((n) => descendants.has(n.id));
+    if (!boxes.length) return;
+    const x = Math.min(...boxes.map((b) => b.x));
+    const y = Math.min(...boxes.map((b) => b.y));
+    fitPending.current = false;
+    setCamera(
+      fitMindmap(
+        {
+          x,
+          y,
+          width: Math.max(...boxes.map((b) => b.x + b.width)) - x,
+          height: Math.max(...boxes.map((b) => b.y + b.height)) - y,
+        },
+        viewport.width,
+        viewport.height,
+      ),
+    );
+  };
+  const focusOnly = (node: MindmapNode) => {
+    if (node.presentationOnly) return;
+    expandBranch(node);
+    selectNode(node);
+    setFocusBranch(
+      node.kind === "root"
+        ? null
+        : {
+            bookmark: binding.relative({ anchor: node.from, head: node.to }),
+            type: node.blockType,
+          },
+    );
   };
   const move = (node: MindmapNode, direction: "up" | "down" | "out") =>
     mutate(() => {
@@ -731,7 +1369,7 @@ export default function MindmapSurface(props: MindmapProps) {
     node?: MindmapNode,
   ) => {
     if (node) {
-      setSelected(node.id);
+      if (!selectionIds.has(node.id)) selectNode(node);
       binding.select({ anchor: node.labelFrom, head: node.labelTo });
     }
     const n = node ?? chosen;
@@ -739,55 +1377,101 @@ export default function MindmapSurface(props: MindmapProps) {
     // Capture the menu's target, not a later selection; source changes invalidate it.
     const snapshot = binding.source;
     const run = (action: () => void) => {
-      if (binding.source !== snapshot)
+      if (result?.source !== snapshot)
+        setMessage("The map is updating. Reopen the menu when it is ready.");
+      else if (binding.source !== snapshot)
         setMessage(
           "The branch changed while the menu was open. Open it again.",
         );
       else action();
     };
+    const targets = selectionIds.has(n.id) ? [...selectionIds] : [n.id];
     const items: ContextAction[] = [
       {
         label: "Edit label",
         icon: "edit",
         group: "Edit",
-        disabled: props.readOnly,
+        disabled: props.readOnly || !!n.presentationOnly,
         action: () => run(() => beginEdit(n)),
       },
       {
         label: "Edit in Source",
         icon: "source",
         group: "Edit",
-        action: () => {
-          changePane("source");
-          binding.select({ anchor: n.from, head: n.to });
-        },
+        action: () => run(() => revealSource(n)),
       },
       {
-        label: "Add child",
+        label: "Add branch",
         icon: "plus",
         group: "Structure",
-        disabled: props.readOnly,
-        action: () => run(() => add(n, "child")),
+        disabled:
+          props.readOnly ||
+          !!n.presentationOnly ||
+          !["heading", "item", "root"].includes(n.kind),
+        disabledReason:
+          "Add structural branches from a heading or list item; use Source for other blocks.",
+        action: () => {},
+        children: [
+          {
+            label: "Add child",
+            icon: "plus",
+            action: () => run(() => add(n, "child")),
+          },
+          {
+            label: "Add sibling",
+            icon: "plus",
+            disabled: n.kind === "root",
+            action: () => run(() => add(n, "sibling")),
+          },
+        ],
       },
       {
-        label: "Add sibling",
-        icon: "plus",
-        group: "Structure",
-        disabled: props.readOnly || n.kind === "root",
-        action: () => run(() => add(n, "sibling")),
-      },
-      {
-        label: folded.has(n.from) ? "Expand branch" : "Fold branch",
+        label: "Navigate branch",
         icon: "chevronRight",
         group: "Structure",
-        disabled: !n.children.length,
-        action: () => toggle(n),
+        action: () => {},
+        children: [
+          {
+            label: isFolded(n) ? "Expand children" : "Fold branch",
+            icon: "chevronRight",
+            disabled:
+              !n.children.length || n.kind === "root" || !!n.presentationOnly,
+            action: () => toggle(n),
+          },
+          {
+            label: "Expand entire branch",
+            icon: "chevronRight",
+            disabled: !n.children.length,
+            action: () => expandBranch(n),
+          },
+          {
+            label: "Focus this branch",
+            icon: "search",
+            disabled: n.kind === "root" || !!n.presentationOnly,
+            action: () => focusOnly(n),
+          },
+          {
+            label: "Center selected",
+            icon: "search",
+            action: () => fitSelection(n),
+          },
+          {
+            label: "Fit selected branch",
+            icon: "search",
+            action: () => fitBranch(n),
+          },
+          {
+            label: "Full block details",
+            icon: "info",
+            action: () => changePane("details"),
+          },
+        ],
       },
       {
         label: "Move branch",
         icon: "moveUp",
         group: "Structure",
-        disabled: props.readOnly || n.kind === "root",
+        disabled: props.readOnly || n.kind === "root" || !!n.presentationOnly,
         action: () => {},
         children: [
           {
@@ -807,6 +1491,75 @@ export default function MindmapSurface(props: MindmapProps) {
             icon: "outdent",
             shortcut: "Alt ←",
             action: () => run(() => move(n, "out")),
+          },
+        ],
+      },
+      {
+        label: targets.length > 1 ? "Selection actions" : "Copy and tasks",
+        icon: "copy",
+        group: "Edit",
+        action: () => {},
+        children: [
+          {
+            label: "Copy Markdown",
+            icon: "copy",
+            action: () => run(() => void copyBranches(targets)),
+          },
+          ...(n.blockType === "codeBlock"
+            ? [
+                {
+                  label: "Copy code",
+                  icon: "copy" as const,
+                  action: () =>
+                    run(() => {
+                      const code =
+                        mindmapBlockPreview(binding.source, n).code ?? "";
+                      void navigator.clipboard.writeText(code).then(
+                        () => setMessage("Code copied."),
+                        () =>
+                          setMessage(
+                            "Clipboard access is unavailable. Open the block in Source to copy it.",
+                          ),
+                      );
+                    }),
+                },
+              ]
+            : []),
+          {
+            label: "Complete tasks",
+            icon: "check",
+            disabled:
+              props.readOnly ||
+              !targets.some((id) => (index?.tasks.get(id)?.total ?? 0) > 0),
+            action: () =>
+              run(() =>
+                mutate(() =>
+                  batchMindmapCommand(
+                    binding.source,
+                    projection!,
+                    targets,
+                    "complete",
+                  ),
+                ),
+              ),
+          },
+          {
+            label: "Reopen tasks",
+            icon: "check",
+            disabled:
+              props.readOnly ||
+              !targets.some((id) => (index?.tasks.get(id)?.total ?? 0) > 0),
+            action: () =>
+              run(() =>
+                mutate(() =>
+                  batchMindmapCommand(
+                    binding.source,
+                    projection!,
+                    targets,
+                    "reopen",
+                  ),
+                ),
+              ),
           },
         ],
       },
@@ -843,10 +1596,15 @@ export default function MindmapSurface(props: MindmapProps) {
         ],
       },
       {
-        label: "Remove branch",
+        label: targets.length > 1 ? "Remove selection" : "Remove branch",
         icon: "trash",
         tone: "danger",
-        disabled: props.readOnly || n.kind === "root",
+        disabled:
+          props.readOnly ||
+          targets.some(
+            (id) =>
+              byId.get(id)?.kind === "root" || byId.get(id)?.presentationOnly,
+          ),
         action: () =>
           run(() => {
             void confirmAction(
@@ -859,7 +1617,14 @@ export default function MindmapSurface(props: MindmapProps) {
             ).then((yes) => {
               if (yes)
                 run(() =>
-                  mutate(() => mindmapCommand(binding.source, n, "delete")),
+                  mutate(() =>
+                    batchMindmapCommand(
+                      binding.source,
+                      projection!,
+                      targets,
+                      "delete",
+                    ),
+                  ),
                 );
             });
           }),
@@ -892,17 +1657,52 @@ export default function MindmapSurface(props: MindmapProps) {
       if (latest.current.canEdit()) binding.history(event.shiftKey);
       return;
     }
+    if (modifier && event.key.toLowerCase() === "c") {
+      event.preventDefault();
+      void copyBranches(selectionIds);
+      return;
+    }
+    if (modifier && event.key.toLowerCase() === "a") {
+      event.preventDefault();
+      setSelections(
+        visibleOrder.flatMap((id) => {
+          const n = byId.get(id);
+          return n && n.kind !== "root" && !n.presentationOnly
+            ? [
+                {
+                  bookmark: binding.relative({ anchor: n.from, head: n.to }),
+                  type: n.blockType,
+                },
+              ]
+            : [];
+        }),
+      );
+      return;
+    }
     if (event.key === "F2") {
       event.preventDefault();
       beginEdit(node);
       return;
     }
-    if (event.key === "Enter") {
+    if (
+      !modifier &&
+      !event.altKey &&
+      event.key.toLowerCase() === "t" &&
+      node.checked !== undefined
+    ) {
       event.preventDefault();
-      command(modifier ? "child" : "sibling");
+      command("toggleTask");
       return;
     }
-    if (event.key === " " && node.children.length) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      command(modifier || node.kind === "root" ? "child" : "sibling");
+      return;
+    }
+    if (
+      event.key === " " &&
+      (navigationById.get(node.id)?.children.length ?? 0)
+    ) {
       event.preventDefault();
       toggle(node);
       return;
@@ -922,31 +1722,52 @@ export default function MindmapSurface(props: MindmapProps) {
       return;
     }
     let next: MindmapNode | undefined;
-    const siblings = byId.get(node.parentId ?? "")?.children ?? [
-      projection!.rootId,
-    ];
+    const position = visibleOrder.indexOf(node.id);
     if (event.key === "ArrowUp")
-      next = byId.get(siblings[Math.max(0, siblings.indexOf(node.id) - 1)]);
+      next = byId.get(visibleOrder[Math.max(0, position - 1)]);
     if (event.key === "ArrowDown")
       next = byId.get(
-        siblings[Math.min(siblings.length - 1, siblings.indexOf(node.id) + 1)],
+        visibleOrder[Math.min(visibleOrder.length - 1, position + 1)],
       );
-    if (event.key === "ArrowLeft") next = byId.get(node.parentId ?? "");
-    if (event.key === "ArrowRight") {
-      if (folded.has(node.from)) toggle(node);
-      next = byId.get(node.children[0]);
+    if (event.key === "ArrowLeft") {
+      if (
+        (navigationById.get(node.id)?.children.length ?? 0) &&
+        !isFolded(node) &&
+        node.kind !== "root" &&
+        !node.presentationOnly
+      ) {
+        event.preventDefault();
+        toggle(node);
+        return;
+      }
+      next =
+        node.id !== navigationProjection?.rootId &&
+        navigableIds.has(node.parentId ?? "")
+          ? byId.get(node.parentId ?? "")
+          : undefined;
     }
-    if (event.key === "Home") next = projection!.nodes[0];
+    if (event.key === "ArrowRight") {
+      if (isFolded(node)) {
+        event.preventDefault();
+        toggle(node);
+        return;
+      }
+      next = byId.get(navigationById.get(node.id)?.children[0] ?? "");
+    }
+    if (event.key === "Home") next = byId.get(visibleOrder[0]);
+    if (event.key === "End") next = byId.get(visibleOrder.at(-1) ?? "");
     if (next) {
       event.preventDefault();
       focusNode(next);
+      selectNode(next, false, event.shiftKey);
     }
   };
   const zoom = (
     factor: number,
     x = viewport.width / 2,
     y = viewport.height / 2,
-  ) =>
+  ) => {
+    fitPending.current = false;
     setCamera((c) => {
       const scale = Math.max(
         mindmapZoomLimits.min,
@@ -958,10 +1779,18 @@ export default function MindmapSurface(props: MindmapProps) {
         y: y - ((y - c.y) * scale) / c.scale,
       };
     });
+  };
   useEffect(() => {
     const root = host.current;
     if (!root) return;
     const wheel = (event: WheelEvent) => {
+      if (
+        (event.target as Element).closest(
+          "input,textarea,[contenteditable=true],.mindmap-overview",
+        )
+      )
+        return;
+      fitPending.current = false;
       event.preventDefault();
       if (event.ctrlKey || event.metaKey) {
         const box = root.getBoundingClientRect();
@@ -980,43 +1809,234 @@ export default function MindmapSurface(props: MindmapProps) {
     root.addEventListener("wheel", wheel, { passive: false });
     return () => root.removeEventListener("wheel", wheel);
   }, [viewport]);
-  const matches =
-    projection?.nodes.filter(
-      (n) =>
-        query.trim() &&
-        n.label.toLowerCase().includes(query.trim().toLowerCase()),
-    ) ?? [];
-  const labelHtml = useMemo(() => {
-    const html = new Map<string, string>();
-    for (const position of visible) {
-      const n = byId.get(position.id);
-      if (!n) continue;
-      const value = mindmapRichLabel(source, n);
-      if (value) {
-        const cached = labelCache.current.get(n.id);
-        if (cached?.key === value && cached.context === props.context)
-          html.set(n.id, cached.html);
-        else {
-          const rendered = renderDocument(parseMarkdown(value), {
-            ...props.context,
-            fragment: true,
-            visuals: false,
-            blockMarks: false,
-            disableImages: true,
-          });
-          labelCache.current.set(n.id, {
-            key: value,
-            context: props.context,
-            html: rendered,
-          });
-          html.set(n.id, rendered);
+  useEffect(() => {
+    if (researchActive && !searchFolds.current) {
+      searchFolds.current = folds;
+      searchDirty.current = false;
+    }
+    if (!researchActive && searchFolds.current) {
+      if (!searchDirty.current) {
+        const restored = searchFolds.current;
+        setFolds(restored);
+        let node = chosen;
+        while (node?.parentId) {
+          const parent = byId.get(node.parentId);
+          if (!parent) break;
+          if (
+            restored.some(
+              (item) =>
+                binding.absolute(item.bookmark)?.anchor === parent.from &&
+                item.type === parent.blockType,
+            )
+          )
+            selectNode(parent);
+          node = parent;
         }
       }
+      searchFolds.current = null;
     }
-    for (const id of labelCache.current.keys())
-      if (!byId.has(id)) labelCache.current.delete(id);
-    return html;
-  }, [byId, visible, source, props.context]);
+    // Snapshot only on entering/leaving a research/search session. Ordinary
+    // folding is explicit intent and sets searchDirty rather than overwriting it.
+  }, [researchActive]);
+  const updateQuery = (value: string) => setQuery(value);
+  const updateLens = (lens: MindmapResearchLens) =>
+    setPresentation((current) => ({ ...current, lens }));
+  const findNext = (direction = 1) => {
+    if (!matches.length) return;
+    const current = matches.findIndex((n) => n.id === selected);
+    const next =
+      matches[
+        current < 0
+          ? direction < 0
+            ? matches.length - 1
+            : 0
+          : (current + direction + matches.length) % matches.length
+      ];
+    const ancestors = new Set<string>();
+    let parent = next.parentId;
+    while (parent) {
+      const node = byId.get(parent);
+      if (!node) break;
+      ancestors.add(`${node.blockType}:${node.from}`);
+      parent = node.parentId;
+    }
+    setFolds((items) =>
+      items.filter(
+        (item) =>
+          !ancestors.has(
+            `${item.type}:${binding.absolute(item.bookmark)?.anchor ?? -1}`,
+          ),
+      ),
+    );
+    selectNode(next);
+    focusNode(next);
+  };
+  const focusNodeId =
+    focusBranch && focusPosition
+      ? rangeIndex.get(`${focusBranch.type}:${focusPosition.anchor}`)
+      : undefined;
+  useEffect(() => {
+    if (
+      focusBranch &&
+      projection &&
+      result?.source === source &&
+      (!focusPosition ||
+        focusPosition.anchor >= focusPosition.head ||
+        !focusNodeId)
+    )
+      setFocusBranch(null);
+  }, [
+    focusBranch,
+    projection,
+    result?.source,
+    source,
+    focusPosition?.anchor,
+    focusPosition?.head,
+    focusNodeId,
+  ]);
+  const focusAncestors: MindmapNode[] = [];
+  let ancestor = focusNodeId && byId.get(focusNodeId);
+  while (ancestor) {
+    focusAncestors.unshift(ancestor);
+    ancestor = byId.get(ancestor.parentId ?? "");
+  }
+  useEffect(() => {
+    if (
+      !presentation.resultsOnly ||
+      !researchActive ||
+      !projection ||
+      result?.source !== source ||
+      draft ||
+      navigableIds.has(selected)
+    )
+      return;
+    let node = byId.get(selected);
+    while (node && !navigableIds.has(node.id))
+      node = byId.get(node.parentId ?? "");
+    node ??= byId.get(navigationProjection?.rootId ?? projection.rootId);
+    if (node) {
+      selectNode(node);
+      selectedAnchor.current = binding.relative({
+        anchor: node.from,
+        head: node.to,
+      });
+    }
+    // Selection is a view fallback, not a content mutation or a zoom reset.
+  }, [
+    presentation.resultsOnly,
+    researchActive,
+    projection,
+    result?.source,
+    source,
+    draft,
+    navigableIds,
+    navigationProjection?.rootId,
+    selected,
+  ]);
+  const toggleTask = (node: MindmapNode) =>
+    mutate(() => {
+      if (result?.source !== binding.source)
+        throw new Error("The map is updating. Try again when it is ready.");
+      return mindmapCommand(binding.source, node, "toggleTask");
+    });
+  const navigateResearch = (position: number) => {
+    if (!projection || result?.source !== binding.source) return;
+    const node = nodeAtMindmapPosition(projection, position);
+    if (presentation.resultsOnly && !navigationById.has(node.id))
+      setPresentation((p) => ({ ...p, resultsOnly: false }));
+    if (
+      focusBranch &&
+      !mindmapBranchIds(projection, focusedProjection?.rootId).has(node.id)
+    )
+      setFocusBranch(null);
+    expandBranch(node);
+    let parent = byId.get(node.parentId ?? "");
+    const ancestors = new Set<string>();
+    while (parent) {
+      ancestors.add(`${parent.blockType}:${parent.from}`);
+      parent = byId.get(parent.parentId ?? "");
+    }
+    setFolds((items) =>
+      items.filter(
+        (item) =>
+          !ancestors.has(
+            `${item.type}:${binding.absolute(item.bookmark)?.anchor ?? -1}`,
+          ),
+      ),
+    );
+    selectNode(node);
+    focusNode(node);
+  };
+  const mapLink = (target: string) => {
+    if (target.startsWith("#fn-") || target.startsWith("#ref-")) {
+      setDetailTab("evidence");
+      changePane("details");
+      return;
+    }
+    const at = research?.targets.get(target);
+    if (at !== undefined) {
+      navigateResearch(at);
+      return;
+    }
+    props.onLink(target);
+  };
+  const sourceRange = (from: number, to: number) => {
+    if (result?.source !== binding.source) {
+      setMessage("Wait for the current map before revealing a source range.");
+      return;
+    }
+    revealPending.current = { from, to };
+    changePane("source");
+    if (pane === "source") {
+      sourceEditor.current?.reveal(from, to);
+      revealPending.current = null;
+    }
+  };
+  const visuals = useMemo(
+    () =>
+      displayedSource === source && displayedSource === binding.source
+        ? markdownVisuals(ownerDocument, displayedSource, (node) =>
+            visualPlacement(
+              props.visual,
+              node,
+              props.visual ? binding : undefined,
+            ),
+          )
+        : [],
+    [ownerDocument, displayedSource, source, props.visual, binding],
+  );
+  const inspectVisual = (node: MindmapNode) => {
+    if (result?.source !== binding.source) {
+      setMessage("Wait for the current map before inspecting a visual.");
+      return;
+    }
+    const at = visuals.findIndex(
+      (visual) =>
+        visual.from !== undefined &&
+        visual.from >= node.from &&
+        visual.from < node.to,
+    );
+    if (at < 0) return;
+    openVisual({
+      items: visuals,
+      index: at,
+      current: () => (result?.source === binding.source ? visuals : []),
+      restore: () =>
+        stage.current
+          ?.querySelector<HTMLElement>(
+            `[data-map-node="${CSS.escape(node.id)}"]`,
+          )
+          ?.focus({ preventScroll: true }),
+    });
+  };
+  const chosenHasVisual =
+    !!chosen &&
+    visuals.some(
+      (visual) =>
+        visual.from !== undefined &&
+        visual.from >= chosen.from &&
+        visual.from < chosen.to,
+    );
   const draftPosition = draft && binding.absolute(draft.bookmark);
   const draftNode =
     draftPosition &&
@@ -1030,12 +2050,121 @@ export default function MindmapSurface(props: MindmapProps) {
     draftBox.x * camera.scale + camera.x <= viewport.width &&
     (draftBox.y + draftBox.height) * camera.scale + camera.y >= 0 &&
     draftBox.y * camera.scale + camera.y <= viewport.height;
+  refreshDrop.current = (x, y) => {
+    const current = drag.current;
+    if (!current?.id || !current.moved) return;
+    clearDrop();
+    if (current.source !== binding.source) {
+      current.drop = undefined;
+      setDropHint(
+        "This document changed during dragging. Nothing will be moved.",
+      );
+      return;
+    }
+    const target = document
+      .elementFromPoint(x, y)
+      ?.closest<HTMLElement>("[data-map-node]");
+    if (
+      !target ||
+      target.dataset.mapNode === current.id ||
+      !host.current?.contains(target)
+    ) {
+      current.drop = undefined;
+      setDropHint("");
+      if (hoverExpand.current) clearTimeout(hoverExpand.current);
+      hoverExpand.current = null;
+      hoverTarget.current = null;
+      return;
+    }
+    const rect = target.getBoundingClientRect(),
+      ratio = (y - rect.top) / rect.height;
+    const placement =
+      ratio < 0.25 ? "before" : ratio > 0.75 ? "after" : "child";
+    const targetId = target.dataset.mapNode!;
+    if (
+      current.drop?.id !== targetId ||
+      current.drop.placement !== placement ||
+      current.drop.source !== binding.source
+    ) {
+      try {
+        if (!projection || result?.source !== binding.source)
+          throw new Error("The map is updating; wait before dropping.");
+        const edit = moveMindmapBranch(
+          binding.source,
+          projection,
+          current.id,
+          targetId,
+          placement,
+        );
+        current.drop = {
+          id: targetId,
+          placement,
+          edit,
+          source: binding.source,
+        };
+      } catch (error) {
+        current.drop = {
+          id: targetId,
+          placement,
+          source: binding.source,
+          error: (error as Error).message,
+        };
+      }
+      setDropHint(
+        current.drop.error ??
+          `Move ${byId.get(current.id)?.label ?? "branch"} ${placement === "child" ? "inside" : placement} ${byId.get(targetId)?.label ?? "branch"}`,
+      );
+    }
+    if (current.drop.error) target.dataset.mapDropInvalid = "true";
+    else target.dataset.mapDrop = placement;
+    dropTarget.current = target;
+    if (hoverTarget.current !== targetId) {
+      if (hoverExpand.current) clearTimeout(hoverExpand.current);
+      hoverExpand.current = null;
+      hoverTarget.current = targetId;
+      const next = byId.get(targetId);
+      if (next && !current.drop.error && isFolded(next))
+        hoverExpand.current = setTimeout(() => {
+          if (drag.current === current && current.source === binding.source)
+            setFolds((items) =>
+              items.filter(
+                (item) =>
+                  item.type !== next.blockType ||
+                  binding.absolute(item.bookmark)?.anchor !== next.from,
+              ),
+            );
+        }, 600);
+    }
+  };
+  useLayoutEffect(() => {
+    const current = drag.current;
+    if (current?.id && current.moved)
+      refreshDrop.current(current.clientX, current.clientY);
+  }, [camera, layout, source]);
   return (
     <section
       className="mindmap-surface"
       aria-label="Markdown mind map"
       data-map-layout={settings.layout}
+      aria-busy={result?.source !== source}
       onKeyDownCapture={(event) => {
+        if (event.nativeEvent.isComposing) return;
+        const field = (event.target as Element).closest(
+          "input,textarea,[contenteditable=true],button",
+        );
+        if (!field && event.key === " ") spaceDown.current = true;
+        if (!field && event.key === "Escape") {
+          clearDrag();
+          spaceDown.current = false;
+          if (draft) {
+            setDraft(null);
+            event.stopPropagation();
+            return;
+          }
+          if (query) updateQuery("");
+          else if (selectionIds.size > 1) setSelections([]);
+          else if (focusBranch) setFocusBranch(null);
+        }
         if (
           (event.metaKey || event.ctrlKey) &&
           event.key === "/" &&
@@ -1045,6 +2174,9 @@ export default function MindmapSurface(props: MindmapProps) {
           event.stopPropagation();
           changePane(pane === "source" ? null : "source");
         }
+      }}
+      onKeyUpCapture={(event) => {
+        if (event.key === " ") spaceDown.current = false;
       }}
     >
       <header className="mindmap-toolbar">
@@ -1060,36 +2192,91 @@ export default function MindmapSurface(props: MindmapProps) {
           aria-label="Find in mind map"
           placeholder="Find a branch…"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onClear={() => setQuery("")}
+          onChange={(e) => updateQuery(e.target.value)}
+          onClear={() => updateQuery("")}
           onKeyDown={(e) => {
-            if (e.key === "Enter" && matches.length) {
-              const next =
-                matches[
-                  (matches.findIndex((n) => n.id === selected) + 1) %
-                    matches.length
-                ];
-              const ancestors = new Set<number>();
-              let parent = next.parentId;
-              while (parent) {
-                const n = byId.get(parent)!;
-                ancestors.add(n.from);
-                parent = n.parentId;
-              }
-              setFolds((items) =>
-                items.filter(
-                  (f) =>
-                    !ancestors.has(binding.absolute(f.bookmark)?.anchor ?? -1),
-                ),
-              );
-              focusNode(next);
+            if (e.key === "Enter") {
+              e.preventDefault();
+              findNext(e.shiftKey ? -1 : 1);
+            }
+            if (e.key === "Escape") {
+              e.preventDefault();
+              updateQuery("");
             }
           }}
         />
-        {query && (
+        <Button
+          variant="ghost"
+          aria-label="Research lens"
+          aria-pressed={presentation.lens !== "all"}
+          onClick={(event) => {
+            const box = event.currentTarget.getBoundingClientRect();
+            openContextMenu({
+              owner: event.currentTarget,
+              x: box.left,
+              y: box.bottom,
+              label: "Research lens",
+              items: mindmapResearchLenses.map((lens) => ({
+                label: lens.label,
+                icon: lens.id === presentation.lens ? "check" : "search",
+                action: () => updateLens(lens.id),
+              })),
+            });
+          }}
+        >
+          <Filter size={16} />
+          {presentation.lens === "all"
+            ? "Lens"
+            : mindmapResearchLenses.find(
+                (lens) => lens.id === presentation.lens,
+              )?.label}
+        </Button>
+        {researchActive && (
           <span className="mindmap-search-count" role="status">
-            {matches.length} found
+            {matches.length
+              ? `${Math.max(0, matches.findIndex((n) => n.id === selected) + 1)} / ${matches.length}`
+              : "No matches"}
           </span>
+        )}
+        {researchActive && (
+          <>
+            <IconButton
+              label="Previous map match"
+              disabled={!matches.length}
+              onClick={() => findNext(-1)}
+            >
+              <ChevronLeft size={15} />
+            </IconButton>
+            <IconButton
+              label="Next map match"
+              disabled={!matches.length}
+              onClick={() => findNext()}
+            >
+              <ChevronRight size={15} />
+            </IconButton>
+            <Button
+              variant="ghost"
+              aria-pressed={presentation.resultsOnly}
+              onClick={() =>
+                setPresentation((p) => ({ ...p, resultsOnly: !p.resultsOnly }))
+              }
+            >
+              {presentation.resultsOnly ? "Show context" : "Focus results"}
+            </Button>
+            <IconButton
+              label="Clear research lens and search"
+              onClick={() => {
+                setQuery("");
+                setPresentation((p) => ({
+                  ...p,
+                  lens: "all",
+                  resultsOnly: false,
+                }));
+              }}
+            >
+              <X size={15} />
+            </IconButton>
+          </>
         )}
         <span className="tool-spacer" />
         <IconButton
@@ -1113,12 +2300,13 @@ export default function MindmapSurface(props: MindmapProps) {
         <IconButton
           label="Fit mind map"
           disabled={!layout}
-          onClick={() =>
-            layout &&
-            setCamera(
-              fitMindmap(layout.bounds, viewport.width, viewport.height),
-            )
-          }
+          onClick={() => {
+            fitPending.current = false;
+            if (layout)
+              setCamera(
+                fitMindmap(layout.bounds, viewport.width, viewport.height),
+              );
+          }}
         >
           <Focus size={16} />
         </IconButton>
@@ -1128,19 +2316,16 @@ export default function MindmapSurface(props: MindmapProps) {
         <Button
           variant="ghost"
           className="mindmap-zoom"
-          onClick={() => setCamera((c) => ({ ...c, scale: 1 }))}
+          onClick={() => {
+            fitPending.current = false;
+            setCamera((c) => ({ ...c, scale: 1 }));
+          }}
           aria-label="Reset zoom to 100 percent"
         >
           {Math.round(camera.scale * 100)}%
         </Button>
         <IconButton label="Zoom in" onClick={() => zoom(1.2)}>
           <Plus size={16} />
-        </IconButton>
-        <IconButton
-          label="Map display options"
-          onClick={() => setDisplay(true)}
-        >
-          <SlidersHorizontal size={16} />
         </IconButton>
         <IconButton
           label="Branch details"
@@ -1150,16 +2335,128 @@ export default function MindmapSurface(props: MindmapProps) {
           <Info size={16} />
         </IconButton>
         <IconButton
-          label="Export mind map"
-          disabled={!projection || result?.source !== source}
-          onClick={() =>
-            projection &&
-            setExporting({ source, projection, settings, selected: chosen?.id })
-          }
+          label="More map options"
+          onClick={(event) => {
+            const owner = event.currentTarget,
+              box = owner.getBoundingClientRect();
+            openContextMenu({
+              owner: event.currentTarget,
+              x: box.left,
+              y: box.bottom,
+              label: "Map options",
+              items: [
+                {
+                  label: "Map hierarchy",
+                  icon: "graph",
+                  action: () => {},
+                  children: [
+                    {
+                      label: "Expand all",
+                      icon: "chevronRight",
+                      action: () => {
+                        if (searchFolds.current) searchDirty.current = true;
+                        setFolds([]);
+                      },
+                    },
+                    ...[1, 2, 3, 6].map((depth) => ({
+                      label:
+                        depth === 1
+                          ? "Fold to first level"
+                          : `Show ${depth} levels`,
+                      icon: "chevronRight" as const,
+                      action: () => foldToDepth(depth),
+                    })),
+                    {
+                      label: "Focus selected branch",
+                      icon: "search",
+                      disabled:
+                        !chosen ||
+                        chosen.kind === "root" ||
+                        !!chosen.presentationOnly,
+                      action: () => chosen && focusOnly(chosen),
+                    },
+                    {
+                      label: "Show entire map",
+                      icon: "search",
+                      disabled: !focusBranch && !presentation.resultsOnly,
+                      action: () => {
+                        setFocusBranch(null);
+                        setPresentation((p) => ({ ...p, resultsOnly: false }));
+                      },
+                    },
+                  ],
+                },
+                {
+                  label: "Toggle map overview",
+                  icon: "graph",
+                  checked: presentation.minimap,
+                  action: () =>
+                    setPresentation((p) => ({ ...p, minimap: !p.minimap })),
+                },
+                {
+                  label: "Map display options",
+                  icon: "settings",
+                  action: () => setDisplay(true),
+                },
+                {
+                  label: "Export mind map",
+                  icon: "download",
+                  disabled: !projection || result?.source !== source,
+                  action: () =>
+                    projection &&
+                    setExporting({
+                      source,
+                      projection,
+                      settings,
+                      selected: chosen?.presentationOnly
+                        ? undefined
+                        : chosen?.id,
+                      research: presentation.preview === "research",
+                    }),
+                },
+                {
+                  label: "Selected branch actions",
+                  icon: "more",
+                  disabled: !chosen,
+                  group: "node",
+                  action: () => openMenu(owner, box.left, box.bottom),
+                },
+                {
+                  label: "Mind-map shortcuts",
+                  icon: "info",
+                  group: "help",
+                  action: () => setHelp(true),
+                },
+              ],
+            });
+          }}
         >
-          <Download size={16} />
+          <MoreHorizontal size={16} />
         </IconButton>
       </header>
+      {focusBranch && (
+        <nav
+          className="mindmap-focus-path"
+          aria-label="Focused branch ancestors"
+        >
+          <IconButton
+            label="Show entire map"
+            onClick={() => setFocusBranch(null)}
+          >
+            <ArrowLeft size={15} />
+          </IconButton>
+          {focusAncestors.map((node) => (
+            <Button
+              key={node.id}
+              variant="ghost"
+              onClick={() => focusOnly(node)}
+              aria-current={node.id === focusNodeId ? "location" : undefined}
+            >
+              {node.label}
+            </Button>
+          ))}
+        </nav>
+      )}
       {message && (
         <Notice tone="warning">
           <span>{message}</span>
@@ -1202,6 +2499,10 @@ export default function MindmapSurface(props: MindmapProps) {
             edge="right"
             className="mindmap-source-pane"
             label="Mind-map source"
+            minWidth={240}
+            defaultWidth={360}
+            maxWidth={900}
+            reserveWidth={360}
           >
             <div className="mindmap-pane-heading">
               <span>Canonical Markdown</span>
@@ -1213,6 +2514,7 @@ export default function MindmapSurface(props: MindmapProps) {
               </IconButton>
             </div>
             <StudioSource
+              ref={sourceEditor}
               binding={binding}
               readOnly={props.readOnly}
               language="markdown"
@@ -1223,10 +2525,14 @@ export default function MindmapSurface(props: MindmapProps) {
           className="mindmap-viewport"
           ref={host}
           tabIndex={0}
-          aria-label="Mind-map viewport. Drag empty space to pan; control or command scroll to zoom."
+          role="tree"
+          aria-label="Markdown hierarchy"
+          aria-roledescription="Mind map"
+          aria-multiselectable="true"
+          title="Drag empty space or middle-drag to pan; command/control scroll to zoom."
           onPointerDown={(e) => {
             if (
-              e.button !== 0 ||
+              (e.button !== 0 && e.button !== 1) ||
               (e.target as Element).closest("button,input,a,textarea")
             )
               return;
@@ -1234,17 +2540,42 @@ export default function MindmapSurface(props: MindmapProps) {
               "[data-map-node]",
             );
             const node = element && byId.get(element.dataset.mapNode!);
-            if (node) {
-              setSelected(node.id);
+            const pan = e.button === 1 || spaceDown.current;
+            fitPending.current = false;
+            if (node && !pan) {
+              const active = selectNode(
+                node,
+                e.metaKey || e.ctrlKey,
+                e.shiftKey,
+              );
               selectedAnchor.current = binding.relative({
-                anchor: node.from,
-                head: node.to,
+                anchor: active.from,
+                head: active.to,
               });
-              binding.select({ anchor: node.labelFrom, head: node.labelTo });
-              element.focus({ preventScroll: true });
+              binding.select({
+                anchor: active.labelFrom,
+                head: active.labelTo,
+              });
+              const activeElement =
+                active.id === node.id
+                  ? element
+                  : stage.current?.querySelector<HTMLElement>(
+                      `[data-map-node="${CSS.escape(active.id)}"]`,
+                    );
+              activeElement?.focus({ preventScroll: true });
+              // Modifier deselection must not let the browser focus the removed
+              // member after the remaining active node was restored above.
+              e.preventDefault();
             }
+            if (e.metaKey || e.ctrlKey || e.shiftKey) return;
+            e.preventDefault();
             drag.current = {
-              ...(node && latest.current.canEdit() && node.kind !== "root"
+              ...(node &&
+              !pan &&
+              latest.current.canEdit() &&
+              node.kind !== "root" &&
+              !node.presentationOnly &&
+              selectionIds.size <= 1
                 ? {
                     id: node.id,
                     bookmark: binding.relative({
@@ -1256,16 +2587,21 @@ export default function MindmapSurface(props: MindmapProps) {
                 : {}),
               x: e.clientX,
               y: e.clientY,
+              clientX: e.clientX,
+              clientY: e.clientY,
+              source: binding.source,
               camera,
               pointer: e.pointerId,
               moved: false,
               target: e.currentTarget,
             };
-            if (!node) e.currentTarget.setPointerCapture(e.pointerId);
+            if (!node || pan) e.currentTarget.setPointerCapture(e.pointerId);
           }}
           onPointerMove={(e) => {
             const current = drag.current;
             if (!current || current.pointer !== e.pointerId) return;
+            current.clientX = e.clientX;
+            current.clientY = e.clientY;
             const dx = e.clientX - current.x,
               dy = e.clientY - current.y;
             if (Math.hypot(dx, dy) > 5) {
@@ -1280,69 +2616,87 @@ export default function MindmapSurface(props: MindmapProps) {
                 y: current.camera.y + dy,
               });
             if (current.id && current.moved) {
-              e.currentTarget.dataset.draggingBranch = current.id;
-              clearDrop();
-              const target = document
-                .elementFromPoint(e.clientX, e.clientY)
-                ?.closest<HTMLElement>("[data-map-node]");
-              if (target && target.dataset.mapNode !== current.id) {
-                const rect = target.getBoundingClientRect(),
-                  ratio = (e.clientY - rect.top) / rect.height;
-                target.dataset.mapDrop =
-                  ratio < 0.25 ? "before" : ratio > 0.75 ? "after" : "child";
-                dropTarget.current = target;
+              const edge = e.currentTarget.getBoundingClientRect();
+              edgeVelocity.current = {
+                x:
+                  e.clientX < edge.left + 28
+                    ? 8
+                    : e.clientX > edge.right - 28
+                      ? -8
+                      : 0,
+                y:
+                  e.clientY < edge.top + 28
+                    ? 8
+                    : e.clientY > edge.bottom - 28
+                      ? -8
+                      : 0,
+              };
+              if (
+                !gestureId.current &&
+                (edgeVelocity.current.x || edgeVelocity.current.y)
+              ) {
+                const pan = () => {
+                  if (drag.current !== current) return;
+                  const velocity = edgeVelocity.current;
+                  setCamera((c) => ({
+                    ...c,
+                    x: c.x + velocity.x,
+                    y: c.y + velocity.y,
+                  }));
+                  gestureId.current =
+                    velocity.x || velocity.y ? requestAnimationFrame(pan) : 0;
+                };
+                gestureId.current = requestAnimationFrame(pan);
               }
+              e.currentTarget.dataset.draggingBranch = current.id;
+              refreshDrop.current(e.clientX, e.clientY);
             }
           }}
           onPointerUp={(e) => {
             const current = drag.current;
-            drag.current = null;
-            clearDrop();
+            refreshDrop.current(e.clientX, e.clientY);
+            clearDrag();
             delete e.currentTarget.dataset.draggingBranch;
             if (!current) return;
             if (e.currentTarget.hasPointerCapture(e.pointerId))
               e.currentTarget.releasePointerCapture(e.pointerId);
             if (!current.moved || !current.id || !projection) return;
-            const target = document
-              .elementFromPoint(e.clientX, e.clientY)
-              ?.closest<HTMLElement>("[data-map-node]");
-            if (!target) {
+            if (current.source !== binding.source) {
+              setMessage(
+                "This document changed during dragging. Nothing was moved.",
+              );
+              return;
+            }
+            if (!current.drop) {
               setMessage(
                 "Drop on another branch to move it. Empty space only pans the map.",
               );
               return;
             }
-            const rect = target.getBoundingClientRect(),
-              ratio = (e.clientY - rect.top) / rect.height;
-            const placement =
-              ratio < 0.25 ? "before" : ratio > 0.75 ? "after" : "child";
             mutate(() => {
               const at = current.bookmark && binding.absolute(current.bookmark);
               if (
                 !at ||
                 binding.source.slice(at.anchor, at.head) !== current.original ||
-                result?.source !== binding.source
+                result?.source !== binding.source ||
+                current.drop?.source !== binding.source
               )
                 throw new Error(
                   "This branch changed during dragging. Nothing was moved.",
                 );
-              return moveMindmapBranch(
-                binding.source,
-                projection,
-                current.id!,
-                target.dataset.mapNode!,
-                placement,
-              );
+              if (!current.drop?.edit)
+                throw new Error(
+                  current.drop?.error ?? "Choose a valid branch destination.",
+                );
+              return current.drop.edit;
             });
           }}
           onPointerCancel={(e) => {
-            drag.current = null;
-            clearDrop();
+            clearDrag();
             delete e.currentTarget.dataset.draggingBranch;
           }}
           onLostPointerCapture={(e) => {
-            drag.current = null;
-            clearDrop();
+            clearDrag();
             delete e.currentTarget.dataset.draggingBranch;
           }}
           onContextMenu={(e) => {
@@ -1367,7 +2721,7 @@ export default function MindmapSurface(props: MindmapProps) {
                 );
             }
             if (e.key === "Escape") {
-              drag.current = null;
+              clearDrag();
               setDraft(null);
             }
           }}
@@ -1394,8 +2748,6 @@ export default function MindmapSurface(props: MindmapProps) {
             <div
               className="mindmap-stage"
               ref={stage}
-              role="tree"
-              aria-label="Markdown hierarchy"
               style={{
                 transform: `translate(${camera.x}px,${camera.y}px) scale(${camera.scale})`,
               }}
@@ -1405,68 +2757,112 @@ export default function MindmapSurface(props: MindmapProps) {
                 aria-hidden="true"
                 style={{ overflow: "visible" }}
               >
-                {layout.nodes.map((position) => {
-                  const node = byId.get(position.id)!,
-                    parent = placements.get(node.parentId ?? "");
-                  if (!parent) return null;
-                  return (
-                    <path
-                      key={position.id}
-                      d={mindmapConnector(parent, position)}
-                      className="mindmap-connector"
-                      style={
-                        {
-                          "--branch-color": branchColor(
-                            position.branch,
-                            settings.colors,
-                          ),
-                        } as CSSProperties
-                      }
-                    />
-                  );
-                })}
+                {layout.nodes
+                  .filter((position) => {
+                    const parent = placements.get(
+                      byId.get(position.id)?.parentId ?? "",
+                    );
+                    if (!parent) return false;
+                    const x = Math.min(parent.x, position.x),
+                      y = Math.min(parent.y, position.y),
+                      right = Math.max(
+                        parent.x + parent.width,
+                        position.x + position.width,
+                      ),
+                      bottom = Math.max(
+                        parent.y + parent.height,
+                        position.y + position.height,
+                      );
+                    return (
+                      right * camera.scale + camera.x >= -100 &&
+                      x * camera.scale + camera.x <= viewport.width + 100 &&
+                      bottom * camera.scale + camera.y >= -100 &&
+                      y * camera.scale + camera.y <= viewport.height + 100
+                    );
+                  })
+                  .map((position) => {
+                    const node = byId.get(position.id)!,
+                      parent = placements.get(node.parentId ?? "");
+                    if (!parent) return null;
+                    return (
+                      <path
+                        key={position.id}
+                        d={mindmapConnector(parent, position)}
+                        className="mindmap-connector"
+                        data-active-path={activePath.has(node.id) || undefined}
+                        data-lens-context={
+                          (researchActive && matchContextIds.has(node.id)) ||
+                          undefined
+                        }
+                        style={
+                          {
+                            "--branch-color": branchColor(
+                              position.branch,
+                              settings.colors,
+                            ),
+                          } as CSSProperties
+                        }
+                      />
+                    );
+                  })}
               </svg>
               {visible.map((position) => {
                 const node = byId.get(position.id)!;
                 const editing = draft && draftNode?.id === node.id;
-                const peer = peers.filter(
-                  (p) =>
-                    p.selection &&
-                    p.selection.head >= node.from &&
-                    p.selection.head <= node.to,
-                );
+                const peer = peersByNode.get(node.id) ?? [];
+                // A task toggle is a synchronous one-character source edit. Reflect
+                // it immediately; a worker round-trip must not restore the old check.
+                const checked = mindmapTaskChecked(node, source);
                 return (
                   <div
-                    key={node.id}
+                    key={nodeKeys.get(node.id) ?? node.id}
                     role="treeitem"
                     aria-level={position.depth + 1}
                     aria-posinset={
-                      node.parentId
-                        ? (byId.get(node.parentId)?.children.indexOf(node.id) ??
-                            0) + 1
+                      node.id !== viewProjection?.rootId && node.parentId
+                        ? (viewById
+                            .get(node.parentId)
+                            ?.children.indexOf(node.id) ?? 0) + 1
                         : 1
                     }
                     aria-setsize={
-                      node.parentId
-                        ? byId.get(node.parentId)?.children.length
+                      node.id !== viewProjection?.rootId && node.parentId
+                        ? viewById.get(node.parentId)?.children.length
                         : 1
                     }
-                    aria-selected={selected === node.id}
+                    aria-selected={selectionIds.has(node.id)}
                     aria-expanded={
-                      node.children.length ? !folded.has(node.from) : undefined
+                      viewById.get(node.id)?.children.length
+                        ? !isFolded(node)
+                        : undefined
                     }
                     aria-label={
-                      node.checked === undefined
+                      checked === undefined
                         ? node.label
-                        : `${node.checked ? "Complete" : "Incomplete"} task: ${node.label}`
+                        : `${checked ? "Complete" : "Incomplete"} task: ${node.label}`
                     }
                     tabIndex={selected === node.id ? 0 : -1}
                     data-map-node={node.id}
                     data-kind={node.kind}
-                    data-matching={
-                      matches.some((n) => n.id === node.id) || undefined
+                    data-matching={matchIds.has(node.id) || undefined}
+                    data-lens-match={
+                      (researchActive && matchIds.has(node.id)) || undefined
                     }
+                    data-lens-context={
+                      (researchActive && matchContextIds.has(node.id)) ||
+                      undefined
+                    }
+                    data-active-path={activePath.has(node.id) || undefined}
                     className="mindmap-node"
+                    onPointerEnter={() => hoverNode(node.id)}
+                    onPointerLeave={(e) => {
+                      if (
+                        !(e.relatedTarget instanceof Element) ||
+                        e.relatedTarget.getAttribute("data-map-control") !==
+                          node.id
+                      )
+                        leaveNode();
+                    }}
                     style={
                       {
                         left: position.x,
@@ -1504,7 +2900,7 @@ export default function MindmapSurface(props: MindmapProps) {
                       {node.checked !== undefined && !editing && (
                         <Checkbox
                           data-editor-field="inline"
-                          checked={node.checked}
+                          checked={checked}
                           aria-label={`Toggle task ${node.label}`}
                           disabled={props.readOnly}
                           onChange={() =>
@@ -1547,29 +2943,29 @@ export default function MindmapSurface(props: MindmapProps) {
                             /* Commit is explicit: peer edits can arrive while another control gains focus. */
                           }}
                         />
-                      ) : labelHtml.has(node.id) ? (
-                        <div
-                          className="mindmap-rich-label"
-                          dangerouslySetInnerHTML={{
-                            __html: labelHtml.get(node.id)!,
-                          }}
-                          onClick={(e) => {
-                            const link = (
-                              e.target as Element
-                            ).closest<HTMLAnchorElement>("a");
-                            if (link) {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              props.onLink(
-                                link.dataset.note ??
-                                  link.getAttribute("href") ??
-                                  "",
-                              );
-                            }
-                          }}
-                        />
                       ) : (
-                        <span>{node.label}</span>
+                        <div className="mindmap-node-content">
+                          <MindmapPreview
+                            source={displayedSource}
+                            node={node}
+                            context={previewContext}
+                            research={presentation.preview === "research"}
+                            onLink={(target) => {
+                              selectNode(node);
+                              mapLink(target);
+                            }}
+                          />
+                          {["root", "heading", "container"].includes(
+                            node.kind,
+                          ) &&
+                            (index?.tasks.get(node.id)?.total ?? 0) > 0 && (
+                              <div className="mindmap-branch-summary">
+                                {index?.tasks.get(node.id)?.complete}/
+                                {index?.tasks.get(node.id)?.total} tasks
+                                complete
+                              </div>
+                            )}
+                        </div>
                       )}
                       {peer.length > 0 && (
                         <span
@@ -1582,27 +2978,193 @@ export default function MindmapSurface(props: MindmapProps) {
                         </span>
                       )}
                     </div>
-                    {node.children.length > 0 && (
-                      <IconButton
-                        label={`${folded.has(node.from) ? "Expand" : "Fold"} ${node.label}`}
-                        className={`mindmap-fold side-${position.side}`}
-                        aria-expanded={!folded.has(node.from)}
-                        onClick={() => toggle(node)}
-                      >
-                        {folded.has(node.from) ? (
-                          <ChevronRight size={12} />
-                        ) : (
-                          <ChevronLeft size={12} />
-                        )}
-                      </IconButton>
-                    )}
                   </div>
                 );
               })}
             </div>
           )}
+          {layout && projection && (
+            <div className="mindmap-control-layer">
+              {draft && draftInView && draftBox && (
+                <div
+                  className="mindmap-draft-actions"
+                  aria-label="Node edit actions"
+                  style={{
+                    left: Math.max(
+                      8,
+                      Math.min(
+                        viewport.width - 80,
+                        (draftBox.x + draftBox.width) * camera.scale +
+                          camera.x -
+                          76,
+                      ),
+                    ),
+                    top: Math.max(
+                      8,
+                      Math.min(
+                        viewport.height - 40,
+                        (draftBox.y + draftBox.height) * camera.scale +
+                          camera.y +
+                          4,
+                      ),
+                    ),
+                  }}
+                >
+                  <IconButton label="Apply node edit" onClick={commit}>
+                    <Check size={16} />
+                  </IconButton>
+                  <IconButton
+                    label="Cancel node edit"
+                    onClick={() => setDraft(null)}
+                  >
+                    <X size={16} />
+                  </IconButton>
+                </div>
+              )}
+              {visible.map((position) => {
+                const node = byId.get(position.id)!;
+                const collapsed = isFolded(node),
+                  active = hovered === node.id || selectionIds.has(node.id);
+                const x =
+                  (position.x + (position.side === 1 ? position.width : 0)) *
+                    camera.scale +
+                  camera.x +
+                  (position.side === 1 ? 6 : -6);
+                const children = node.children.flatMap((id) => {
+                  const next = placements.get(id);
+                  return next ? [next] : [];
+                });
+                const tightGutter =
+                  !collapsed &&
+                  children.some(
+                    (child) =>
+                      (position.side === 1
+                        ? child.x - position.x - position.width
+                        : position.x - child.x - child.width) *
+                        camera.scale <
+                      44,
+                  );
+                const y = tightGutter
+                  ? Math.max(64, position.y * camera.scale + camera.y - 6)
+                  : (position.y + position.height / 2) * camera.scale +
+                    camera.y;
+                if (
+                  !viewById.get(node.id)?.children.length ||
+                  node.kind === "root" ||
+                  node.presentationOnly
+                )
+                  return null;
+                return (
+                  <IconButton
+                    key={nodeKeys.get(node.id) ?? node.id}
+                    data-map-control={node.id}
+                    data-visible={collapsed || active || undefined}
+                    data-collapsed={collapsed || undefined}
+                    label={`${collapsed ? "Expand" : "Fold"} ${node.label}`}
+                    title={
+                      collapsed
+                        ? `Expand ${node.label} · ${index?.descendants.get(node.id) ?? 0} hidden nodes`
+                        : `Fold ${node.label}`
+                    }
+                    className="mindmap-fold"
+                    style={{
+                      left: x,
+                      top: y,
+                      transform: `translate(${position.side === 1 ? "0" : "-100%"}, ${tightGutter ? "-100%" : "-50%"})`,
+                    }}
+                    aria-expanded={!collapsed}
+                    onPointerEnter={() => hoverNode(node.id)}
+                    onPointerLeave={leaveNode}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggle(node);
+                    }}
+                  >
+                    {collapsed ? (
+                      position.side === 1 ? (
+                        <ChevronRight size={14} />
+                      ) : (
+                        <ChevronLeft size={14} />
+                      )
+                    ) : position.side === 1 ? (
+                      <ChevronLeft size={14} />
+                    ) : (
+                      <ChevronRight size={14} />
+                    )}
+                    {collapsed && (
+                      <span className="mindmap-hidden-count" aria-hidden="true">
+                        {index?.descendants.get(node.id) ?? 0}
+                      </span>
+                    )}
+                  </IconButton>
+                );
+              })}
+            </div>
+          )}
+          {chosen && placements.has(chosen.id) && (
+            <div
+              className="mindmap-node-actions"
+              aria-label="Selected block actions"
+            >
+              {chosen.checked !== undefined && (
+                <IconButton
+                  label={`${chosen.checked ? "Reopen" : "Complete"} selected task`}
+                  disabled={props.readOnly}
+                  onClick={() => toggleTask(chosen)}
+                >
+                  <ListChecks size={15} />
+                </IconButton>
+              )}
+              {(index?.tasks.get(chosen.id)?.total ?? 0) > 0 && (
+                <HelpText as="span">
+                  {index?.tasks.get(chosen.id)?.complete}/
+                  {index?.tasks.get(chosen.id)?.total} tasks
+                </HelpText>
+              )}
+              {chosen.kind === "content" || chosen.kind === "container" ? (
+                <IconButton
+                  label="Open full block"
+                  onClick={() => changePane("details")}
+                >
+                  <Info size={15} />
+                </IconButton>
+              ) : null}
+              <IconButton
+                label="Reveal selected in Source"
+                disabled={!chosen.to}
+                onClick={() => revealSource(chosen)}
+              >
+                <Braces size={15} />
+              </IconButton>
+              <IconButton
+                label="Center selected branch"
+                onClick={() => fitSelection(chosen)}
+              >
+                <Focus size={15} />
+              </IconButton>
+            </div>
+          )}
+          {dropHint && (
+            <p className="mindmap-drop-hint" role="status">
+              {dropHint}
+            </p>
+          )}
+          {presentation.minimap && layout && (
+            <MindmapOverview
+              layout={layout}
+              camera={camera}
+              viewport={viewport}
+              onCamera={(next) => {
+                fitPending.current = false;
+                setCamera(next);
+              }}
+              onClose={() =>
+                setPresentation((value) => ({ ...value, minimap: false }))
+              }
+            />
+          )}
         </div>
-        {pane === "details" && chosen && (
+        {pane === "details" && chosen && projection && research && (
           <ResizablePanel
             account={props.scope}
             name="mindmap-details"
@@ -1619,80 +3181,44 @@ export default function MindmapSurface(props: MindmapProps) {
                 <X size={15} />
               </IconButton>
             </div>
-            <div className="mindmap-detail-content">
-              <HelpText>
-                Lines {source.slice(0, chosen.from).split("\n").length}–
-                {source.slice(0, chosen.branchTo).split("\n").length} ·{" "}
-                {chosen.children.length} branches
-              </HelpText>
-              <ReadingView
-                parsed={parseMarkdown(
-                  source.slice(chosen.from, chosen.branchTo),
-                )}
-                source={source.slice(chosen.from, chosen.branchTo)}
-                context={props.context}
-                onLink={props.onLink}
-              />
-              <div className="mindmap-detail-actions">
-                <Button onClick={() => changePane("source")}>
-                  Edit in Source
-                </Button>
-                {props.onDocument && (
-                  <Button onClick={() => props.onDocument?.(chosen.from)}>
-                    Open document
-                  </Button>
-                )}
-              </div>
-            </div>
+            <MindmapDetails
+              node={chosen}
+              projection={projection}
+              research={research}
+              source={displayedSource}
+              liveSource={source}
+              context={previewContext}
+              document={ownerDocument}
+              readOnly={props.readOnly}
+              onLink={mapLink}
+              onNavigate={navigateResearch}
+              onSource={sourceRange}
+              onDocument={props.onDocument}
+              onToggleTask={toggleTask}
+              onVisual={chosenHasVisual ? inspectVisual : undefined}
+              tab={detailTab}
+              onTab={setDetailTab}
+            />
           </ResizablePanel>
         )}
       </div>
-      <footer className="mindmap-status">
-        <span>
-          {projection?.nodes.length ?? 0} nodes · {layout?.nodes.length ?? 0}{" "}
-          visible
-          {projection?.supporting.length
-            ? ` · ${projection.supporting.length} supporting blocks`
-            : ""}
-        </span>
-        <span>
-          {props.readOnly
-            ? "Read only"
-            : "Double-click / F2 to edit · Enter sibling · ⌘/Ctrl Enter child"}
-        </span>
-        {draft && <Button onClick={commit}>Apply label</Button>}
-        <IconButton
-          label="Selected branch actions"
-          onClick={(e) => {
-            const box = e.currentTarget.getBoundingClientRect();
-            openMenu(e.currentTarget, box.left, box.top);
-          }}
-        >
-          <MoreHorizontal size={15} />
-        </IconButton>
-      </footer>
       {display && (
         <MindmapDisplayDialog
           settings={settings}
+          presentation={presentation}
+          onPresentation={setPresentation}
           onChange={(next) => {
             localPreferences.current = true;
             if (next.nodeWidth !== settings.nodeWidth) {
               setSizes({});
-              measurements.current.clear();
             }
             setSettings(next);
           }}
-          onExpandAll={() => setFolds([])}
-          onFoldAll={() =>
-            setFolds(
-              (projection?.nodes ?? [])
-                .filter((n) => n.kind !== "root" && n.children.length)
-                .map((n) => ({
-                  bookmark: binding.relative({ anchor: n.from, head: n.to }),
-                  type: n.blockType,
-                })),
-            )
-          }
+          onExpandAll={() => {
+            if (searchFolds.current) searchDirty.current = true;
+            setFolds([]);
+          }}
+          onFoldAll={() => foldToDepth(1)}
           onSave={
             props.onSaveDefaults && !props.readOnly
               ? async () => {
@@ -1705,14 +3231,94 @@ export default function MindmapSurface(props: MindmapProps) {
               : undefined
           }
           onClose={() => {
-            fitPending.current = true;
             setDisplay(false);
-            if (layout)
-              setCamera(
-                fitMindmap(layout.bounds, viewport.width, viewport.height),
-              );
           }}
         />
+      )}
+      {help && (
+        <Dialog title="Mind-map shortcuts" onClose={() => setHelp(false)}>
+          <dl className="mindmap-shortcuts">
+            <dt>Arrow keys · Home / End</dt>
+            <dd>Navigate visible branches; Left folds, Right expands.</dd>
+            <dt>Enter · ⌘/Ctrl Enter</dt>
+            <dd>Add a sibling or child. The root always adds a child.</dd>
+            <dt>F2 · double-click</dt>
+            <dd>Edit an inline label; other blocks open their source range.</dd>
+            <dt>T · Space</dt>
+            <dd>Toggle the selected task or fold its branch.</dd>
+            <dt>⌘/Ctrl click · Shift click</dt>
+            <dd>Toggle selection or select a visible range.</dd>
+            <dt>⌘/Ctrl A · ⌘/Ctrl C</dt>
+            <dd>Select visible branches or copy selected Markdown.</dd>
+            <dt>Alt ↑ / ↓ / ←</dt>
+            <dd>Move a compatible branch up, down or outdent.</dd>
+            <dt>⌘/Ctrl / · ⌘/Ctrl Z</dt>
+            <dd>Toggle source or undo. Add Shift to redo.</dd>
+            <dt>Drag blank space · middle-drag</dt>
+            <dd>
+              Pan without modifying Markdown. Command/control wheel zooms.
+            </dd>
+            <dt>Shift F10 · Escape</dt>
+            <dd>Open branch actions; cancel gestures or leave focused view.</dd>
+          </dl>
+          <DialogFooter>
+            <Button variant="primary" onClick={() => setHelp(false)}>
+              Done
+            </Button>
+          </DialogFooter>
+        </Dialog>
+      )}
+      {leaving && draft && (
+        <Dialog title="Keep your node edit?" onClose={() => setLeaving(null)}>
+          <p>
+            Your label has not been applied to Markdown. Apply it before
+            leaving, or keep editing.
+          </p>
+          <TextInput
+            aria-label="Unsaved node label"
+            value={draft.value}
+            readOnly
+          />
+          <Button
+            onClick={() =>
+              void navigator.clipboard.writeText(draft.value).then(
+                () => setMessage("Draft copied."),
+                () =>
+                  setMessage(
+                    "Clipboard access is unavailable. Select and copy the label above.",
+                  ),
+              )
+            }
+          >
+            Copy draft
+          </Button>
+          {message && <Notice tone="warning">{message}</Notice>}
+          <DialogFooter>
+            <Button onClick={() => setLeaving(null)}>Stay</Button>
+            <Button
+              variant="danger"
+              onClick={() => {
+                const proceed = leaving;
+                setDraft(null);
+                setLeaving(null);
+                proceed();
+              }}
+            >
+              Discard and leave
+            </Button>
+            <Button
+              variant="primary"
+              onClick={() => {
+                if (!commit()) return;
+                const proceed = leaving;
+                setLeaving(null);
+                proceed();
+              }}
+            >
+              Apply and leave
+            </Button>
+          </DialogFooter>
+        </Dialog>
       )}
       {exporting && (
         <MindmapExportDialog
@@ -1722,7 +3328,8 @@ export default function MindmapSurface(props: MindmapProps) {
           projection={exporting.projection}
           settings={exporting.settings}
           selected={exporting.selected}
-          context={props.context}
+          context={previewContext}
+          research={exporting.research}
           beforeExport={props.beforeExport}
           onClose={() => setExporting(null)}
         />
@@ -1730,14 +3337,4 @@ export default function MindmapSurface(props: MindmapProps) {
     </section>
   );
 }
-export function branchColor(index: number, mode: MindmapSettings["colors"]) {
-  return mode === "accent"
-    ? "var(--accent)"
-    : [
-        "var(--accent)",
-        "var(--green, var(--accent))",
-        "var(--danger, var(--accent))",
-        "color-mix(in srgb, var(--accent) 65%, var(--text))",
-        "color-mix(in srgb, var(--green, var(--accent)) 65%, var(--text))",
-      ][index % 5];
-}
+export { mindmapBranchColor as branchColor } from "@axiom/mindmap";

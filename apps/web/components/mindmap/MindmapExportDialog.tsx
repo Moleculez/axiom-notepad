@@ -1,10 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import {
-  parseMarkdown,
-  renderDocument,
-  type RenderContext,
-} from "@axiom/markdown";
+import { parseMarkdown, type RenderContext } from "@axiom/markdown";
 import {
   layoutMindmap,
   type MindmapProjection,
@@ -32,9 +28,12 @@ import {
   downloadText,
   rasterizeSvg,
 } from "../../lib/tools/download";
-import { waitForMindmapMath } from "../../lib/tools/mindmap-export";
-import { estimateMindmapLabel } from "@axiom/mindmap/layout";
-import { mindmapRichLabel } from "@axiom/mindmap/label";
+import { waitForMindmapPreviews } from "../../lib/tools/mindmap-export";
+import {
+  estimateMindmapLabel,
+  mindmapBranchColor,
+} from "@axiom/mindmap/layout";
+import { renderMindmapPreview } from "./MindmapPreview";
 
 export default function MindmapExportDialog({
   binding,
@@ -46,6 +45,7 @@ export default function MindmapExportDialog({
   context,
   beforeExport,
   onClose,
+  research = true,
 }: {
   binding: NativeBinding;
   source: string;
@@ -56,10 +56,11 @@ export default function MindmapExportDialog({
   context: RenderContext;
   beforeExport?: () => Promise<void>;
   onClose: () => void;
+  research?: boolean;
 }) {
   const [format, setFormat] = useState("svg"),
     [scope, setScope] = useState("whole"),
-    [rich, setRich] = useState(true),
+    [rich, setRich] = useState(research),
     [scale, setScale] = useState(1),
     [tiled, setTiled] = useState(false),
     [busy, setBusy] = useState(false),
@@ -100,17 +101,37 @@ export default function MindmapExportDialog({
         font = styles.fontFamily,
         fontSize = parseFloat(styles.fontSize) || 16;
       // Resolve CSS variables/color-mix before serializing an offline SVG.
-      const color = (property: string, fallback: string) => {
+      const color = (expression: string) => {
         const sample = document.createElement("span");
-        sample.style.color = `var(${property}, ${fallback})`;
+        sample.style.color = expression;
         root.append(sample);
         const resolved = getComputedStyle(sample).color;
         sample.remove();
         return resolved;
       };
-      const text = color("--text", "#202124"),
-        accent = color("--accent", "#476b83"),
-        background = color("--paper", "#ffffff");
+      const text = color("var(--text, #202124)"),
+        accent = color("var(--accent, #476b83)"),
+        surface = color("var(--paper, #ffffff)"),
+        background = color(
+          "color-mix(in srgb, var(--paper, #ffffff) 97%, var(--bg, #ffffff))",
+        ),
+        border = color("var(--line, #888888)"),
+        rootBorder = color(
+          "color-mix(in srgb, var(--accent, #476b83) 40%, var(--line, #888888))",
+        ),
+        branchColors = Array.from({ length: 5 }, (_, index) =>
+          color(mindmapBranchColor(index, settings.colors)),
+        );
+      // Measure derived geometry instead of parsing calc()/custom-property text.
+      const specimen = document.createElement("div");
+      specimen.className = "mindmap-label";
+      root.append(specimen);
+      const nodeStyles = getComputedStyle(specimen),
+        radius = parseFloat(nodeStyles.borderTopLeftRadius) || 0,
+        textWeight = parseFloat(nodeStyles.fontWeight) || 400,
+        headingWeight =
+          parseFloat(styles.getPropertyValue("--weight-heading")) || 600;
+      specimen.remove();
       const sizes: Record<string, { width: number; height: number }> = {},
         images = new Map<string, string>();
       if (!rich)
@@ -126,6 +147,9 @@ export default function MindmapExportDialog({
             "Rich visual capture supports 120 nodes. Export a selected branch or disable rich labels for a vector overview; Markdown always includes the complete source.",
           );
         const { toPng, getFontEmbedCSS } = await import("html-to-image");
+        // All label fragments resolve against this frozen complete document,
+        // including definitions outside a selected branch.
+        const snapshotContext = { ...context, document: parseMarkdown(source) };
         let capturedPixels = 0,
           fontCss: string | undefined;
         for (let i = 0; i < tree.nodes.length; i++) {
@@ -133,27 +157,35 @@ export default function MindmapExportDialog({
           const node = tree.nodes[i],
             element = document.createElement("div");
           element.className = "mindmap-export-label mindmap-label";
+          element.dataset.kind = node.kind;
+          element.style.setProperty("--branch-color", branchColors[0]);
           element.style.width = settings.nodeWidth + "px";
-          const value = mindmapRichLabel(source, node);
-          if (value)
-            element.innerHTML = renderDocument(parseMarkdown(value), {
-              ...context,
-              fragment: true,
-              disableImages: true,
-              visuals: false,
-              blockMarks: false,
-            });
-          else element.textContent = node.label;
+          const { preview, html } = renderMindmapPreview(
+            source,
+            node,
+            snapshotContext,
+            research,
+            { images: false },
+          );
+          element.classList.add(`mindmap-preview-${preview.kind}`);
+          if (preview.caption) {
+            const caption = document.createElement("div");
+            caption.className = "mindmap-block-caption";
+            caption.textContent = preview.caption;
+            element.append(caption);
+          }
+          const body = document.createElement("div");
+          if (html) body.innerHTML = html;
+          else body.textContent = node.label;
+          element.append(body);
           // Private application URLs never leave the workbench. Captures are inert pixels.
           element.querySelectorAll("a").forEach((a) => {
             a.removeAttribute("href");
           });
           root.append(element);
           await document.fonts.ready;
-          setProgress(
-            `Rendering equation / rich label ${i + 1} of ${tree.nodes.length}`,
-          );
-          await waitForMindmapMath(element, controller.signal);
+          setProgress(`Rendering rich label ${i + 1} of ${tree.nodes.length}`);
+          await waitForMindmapPreviews(element, controller.signal);
           const box = element.getBoundingClientRect();
           capturedPixels += box.width * box.height * scale * scale;
           if (capturedPixels > 64_000_000)
@@ -170,7 +202,9 @@ export default function MindmapExportDialog({
             await toPng(element, {
               pixelRatio: scale,
               fontEmbedCSS: fontCss,
-              backgroundColor: background,
+              // Frames remain vectors. Rounded label corners must not acquire a
+              // square paper-filled PNG backdrop at radius > 0.
+              backgroundColor: "transparent",
               cacheBust: false,
             }),
           );
@@ -182,7 +216,20 @@ export default function MindmapExportDialog({
         svg = mindmapSvg(
           tree,
           layout,
-          { background, text, accent, font, fontSize },
+          {
+            background,
+            surface,
+            border,
+            rootBorder,
+            radius,
+            textWeight,
+            headingWeight,
+            branchColors,
+            text,
+            accent,
+            font,
+            fontSize,
+          },
           images,
         );
       controller.signal.throwIfAborted();

@@ -796,7 +796,10 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(props, ref) {
       mode: () => propsRef.current.mode,
       preferences: () => propsRef.current.preferences,
       appearance: () => propsRef.current.appearance,
-      context: () => propsRef.current.renderContext,
+      context: () =>
+        propsRef.current.mindmap
+          ? { ...propsRef.current.renderContext, disableImages: true }
+          : propsRef.current.renderContext,
       readOnly: () => !!propsRef.current.readOnly || serverReadOnly.current,
       workspace: (id) => propsRef.current.onCommand(id),
       extensions: () => propsRef.current.extensions ?? [],
@@ -1058,6 +1061,7 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(props, ref) {
   useEffect(() => {
     viewRef.current?.configure();
   }, [
+    !!props.mindmap,
     props.readOnly,
     props.mode,
     props.renderContext,

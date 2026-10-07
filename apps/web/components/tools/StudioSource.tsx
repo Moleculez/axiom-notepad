@@ -10,6 +10,7 @@ import {
 } from "../../lib/tools/math-source";
 export type StudioSourceHandle = {
   insert: (value: string, fields?: readonly [number, number][]) => void;
+  reveal: (from: number, to?: number) => void;
 };
 export default function StudioSource({
   binding,
@@ -33,6 +34,9 @@ export default function StudioSource({
   useImperativeHandle(
     ref,
     () => ({
+      reveal(from, to = from) {
+        surface.current?.focus({ anchor: from, head: to });
+      },
       insert(value, fields = []) {
         const editor = surface.current;
         if (!editor || readonly.current) return;

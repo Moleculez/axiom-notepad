@@ -9,6 +9,8 @@ import {
   TextArea,
 } from "../ui/controls";
 import ResizablePanel from "../ResizablePanel";
+import MindmapFooterInfo from "../mindmap/MindmapFooterInfo";
+import type { MindmapStatus } from "../../lib/mindmap-state";
 import { useManagement } from "./ManagementActions";
 import FilePreviewSurface from "../tools/FilePreviewSurface";
 import AssistantSuggestion from "../assistant/AssistantSuggestion";
@@ -559,6 +561,7 @@ function DocumentPane({
           }
         : undefined);
   const [note, setNote] = useState(metadata),
+    [mapStatus, setMapStatus] = useState<MindmapStatus | null>(null),
     [mode, setMode] = useState<EditorMode>(
       savedView?.mode ?? (metadata.role === "editor" ? "write" : "read"),
     ),
@@ -1545,6 +1548,11 @@ function DocumentPane({
                             scope: `${session.user.id}:${note.id}:${note.generation}`,
                             title: note.title,
                             context: renderContext,
+                            document: { source, parsed },
+                            visual: {
+                              resourceId: note.id,
+                              generation: note.generation,
+                            },
                             settings: mindmapSettingsSchema
                               .catch(mindmapSettingsSchema.parse({}))
                               .parse(mapProject.data?.settings ?? {}),
@@ -1566,6 +1574,7 @@ function DocumentPane({
                               documentView(false, position),
                             externalInspector: !!panel && panel !== "outline",
                             onAuxiliary: () => setPanel(null),
+                            onStatus: setMapStatus,
                             beforeExport: async () => {
                               await editor.current?.flush();
                               await api(`resources/${note.id}`);
@@ -1760,15 +1769,17 @@ function DocumentPane({
           </div>
           <footer className="ws-note-footer">
             <DocumentStatistics source={source} parsed={parsed} />
-            <span>
-              {mindmap
-                ? "Mind map"
-                : mode === "source"
+            {mindmap ? (
+              <MindmapFooterInfo status={mapStatus} />
+            ) : (
+              <span>
+                {mode === "source"
                   ? "Source"
                   : mode === "write"
                     ? "Live preview"
                     : "Reading"}
-            </span>
+              </span>
+            )}
           </footer>
           <ReadingMarks
             active={active}

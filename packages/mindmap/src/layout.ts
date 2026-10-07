@@ -8,9 +8,26 @@ import {
   type MindmapSettings,
 } from "./types";
 
+/** Semantic branch roles are shared by the live view and resolved offline exports. */
+export function mindmapBranchColor(
+  index: number,
+  mode: MindmapSettings["colors"],
+) {
+  if (mode === "accent") return "var(--accent)";
+  const colors = [
+    "var(--accent)",
+    "var(--green, var(--accent))",
+    "var(--danger, var(--accent))",
+    "color-mix(in srgb, var(--accent) 65%, var(--text))",
+    "color-mix(in srgb, var(--green, var(--accent)) 65%, var(--text))",
+  ];
+  const branch = Number.isFinite(index) ? Math.trunc(index) : 0;
+  return colors[((branch % colors.length) + colors.length) % colors.length];
+}
+
 /** Shared, bounded fallback for both layout and selectable-text exports. */
 export function wrapMindmapLabel(label: string, width: number, fontSize = 16) {
-  const capacity = Math.max(8, Math.floor((width - 24) / (fontSize * 0.55)));
+  const capacity = Math.max(8, Math.floor((width - 26) / (fontSize * 0.55)));
   const lines: string[] = [];
   let current = "";
   for (const word of label.split(/\s+/)) {
@@ -36,7 +53,7 @@ export function estimateMindmapLabel(
     width,
     height: Math.max(
       48,
-      wrapMindmapLabel(label, width, fontSize).length * fontSize * 1.35 + 24,
+      wrapMindmapLabel(label, width, fontSize).length * fontSize * 1.45 + 22,
     ),
   };
 }

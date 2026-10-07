@@ -87,9 +87,17 @@ See [showcase storage, settings and GitHub Pages deployment](docs/STATIC_SHOWCAS
 - **Map the document.** [Native mind maps](docs/MINDMAP.md) turn headings and nested
   lists into an editable hierarchy without copying Markdown. Dedicated files share
   note routes, collaboration and author undo; search, folds, guarded moves,
-  source/details panes and visual exports reuse one production/showcase surface.
-  Browser/migration acceptance remains pending; this change has not updated the
-  published demo.
+  focused branches, multi-selection/task actions and framed paper nodes reuse one
+  production/showcase surface. Research lenses find equations, figures, code,
+  tables, linked evidence and unfinished tasks; Details has Block/Evidence/Tasks
+  tabs with full previews and source navigation. Mermaid/images, an optional
+  overview, resizable source pane and shared visual viewer retain document
+  context. Editing preserves zoom; counts share the document footer, and a
+  navigation guard protects unapplied labels. Visual exports render diagrams but
+  summarize media without fetching it.
+  Authenticated runtime and migration gates are recorded in
+  [verification](docs/VERIFICATION.md); this update
+  has not deployed the published demo.
 - **Ask with evidence.** An opt-in [workspace research assistant](docs/WORKSPACE_ASSISTANT.md)
   with selected excerpts, exact outgoing-context review, source citations, private
   Markdown/math suggestions and reviewed task/schedule changes with guarded Undo.

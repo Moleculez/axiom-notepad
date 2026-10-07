@@ -137,6 +137,77 @@ describe("mind-map storage and file contracts", () => {
   });
 });
 describe("mind-map source and collaborative anchor contracts", () => {
+  it.each([
+    ["### \n", "### New method\n"],
+    ["###\n", "### New method\n"],
+    ["###", "### New method"],
+    ["###\t  \r\n", "###\t  New method\r\n"],
+    ["  ### \n", "  ### New method\n"],
+    ["### ###\n", "### New method ###\n"],
+    ["### ###  \r\n", "### New method ###  \r\n"],
+    ["\ufeff### \r\n", "\ufeff### New method\r\n"],
+    ["#\n", "# New method\n"],
+    ["> ### \n>\n> Text\n", "> ### New method\n>\n> Text\n"],
+  ])(
+    "renames an empty heading without changing topology: %j",
+    (source, expected) => {
+      const before = projectMindmap(source);
+      const heading = before.nodes.find(
+        (node) => node.blockType === "heading",
+      )!;
+      const edit = mindmapCommand(source, heading, "rename", "New method");
+      const revised = applyChanges(source, edit.changes);
+      expect(revised).toBe(expected);
+      const after = projectMindmap(revised);
+      const topology = (projection: typeof before) => {
+        const ids = new Map(
+          projection.nodes.map((node, index) => [node.id, index]),
+        );
+        return projection.nodes.map((node) => [
+          node.kind,
+          node.blockType,
+          node.level,
+          node.checked,
+          node.parentId === null ? null : ids.get(node.parentId),
+        ]);
+      };
+      expect(topology(after)).toEqual(topology(before));
+      expect(
+        after.nodes.find((node) => node.blockType === "heading")!.label,
+      ).toBe("New method");
+      expect(revised.slice(0, edit.selection!.head)).toMatch(/New method$/);
+    },
+  );
+  it("applies a newly added empty research heading while retaining all other blocks", () => {
+    const source =
+      "# Root\n\n## Methods\n\n$$x^2$$\n\n## Results\n\nEvidence\n";
+    const methods = find(source, "Methods");
+    const inserted = applyChanges(
+      source,
+      mindmapCommand(source, methods, "child").changes,
+    );
+    const before = projectMindmap(inserted);
+    const added = before.nodes.find((node) => node.level === 3)!;
+    const revised = applyChanges(
+      inserted,
+      mindmapCommand(inserted, added, "rename", "New method").changes,
+    );
+    expect(revised).toBe(inserted.replace("### \n", "### New method\n"));
+    const after = projectMindmap(revised);
+    expect(
+      after.nodes.map((node) => [node.kind, node.blockType, node.level]),
+    ).toEqual(
+      before.nodes.map((node) => [node.kind, node.blockType, node.level]),
+    );
+    expect(
+      after.nodes.find((node) => node.label === "New method")!.parentId,
+    ).toBe(after.nodes.find((node) => node.label === "Methods")!.id);
+    expect(
+      after.nodes.find((node) => node.blockType === "mathBlock")!.labelSource,
+    ).toBe(
+      before.nodes.find((node) => node.blockType === "mathBlock")!.labelSource,
+    );
+  });
   it("rejects block-structure grammar in inline label edits and root siblings", () => {
     const source = "- A\n- B\n",
       node = find(source, "A");

@@ -2,9 +2,24 @@ import { z } from "zod";
 import { mindmapSettingsSchema } from "@axiom/shared/mindmap";
 import type { NativeBinding } from "@axiom/editor/binding";
 import type { MindmapProjection } from "@axiom/mindmap";
-import { mindmapZoomLimits } from "@axiom/mindmap";
+import { mindmapZoomLimits, mindmapResearchLenses } from "@axiom/mindmap";
 
 const position = z.number().int().min(0).max(1_000_000);
+export const mindmapPresentationSchema = z.object({
+  preview: z.enum(["research", "compact"]).default("research"),
+  minimap: z.boolean().default(false),
+  supporting: z.boolean().default(false),
+  lens: z.enum(mindmapResearchLenses.map((lens) => lens.id)).default("all"),
+  resultsOnly: z.boolean().default(false),
+});
+export type MindmapPresentation = z.infer<typeof mindmapPresentationSchema>;
+export type MindmapStatus = {
+  total: number;
+  shown: number;
+  supporting: number;
+  selected: number;
+  readOnly: boolean;
+};
 export const mindmapViewSchema = z
   .object({
     settings: mindmapSettingsSchema,
@@ -25,6 +40,20 @@ export const mindmapViewSchema = z
         }),
       )
       .max(5000),
+    presentation: mindmapPresentationSchema.default({
+      preview: "research",
+      minimap: false,
+      supporting: false,
+      lens: "all",
+      resultsOnly: false,
+    }),
+    focus: z
+      .object({
+        position,
+        type: z.string().max(80),
+        label: z.string().max(1_000_000),
+      })
+      .optional(),
   })
   .strict();
 export type MindmapViewState = z.infer<typeof mindmapViewSchema>;

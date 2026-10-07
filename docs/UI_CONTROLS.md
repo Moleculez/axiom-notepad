@@ -61,6 +61,31 @@ consume the same CSS base without adding React wrappers to the editable DOM.
   `min-width: 0` and owned scrollports rather than whole-page horizontal overflow.
   Never fix overflow by hiding an action, clipping a label, or shrinking text.
 
+Mind-map controls are screen-sized, not scaled together with node content. Use
+shared IconButtons with names/tooltips for contextual folding and draft apply/cancel;
+do not hide collapsed states or focused controls. Source resize handles stay on
+their owning panel edge, expose current/bounded pixel widths and support arrows,
+reset and cancellation. Node tasks remain shared native Checkboxes. A transparent
+`data-editor-field` text reset must exclude checkboxes: preserve their checked,
+disabled, focus and forced-color treatment and first-line alignment. Language-logo
+frames have explicit small dimensions so bundled SVG image intrinsic sizes cannot
+expand a node or wrap caption text one character at a time.
+Fold badges anchor by their full width in either direction. At low zoom, move an
+expanded control out of a tight connector gutter rather than covering the next
+label. Keep controls reachable while the pointer crosses the node/control gap;
+keyboard focus and selected states must not depend on hover timing.
+
+Mind-map images and diagrams fit their label width and a bounded preview height,
+inside one paper node frame, without a second content card. The node frame owns
+its fixed-width border and preference-derived compact radius; hover/selection
+must not change geometry. Node controls remain in the unscaled control layer,
+not inside clipped image/table/code content. Details uses one tab strip and
+unboxed evidence/task rows in its owned scrollport, not competing inspector cards.
+Retain loaded descendants during pan/zoom and edits;
+only changed diagram source or appearance rerenders SVG. Failed images expose a
+named, keyboard-operable Retry using shared button geometry. Source remains
+available on rendering errors; never replace a content failure with an empty node.
+
 ## Text fields and adaptive choices
 
 All application fields share the semantic `--field-surface` and `--field-edge`

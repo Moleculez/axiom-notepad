@@ -3,7 +3,8 @@ import { useState } from "react";
 import { ChevronsDownUp, ChevronsUpDown } from "lucide-react";
 import type { MindmapSettings } from "@axiom/mindmap";
 import Dialog, { DialogFooter } from "../Dialog";
-import { Button, Field, NativeSelect, Notice } from "../ui/controls";
+import { Button, Field, NativeSelect, Notice, Switch } from "../ui/controls";
+import type { MindmapPresentation } from "../../lib/mindmap-state";
 
 /** Presentation controls do not acquire document authority or change Markdown. */
 export default function MindmapDisplayDialog({
@@ -13,6 +14,8 @@ export default function MindmapDisplayDialog({
   onExpandAll,
   onSave,
   onClose,
+  presentation,
+  onPresentation,
 }: {
   settings: MindmapSettings;
   onChange: (settings: MindmapSettings) => void;
@@ -20,6 +23,8 @@ export default function MindmapDisplayDialog({
   onExpandAll: () => void;
   onSave?: () => Promise<void>;
   onClose: () => void;
+  presentation: MindmapPresentation;
+  onPresentation: (value: MindmapPresentation) => void;
 }) {
   const [saving, setSaving] = useState(false),
     [message, setMessage] = useState("");
@@ -30,6 +35,40 @@ export default function MindmapDisplayDialog({
       onClose={onClose}
     >
       <div className="mindmap-options">
+        <Field label="Block presentation">
+          <NativeSelect
+            value={presentation.preview}
+            onChange={(e) =>
+              onPresentation({
+                ...presentation,
+                preview: e.target.value as MindmapPresentation["preview"],
+              })
+            }
+          >
+            <option value="research">
+              Research-rich · equations and excerpts
+            </option>
+            <option value="compact">Compact · concise labels</option>
+          </NativeSelect>
+        </Field>
+        <label className="ui-choice">
+          <Switch
+            checked={presentation.minimap}
+            onChange={(e) =>
+              onPresentation({ ...presentation, minimap: e.target.checked })
+            }
+          />
+          <span>Map overview</span>
+        </label>
+        <label className="ui-choice">
+          <Switch
+            checked={presentation.supporting}
+            onChange={(e) =>
+              onPresentation({ ...presentation, supporting: e.target.checked })
+            }
+          />
+          <span>Supporting material · metadata and definitions</span>
+        </label>
         <Field label="Direction">
           <NativeSelect
             value={settings.layout}
@@ -127,7 +166,7 @@ export default function MindmapDisplayDialog({
               void onSave()
                 .then(() =>
                   setMessage(
-                    "File defaults saved. Each reader keeps their own local presentation.",
+                    "File layout defaults saved. Block previews and the overview remain local to each reader.",
                   ),
                 )
                 .catch((e) => setMessage(e.message))

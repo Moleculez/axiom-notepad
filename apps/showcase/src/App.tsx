@@ -105,14 +105,27 @@ export default function App() {
     toastTimer.current = setTimeout(() => setToast(""), 5500);
   }, []);
   const navigate = useCallback((destination: Destination, id?: string) => {
-    window.dispatchEvent(new Event("axiom:route"));
-    location.hash = `${destination}${id ? `&note=${id}` : ""}`;
+    const next = `#${destination}${id ? `&note=${id}` : ""}`;
+    if (next === location.hash) return;
+    const proceed = () => {
+      if (id && store.document(id)) store.select(id);
+      window.dispatchEvent(new Event("axiom:route"));
+      location.hash = next;
+    };
+    if (
+      window.dispatchEvent(
+        new CustomEvent("axiom:before-navigate", {
+          cancelable: true,
+          detail: { destination: next, proceed },
+        }),
+      )
+    )
+      proceed();
   }, []);
   const open = useCallback(
     (id: string) => {
       const doc = store.document(id);
       if (doc) {
-        store.select(id);
         navigate(
           doc.view === "mindmap"
             ? "mindmap"

@@ -2,6 +2,7 @@ import { test, expect, type Page } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { interfaceStyles } from "../../packages/shared/src/interface-styles";
+import { samples, mindmapId } from "../../apps/showcase/src/samples";
 const { PDFDocument }: typeof import("pdf-lib") = createRequire(
   import.meta.url,
 )("pdf-lib");
@@ -768,7 +769,10 @@ test("portable JSON Canvas and ZIP downloads contain stable asset paths and rest
     buffer = await readFile((await zipDownload.path())!);
   const zip = await JSZip.loadAsync(buffer);
   const manifest = JSON.parse(await zip.file("manifest.json")!.async("string"));
-  expect(manifest.documents.length).toBe(5);
+  expect(manifest.documents).toHaveLength(samples.length + 2);
+  expect(
+    manifest.documents.find((d: { id: string }) => d.id === mindmapId)?.view,
+  ).toBe("mindmap");
   for (const asset of manifest.assets)
     expect(zip.file(asset.path)).not.toBeNull();
   const paper = manifest.documents.find(
@@ -784,7 +788,7 @@ test("portable JSON Canvas and ZIP downloads contain stable asset paths and rest
     .setInputFiles({ name: "backup.zip", mimeType: "application/zip", buffer });
   await expect
     .poll(() => page.getByLabel("Choose a notebook").locator("option").count())
-    .toBe(8);
+    .toBe((samples.length + 1) * 2);
   expect(await savedSource(page, paperId)).toContain("Spectral graph methods");
 });
 

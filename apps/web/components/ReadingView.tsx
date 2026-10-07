@@ -8,6 +8,7 @@ import {
   hasReadingSelection,
   reconcileReadingBlocks,
 } from "../lib/reading-dom";
+import { readingLinkRoute } from "../lib/reading-links";
 import {
   installMarkdownVisuals,
   type VisualContext,
@@ -21,6 +22,7 @@ export default function ReadingView({
   parsed,
   context,
   onLink,
+  onInternalAnchor,
   personalPrint = false,
   active = true,
   blockMarks = false,
@@ -31,6 +33,8 @@ export default function ReadingView({
   parsed: ParsedDocument;
   context: RenderContext;
   onLink: (target: string) => void;
+  /** Embedded readers can route all hash anchors within their host view. */
+  onInternalAnchor?: (target: string) => void;
   personalPrint?: boolean;
   active?: boolean;
   blockMarks?: boolean;
@@ -212,14 +216,15 @@ export default function ReadingView({
           if (link) {
             const target =
               link.dataset.noteTarget ?? link.getAttribute("href")!;
-            // Equation references and footnotes retain native in-document anchors.
-            if (
-              target.startsWith("#") &&
-              !parsed.outline.some((h) => "#" + h.id === target)
-            )
-              return;
+            const route = readingLinkRoute(
+              target,
+              displayed.current.parsed.outline,
+              !!onInternalAnchor,
+            );
+            if (route === "native") return;
             event.preventDefault();
-            onLink(target);
+            if (route === "internal") onInternalAnchor!(target);
+            else onLink(target);
           }
         }}
       />

@@ -3,7 +3,151 @@
 Updated October 7, 2026. Historical logs are [archived separately](archive/VERIFICATION-2026-09-11.md).
 Do not treat historical browser totals or local build IDs as current release evidence.
 
-## October 7 native mind maps — source implemented, runtime acceptance pending
+## October 7 framed research navigation — local desktop acceptance
+
+- [Mind maps](MINDMAP.md) now use quiet paper frames, neutral rules, branch rails
+  and source-backed task progress. Live and exported nodes share radius, branch
+  colors and text weights, without per-node shadows or nested preview cards.
+  Toolbar overflow groups secondary actions; inspector tabs wrap complete
+  controls without clipping labels or counts at enlarged text and narrow widths.
+- Research lenses emphasize equations, figures/diagrams, code, tables, linked
+  evidence and unfinished tasks in place. Explicit Focus results derives a
+  read-only topology while commands retain the complete projection. The shared
+  view derivation lets keyboard navigation follow current focus/filter/fold
+  intent before asynchronous layout arrives. No lens action resets zoom or edits
+  Markdown. Block/Evidence/Tasks tabs use canonical guarded ranges, contextual
+  definitions/footnotes/numbering and explicit visual inspection.
+- Audited fixes include modifier deselection, reverse search, stationary edge
+  pan destinations, multiple navigation blockers, conflicting retained drafts,
+  quick pane persistence, empty-heading source offsets/rename, typed fold keys,
+  filtered new-branch focus, contextual references and stable math/media DOM.
+  Visual placements are built only against the matching live source revision.
+  Worker parsing/research indexes are cached across view changes; oversized
+  source is rejected before parsing. Old local preferences gain safe defaults.
+- **2,535 unit tests / 148 files** pass. TypeScript, whole-repository ESLint,
+  shared UI validation (**203 JSX files**), both trusted theme packs,
+  documentation links and whitespace checks pass.
+- The complete built-showcase suite passes **234 cases** in Chromium, Firefox
+  and WebKit, including **132 mind-map cases**. Coverage includes all five
+  interface styles, light/dark, enlarged text, zero radius, disabled shadows,
+  reduced motion, forced colors, keyboard navigation, source/undo, draft guards,
+  search/filter/focus, drag, contextual media and export. Actual screenshots were
+  inspected for alignment, wrapping, pane scrolling and footer visibility.
+  Private evidence: `data/mindmap-research-release-check`.
+- **18 repeated critical race checks** also pass across all three engines,
+  including deliberately delayed worker responses. Earlier diagnostic runs
+  exposed the empty-heading and asynchronous keyboard-view bugs fixed above;
+  they are not release gates. Firefox's fractional transform serialization uses
+  a **0.001px** assertion tolerance, without reducing control targets.
+  Private evidence: `data/mindmap-research-race-check`.
+- The separate optimized production build **`GGd0_WeFvQBm2rb4R9Gpp`** passes
+  compilation, generated types and routing in `.next/mindmap-research-build`,
+  with **983 offline assets**. The pre-existing dirty generated type-selection
+  file was restored exactly. The static showcase builds without account services.
+
+These checks use disposable browser-local guests and pure fixtures, not working
+notes/files or account APIs. Authenticated simultaneous-peer/bookmark/revocation,
+physical IME/clipboard, assistive technologies and target-environment printing
+remain separate gates. No dependency or database schema change was added in this
+increment. No working data was migrated, no user service was restarted, and no
+commit, push or deployment was performed. The published showcase is unchanged.
+
+## October 7 mind-map diagrams and images — local desktop acceptance
+
+- Research previews now pass complete Mermaid programs to the existing strict,
+  serialized document renderer rather than four-line code excerpts. Loaded SVG
+  remains mounted during source edits and navigation; temporary syntax errors
+  retain a labeled last-valid preview. Palette/font changes refresh diagram
+  presentation without resetting zoom. Renderer resource/size/edge guards remain
+  unchanged. See [mind maps](MINDMAP.md).
+- Host-permitted images render at bounded node dimensions with loading,
+  unavailable and keyboard-operable Retry states. Mounted nodes load eagerly
+  because the map already culls off-screen content; loaded image elements survive
+  edits and theme changes. Actual dark-mode screenshot pixels verify painted
+  SVG-image details, not merely decoded dimensions. Compact previews and visual
+  exports keep media as summaries; Mermaid exports wait for ready SVG and refuse
+  incomplete captures without downloading a file.
+- **2,478 unit tests / 142 files** pass, including **54 mind-map regressions**.
+  TypeScript, whole-repository ESLint, shared UI validation (**202 JSX files**),
+  both trusted theme packs, documentation links and whitespace checks pass.
+  The built browser-local map matrix passes **48 cases** in Chromium, Firefox
+  and WebKit: complete diagrams, local images, syntax recovery/undo, stable
+  identities/zoom, retry, export readiness/refusal, light/dark, large UI text,
+  keyboard, reduced motion and forced colors. Actual screenshots were inspected.
+  The complete showcase matrix passes **150 cases**, including those map checks,
+  document/editor/Canvas/media/export workflows and all five native interface
+  styles. Assertions reject account/API/sync traffic, external media requests and
+  page errors. Private evidence: `data/mindmap-visuals-final.cQKU6u`.
+- The optimized production build **`0dPzPFqp7TDUa17E7p0rp`** passes compilation,
+  generated types and routing in `.next/mindmap-visuals-build`, with **981 offline
+  assets**. The pre-existing dirty generated type-selection file was restored
+  exactly. No dependency, database schema or source-format change was needed.
+
+These checks use disposable guest data, not working notes/files or account APIs.
+Authenticated simultaneous-peer/revocation checks, physical IME/clipboard,
+assistive technologies and target-environment PDF/printing acceptance remain
+separate gates. No working data was migrated, no user service was restarted, and
+no commit, push or deployment was performed. The published showcase is unchanged.
+
+## October 7 mind-map usability — local desktop acceptance
+
+- [Mind maps](MINDMAP.md) now provide screen-sized contextual fold controls,
+  whole-subtree counts, visible-order keyboard navigation, focused-branch
+  breadcrumbs, search that restores unchanged folds, multi-selection and
+  single-transaction task actions. Research-rich equation/code/table/quote
+  previews, optional supporting definitions and a geometry-only overview share
+  production/showcase components. Media tiles remain inert until explicitly
+  opened. Canonical Markdown, collaboration anchors and author undo are retained.
+- Source resize geometry, saved widths, pointer cancellation, keyboard/reset
+  behavior and zoom preservation are corrected. Typing, undo, changing layout
+  and closing Display preserve scale; only explicit framing/zoom changes it.
+  Map counts share the host's fixed `ws-note-footer`, with no second status footer.
+  Stable source-range React keys, intrinsic measurements, coalesced observers,
+  current-only worker caching, indexed subtree/task traversal and memoized search
+  reduce redundant work. Full-block parsing is deferred until Details opens.
+- **2,470 unit tests / 141 files** pass, including **46 mind-map regressions**.
+  An intermediate rerun encountered `kill EPERM` in the existing owned-process
+  cleanup test; the complete rerun passed without changes to that helper. This
+  does not establish the cause of that intermittent environment/process error.
+  TypeScript, whole-repository ESLint, shared UI validation (**202 JSX files**),
+  both trusted theme packs, documentation links and whitespace checks pass.
+- The complete built-showcase matrix passes **141 cases** in Chromium, Firefox
+  and WebKit, including **39 mind-map cases**, editor/source/read mode, Canvas,
+  local media/export/backup, settings and the five-style native-control matrix.
+  Each context uses disposable guest data; assertions reject account/API/sync
+  traffic, external media requests and page errors. An earlier Canvas ZIP check
+  expected the old five-document fixture; it now verifies the expanded inventory
+  and the mind-map view marker. Passing evidence:
+  `data/mindmap-usability-final.wb2ZjX`.
+- Actual screenshots were reviewed for research previews, source-pane edges,
+  footer visibility, code caption/icon sizing, drag rejection, painted equation
+  retention, light/dark, 22px UI text, zero radius, no shadows, keyboard focus,
+  forced colors and reduced motion. After the final fold-control geometry
+  adjustment, all **39 mind-map cases** pass again in
+  `data/mindmap-controls-final.CzRDrp`. A screenshot review then caught a count
+  wrapping below its IconButton; the icon/count row was corrected and **nine
+  fold/light/dark accessibility checks** pass in all three engines in
+  `data/mindmap-badges-final.KXhSyv`. Final screenshots confirm that counts stay
+  inside badges, leftward badges clear their labels, and source/footer geometry
+  remains contained.
+- The static showcase builds without account services. The isolated optimized
+  production build **`OZVxW_ofO54AtGoZSGFOC`** passes compile, generated types and
+  routing in `.next/mindmap-usability-build`, with **981 offline assets**.
+  The pre-existing dirty generated type-selection file was restored exactly.
+- Disposable single-user SQL now passes fresh schema, **48→49**, controller
+  rerun, exact Markdown/Yjs/profile preservation, new mind-map profile and invalid
+  kind rejection. Private receipt:
+  `data/mindmap-migration-24tjWu/result.json`. It does not certify HTTP, concurrent
+  migration or authenticated browser behavior and did not migrate working data.
+
+Authenticated simultaneous-peer editing, revocation/recovery, physical IME and
+clipboard, assistive technology, native printing and rich math/font/PDF map capture
+remain separate target-environment gates. This pass does not promote the older
+Stage 3–5 runtime gates. The working dev health endpoint still reports
+`database_upgrade_required`; its pending migrations were not applied. No commit,
+push or deployment was performed, and the public showcase/gallery was not updated.
+
+## October 7 initial native mind maps — earlier restricted-run evidence
 
 - [Native mind maps](MINDMAP.md) add a Markdown-backed file profile and alternate
   note view, sharing the host NativeBinding/Y.Text/journal/author undo. Native

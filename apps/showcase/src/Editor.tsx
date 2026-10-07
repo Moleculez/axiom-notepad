@@ -11,6 +11,8 @@ const MindmapSurface = lazy(
 );
 import * as Y from "yjs";
 import { NativeBinding } from "@axiom/editor/binding";
+import MindmapFooterInfo from "../../web/components/mindmap/MindmapFooterInfo";
+import type { MindmapStatus } from "../../web/lib/mindmap-state";
 import { documentStatistics, parseMarkdown } from "@axiom/markdown";
 import { editorAppearanceKey } from "@axiom/shared/minimap";
 import { AxiomEditorView } from "../../web/lib/editor-vnext/view";
@@ -60,6 +62,7 @@ export default function Editor({
     appearance = snapshot.appearance;
   const doc = snapshot.documents.find((d) => d.id === initial.id) ?? initial;
   const [source, setSource] = useState(doc.source),
+    [mapStatus, setMapStatus] = useState<MindmapStatus | null>(null),
     [mapBinding, setMapBinding] = useState<NativeBinding | null>(null),
     [map, setMap] = useState(defaultMap),
     [mode, setMode] = useState<Mode>(doc.kind === "text" ? "source" : "write"),
@@ -85,6 +88,7 @@ export default function Editor({
       [parsed, source],
     );
   const current = useRef({
+    map,
     appearance,
     mode,
     renderContext,
@@ -93,6 +97,7 @@ export default function Editor({
     headings: parsed.outline,
   });
   current.current = {
+    map,
     appearance,
     mode,
     renderContext,
@@ -133,7 +138,10 @@ export default function Editor({
       mode: () => current.current.mode,
       preferences: () => current.current.preferences,
       appearance: () => current.current.appearance,
-      context: () => current.current.renderContext(),
+      context: () => ({
+        ...current.current.renderContext(),
+        ...(current.current.map ? { disableImages: true } : {}),
+      }),
       readOnly: () => current.current.mode === "read",
       workspace: (command) => {
         if (command === "source")
@@ -244,6 +252,7 @@ export default function Editor({
   useEffect(() => {
     view.current?.configure();
   }, [
+    map,
     mode,
     editorAppearanceKey(appearance),
     dark,
@@ -455,10 +464,11 @@ export default function Editor({
             </button>
           ))}
         </div>
-        <span className="demo-toolbar-divider" />
+        <span className="demo-toolbar-divider" hidden={map} />
         <IconButton
           className="icon-button"
           aria-label="Undo"
+          hidden={map}
           title="Undo · ⌘Z / Ctrl Z"
           disabled={mode === "read"}
           onClick={() => view.current?.execute("undo")}
@@ -468,6 +478,7 @@ export default function Editor({
         <IconButton
           className="icon-button"
           aria-label="Redo"
+          hidden={map}
           title="Redo · ⇧⌘Z / Ctrl Shift Z"
           disabled={mode === "read"}
           onClick={() => view.current?.execute("redo")}
@@ -477,6 +488,7 @@ export default function Editor({
         <IconButton
           className="icon-button"
           aria-label="Insert local image or attachment"
+          hidden={map}
           title="Insert local image or attachment"
           disabled={mode === "read"}
           onClick={() => {
@@ -489,6 +501,7 @@ export default function Editor({
         <IconButton
           className="icon-button"
           aria-label="Toggle outline"
+          hidden={map}
           disabled={map}
           title="Outline"
           aria-pressed={outline}
@@ -499,6 +512,7 @@ export default function Editor({
         <IconButton
           className="icon-button"
           aria-label="Toggle minimap"
+          hidden={map}
           disabled={map}
           title="Minimap"
           aria-pressed={appearance.minimap.enabled}
@@ -524,6 +538,7 @@ export default function Editor({
         <IconButton
           className="icon-button"
           aria-label="Export document"
+          hidden={map}
           title="Export document"
           onClick={() => setExporting(true)}
         >
@@ -535,12 +550,14 @@ export default function Editor({
           <Suspense fallback={<p role="status">Opening mind map…</p>}>
             <MindmapSurface
               binding={mapBinding}
+              onStatus={setMapStatus}
               account="showcase-local"
               scope={`showcase:${doc.id}:1`}
               title={doc.title}
               readOnly={mode === "read"}
               canEdit={() => current.current.mode !== "read"}
               context={renderContext()}
+              document={{ source, parsed }}
               onAuxiliary={() => setOutline(false)}
               onDocument={(at) => {
                 navigate("editor", doc.id);
@@ -621,7 +638,7 @@ export default function Editor({
           </ResizablePanel>
         )}
       </div>
-      <footer className="demo-document-status">
+      <footer className="demo-document-status ws-note-footer">
         <span>
           <span className="demo-save-dot" />
           {snapshot.status}
@@ -631,7 +648,14 @@ export default function Editor({
           {statistics.readingMinutes} min read
         </span>
         <span>
-          {mode === "read" ? "Read only" : "Canonical Markdown"} · device only
+          {map ? (
+            <MindmapFooterInfo status={mapStatus} />
+          ) : (
+            <>
+              {mode === "read" ? "Read only" : "Canonical Markdown"} · device
+              only
+            </>
+          )}
         </span>
       </footer>
       <input

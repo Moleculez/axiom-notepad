@@ -20,10 +20,28 @@ Mind-map presentation inherits existing paper/text/accent, interface and reading
 font/size tokens. Branch colors must use semantic theme values, not a separate
 hardcoded palette. Layout/spacing/width preferences are independent of palettes
 and fonts. Label/source fields keep `data-editor-field` transparency; selection,
-drop targets and folding must retain keyboard/forced-color visibility. Do not add
-card chrome per node, global form resets or animation that overrides motion
+drop targets and folding must retain keyboard/forced-color visibility. Base mind
+maps now frame each node with paper, a neutral one-pixel border, a restrained
+semantic branch rail and the user's compact radius. Packs must not add per-node
+shadows, nested frames, global form resets or animation that overrides motion
 preferences. Production and showcase share the same native surface. See
 [mind-map contributor contracts](MINDMAP.md#contributor-and-acceptance-contracts).
+Research/compact previews, focus, folds, camera and the optional overview are view
+state, not theme mutations. Keep code/table preview surfaces transparent and
+equations stable during navigation. Fold/draft controls use unscaled shared
+control geometry; their sizes must not shrink with map zoom. Test caption icons,
+task controls, source resize handles and the single host footer with large text,
+square corners, no shadows, reduced motion and both color modes.
+Mermaid previews reuse the document renderer and semantic paper/text/accent/rule
+colors. Palette/font changes refresh their SVG without resetting the camera;
+navigation does not repaint it. Authored images keep their original colors, fit
+bounded node geometry and follow host asset/URL policy. Theme packs must not add
+remote resources, media filters or a competing image/diagram frame.
+Node hover/search/lens/selection only strengthen existing rules or out-of-flow
+outlines; connector anchors continue to use the same measured border-box. Keep
+radius zero square, all content legible in forced colors and unselected content
+at ordinary contrast. Offline exporters resolve theme tokens before writing
+surface/border/radius/branch colors; theme CSS never becomes an exported script.
 
 ### Interface styles and public website templates
 

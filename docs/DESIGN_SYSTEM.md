@@ -69,6 +69,33 @@ cursor navigation may reveal a target. Share the reading-mark lane, keep the
 footer fixed, and use the compact overview when a desktop pane is too narrow.
 See [minimap](MINIMAP.md) for settings, accessibility and rendering boundaries.
 
+Mind maps frame each node with an opaque paper surface, a thin neutral rule and
+user-controlled compact radius. Quiet branch rails and stronger root/section
+weights establish hierarchy; per-node shadows and nested content cards are not
+part of this treatment. Reading/code fonts remain independent from UI captions.
+Hover, selection, search and drop feedback change color or out-of-flow outlines,
+never the measured border-box, padding or connector anchors. Selected ancestry
+emphasizes rules without fading unrelated content below readable contrast.
+Expanded fold controls appear on hover, selection or
+keyboard focus; collapsed badges remain visible and count the entire hidden
+subtree. Controls live in an unscaled screen layer and remain at least 32px even
+when content is zoomed out. Bounded research previews retain mathematical output
+and academic table rules; language/symbol icons are small caption aids, never
+full-sized illustrations. Research previews render complete Mermaid diagrams and
+host-permitted images at bounded size; attachments and compact/export media stay
+summaries. Keep loaded image/diagram DOM through navigation and source-preserving
+edits. Failed images have an accessible retry; invalid diagrams retain a clearly
+labeled last-valid preview. Intrinsic node measurements exclude zoom, and camera
+changes never rewrite math or diagrams.
+Offline visual exports resolve the same paper/rule/radius/branch roles; node
+frames and connections remain vectors even when labels are captured as pixels.
+One auxiliary source/details pane owns scroll. Inspector tabs wrap as complete
+controls at large text or a retained narrow width: never shrink a label into its
+count, clip tab text or force a wider saved pane. Validate actual text-range
+containment and spacing, not only button boxes. The host document footer shows map
+counts alongside existing statistics, with no duplicate status footer. See
+[mind maps](MINDMAP.md) for editing, navigation and acceptance boundaries.
+
 LaTeX Article enables personal document decorations: H1–H3 have bottom rules,
 resting H1–H6 have a muted hierarchical label (`§ 1`, `§ 1.1`, `§ 1.2`, `§ 2.1`)
 in a reserved left gutter that grows with the number, and authored

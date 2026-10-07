@@ -590,7 +590,9 @@ function blocks(lines: Line[], ctx: Context): N[] {
       const value = h[2].replace(/(?:^|[ \t]+)#+[ \t]*$/, "").trim();
       const start =
         l.from +
-        s.indexOf(h[2], s.indexOf(h[1]) + h[1].length) +
+        // An empty capture starts after the separator, not at the first
+        // indexOf("") match immediately after the opening hashes.
+        (s.length - h[2].length) +
         h[2].indexOf(value);
       out.push(
         node("heading", l.from, l.to, {
@@ -1509,10 +1511,40 @@ export function parseMarkdown(
   source: string,
   dialect: Dialect = "stem-v1",
 ): ParsedDocument {
+  return parseMarkdownDocument(source, dialect);
+}
+
+/** Parse a view-only excerpt with its owning document's reference vocabulary.
+ * Excerpt positions stay local; inherited definitions and their AST are immutable.
+ * Pass the owner as renderDocument's context.document for global math/numbering.
+ */
+export function parseMarkdownFragment(
+  source: string,
+  owner: ParsedDocument,
+  dialect: Dialect = "stem-v1",
+): ParsedDocument {
+  return parseMarkdownDocument(source, dialect, owner);
+}
+
+function parseMarkdownDocument(
+  source: string,
+  dialect: Dialect,
+  owner?: ParsedDocument,
+): ParsedDocument {
+  const refs = new Map<string, Ref>();
+  for (const definition of owner?.definitions ?? []) {
+    if (definition.type !== "referenceDefinition" || !definition.key) continue;
+    const key = normalize(definition.key);
+    if (!refs.has(key))
+      refs.set(key, {
+        href: definition.href ?? "",
+        title: definition.title,
+      });
+  }
   const ctx: Context = {
     dialect,
-    refs: new Map(),
-    footnotes: {},
+    refs,
+    footnotes: { ...owner?.footnotes },
     definitions: [],
     depth: 0,
     budget: {
@@ -1571,8 +1603,28 @@ export function parseMarkdown(
     n.children?.forEach(visit);
   };
   visit(ast);
-  Object.values(ctx.footnotes).forEach((ns) => ns.forEach(visit));
-  if (dialect === "stem-v1") collectMedia(parsed);
+  // Inherited footnotes are already parsed in the owner. Visiting them again
+  // would mutate its inline AST and contaminate this excerpt's link/cite index.
+  Object.entries(ctx.footnotes).forEach(([key, ns]) => {
+    if (ns !== owner?.footnotes[key]) ns.forEach(visit);
+  });
+  if (dialect === "stem-v1") {
+    if (owner) {
+      // Media collection also rewrites child arrays. Limit it to this excerpt's
+      // new footnotes, then restore inherited immutable definition bodies.
+      const local = {
+        ...parsed,
+        footnotes: Object.fromEntries(
+          Object.entries(parsed.footnotes).filter(
+            ([key, ns]) => ns !== owner.footnotes[key],
+          ),
+        ),
+      };
+      collectMedia(local);
+      parsed.footnotes = { ...parsed.footnotes, ...local.footnotes };
+      parsed.figures = local.figures;
+    } else collectMedia(parsed);
+  }
   if (ctx.budget.limited)
     parsed.diagnostics.push({
       from: 0,

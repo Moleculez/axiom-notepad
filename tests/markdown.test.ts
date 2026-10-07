@@ -27,6 +27,23 @@ for (const dialect of ["commonmark", "gfm"] as const) {
   });
 }
 describe("research dialect", () => {
+  it.each([
+    ["### \n", 4],
+    ["###\t  \r\n", 6],
+    ["  ### \n", 6],
+    ["\ufeff### \r\n", 5],
+    ["###\n", 3],
+    ["### ###\n", 4],
+  ])(
+    "maps empty ATX content after its opening separator: %j",
+    (source, offset) => {
+      const heading = parseMarkdown(source).ast.children![0];
+      expect(heading.type).toBe("heading");
+      expect(heading.text).toBe("");
+      expect(heading.contentFrom).toBe(offset);
+      expect(heading.contentTo).toBe(offset);
+    },
+  );
   it("resolves image previews through a trusted host without rewriting canonical source", () => {
     const source =
         "![Local figure](assets/figure.png)\n\n![Remote](https://example.com/private.png)",

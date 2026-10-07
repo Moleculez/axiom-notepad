@@ -20,6 +20,8 @@ export type MindmapNode = {
   checked?: boolean;
   /** Structural moves cannot cross a quote/container boundary. */
   scope: string;
+  /** Derived definition navigator; never acquires structural edit authority. */
+  presentationOnly?: boolean;
   item?: {
     prefix: string;
     marker: string;

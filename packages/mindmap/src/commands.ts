@@ -2,6 +2,7 @@ import type { TextChange } from "../../markdown/src/types";
 import { applyChanges } from "../../editor/src/transactions";
 import { projectMindmap } from "./projection";
 import type { MindmapEdit, MindmapNode, MindmapProjection } from "./types";
+import { selectedMindmapRoots } from "./navigation";
 
 const newline = (source: string) => (source.includes("\r\n") ? "\r\n" : "\n");
 const afterLine = (source: string, at: number) =>
@@ -24,6 +25,10 @@ export function mindmapCommand(
   command: MindmapCommand,
   value = "",
 ): MindmapEdit {
+  if (node.presentationOnly)
+    throw new Error(
+      "Supporting material is edited in Source, not as a structural branch.",
+    );
   if (
     (node.kind !== "root" || node.level) &&
     source.slice(node.labelFrom, node.labelTo) !== node.labelSource
@@ -43,7 +48,26 @@ export function mindmapCommand(
         "Node labels stay on one line. Use Source to edit multiline content.",
       );
     const label = value.replace(/\u0000/g, "");
-    const change = { from: node.labelFrom, to: node.labelTo, insert: label };
+    let prefix = "",
+      suffix = "";
+    if (label && node.blockType === "heading" && !node.labelSource) {
+      // Bare ATX markers have no separator yet. Empty closed headings need
+      // separation from their retained closing hashes. Both remain headings;
+      // the complete topology comparison below is still mandatory.
+      if (/^ {0,3}#{1,6}$/.test(source.slice(node.from, node.labelFrom)))
+        prefix = " ";
+      if (
+        /^#+[ \t]*$/.test(
+          source.slice(node.labelTo, node.to).split(/[\r\n]/, 1)[0],
+        )
+      )
+        suffix = " ";
+    }
+    const change = {
+      from: node.labelFrom,
+      to: node.labelTo,
+      insert: prefix + label + suffix,
+    };
     const before = projectMindmap(source),
       after = projectMindmap(applyChanges(source, [change]));
     const shape = (projection: MindmapProjection) => {
@@ -66,8 +90,8 @@ export function mindmapCommand(
     return {
       changes: [change],
       selection: {
-        anchor: node.labelFrom + label.length,
-        head: node.labelFrom + label.length,
+        anchor: node.labelFrom + prefix.length + label.length,
+        head: node.labelFrom + prefix.length + label.length,
       },
     };
   }
@@ -167,6 +191,10 @@ export function moveMindmapBranch(
     target = byId.get(targetId);
   if (!node || !target || node.kind === "root" || node === target)
     throw new Error("Choose another branch as the move target.");
+  if (node.presentationOnly || target.presentationOnly)
+    throw new Error(
+      "Supporting material cannot be moved. Edit its definition in Source.",
+    );
   if (target.from >= node.from && target.from < node.branchTo)
     throw new Error("A branch cannot move into its own descendants.");
   if (node.scope !== "document" || target.scope !== "document")
@@ -261,7 +289,7 @@ export function moveMindmapBranch(
   const result = applyChanges(source, changes),
     moved = projectMindmap(result);
   const beforeLabels = projection.nodes
-    .filter((n) => n.kind !== "root")
+    .filter((n) => n.kind !== "root" && !n.presentationOnly)
     .map((n) => `${n.blockType}:${n.fingerprint}`)
     .sort();
   const afterLabels = moved.nodes
@@ -274,4 +302,53 @@ export function moveMindmapBranch(
     );
   at -= at > from ? to - from : 0;
   return { changes, selection: { anchor: at, head: at } };
+}
+
+/** One guarded source transaction for a normalized multi-selection. */
+export function batchMindmapCommand(
+  source: string,
+  projection: MindmapProjection,
+  ids: Iterable<string>,
+  command: "delete" | "complete" | "reopen",
+): MindmapEdit {
+  const roots = selectedMindmapRoots(projection, ids);
+  if (!roots.length || roots.some((n) => n.presentationOnly))
+    throw new Error("Select editable document branches first.");
+  if (command === "delete") {
+    if (roots.some((n) => n.kind === "root"))
+      throw new Error("The document root cannot be removed.");
+    const changes = roots.flatMap(
+      (n) => mindmapCommand(source, n, "delete").changes,
+    );
+    const merged: TextChange[] = [];
+    for (const change of changes.sort((a, b) => a.from - b.from)) {
+      const previous = merged.at(-1);
+      if (previous && change.from <= previous.to)
+        previous.to = Math.max(previous.to, change.to);
+      else merged.push({ ...change });
+    }
+    return {
+      changes: merged,
+      selection: { anchor: merged[0].from, head: merged[0].from },
+    };
+  }
+  const checked = command === "complete";
+  const rootIds = new Set(roots.map((n) => n.id)),
+    byId = new Map(projection.nodes.map((n) => [n.id, n]));
+  const tasks = projection.nodes.filter((n) => {
+    if (n.checked === undefined || n.presentationOnly) return false;
+    let id: string | null = n.id;
+    while (id) {
+      if (rootIds.has(id)) return true;
+      id = byId.get(id)?.parentId ?? null;
+    }
+    return false;
+  });
+  if (!tasks.length) throw new Error("The selection contains no task items.");
+  return {
+    changes: tasks
+      .filter((n) => n.checked !== checked)
+      .flatMap((n) => mindmapCommand(source, n, "toggleTask").changes)
+      .sort((a, b) => a.from - b.from),
+  };
 }
