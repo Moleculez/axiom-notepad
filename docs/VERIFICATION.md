@@ -3,6 +3,119 @@
 Updated October 7, 2026. Historical logs are [archived separately](archive/VERIFICATION-2026-09-11.md).
 Do not treat historical browser totals or local build IDs as current release evidence.
 
+## October 7 UI consistency and bounded performance audit
+
+- Shared native `ActionRow` size contexts now align adjacent text, icon, search
+  and select controls. Removed competing page-level button drawing, corrected
+  wrapping and inset keyboard focus, and preserved transparent document fields.
+  The CSS/JSX contract checks catch general resets and fixed-pixel action text;
+  they complement, rather than replace, actual screenshot review. See
+  [UI controls](UI_CONTROLS.md) and [performance contracts](PERFORMANCE.md).
+- Visual reconciliation indexes identities once per pass. Canvas previews use
+  animation-frame scheduling with exact final samples, one-step source undo,
+  cancellation and bounded presence. PDF search shares a bounded, document-scoped
+  text cache; read-mode outlines reuse geometry between layout invalidations.
+  Appearance loads lazily without moving draft ownership, and API/bootstrap reads
+  share a navigation lifetime that recovers after canceled unload and pageshow.
+- Per-account IndexedDB schema version 2 separates paper payloads from routine
+  research metadata. Atomic upgrades retain checksums, bytes and pending drafts;
+  blocked/quota failures preserve the prior schema. Delayed account/workspace
+  reads cannot publish into a different live scope. Browser-local tests exercise
+  actual upgrades, payload-read counts, selected-file/export boundaries,
+  account guards and failure recovery without touching working research data.
+- Server link indexing batches resolution/insertion while retaining permissions,
+  ambiguity and source semantics. Planning rollups query active descendants of
+  visible parents and skip empty field-value work. S3 clients drain streams before
+  retirement; workers use two fair bounded lanes with existing leases and cancel
+  guards. Append-only migration 50 adds a measured partial reverse-link index.
+  Same-host handler/query timings, rejected candidates and measurement limits are
+  recorded in [Performance](PERFORMANCE.md); no whole-application speedup is claimed.
+- Browser regressions found and fixed Read-mode image/diagram viewer installation
+  and the legacy notebook's workspace-scoped reading bookmarks. Canonical source,
+  collaboration anchors and private annotation boundaries are unchanged. PDF
+  navigation preserves a focused page draft and rejects an older scroll
+  observation after an explicit page command. Worker drains invalidate stale
+  empty reads after jobs/maintenance enqueue work; one-shot maintenance cannot
+  keep the drain alive indefinitely.
+
+### Executed evidence
+
+- **2,593 unit tests / 154 files** pass. TypeScript, whole-repository ESLint,
+  shared UI validation (**209 JSX / 47 CSS files**), both trusted theme packs,
+  documentation links and whitespace checks pass at this audit checkpoint.
+  One diagnostic unit run encountered the existing owned-process cleanup test's
+  `kill EPERM`; its focused rerun and the complete rerun passed without changing
+  the cleanup helper. This does not establish the intermittent error's cause.
+- **30 alignment cases** pass across five interface styles, both color modes and
+  all three desktop engines. Each covers 15/22px text, keyboard, forced colors,
+  reduced motion, zero radius and disabled shadows. Screenshots were inspected
+  for mixed control edges, wrapping and document-field separation. Private
+  evidence: `data/ui-alignment-final`. WebKit's native popup-select chrome retains
+  an engine-drawn corner; the narrow exception does not apply to authored controls.
+- The complete newly built static showcase passes **270 cases** across all three
+  engines in `data/ui-performance-showcase-final-accepted`. These include expanded
+  planning-filter geometry, the five-style control matrix, large text, source/undo,
+  read-mode images/diagrams, Mind map, Canvas, local media and exports. Actual
+  settings, planning and research-map screenshots were inspected for usable input
+  widths, alignment, wrapping, scroll ownership and footer visibility. Earlier
+  diagnostic runs exposed stale menu/selector expectations and unstable fixture
+  initialization, retained as failures rather than accepted evidence.
+- Separate repeated client checks pass **18 cases**, with **six counter cases**
+  recording five/five/six DOM scans for 50 uniquely anchored images in
+  Chromium/Firefox/WebKit. Canvas bursts preserve exact source before release and
+  on cancellation; final release and one semantic source undo pass. Initialization
+  waits for known normalized Canvas bytes to be saved, not just an earlier
+  transient Saved label. Private evidence:
+  `data/client-performance-initialized-baseline` and
+  `data/client-performance-evidence.json`. These are not latency/FPS measurements.
+- Production settings, control sizing, planning filters at 22px/1440/1024,
+  native navigation cancellation/resume, legacy reading/privacy and 1,000-page
+  PDF workflows pass **54 targeted cases** across the three engines in
+  `data/reliability-AB7Ui7`. That broader diagnostic run failed overall on stale
+  test-port guards and an assertion that threw before autosave completed; it is
+  not an accepted whole-run receipt. Corrected critical replay passes **11 cases**
+  in `data/reliability-4ynVC7`, with one explicit WebKit offline-reload skip.
+  Chromium/Firefox verify actual production offline reload, pending private
+  annotations, reconnect upload and cross-tab sign-out. All three verify focused
+  page drafts, explicit-jump/scroll races, scoped persistence/resume, reference
+  operations, graph search alignment/export and wrapped selection actions.
+- The final isolated optimized production build **`ZeavvkLqeoC0EYRnjvm4P`** passes
+  compile, types and routing with **984 offline assets**. Its coordinator also
+  passes abrupt sync-crash persistence, failed-save acknowledgment refusal,
+  journal recovery and graceful drain. Paired backup/restore checks **31 database
+  contracts** and **six attachment checksums**, including exact Markdown/Yjs,
+  journals, snapshots, planning, users and migration receipts; nonempty-target
+  restore is refused. Private accepted receipt:
+  `data/reliability-4ynVC7/receipt.json`. These are disposable local fixtures, not
+  real provider, S3 or production-server acceptance.
+- The serial Chromium editor benchmark passes all **12 location/engine series**,
+  with 50 edits each, source convergence and retained raw timings. The current
+  custom editor's input-to-next-frame p95 is **14.9–15.3 ms at 100k characters**
+  and **116.3–118.1 ms at 980k**, within the 50/200 ms budgets. This is synthetic
+  same-host input plus layout, not physical device latency or a before/after
+  application-speed comparison. Private evidence:
+  `data/ui-performance-editor-benchmark`.
+- **Nine browser-local research storage/lifetime cases** pass across Chromium,
+  Firefox and WebKit. The upgrade fixture verifies four 2 MiB payloads and twenty
+  routine metadata reads with **zero payload reads**. Chromium/Firefox test actual
+  Blob payloads; WebKit's ephemeral fixture uses typed arrays, so this does not
+  certify persistent WebKit Blob storage. Private evidence:
+  `data/ui-performance-storage-accepted`.
+- Disposable PostgreSQL fixtures verify migration 49 → 50 rollback/idempotency,
+  exact Markdown/Yjs preservation and complete link count/hash. Measured query
+  plans and semantic results are retained in `data/performance-audit-W5HLAZ` and
+  `data/performance-audit-backlinks-A25E6o`; see the timing caveats in Performance.
+
+Physical IME/clipboard, assistive-technology use, real Safari offline reload and
+persistent Blob storage, real provider/S3 paths and target-environment deployment
+remain separate acceptance gates. Diagnostic failures remain retained and are not
+passing release evidence; this audit does not certify every project workflow.
+Working notes, attachments and database were not migrated or mutated. Migration
+50 is included for the next controlled upgrade, not applied to working data.
+Existing services and the pre-existing generated type-selection changes were
+preserved. No commit, push or deployment was performed; the published showcase
+is unchanged.
+
 ## October 7 framed research navigation — local desktop acceptance
 
 - [Mind maps](MINDMAP.md) now use quiet paper frames, neutral rules, branch rails

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   nativeControlOwner,
   validateUiSource,
+  validateUiStyles,
 } from "../scripts/verify/ui-contract";
 
 const file = "apps/web/components/Example.tsx";
@@ -74,5 +75,58 @@ describe("shared UI drift guard", () => {
         'import { Globe2 } from "lucide-react"; const ui = <div><Globe2/><TextInput data-editor-field /></div>;',
       ),
     ).toEqual([]);
+  });
+});
+
+describe("shared control cascade guard", () => {
+  const file = "apps/web/app/example.css";
+  it("rejects general button drawing and aggregated page resets", () => {
+    const errors = validateUiStyles(
+      file,
+      `.button { min-height: 38px; font-size: 0.8em; }
+      .ws-app :is(.settings-stage, .productivity-page) .button { line-height: 1.25; }
+      .ws-app button { padding: 5px; }`,
+    );
+    expect(errors).toHaveLength(4);
+    expect(errors[0]).toMatchObject({ file, line: 1 });
+  });
+  it("rejects fixed page action text while allowing scoped layout and functional focus", () => {
+    expect(
+      validateUiStyles(
+        file,
+        `.library-filters .button { font-size: 11px; }
+      .library-filters { display:flex; gap:8px; }
+      .library-filters > .button { flex: none; white-space: nowrap; }
+      .ws-app .ws-page-tabs a:focus-visible { outline:2px solid var(--focus); outline-offset:-2px; box-shadow:none; }
+      .button:focus-visible { box-shadow:none; }`,
+      ),
+    ).toHaveLength(1);
+  });
+  it("keeps explicit owners, specialized tabs/editor fields and the legacy layer separate", () => {
+    expect(
+      validateUiStyles(
+        "apps/web/app/ui-controls.css",
+        ".button { min-height:36px; }",
+      ),
+    ).toEqual([]);
+    expect(
+      validateUiStyles(
+        "apps/web/app/interface-styles.css",
+        ".button.secondary { border-radius:var(--radius); }",
+      ),
+    ).toEqual([]);
+    expect(
+      validateUiStyles(
+        file,
+        `@layer legacy { .button { padding:4px; } }
+      .tab-strip button[role="tab"] { padding:8px; font-size:var(--size-ui-small); }
+      input[data-editor-field] { background:transparent; }
+      .button > svg { display:block; }
+      /* .button { font-size:11px; } */`,
+      ),
+    ).toEqual([]);
+  });
+  it("does not accept an invalid CSS/selector as an audited stylesheet", () => {
+    expect(validateUiStyles(file, ".button { ")).toHaveLength(1);
   });
 });

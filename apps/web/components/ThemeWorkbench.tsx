@@ -27,6 +27,7 @@ import {
   Trash2,
   UserRound,
   Globe2,
+  X,
 } from "lucide-react";
 import {
   contrastRatio,
@@ -155,6 +156,47 @@ export default function ThemeWorkbench({
           />
         </Field>
       </div>
+      <section
+        className="theme-workbench-toolbars"
+        aria-label="Mixed toolbar sizes"
+      >
+        <h3>Toolbar alignment</h3>
+        {(["standard", "compact"] as const).map((size) => (
+          <ActionRow
+            key={size}
+            size={size}
+            aria-label={`${size === "standard" ? "Standard" : "Compact"} toolbar sample`}
+          >
+            <SearchField
+              aria-label={`${size} toolbar query`}
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              onClear={() => setQuery("")}
+              clearLabel={`Clear ${size} toolbar query`}
+              placeholder="Find evidence…"
+            />
+            <NativeSelect
+              aria-label={`${size} toolbar density`}
+              value={density}
+              onChange={(event) => setDensity(event.target.value)}
+            >
+              <option value="comfortable">Comfortable</option>
+              <option value="compact">Compact</option>
+            </NativeSelect>
+            <Button type="button" onClick={() => setSelected(!selected)}>
+              <Plus aria-hidden="true" />
+              Select sample
+            </Button>
+            <IconButton
+              type="button"
+              label={`Reset ${size} toolbar query`}
+              onClick={() => setQuery("")}
+            >
+              <X aria-hidden="true" />
+            </IconButton>
+          </ActionRow>
+        ))}
+      </section>
       <ActionRow className="theme-workbench-actions">
         <Button
           className="button primary"

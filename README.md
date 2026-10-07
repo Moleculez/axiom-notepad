@@ -292,8 +292,9 @@ docker compose --env-file .env.production exec web node --import tsx scripts/ops
 ```
 
 Read [deployment, backups and upgrades](docs/DEPLOYMENT.md) before using real data.
-Current features require database migrations through **43**, including workspace
-research/planning, controlled extensions, searchable Intake and atomic imports.
+Current features require database migrations through **50**, including workspace
+research/planning, controlled extensions, atomic imports, native mind maps and the
+reverse-link performance index.
 Back up database and stored files, stop old writers, migrate, and restart matching
 web/sync/worker/publish versions; do not mix old services with the new schema.
 Production configuration never loads the development `.env` into containers.
@@ -333,6 +334,8 @@ It records blocked/failed phases explicitly and requires separate operator revie
 
 [Contributing](CONTRIBUTING.md) explains project structure and change contracts;
 [maintenance](docs/MAINTENANCE.md) explains safe cleanup and regeneration.
+The [performance contract](docs/PERFORMANCE.md) documents bounded caches,
+source-safe scheduling, offline storage upgrades and reproducible UI/SQL gates.
 
 Private configuration, databases, attachments, backups, caches and raw test reports
 stay outside Git. Only reviewed, fictional [showcase assets](docs/SHOWCASE.md) are

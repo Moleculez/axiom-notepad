@@ -9,6 +9,12 @@ import {
   type Session,
 } from "../../components/workspace/ui";
 import type { Space } from "@axiom/shared/workspace";
+import {
+  ActionRow,
+  Button,
+  Checkbox,
+  SearchField,
+} from "../../components/ui/controls";
 export default function ConnectPage() {
   const [session, setSession] = useState<Session | null>(null),
     [loading, setLoading] = useState(true),
@@ -117,12 +123,13 @@ export default function ConnectPage() {
         </dl>
         <fieldset>
           <legend>Allowed workspaces</legend>
-          <input
-            type="search"
+          <SearchField
             aria-label="Find a workspace to share"
             placeholder="Find a workspace…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            onClear={() => setSearch("")}
+            clearLabel="Clear workspace search"
           />
           <div className="connection-space-list">
             {spaces
@@ -133,8 +140,7 @@ export default function ConnectPage() {
               )
               .map((s) => (
                 <label key={s.id}>
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={selected.includes(s.id)}
                     onChange={(e) =>
                       setSelected((ids) =>
@@ -168,8 +174,7 @@ export default function ConnectPage() {
             )
             .map((scope) => (
               <label key={scope}>
-                <input
-                  type="checkbox"
+                <Checkbox
                   disabled={scope === "workspace:read"}
                   checked={scopes.includes(scope)}
                   onChange={(e) =>
@@ -196,22 +201,23 @@ export default function ConnectPage() {
           approval in Axiom. Revoke this connection at any time in Settings →
           Connected apps.
         </p>
-        <div className="dialog-actions">
-          <button
+        <ActionRow align="end" size="standard">
+          <Button
             className="button secondary"
             disabled={busy}
             onClick={() => void decide(false)}
           >
             Deny
-          </button>
-          <button
+          </Button>
+          <Button
             className="button primary"
             disabled={busy || !client || !selected.length}
+            pending={busy}
             onClick={() => void decide(true)}
           >
-            {busy ? "Connecting…" : "Allow connection"}
-          </button>
-        </div>
+            Allow connection
+          </Button>
+        </ActionRow>
       </section>
     </main>
   );

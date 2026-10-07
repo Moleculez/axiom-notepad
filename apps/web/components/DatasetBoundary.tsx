@@ -32,6 +32,8 @@ export default function DatasetBoundary({ children }: { children: ReactNode }) {
           setState(identity.setupRequired ? "setup" : "ready");
       } catch (error) {
         if (!alive || replacement.current) return;
+        if (error instanceof DOMException && error.name === "AbortError")
+          return;
         if (allowVerifiedOfflineDataset()) setState("ready");
         else {
           setError((error as Error).message);
@@ -47,9 +49,12 @@ export default function DatasetBoundary({ children }: { children: ReactNode }) {
     };
     window.addEventListener(DATASET_RESET, reset);
     window.addEventListener("online", verify);
+    window.addEventListener("pageshow", verify);
+    window.addEventListener("focus", verify);
     window.addEventListener("storage", storage);
     const timer = setInterval(() => {
-      if (navigator.onLine) void verify();
+      if (navigator.onLine && document.visibilityState === "visible")
+        void verify();
     }, 15000);
     void verify();
     return () => {
@@ -57,6 +62,8 @@ export default function DatasetBoundary({ children }: { children: ReactNode }) {
       clearInterval(timer);
       window.removeEventListener(DATASET_RESET, reset);
       window.removeEventListener("online", verify);
+      window.removeEventListener("pageshow", verify);
+      window.removeEventListener("focus", verify);
       window.removeEventListener("storage", storage);
     };
   }, [attempt]);

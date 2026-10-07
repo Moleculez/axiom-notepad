@@ -210,14 +210,46 @@ test("unified workspace, task inspector, Gantt preview, undo, settings and legac
         document.documentElement.style.colorScheme = "dark";
         for (const [name, value] of Object.entries(palette))
           document.documentElement.style.setProperty(name, value);
-        document.documentElement.style.setProperty("--size-ui", "18px");
+        document.documentElement.style.setProperty("--size-ui", "22px");
       },
       appearanceVariables(defaults, true),
     );
-    await page.screenshot({
-      path: test.info().outputPath("workspace-gantt-dark-large-type.png"),
-      animations: "disabled",
-    });
+    for (const width of [1440, 1024]) {
+      await page.setViewportSize({ width, height: 1000 });
+      const geometry = await page
+        .getByRole("searchbox", { name: "Find tasks", exact: true })
+        .evaluate((input) => {
+          const shell = input.closest(".ui-search-field")!,
+            filters = shell.closest(".planning-filters")!,
+            box = input.getBoundingClientRect(),
+            frame = shell.getBoundingClientRect(),
+            icon = shell
+              .querySelector(".ui-input-leading svg")!
+              .getBoundingClientRect();
+          return {
+            inputWidth: box.width,
+            iconContained: icon.left >= frame.left && icon.right <= frame.right,
+            iconOffset: Math.abs(
+              icon.top + icon.height / 2 - frame.top - frame.height / 2,
+            ),
+            filterOverflow: filters.scrollWidth > filters.clientWidth + 1,
+          };
+        });
+      expect(geometry.inputWidth).toBeGreaterThan(22 * 9);
+      expect(geometry.iconContained).toBe(true);
+      expect(geometry.iconOffset).toBeLessThan(1);
+      expect(geometry.filterOverflow).toBe(false);
+      await page.screenshot({
+        path: test
+          .info()
+          .outputPath(
+            width === 1440
+              ? "workspace-gantt-dark-large-type.png"
+              : "workspace-gantt-dark-large-type-1024.png",
+          ),
+        animations: "disabled",
+      });
+    }
     expect(errors).toEqual([]);
   } finally {
     await context.close();

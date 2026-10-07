@@ -102,6 +102,7 @@ import {
 } from "../../lib/editor-recovery";
 import { openExternalEditorLink } from "../../lib/editor-links";
 import { sectionAtPosition, type OutlineHeading } from "../../lib/outline";
+import { useReadOutline } from "../../lib/read-outline";
 import type { EditorHandle, EditorMode, CommentAnchor } from "../Editor";
 import {
   useActiveCommandPane,
@@ -1082,24 +1083,24 @@ function DocumentPane({
     setSource(body);
     setParsed(parsed);
   };
+  const updateReadSection = useReadOutline(
+    scroller,
+    active && mode === "read" && !mindmap,
+    parsed.outline,
+    JSON.stringify(appearance.effective),
+    setSection,
+  );
   const scroll = () => {
     const node = scroller.current;
     if (!node) return;
     viewRef.current.scroll = node.scrollTop;
-    const top = node.getBoundingClientRect().top + 50;
     if (mode !== "read") {
+      const top = node.getBoundingClientRect().top + 50;
       const position = editor.current?.visiblePosition(top);
       if (position != null)
         setSection(sectionAtPosition(parsed.outline, position));
     } else {
-      let selected = parsed.outline[0]?.id ?? null;
-      for (const heading of node.querySelectorAll<HTMLElement>(
-        ".read-mount:not(.print-only) :is(h1,h2,h3,h4,h5,h6)[id]",
-      )) {
-        if (heading.getBoundingClientRect().top > top) break;
-        selected = heading.id;
-      }
-      setSection(selected);
+      updateReadSection();
     }
     if (!touched.current || !context.data) return;
     clearTimeout(progressTimer.current);

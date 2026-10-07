@@ -844,6 +844,7 @@ export class AxiomEditorView {
     if (this.mode === "read") {
       this.content.innerHTML = renderDocument(this.parsed, {
         ...this.options.context(),
+        visuals: true,
         scrollTables: true,
         blockMarks: true,
       });
@@ -1361,6 +1362,7 @@ export class AxiomEditorView {
     if (this.mode === "read") {
       this.content.innerHTML = renderDocument(this.parsed, {
         ...this.options.context(),
+        visuals: true,
         scrollTables: true,
         blockMarks: true,
       });

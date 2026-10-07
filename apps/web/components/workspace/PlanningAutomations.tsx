@@ -457,8 +457,30 @@ function RuleEditor({
                           ? ["eq"]
                           : ["eq", "empty", "notEmpty"];
                 return (
-                  <div className="planning-rule-clause" key={i}>
-                    <Field label={`Condition ${i + 1}`}>
+                  <ActionRow
+                    className="planning-rule-clause"
+                    size="standard"
+                    key={i}
+                  >
+                    <Field
+                      label={`Condition ${i + 1}`}
+                      action={
+                        <IconButton
+                          type="button"
+                          label={`Remove condition ${i + 1}`}
+                          onClick={() => {
+                            setDraft({
+                              ...draft,
+                              conditions: draft.conditions.filter(
+                                (_, n) => n !== i,
+                              ),
+                            });
+                          }}
+                        >
+                          <X size={14} />
+                        </IconButton>
+                      }
+                    >
                       <NativeSelect
                         value={c.field === "custom" ? c.fieldId : c.field}
                         onChange={(e) => {
@@ -596,27 +618,13 @@ function RuleEditor({
                           )}
                         </Field>
                       ))}
-                    <IconButton
-                      type="button"
-                      label={`Remove condition ${i + 1}`}
-                      onClick={() => {
-                        setDraft({
-                          ...draft,
-                          conditions: draft.conditions.filter(
-                            (_, n) => n !== i,
-                          ),
-                        });
-                      }}
-                    >
-                      <X size={14} />
-                    </IconButton>
                     {c.field === "custom" && !f && (
                       <HelpText>
                         This field is archived or unavailable. Remove this
                         condition before enabling.
                       </HelpText>
                     )}
-                  </div>
+                  </ActionRow>
                 );
               })}
               <Button
@@ -649,8 +657,29 @@ function RuleEditor({
                     ? fields.find((f) => f.id === a.fieldId)
                     : undefined;
                 return (
-                  <div className="planning-rule-clause" key={i}>
-                    <Field label={`Action ${i + 1}`}>
+                  <ActionRow
+                    className="planning-rule-clause"
+                    size="standard"
+                    key={i}
+                  >
+                    <Field
+                      label={`Action ${i + 1}`}
+                      action={
+                        <IconButton
+                          type="button"
+                          label={`Remove action ${i + 1}`}
+                          disabled={draft.actions.length === 1}
+                          onClick={() => {
+                            setDraft({
+                              ...draft,
+                              actions: draft.actions.filter((_, n) => n !== i),
+                            });
+                          }}
+                        >
+                          <X size={14} />
+                        </IconButton>
+                      }
+                    >
                       <NativeSelect
                         value={a.kind === "custom" ? a.fieldId : a.kind}
                         onChange={(e) => {
@@ -737,26 +766,13 @@ function RuleEditor({
                         )}
                       </Field>
                     )}
-                    <IconButton
-                      type="button"
-                      label={`Remove action ${i + 1}`}
-                      disabled={draft.actions.length === 1}
-                      onClick={() => {
-                        setDraft({
-                          ...draft,
-                          actions: draft.actions.filter((_, n) => n !== i),
-                        });
-                      }}
-                    >
-                      <X size={14} />
-                    </IconButton>
                     {a.kind === "custom" && !f && (
                       <HelpText>
                         This field is archived or unavailable. Choose another
                         field or remove this action.
                       </HelpText>
                     )}
-                  </div>
+                  </ActionRow>
                 );
               })}
               <Button

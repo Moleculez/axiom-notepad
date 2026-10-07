@@ -1,8 +1,4 @@
-/* Desktop workspace chrome. Document typography is deliberately out of scope. */
-.ws-app {
-  --workspace-control-height: 2.4em;
-  --workspace-control-gap: 0.5em;
-}
+/* Desktop layout only; shared native controls own drawing and geometry. */
 .workspace-action-row {
   display: flex;
   align-items: center;
@@ -16,12 +12,6 @@
 }
 .workspace-action-row > .button {
   flex: 0 0 auto;
-}
-.ws-app .workspace-action-row > :is(input, .button) {
-  min-height: calc(var(--size-ui) * 2.8);
-  height: auto;
-  margin: 0;
-  padding-block: 0.6em;
 }
 .group-card-grid {
   display: grid;
@@ -96,22 +86,6 @@
 }
 
 .ws-app
-  :is(.settings-stage, .settings-form-section, .groups-hub, .productivity-page)
-  .button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--workspace-control-gap);
-  min-block-size: var(--workspace-control-height);
-  line-height: 1.25;
-}
-.ws-app
-  :is(.settings-stage, .settings-form-section, .groups-hub, .productivity-page)
-  .button
-  > svg {
-  flex-shrink: 0;
-}
-.ws-app
   .settings-stage
   :is(.setting-pair, .color-controls, .settings-controls) {
   align-items: start;
@@ -122,7 +96,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px 12px;
-  min-block-size: var(--workspace-control-height);
+  min-block-size: var(--control-height);
   margin-bottom: 10px;
 }
 .ws-app .preference-number-heading > label {

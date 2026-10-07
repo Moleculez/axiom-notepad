@@ -162,7 +162,10 @@ export async function workspaceApi(
       .max(200)
       .parse(url.searchParams.get("name") ?? "")
       .trim();
-    if (name) where.push(`strpos(lower(r.name),lower(${bind(name)})) > 0`);
+    if (name)
+      where.push(
+        `lower(r.name) LIKE lower(${bind("%" + name.replace(/[\\%_]/g, "\\$&") + "%")})`,
+      );
     const mime = url.searchParams.get("mime"),
       tag = url.searchParams.get("tag");
     if (mime)
@@ -203,7 +206,7 @@ export async function workspaceApi(
     if (search) {
       const param = bind(search);
       where.push(
-        `(r.reference_code=upper(${param}) OR r.name ILIKE '%'||${param}||'%' OR r.description ILIKE '%'||${param}||'%' OR array_to_string(r.tags,' ') ILIKE '%'||${param}||'%' OR EXISTS(SELECT 1 FROM notes n WHERE n.id=r.note_id AND to_tsvector('simple',n.title||' '||n.plain_text) @@ plainto_tsquery('simple',${param})))`,
+        `(r.reference_code=upper(${param}) OR lower(r.name) LIKE '%'||lower(${param})||'%' OR r.description ILIKE '%'||${param}||'%' OR array_to_string(r.tags,' ') ILIKE '%'||${param}||'%' OR EXISTS(SELECT 1 FROM notes n WHERE n.id=r.note_id AND to_tsvector('simple',n.title||' '||n.plain_text) @@ plainto_tsquery('simple',${param})))`,
       );
     }
     const encoded = url.searchParams.get("cursor");

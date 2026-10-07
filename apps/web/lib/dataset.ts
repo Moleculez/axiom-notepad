@@ -3,7 +3,8 @@ export const DATASET_RESET = "axiom:dataset-reset";
 const RESET_PENDING = "axiom:dataset-reset-pending";
 export type DatasetIdentity = { datasetId: string; setupRequired: boolean };
 let verified: string | null = null,
-  checking: Promise<DatasetIdentity> | null = null;
+  checking: Promise<DatasetIdentity> | null = null,
+  checkingSignal: AbortSignal | null = null;
 let clearing: Promise<void> | null = null;
 export function currentDataset() {
   return verified;
@@ -12,17 +13,23 @@ export function datasetRequestHeaders(): Record<string, string> {
   return verified ? { "X-Axiom-Dataset": verified } : {};
 }
 export async function verifyDataset(): Promise<DatasetIdentity> {
-  if (checking) return checking;
-  checking = (async () => {
+  // A restoration can precede the rejected old request's finally microtask.
+  // Never share a canceled lifetime with a resumed page.
+  if (checking && !checkingSignal?.aborted) return checking;
+  const { controller, finish } = pageRequest(AbortSignal.timeout(8000));
+  const pending = (async () => {
+    controller.signal.throwIfAborted();
     const response = await fetch("/api/v1/instance", {
       cache: "no-store",
-      signal: AbortSignal.timeout(8000),
+      signal: controller.signal,
     });
+    controller.signal.throwIfAborted();
     if (!response.ok)
       throw new Error(
         "Cannot verify this application's dataset. Check the development service and database migrations.",
       );
     const identity = (await response.json()) as DatasetIdentity;
+    controller.signal.throwIfAborted();
     if (!/^[\da-f-]{36}$/i.test(identity.datasetId))
       throw new Error("The application returned an invalid dataset identity.");
     const previous = localStorage.getItem(DATASET_KEY);
@@ -45,10 +52,16 @@ export async function verifyDataset(): Promise<DatasetIdentity> {
     verified = identity.datasetId;
     return identity;
   })();
+  checking = pending;
+  checkingSignal = controller.signal;
   try {
-    return await checking;
+    return await pending;
   } finally {
-    checking = null;
+    if (checking === pending) {
+      checking = null;
+      checkingSignal = null;
+    }
+    finish();
   }
 }
 export function allowVerifiedOfflineDataset(): boolean {
@@ -105,3 +118,4 @@ async function clearDatasetStorage(identity: DatasetIdentity) {
   localStorage.removeItem(RESET_PENDING);
   verified = identity.datasetId;
 }
+import { pageRequest } from "./request-lifecycle";

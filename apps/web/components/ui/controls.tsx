@@ -740,13 +740,19 @@ export const Slider = forwardRef<
 export function ActionRow({
   className,
   align,
+  size,
   ...props
-}: HTMLAttributes<HTMLDivElement> & { align?: "start" | "end" | "between" }) {
+}: HTMLAttributes<HTMLDivElement> & {
+  align?: "start" | "end" | "between";
+  /** Opt-in common geometry for a mixed toolbar; standalone controls stay unchanged. */
+  size?: "standard" | "compact";
+}) {
   return (
     <div
       {...props}
       className={classes("ws-actions ui-actions", className)}
       data-align={align}
+      data-control-group-size={size}
     />
   );
 }

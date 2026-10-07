@@ -481,7 +481,7 @@ export default function PlanningGantt({
   }
   return (
     <section className="planning-gantt" aria-label="Gantt schedule">
-      <div className="planning-gantt-controls">
+      <ActionRow className="planning-gantt-controls" size="standard">
         <NativeSelect
           aria-label="Timeline scale"
           value={fit ? "fit" : zoom}
@@ -539,7 +539,7 @@ export default function PlanningGantt({
         >
           <Settings2 size={16} />
         </IconButton>
-      </div>
+      </ActionRow>
       <HelpText className="planning-gantt-help">
         Drag bars to review schedule changes; Alt + ←/→ moves a day. Drag a
         finish connector to another task’s start, or use Link tasks.

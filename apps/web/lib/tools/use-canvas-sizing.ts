@@ -1,18 +1,24 @@
 "use client";
 import { useEffect, useState } from "react";
 import type { Awareness } from "y-protocols/awareness";
-import { canvasSizingOwner } from "@axiom/shared/canvas-sizing";
+import { canvasSizingSnapshot } from "./canvas-presence";
 
 export function useCanvasSizing(
   awareness: Awareness | null,
   readOnly: boolean,
   editing: string | null,
 ) {
-  const [, update] = useState(0);
+  const [snapshot, update] = useState(() =>
+    canvasSizingSnapshot(awareness?.getStates() ?? []),
+  );
   useEffect(() => {
     if (!awareness) return;
-    const changed = () => update((n) => n + 1);
+    const changed = () => {
+      const next = canvasSizingSnapshot(awareness.getStates());
+      update((old) => (old.key === next.key ? old : next));
+    };
     awareness.on("change", changed);
+    changed();
     return () => {
       awareness.off("change", changed);
       awareness.setLocalStateField("canvasSizing", null);
@@ -27,5 +33,5 @@ export function useCanvasSizing(
   return (id: string) =>
     !readOnly &&
     (!awareness ||
-      canvasSizingOwner(awareness.getStates(), id) === awareness.clientID);
+      (snapshot.owners.get(id) ?? snapshot.fallback) === awareness.clientID);
 }

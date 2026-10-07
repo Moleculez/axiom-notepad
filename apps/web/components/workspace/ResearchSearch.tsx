@@ -1,5 +1,5 @@
 "use client";
-import { Button, SearchField, TextInput } from "../ui/controls";
+import { ActionRow, Button, SearchField, TextInput } from "../ui/controls";
 import { useEffect, useRef, useState } from "react";
 /** Server-backed filters wait for a typing pause; explicit Enter/blur flushes. */
 export function ResearchFilterInput({
@@ -8,12 +8,14 @@ export function ResearchFilterInput({
   label,
   placeholder,
   maxLength = 200,
+  className,
 }: {
   value: string;
   onChange: (value: string) => void;
   label: string;
   placeholder: string;
   maxLength?: number;
+  className?: string;
 }) {
   const [draft, setDraft] = useState(value),
     timer = useRef<ReturnType<typeof setTimeout> | null>(null),
@@ -36,6 +38,7 @@ export function ResearchFilterInput({
   };
   return (
     <TextInput
+      className={className}
       aria-label={label}
       placeholder={placeholder}
       maxLength={maxLength}
@@ -81,19 +84,21 @@ export default function ResearchSearch({
         onSubmit?.();
       }}
     >
-      <SearchField
-        aria-label={label}
-        placeholder={placeholder ?? label}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onClear={() => onChange("")}
-        clearLabel={`Clear ${label.toLowerCase()}`}
-      />
-      {onSubmit && (
-        <Button className="button ghost" type="submit">
-          Search
-        </Button>
-      )}
+      <ActionRow className="research-search-controls" size="standard">
+        <SearchField
+          aria-label={label}
+          placeholder={placeholder ?? label}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onClear={() => onChange("")}
+          clearLabel={`Clear ${label.toLowerCase()}`}
+        />
+        {onSubmit && (
+          <Button className="button ghost" type="submit">
+            Search
+          </Button>
+        )}
+      </ActionRow>
     </form>
   );
 }

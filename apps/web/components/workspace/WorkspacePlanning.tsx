@@ -323,7 +323,7 @@ export default function WorkspacePlanning({ space }: { space: Space }) {
         />
       ) : (
         <>
-          <div className="planning-toolbar">
+          <ActionRow className="planning-toolbar" size="standard">
             <Button
               className="button ghost"
               disabled={!tasks.length || tasks.length > 100}
@@ -405,8 +405,8 @@ export default function WorkspacePlanning({ space }: { space: Space }) {
               <Plus size={16} />
               New task
             </Button>
-          </div>
-          <div className="planning-filters">
+          </ActionRow>
+          <ActionRow className="planning-filters" size="standard">
             <PlanningPropertyView spaceId={space.id} params={params} change={change} people={people.data??[]}/>
             <SearchField
               wrapperClassName="planning-search"
@@ -474,7 +474,7 @@ export default function WorkspacePlanning({ space }: { space: Space }) {
                 ? `${data.data.total.toLocaleString()} tasks · ${data.data.completed} done`
                 : "Loading…"}
             </span>
-          </div>
+          </ActionRow>
           <PlanningBulkActions
             spaceId={space.id}
             selected={[...selection.values()]}

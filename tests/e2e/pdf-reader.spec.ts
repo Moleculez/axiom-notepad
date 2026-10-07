@@ -40,6 +40,15 @@ test("research reader navigation, search, private notes, bookmarks, split view a
     title: "PDF fixture",
     body: "# Unchanged research\n",
   });
+  const noteContextResponse = await context.request.get(
+    `/api/v1/notes/${note.id}/context`,
+  );
+  expect(
+    noteContextResponse.ok(),
+    await noteContextResponse.text(),
+  ).toBeTruthy();
+  const { space } = await noteContextResponse.json();
+  expect(space.id).toBeTruthy();
   const doc = await PDFDocument.create(),
     font = await doc.embedFont(StandardFonts.Helvetica);
   for (let n = 1; n <= 12; n++) {
@@ -250,14 +259,46 @@ test("research reader navigation, search, private notes, bookmarks, split view a
         .locator(".pdf-outline-link")
         .filter({ hasText: "2 Experimental methods" }),
     ).toBeVisible();
-    await reader.getByLabel("Go to PDF page", { exact: true }).fill("6");
-    await reader.getByLabel("Go to PDF page", { exact: true }).press("Enter");
+    const pageField = reader.getByLabel("Go to PDF page", { exact: true }),
+      pageViewport = reader.getByLabel("PDF page viewport", { exact: true });
+    await pageField.fill("6");
+    // Scrolling while a page-number draft is focused must not replace the
+    // user's intended destination before they submit it.
+    await pageViewport.evaluate((node) => {
+      node.dispatchEvent(new WheelEvent("wheel", { bubbles: true }));
+      const shell = node.querySelector<HTMLElement>('[data-pdf-page="4"]')!;
+      node.scrollTop = shell.offsetTop - 20;
+      node.dispatchEvent(new Event("scroll"));
+    });
+    await expect(reader.locator(".pdf-statusbar")).toContainText(
+      "Page 4 of 12",
+    );
+    await expect(pageField).toBeFocused();
+    await expect(pageField).toHaveValue("6");
+    await pageField.press("Enter");
     await expect(reader.locator(".pdf-statusbar")).toContainText(
       "Page 6 of 12",
     );
     await expect(
       reader.locator('[data-pdf-page="6"] .textLayer'),
     ).toContainText("Page 6");
+    // A scroll observation queued in the previous viewport cannot override
+    // an explicit destination submitted in the same task.
+    await pageField.fill("7");
+    await pageField.evaluate((input: HTMLInputElement) => {
+      document
+        .querySelector('[aria-label="PDF page viewport"]')!
+        .dispatchEvent(new Event("scroll"));
+      input.form!.requestSubmit();
+    });
+    await expect(reader.locator(".pdf-statusbar")).toContainText(
+      "Page 7 of 12",
+    );
+    await pageField.fill("6");
+    await pageField.press("Enter");
+    await expect(reader.locator(".pdf-statusbar")).toContainText(
+      "Page 6 of 12",
+    );
     await reader
       .getByRole("button", { name: "Find in paper", exact: true })
       .click();
@@ -529,15 +570,28 @@ test("research reader navigation, search, private notes, bookmarks, split view a
     await expect
       .poll(async () => {
         const r = await context.request.get(
-          `/api/v1/me/reading?groupId=${group.id}`,
+          `/api/v1/me/reading?groupId=${space.id}`,
         );
+        expect(r.ok(), await r.text()).toBeTruthy();
         const records = await r.json();
-        return records.find(
-          (item: { target_id: string; kind: string }) =>
-            item.target_id === attachment.id && item.kind === "progress",
-        )?.data.pdfView?.offset;
+        const progress = records.find(
+          (item: {
+            target_id: string;
+            target_type: string;
+            kind: string;
+            group_id: string;
+          }) =>
+            item.target_id === attachment.id &&
+            item.target_type === "attachment" &&
+            item.kind === "progress" &&
+            item.group_id === space.id,
+        );
+        return {
+          page: progress?.data.page,
+          offsetAboveThreshold: Number(progress?.data.pdfView?.offset) > 0.25,
+        };
       })
-      .toBeGreaterThan(0.25);
+      .toEqual({ page: 4, offsetAboveThreshold: true });
     await page.reload();
     await expect(reader.locator(".pdf-statusbar")).toContainText(
       "Page 4 of 12",

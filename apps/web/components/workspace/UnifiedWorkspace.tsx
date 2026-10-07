@@ -316,7 +316,7 @@ function WorkspaceDirectory() {
       >
         One home for your files, plans, evidence and conversations.
       </PageHeading>
-      <div className="workspace-directory-filters">
+      <ActionRow className="workspace-directory-filters" size="standard">
         <SearchField
           aria-label="Find a workspace"
           placeholder="Find a workspace…"
@@ -338,7 +338,7 @@ function WorkspaceDirectory() {
           <Users size={16} aria-hidden="true" />
           <span>Manage groups</span>
         </WorkspaceLink>
-      </div>
+      </ActionRow>
       <ErrorNotice message={data.error} retry={data.reload} />
       {data.loading && !data.data && <Loading />}
       <div className="unified-workspace-grid">

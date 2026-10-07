@@ -81,7 +81,7 @@ export default function GroupsHub({
           remains yours.
         </PageHeading>
       )}
-      <div className="workspace-action-row">
+      <ActionRow className="workspace-action-row" size="standard">
         <TextInput
           aria-label="Search your groups"
           placeholder="Find a group…"
@@ -96,7 +96,7 @@ export default function GroupsHub({
           <Plus size={16} />
           Create group
         </Button>
-      </div>
+      </ActionRow>
       <ErrorNotice
         message={action.error || invitations.error}
         retry={invitations.error ? invitations.reload : undefined}

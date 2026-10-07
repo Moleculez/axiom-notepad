@@ -29,7 +29,7 @@ their TypeScript contracts to prevent page-wide React rendering failures.
 | `SearchField`            | Search with an aligned leading icon                        | The icon is inside the field's reserved inset, never a loosely aligned adjacent control.                                 |
 | `InputGroup`             | A native field with a decorative prefix or trailing action | Owns one shared surface and focus ring. Native IDs, descriptions and invalid state are forwarded to the control.         |
 | `Picker`                 | Searchable single/multiple entity choices                  | Query text never becomes an ID. Retain selected labels, abort stale lookups and expose loading/error/retry/empty states. |
-| `ActionRow`              | A wrapping group of application actions                    | Supports start/end/between alignment; preserves native form ownership.                                                   |
+| `ActionRow`              | A wrapping group of application actions                    | Supports start/end/between alignment and optional standard/compact group sizing; preserves native form ownership.        |
 | `HelpText`               | Routine explanation, counts or limits                      | Transparent and unboxed. Use `as="span"` for inline metadata.                                                            |
 | `Notice`                 | A consequential warning, failure or important boundary     | Choose a semantic tone and write the consequence/recovery. Use `role="alert"` only for newly arising urgent errors.      |
 
@@ -48,6 +48,10 @@ consume the same CSS base without adding React wrappers to the editable DOM.
 - Single-line native selectors also use the shared text-scaled control height:
   Safari ignores their minimum height in native popup mode. Keep the native arrow
   and keyboard behavior; never replace them with a hardcoded-pixel page workaround.
+  WebKit may retain the system popup's corner radius despite an authored zero
+  radius; this narrow native-platform exception does not apply to application-drawn
+  field shells, actions, dialogs or document cells. Do not remove the native arrow
+  merely to change popup corners.
 - Use the UI font and shared `--size-ui`, `--size-ui-small`, `--control-text-size`,
   `--control-height` and `--control-height-compact` roles. No fixed 10px text in a
   settings section; prose and equations do not inherit these form roles.
@@ -60,6 +64,21 @@ consume the same CSS base without adding React wrappers to the editable DOM.
 - Selection/action bars wrap within their own allocated layout slot. Use
   `min-width: 0` and owned scrollports rather than whole-page horizontal overflow.
   Never fix overflow by hiding an action, clipping a label, or shrinking text.
+
+For mixed application toolbars, set `ActionRow size="standard"` to align the
+SearchField/InputGroup shell, NativeSelect, Button and IconButton to the same
+text-scaled edge. Use `size="compact"` only for a deliberately dense group.
+Omitting size preserves each control's existing geometry; an unsized nested
+ActionRow starts its own sizing context rather than inheriting its parent's
+choice. This is layout coordination, not an HTML `size` attribute or a global
+enlargement of editor controls. Remove competing page height/padding/font rules
+before adopting the group contract. A long action can grow or wrap as a whole;
+never force a fixed height that clips its label.
+
+Scrollable page-tab strips use a visible inset keyboard outline so first/last
+links retain focus feedback at the scrollport edge without losing the bottom
+separator. Do not remove focus rings or add overflow to the entire page as a
+clipping workaround. Forced colors keep their system-color outline.
 
 Mind-map controls are screen-sized, not scaled together with node content. Use
 shared IconButtons with names/tooltips for contextual folding and draft apply/cancel;
@@ -113,6 +132,14 @@ actions must retain intrinsic non-shrinking label widths; wrap whole search/acti
 groups instead of breaking “Preview” into fragments. Inspect 1024/1280px desktops
 and enlarged UI text.
 
+Mixed filter rows need a nonzero, text-scaled search flex basis (for example,
+`flex: 1 1 14em`) and an owned minimum track, not `flex: 1` with a zero basis.
+The shared shell permits `min-width: 0`; otherwise neighboring selectors can
+leave a nearly zero-width search field even when every height aligns. Use
+`--field-width` for its intrinsic width, text-scaled picker tracks and whole-unit
+wrapping. Assert the actual editable input's usable width and icon containment
+at large text and 1024px desktop widths, not only shell alignment or no overflow.
+
 Clear buttons are named, non-submit actions. Reserve their slot so typing or
 clearing does not move the field text; clearing restores input focus. Multi-select
 labels wrap without pushing remove actions out of view. Grid columns need enough
@@ -124,7 +151,8 @@ and keep those action labels on one line.
 
 `Field.action` places a named non-submit action alongside its actual control,
 below the full-width label and above guidance/errors. Use this for property Clear
-actions; never position them with a fixed label-height margin. The original native
+actions and planning clause Remove actions, not an extra equal-width grid column;
+never position them with a fixed label-height margin. The original native
 child still owns the linked ID and ARIA descriptions. Wrapping labels, long picker
 values and enlarged UI text must not move the action to the label's baseline.
 
@@ -308,6 +336,15 @@ markup. The only native-owner exemption is `components/ui/controls.tsx`, not a
 folder allowlist. Editor-engine DOM and document-task rendering have a different
 semantic contract; this guard is not a security sandbox or a complete CSS audit.
 
+The same command parses stylesheet selectors and declarations. It rejects general
+shared-action drawing/geometry resets outside their canonical owners and fixed
+pixel text sizes on page-scoped shared actions. Page-specific layout, scoped
+specialized tab/editor controls, functional focus/forced-color rules and the
+explicit pre-existing `@layer legacy` foundation are distinct boundaries, not
+blanket folder exemptions. Do not add new general rules to that legacy layer.
+The guard is deliberately narrow: geometry and screenshots still verify the
+resolved cascade, intrinsic widths, wrapping and scroll/focus ownership.
+
 The guard runs in root `check` and showcase CI, alongside theme and documentation
 checks. New controls require native-prop/ARIA unit coverage and screenshot/interaction
 review. Inspect all five styles in light/dark, large UI text, compact density,
@@ -319,5 +356,11 @@ remain separate manual acceptance, not consequences of a synthetic test pass.
 Use **Settings → Appearance → Interface** or **Showcase → Appearance → Interface**
 for the real interactive specimen. It includes native switch, filled slider,
 mixed/disabled selection, validation and stable pending actions; it never performs
-real file/account operations. Keep specimen behavior in the shared component,
+real file/account operations. Standard and compact mixed toolbars exercise search,
+selector, label and icon geometry together, including the clear action's inset.
+The isolated action-row browser fixture uses real server-rendered controls and
+the ordered application styles without account or dataset writes; it checks
+reference filters, planning actions, nested sizing and clipped-strip focus in
+all five styles, both modes, large text and all three browser engines.
+Keep specimen behavior in the shared component,
 not a second mock implementation in a theme.

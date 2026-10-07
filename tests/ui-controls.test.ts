@@ -277,4 +277,31 @@ describe("native-compatible controls", () => {
     expect(html).toContain('class="ui-notice" data-tone="warning"');
     expect(html).not.toContain('role="alert"');
   });
+  it("opts mixed action groups into one size without changing unsized groups or native fields", () => {
+    const ordinary = renderToStaticMarkup(
+      h(ActionRow, null, h(IconButton, { label: "Standalone action" })),
+    );
+    expect(ordinary).not.toContain("data-control-group-size");
+    for (const size of ["standard", "compact"] as const) {
+      const html = renderToStaticMarkup(
+        h(
+          "form",
+          { id: "research" },
+          h(
+            ActionRow,
+            { size, align: "end", "aria-label": "Research actions" },
+            h(TextInput, { name: "query", defaultValue: "equations" }),
+            h(Button, { type: "submit", pending: false }, "Search"),
+            h(IconButton, { type: "button", label: "Clear query" }),
+          ),
+        ),
+      );
+      expect(html).toContain(`data-control-group-size="${size}"`);
+      expect(html).not.toContain(` size="${size}"`);
+      expect(html).toContain('name="query"');
+      expect(html).toContain('type="submit"');
+      expect(html).toContain('data-pending="false"');
+      expect(html).toContain('aria-label="Research actions"');
+    }
+  });
 });

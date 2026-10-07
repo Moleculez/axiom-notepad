@@ -1,9 +1,14 @@
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { validateUiSource, type UiDiagnostic } from "./ui-contract";
+import {
+  validateUiSource,
+  validateUiStyles,
+  type UiDiagnostic,
+} from "./ui-contract";
 
 const roots = ["apps/web/components", "apps/showcase/src"];
 let checked = 0;
+let stylesChecked = 0;
 const errors: UiDiagnostic[] = [];
 async function inspect(directory: string) {
   for (const entry of await readdir(directory, { withFileTypes: true })) {
@@ -12,10 +17,14 @@ async function inspect(directory: string) {
     else if (entry.isFile() && path.endsWith(".tsx")) {
       checked++;
       errors.push(...validateUiSource(path, await readFile(path, "utf8")));
+    } else if (entry.isFile() && path.endsWith(".css")) {
+      stylesChecked++;
+      errors.push(...validateUiStyles(path, await readFile(path, "utf8")));
     }
   }
 }
 for (const root of roots) await inspect(root);
+await inspect("apps/web/app");
 if (errors.length) {
   console.error(
     errors
@@ -25,5 +34,5 @@ if (errors.length) {
   process.exitCode = 1;
 } else
   console.log(
-    `${checked} application/showcase JSX files respect the shared UI control contract.`,
+    `${checked} application/showcase JSX files and ${stylesChecked} stylesheets respect the shared UI control contract.`,
   );

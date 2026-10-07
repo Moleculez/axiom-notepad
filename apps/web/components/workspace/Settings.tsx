@@ -41,7 +41,6 @@ import { api, authRequest, download, post, timeAgo } from "../../lib/client";
 import { ExportsPage } from "./AccountPages";
 import GroupsHub from "./GroupsHub";
 import { useResearch } from "../../lib/research-store";
-import AppearanceSettings from "../AppearanceSettings";
 import ResearchDataSettings from "../ResearchDataSettings";
 import ConnectionsSettings from "./ConnectionsSettings";
 import ExtensionsSettings from "../plugins/ExtensionsSettings";
@@ -61,6 +60,14 @@ import {
 import { Avatar } from "./Pages";
 const AvatarCropDialog = dynamic(() => import("./AvatarCropDialog"), {
   ssr: false,
+});
+const AppearanceSettings = dynamic(() => import("../AppearanceSettings"), {
+  ssr: false,
+  loading: () => (
+    <div className="settings-stage" aria-busy="true">
+      <p role="status">Loading appearance & writing…</p>
+    </div>
+  ),
 });
 
 import {

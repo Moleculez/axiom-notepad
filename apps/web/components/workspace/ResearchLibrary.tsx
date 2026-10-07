@@ -1,5 +1,6 @@
 "use client";
 import {
+  ActionRow,
   Button,
   Checkbox,
   IconButton,
@@ -395,7 +396,7 @@ export default function ResearchLibrary({
       ));
   return (
     <div className="research-library">
-      <div className="research-panel-toolbar">
+      <ActionRow className="research-panel-toolbar" size="standard">
         <IconButton
           className="icon-button"
           aria-label={
@@ -446,7 +447,7 @@ export default function ResearchLibrary({
           <Upload size={16} />
         </IconButton>
         <details className="research-export-menu">
-          <summary aria-label="Export library">
+          <summary className="button ghost" aria-label="Export library">
             <Download size={16} />
           </summary>
           <div>
@@ -464,7 +465,7 @@ export default function ResearchLibrary({
             </Button>
           </div>
         </details>
-      </div>
+      </ActionRow>
       <ErrorNotice message={data.error || action.error} retry={data.reload} />
       <div className="library-layout">
         {rail && (
@@ -640,18 +641,21 @@ export default function ResearchLibrary({
                 : "references"}
             </span>
           </header>
-          <div
+          <ActionRow
             className="library-filters"
+            size="standard"
             id="library-filter-fields"
             hidden={!filtersOpen}
           >
             <ResearchFilterInput
+              className="library-author-filter"
               label="Filter reference author"
               placeholder="Author"
               value={params.get("author") ?? ""}
               onChange={(author) => onRoute({ author })}
             />
             <ResearchFilterInput
+              className="library-year-filter"
               label="Filter reference year"
               maxLength={20}
               placeholder="Year"
@@ -686,10 +690,11 @@ export default function ResearchLibrary({
             >
               Reset filters
             </Button>
-          </div>
+          </ActionRow>
           {!!chosen.length && (
-            <div
+            <ActionRow
               className="library-selection"
+              size="standard"
               aria-label="Selected reference actions"
             >
               <strong>{chosen.length} selected</strong>
@@ -759,7 +764,10 @@ export default function ResearchLibrary({
                 <GitMerge size={15} />
               </IconButton>
               <details className="research-export-menu">
-                <summary aria-label="Export selected references">
+                <summary
+                  className="button ghost"
+                  aria-label="Export selected references"
+                >
                   <Download size={15} />
                 </summary>
                 <div>
@@ -814,7 +822,7 @@ export default function ResearchLibrary({
               >
                 <X size={15} />
               </IconButton>
-            </div>
+            </ActionRow>
           )}
           {organize && chosen.length > 0 && (
             <div className="library-organize">

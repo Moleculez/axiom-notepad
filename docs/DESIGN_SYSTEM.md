@@ -215,13 +215,26 @@ warnings remain recognizable. The five trusted interface styles (Axiom, Material
 Tonal, Fluent Studio, Editorial, macOS Studio) share this geometry and state
 contract while changing their component presentation. Do not reintroduce page-local
 checkbox knobs, slider drawing or general button resets. `validate:ui` checks
-the JSX boundary; see [control criteria](UI_CONTROLS.md) for usage and review.
+the JSX boundary and narrow shared-action CSS drift; see
+[control criteria](UI_CONTROLS.md) for usage and review.
 
 Application fields have one visual shell. Shared SearchField/InputGroup own icon
 tracks, surface and focus; Field owns the associated label, guidance and error.
 Avoid nested bordered search boxes or page-local icon offsets. Use intrinsic
 selector widths and non-shrinking short toolbar actions; wrap whole controls
 instead of splitting labels like “Manage groups” into unintended lines.
+
+Mixed application action groups opt into `ActionRow size="standard"` or
+`size="compact"` for one text-scaled control edge, not per-page fixed pixel
+heights. An omitted size keeps the existing standalone/contextual treatment,
+including inside an unsized nested row. Planning clause Remove actions belong
+beside their field under the full label, not in an extra auto-fit grid column.
+Use `--field-width` and intrinsic flex tracks for short filters; wrap complete
+controls at constrained widths. Check both border-box edges and icon/text
+centers, not just the surrounding row. Keyboard focus on scrollable tabs must
+stay visible inside first/last edges while retaining the separator. Application
+read-only styling also excludes `data-editor-field`; document fields never acquire
+a filled application surface when their editability changes.
 
 Canvas headers/content/captions form a flexible column. Only card content clips;
 ports, resize handles and selection rings stay outside that clip. Auto-height

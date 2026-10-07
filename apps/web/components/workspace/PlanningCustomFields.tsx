@@ -445,8 +445,25 @@ function PropertyViewEditor({
                         : []),
                     ];
               return (
-                <div className="planning-rule-clause" key={i}>
-                  <Field label={`Property ${i + 1}`}>
+                <ActionRow
+                  className="planning-rule-clause"
+                  size="standard"
+                  key={i}
+                >
+                  <Field
+                    label={`Property ${i + 1}`}
+                    action={
+                      <IconButton
+                        type="button"
+                        label={`Remove property filter ${i + 1}`}
+                        onClick={() =>
+                          setFilters(filters.filter((_, n) => n !== i))
+                        }
+                      >
+                        <X size={14} />
+                      </IconButton>
+                    }
+                  >
                     <NativeSelect
                       value={c.fieldId}
                       onChange={(e) =>
@@ -513,15 +530,6 @@ function PropertyViewEditor({
                       onChange={(value) => setFilter(i, { value })}
                     />
                   )}
-                  <IconButton
-                    type="button"
-                    label={`Remove property filter ${i + 1}`}
-                    onClick={() => {
-                      setFilters(filters.filter((_, n) => n !== i));
-                    }}
-                  >
-                    <X size={14} />
-                  </IconButton>
                   {(!field || field.archived) && (
                     <HelpText>
                       This property is unavailable or archived. Remove the
@@ -529,7 +537,7 @@ function PropertyViewEditor({
                       ignored.
                     </HelpText>
                   )}
-                </div>
+                </ActionRow>
               );
             })}
             <Button

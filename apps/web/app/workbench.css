@@ -8,9 +8,6 @@
   background: var(--bg);
   --ws-gutter: clamp(18px, 3vw, 48px);
 }
-.ws-app :is(button, input, select, textarea, summary) {
-  font: inherit;
-}
 .ws-app :is(button, a, summary) {
   -webkit-tap-highlight-color: transparent;
 }
@@ -1201,6 +1198,19 @@
 .ws-page-tabs a.active {
   color: var(--accent);
   border-bottom-color: var(--accent);
+}
+/* A scrolling strip clips outward focus rings. Keep its edge/bottom rule fixed
+   and draw the functional focus cue inside each complete tab instead. */
+.ws-app .ws-page-tabs a:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+  box-shadow: none;
+}
+@media (forced-colors: active) {
+  .ws-app .ws-page-tabs a:focus-visible {
+    outline-color: Highlight;
+    outline-offset: -2px;
+  }
 }
 .ws-board {
   display: grid;

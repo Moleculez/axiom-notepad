@@ -112,7 +112,6 @@ textarea:not(:where([data-editor-field])) {
     color 150ms,
     box-shadow 150ms;
 }
-button,
 input:not(:where([data-editor-field])),
 select:not(:where([data-editor-field])),
 textarea:not(:where([data-editor-field])),

@@ -78,6 +78,7 @@ import PdfSelectionActions, { type PdfSelection } from "./PdfSelectionActions";
 import Dialog from "../Dialog";
 import { useAppearance } from "../../lib/appearance";
 import { pdfRuntimeOptions } from "../../lib/pdf-runtime";
+import { pdfSearchText, closePdfSearchText } from "../../lib/pdf-search-cache";
 type Panel = "annotations" | "outline" | "thumbnails" | "search" | "bookmarks";
 export type PdfReaderProps = {
   attachment: { id: string; name: string; page?: number; annotation?: string };
@@ -97,6 +98,8 @@ export default function PdfReader({
 }: PdfReaderProps) {
   const root = useRef<HTMLElement>(null),
     current = useRef(research),
+    pageField = useRef<HTMLInputElement>(null),
+    pageEditing = useRef(false),
     progressRef = useRef<ReadingItem | undefined>(undefined),
     searchToken = useRef(0);
   current.current = research;
@@ -183,6 +186,7 @@ export default function PdfReader({
       setFuture([]);
     }
     setPage(n);
+    setPageInput(labels[n - 1] ?? String(n));
     setOffset(0);
     setResumeOffset(0);
     setJump((n) => n + 1);
@@ -287,6 +291,7 @@ export default function PdfReader({
   };
   useEffect(() => {
     let alive = true,
+      openedPdf: PDFDocumentProxy | undefined,
       task:
         ReturnType<(typeof import("pdfjs-dist"))["getDocument"]> | undefined;
     setPdf(null);
@@ -321,7 +326,11 @@ export default function PdfReader({
           if (alive) setPasswordRequest({ update, retry: reason === 2 });
         };
         const doc = await task.promise;
-        if (!alive) return;
+        openedPdf = doc;
+        if (!alive) {
+          closePdfSearchText(doc);
+          return;
+        }
         let progress = current.current.entries.find(
           (e) =>
             e.kind === "reading" &&
@@ -383,6 +392,9 @@ export default function PdfReader({
       });
     const unavailable = (event: Event) => {
       if ((event as CustomEvent).detail === attachment.id) {
+        alive = false;
+        searchToken.current++;
+        if (openedPdf) closePdfSearchText(openedPdf);
         setPdf(null);
         setMeta(null);
         setError(
@@ -395,6 +407,7 @@ export default function PdfReader({
     return () => {
       alive = false;
       searchToken.current++;
+      if (openedPdf) closePdfSearchText(openedPdf);
       window.removeEventListener("axiom-paper-unavailable", unavailable);
       void task?.destroy();
     };
@@ -409,7 +422,9 @@ export default function PdfReader({
     setSelectedId(attachment.annotation ?? "");
   }, [attachment.annotation]);
   useEffect(() => {
-    setPageInput(labels[page - 1] ?? String(page));
+    // An arriving page/scroll observation is not permission to overwrite a
+    // focused navigation draft. Explicit navigation normalizes it in go().
+    if (!pageEditing.current) setPageInput(labels[page - 1] ?? String(page));
   }, [page, labels]);
   useEffect(() => {
     if (!pdf || !meta) return;
@@ -456,17 +471,13 @@ export default function PdfReader({
     try {
       for (let n = 1; n <= pdf.numPages; n++) {
         if (token !== searchToken.current) return;
-        const p = await pdf.getPage(n),
-          content = await p.getTextContent();
+        const text = await pdfSearchText(pdf, n);
         if (token !== searchToken.current) return;
         found.push(
-          ...pdfTextMatches(
-            content.items.flatMap((i) => ("str" in i ? [i.str] : [])).join(" "),
-            query,
-            n,
-            matchCase,
-            wholeWord,
-          ).slice(0, 2000 - found.length),
+          ...pdfTextMatches(text, query, n, matchCase, wholeWord).slice(
+            0,
+            2000 - found.length,
+          ),
         );
         if (n % 5 === 0 || n === pdf.numPages || found.length >= 2000) {
           setHits([...found]);
@@ -806,16 +817,24 @@ export default function PdfReader({
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            const index = labels.indexOf(pageInput);
-            go(index >= 0 ? index + 1 : Number(pageInput));
+            const value = pageField.current?.value ?? pageInput,
+              index = labels.indexOf(value);
+            go(index >= 0 ? index + 1 : Number(value));
           }}
         >
           <TextInput
+            ref={pageField}
             aria-label="Go to PDF page"
             className="pdf-page-input"
             value={pageInput}
             onChange={(e) => setPageInput(e.target.value)}
-            onBlur={() => setPageInput(labels[page - 1] ?? String(page))}
+            onFocus={() => {
+              pageEditing.current = true;
+            }}
+            onBlur={() => {
+              pageEditing.current = false;
+              setPageInput(labels[page - 1] ?? String(page));
+            }}
           />
         </form>
         <span className="pdf-page-count">/ {pdf?.numPages ?? "…"}</span>

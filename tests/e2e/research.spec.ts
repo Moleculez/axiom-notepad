@@ -66,6 +66,26 @@ async function open(context: BrowserContext, id: string) {
   ).toBeVisible();
   return page;
 }
+function paperText(page: Page, number = 1) {
+  return page.locator(`[data-pdf-page="${number}"] .textLayer`);
+}
+async function readerActions(page: Page) {
+  const toggle = page.getByRole("button", {
+    name: "Reader view and file actions",
+    exact: true,
+  });
+  if ((await toggle.getAttribute("aria-pressed")) !== "true")
+    await toggle.click();
+  return page.locator(".pdf-view-options");
+}
+async function closeReaderActions(page: Page) {
+  const toggle = page.getByRole("button", {
+    name: "Reader view and file actions",
+    exact: true,
+  });
+  if ((await toggle.getAttribute("aria-pressed")) === "true")
+    await toggle.click();
+}
 async function slider(page: Page, label: string, value: number) {
   await page
     .getByRole("slider", { name: label, exact: true })
@@ -309,9 +329,7 @@ test("quotation insertion persists a real private annotation and warns before pu
   await page
     .getByRole("button", { name: "quantum-paper.pdf", exact: false })
     .click();
-  await expect(page.locator(".textLayer")).toContainText(
-    "Quantum research paper",
-  );
+  await expect(paperText(page)).toContainText("Quantum research paper");
   await page.getByRole("button", { name: "Page note", exact: true }).click();
   await page
     .getByLabel("Annotation note", { exact: true })
@@ -411,15 +429,16 @@ test("online papers remain readable when research storage is denied", async ({
   await page
     .getByRole("button", { name: "quantum-paper.pdf", exact: false })
     .click();
-  await expect(page.locator(".textLayer")).toContainText(
-    "Quantum research paper",
-  );
-  await page.getByRole("button", { name: "Keep offline", exact: true }).click();
+  await expect(paperText(page)).toContainText("Quantum research paper");
+  const actions = await readerActions(page);
+  await actions
+    .getByRole("button", { name: "Keep offline", exact: true })
+    .click();
   await expect(page.locator(".pdf-viewer")).toContainText(
     "Simulated research storage denial",
   );
   await expect(
-    page.getByRole("button", { name: "Remove offline copy", exact: true }),
+    actions.getByRole("button", { name: "Remove offline copy", exact: true }),
   ).toHaveCount(0);
   await Promise.all([owner.close(), member.close()]);
 });
@@ -432,13 +451,15 @@ test("reconnecting removes revoked offline papers while retaining unsynced annot
   await page
     .getByRole("button", { name: "quantum-paper.pdf", exact: false })
     .click();
-  await expect(page.locator(".textLayer")).toContainText(
-    "Quantum research paper",
-  );
-  await page.getByRole("button", { name: "Keep offline", exact: true }).click();
+  await expect(paperText(page)).toContainText("Quantum research paper");
+  const actions = await readerActions(page);
+  await actions
+    .getByRole("button", { name: "Keep offline", exact: true })
+    .click();
   await expect(
-    page.getByRole("button", { name: "Remove offline copy", exact: true }),
+    actions.getByRole("button", { name: "Remove offline copy", exact: true }),
   ).toBeVisible();
+  await closeReaderActions(page);
   await member.setOffline(true);
   await page.getByRole("button", { name: "Page note", exact: true }).click();
   await page
@@ -460,7 +481,7 @@ test("reconnecting removes revoked offline papers while retaining unsynced annot
       page.evaluate(async (user) => {
         return await new Promise<{ papers: number; pending: number }>(
           (resolve, reject) => {
-            const request = indexedDB.open(`axiom:${user}:research-v1`, 1);
+            const request = indexedDB.open(`axiom:${user}:research-v1`);
             request.onerror = () => reject(request.error);
             request.onsuccess = () => {
               const db = request.result,
@@ -497,10 +518,8 @@ test("PDF text, search, rotated highlights, private sharing and references work 
     .getByRole("button", { name: "quantum-paper.pdf", exact: false })
     .click();
   await expect(page.locator(".pdf-toolbar")).toContainText("1 / 2");
-  await expect(page.locator(".textLayer")).toContainText(
-    "Quantum research paper",
-  );
-  await page.locator(".textLayer").evaluate((el) => {
+  await expect(paperText(page)).toContainText("Quantum research paper");
+  await paperText(page).evaluate((el) => {
     const span = [...el.querySelectorAll("span")].find((s) =>
       s.textContent?.includes("selected finding"),
     )!;
@@ -511,6 +530,15 @@ test("PDF text, search, rotated highlights, private sharing and references work 
     selection.addRange(range);
     el.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
   });
+  await expect(
+    page.getByRole("toolbar", { name: "Selected text actions" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("region", { name: "Annotation editor" }),
+  ).toHaveCount(0);
+  await page
+    .getByRole("button", { name: "Add note to selected PDF text", exact: true })
+    .click();
   await expect(
     page.getByRole("region", { name: "Annotation editor" }),
   ).toBeVisible();
@@ -533,6 +561,16 @@ test("PDF text, search, rotated highlights, private sharing and references work 
   await page
     .getByRole("button", { name: "Share with readers", exact: true })
     .click();
+  const sharing = page.getByRole("dialog", {
+    name: "Share annotation?",
+    exact: true,
+  });
+  await expect(sharing).toBeVisible();
+  expect(
+    await api(owner.request, `attachments/${file.id}/annotations`),
+  ).toEqual([]);
+  await sharing.getByRole("button", { name: "Share", exact: true }).click();
+  await expect(sharing).toHaveCount(0);
   await expect
     .poll(
       async () =>
@@ -543,8 +581,16 @@ test("PDF text, search, rotated highlights, private sharing and references work 
     .getByRole("button", { name: "Close paper panel", exact: true })
     .click();
   await expect(page.locator(".pdf-highlight")).toHaveCount(1);
-  await page.getByRole("button", { name: "Rotate PDF clockwise" }).click();
+  await (
+    await readerActions(page)
+  )
+    .getByRole("button", { name: "Rotate PDF clockwise", exact: true })
+    .click();
+  await closeReaderActions(page);
   await expect(page.locator(".pdf-highlight")).toHaveCount(1);
+  await page
+    .getByRole("button", { name: "Find in paper", exact: true })
+    .click();
   await page
     .getByLabel("Search PDF text", { exact: true })
     .fill("reproducible");
@@ -552,9 +598,12 @@ test("PDF text, search, rotated highlights, private sharing and references work 
   await page.getByRole("button", { name: /Page 2.*reproducible/ }).click();
   await expect(page.locator(".pdf-toolbar")).toContainText("2 / 2");
   await page.getByRole("button", { name: "Bookmark", exact: true }).click();
-  await page
+  await (
+    await readerActions(page)
+  )
     .getByRole("button", { name: "Link this page", exact: true })
     .click();
+  await closeReaderActions(page);
   await page.getByRole("button", { name: "Source", exact: true }).click();
   await expect(page.getByTestId("note-editor")).toContainText("#page=2");
   const ref = await api(member.request, "references", {
@@ -573,11 +622,11 @@ test("PDF text, search, rotated highlights, private sharing and references work 
   expect(refs.find((r: any) => r.id === ref.id).linked_papers[0].id).toBe(
     file.id,
   );
-  await expect(page.locator(".paper-page")).toHaveAttribute(
+  await expect(page.locator('[data-pdf-page="2"] .paper-page')).toHaveAttribute(
     "data-rendered",
     "true",
   );
-  await expect(page.locator(".textLayer")).toContainText("Second page");
+  await expect(paperText(page, 2)).toContainText("Second page");
   await page.screenshot({
     path: "test-results/research-reading-workspace.png",
     fullPage: true,
@@ -714,6 +763,7 @@ test("reference editing preserves citation keys and uncommon BibTeX fields", asy
   browser,
 }) => {
   const { owner, member, group, note } = await lab(browser);
+  const { space } = await api(member.request, `notes/${note.id}/context`);
   await api(
     member.request,
     `references?groupId=${group.id}`,
@@ -755,8 +805,12 @@ test("reference editing preserves citation keys and uncommon BibTeX fields", asy
   await expect
     .poll(
       async () =>
-        (await api(member.request, `me/reading?groupId=${group.id}`)).filter(
-          (r: any) => r.kind === "reading",
+        (await api(member.request, `me/reading?groupId=${space.id}`)).filter(
+          (r: any) =>
+            r.kind === "reading" &&
+            r.target_id === ref.id &&
+            r.group_id === space.id &&
+            r.data.status === "reading",
         ).length,
     )
     .toBe(1);
@@ -764,10 +818,20 @@ test("reference editing preserves citation keys and uncommon BibTeX fields", asy
   await expect(page.locator(".reference-card")).toHaveCount(0);
   await page.getByLabel("Filter reading status").selectOption("reading");
   await expect(page.locator(".reference-card")).toHaveCount(1);
-  page.once("dialog", (dialog) => void dialog.accept("Currently reading"));
   await page
     .getByRole("button", { name: "Save current filter", exact: true })
     .click();
+  const savedFilter = page.getByRole("dialog", {
+    name: "Save library filter",
+    exact: true,
+  });
+  await savedFilter
+    .getByRole("textbox", { name: "Name", exact: true })
+    .fill("Currently reading");
+  await savedFilter
+    .getByRole("button", { name: "Save filter", exact: true })
+    .click();
+  await expect(savedFilter).toHaveCount(0);
   await expect(
     page.getByRole("button", { name: "Currently reading", exact: true }),
   ).toBeVisible();
@@ -781,7 +845,7 @@ test("reference editing preserves citation keys and uncommon BibTeX fields", asy
 test("saved heading links open the actual section in read and source modes", async ({
   browser,
 }) => {
-  const { owner, member, note } = await lab(browser),
+  const { owner, member, group, note } = await lab(browser),
     page = await open(member, note.id);
   await page.goto(`/?note=${note.id}#target-section`);
   await expect(page.getByTestId("note-editor")).toBeVisible();
@@ -800,6 +864,23 @@ test("saved heading links open the actual section in read and source modes", asy
   await page
     .getByRole("button", { name: "Bookmark this note section" })
     .click();
+  const resolved = await api(member.request, `notes/${note.id}`);
+  expect(resolved.space_id).not.toBe(group.id);
+  // A local bookmark must remain visible and reach the authoritative workspace,
+  // rather than disappearing after legacy group-context migration.
+  await expect
+    .poll(async () =>
+      (await api(member.request, `me/reading?groupId=${resolved.space_id}`))
+        .filter(
+          (item: any) =>
+            item.kind === "bookmark" &&
+            item.target_id === note.id &&
+            item.data.heading === "target-section" &&
+            !item.deleted,
+        )
+        .map((item: any) => item.group_id),
+    )
+    .toEqual([resolved.space_id]);
   await page
     .getByRole("button", { name: "Appearance settings", exact: true })
     .click();
@@ -883,18 +964,18 @@ test("opt-in PDF and private annotations survive an offline reload and sign-out 
   await page
     .getByRole("button", { name: "quantum-paper.pdf", exact: false })
     .click();
-  await expect(page.locator(".textLayer")).toContainText(
-    "Quantum research paper",
-  );
-  await page.getByRole("button", { name: "Keep offline", exact: true }).click();
+  await expect(paperText(page)).toContainText("Quantum research paper");
+  const actions = await readerActions(page);
+  await actions
+    .getByRole("button", { name: "Keep offline", exact: true })
+    .click();
   await expect(
-    page.getByRole("button", { name: "Remove offline copy", exact: true }),
+    actions.getByRole("button", { name: "Remove offline copy", exact: true }),
   ).toBeVisible();
+  await closeReaderActions(page);
   await member.setOffline(true);
   await page.reload();
-  await expect(page.locator(".textLayer")).toContainText(
-    "Quantum research paper",
-  );
+  await expect(paperText(page)).toContainText("Quantum research paper");
   await page.getByRole("button", { name: "Page note", exact: true }).click();
   await page
     .getByLabel("Annotation note", { exact: true })
@@ -906,10 +987,8 @@ test("opt-in PDF and private annotations survive an offline reload and sign-out 
     "Offline annotation survives.",
   );
   await page.reload();
-  await expect(page.locator(".textLayer")).toContainText(
-    "Quantum research paper",
-  );
-  await page.getByRole("button", { name: /1 annotations/ }).click();
+  await expect(paperText(page)).toContainText("Quantum research paper");
+  await page.getByRole("button", { name: "Annotations", exact: true }).click();
   await expect(page.locator(".annotation-card")).toContainText(
     "Offline annotation survives.",
   );
@@ -923,9 +1002,7 @@ test("opt-in PDF and private annotations survive an offline reload and sign-out 
     .toBe(1);
   const other = await member.newPage();
   await other.goto(`/?note=${note.id}&paper=${file.id}`);
-  await expect(other.locator(".textLayer")).toContainText(
-    "Quantum research paper",
-  );
+  await expect(paperText(other)).toContainText("Quantum research paper");
   await member.setOffline(true);
   await page
     .getByRole("button", { name: "Appearance settings", exact: true })

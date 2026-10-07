@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   pdfPageLayout,
   pdfPageAtOffset,
@@ -8,6 +8,7 @@ import {
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import type { PageViewport } from "pdfjs-dist/types/src/display/page_viewport";
 import type { Annotation, AnnotationData } from "@axiom/shared/research";
+import { overlappingPdfSpans } from "../../lib/pdf-search-cache";
 import { annotationSegments } from "@axiom/shared/pdf-annotations";
 import PdfDrawingLayer, {
   type PdfDrawingTool,
@@ -215,7 +216,7 @@ export default function PdfPages(props: Props) {
     observer.observe(node);
     return () => observer.disconnect();
   }, []);
-  useEffect(() => {
+  useLayoutEffect(() => {
     cancelAnimationFrame(layoutFrame.current);
     layoutFrame.current = 0;
     pendingJump.current = { page: props.page, offset: props.resumeOffset ?? 0 };
@@ -237,9 +238,12 @@ export default function PdfPages(props: Props) {
     let frame = 0;
     const scroll = () => {
       if (frame) return;
+      const jump = current.current.jump;
       frame = requestAnimationFrame(() => {
         frame = 0;
-        if (pendingJump.current) return;
+        // A queued observation belongs to the old viewport. An explicit page
+        // command wins even when it commits before this frame is delivered.
+        if (pendingJump.current || jump !== current.current.jump) return;
         current.current.onScrollFraction?.(
           node.scrollTop / Math.max(1, node.scrollHeight - node.clientHeight),
         );
@@ -453,6 +457,10 @@ function Page(
   const textSpans = useRef<
     { element: HTMLElement; start: number; text: string }[]
   >([]);
+  const matchGeometry = useRef<{
+    key: string;
+    rects: { rect: PdfRect; start: number }[];
+  } | null>(null);
   const [searchRects, setSearchRects] = useState<
     { rect: PdfRect; active: boolean }[]
   >([]);
@@ -597,40 +605,57 @@ function Page(
   }, [props.pdf, props.page, props.rotation, props.active, scale]);
   useEffect(() => {
     if (!root.current || !props.active) return;
-    const text = textSpans.current.map((s) => s.text).join(" ");
-    const matches = pdfTextMatches(
-      text,
-      props.query,
+    const box = root.current.getBoundingClientRect();
+    const key = JSON.stringify([
+      renderRevision,
       props.page,
+      props.query,
       props.matchCase,
       props.wholeWord,
-    );
-    const box = root.current.getBoundingClientRect();
-    const rects: { rect: PdfRect; active: boolean }[] = [];
-    for (const match of matches) {
-      const active =
-        props.activeHit?.page === props.page &&
-        props.activeHit.start === match.start;
-      for (const span of textSpans.current) {
-        const start = Math.max(0, match.start - span.start),
-          end = Math.min(span.text.length, match.end - span.start);
-        if (
-          end <= start ||
-          !span.element.firstChild ||
-          !span.element.isConnected
-        )
-          continue;
-        const range = document.createRange();
-        range.setStart(span.element.firstChild, start);
-        range.setEnd(span.element.firstChild, end);
-        for (const r of range.getClientRects())
-          if (r.width && r.height)
-            rects.push({
-              rect: [r.left - box.left, r.top - box.top, r.width, r.height],
-              active,
-            });
+    ]);
+    if (matchGeometry.current?.key !== key) {
+      const text = textSpans.current.map((s) => s.text).join(" ");
+      const matches = pdfTextMatches(
+        text,
+        props.query,
+        props.page,
+        props.matchCase,
+        props.wholeWord,
+      );
+      const rects: { rect: PdfRect; start: number }[] = [];
+      for (const match of matches) {
+        for (const span of overlappingPdfSpans(
+          textSpans.current,
+          match.start,
+          match.end,
+        )) {
+          const start = Math.max(0, match.start - span.start),
+            end = Math.min(span.text.length, match.end - span.start);
+          if (
+            end <= start ||
+            !span.element.firstChild ||
+            !span.element.isConnected
+          )
+            continue;
+          const range = document.createRange();
+          range.setStart(span.element.firstChild, start);
+          range.setEnd(span.element.firstChild, end);
+          for (const r of range.getClientRects())
+            if (r.width && r.height)
+              rects.push({
+                rect: [r.left - box.left, r.top - box.top, r.width, r.height],
+                start: match.start,
+              });
+        }
       }
+      matchGeometry.current = { key, rects };
     }
+    const rects = matchGeometry.current.rects.map((item) => ({
+      rect: item.rect,
+      active:
+        props.activeHit?.page === props.page &&
+        props.activeHit.start === item.start,
+    }));
     setSearchRects(rects);
     const target = rects.find((r) => r.active),
       scroller = props.container.current;

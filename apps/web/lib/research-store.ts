@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api, ApiError, errorMessage, SIGN_OUT_PENDING } from "./client";
 import {
   readingInputSchema,
@@ -46,7 +46,30 @@ export type ResearchEntry = {
   conflict?: ReadingItem | Annotation | null;
 };
 export type StoredResearch = CachedPaper | ResearchEntry;
+type PaperPayload = Pick<CachedPaper, "key" | "bytes" | "blob">;
+const STORAGE_VERSION = 2;
+const PAYLOADS = "paper-bytes";
 const dbName = (user: string) => `axiom:${user}:research-v1`;
+/** Keep binary structured clones out of routine reading state and sync reads. */
+function splitPaper(paper: CachedPaper): [CachedPaper, PaperPayload] {
+  const { bytes, blob, ...summary } = paper;
+  return [summary, { key: paper.key, bytes, blob }];
+}
+function putEntry(
+  items: IDBObjectStore,
+  payloads: IDBObjectStore,
+  entry: StoredResearch,
+) {
+  if (entry.kind !== "pdf") {
+    items.put(entry);
+    return;
+  }
+  const [summary, payload] = splitPaper(entry);
+  items.put(summary);
+  // A metadata-only update must not erase a previously pinned binary.
+  if (payload.bytes !== undefined || payload.blob !== undefined)
+    payloads.put(payload);
+}
 function assertAccount(user: string) {
   let id: string | undefined;
   try {
@@ -70,24 +93,74 @@ function changed(user: string) {
 export async function researchStorage<T>(
   user: string,
   mode: IDBTransactionMode,
-  operation: (store: IDBObjectStore, result: (value: T) => void) => void,
+  operation: (
+    store: IDBObjectStore,
+    result: (value: T) => void,
+    payloads: IDBObjectStore,
+  ) => void,
 ): Promise<T> {
   assertAccount(user);
   return new Promise<T>((resolve, reject) => {
-    const request = indexedDB.open(dbName(user), 1);
-    request.onupgradeneeded = () =>
-      request.result.createObjectStore("items", { keyPath: "key" });
+    let abandoned = false;
+    const request = indexedDB.open(dbName(user), STORAGE_VERSION);
+    request.onupgradeneeded = () => {
+      const tx = request.transaction!;
+      if (abandoned) {
+        tx.abort();
+        return;
+      }
+      const db = request.result;
+      const items = db.objectStoreNames.contains("items")
+        ? tx.objectStore("items")
+        : db.createObjectStore("items", { keyPath: "key" });
+      if (!items.indexNames.contains("kind")) items.createIndex("kind", "kind");
+      if (!items.indexNames.contains("kindGroup"))
+        items.createIndex("kindGroup", ["kind", "groupId"]);
+      const payloads = db.objectStoreNames.contains(PAYLOADS)
+        ? tx.objectStore(PAYLOADS)
+        : db.createObjectStore(PAYLOADS, { keyPath: "key" });
+      // Cursor requests keep the atomic version transaction alive. A quota,
+      // clone or cursor failure aborts both stores and preserves version 1.
+      items.openCursor().onsuccess = (event) => {
+        const cursor = (event.target as IDBRequest<IDBCursorWithValue | null>)
+          .result;
+        if (!cursor) return;
+        try {
+          const value = cursor.value as StoredResearch;
+          if (value.kind === "pdf") {
+            const [summary, payload] = splitPaper(value);
+            if (payload.bytes !== undefined || payload.blob !== undefined)
+              payloads.put(payload);
+            cursor.update(summary);
+          }
+          cursor.continue();
+        } catch {
+          tx.abort();
+        }
+      };
+    };
     request.onerror = () => reject(request.error);
-    request.onblocked = () =>
-      reject(new Error("Research storage is blocked by another tab."));
+    request.onblocked = () => {
+      abandoned = true;
+      reject(
+        new Error(
+          "Close other Axiom tabs, then retry upgrading research storage. Your pinned papers and drafts are retained.",
+        ),
+      );
+    };
     request.onsuccess = () => {
       const db = request.result;
+      if (abandoned) {
+        db.close();
+        return;
+      }
       db.onversionchange = () => db.close();
       let value: T;
+      let tx: IDBTransaction | undefined;
       try {
         assertAccount(user);
-        const tx = db.transaction(
-          "items",
+        tx = db.transaction(
+          ["items", PAYLOADS],
           mode,
           mode === "readwrite" ? { durability: "strict" } : undefined,
         );
@@ -103,44 +176,143 @@ export async function researchStorage<T>(
         };
         tx.onabort = () => {
           db.close();
-          reject(tx.error ?? new Error("Research storage was not saved."));
+          reject(
+            tx!.error ??
+              new Error(
+                "Research storage was not saved. Your existing data is retained.",
+              ),
+          );
         };
-        operation(tx.objectStore("items"), (result) => {
-          value = result;
-        });
+        operation(
+          tx.objectStore("items"),
+          (result) => {
+            value = result;
+          },
+          tx.objectStore(PAYLOADS),
+        );
       } catch (e) {
+        tx?.abort();
         db.close();
         reject(e);
       }
     };
   });
 }
-export const allResearch = (user: string) =>
+/** Routine metadata-only snapshot. Never retrieves a pinned-paper payload. */
+export const researchSummaries = (user: string) =>
   researchStorage<StoredResearch[]>(user, "readonly", (s, done) => {
     s.getAll().onsuccess = (e) => done((e.target as IDBRequest).result);
   });
+export const researchEntries = (
+  user: string,
+  kind?: ResearchEntry["kind"],
+  groupId?: string,
+) =>
+  researchStorage<ResearchEntry[]>(user, "readonly", (s, done) => {
+    const kinds = kind ? [kind] : ["annotation", "reading"];
+    let pending = kinds.length;
+    const entries: ResearchEntry[] = [];
+    for (const type of kinds) {
+      const read =
+        groupId === undefined
+          ? s.index("kind").getAll(type)
+          : s.index("kindGroup").getAll([type, groupId]);
+      read.onsuccess = (event) => {
+        entries.push(...(event.target as IDBRequest<ResearchEntry[]>).result);
+        if (--pending === 0)
+          done(
+            entries.sort((a, b) =>
+              a.key < b.key ? -1 : a.key > b.key ? 1 : 0,
+            ),
+          );
+      };
+    }
+  });
+/** Full legacy-shaped records are assembled only for explicit backup/export. */
+export const allResearch = (user: string) =>
+  researchStorage<StoredResearch[]>(user, "readonly", (s, done, payloads) => {
+    let items: StoredResearch[] | undefined;
+    let binaries: PaperPayload[] | undefined;
+    const complete = () => {
+      if (!items || !binaries) return;
+      const byKey = new Map(binaries.map((p) => [p.key, p]));
+      done(
+        items.map((item) =>
+          item.kind === "pdf" ? { ...item, ...byKey.get(item.key) } : item,
+        ),
+      );
+    };
+    s.getAll().onsuccess = (event) => {
+      items = (event.target as IDBRequest<StoredResearch[]>).result;
+      complete();
+    };
+    payloads.getAll().onsuccess = (event) => {
+      binaries = (event.target as IDBRequest<PaperPayload[]>).result;
+      complete();
+    };
+  });
+/** Read only the chosen binary, in the same transaction as its metadata. */
+export const cachedPaper = (user: string, id: string) =>
+  researchStorage<CachedPaper | undefined>(
+    user,
+    "readonly",
+    (s, done, payloads) => {
+      s.get(`pdf:${id}`).onsuccess = (event) => {
+        const item = (event.target as IDBRequest<StoredResearch | undefined>)
+          .result;
+        if (!item || item.kind !== "pdf") {
+          done(undefined);
+          return;
+        }
+        payloads.get(item.key).onsuccess = (payloadEvent) =>
+          done({
+            ...item,
+            ...(payloadEvent.target as IDBRequest<PaperPayload | undefined>)
+              .result,
+          });
+      };
+    },
+  );
 export const storeResearch = (user: string, value: StoredResearch) =>
-  researchStorage<void>(user, "readwrite", (s) => {
-    s.put(value);
+  researchStorage<void>(user, "readwrite", (s, _done, payloads) => {
+    putEntry(s, payloads, value);
   });
 export const removeResearch = (user: string, key: string) =>
-  researchStorage<void>(user, "readwrite", (s) => {
+  researchStorage<void>(user, "readwrite", (s, _done, payloads) => {
     s.delete(key);
+    payloads.delete(key);
   });
 export const updateResearch = (
   user: string,
   key: string,
   fn: (entry: StoredResearch | undefined) => StoredResearch | undefined,
 ) =>
-  researchStorage<void>(user, "readwrite", (s) => {
+  researchStorage<void>(user, "readwrite", (s, _done, payloads) => {
     s.get(key).onsuccess = (e) => {
-      const next = fn((e.target as IDBRequest).result);
-      if (next) s.put(next);
-      else s.delete(key);
+      const old = (e.target as IDBRequest<StoredResearch | undefined>).result;
+      const apply = (entry: StoredResearch | undefined) => {
+        try {
+          const next = fn(entry);
+          if (next) putEntry(s, payloads, next);
+          else {
+            s.delete(key);
+            payloads.delete(key);
+          }
+        } catch {
+          s.transaction.abort();
+        }
+      };
+      if (old?.kind === "pdf")
+        payloads.get(key).onsuccess = (event) =>
+          apply({
+            ...old,
+            ...(event.target as IDBRequest<PaperPayload | undefined>).result,
+          });
+      else apply(old);
     };
   });
 async function revokeCachedPaper(user: string, id: string) {
-  await researchStorage<void>(user, "readwrite", (s) => {
+  await researchStorage<void>(user, "readwrite", (s, _done, payloads) => {
     s.getAll().onsuccess = (e) => {
       for (const r of (e.target as IDBRequest<StoredResearch[]>).result)
         if (
@@ -148,8 +320,10 @@ async function revokeCachedPaper(user: string, id: string) {
           (r.kind === "annotation" &&
             (r.value as Annotation).attachment_id === id &&
             !r.pending)
-        )
+        ) {
           s.delete(r.key);
+          if (r.kind === "pdf") payloads.delete(r.key);
+        }
     };
   });
   window.dispatchEvent(
@@ -175,15 +349,10 @@ export async function openPaperSource(
 }> {
   assertAccount(user);
   // Do not materialize every pinned PDF just to open one paper.
-  const stored = await researchStorage<StoredResearch | undefined>(
-    user,
-    "readonly",
-    (s, done) => {
-      s.get(`pdf:${id}`).onsuccess = (event) =>
-        done((event.target as IDBRequest<StoredResearch | undefined>).result);
-    },
-  ).catch(() => undefined);
-  const cached = stored?.kind === "pdf" ? stored : undefined;
+  const cached = await cachedPaper(user, id).catch(() => {
+    assertAccount(user);
+    return undefined;
+  });
   try {
     const meta = await api<PaperMeta>(`attachments/${id}/meta`);
     assertAccount(user);
@@ -219,13 +388,10 @@ export async function loadPaper(
 ): Promise<{ meta: PaperMeta; bytes: Uint8Array; pinned: boolean }> {
   assertAccount(user);
   // Online viewing must remain available when local storage is denied.
-  const stored: StoredResearch[] = await allResearch(user).catch(() => {
+  const cached = await cachedPaper(user, id).catch(() => {
     assertAccount(user);
-    return [];
+    return undefined;
   });
-  const cached = stored.find(
-    (r): r is CachedPaper => r.kind === "pdf" && r.meta.id === id,
-  );
   try {
     const meta = await api<PaperMeta>(`attachments/${id}/meta`);
     assertAccount(user);
@@ -299,12 +465,24 @@ export function useResearch(userId?: string, groupId?: string, enabled = true) {
   const watched = useRef<string | null>(null),
     watchedPapers = useRef(new Map<string, number>()),
     active = useRef(false),
+    refreshGeneration = useRef(0),
     syncRef = useRef<() => Promise<void>>(async () => {});
+  const scope = useMemo(
+      () => ({ userId, groupId, enabled }),
+      [userId, groupId, enabled],
+    ),
+    currentScope = useRef(scope);
+  currentScope.current = scope;
   const refresh = useCallback(async () => {
-    if (!userId || !active.current) return;
+    const generation = refreshGeneration.current,
+      current = () =>
+        active.current &&
+        scope === currentScope.current &&
+        generation === refreshGeneration.current;
+    if (!userId || !current()) return;
     try {
-      const all = await allResearch(userId);
-      if (!active.current) return;
+      const all = await researchSummaries(userId);
+      if (!current()) return;
       setEntries(
         all.filter(
           (r): r is ResearchEntry => r.kind !== "pdf" && r.groupId === groupId,
@@ -312,11 +490,12 @@ export function useResearch(userId?: string, groupId?: string, enabled = true) {
       );
       setPapers(all.filter((r): r is CachedPaper => r.kind === "pdf"));
     } catch (e) {
-      if (active.current) setStatus((e as Error).message);
+      if (current()) setStatus((e as Error).message);
     }
-  }, [userId, groupId]);
+  }, [userId, groupId, scope]);
   useEffect(() => {
     if (!enabled) return;
+    const generation = ++refreshGeneration.current;
     active.current = true;
     let alive = true,
       busy = false,
@@ -339,12 +518,12 @@ export function useResearch(userId?: string, groupId?: string, enabled = true) {
     ) => {
       if (!valid()) return;
       await researchStorage<void>(userId!, "readwrite", (s) => {
-        s.getAll().onsuccess = (e) => {
-          const local = (e.target as IDBRequest<StoredResearch[]>).result;
+        s.index("kind").getAll(kind).onsuccess = (e) => {
+          const local = (e.target as IDBRequest<ResearchEntry[]>).result;
+          const byKey = new Map(local.map((entry) => [entry.key, entry]));
           for (const record of records) {
             const key = `${kind}:${record.id}`,
-              old = local.find((r) => r.key === key) as
-                ResearchEntry | undefined;
+              old = byKey.get(key);
             if (!old?.pending)
               s.put({
                 key,
@@ -374,7 +553,7 @@ export function useResearch(userId?: string, groupId?: string, enabled = true) {
       const running = () => valid() && !signal.aborted;
       busy = true;
       try {
-        let all = await allResearch(userId!);
+        let all = await researchSummaries(userId!);
         if (!running()) return;
         // Resolve identities on the server; never guess the destination from
         // the open workspace, or copy private pending edits into sibling spaces.
@@ -436,7 +615,7 @@ export function useResearch(userId?: string, groupId?: string, enabled = true) {
             });
           }
         }
-        if (legacy.length) all = await allResearch(userId!);
+        if (legacy.length) all = await researchSummaries(userId!);
         if (Date.now() - lastPaperCheck > 60000) {
           for (const paper of all.filter(
             (r): r is CachedPaper => r.kind === "pdf",
@@ -602,9 +781,10 @@ export function useResearch(userId?: string, groupId?: string, enabled = true) {
         }
         if (running()) {
           await refresh();
-          const pending = (await allResearch(userId!)).filter(
-            (r): r is ResearchEntry =>
-              r.kind !== "pdf" && r.groupId === groupId && r.pending,
+          const pending = (
+            await researchEntries(userId!, undefined, groupId)
+          ).filter(
+            (r): r is ResearchEntry => r.groupId === groupId && r.pending,
           );
           if (running())
             setStatus(
@@ -683,6 +863,7 @@ export function useResearch(userId?: string, groupId?: string, enabled = true) {
     return () => {
       alive = false;
       active.current = false;
+      if (refreshGeneration.current === generation) refreshGeneration.current++;
       controller.abort();
       channel?.close();
       clearInterval(timer);
@@ -705,7 +886,7 @@ export function useResearch(userId?: string, groupId?: string, enabled = true) {
       existing?: ReadingItem,
     ) => {
       if (!userId || !groupId) throw new Error("Sign in first.");
-      const all = await allResearch(userId);
+      const all = await researchEntries(userId, "reading");
       const old =
         ((
           all.find(

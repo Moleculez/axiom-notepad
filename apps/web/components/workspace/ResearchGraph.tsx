@@ -750,7 +750,7 @@ export default function ResearchGraph({
         <span className="tool-spacer" />
         <span className="muted">Drag to pan · ⌘/Ctrl + scroll to zoom</span>
         <details className="research-export-menu">
-          <summary>
+          <summary className="button ghost">
             <Download size={14} />
             Export
           </summary>

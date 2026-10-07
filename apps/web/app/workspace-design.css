@@ -106,36 +106,6 @@ body {
 .topbar-actions {
   gap: 8px;
 }
-.icon-button {
-  border-radius: var(--control-radius);
-  flex-shrink: 0;
-  min-width: 32px;
-  min-height: 32px;
-}
-.icon-button:hover {
-  background: var(--hover);
-  color: var(--text);
-}
-.button {
-  min-height: 38px;
-  border-radius: var(--control-radius);
-  letter-spacing: -0.01em;
-}
-.button svg,
-.icon-button svg {
-  flex-shrink: 0;
-  stroke-width: 1.7;
-}
-.button.secondary {
-  background: var(--paper);
-}
-.button.primary {
-  box-shadow: inset 0 1px 0 #ffffff25;
-}
-.button:active:not(:disabled),
-.icon-button:active:not(:disabled) {
-  opacity: 0.8;
-}
 .document-topline {
   padding: 10px 22px;
   min-height: 58px;
@@ -642,9 +612,6 @@ body {
   background: var(--paper);
   align-items: center;
   justify-content: flex-end;
-}
-.dialog-body .button {
-  white-space: normal;
 }
 .dialog[data-size="settings"] > .dialog-body {
   padding: 0;

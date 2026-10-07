@@ -77,11 +77,20 @@ import {
 } from "../../lib/tools/canvas-clipboard";
 import Dialog from "../Dialog";
 import { useCanvasHost } from "./CanvasHost";
+import CanvasCursors from "./CanvasCursors";
+import { LatestFrame, LatestThrottle } from "../../lib/latest-frame";
 
 const origin = "canvas-local";
 const sides: CanvasSide[] = ["top", "right", "bottom", "left"];
 const clamp = (n: number, a: number, b: number) => Math.min(b, Math.max(a, n));
 type Point = { x: number; y: number };
+type PointerSample = {
+  clientX: number;
+  clientY: number;
+  pointerId: number;
+  timeStamp: number;
+  capture?: boolean;
+};
 type View = Point & { zoom: number };
 type Drag = {
   pointer: number;
@@ -157,9 +166,7 @@ export function CanvasSurface({
     [picker, setPickerValue] = useState(false),
     [query, setQuery] = useState(""),
     [error, setError] = useState(""),
-    [peers, setPeers] = useState<
-      { id: number; name: string; color: string; x: number; y: number }[]
-    >([]);
+    [peerCount, setPeerCount] = useState(0);
   const setPanel = (value: typeof panel) => {
     if (!sandbox || value !== "discussion") setPanelValue(value);
   };
@@ -176,6 +183,37 @@ export function CanvasSurface({
     previewData = useRef(new Map<string, ResourceCardPreview>()),
     latest = useRef({ data, view, selection, readOnly: shared.readOnly });
   latest.current = { data, view, selection, readOnly: shared.readOnly };
+  const moveCurrent = useRef<(sample: PointerSample) => void>(() => {});
+  const pointerFrames = useMemo(
+    () =>
+      new LatestFrame<PointerSample>((sample) => moveCurrent.current(sample)),
+    [],
+  );
+  const previewGeometry = useRef<CanvasNode[] | null>(null);
+  const awarenessRef = useRef(shared.awareness);
+  awarenessRef.current = shared.awareness;
+  const presence = useMemo(
+    () =>
+      new LatestThrottle<Point>((point) =>
+        awarenessRef.current?.setLocalStateField("canvas", point),
+      ),
+    [],
+  );
+  const cancelGesture = useRef<() => void>(() => {});
+  useEffect(
+    () => () => {
+      pointerFrames.cancel();
+      presence.cancel();
+    },
+    [pointerFrames, presence],
+  );
+  useEffect(() => {
+    const awareness = shared.awareness;
+    return () => {
+      presence.cancel();
+      awareness?.setLocalStateField("canvas", null);
+    };
+  }, [shared.awareness, presence]);
   const ownsSizing = useCanvasSizing(
     shared.awareness,
     shared.readOnly,
@@ -215,10 +253,36 @@ export function CanvasSurface({
       controller.abort();
     };
   }, [picker, sandbox, query, host.resources, host.revision]);
-  const nodes = dragPreview ?? data.nodes,
-    selected = nodes.filter((n) => selection.includes(n.id)),
-    selectedEdge = data.edges.find((e) => selection.includes(e.id));
-  const nodeMap = new Map(nodes.map((n) => [n.id, n]));
+  const nodes = dragPreview ?? data.nodes;
+  const selectedIds = useMemo(() => new Set(selection), [selection]);
+  const selected = useMemo(
+    () => nodes.filter((node) => selectedIds.has(node.id)),
+    [nodes, selectedIds],
+  );
+  const selectedEdge = useMemo(
+    () => data.edges.find((edge) => selectedIds.has(edge.id)),
+    [data.edges, selectedIds],
+  );
+  const nodeMap = useMemo(
+    () => new Map(nodes.map((node) => [node.id, node])),
+    [nodes],
+  );
+  const edgeGeometry = useMemo(
+    () =>
+      data.edges.flatMap((edge) => {
+        const from = nodeMap.get(edge.fromNode),
+          to = nodeMap.get(edge.toNode);
+        return from && to
+          ? [
+              {
+                edge,
+                ...canvasEdgeGeometry(from, to, edge.fromSide, edge.toSide),
+              },
+            ]
+          : [];
+      }),
+    [data.edges, nodeMap],
+  );
   const viewport = {
     x: -view.x / view.zoom - 180 / view.zoom,
     y: -view.y / view.zoom - 180 / view.zoom,
@@ -229,7 +293,7 @@ export function CanvasSurface({
     (n) =>
       n.id === editing ||
       n.id === renaming ||
-      selection.includes(n.id) ||
+      selectedIds.has(n.id) ||
       intersectsCanvas(n, viewport),
   );
   const point = (client: Point, v = view) => {
@@ -353,40 +417,6 @@ export function CanvasSurface({
     };
   }, [shared.document]);
   useEffect(() => {
-    const awareness = shared.awareness;
-    if (!awareness) return;
-    const update = () =>
-      setPeers(
-        [...awareness.getStates()].flatMap(([id, state]) =>
-          id === awareness.clientID ||
-          !state.canvas ||
-          !Number.isFinite(state.canvas.x) ||
-          !Number.isFinite(state.canvas.y)
-            ? []
-            : [
-                {
-                  id,
-                  name: String(state.user?.name ?? "Collaborator").slice(
-                    0,
-                    100,
-                  ),
-                  color: /^#[\da-f]{6}$/i.test(state.user?.color)
-                    ? state.user.color
-                    : "#7080a0",
-                  x: state.canvas.x,
-                  y: state.canvas.y,
-                },
-              ],
-        ),
-      );
-    awareness.on("change", update);
-    update();
-    return () => {
-      awareness.setLocalStateField("canvas", null);
-      awareness.off("change", update);
-    };
-  }, [shared.awareness]);
-  useEffect(() => {
     const root = board.current;
     if (!root) return;
     const wheel = (e: WheelEvent) => {
@@ -413,12 +443,17 @@ export function CanvasSurface({
     const release = () => {
       spaceHeld.current = false;
     };
+    const blurred = () => {
+      release();
+      presence.cancel();
+      cancelGesture.current();
+    };
     window.addEventListener("keyup", release);
-    window.addEventListener("blur", release);
+    window.addEventListener("blur", blurred);
     return () => {
       root.removeEventListener("wheel", wheel);
       window.removeEventListener("keyup", release);
-      window.removeEventListener("blur", release);
+      window.removeEventListener("blur", blurred);
     };
   }, []);
   const center = () => {
@@ -892,6 +927,9 @@ export function CanvasSurface({
     else if (kind === "select" && !(e.shiftKey || e.metaKey || e.ctrlKey))
       setSelection([]);
     if (kind !== "move" || node?.id !== editing) setEditing(null);
+    pointerFrames.cancel();
+    presence.cancel();
+    previewGeometry.current = null;
     drag.current = {
       pointer: e.pointerId,
       kind,
@@ -910,19 +948,23 @@ export function CanvasSurface({
     if (kind === "connect" && node)
       setConnection({ from: node.id, side: side!, to: at });
   };
-  const move = (e: ReactPointerEvent) => {
+  const processMove = (e: PointerSample) => {
     const d = drag.current,
       p = point({ x: e.clientX, y: e.clientY });
     if (!d) {
-      if (shared.awareness && e.timeStamp % 3 < 1)
-        shared.awareness.setLocalStateField("canvas", p);
+      if (shared.awareness) presence.push(p);
       return;
     }
+    if (d.pointer !== e.pointerId) return;
     const dx = (e.clientX - d.start.x) / d.view.zoom,
       dy = (e.clientY - d.start.y) / d.view.zoom;
     d.moved ||= Math.hypot(e.clientX - d.start.x, e.clientY - d.start.y) > 4;
     if (!d.moved) return;
-    if (d.kind === "move" && !board.current?.hasPointerCapture(e.pointerId)) {
+    if (
+      d.kind === "move" &&
+      e.capture !== false &&
+      !board.current?.hasPointerCapture(e.pointerId)
+    ) {
       board.current?.setPointerCapture(e.pointerId);
       setEditing(null);
     }
@@ -932,36 +974,37 @@ export function CanvasSurface({
         x: d.view.x + e.clientX - d.start.x,
         y: d.view.y + e.clientY - d.start.y,
       });
-    if (d.kind === "move" || d.kind === "resize")
-      setDragPreview(
-        d.nodes.map((n) =>
-          !d.ids.includes(n.id) || n.locked
-            ? n
-            : d.kind === "move"
-              ? {
-                  ...n,
-                  x: clamp(
-                    snap
-                      ? Math.round((n.x + dx) / 24) * 24
-                      : Math.round(n.x + dx),
-                    -1e6,
-                    1e6,
-                  ),
-                  y: clamp(
-                    snap
-                      ? Math.round((n.y + dy) / 24) * 24
-                      : Math.round(n.y + dy),
-                    -1e6,
-                    1e6,
-                  ),
-                }
-              : {
-                  ...n,
-                  width: clamp(Math.round(n.width + dx), 100, 20000),
-                  height: clamp(Math.round(n.height + dy), 70, 20000),
-                },
-        ),
+    if (d.kind === "move" || d.kind === "resize") {
+      const selected = new Set(d.ids);
+      previewGeometry.current = d.nodes.map((n) =>
+        !selected.has(n.id) || n.locked
+          ? n
+          : d.kind === "move"
+            ? {
+                ...n,
+                x: clamp(
+                  snap
+                    ? Math.round((n.x + dx) / 24) * 24
+                    : Math.round(n.x + dx),
+                  -1e6,
+                  1e6,
+                ),
+                y: clamp(
+                  snap
+                    ? Math.round((n.y + dy) / 24) * 24
+                    : Math.round(n.y + dy),
+                  -1e6,
+                  1e6,
+                ),
+              }
+            : {
+                ...n,
+                width: clamp(Math.round(n.width + dx), 100, 20000),
+                height: clamp(Math.round(n.height + dy), 70, 20000),
+              },
       );
+      setDragPreview(previewGeometry.current);
+    }
     if (d.kind === "connect") {
       const target = canvasConnectionTarget(
         latest.current.data.nodes,
@@ -1002,43 +1045,77 @@ export function CanvasSurface({
       ]);
     }
   };
+  moveCurrent.current = processMove;
+  const move = (event: ReactPointerEvent) => {
+    if (drag.current && drag.current.pointer !== event.pointerId) return;
+    pointerFrames.push({
+      clientX: event.clientX,
+      clientY: event.clientY,
+      pointerId: event.pointerId,
+      timeStamp: event.timeStamp,
+    });
+  };
   const finish = (e?: ReactPointerEvent, cancel = false) => {
+    if (e && drag.current && e.pointerId !== drag.current.pointer) return;
+    if (cancel) pointerFrames.cancel();
+    else
+      pointerFrames.flush(
+        e
+          ? {
+              clientX: e.clientX,
+              clientY: e.clientY,
+              pointerId: e.pointerId,
+              timeStamp: e.timeStamp,
+              // A released native pointer is no longer capture eligible. Its
+              // geometry still has to be consumed before the source transaction.
+              capture: false,
+            }
+          : undefined,
+      );
     const d = drag.current;
     if (!d) return;
+    const finalPreview = previewGeometry.current;
     if (
       !cancel &&
       d.moved &&
-      dragPreview &&
+      finalPreview &&
+      shared.document &&
+      !latest.current.readOnly &&
+      !parsed.error &&
       ["move", "resize"].includes(d.kind)
     ) {
       // Rebase geometry deltas onto the latest shared coordinates so concurrent
       // collaborators' changes to text and unrelated properties are untouched.
-      command(
-        d.ids.flatMap((id) => {
-          const before = d.nodes.find((n) => n.id === id),
-            preview = dragPreview.find((n) => n.id === id),
-            now = readCanvas(shared.document!).nodes.find((n) => n.id === id);
-          return before && preview && now && !now.locked
-            ? [
-                {
-                  type: "update-node" as const,
-                  id,
-                  changes:
-                    d.kind === "move"
-                      ? {
-                          x: now.x + preview.x - before.x,
-                          y: now.y + preview.y - before.y,
-                        }
-                      : {
-                          width: preview.width,
-                          height: preview.height,
-                          heightMode: "manual",
-                        },
-                },
-              ]
-            : [];
-        }),
+      const beforeNodes = new Map(d.nodes.map((node) => [node.id, node]));
+      const previews = new Map(finalPreview.map((node) => [node.id, node]));
+      const currentNodes = new Map(
+        readCanvas(shared.document).nodes.map((node) => [node.id, node]),
       );
+      const updates = d.ids.flatMap((id) => {
+        const before = beforeNodes.get(id),
+          preview = previews.get(id),
+          now = currentNodes.get(id);
+        return before && preview && now && !now.locked
+          ? [
+              {
+                type: "update-node" as const,
+                id,
+                changes:
+                  d.kind === "move"
+                    ? {
+                        x: now.x + preview.x - before.x,
+                        y: now.y + preview.y - before.y,
+                      }
+                    : {
+                        width: preview.width,
+                        height: preview.height,
+                        heightMode: "manual" as const,
+                      },
+              },
+            ]
+          : [];
+      });
+      if (updates.length) command(updates);
     }
     if (!cancel && e && d.kind === "connect") {
       const target = canvasConnectionTarget(
@@ -1069,13 +1146,15 @@ export function CanvasSurface({
       setView(d.view);
     }
     drag.current = null;
+    previewGeometry.current = null;
     setDragPreview(null);
     setRectangle(null);
     setConnection(null);
     if (board.current?.hasPointerCapture(d.pointer))
       board.current.releasePointerCapture(d.pointer);
   };
-  const bounds = canvasBounds(nodes),
+  cancelGesture.current = () => finish(undefined, true);
+  const bounds = useMemo(() => canvasBounds(nodes), [nodes]),
     miniScale = Math.min(180 / (bounds.width || 1), 110 / (bounds.height || 1));
   const importCanvas = async (file?: File) => {
     if (!file) return;
@@ -1454,16 +1533,7 @@ export function CanvasSurface({
                   <path d="M0 0 L8 4 L0 8" fill="context-stroke" />
                 </marker>
               </defs>
-              {data.edges.map((edge) => {
-                const from = nodeMap.get(edge.fromNode),
-                  to = nodeMap.get(edge.toNode);
-                if (!from || !to) return null;
-                const { d, label } = canvasEdgeGeometry(
-                  from,
-                  to,
-                  edge.fromSide,
-                  edge.toSide,
-                );
+              {edgeGeometry.map(({ edge, d, label }) => {
                 return (
                   <g
                     key={edge.id}
@@ -1678,16 +1748,10 @@ export function CanvasSurface({
                 }}
               />
             )}
-            {peers.map((p) => (
-              <div
-                key={p.id}
-                className="canvas-peer"
-                style={{ left: p.x, top: p.y, color: p.color }}
-              >
-                <MousePointer2 size={17} />
-                <span style={{ background: p.color }}>{p.name}</span>
-              </div>
-            ))}
+            <CanvasCursors
+              awareness={shared.awareness}
+              onCount={setPeerCount}
+            />
           </div>
           {!data.nodes.length && (
             <div className="canvas-empty">
@@ -2131,7 +2195,7 @@ export function CanvasSurface({
               : host.local
                 ? "Saved on this device"
                 : "Collaborative canvas"}
-          {peers.length ? ` · ${peers.length + 1} here` : ""}
+          {peerCount ? ` · ${peerCount + 1} here` : ""}
         </span>
       </footer>
       {exporting &&

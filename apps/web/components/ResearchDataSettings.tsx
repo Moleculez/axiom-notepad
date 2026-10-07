@@ -12,7 +12,7 @@ import {
 import { type ReadingItem } from "@axiom/shared/research";
 import type { Preferences } from "@axiom/shared/appearance";
 import {
-  allResearch,
+  researchEntries,
   removeResearch,
   type ResearchController,
   type CachedPaper,
@@ -169,7 +169,7 @@ export default function ResearchDataSettings({
             className="button secondary"
             onClick={() =>
               void work(async () => {
-                const all = await allResearch(userId);
+                const all = await researchEntries(userId);
                 download(
                   "axiom-personal-reading.json",
                   JSON.stringify(

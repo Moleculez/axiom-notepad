@@ -11,6 +11,7 @@ import { diagramSnapshot } from "./editor-vnext/diagrams";
 import { actionIcon } from "./icons/actions";
 import { openContextMenu, type ContextAction } from "./context-menu";
 import { markdownVisuals, openVisual, type VisualAsset } from "./visual-assets";
+import { visualLookup, visualPlacementKey } from "./visual-index";
 
 export type VisualContext = {
   resourceId: string;
@@ -241,14 +242,14 @@ export function installVisualSurface(
     Array.from(root.querySelectorAll<HTMLElement>("[data-visual-kind]")).filter(
       own,
     );
-  const assets = () =>
-    options.assets().map((item) => {
-      const element = elements().find(
-        (el) =>
-          el.dataset.visualId === item.id ||
-          (item.from !== undefined &&
-            Number(el.dataset.visualFrom) === item.from),
-      );
+  const elementIdentity = (el: HTMLElement) => ({
+    id: el.dataset.visualId,
+    from: Number(el.dataset.visualFrom),
+  });
+  const assets = () => {
+    const lookup = visualLookup(elements(), elementIdentity);
+    return options.assets().map((item) => {
+      const element = lookup(item);
       const snapshot = element && diagramSnapshot(element),
         img = element?.querySelector("img");
       return {
@@ -262,6 +263,7 @@ export function installVisualSurface(
           : {}),
       };
     });
+  };
   const find = (el: HTMLElement, items = assets()) =>
     items.find(
       (i) =>
@@ -322,10 +324,17 @@ export function installVisualSurface(
   const controls = () => {
     if (!alive) return;
     const items = options.assets();
+    const lookup = visualLookup(items, (item) => item);
+    const counts = new Map<string, number>();
+    for (const mark of marks)
+      if (!mark.deleted && !mark.parentId && !mark.resolved) {
+        const key = visualPlacementKey(mark.placement);
+        counts.set(key, (counts.get(key) ?? 0) + 1);
+      }
     const resource = items.find((i) => i.placement)?.placement?.resourceId;
     if (resource && resource !== loadedResource) load();
     for (const el of elements()) {
-      const item = find(el, items);
+      const item = lookup(elementIdentity(el));
       if (!item) continue;
       if (!el.hasAttribute("tabindex")) el.tabIndex = 0;
       let button = el.querySelector<HTMLButtonElement>(
@@ -341,14 +350,9 @@ export function installVisualSurface(
         button.append(actionIcon("focus"), document.createElement("span"));
         el.append(button);
       }
-      const count = marks.filter(
-        (m) =>
-          !m.deleted &&
-          !m.parentId &&
-          !m.resolved &&
-          item.placement &&
-          samePlacement(m.placement, item.placement),
-      ).length;
+      const count = item.placement
+        ? (counts.get(visualPlacementKey(item.placement)) ?? 0)
+        : 0;
       const label = count
         ? `View ${item.kind === "image" ? "image" : "diagram"} · ${count} annotations`
         : `View ${item.kind === "image" ? "image" : "diagram"} larger`;

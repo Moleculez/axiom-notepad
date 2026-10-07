@@ -1,8 +1,146 @@
 import ts from "typescript";
+import postcss from "postcss";
+import selectorParser from "postcss-selector-parser";
 
 export type UiDiagnostic = { file: string; line: number; message: string };
 /** This implementation necessarily owns native controls, not a page exception. */
 export const nativeControlOwner = "apps/web/components/ui/controls.tsx";
+const controlStylesOwner = "apps/web/app/ui-controls.css";
+const interfaceStylesOwner = "apps/web/app/interface-styles.css";
+
+/** Narrow cascade guard, not a complete visual audit. Page layout may place
+ * controls; their common drawing, typography and size have one native owner. */
+export function validateUiStyles(file: string, source: string): UiDiagnostic[] {
+  if ([controlStylesOwner, interfaceStylesOwner].includes(file)) return [];
+  const errors: UiDiagnostic[] = [];
+  const common = new Set([
+    "button",
+    "icon-button",
+    "ui-button",
+    "ui-icon-button",
+  ]);
+  const shells = new Set(["ws-app", "dialog", "showcase-app"]);
+  const drawing =
+    /^(?:display|align-items|justify-content|gap|(?:min-|max-)?(?:height|block-size)|padding(?:-.+)?|font(?:-.+)?|line-height|letter-spacing|white-space|overflow-wrap|border(?:-.+)?|background(?:-.+)?|box-shadow)$/;
+  try {
+    postcss.parse(source).walkRules((rule) => {
+      // The explicitly layered legacy foundation predates shared controls and
+      // loses to the canonical unlayered owner. Do not grant page exemptions.
+      let ancestor: postcss.Node | undefined = rule.parent;
+      let forcedColors = false;
+      while (ancestor) {
+        if (ancestor.type === "atrule") {
+          const atRule = ancestor as postcss.AtRule;
+          if (atRule.name === "layer" && atRule.params === "legacy") return;
+          if (
+            atRule.name === "media" &&
+            /forced-colors\s*:/.test(atRule.params)
+          )
+            forcedColors = true;
+        }
+        ancestor = ancestor.parent;
+      }
+      selectorParser((selectors) =>
+        selectors.each((selector) => {
+          let lastCombinator = -1;
+          selector.nodes.forEach((node, index) => {
+            if (node.type === "combinator") lastCombinator = index;
+          });
+          const targetNodes = selector.nodes.slice(lastCombinator + 1);
+          if (
+            targetNodes.some(
+              (node) => node.type === "pseudo" && node.value.startsWith("::"),
+            )
+          )
+            return;
+          const target = selectorParser().astSync(
+            targetNodes.map((node) => node.toString()).join(""),
+          );
+          let action = false;
+          let sharedAction = false;
+          const excluded = (node: selectorParser.Node) => {
+            let parent = node.parent;
+            while (parent) {
+              if (parent.type === "pseudo" && parent.value === ":not")
+                return true;
+              parent = parent.parent;
+            }
+            return false;
+          };
+          const scopes = new Set<string>();
+          const variants = new Set([
+            "primary",
+            "secondary",
+            "ghost",
+            "danger",
+            "small",
+            "active",
+            "selected",
+            "is-selected",
+          ]);
+          target.walkClasses((node) => {
+            if (excluded(node)) return;
+            if (common.has(node.value)) action = sharedAction = true;
+            else if (!variants.has(node.value)) scopes.add(node.value);
+          });
+          // Generic raw button resets also affect specialized application controls.
+          target.walkTags((node) => {
+            if (node.value === "button" && !excluded(node)) action = true;
+          });
+          if (!action) return;
+          for (const node of selector.nodes.slice(0, lastCombinator)) {
+            const scope = selectorParser().astSync(node.toString());
+            scope.walkClasses((entry) => {
+              if (!shells.has(entry.value)) scopes.add(entry.value);
+            });
+          }
+          const broad =
+            scopes.size === 0 ||
+            selector.nodes.slice(0, lastCombinator).some((node) => {
+              if (
+                node.type !== "pseudo" ||
+                ![":is", ":where"].includes(node.value)
+              )
+                return false;
+              const alternatives = new Set<string>();
+              node.walkClasses((entry) => {
+                alternatives.add(entry.value);
+              });
+              return alternatives.size > 1;
+            });
+          const functionalFocus = /:focus(?:-visible|-within)?/.test(
+            selector.toString(),
+          );
+          rule.walkDecls((declaration) => {
+            if (!drawing.test(declaration.prop)) return;
+            if (
+              (functionalFocus || forcedColors) &&
+              /^(?:border|background|box-shadow)/.test(declaration.prop)
+            )
+              return;
+            const fixedText =
+              sharedAction &&
+              /^(?:font|font-size)$/.test(declaration.prop) &&
+              /\b\d+(?:\.\d+)?px\b/.test(declaration.value);
+            if (!broad && !fixedText) return;
+            errors.push({
+              file,
+              line: declaration.source?.start?.line ?? 1,
+              message: `Shared action ${declaration.prop} must use ui-controls.css and semantic control tokens, not a general/page-fixed reset (${selector.toString()}).`,
+            });
+          });
+        }),
+      ).processSync(rule.selector);
+    });
+  } catch (error) {
+    errors.push({
+      file,
+      line: 1,
+      message: `Cannot inspect UI stylesheet: ${(error as Error).message}`,
+    });
+  }
+  return errors;
+}
 
 function strings(node: ts.Node | undefined): string[] {
   if (!node) return [];

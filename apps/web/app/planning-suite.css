@@ -22,10 +22,18 @@
 .planning-filters > .ui-select,
 .planning-suite-panel > header > .ui-select {
   --field-width: auto;
-  max-width: 190px;
+  flex: 0 1 auto;
+  max-inline-size: 100%;
+}
+.planning-filters > .ui-search-field.planning-search {
+  --field-width: auto;
+  flex: 1 1 14em;
+  min-inline-size: min(100%, 14em);
+  max-inline-size: none;
 }
 .planning-filters > .ui-picker {
-  width: 170px;
+  flex: 0 1 12em;
+  width: min(100%, 12em);
 }
 .planning-selection-bar {
   display: flex;
@@ -369,7 +377,7 @@
   display: grid;
   gap: 12px;
 }
-.planning-rule-clause {
+.planning-rule-clause.ui-actions {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 12em), 1fr));
   align-items: start;
@@ -377,8 +385,8 @@
   padding-block: 12px;
   border-bottom: 1px solid var(--line);
 }
-.planning-rule-clause > .icon-button {
-  justify-self: end;
+.planning-rule-clause > .ui-help {
+  grid-column: 1 / -1;
 }
 .planning-rule-clause .planning-custom-control {
   grid-column: 1 / -1;

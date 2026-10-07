@@ -5,7 +5,6 @@ import { Readable, Transform } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { createHash } from "node:crypto";
 import {
-  S3Client,
   GetObjectCommand,
   HeadObjectCommand,
   PutObjectCommand,
@@ -17,19 +16,13 @@ import {
 import { attachmentMime } from "./storage";
 import { detectPrefix, officeDirectoryType } from "./file-detection";
 import { Upload } from "@aws-sdk/lib-storage";
+import { withStorageS3Client } from "./storage-client";
 export const storageRoot = () =>
   resolve(
     /* turbopackIgnore: true */ process.env.STORAGE_PATH ??
       "./data/attachments",
   );
 const cloud = () => process.env.STORAGE_DRIVER === "s3";
-const s3 = () =>
-  new S3Client({
-    region: process.env.AWS_REGION,
-    ...(process.env.S3_ENDPOINT
-      ? { endpoint: process.env.S3_ENDPOINT, forcePathStyle: true }
-      : {}),
-  });
 const bucket = () => process.env.S3_BUCKET;
 function keyPath(key: string) {
   if (!/^[a-f0-9-]{36}$/.test(key))
@@ -46,15 +39,17 @@ export async function attachmentStream(
 ): Promise<Readable> {
   const file = keyPath(key);
   if (cloud()) {
-    const result = await s3().send(
-      new GetObjectCommand({
-        Bucket: bucket(),
-        Key: key,
-        ...(range ? { Range: `bytes=${range.start}-${range.end}` } : {}),
-      }),
-    );
-    if (!result.Body) throw new Error("Stored file unavailable.");
-    return result.Body as Readable;
+    return withStorageS3Client(async (client) => {
+      const result = await client.send(
+        new GetObjectCommand({
+          Bucket: bucket(),
+          Key: key,
+          ...(range ? { Range: `bytes=${range.start}-${range.end}` } : {}),
+        }),
+      );
+      if (!result.Body) throw new Error("Stored file unavailable.");
+      return result.Body as Readable;
+    });
   }
   await stat(/* turbopackIgnore: true */ file);
   return createReadStream(
@@ -79,15 +74,17 @@ export async function putAttachmentStream(
       IfNoneMatch: "*",
     };
     // Prepared ZIPs in a full backup may exceed S3's single-PUT limit.
-    if (bytes > 5_000_000_000)
-      await new Upload({
-        client: s3(),
-        params,
-        queueSize: 2,
-        partSize: 16 * 1024 * 1024,
-        leavePartsOnError: false,
-      }).done();
-    else await s3().send(new PutObjectCommand(params));
+    await withStorageS3Client(async (client) => {
+      if (bytes > 5_000_000_000)
+        await new Upload({
+          client,
+          params,
+          queueSize: 2,
+          partSize: 16 * 1024 * 1024,
+          leavePartsOnError: false,
+        }).done();
+      else await client.send(new PutObjectCommand(params));
+    });
   } else {
     await mkdir(storageRoot(), { recursive: true, mode: 0o700 });
     await pipeline(
@@ -119,27 +116,29 @@ export async function putGeneratedStream(
     },
   });
   if (cloud()) {
-    const upload = new Upload({
-      client: s3(),
-      params: {
-        Bucket: bucket(),
-        Key: key,
-        Body: digest,
-        ContentType: mime,
-        IfNoneMatch: "*",
-      },
-      queueSize: 2,
-      partSize: 16 * 1024 * 1024,
-      leavePartsOnError: false,
+    await withStorageS3Client(async (client) => {
+      const upload = new Upload({
+        client,
+        params: {
+          Bucket: bucket(),
+          Key: key,
+          Body: digest,
+          ContentType: mime,
+          IfNoneMatch: "*",
+        },
+        queueSize: 2,
+        partSize: 16 * 1024 * 1024,
+        leavePartsOnError: false,
+      });
+      try {
+        await Promise.all([pipeline(source, digest), upload.done()]);
+      } catch (error) {
+        source.destroy();
+        digest.destroy();
+        await upload.abort().catch(() => {});
+        throw error;
+      }
     });
-    try {
-      await Promise.all([pipeline(source, digest), upload.done()]);
-    } catch (error) {
-      source.destroy();
-      digest.destroy();
-      await upload.abort().catch(() => {});
-      throw error;
-    }
   } else {
     await mkdir(storageRoot(), { recursive: true, mode: 0o700 });
     try {
@@ -162,13 +161,15 @@ export async function startMultipart(key: string, uploadId: string) {
     await mkdir(staging(uploadId), { recursive: true, mode: 0o700 });
     return null;
   }
-  const result = await s3().send(
-    new CreateMultipartUploadCommand({
-      Bucket: bucket(),
-      Key: key,
-      ContentType: "application/octet-stream",
-      ChecksumAlgorithm: "SHA256",
-    }),
+  const result = await withStorageS3Client((client) =>
+    client.send(
+      new CreateMultipartUploadCommand({
+        Bucket: bucket(),
+        Key: key,
+        ContentType: "application/octet-stream",
+        ChecksumAlgorithm: "SHA256",
+      }),
+    ),
   );
   if (!result.UploadId)
     throw new Error("Could not initialize object storage upload.");
@@ -183,15 +184,17 @@ export async function storeChunk(
   if (!Number.isSafeInteger(part) || part < 1 || part > 120)
     throw new Error("Invalid upload part.");
   if (cloud()) {
-    const result = await s3().send(
-      new UploadPartCommand({
-        Bucket: bucket(),
-        Key: upload.storage_key,
-        UploadId: upload.multipart_id!,
-        PartNumber: part,
-        Body: data,
-        ChecksumSHA256: Buffer.from(sha256, "hex").toString("base64"),
-      }),
+    const result = await withStorageS3Client((client) =>
+      client.send(
+        new UploadPartCommand({
+          Bucket: bucket(),
+          Key: upload.storage_key,
+          UploadId: upload.multipart_id!,
+          PartNumber: part,
+          Body: data,
+          ChecksumSHA256: Buffer.from(sha256, "hex").toString("base64"),
+        }),
+      ),
     );
     return result.ETag ?? null;
   }
@@ -237,24 +240,28 @@ export async function completeMultipart(
   }
   if (cloud()) {
     try {
-      await s3().send(
-        new CompleteMultipartUploadCommand({
-          Bucket: bucket(),
-          Key: upload.storage_key,
-          UploadId: upload.multipart_id!,
-          MultipartUpload: {
-            Parts: chunks.map((c) => ({
-              PartNumber: c.part,
-              ETag: c.etag!,
-              ChecksumSHA256: Buffer.from(c.sha256, "hex").toString("base64"),
-            })),
-          },
-        }),
+      await withStorageS3Client((client) =>
+        client.send(
+          new CompleteMultipartUploadCommand({
+            Bucket: bucket(),
+            Key: upload.storage_key,
+            UploadId: upload.multipart_id!,
+            MultipartUpload: {
+              Parts: chunks.map((c) => ({
+                PartNumber: c.part,
+                ETag: c.etag!,
+                ChecksumSHA256: Buffer.from(c.sha256, "hex").toString("base64"),
+              })),
+            },
+          }),
+        ),
       );
     } catch (error) {
       if ((error as Error).name !== "NoSuchUpload") throw error;
-      const stored = await s3().send(
-        new HeadObjectCommand({ Bucket: bucket(), Key: upload.storage_key }),
+      const stored = await withStorageS3Client((client) =>
+        client.send(
+          new HeadObjectCommand({ Bucket: bucket(), Key: upload.storage_key }),
+        ),
       );
       if (stored.ContentLength !== Number(upload.bytes)) throw error;
     }
@@ -361,12 +368,14 @@ export async function clearUploadStaging(
   if (cloud()) {
     if (abort && upload.multipart_id) {
       try {
-        await s3().send(
-          new AbortMultipartUploadCommand({
-            Bucket: bucket(),
-            Key: upload.storage_key,
-            UploadId: upload.multipart_id,
-          }),
+        await withStorageS3Client((client) =>
+          client.send(
+            new AbortMultipartUploadCommand({
+              Bucket: bucket(),
+              Key: upload.storage_key,
+              UploadId: upload.multipart_id!,
+            }),
+          ),
         );
       } catch (error) {
         if ((error as Error).name !== "NoSuchUpload") throw error;

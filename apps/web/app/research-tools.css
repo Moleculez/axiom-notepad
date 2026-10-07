@@ -1580,10 +1580,6 @@
   margin-left: auto;
   font-size: 11px;
 }
-.image-inspector .button {
-  font-size: 11px;
-  min-height: 30px;
-}
 .image-transform-controls {
   display: flex;
   align-items: center;
@@ -1753,9 +1749,6 @@
 .resource-comment-actions {
   display: flex;
   gap: 8px;
-}
-.resource-comment-actions .button {
-  font-size: 11px;
 }
 .resource-discussion form {
   display: grid;

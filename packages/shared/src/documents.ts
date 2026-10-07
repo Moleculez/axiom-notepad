@@ -116,7 +116,6 @@ export async function indexNote(
 ) {
   const id = room.split(":")[0],
     generation = Number(room.split(":")[1]);
-  const parsed = parseMarkdown(source);
   const index = async (client: import("pg").PoolClient) => {
     const {
       rows: [previous],
@@ -125,13 +124,19 @@ export async function indexNote(
       [id, generation],
     );
     if (!previous) return;
+    // A canvas or raw document is not Markdown. Parse once per snapshot, and
+    // retain reindexing even for unchanged source after a workspace transfer.
+    const parsed =
+      previous.source_format === "markdown" ? parseMarkdown(source) : null;
+    const canvas =
+      previous.source_format === "canvas" ? parseCanvas(source) : null;
     const result = await client.query(
       "UPDATE notes SET updated_at=CASE WHEN body IS DISTINCT FROM $1 THEN now() ELSE updated_at END,body=$1,plain_text=$2 WHERE id=$3 AND generation=$4 RETURNING group_id",
       [
         source,
         previous.source_format === "canvas"
-          ? parseCanvas(source)
-              .nodes.map((n) =>
+          ? canvas!.nodes
+              .map((n) =>
                 [
                   canvasTitle(n),
                   ...(n.tags ?? []),
@@ -141,14 +146,14 @@ export async function indexNote(
               .join("\n")
           : previous.source_format !== "markdown"
             ? source
-            : plainText(parsed.ast),
+            : plainText(parsed!.ast),
         id,
         generation,
       ],
     );
     if (!result.rowCount) return;
     await client.query("DELETE FROM note_citations WHERE note_id=$1", [id]);
-    if (previous.source_format === "markdown" && parsed.citations.length)
+    if (parsed?.citations.length)
       await client.query(
         "INSERT INTO note_citations(note_id,cite_key) SELECT $1,unnest($2::text[]) ON CONFLICT DO NOTHING",
         [id, parsed.citations],
@@ -162,22 +167,42 @@ export async function indexNote(
         [id],
       );
     await client.query("DELETE FROM note_links WHERE source_id=$1", [id]);
-    for (const link of previous.source_format === "canvas"
-      ? parseCanvas(source)
-          .nodes.filter((n) => n.type === "file" && n.resourceId)
-          .map((n) => ({ target: String(n.resourceId) }))
-      : previous.source_format !== "markdown"
-        ? []
-        : parsed.links) {
-      if (/^(?:https?:|mailto:|\/|#)/.test(link.target)) continue;
-      const target = link.target.split("#")[0];
-      const { rows } = await client.query(
-        "SELECT n.id FROM notes n JOIN resources r ON r.note_id=n.id WHERE r.space_id=(SELECT space_id FROM resources WHERE note_id=$1) AND n.deleted_at IS NULL AND (n.id::text=$2 OR lower(n.title)=lower($2)) LIMIT 2",
-        [id, target],
+    const targets = [
+      ...new Set(
+        (canvas
+          ? canvas.nodes
+              .filter((n) => n.type === "file" && n.resourceId)
+              .map((n) => String(n.resourceId))
+          : (parsed?.links.map((link) => link.target) ?? [])
+        ).filter((target) => !/^(?:https?:|mailto:|\/|#)/.test(target)),
+      ),
+    ];
+    if (targets.length) {
+      // Limit each candidate set to two: UUID and title matches have always
+      // been equally valid, and an ambiguous target must remain unresolved.
+      const { rows: resolved } = await client.query<{
+        target: string;
+        target_id: string | null;
+      }>(
+        `SELECT input.target,CASE WHEN count(candidate.id)=1 THEN (array_agg(candidate.id))[1] END AS target_id
+         FROM unnest($2::text[]) input(target)
+         LEFT JOIN LATERAL (
+           SELECT n.id FROM notes n JOIN resources r ON r.note_id=n.id
+           WHERE r.space_id=(SELECT space_id FROM resources WHERE note_id=$1)
+             AND n.deleted_at IS NULL AND (n.id::text=input.target OR lower(n.title)=lower(input.target)) LIMIT 2
+         ) candidate ON true GROUP BY input.target`,
+        [id, [...new Set(targets.map((target) => target.split("#")[0]))]],
+      );
+      const byTarget = new Map(
+        resolved.map((row) => [row.target, row.target_id]),
       );
       await client.query(
-        "INSERT INTO note_links(source_id,target,target_id) VALUES($1,$2,$3) ON CONFLICT DO NOTHING",
-        [id, link.target, rows.length === 1 ? rows[0].id : null],
+        "INSERT INTO note_links(source_id,target,target_id) SELECT $1,input.target,input.target_id FROM unnest($2::text[],$3::uuid[]) input(target,target_id) ON CONFLICT DO NOTHING",
+        [
+          id,
+          targets,
+          targets.map((target) => byTarget.get(target.split("#")[0]) ?? null),
+        ],
       );
     }
     if (previous.body !== source)

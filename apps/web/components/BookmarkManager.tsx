@@ -22,7 +22,7 @@ import {
 import type { ReadingItem } from "@axiom/shared/research";
 import { markColors, exportReadingMarks } from "@axiom/shared/note-comments";
 import {
-  allResearch,
+  researchEntries,
   type ResearchController,
   type ResearchEntry,
 } from "../lib/research-store";
@@ -129,7 +129,7 @@ export default function BookmarkManager({
     }
   };
   const undo = async () => {
-    const latest = await allResearch(userId);
+    const latest = await researchEntries(userId, "reading");
     for (const entry of removed) {
       const value = entry.value as ReadingItem;
       const current = latest.find((r) => r.key === entry.key) as

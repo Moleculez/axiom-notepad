@@ -86,6 +86,17 @@ position its icon with page-local offsets. Layout uses wrapperClassName and
 `--field-width`; prominent search may adjust the shared text/height roles without
 redrawing the control. See the icon-field geometry checklist in UI controls.
 
+Mixed application toolbars opt into the shared ActionRow standard/compact sizing
+context; interface styles and palette packs must not override its height, field
+padding, clear-action inset or wrapping. Unsized groups retain their standalone
+control treatment and establish a separate context when nested. Keep contextual
+editor controls, native selectors and property-table inputs under their existing
+owners rather than applying one toolbar size everywhere. Read-only document
+fields remain transparent. The shared Interface specimen includes both mixed
+toolbar sizes; review their resolved edges and clear-action containment with
+large UI text, zero radius and no shadows. Scrollable page tabs retain an inset
+focus cue at clipped edges, including in forced colors; packs cannot erase it.
+
 Public website templates are a third, separate layer under `apps/publish/client`.
 They must work without the private app shell or preference stores, use only
 selected public resources and locally bundled licensed assets, and preserve

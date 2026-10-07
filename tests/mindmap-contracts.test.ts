@@ -80,7 +80,9 @@ describe("mind-map storage and file contracts", () => {
   });
   it("only appends an additive profile constraint migration", () => {
     expect(forwardMigrations.filter((m) => m.version === 49)).toHaveLength(1);
-    expect(forwardMigrations.at(-1)?.sql).toBe(mindmapMigration);
+    expect(forwardMigrations.find((m) => m.version === 49)?.sql).toBe(
+      mindmapMigration,
+    );
     expect(mindmapMigration).toContain("'mindmap'");
     expect(mindmapMigration).not.toMatch(
       /(?:UPDATE|DELETE\s+FROM|DROP\s+TABLE|TRUNCATE)\s/i,

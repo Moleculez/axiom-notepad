@@ -150,7 +150,7 @@ test("overscroll and malformed queued reading data never interrupt continued Mar
         const userId = JSON.parse(localStorage.getItem("axiom:session")!).user
           .id;
         const db = await new Promise<IDBDatabase>((done, fail) => {
-          const req = indexedDB.open(`axiom:${userId}:research-v1`, 1);
+          const req = indexedDB.open(`axiom:${userId}:research-v1`);
           req.onsuccess = () => done(req.result);
           req.onerror = () => fail(req.error);
         });

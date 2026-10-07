@@ -9,6 +9,145 @@ test.beforeAll(() => {
     throw new Error("Control acceptance requires isolated staging on 3004.");
 });
 
+test("instance checks cancel during native navigation and rapid focus/pageshow resume a fresh lifetime", async ({
+  browser,
+}, info) => {
+  test.setTimeout(120000);
+  const body = "# Navigation lifetime\n\nKeep this research unchanged.",
+    f = await fixture(browser, body),
+    consoleErrors: string[] = [],
+    routing: Promise<void>[] = [];
+  f.page.on("console", (message) => {
+    if (message.type() === "error") consoleErrors.push(message.text());
+  });
+  try {
+    await f.page.addInitScript(() => {
+      const key = "navigation-lifetime-evidence",
+        log = (value: Record<string, unknown>) => {
+          const records = JSON.parse(sessionStorage.getItem(key) ?? "[]");
+          records.push(value);
+          sessionStorage.setItem(key, JSON.stringify(records));
+        };
+      let phase = "active";
+      for (const type of ["beforeunload", "pagehide", "pageshow", "focus"]) {
+        window.addEventListener(type, () => {
+          if (type === "pagehide") phase = "leaving";
+          else if (type === "beforeunload") phase = "prepared";
+          else if (type === "pageshow" || phase !== "leaving") phase = "active";
+          log({ event: type, phase });
+        });
+      }
+      const native = window.fetch;
+      window.fetch = function (input, options) {
+        const url =
+          typeof input === "string"
+            ? input
+            : input instanceof URL
+              ? input.href
+              : input.url;
+        if (new URL(url, location.href).pathname === "/api/v1/instance") {
+          const signal =
+            options?.signal ?? (input instanceof Request ? input.signal : null);
+          log({ event: "instance", phase, abortedAtStart: !!signal?.aborted });
+          signal?.addEventListener(
+            "abort",
+            () => log({ event: "instance-aborted", phase }),
+            { once: true },
+          );
+        }
+        // Instrument only; the production response/rejection stays untouched.
+        return native.call(this, input, options);
+      };
+    });
+    await f.page.route("**/api/v1/instance", (route) => {
+      const work = (async () => {
+        // A slow real bootstrap response keeps the navigation race reproducible
+        // in WebKit. No console/page error or route rejection is suppressed.
+        await new Promise((resolve) => setTimeout(resolve, 150));
+        await route.continue();
+      })();
+      routing.push(work);
+      return work;
+    });
+    for (const path of [
+      "/workbench/settings/theme",
+      "/workbench/workspaces",
+      "/workbench/settings/general",
+    ]) {
+      const bootstrap = f.page.waitForRequest(
+        (request) => new URL(request.url()).pathname === "/api/v1/instance",
+      );
+      await f.page.goto(path, { waitUntil: "domcontentloaded" });
+      await bootstrap;
+      // Leave with the actual bootstrap request still outstanding. This is a
+      // full document navigation, not only a synthetic lifecycle unit test.
+    }
+    await expect(f.page.locator(".ws-app")).toBeVisible();
+    const count = () =>
+      f.page.evaluate(
+        () =>
+          JSON.parse(
+            sessionStorage.getItem("navigation-lifetime-evidence") ?? "[]",
+          ).filter((entry: { event: string }) => entry.event === "instance")
+            .length as number,
+      );
+    let before = await count();
+    await f.page.evaluate(() => {
+      window.dispatchEvent(new Event("focus"));
+      window.dispatchEvent(new Event("beforeunload"));
+      window.dispatchEvent(new Event("focus"));
+    });
+    await expect.poll(count).toBeGreaterThanOrEqual(before + 2);
+    await f.page.waitForResponse(
+      (response) =>
+        new URL(response.url()).pathname === "/api/v1/instance" &&
+        response.ok(),
+    );
+    before = await count();
+    await f.page.evaluate(() => {
+      window.dispatchEvent(new Event("pagehide"));
+      window.dispatchEvent(new Event("focus"));
+    });
+    expect(await count()).toBe(before);
+    await f.page.evaluate(() => window.dispatchEvent(new Event("pageshow")));
+    await expect.poll(count).toBeGreaterThan(before);
+    await f.page.waitForResponse(
+      (response) =>
+        new URL(response.url()).pathname === "/api/v1/instance" &&
+        response.ok(),
+    );
+    await f.page.reload();
+    await expect(f.page.locator(".ws-app")).toBeVisible();
+    await Promise.all(routing);
+    const evidence = await f.page.evaluate(
+      () =>
+        JSON.parse(
+          sessionStorage.getItem("navigation-lifetime-evidence") ?? "[]",
+        ) as { event: string; phase: string; abortedAtStart?: boolean }[],
+    );
+    expect(
+      evidence
+        .filter((entry) => entry.event === "instance")
+        .every((entry) => !entry.abortedAtStart && entry.phase === "active"),
+    ).toBe(true);
+    expect(
+      evidence.filter((entry) => entry.event === "instance-aborted").length,
+    ).toBeGreaterThanOrEqual(2);
+    expect(evidence.some((entry) => entry.event === "pagehide")).toBe(true);
+    expect(evidence.some((entry) => entry.event === "pageshow")).toBe(true);
+    expect(consoleErrors).toEqual([]);
+    expect(f.errors).toEqual([]);
+    expect(await f.source()).toBe(body);
+    await info.attach("navigation-lifetime-evidence", {
+      body: JSON.stringify(evidence),
+      contentType: "application/json",
+    });
+  } finally {
+    await Promise.all(routing);
+    await f.close();
+  }
+});
+
 test("interface treatments preview transactionally, preserve typography and survive save/reload", async ({
   browser,
 }, info) => {

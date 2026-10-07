@@ -347,7 +347,13 @@ INSERT INTO app_instance(singleton,setup_completed_at) SELECT true,CASE WHEN EXI
     name: "native-markdown-mind-map-profile",
     sql: mindmapMigration,
   },
+  {
+    version: 50,
+    name: "reverse-note-link-performance",
+    sql: linkPerformanceMigration,
+  },
 ];
+import { linkPerformanceMigration } from "./link-performance-migration";
 import { mindmapMigration } from "./mindmap-migration";
 import { stagePortabilityMigration } from "./stage-portability-migration";
 import { assistantGroundingMigration } from "./assistant-grounding-migration";

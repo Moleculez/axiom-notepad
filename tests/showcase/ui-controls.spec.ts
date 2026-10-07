@@ -1,4 +1,4 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page, type Locator } from "@playwright/test";
 import { interfaceStyles } from "../../packages/shared/src/interface-styles";
 import { paperAppearance } from "../../apps/showcase/src/samples";
 
@@ -89,6 +89,110 @@ async function iconFieldsAlign(page: Page) {
   }
 }
 
+async function mixedToolbarsAlign(page: Page) {
+  const scrollport = page.locator(".demo-settings-preview-scroll:visible"),
+    scroll = await scrollport.evaluate((el) => ({
+      top: el.scrollTop,
+      left: el.scrollLeft,
+    }));
+  const query = page.getByRole("searchbox", {
+      name: "standard toolbar query",
+      exact: true,
+    }),
+    previous = await query.inputValue();
+  await query.fill("Alignment specimen");
+  await expect(
+    page.getByRole("button", {
+      name: "Clear standard toolbar query",
+      exact: true,
+    }),
+  ).toBeVisible();
+  const sizes = await page
+    .locator(".theme-workbench-toolbars .ui-actions:visible")
+    .evaluateAll((groups) => {
+      // --size-ui may be authored in rem. The body's semantic UI font resolves
+      // user preferences to pixels without treating a raw rem value as pixels.
+      const uiSize = parseFloat(getComputedStyle(document.body).fontSize);
+      return groups.map((group) => {
+        const controls = [...group.children].map((el) => {
+          const box = el.getBoundingClientRect();
+          return {
+            top: box.top,
+            left: box.left,
+            right: box.right,
+            height: box.height,
+          };
+        });
+        const search = group.querySelector(".ui-search-field")!,
+          clear = search.querySelector(".ui-search-clear-slot .icon-button")!,
+          shell = search.getBoundingClientRect(),
+          action = clear.getBoundingClientRect();
+        return {
+          expected:
+            group.getAttribute("data-control-group-size") === "compact"
+              ? Math.max(28, uiSize * 2.133)
+              : Math.max(32, uiSize * 2.4),
+          controls,
+          clearContained:
+            action.top >= shell.top &&
+            action.bottom <= shell.bottom &&
+            action.left >= shell.left &&
+            action.right <= shell.right,
+          clearOffset: Math.abs(
+            action.top + action.height / 2 - shell.top - shell.height / 2,
+          ),
+          overflow: group.scrollWidth > group.clientWidth + 1,
+        };
+      });
+    });
+  await query.fill(previous);
+  await scrollport.evaluate((el, scroll) => {
+    el.scrollTop = scroll.top;
+    el.scrollLeft = scroll.left;
+  }, scroll);
+  expect(sizes).toHaveLength(2);
+  for (const group of sizes) {
+    expect(group.controls).toHaveLength(4);
+    for (const box of group.controls) {
+      expect(Math.abs(box.height - group.expected)).toBeLessThan(1);
+      for (const other of group.controls)
+        if (box !== other && Math.abs(box.top - other.top) < group.expected / 2)
+          expect(box.right <= other.left || other.right <= box.left).toBe(true);
+    }
+    expect(group.overflow).toBe(false);
+    expect(group.clearContained).toBe(true);
+    expect(group.clearOffset).toBeLessThan(1);
+  }
+}
+
+async function fieldBoundsInScrollport(field: Locator) {
+  return field.evaluate((el) => {
+    const owner = el.closest(".demo-settings-preview-scroll")!;
+    const box = el.getBoundingClientRect(),
+      frame = owner.getBoundingClientRect();
+    // Native focus/Playwright pointer reveal may scroll this owned panel by a
+    // few pixels. Its content coordinates must not change when Clear appears
+    // or disappears; the panel frame and whole page must remain stationary.
+    // Firefox serializes independent rectangles at slightly different floating
+    // precision after scrolling (~0.000015px). Snap below every engine's layout
+    // quantum, not a visible-pixel tolerance or allowance for control movement.
+    const precise = (value: number) => Math.round(value * 1024) / 1024;
+    return {
+      x: precise(box.x - frame.x + owner.scrollLeft),
+      y: precise(box.y - frame.y + owner.scrollTop),
+      width: precise(box.width),
+      height: precise(box.height),
+      owner: {
+        x: frame.x,
+        y: frame.y,
+        width: frame.width,
+        height: frame.height,
+      },
+      pageScroll: { x: window.scrollX, y: window.scrollY },
+    };
+  });
+}
+
 for (const { id, name } of interfaceStyles) {
   for (const mode of ["light", "dark"] as const) {
     test(`${name} / ${mode}: real native controls, states and inherited dialog styling`, async ({
@@ -106,15 +210,16 @@ for (const { id, name } of interfaceStyles) {
       await expect(page.locator("html")).toHaveAttribute("data-theme", mode);
       const view = await specimen(page);
       await iconFieldsAlign(page);
+      await mixedToolbarsAlign(page);
       const search = view.getByRole("searchbox", { name: "Specimen search" }),
-        before = await search.boundingBox();
+        before = await fieldBoundsInScrollport(search);
       await search.fill("Physics");
-      const withClear = await search.boundingBox();
+      const withClear = await fieldBoundsInScrollport(search);
       expect(withClear).toEqual(before);
       await view.getByRole("button", { name: "Clear specimen search" }).click();
       await expect(search).toHaveValue("");
       await expect(search).toBeFocused();
-      expect(await search.boundingBox()).toEqual(before);
+      expect(await fieldBoundsInScrollport(search)).toEqual(before);
       const person = view.getByRole("combobox", { name: "Specimen person" });
       await person.fill("Noether");
       await expect(
@@ -331,6 +436,7 @@ test("large text, square shapes and no shadows keep the shared fields and action
   for (const { id } of interfaceStyles) {
     await dialog.getByLabel("Interface design").selectOption(id);
     await iconFieldsAlign(page);
+    await mixedToolbarsAlign(page);
     await noOverflow(page);
     const save = view.getByRole("button", { name: "Save sample", exact: true });
     await save.scrollIntoViewIfNeeded();

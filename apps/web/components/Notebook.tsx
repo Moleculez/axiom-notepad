@@ -249,7 +249,10 @@ export default function Notebook() {
       );
     }
   };
-  const research = useResearch(session?.user.id, groupId);
+  // noteAccess supplies the authoritative workspace identity. Legacy cached
+  // notes without it may still open, but cannot create reading data until an
+  // online refresh resolves their context; never guess from the owning group.
+  const research = useResearch(session?.user.id, note?.space_id);
   const researchRef = useRef(research),
     documentScroll = useRef<HTMLElement>(null),
     outlineInput = useRef<"caret" | "scroll">("scroll"),
@@ -1539,7 +1542,11 @@ export default function Notebook() {
                 }}
                 onScroll={() => {
                   updateVisibleSection();
-                  if (!readingTouched.current || !documentScroll.current)
+                  if (
+                    !readingTouched.current ||
+                    !documentScroll.current ||
+                    !note.space_id
+                  )
                     return;
                   clearTimeout(progressTimer.current);
                   const el = documentScroll.current,
@@ -1585,9 +1592,19 @@ export default function Notebook() {
                   <div className="document-meta">
                     <button
                       aria-label="Bookmark this note section"
+                      disabled={!note.space_id || busy}
+                      title={
+                        !note.space_id
+                          ? "Reconnect to resolve this note’s reading context."
+                          : undefined
+                      }
                       onMouseDown={(event) => event.preventDefault()}
                       onClick={() =>
                         void run(async () => {
+                          if (!note.space_id)
+                            throw new Error(
+                              "Reconnect to resolve this note’s reading context before saving a bookmark.",
+                            );
                           const position = editor.current?.position() ?? 0;
                           const heading =
                             mode === "read"

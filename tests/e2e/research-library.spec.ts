@@ -8,8 +8,10 @@ import { fixture, origin } from "./native-editor-helpers";
 import { defaults } from "../../packages/shared/src/appearance";
 
 test.beforeAll(() => {
-  if (origin !== "http://localhost:3008")
-    throw new Error("Use isolated research staging on port 3008.");
+  // Both coordinators verify an isolated-server fingerprint before fixtures
+  // can mutate anything; never accept an arbitrary application origin.
+  if (!["http://localhost:3008", "http://localhost:3004"].includes(origin))
+    throw new Error("Use isolated research staging on port 3008 or 3004.");
 });
 
 test("standalone PDF linking, collection boundaries, viewer access and revocation", async ({
@@ -396,7 +398,7 @@ test("workspace Research navigation and old offline reading edits stay scoped", 
     await f.page.evaluate(
       async ({ user, group, ref, pendingId, filterId }) => {
         await new Promise<void>((resolve, reject) => {
-          const request = indexedDB.open(`axiom:${user}:research-v1`, 1);
+          const request = indexedDB.open(`axiom:${user}:research-v1`);
           request.onupgradeneeded = () =>
             request.result.createObjectStore("items", { keyPath: "key" });
           request.onerror = () => reject(request.error);
@@ -990,9 +992,56 @@ test("Research tabs, library inspector, aligned graph search and exports", async
     expect(layout.overflow).toBeLessThanOrEqual(1);
     expect(layout.inset).toBe(true);
     expect(layout.height).toBeGreaterThan(250);
-    expect(
-      (await f.page.locator(".library-selection").boundingBox())!.height,
-    ).toBeLessThan(55);
+    // Standard shared targets may wrap into two complete rows beside the
+    // inspector. A fixed single-row height would require shrinking targets or
+    // clipping actions; verify useful geometry instead.
+    const selection = await f.page
+      .locator(".library-selection")
+      .evaluate((el) => {
+        const shell = el.getBoundingClientRect(),
+          style = getComputedStyle(el),
+          controls = [
+            ...el.querySelectorAll(":scope > button, :scope > select"),
+          ].map((control) => control.getBoundingClientRect()),
+          height = Math.max(
+            32,
+            parseFloat(getComputedStyle(document.body).fontSize) * 2.4,
+          ),
+          rows: number[] = [];
+        for (const box of controls)
+          if (!rows.some((top) => Math.abs(top - box.top) < 1))
+            rows.push(box.top);
+        return {
+          rows: rows.length,
+          overflow: el.scrollWidth - el.clientWidth,
+          contained: controls.every(
+            (box) =>
+              box.left >= shell.left &&
+              box.right <= shell.right + 1 &&
+              box.top >= shell.top &&
+              box.bottom <= shell.bottom + 1,
+          ),
+          heightDelta: Math.max(
+            ...controls.map((box) => Math.abs(box.height - height)),
+          ),
+          aligned: controls.every((box) =>
+            controls.every(
+              (other) =>
+                Math.abs(box.top - other.top) >= height / 2 ||
+                Math.abs(box.bottom - other.bottom) < 1,
+            ),
+          ),
+          height: shell.height,
+          heightBudget: height * 3 + parseFloat(style.rowGap) + 2,
+        };
+      });
+    expect(selection.rows).toBeGreaterThan(0);
+    expect(selection.rows).toBeLessThanOrEqual(2);
+    expect(selection.overflow).toBeLessThanOrEqual(1);
+    expect(selection.contained).toBe(true);
+    expect(selection.heightDelta).toBeLessThan(1);
+    expect(selection.aligned).toBe(true);
+    expect(selection.height).toBeLessThanOrEqual(selection.heightBudget);
     await f.page.screenshot({
       path: info.outputPath("research-library-1280.png"),
     });

@@ -1,8 +1,15 @@
 import { randomUUID } from "node:crypto";
 import { previewSchedule, applySchedule } from "./schedule-service";
+import { readPlanningProgress } from "./planning-progress";
 import { planningSuiteApi, planningEntityHistory } from "./planning-suite-api";
 import { planningLabApi } from "./planning-lab-api";
-import { fieldDefinitions, validateCustomPatch, parseFieldQuery, fieldWhere, fieldSummaries } from "./planning-field-service";
+import {
+  fieldDefinitions,
+  validateCustomPatch,
+  parseFieldQuery,
+  fieldWhere,
+  fieldSummaries,
+} from "./planning-field-service";
 import { z } from "zod";
 import type { PoolClient } from "pg";
 import { query, transaction } from "./db";
@@ -29,7 +36,6 @@ import {
   dependencyLinkSchema,
   resolveDependencyLinks,
   taskDependencyLinks,
-  planningProgress,
   type PlanningTask,
 } from "./planning";
 
@@ -277,19 +283,14 @@ export async function planningApi(
       );
       if (!task) throw new HttpError(404, "Task unavailable.");
       if (task.has_children) {
-        const full = await query<PlanningTask>(
-          "SELECT id,parent_id,status,progress_percent FROM tasks WHERE space_id=$1 AND deleted_at IS NULL LIMIT 50001",
-          [id],
-        );
-        if (full.length > 50000)
-          throw new HttpError(
-            413,
-            "This workspace exceeds the progress analysis limit.",
-          );
         task.derived_progress_percent =
-          planningProgress(full).get(task.id) ?? 0;
+          (await readPlanningProgress(id, [task.id])).get(task.id) ?? 0;
       }
-      task.fields_version = (await query("SELECT planning_fields_version FROM spaces WHERE id=$1", [id]))[0].planning_fields_version;
+      task.fields_version = (
+        await query("SELECT planning_fields_version FROM spaces WHERE id=$1", [
+          id,
+        ])
+      )[0].planning_fields_version;
       return json(normalizeTask(task));
     }
     if (section === "tasks" || section === "planning") {
@@ -338,7 +339,15 @@ export async function planningApi(
               ? " AND t.status NOT IN ('done','cancelled') AND EXISTS(SELECT 1 FROM task_dependencies d JOIN tasks b ON b.id=d.depends_on WHERE d.task_id=t.id AND b.deleted_at IS NULL AND b.status NOT IN ('done','cancelled'))"
               : "";
       const fieldQuery = parseFieldQuery(url.searchParams);
-      const definitions = fieldQuery.filters.length || fieldQuery.include.length || fieldQuery.sortField ? await transaction(async db => { await requireScope(db, userId, id); return fieldDefinitions(db,id); }) : null;
+      const definitions =
+        fieldQuery.filters.length ||
+        fieldQuery.include.length ||
+        fieldQuery.sortField
+          ? await transaction(async (db) => {
+              await requireScope(db, userId, id);
+              return fieldDefinitions(db, id);
+            })
+          : null;
       const where = `t.space_id=$1 AND (t.deleted_at IS NOT NULL)=$7 AND ($2::text IS NULL OR t.status=$2) AND ($3::text IS NULL OR t.priority=$3) AND ($4::text IS NULL OR t.assignee_id=$4) AND ($5::uuid IS NULL OR t.milestone_id=$5) AND (t.title ILIKE $6 OR array_to_string(t.labels,' ') ILIKE $6)${riskWhere}${fieldWhere(fieldQuery.filters, definitions?.items ?? [], args)}`;
       let sort =
         {
@@ -349,14 +358,30 @@ export async function planningApi(
         }[url.searchParams.get("sort") ?? "position"] ??
         "t.position,t.created_at";
       const countArgs = [...args];
-      if(fieldQuery.include.some(id=>!definitions?.items.some(f=>f.id===id))) throw new HttpError(409,"A displayed property is unavailable. Review the Properties columns.");
+      if (
+        fieldQuery.include.some(
+          (id) => !definitions?.items.some((f) => f.id === id),
+        )
+      )
+        throw new HttpError(
+          409,
+          "A displayed property is unavailable. Review the Properties columns.",
+        );
       if (fieldQuery.sortField) {
-        const f = definitions!.items.find(f => f.id === fieldQuery.sortField && !f.archived);
-        if (!f) throw new HttpError(409,"The sort field is unavailable. Choose another sort.");
+        const f = definitions!.items.find(
+          (f) => f.id === fieldQuery.sortField && !f.archived,
+        );
+        if (!f)
+          throw new HttpError(
+            409,
+            "The sort field is unavailable. Choose another sort.",
+          );
         args.push(f.id);
         sort = `(SELECT ${f.kind === "number" ? "v.number_value" : "v.value"} FROM planning_field_values v WHERE v.task_id=t.id AND v.field_id=$${args.length}::uuid) ${fieldQuery.direction === "desc" ? "DESC" : "ASC"} NULLS LAST`;
       }
-      const listArgs = [...args,limit+1,offset], limitBind=args.length+1, offsetBind=args.length+2;
+      const listArgs = [...args, limit + 1, offset],
+        limitBind = args.length + 1,
+        offsetBind = args.length + 2;
       const [items, [totals], milestones, [settings]] = await Promise.all([
         query<PlanningTask>(
           `SELECT ${taskFields(section !== "planning")} FROM tasks t LEFT JOIN "user" u ON u.id=t.assignee_id WHERE ${where} ORDER BY ${sort},t.id LIMIT $${limitBind} OFFSET $${offsetBind}`,
@@ -375,24 +400,30 @@ export async function planningApi(
           [id],
         ),
       ]);
-      const full = items.some((t) => t.has_children)
-        ? await query<PlanningTask>(
-            "SELECT id,parent_id,status,progress_percent FROM tasks WHERE space_id=$1 AND deleted_at IS NULL LIMIT 50001",
-            [id],
-          )
-        : [];
-      if (full.length > 50000)
-        throw new HttpError(
-          413,
-          "This workspace exceeds the progress analysis limit.",
-        );
-      const progress = planningProgress(full);
-      const summaries = await transaction(async db => { await requireScope(db,userId,id); return fieldSummaries(db,id,items.slice(0,limit).map(t=>t.id),fieldQuery.include); });
+      const visibleItems = items.slice(0, limit);
+      const progress = await readPlanningProgress(
+        id,
+        visibleItems.filter((task) => task.has_children).map((task) => task.id),
+      );
+      const summaries =
+        fieldQuery.include.length && visibleItems.length
+          ? await transaction(async (db) => {
+              await requireScope(db, userId, id);
+              return fieldSummaries(
+                db,
+                id,
+                visibleItems.map((t) => t.id),
+                fieldQuery.include,
+              );
+            })
+          : new Map();
       return json({
-        items: items.slice(0, limit).map((t) =>
+        items: visibleItems.map((t) =>
           normalizeTask({
             ...t,
-            ...(fieldQuery.include.length ? {field_summaries:summaries.get(t.id)??{}} : {}),
+            ...(fieldQuery.include.length
+              ? { field_summaries: summaries.get(t.id) ?? {} }
+              : {}),
             ...(t.has_children
               ? { derived_progress_percent: progress.get(t.id) ?? 0 }
               : {}),
@@ -407,7 +438,9 @@ export async function planningApi(
           timezone: settings.timezone,
         }),
         version: settings.planning_version,
-        fields: definitions?.items.filter(f=>fieldQuery.include.includes(f.id)) ?? [],
+        fields:
+          definitions?.items.filter((f) => fieldQuery.include.includes(f.id)) ??
+          [],
       });
     }
     if (section === "milestones")
@@ -801,7 +834,15 @@ export async function mutatePlanningTask(
       (resourceId) => resourceId !== old.note_id,
     );
   const taskId = child ?? newId ?? randomUUID();
-  const customFields = Object.hasOwn(raw,"customFields") ? await validateCustomPatch(client,id,raw.customFields,raw.fieldsVersion,old?.custom_fields??{}) : old?.custom_fields??{};
+  const customFields = Object.hasOwn(raw, "customFields")
+    ? await validateCustomPatch(
+        client,
+        id,
+        raw.customFields,
+        raw.fieldsVersion,
+        old?.custom_fields ?? {},
+      )
+    : (old?.custom_fields ?? {});
   const resources = await validateTask(client, id, input, taskId);
   const fields = [
     input.title,

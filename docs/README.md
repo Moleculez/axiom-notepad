@@ -55,6 +55,7 @@ their own deployment-specific acceptance checks.
 - [Repository structure and contribution workflow](../CONTRIBUTING.md)
 - [Extension development and acceptance](EXTENSIONS.md#package-format-and-sdk)
 - [Architecture and data boundaries](ARCHITECTURE.md)
+- [Performance and regression contracts](PERFORMANCE.md) — bounded caches, source-safe scheduling, offline upgrades and isolated measurements
 - [Current editor architecture](EDITOR_VNEXT.md), [typing contracts](TYPING_INTEGRITY.md)
   and [editor acceptance checklist](EDITOR_VNEXT_ACCEPTANCE.md)
 - [File-first workbench](FILE_WORKBENCH.md) — canonical routes, tabs, menus and dialogs

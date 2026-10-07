@@ -1,4 +1,5 @@
 import { datasetRequestHeaders } from "./dataset";
+import { pageRequest } from "./request-lifecycle";
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -29,39 +30,9 @@ export function errorMessage(
   }
   return error instanceof Error ? error.message : fallback;
 }
-let pageLeaving = false;
-let navigationPrepared = false;
-const pageRequests = new Map<AbortController, boolean>();
 const readOnlyRequest = (path: string, options: RequestInit) =>
   ["GET", "HEAD"].includes(options.method ?? "GET") ||
   (options.method === "POST" && path.endsWith("/sync-token"));
-if (typeof window !== "undefined") {
-  window.addEventListener("beforeunload", () => {
-    // WebKit can invalidate the old origin before pagehide. Stop current reads
-    // AND prevent a late socket callback from starting another token request in
-    // that gap. Do not cancel writes: an unsaved-work prompt may be canceled.
-    navigationPrepared = true;
-    for (const [request, readOnly] of pageRequests)
-      if (readOnly) request.abort();
-  });
-  window.addEventListener("pagehide", () => {
-    pageLeaving = true;
-    for (const request of pageRequests.keys()) request.abort();
-  });
-  window.addEventListener("pageshow", () => {
-    pageLeaving = false;
-    navigationPrepared = false;
-  });
-  const resumePreparedNavigation = () => {
-    // There is no "beforeunload canceled" event. Returning focus or interacting
-    // with the retained page resumes reads without a timer that could race the
-    // next navigation step. A page already hidden cannot be revived this way.
-    if (!pageLeaving) navigationPrepared = false;
-  };
-  window.addEventListener("focus", resumePreparedNavigation);
-  window.addEventListener("pointerdown", resumePreparedNavigation, true);
-  window.addEventListener("keydown", resumePreparedNavigation, true);
-}
 export const SIGN_OUT_PENDING = "axiom:pending-signout";
 let signingOut: Promise<boolean> | undefined;
 export function finishPendingSignOut(): Promise<boolean> {
@@ -99,15 +70,8 @@ export async function api<T = any>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
-  if (pageLeaving) throw new DOMException("The page is leaving.", "AbortError");
   const readOnly = readOnlyRequest(path, options);
-  if (navigationPrepared && readOnly)
-    throw new DOMException("Navigation is being prepared.", "AbortError");
-  const controller = new AbortController();
-  const abort = () => controller.abort(options.signal?.reason);
-  if (options.signal?.aborted) abort();
-  else options.signal?.addEventListener("abort", abort, { once: true });
-  pageRequests.set(controller, readOnly);
+  const { controller, finish } = pageRequest(options.signal, readOnly);
   try {
     if (
       typeof indexedDB !== "undefined" &&
@@ -216,8 +180,7 @@ export async function api<T = any>(
     }
     throw error;
   } finally {
-    pageRequests.delete(controller);
-    options.signal?.removeEventListener("abort", abort);
+    finish();
   }
 }
 export const post = <T = any>(path: string, data: unknown = {}) =>
