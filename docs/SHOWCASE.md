@@ -20,8 +20,16 @@ overview, resizable source pane and explicit image/diagram inspection use the sa
 controls as production. Zoom survives typing and undo; map counts share the
 document footer, and navigation reviews unapplied labels rather than discarding
 them silently. Current local browser evidence is recorded
-in [Verification](VERIFICATION.md). This increment has not been deployed; the dated
-captures below are unchanged, not screenshots of this map usability update.
+in [Verification](VERIFICATION.md). This interface-system increment does not deploy
+the hosted site; the dated captures below remain earlier visual checkpoints.
+
+Appearance now shares eight original interface systems and five optional palette
+packs with production. Representative miniatures and **Compare all styles** show
+the same native fields, selection, tabs and overlays under identical colors/fonts.
+Tested local source includes independent typography, large text, square corners,
+disabled shadows and accessibility overrides. See [theme authoring](THEME_AUTHORING.md)
+for the shared recipe boundary and [Verification](VERIFICATION.md) for current
+browser evidence; no deployment is implied by a local build.
 
 The static editor and Canvas are interactive, not screenshots: try the fictional
 notebooks, create a local draft, import files or export a portable copy. Seven
@@ -115,8 +123,8 @@ creation, stale evidence, revoked annotation access and idempotent retries.
 
 ### Publish a reviewed research website
 
-Choose LaTeX Paper or Monograph for academic reading, Tufte for margin notes, or
-Material, Fluent and Minimal treatments. The live specimen shares the publication
+Choose LaTeX Paper or Monograph for academic reading, Margin Essay for margin notes,
+or Tonal Research, Framed Studio and Minimal Journal. The live specimen shares the publication
 renderer. Readers get a floating hierarchical TOC, word/read-time statistics,
 syntax-highlighted code in light/dark modes, topics and a filterable archive timeline.
 Authors get a private analytics dashboard with comparisons and CSV; managers can
@@ -137,8 +145,9 @@ Local browser fixtures are covered in [Verification](VERIFICATION.md); custom DN
 and automatic certificate issuance still require deployment-specific acceptance.
 
 Settings now has a searchable grouped left rail and consistent page widths.
-Its Interface style picker previews Axiom, Material Tonal, Fluent Studio and
-Editorial controls independently of palette and reading fonts. These are real
+Its Interface style picker previews Axiom, Contour, Vector, Folio, Harbor, Signal,
+Gridwork and Cutline controls independently of palette and reading fonts. The
+comparison gallery uses identical colors/typography for every system. These are real
 component treatments, not changes to research content or website templates.
 
 ### 1. Write and connect the evidence
@@ -383,4 +392,5 @@ Before committing a recapture:
 
 App icons, maskable safe zones, color usage and versioned PWA updates are governed
 by [Branding](BRANDING.md). Font and dependency notices remain in their existing
-locations. This workflow adds no application or asset license grant.
+locations. First-party source, documentation and original artwork use the root
+[MIT License](../LICENSE); bundled third-party assets retain their own notices.

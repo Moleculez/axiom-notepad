@@ -291,7 +291,7 @@ The local API rehearsal traverses 1,250 tied/microsecond positions, concurrent
 submissions/edits, literal wildcard searches, filters/counts and membership revocation.
 `npm run plugins:staging -- test --config planning.config.ts` runs isolated port-3004 browser acceptance (never the working
 database); its new Intake fixtures cover more than 200 records, lazy details, stale
-draft retention, all five styles, both modes, large text and fixed dialog actions.
+draft retention, all registered styles, both modes, large text and fixed dialog actions.
 
 Forward migration **39** adds relationship offsets, leaf progress, saved views,
 Goals, Intake, metadata history, routine archive state and capacity receipt fences.

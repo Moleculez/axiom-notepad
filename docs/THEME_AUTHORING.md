@@ -45,21 +45,29 @@ surface/border/radius/branch colors; theme CSS never becomes an exported script.
 
 ### Interface styles and public website templates
 
-Appearance schema 11 separates `interfaceStyle` from `themePack`. The five trusted
-styles (Axiom, Material Tonal, Fluent Studio, Editorial, macOS Studio) live in
-`apps/web/app/interface-styles.css`. They are component-level presentations,
-not uploaded CSS: rounded tonal controls, layered/bordered chrome or flat editorial
-rules. IDs/labels come from `packages/shared/src/interface-styles.ts` in both
-production and showcase. Version 10 preferences migrate without restyling; a
-version 10 reader cannot represent macOS Studio and receives an upgrade response
-rather than an unknown ID. Current-schema writes remain mandatory, including
-the bundled preference API, so an old tab cannot erase a new style choice.
-They reference semantic palette, radius and shadow tokens. A zero-radius,
-no-shadow, high-contrast or reduced-motion user choice must still win. UI, prose
-and equation fonts remain independent. Material/Fluent are design inspirations,
-not claims of shipping their libraries or exact conformance; see Fluent's
-[shape](https://fluent2.microsoft.design/shapes) and
-[elevation](https://fluent2.microsoft.design/elevation) guidance.
+Appearance schema 12 separates `interfaceStyle` from `themePack`. Eight original
+systems—Axiom, Contour, Vector, Folio, Harbor, Signal, Gridwork and Cutline—use
+the typed recipe registry in `packages/shared/src/interface-styles.ts`.
+Production and showcase share identities, bounded presentation roles and
+representative control miniatures. Rendering stays in the shared control/style
+owners; these are compiled source recipes, never uploaded CSS.
+
+The schema upgrade maps known historical identities into their successor families
+while preserving unrelated preferences and restore points. Legacy reads return
+only representable styles/packs; an unsupported selection gets an upgrade response,
+never an unknown ID or silent style replacement. Current-schema writes remain
+mandatory, including the bundled preference API, so an old tab cannot erase a new
+choice. The first-paint loader uses registry-derived identities and aliases.
+
+Every recipe covers fields, controls, selection, chrome and overlays and differs
+in at least three non-color treatments from every other recipe, including fields
+or selection. See the [design matrix](DESIGN_SYSTEM.md#original-interface-systems).
+Geometry, native semantics and the single-sheet editor boundary remain shared.
+Recipe variables use semantic palette, radius and shadow tokens. A zero-radius,
+no-shadow, high-contrast, reduced-transparency or reduced-motion user choice still
+wins through the final accessibility/preference layer. UI, prose and equation fonts
+remain independent. Grids, diagonal accents and instrument-like decoration belong
+only to chrome, never reading, editable fields or data.
 
 Do not use an interface style to alter scrolling, dialog portals, toolbar hit
 areas, editor geometry or authorization. Review settings, menus, dialogs, file
@@ -75,6 +83,14 @@ including portal dialogs and the static showcase. `--on-danger` is derived for
 solid destructive labels independently of `--on-accent`; do not substitute paper
 or fixed white. Shared native controls, unboxed HelpText, consequential Notice,
 pending geometry and keyboard states are governed by [UI controls](UI_CONTROLS.md).
+The registry supplies every presentation role, including field edges/inset rules,
+adornment compartments, header foregrounds, navigation and overlay treatments.
+`--ui-header-text`/`--ui-header-muted` and `--ui-chrome-text`/`--ui-chrome-muted`
+are not substitutes for body `--text`/`--muted`. Inverse chrome derives a legible
+foreground without changing the selected palette. Keep structural inset rules
+separate from optional `--shadow`, so Shadows None retains selection and framing.
+An underlined field still reserves the common border box; hover, invalid and focus
+must never change measured edges or clip an icon track.
 Application text fields additionally consume `--field-surface` and `--field-edge`.
 Use TextInput/TextArea/NativeSelect/SearchField/Picker rather than a page-local
 native reset. Document-editing fields retain `data-editor-field` and their
@@ -125,7 +141,8 @@ footnotes, dark mode and print in each theme before adding an ID.
 
 1. Add a typed manifest to `packages/shared/src/theme-packs.ts` and register its ID
    in `themePackIds`. Use `format: "axiom-theme-pack"`, `version: 1`, and
-   `minimumAppearanceSchema: 5`. Include name, description, author, license,
+   `minimumAppearanceSchema: 12` for new packs (the two original packs retain 5).
+   Include name, description, author, license,
    stylesheet path, asset inventory, and at least one fixture path.
 2. Supply complete light **and** dark palettes using the existing 21 semantic
    roles. Literal six-digit hex values belong here, not in component styles.
@@ -311,7 +328,10 @@ large code/table blocks are required fixtures, not optional polish.
 - Chromium, Firefox and WebKit screenshots. Record manual IME/clipboard checks
   separately; synthetic composition events do not certify physical input methods.
 
-Current packs: **Paper Research** and **Technical Slate**. Default appearance stays
+Current packs: **Paper Research**, **Technical Slate**, **Botanical**, **Spectrum**
+and **Graphite Ink**. The latter three require Appearance schema 12. Each pack
+provides a paired light/dark palette and scoped link/rule/caption treatment, not
+an interface recipe or font override. Default appearance stays
 unchanged. Increment pack contract versions when the meaning of a manifest field
 changes; reject unsupported versions rather than falling back and overwriting
 saved choices. Add forward database/preference migrations for released schemas.

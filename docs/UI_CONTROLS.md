@@ -108,7 +108,7 @@ available on rendering errors; never replace a content failure with an empty nod
 ## Text fields and adaptive choices
 
 All application fields share the semantic `--field-surface` and `--field-edge`
-roles in `ui-controls.css`. Material is tonal; Editorial is paper-flat; the other
+roles in `ui-controls.css`. Contour is tonal; Folio is paper-flat; the other
 styles follow their selected surface treatment. Hover only changes the edge;
 focus is an inset ring, not a second rounded underline or a layout-changing
 outline. Disabled and read-only fields remain identifiable. Width is a layout
@@ -315,13 +315,16 @@ production and showcase consume the same registry. Presentation belongs to
 inherit the chosen style. The default stays **Axiom**.
 
 - **Axiom:** quiet research surfaces and balanced controls.
-- **Material Tonal:** rounded tonal buttons, expressive slider handles and soft
+- **Contour:** broad tonal groups, capsule actions, vertical slider handles and solid
   selection.
-- **Fluent Studio:** precise borders, layered panels and restrained selection.
-- **Editorial:** flat paper, minimal elevation and straight, understated rules.
-- **macOS Studio:** softly grouped controls and restrained desktop chrome.
+- **Vector:** architectural frames, outlined fields and leading-edge selection.
+- **Folio:** continuous paper, minimal elevation and straight ruled fields.
+- **Harbor:** banded headers, inset fields and recessed segmented groups.
+- **Signal:** instrument-like compartments, icon tracks and strong action edges.
+- **Gridwork:** fine chrome lattice, bracketed selection and ruled controls.
+- **Cutline:** bold graphic edges, diagonal chrome accents and offset framing.
 
-Each treatment covers controls, selection, navigation and overlays. It must honor
+Each treatment covers controls, fields, selection, navigation and overlays. It must honor
 palette overrides, independent font roles, density, radius, motion and shadow
 preferences; it must not change document content, routing or permissions. Trusted
 styles are reviewed source, not user-uploaded CSS or claims of platform conformance.
@@ -345,9 +348,23 @@ blanket folder exemptions. Do not add new general rules to that legacy layer.
 The guard is deliberately narrow: geometry and screenshots still verify the
 resolved cascade, intrinsic widths, wrapping and scroll/focus ownership.
 
+The same gate checks the typed interface registry for complete role coverage,
+safe palette/font-independent values and at least three non-color structural
+differences between every pair. It also checks original presentation vocabulary
+and matching first-party MIT metadata. Required technical identities and upstream
+notices remain intact; see [branding](BRANDING.md).
+
+Chrome foregrounds are separate from document and field foregrounds. Inverse
+navigation uses its own derived ink roles; a filled icon control is measured
+against its own surface, not the surrounding band. Wait for real color transitions
+to settle before taking acceptance screenshots, then verify resolved text contrast
+and SVG strokes in both modes. Passing box geometry alone does not establish
+legibility. OS contrast/transparency overrides must outrank inline recipe values
+without recoloring source-backed document fields.
+
 The guard runs in root `check` and showcase CI, alongside theme and documentation
 checks. New controls require native-prop/ARIA unit coverage and screenshot/interaction
-review. Inspect all five styles in light/dark, large UI text, compact density,
+review. Inspect all eight styles in light/dark, large UI text, compact density,
 long labels, invalid/disabled/mixed/pending states, radius zero, shadows None,
 reduced motion and forced colors. Keyboard must reach every action. Verify
 Chromium, Firefox and WebKit; physical IME/clipboard and assistive technologies
@@ -361,6 +378,27 @@ selector, label and icon geometry together, including the clear action's inset.
 The isolated action-row browser fixture uses real server-rendered controls and
 the ordered application styles without account or dataset writes; it checks
 reference filters, planning actions, nested sizing and clipped-strip focus in
-all five styles, both modes, large text and all three browser engines.
+all registered styles, both modes, large text and all three browser engines.
 Keep specimen behavior in the shared component,
 not a second mock implementation in a theme.
+
+**Theme → Compare all styles** adds the shared eight-style comparison gallery.
+While open, use the full settings track rather than squeezing eight specimens
+into the ordinary preview split. Keep the preview mounted, preserve its draft,
+undo and split position, and restore the prior layout on close. Search/category
+changes must not leave an empty full-width comparison mode behind. Give sample
+titles a useful text track at large UI sizes; correct first-line alignment alone
+does not make a fragmented one-word column readable.
+Verify it in both the actual `.ws-app` host and the static showcase: host form
+selectors can outrank an otherwise correct component rule. Scope structural
+label layout to the component rather than adding a general form reset or
+`!important`. A checkbox inside an icon wrapper must still sit beside the title
+and align with its first line when the text wraps. Capture the real fields and
+sliders inside their owned scrollport, not an oversized card heading; keep the
+stationary footer visible. Use long browser-local sample labels for wrapping
+stress without changing documents or saved preferences.
+After toggling, verify native `checked` and the row's selected state together.
+Move the pointer clear and wait for the relevant painted roles to settle before
+capturing. Measure the actual glyph against its composited checkbox surface;
+an opaque check must meet 3:1 contrast. A valid recipe or checked property does
+not prove that a stale screenshot paints the correct selected background.

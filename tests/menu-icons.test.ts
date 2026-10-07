@@ -11,6 +11,7 @@ import { ActionIcon } from "../apps/web/lib/icons/ActionIcon";
 import { editorCommandIcons } from "../apps/web/lib/icons/editor-commands";
 import { languageIconSpec } from "../apps/web/lib/icons/languages";
 import data from "../apps/web/lib/icons/language-data.json";
+import mappings from "../apps/web/lib/icons/language-mappings.json";
 
 describe("shared menu icons", () => {
   it("has an intentional, renderable icon for every editor command", () => {
@@ -40,14 +41,14 @@ describe("shared menu icons", () => {
       expect(markup).not.toMatch(/<title|<text|<script/);
     }
   });
-  it("gives every installed language an explicit logo or semantic fallback", () => {
-    expect(Object.keys(data.mappings).sort()).toEqual(
+  it("gives every installed language an explicit neutral semantic icon", () => {
+    expect(Object.keys(mappings).sort()).toEqual(
       codeLanguages.map((c) => c.value).sort(),
     );
     for (const language of codeLanguages) {
       const spec = languageIconSpec(language.value);
       expect(actionIconNames).toContain(spec.fallback);
-      if (spec.brand) expect(data.logos[spec.brand].svg).toMatch(/^<svg\b/);
+      expect(spec).not.toHaveProperty("brand");
       for (const alias of language.aliases)
         expect(languageIconSpec(alias), alias).toEqual(spec);
     }

@@ -20,7 +20,9 @@ export const themePackManifestSchema = z
     description: z.string().min(1).max(500),
     author: z.string().min(1).max(100),
     license: z.string().min(1).max(100),
-    minimumAppearanceSchema: z.literal(5),
+    // Shipped packs can target a later Appearance contract, but an arbitrary
+    // future version must not pass a reviewed manifest's build gate.
+    minimumAppearanceSchema: z.union([z.literal(5), z.literal(12)]),
     css: path,
     assets: z.array(path).max(30),
     fixtures: z.array(path).min(1).max(20),

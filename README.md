@@ -155,8 +155,11 @@ See [showcase storage, settings and GitHub Pages deployment](docs/STATIC_SHOWCAS
   controllers without automatically retrying work.
 - **Make it yours.** Semantic light/dark themes, Paper Research and Technical Slate
   packs, separate reading/interface/code typography, device overrides and a live
-  settings scratchpad. Axiom, Material Tonal, Fluent Studio, Editorial and macOS Studio component
-  styles change controls and surfaces independently of your colors and reading fonts.
+  settings scratchpad. Eight original interface systems—Axiom, Contour, Vector,
+  Folio, Harbor, Signal, Gridwork and Cutline—change field treatment, selection,
+  navigation and overlays independently of your colors and reading fonts.
+  Botanical, Spectrum and Graphite Ink join the existing document packs. Use the
+  comparison gallery to review styles with identical colors and typography.
   Settings has a searchable grouped rail and a consistent page frame.
   Shared native controls and an interactive Interface specimen keep settings,
   action bars and dialogs consistent. Reusable field shells align icons, labels
@@ -340,8 +343,14 @@ source-safe scheduling, offline storage upgrades and reproducible UI/SQL gates.
 Private configuration, databases, attachments, backups, caches and raw test reports
 stay outside Git. Only reviewed, fictional [showcase assets](docs/SHOWCASE.md) are
 committed. The [brand guide](docs/BRANDING.md) and [theme authoring criteria](docs/THEME_AUTHORING.md)
-keep future visual work consistent. Third-party licenses remain with their assets;
-this documentation does not introduce a new project license.
+keep future visual work consistent.
+
+## License
+
+Axiom's first-party source and documentation are available under the
+[MIT License](LICENSE), copyright © 2026 Moleculez. Bundled dependencies, fonts,
+icons and other third-party assets retain their original licenses and required
+notices; the project license does not replace those terms.
 
 A server database backup without its matching stored files is not a complete
 recovery plan. Always rehearse recovery before relying on the deployment.

@@ -4,7 +4,7 @@
   gap: 7px;
   padding: 7px 9px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--size-ui-small);
   text-decoration: none;
   border-radius: var(--control-radius);
   flex-shrink: 0;

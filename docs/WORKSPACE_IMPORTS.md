@@ -168,7 +168,7 @@ Background transfer polling stays quiet, releases page/account lifetimes and
 must not activate the foreground progress bar or request status while offline.
 Load the preview engine on demand without changing the review pane's geometry.
 Never mount a collaboration provider or allow remote media in local preview.
-Test all five interface styles,
+Test all registered interface styles,
 both modes, large UI text, keyboard, forced colors and reduced motion; inspect
 actual screenshots. Physical file-picker/drop and assistive-technology checks
 remain manual gates.

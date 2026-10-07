@@ -98,7 +98,7 @@ not every embedded document's full text.
 New websites start with **LaTeX Paper**: locally hosted Latin Modern, paper-like
 proportions, restrained section rules, booktabs-inspired tables and mathematical
 typography. Existing configurations without a theme retain **Original**. Additional
-styles are **LaTeX Monograph**, **Tufte Essay**, **Material Research**, **Fluent Studio**
+styles are **LaTeX Monograph**, **Margin Essay**, **Tonal Research**, **Framed Studio**
 and **Minimal Journal**. These change component shape, spacing and typography, not
 just accent colors. Each theme uses Axiom's shared components and presentation
 tokens.
@@ -108,7 +108,7 @@ section numbers, word count, estimated reading time, TOC and progress. The TOC
 follows heading ancestry, highlights the current section, folds branches, and
 collapses into a disclosure when the desktop is too narrow for a side rail.
 Heading copy buttons share stable section URLs without search parameters. In the
-Tufte theme, sufficiently wide pages also display collision-aware margin footnotes;
+Margin Essay theme, sufficiently wide pages also display collision-aware margin footnotes;
 ordinary endnotes remain available at every width and in print.
 
 Markdown statistics use the shared document engine. Code/TeX syntax is not counted
@@ -189,7 +189,7 @@ contains static HTML/assets, locally bundled readers/fonts, licenses and hosting
 notes; private snapshots, credentials and server APIs are absent.
 
 First-party event collection and live aggregate counters are omitted. The review
-dialog has an unchecked **Include configured Google Analytics** option. Selecting
+dialog has an unchecked **Include external analytics** option. Selecting
 it includes only the configured measurement ID and consent-gated loader, with CSP
 instructions in `HOSTING.txt`; it never automatically grants visitor consent.
 

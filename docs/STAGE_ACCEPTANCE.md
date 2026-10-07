@@ -154,7 +154,7 @@ staging wrappers and their descendants on interruption. The user's exact existin
 already-dirty file. Acceptance does not change working migrations or restart 8080.
 
 Even `software: passed` leaves `acceptance: pending-operator-review`. The generated
-checklist requires inspection of **current actual images** for all five interface
+checklist requires inspection of **current actual images** for all registered interface
 styles, light/dark, 22px text, wrapping, scroll ownership and footer visibility;
 keyboard/Space/Escape/focus-return behavior; forced colors/reduced motion; and a
 recorded screen-reader/platform pass. Record reviewer/date/source/build identity,

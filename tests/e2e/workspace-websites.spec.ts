@@ -8,6 +8,8 @@ import {
   siteEntrySchema,
 } from "../../packages/shared/src/sites";
 import { wordFixture, slidesFixture } from "../helpers/office-fixtures";
+import { interfaceStyles } from "../../packages/shared/src/interface-styles";
+import { settledInterfaceChrome } from "./interface-style-helpers";
 const { PDFDocument } = createRequire(import.meta.url)(
   "pdf-lib",
 ) as typeof import("pdf-lib");
@@ -318,32 +320,18 @@ test("settings rail, component styles and processing provider dialog remain cohe
       .boundingBox();
     expect(general?.x).toBe(theme?.x);
     expect(theme!.width).toBeGreaterThan(180);
-    await f.page.getByRole("button", { name: /Material Tonal/ }).click();
-    await expect(f.page.locator("html")).toHaveAttribute(
-      "data-interface-style",
-      "material",
-    );
-    await f.page.screenshot({
-      path: info.outputPath("settings-material-current.png"),
-      fullPage: true,
-    });
-    await f.page.getByRole("button", { name: /Fluent Studio/ }).click();
-    await expect(f.page.locator("html")).toHaveAttribute(
-      "data-interface-style",
-      "fluent",
-    );
-    await f.page
-      .getByRole("button", { name: /Editorial/ })
-      .first()
-      .click();
-    await expect(f.page.locator("html")).toHaveAttribute(
-      "data-interface-style",
-      "editorial",
-    );
-    await f.page.screenshot({
-      path: info.outputPath("settings-editorial-current.png"),
-      fullPage: true,
-    });
+    for (const { id, name } of interfaceStyles) {
+      await f.page.getByRole("radio", { name, exact: true }).check();
+      await expect(f.page.locator("html")).toHaveAttribute(
+        "data-interface-style",
+        id,
+      );
+      await settledInterfaceChrome(f.page);
+      await f.page.screenshot({
+        path: info.outputPath(`settings-${id}-current.png`),
+        fullPage: true,
+      });
+    }
     const appearanceFrame = await f.page
       .locator(".settings-stage")
       .boundingBox();

@@ -18,17 +18,17 @@ export const siteThemes = [
   },
   {
     id: "tufte",
-    name: "Tufte Essay",
+    name: "Margin Essay",
     description: "Editorial serif, generous figures and margin notes",
   },
   {
     id: "material",
-    name: "Material Research",
+    name: "Tonal Research",
     description: "Tonal surfaces and softly rounded controls",
   },
   {
     id: "fluent",
-    name: "Fluent Studio",
+    name: "Framed Studio",
     description: "Fine borders, subtle layers and clear navigation",
   },
   {

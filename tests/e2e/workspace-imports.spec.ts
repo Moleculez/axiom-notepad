@@ -165,13 +165,11 @@ test("mixed native collection previews, publishes atomically and exports an impo
   f.page.on("pageerror", (error) => errors.push(error.message));
   try {
     const modal = await dialog(f.page, "ZIP");
-    await modal
-      .locator('input[type="file"]')
-      .setInputFiles({
-        name: "Research.zip",
-        mimeType: "application/zip",
-        buffer: Buffer.from(collection.bytes),
-      });
+    await modal.locator('input[type="file"]').setInputFiles({
+      name: "Research.zip",
+      mimeType: "application/zip",
+      buffer: Buffer.from(collection.bytes),
+    });
     await expect(modal.locator(".import-counts")).toContainText("5 notes");
     await expect(modal).toContainText("Restores files and safe metadata");
     await modal
@@ -509,7 +507,7 @@ test("ZIP preserves empty folders and previews are tidy in every interface treat
       ).toBeInViewport();
       if (
         (style === "axiom" && mode === "light") ||
-        (style === "editorial" && mode === "dark")
+        (style === "folio" && mode === "dark")
       ) {
         await scroll.evaluate((el) => {
           el.scrollTop = 0;
@@ -526,7 +524,7 @@ test("ZIP preserves empty folders and previews are tidy in every interface treat
       }
       await modal.getByRole("button", { name: "Close", exact: true }).click();
     }
-  await appearance(f.context.request, "light", "fluent", true);
+  await appearance(f.context.request, "light", "vector", true);
   await f.page.setViewportSize({ width: 1280, height: 720 });
   await f.page.reload();
   const large = await dialog(f.page, "ZIP");

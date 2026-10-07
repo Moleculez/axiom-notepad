@@ -23,8 +23,9 @@ focus indicators; scrollbars never displace the other pane or shared actions.
   workspace restores the saved sidebar state/width; the settings rail does not
   overwrite it. Every category uses the same full-width outer frame. Appearance
   and Writing add the live split preview within that frame.
-- **Appearance → Theme → Interface style** offers Axiom, Material Tonal, Fluent
-  Studio, Editorial and macOS Studio component treatments. These affect controls, selection,
+- **Appearance → Theme → Interface style** offers a native radio group for Axiom,
+  Contour, Vector, Folio, Harbor, Signal, Gridwork and Cutline, with representative
+  field/chrome miniatures and a real-control comparison gallery. These affect controls, selection,
   navigation and surfaces—not just colors. Palette packs, custom colors, reading
   fonts, explicit shape/effect preferences and website templates stay independent.
   Public website reading preferences, six additional visual themes and privacy
@@ -139,10 +140,13 @@ layout and form treatment; `interface-styles.css` owns the common settings rail,
 frame and component presentations. The shared native controls are defined in
 `components/ui/controls.tsx` and `ui-controls.css`; precision sliders coalesce
 expensive preview updates to a frame and flush the last value on release/blur.
-See the [control contract](UI_CONTROLS.md). Appearance schema 11 adds macOS Studio
-to the registry; schema 10 adds `interfaceStyle`, defaulting to Axiom, while schema 9 adds PDF-reader defaults, retaining
+See the [control contract](UI_CONTROLS.md). Appearance schema 12 introduces original
+interface identities and Botanical, Spectrum and Graphite Ink packs. Known historical
+styles migrate into their successor families without clearing colors, fonts,
+restore points or unrelated values. Schema 10 introduced `interfaceStyle`,
+defaulting to Axiom, while schema 9 added PDF-reader defaults, retaining
 nested minimap preferences from schema 8, the reading-mark toggles from schema 7
-and `blockGuides` from schema 6. Versions 1–10 migrate without dropping
+and `blockGuides` from schema 6. Versions 1–11 migrate without dropping
 saved choices; older readers receive a compatible shape, and stale writes are
 rejected with 426.
 Save, cancel, section reset, offline merging and previous preferences include it.

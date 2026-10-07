@@ -1,6 +1,8 @@
 import { readFileSync } from "node:fs";
 import { test, expect, type Page } from "@playwright/test";
 import type { Preferences } from "../../packages/shared/src/appearance";
+import { interfaceStyleIds } from "../../packages/shared/src/interface-styles";
+import { themePackIds } from "../../packages/shared/src/theme-packs";
 import {
   expectSheetBlock,
   expectSheetField,
@@ -139,8 +141,8 @@ test("code and equation hover borders are wider without reflow or source reveal"
   expect(await page.evaluate(() => window.editorLab.recovery())).toEqual([]);
 });
 
-for (const pack of ["default", "paper-research", "technical-slate"] as const)
-  for (const style of ["axiom", "material", "fluent", "editorial"] as const)
+for (const pack of themePackIds)
+  for (const style of interfaceStyleIds)
     for (const dark of [false, true]) {
       test(`property tables share paper geometry · ${pack} · ${style} · ${dark ? "dark" : "light"}`, async ({
         page,
@@ -283,7 +285,7 @@ for (const scale of [0.8, 1.5]) {
       codeSize: 24,
       radius: 0,
       shadows: "none",
-      interfaceStyle: "material",
+      interfaceStyle: "contour",
       lightPreset: "lightContrast",
     });
     const title = definition(page).getByLabel("Title", { exact: true });
@@ -482,12 +484,7 @@ test("editor field dialogs share control typography, shape and surface", async (
   await expect(dialog.getByLabel("Placement")).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(dialog.getByLabel("Caption")).toBeFocused();
-  for (const interfaceStyle of [
-    "axiom",
-    "material",
-    "fluent",
-    "editorial",
-  ] as const) {
+  for (const interfaceStyle of interfaceStyleIds) {
     await appearance(
       page,
       { uiScale: 1.5, radius: 0, shadows: "none", interfaceStyle },
@@ -516,7 +513,7 @@ test("custom paper and tinted canvas remain continuous through edit states witho
     sheetSpecimen,
   );
   await appearance(page, {
-    interfaceStyle: "material",
+    interfaceStyle: "contour",
     radius: 24,
     lightColors: {
       paper: "#fff9ed",

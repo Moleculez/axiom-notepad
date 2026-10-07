@@ -8,6 +8,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { createRequire } from "node:module";
 import { pluginManifestSchema } from "../../packages/shared/src/plugins";
 import { APPEARANCE_SCHEMA } from "../../packages/shared/src/appearance";
+import { interfaceStyleIds } from "../../packages/shared/src/interface-styles";
 import { signInOwner } from "./auth";
 
 const origin = process.env.TEST_APP_URL || "http://localhost:3004";
@@ -446,13 +447,7 @@ test("matched frames keep footers visible in all interface styles and large text
   try {
     await f.page.getByRole("button", { name: "Close extension panel" }).click();
     for (const mode of ["light", "dark"])
-      for (const interfaceStyle of [
-        "axiom",
-        "material",
-        "fluent",
-        "editorial",
-        "macos",
-      ]) {
+      for (const interfaceStyle of interfaceStyleIds) {
         const record = await (
           await f.context.request.get("/api/v1/me/preferences", {
             headers: { "X-Axiom-Appearance-Schema": String(APPEARANCE_SCHEMA) },
@@ -502,17 +497,16 @@ test("matched frames keep footers visible in all interface styles and large text
           }));
         expect(geometry.bottom).toBeLessThanOrEqual(geometry.viewport);
         expect(geometry.bottom).toBeGreaterThan(geometry.viewport - 100);
-        if (["axiom", "editorial", "fluent"].includes(interfaceStyle))
-          await f.page.screenshot({
-            path:
-              "test-results/plugins/" +
-              test.info().project.name +
-              "-" +
-              interfaceStyle +
-              "-" +
-              mode +
-              ".png",
-          });
+        await f.page.screenshot({
+          path:
+            "test-results/plugins/" +
+            test.info().project.name +
+            "-" +
+            interfaceStyle +
+            "-" +
+            mode +
+            ".png",
+        });
       }
     await f.page.emulateMedia({
       forcedColors: "active",

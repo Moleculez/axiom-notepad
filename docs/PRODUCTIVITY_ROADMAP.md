@@ -20,8 +20,9 @@ group-admin features remain in place. No new Office editing engine is introduced
   readership analytics include comparisons, CSV, manager-controlled public counters
   and optional consent-gated GA4 embedding. Collection is disabled by default.
 - Settings uses a searchable replacement rail and one shared page frame.
-  Axiom, Material Tonal, Fluent Studio, Editorial and macOS Studio presentations change component
-  styling independently of palette packs and reading typography. Processing-provider
+  Axiom, Contour, Vector, Folio, Harbor, Signal, Gridwork and Cutline presentations
+  change fields, selection, chrome and overlays independently of palette packs
+  and reading typography. Processing-provider
   dialogs have grouped aligned fields, a fixed footer and guarded draft dismissal.
 
 - Shared context-menu normalization: at most eight root actions, named categories,

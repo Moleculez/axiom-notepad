@@ -1,0 +1,20 @@
+[data-theme-pack="botanical"] .reading-view a,
+[data-theme-pack="botanical"] .axiom-prose a {
+  text-decoration-color: var(--accent);
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.2em;
+}
+[data-theme-pack="botanical"] .editor-properties-caption,
+[data-theme-pack="botanical"] .document-metadata caption,
+[data-theme-pack="botanical"] .canvas-resource-caption {
+  color: var(--muted);
+}
+[data-theme-pack="botanical"] .reading-view hr,
+[data-theme-pack="botanical"] .axiom-prose .editor-properties td,
+[data-theme-pack="botanical"] .prose .document-metadata td {
+  border-color: var(--line);
+}
+[data-theme-pack="botanical"] .canvas-card-toolbar {
+  color: var(--muted);
+  background-color: var(--paper);
+}

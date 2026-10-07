@@ -44,7 +44,7 @@ This deterministically exports [ink](assets/brand/mark-ink.svg),
 SVGs and matching transparent 512px PNGs into `docs/assets/brand/`. Public assets
 include the SVG favicon and opaque 32/180/192/512px tiles. Normal production builds
 also regenerate these files. Existing PNG icon routes remain valid; a new 180px
-route supplies the Apple touch icon.
+route supplies the installed-device touch icon.
 
 When geometry changes, bump `brandVersion`, update the manifest icon query versions,
 and regenerate. The offline manifest includes the current versioned icons. The PWA
@@ -66,5 +66,33 @@ or performance.
 
 See the [documentation asset workflow](SHOWCASE.md) for capture and composition.
 The curated assets are intentional repository files; raw browser evidence stays in
-ignored test output. Third-party font notices remain applicable. This guide does
-not grant a new license to the application or its assets.
+ignored test output. Axiom's first-party source, documentation and original brand
+artwork are covered by the root [MIT License](../LICENSE). Third-party font/icon
+notices remain applicable and are not relicensed by this guide.
+
+## Original interface vocabulary and attribution
+
+Use Axiom's own design names and semantic action icons, not product comparisons,
+borrowed platform names or optional vendor logos. The interface systems are
+**Axiom, Contour, Vector, Folio, Harbor, Signal, Gridwork and Cutline**. Describe
+their actual field, selection, chrome and overlay behavior; do not claim a vendor
+library or platform certification. Publication and palette labels follow the
+same original vocabulary even when stable persisted identifiers are historical.
+
+This is a presentation rule, not an instruction to hide provenance or recipients.
+Keep exact dependency/package names, language and font names, interoperable MIME
+types, standards, historical preference aliases, repository/hosting URLs, provider
+setup identity and explicit privacy/consent recipients. Retain every upstream
+copyright, notice and license. User-authored documents and private configuration
+are not branding cleanup targets.
+
+Language suggestions use the shared neutral semantic icon catalog; identifying
+text keeps each language's correct name. The source link uses a source-code icon
+and the label “Source repository.” Optional analytics actions use ordinary
+descriptive labels while their setup/help and visitor disclosure still identify
+the actual destination.
+
+`validate:ui` includes the authored-branding/license guard. It scans first-party
+documentation and display strings, not third-party notices or arbitrary source
+identifiers. New external technical/attribution references must have a concrete
+reason; do not silence the guard by changing user content or licensed material.

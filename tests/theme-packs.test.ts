@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
-import { themePacks } from "../packages/shared/src/theme-packs";
+import { themePacks, themePackIds } from "../packages/shared/src/theme-packs";
 import {
   themePackContrast,
   themePackManifestSchema,
@@ -14,6 +14,39 @@ import {
   presets,
 } from "../packages/shared/src/appearance";
 describe("trusted theme contracts", () => {
+  it("keeps pack identities, stylesheet imports and supported contracts complete", () => {
+    expect(themePackIds.slice(1)).toEqual(themePacks.map((pack) => pack.id));
+    const styles = readFileSync("apps/web/app/styles.ts", "utf8");
+    for (const pack of themePacks)
+      expect(styles).toContain(`import "../themes/${pack.id}.css";`);
+    for (const version of [0, 4, 6, 11, 13, 999])
+      expect(
+        themePackManifestSchema.safeParse({
+          ...themePacks[0],
+          minimumAppearanceSchema: version,
+        }).success,
+      ).toBe(false);
+  });
+  it("new packs supply coordinated captions, rules and links without form resets", () => {
+    const newPacks = themePacks.filter(
+      (pack) => pack.minimumAppearanceSchema === 12,
+    );
+    expect(newPacks.map((pack) => pack.id)).toEqual([
+      "botanical",
+      "spectrum",
+      "graphite-ink",
+    ]);
+    for (const pack of newPacks) {
+      const css = readFileSync(pack.css, "utf8");
+      expect(css).toContain(".editor-properties-caption");
+      expect(css).toContain(".canvas-resource-caption");
+      expect(css).toContain("text-underline-offset:");
+      expect(css).toContain("border-color:");
+      expect(css).not.toMatch(
+        /\b(?:input|textarea|select)\b|--(?:font|radius|size|control)-/,
+      );
+    }
+  });
   for (const pack of themePacks)
     it(`${pack.name} has paired readable palettes and scoped CSS`, () => {
       expect(themePackManifestSchema.safeParse(pack).success).toBe(true);

@@ -292,7 +292,7 @@ test("website themes, discovery, analytics privacy and static exports", async ({
     ).toBeVisible();
     expect(googleRequests).toHaveLength(0);
     await page
-      .getByRole("button", { name: "Reject Google", exact: true })
+      .getByRole("button", { name: "Reject external analytics", exact: true })
       .click();
     await expect.poll(async () => (await report()).current.views).toBe(1);
     // Cumulative event retries/out-of-order writes cannot inflate totals.
@@ -339,14 +339,14 @@ test("website themes, discovery, analytics privacy and static exports", async ({
       .getByRole("button", { name: "Privacy settings", exact: true })
       .click();
     await page
-      .getByRole("button", { name: "Accept Google", exact: true })
+      .getByRole("button", { name: "Accept external analytics", exact: true })
       .click();
     await expect.poll(() => googleRequests.length).toBe(1);
     await page
       .getByRole("button", { name: "Privacy settings", exact: true })
       .click();
     await page
-      .getByRole("button", { name: "Reject Google", exact: true })
+      .getByRole("button", { name: "Reject external analytics", exact: true })
       .click();
     expect(
       await page.evaluate(() =>

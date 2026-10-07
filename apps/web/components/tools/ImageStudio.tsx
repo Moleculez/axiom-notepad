@@ -2042,7 +2042,7 @@ export default function ImageStudio({
             <>
               <p>
                 Exports are copies. PSD export preserves common raster layers,
-                masks and transforms as raster appearance; advanced Photoshop
+                masks and transforms as raster appearance; advanced source-format
                 features are not recreated.
               </p>
               <div className="tool-export-grid">

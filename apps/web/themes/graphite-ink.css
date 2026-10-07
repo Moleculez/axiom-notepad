@@ -1,0 +1,20 @@
+[data-theme-pack="graphite-ink"] .reading-view a,
+[data-theme-pack="graphite-ink"] .axiom-prose a {
+  text-decoration-color: var(--text);
+  text-decoration-thickness: 0.06em;
+  text-underline-offset: 0.18em;
+}
+[data-theme-pack="graphite-ink"] .editor-properties-caption,
+[data-theme-pack="graphite-ink"] .document-metadata caption,
+[data-theme-pack="graphite-ink"] .canvas-resource-caption {
+  color: var(--muted);
+}
+[data-theme-pack="graphite-ink"] .reading-view hr,
+[data-theme-pack="graphite-ink"] .axiom-prose .editor-properties td,
+[data-theme-pack="graphite-ink"] .prose .document-metadata td {
+  border-color: var(--muted);
+}
+[data-theme-pack="graphite-ink"] .canvas-card-toolbar {
+  color: var(--muted);
+  background-color: var(--paper);
+}

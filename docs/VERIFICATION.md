@@ -1,7 +1,134 @@
 # Current verification and beta release gates
 
-Updated October 7, 2026. Historical logs are [archived separately](archive/VERIFICATION-2026-09-11.md).
+Updated October 8, 2026. Historical logs are [archived separately](archive/VERIFICATION-2026-09-11.md).
 Do not treat historical browser totals or local build IDs as current release evidence.
+
+## October 8 original interface systems and licensing
+
+- Eight complete, typed interface recipes now drive production and showcase:
+  Axiom, Contour, Vector, Folio, Harbor, Signal, Gridwork and Cutline. Their field,
+  selection, chrome, control and overlay treatments remain independent of colors,
+  fonts and document layout. Representative native-radio miniatures and a real
+  interactive comparison gallery hold palette/typography constant. Axiom remains
+  the default. Botanical, Spectrum and Graphite Ink add paired semantic palettes
+  and bounded document treatments, bringing optional trusted packs to five.
+- Appearance schema 12 normalizes historical style identities without discarding
+  explicit preferences or restore points. Legacy readers receive representable
+  projections or an upgrade response; old writers cannot erase new choices.
+  Account-scoped first paint derives recipes and aliases from the registry rather
+  than a second hardcoded list. Document fields remain transparent and independent
+  of application form drawing, including at zero radius and disabled shadows.
+- Neutral semantic icons replace optional vendor marks. Original presentation
+  names are checked without removing technical identities, consent recipients,
+  compatibility IDs or upstream notices. The root MIT license names **2026
+  Moleculez**; all ten first-party package manifests and lock entries agree.
+  [UI controls](UI_CONTROLS.md), [theme authoring](THEME_AUTHORING.md) and
+  [branding](BRANDING.md) document the continuing contributor boundaries.
+
+### Executed evidence
+
+- **2,628 unit tests / 159 files** pass. TypeScript, whole-repository ESLint,
+  whitespace, documentation links, UI validation (**211 JSX / 48 CSS files**),
+  all five pack scope/contrast checks and first-party license metadata pass.
+  The UI gate additionally rejects incomplete or unsafe recipes and pairs without
+  three non-color differences, including a field/selection difference.
+  One commit preflight run hit the existing owned-process cleanup test's
+  `kill EPERM`; its focused **17-case** rerun and complete **2,628-case** rerun
+  pass without changing the cleanup helper. The intermittent cause is not established.
+- The broad built static showcase passes **336 cases** across Chromium, Firefox
+  and WebKit in `data/interface-v12-showcase-accepted`. It covers all eight styles,
+  both modes, mixed actions, settings scroll ownership and footers, editor
+  source/undo, local files, exports, mind maps and Canvas. This is the broad
+  checkpoint before the final primary-hover and nested-popup foreground polish.
+- A freshly rebuilt controls/comparison replay passes **120 cases** across those
+  engines in `data/interface-v12-showcase-final-controls`, including the final
+  primary-hover and paper-popup foreground fixes. After the production-only Docs
+  scaling and Recent-work overlay fixes, another fresh showcase build passes all
+  **12 comparison cases** in `data/interface-v12-gallery-final`. Its samples cover
+  native interactions, equal palette/font comparisons, zero-radius/no-shadow
+  layouts, both modes and browser accessibility emulation without changing files.
+- Editor property-table/field coverage passes **311 cases**, with one explicit
+  WebKit forced-colors skip, in `data/interface-v12-property-tables`. The matrix
+  includes all eight styles, six palette choices and both modes. Thirty neutral
+  menu/icon cases pass in `data/interface-v12-menu-icons`; twelve comparison
+  cases pass in `data/interface-v12-gallery-accepted`. Actual screenshots were
+  reviewed for alignment, wrapping, continuous paper, reachable footers, large
+  text, square corners and disabled shadows.
+  The separate mind-map design replay passes **54 cases** in
+  `data/interface-v12-mindmap-accepted` with the current native-radio picker.
+- Isolated optimized production candidate **`EpsjxnbcfPfzSJAHRHk_9`** passes all
+  **39 targeted cases** across the three engines, with **983 offline assets**.
+  These cover transactional preview/Apply/Cancel, reload and legacy-writer guards,
+  all style/mode combinations, menu foregrounds, split-pane scrolling, account
+  forms and 33px typography on nine page layouts. Settled fixture measurements
+  record minimum text contrast **5.372:1** and essential glyph contrast
+  **5.734:1**; this is measured fixture coverage, not every possible custom color.
+  All four sync durability gates pass. Paired recovery verifies **31 database
+  contracts**, **one blob checksum** and nonempty-target overwrite refusal.
+  The accepted receipt is `data/reliability-XiABJj/receipt.json`. This checkpoint
+  precedes the comparison-gallery row-flow and full-width layout refinements.
+- A later isolated gallery-only production replay passes **three cases** across
+  the three engines in `data/reliability-ccRLez/receipt.json`, using candidate
+  **`rVRR3SRHMjKcMK7N4mR_H`** with **983 offline assets**. Its four durability
+  gates and paired recovery also pass. The 48 row screenshots exposed fragmented
+  labels in the narrow split panel at 33px and stale selected paint in some
+  WebKit captures; these screenshots are diagnostic findings, not final visual
+  acceptance. The scoped row-flow showcase replay passes **12 cases** in
+  `data/interface-v12-gallery-row-scoped-final` before the full-width refinement.
+- Comparison now temporarily uses the full settings track without unmounting the
+  live preview. Closing it restores the prior split and preview state. Tests add
+  usable title widths, bounded wrapping, preview source/undo retention and settled
+  native checked/row/glyph contrast assertions. The compile-only production checkpoint
+  **`qz6ErmGh6OTCgx0l4HzkL`** passes compilation, types and routing with **983
+  offline assets**; the latest static showcase also builds. These are build gates,
+  not a new authenticated production-browser receipt.
+- Direct Chrome review of the latest built, browser-local showcase verifies
+  full-width comparison in both modes, 22px UI text, checkbox round trips, aligned
+  icon/label rows, readable fields/sliders and a reachable stationary footer.
+  All eight checked samples expose matching native and row state with opaque,
+  contrasting glyphs. Closing comparison restores the live preview. Temporary
+  preferences and the viewport override were restored; no documents were edited.
+  The earlier **12 automated comparison attempts** in
+  `data/interface-v12-gallery-fullwidth` fail during browser startup under the
+  then-restricted permissions; no browser assertions execute in that run.
+- After full access is restored, the freshly rebuilt full-width showcase passes
+  **12 cases**, four per engine, with **zero skips, failures or flaky cases**, in
+  `data/interface-v12-gallery-fullwidth-fullaccess`. Actual light/dark, large-text,
+  wrapped-title and square/no-shadow screenshots are reviewed for contained
+  controls, aligned glyphs and a reachable footer. The documented native WebKit
+  popup-selector corner exception remains; it does not permit rounded authored
+  controls when the explicit radius is zero.
+- Fresh isolated production candidate **`OWqUdfJl1shPbTONUUGQF`**, with **983
+  offline assets**, passes all **three full-width gallery cases** across the
+  desktop engines in `data/reliability-4KNJyu/receipt.json`. Coverage includes
+  both modes at 33px, all eight systems, usable title tracks, settled checked
+  glyph contrast, retained preview DOM/split position, exact scratchpad source
+  undo, unchanged saved preferences and unchanged fixture Markdown. All four
+  durability gates and paired recovery (**31 database contracts**, **one blob**,
+  nonempty-target overwrite refusal) also pass. This is targeted acceptance,
+  not a new replay of every earlier production workflow.
+
+Earlier diagnostic outputs remain retained, not accepted receipts. They exposed
+an obsolete mind-map picker selector, a Firefox animation-bookkeeping wait and
+an inverse-header foreground leaking into a paper popup. A WebKit typography
+assertion also sampled inherited text before settings hydration had settled;
+its corrected preflight verifies 33px UI text and the 28.05px Docs caption across
+all nine routes. Screenshot sampling now checks settled computed colors and
+visible native-details contents rather than unrelated animation counts.
+
+The diagnostic `data/reliability-cF5b5l` run also exposed an invalid undo oracle:
+virtualized source `innerText` omitted offscreen lines, while `textContent`
+concatenated line nodes without canonical newlines. The corrected test reads the
+actual **Copy sample Markdown** action, checks fresh browser-local captures and
+compares complete source bytes; it does not touch or certify the OS clipboard.
+
+Physical IME/clipboard, assistive technologies and real OS accessibility remain separate
+acceptance work; emulation is not certification. Working data, existing dev
+services and the pre-existing generated type selection are preserved by isolated
+verification. At the earlier restricted checkpoint, UI/theme/documentation
+validators used `node --import tsx` because the CLI's IPC socket was denied;
+the full-access commit preflight uses the standard npm commands. Publishing source
+does not upgrade the working database or promote any disposable fixture data.
 
 ## October 7 UI consistency and bounded performance audit
 
@@ -2076,7 +2203,7 @@ recommended runtime and Docker image target. No public deployment or push was ru
   flows, workspace lifecycle, Trash, native-file creation and Canvas interactions.
 - **Nine branding scenarios pass** on the final candidate, three each in Chromium,
   Firefox and WebKit: auth/workspace identity, light/dark geometry, named controls,
-  focus, forced colors, unchanged source, versioned favicon/PNG routes, Apple icon,
+  focus, forced colors, unchanged source, versioned favicon/PNG routes, touch icon,
   manifest shortcuts and the public social-image asset. The five editor-vNext
   scenarios also pass again after the visual rollout. These reruns are not added
   to the product total a second time.

@@ -1,7 +1,12 @@
 import { z } from "zod";
 import { legacyDocumentDecorations } from "./document-style";
 import { themePack, themePackIds } from "./theme-packs";
-import { interfaceStyleIds } from "./interface-styles";
+import {
+  interfaceStyleIds,
+  interfaceStyleVariables,
+  legacyInterfaceStyleId,
+  normalizeInterfaceStyleId,
+} from "./interface-styles";
 import { minimapPreferencesSchema } from "./minimap";
 import { pdfReaderPreferencesSchema } from "./pdf-reader";
 
@@ -270,7 +275,7 @@ export const presets: Record<
     },
   },
 };
-export const APPEARANCE_SCHEMA = 11;
+export const APPEARANCE_SCHEMA = 12;
 export const APPEARANCE_SCHEMA_HEADER = "X-Axiom-Appearance-Schema";
 const currentPreferencesSchema = z
   .object({
@@ -343,9 +348,13 @@ const currentPreferencesSchema = z
       .default([]),
   })
   .strict();
-// Reading an older account/cache must not silently restyle it. Only new
-// profiles receive the new defaults; existing explicit choices survive intact.
+// Reading an older account/cache preserves explicit choices. Historical style
+// identities map to their corresponding recipe, never to unrelated defaults.
 export const preferencesSchema = z.preprocess((value) => {
+  const normalizedStyle =
+    value && typeof value === "object" && "interfaceStyle" in value
+      ? normalizeInterfaceStyleId(value.interfaceStyle)
+      : undefined;
   if (
     value &&
     typeof value === "object" &&
@@ -363,6 +372,7 @@ export const preferencesSchema = z.preprocess((value) => {
       material: "solid",
       glassIntensity: 65,
       ...value,
+      ...(normalizedStyle ? { interfaceStyle: normalizedStyle } : {}),
       schemaVersion: APPEARANCE_SCHEMA,
     };
   if (
@@ -378,11 +388,13 @@ export const preferencesSchema = z.preprocess((value) => {
       value.schemaVersion === 7 ||
       value.schemaVersion === 8 ||
       value.schemaVersion === 9 ||
-      value.schemaVersion === 10)
+      value.schemaVersion === 10 ||
+      value.schemaVersion === 11)
   )
     return {
       documentDecorations: legacyDocumentDecorations(value),
       ...value,
+      ...(normalizedStyle ? { interfaceStyle: normalizedStyle } : {}),
       schemaVersion: APPEARANCE_SCHEMA,
     };
   return value;
@@ -428,15 +440,38 @@ export function appearanceForClient(
 ) {
   const version = request.headers.get(APPEARANCE_SCHEMA_HEADER);
   if (version === String(APPEARANCE_SCHEMA)) return record;
-  if (version === "10") {
-    // v10 cannot represent macOS Studio. Never send an unknown ID that an old
-    // tab could replace with fallback defaults, including in a restore point.
-    if (
-      record.preferences.interfaceStyle === "macos" ||
-      record.previousPreferences?.interfaceStyle === "macos"
-    )
-      return null;
-    const legacy = (p: Preferences) => ({ ...p, schemaVersion: 10 });
+  const supportedLegacyVersions = [
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8",
+    "9",
+    "10",
+    "11",
+  ];
+  if (version && !supportedLegacyVersions.includes(version)) return null;
+  const clientVersion = Number(version ?? "2");
+  // Both the current value and its restore point must fit an older reader.
+  // Dropping a new style or pack would misleadingly substitute an older look.
+  const representable = (p: Preferences) =>
+    legacyInterfaceStyleId(p.interfaceStyle, clientVersion) !== undefined &&
+    (p.themePack === "default" ||
+      p.themePack === "paper-research" ||
+      p.themePack === "technical-slate");
+  if (
+    !representable(record.preferences) ||
+    (record.previousPreferences && !representable(record.previousPreferences))
+  )
+    return null;
+  if (version === "10" || version === "11") {
+    const legacy = (p: Preferences) => ({
+      ...p,
+      interfaceStyle: legacyInterfaceStyleId(p.interfaceStyle, clientVersion),
+      schemaVersion: clientVersion,
+    });
     return {
       ...record,
       preferences: legacy(record.preferences),
@@ -501,8 +536,6 @@ export function appearanceForClient(
         : record.previousPreferences,
     };
   }
-  if (version && version !== "2" && version !== "3" && version !== "4")
-    return null;
   const compatible = (p: Preferences) =>
     p.themePack === "default" &&
     (version === "4" || p.documentDecorations === "none") &&
@@ -596,7 +629,9 @@ export function appearanceVariables(
   p: Preferences,
   dark: boolean,
 ): Record<string, string> {
-  const result: Record<string, string> = {};
+  const result: Record<string, string> = {
+    ...interfaceStyleVariables(p.interfaceStyle),
+  };
   const palette = paletteFor(p, dark);
   for (const [key, color] of Object.entries(palette))
     result["--" + key.replace(/[A-Z]/g, (c) => "-" + c.toLowerCase())] = color;
@@ -606,6 +641,14 @@ export function appearanceVariables(
     contrastRatio(palette.danger, "#000000")
       ? "#ffffff"
       : "#000000";
+  // An ink navigation band needs an independently legible foreground. This
+  // changes only chrome presentation, not the user's palette or paper colors.
+  result["--ink-chrome-text"] =
+    contrastRatio(palette.text, "#ffffff") >=
+    contrastRatio(palette.text, "#000000")
+      ? "#ffffff"
+      : "#000000";
+  result["--ink-chrome-muted"] = result["--ink-chrome-text"];
   for (const role of ["ui", "prose", "heading", "code"] as const)
     result[`--font-${role}`] = fonts[p[`${role}Font`]].family;
   for (const role of ["ui", "prose", "code"] as const)

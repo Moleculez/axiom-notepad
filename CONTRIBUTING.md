@@ -135,3 +135,16 @@ and dark artwork visually, including reduced-size readability, before committing
   licenses/notices and document actual dependency boundaries.
 
 No outbound deployment, tag or push is implied by a local commit.
+
+## Licensing and original interface names
+
+First-party source, documentation and original Axiom artwork use the root
+[MIT License](LICENSE), copyright © 2026 Moleculez. Retain upstream notices,
+attribution and license files for dependencies, fonts, icons and bundled assets;
+do not replace their terms with the application license.
+
+Use Axiom's original interface vocabulary and semantic icons. Technical
+dependency/language/font identifiers and explicit provider/consent destinations
+stay accurate; historical compatibility IDs are not user-facing style choices.
+The authored-branding and first-party MIT metadata checks run with
+`npm run validate:ui`. See [branding exceptions](docs/BRANDING.md#original-interface-vocabulary-and-attribution).

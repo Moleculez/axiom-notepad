@@ -325,6 +325,26 @@ test("desktop pages honor scaled typography, square surfaces and no decorative s
         "dark",
       );
       await expect(f.page.locator(".ws-loading:visible")).toHaveCount(0);
+      const caption = () =>
+        f.page
+          .getByRole("link", { name: "Open Docs", exact: true })
+          .evaluate((element) => ({
+            fontSize: parseFloat(getComputedStyle(element).fontSize),
+            uiSize: parseFloat(
+              getComputedStyle(element.closest(".ws-app")!).fontSize,
+            ),
+          }));
+      // Inherited font styles can settle one frame after the root variables in
+      // WebKit. Verify both values, not a mixed hydration-frame measurement.
+      await expect
+        .poll(async () => (await caption()).uiSize)
+        .toBeCloseTo(33, 1);
+      await expect
+        .poll(async () => {
+          const value = await caption();
+          return Math.abs(value.fontSize - value.uiSize * 0.85);
+        })
+        .toBeLessThan(0.05);
       if (route === "settings/theme") {
         // Let the lazily loaded math worker finish before navigating away.
         // WebKit reports canceled worker script loads as access-control errors.

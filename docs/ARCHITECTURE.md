@@ -73,9 +73,9 @@ reconfigure the existing sample view; hiding it preserves the session. Profile
 and notification forms use independent saved baselines and their existing APIs,
 not the Appearance/Writing draft controller. See [settings behavior](SETTINGS.md).
 
-Current appearance preferences use **schema 11**; Writing uses **schema 2** and
+Current appearance preferences use **schema 12**; Writing uses **schema 2** and
 portable palette JSON remains **version 1**. Clients advertise
-`X-Axiom-Appearance-Schema: 11` on bundle requests. Readers normalize older saved
+`X-Axiom-Appearance-Schema: 12` on bundle requests. Readers normalize older saved
 profiles without dropping authored choices. Older clients receive a representable
 shape or HTTP 426; stale writes cannot silently erase new settings. The optional
 `savePrevious` snapshot and preference revision commit in the same compare-and-swap

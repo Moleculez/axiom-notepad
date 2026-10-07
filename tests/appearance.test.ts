@@ -19,9 +19,10 @@ import { applyDocumentStyle } from "../packages/shared/src/editor-looks";
 import {
   interfaceStyleIds,
   interfaceStyles,
+  interfaceStyleVariables,
 } from "../packages/shared/src/interface-styles";
 describe("personal appearance", () => {
-  it("migrates version 10 without restyling and negotiates the five-style registry safely", () => {
+  it("migrates historical identities and negotiates representable recipes safely", () => {
     expect(interfaceStyles.map((style) => style.id)).toEqual([
       ...interfaceStyleIds,
     ]);
@@ -35,7 +36,11 @@ describe("personal appearance", () => {
         lightColors: { accent: "#123456" },
       },
       upgraded = preferencesSchema.parse(legacy);
-    expect(upgraded).toEqual({ ...legacy, schemaVersion: 11 });
+    expect(upgraded).toEqual({
+      ...legacy,
+      schemaVersion: APPEARANCE_SCHEMA,
+      interfaceStyle: "vector",
+    });
     const request = new Request("http://localhost", {
         headers: { [APPEARANCE_SCHEMA_HEADER]: "10" },
       }),
@@ -54,24 +59,135 @@ describe("personal appearance", () => {
         preferencesSchema.parse({ ...upgraded, interfaceStyle: style })
           .interfaceStyle,
       ).toBe(style);
-    const macos = preferencesSchema.parse({
+    const harbor = preferencesSchema.parse({
       ...upgraded,
-      interfaceStyle: "macos",
+      interfaceStyle: "harbor",
     });
     expect(
-      appearanceForClient(request, { ...record, preferences: macos }),
+      appearanceForClient(request, { ...record, preferences: harbor }),
     ).toBeNull();
     expect(
-      appearanceForClient(request, { ...record, previousPreferences: macos }),
+      appearanceForClient(request, { ...record, previousPreferences: harbor }),
     ).toBeNull();
     expect(
       appearanceForClient(
         new Request("http://localhost", {
           headers: { [APPEARANCE_SCHEMA_HEADER]: "11" },
         }),
-        { ...record, preferences: macos },
+        { ...record, preferences: harbor },
       )?.preferences,
-    ).toEqual(macos);
+    ).toEqual({ ...harbor, schemaVersion: 11, interfaceStyle: "macos" });
+    for (const [old, canonical] of [
+      ["material", "contour"],
+      ["fluent", "vector"],
+      ["editorial", "folio"],
+      ["macos", "harbor"],
+    ]) {
+      for (const version of [1, 9, 10, 11]) {
+        const normalized = preferencesSchema.parse({
+          ...legacy,
+          schemaVersion: version,
+          interfaceStyle: old,
+        });
+        expect(normalized.interfaceStyle).toBe(canonical);
+        expect(normalized.radius).toBe(0);
+        expect(normalized.uiSize).toBe(22);
+        expect(normalized.shadows).toBe("none");
+        expect(normalized.lightColors).toEqual({ accent: "#123456" });
+      }
+      expect(
+        preferencesSchema.safeParse({ ...defaults, interfaceStyle: old })
+          .success,
+      ).toBe(false);
+    }
+  });
+  it("refuses new-only styles and packs in older reads including restore points", () => {
+    for (const version of [null, "2", "4", "5", "7", "8", "9", "10", "11"]) {
+      const request = new Request("http://localhost", {
+        headers: version ? { [APPEARANCE_SCHEMA_HEADER]: version } : {},
+      });
+      for (const style of ["signal", "gridwork", "cutline"] as const) {
+        const value = { ...defaults, interfaceStyle: style };
+        expect(
+          appearanceForClient(request, { preferences: value, version: 2 }),
+        ).toBeNull();
+        expect(
+          appearanceForClient(request, {
+            preferences: defaults,
+            previousPreferences: value,
+            version: 2,
+          }),
+        ).toBeNull();
+      }
+      for (const themePack of [
+        "botanical",
+        "spectrum",
+        "graphite-ink",
+      ] as const) {
+        const value = { ...defaults, themePack };
+        expect(
+          appearanceForClient(request, { preferences: value, version: 2 }),
+        ).toBeNull();
+        expect(
+          appearanceForClient(request, {
+            preferences: defaults,
+            previousPreferences: value,
+            version: 2,
+          }),
+        ).toBeNull();
+      }
+    }
+    for (const interfaceStyle of interfaceStyleIds) {
+      const value = { ...defaults, interfaceStyle };
+      const record = {
+        preferences: value,
+        previousPreferences: value,
+        version: 2,
+      };
+      expect(
+        appearanceForClient(
+          new Request("http://localhost", {
+            headers: { [APPEARANCE_SCHEMA_HEADER]: String(APPEARANCE_SCHEMA) },
+          }),
+          record,
+        ),
+      ).toEqual(record);
+    }
+    expect(
+      appearanceForClient(
+        new Request("http://localhost", {
+          headers: { [APPEARANCE_SCHEMA_HEADER]: "13" },
+        }),
+        { preferences: defaults, version: 1 },
+      ),
+    ).toBeNull();
+  });
+  it("adds complete recipe roles without overriding palette, fonts or geometry", () => {
+    for (const interfaceStyle of interfaceStyleIds) {
+      const value = preferencesSchema.parse({
+        ...defaults,
+        interfaceStyle,
+        uiFont: "atkinson",
+        proseFont: "sourceSerif",
+        uiSize: 22,
+        radius: 0,
+        shadows: "none",
+        motion: "none",
+        lightColors: { paper: "#123456", text: "#fff000" },
+      });
+      const variables = appearanceVariables(value, false);
+      expect(variables).toMatchObject(interfaceStyleVariables(interfaceStyle));
+      expect(variables["--radius"]).toBe("0px");
+      expect(variables["--shadow"]).toBe("none");
+      expect(variables["--paper"]).toBe("#123456");
+      expect(variables["--text"]).toBe("#fff000");
+      expect(variables["--size-ui"]).toBe("1.375rem");
+      expect(variables["--font-ui"]).toContain("Atkinson");
+      expect(variables["--font-prose"]).toContain("Source Serif");
+      expect(
+        contrastRatio(variables["--ink-chrome-text"], "#fff000"),
+      ).toBeGreaterThanOrEqual(4.5);
+    }
   });
   it("derives readable danger labels separately from accent labels, including custom colors", () => {
     for (const mode of [false, true]) {
@@ -94,12 +210,12 @@ describe("personal appearance", () => {
     expect(upgraded.interfaceStyle).toBe("axiom");
     expect(upgraded.proseSize).toBe(23);
     expect(upgraded.radius).toBe(0);
-    const fluent = { ...upgraded, interfaceStyle: "fluent" as const };
+    const vector = { ...upgraded, interfaceStyle: "vector" as const };
     const response = appearanceForClient(
       new Request("http://localhost", {
         headers: { [APPEARANCE_SCHEMA_HEADER]: "9" },
       }),
-      { preferences: fluent, previousPreferences: upgraded, version: 2 },
+      { preferences: vector, previousPreferences: upgraded, version: 2 },
     );
     expect(response?.preferences).toEqual(legacy);
     expect(response?.previousPreferences).toEqual(legacy);

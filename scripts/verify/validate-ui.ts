@@ -5,6 +5,8 @@ import {
   validateUiStyles,
   type UiDiagnostic,
 } from "./ui-contract";
+import { inspectBrandingAndLicensing } from "./branding-contract";
+import { validateInterfaceRegistry } from "./interface-contract";
 
 const roots = ["apps/web/components", "apps/showcase/src"];
 let checked = 0;
@@ -25,6 +27,9 @@ async function inspect(directory: string) {
 }
 for (const root of roots) await inspect(root);
 await inspect("apps/web/app");
+const branding = await inspectBrandingAndLicensing();
+errors.push(...branding.errors);
+errors.push(...validateInterfaceRegistry());
 if (errors.length) {
   console.error(
     errors
@@ -34,5 +39,5 @@ if (errors.length) {
   process.exitCode = 1;
 } else
   console.log(
-    `${checked} application/showcase JSX files and ${stylesChecked} stylesheets respect the shared UI control contract.`,
+    `${checked} application/showcase JSX files and ${stylesChecked} stylesheets respect the shared UI control contract. Eight interface recipes are complete and structurally distinct. ${branding.checked} authored files respect presentation vocabulary; ${branding.packagesChecked} first-party packages have matching MIT metadata.`,
   );

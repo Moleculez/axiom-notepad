@@ -605,7 +605,7 @@ export const guideBodies: Record<string, GuideBody> = {
   "preferences/appearance": guide([
     [
       "Color, components and type",
-      "Appearance separates light/dark palettes, document packs and component styles such as Axiom, Material Tonal, Fluent Studio and Editorial. Configure interface, reading and code fonts/sizes separately. The live scratchpad helps compare real editor states.",
+      "Appearance separates light/dark palettes, document packs and eight original interface systems: Axiom, Contour, Vector, Folio, Harbor, Signal, Gridwork and Cutline. Compare their real controls with the same colors and fonts. Configure interface, reading and code typography independently; the live scratchpad retains your sample.",
     ],
     [
       "Reading geometry",

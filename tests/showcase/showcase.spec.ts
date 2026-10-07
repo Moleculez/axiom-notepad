@@ -195,7 +195,7 @@ test("production outline stays contained across themes, large text and accessibi
   const panel = page.getByRole("complementary", { name: "Document context" }),
     content = panel.locator(".ws-context-content"),
     toc = panel.getByRole("navigation", { name: "Table of contents" });
-  for (const { id } of interfaceStyles) {
+  for (const { id, name } of interfaceStyles) {
     for (const mode of ["light", "dark"] as const) {
       await page
         .getByRole("button", { name: "Appearance", exact: true })
@@ -203,7 +203,7 @@ test("production outline stays contained across themes, large text and accessibi
       const settings = page.getByRole("dialog", {
         name: "Appearance & editor",
       });
-      await settings.getByLabel("Interface design").selectOption(id);
+      await settings.getByRole("radio", { name, exact: true }).check();
       await settings.getByRole("button", { name: mode, exact: true }).click();
       const size = settings.getByLabel("Interface font size value", {
         exact: true,
@@ -302,7 +302,7 @@ test("production outline stays contained across themes, large text and accessibi
           .evaluate((el) => el.scrollTop),
       ).toBe(documentScroll);
       await expect(page.locator(".demo-document-status")).toBeInViewport();
-      if (id === "editorial" || (id === "axiom" && mode === "light")) {
+      if (id === "folio" || (id === "axiom" && mode === "light")) {
         await content.evaluate((element) => {
           element.scrollTop = 0;
         });
@@ -1079,7 +1079,7 @@ test("settings use one keyboard-accessible rail, stable panes and category-only 
   await page.screenshot({ path: info.outputPath("settings-light.png") });
   await settings.getByRole("tab", { name: "Theme & interface" }).click();
   await settings.getByRole("button", { name: "dark", exact: true }).click();
-  await settings.getByLabel("Interface design").selectOption("fluent");
+  await settings.getByRole("radio", { name: "Vector", exact: true }).check();
   await page.setViewportSize({ width: 1120, height: 760 });
   const compact = await layout();
   expect(compact.overflow).toBeLessThanOrEqual(1);

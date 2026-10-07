@@ -12,7 +12,7 @@ async function assets(
   const entries = await readdir(dir, { withFileTypes: true }),
     paths: string[] = [];
   for (const entry of entries) {
-    // Finder metadata and hidden tooling files are not public application assets.
+    // Platform metadata and hidden tooling files are not public application assets.
     // One failing URL would reject Cache.addAll and prevent the shell installing.
     if (entry.name.startsWith(".")) continue;
     const name = relative + entry.name;

@@ -21,6 +21,8 @@ export default defineConfig({
     "planning-intake.spec.ts",
     "ui-controls.spec.ts",
     "interface-harmony.spec.ts",
+    "settings-panels.spec.ts",
+    "workspace-websites.spec.ts",
     "productivity-settings.spec.ts",
     "research.spec.ts",
     "research-library.spec.ts",

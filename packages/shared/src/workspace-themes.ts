@@ -26,19 +26,19 @@ export const workspaceThemeFamilies: Record<string, Family> = {
     dark: "stoneDark",
   },
   materialIndigo: {
-    name: "Material Indigo",
+    name: "Indigo",
     description: "Tonal violet · calm emphasis",
     light: "materialIndigoLight",
     dark: "materialIndigoDark",
   },
   materialSage: {
-    name: "Material Sage",
+    name: "Sage",
     description: "Muted green · natural surfaces",
     light: "materialSageLight",
     dark: "materialSageDark",
   },
   materialTeal: {
-    name: "Material Teal",
+    name: "Teal",
     description: "Mineral teal · clear hierarchy",
     light: "materialTealLight",
     dark: "materialTealDark",

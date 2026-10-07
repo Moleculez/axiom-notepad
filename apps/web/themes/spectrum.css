@@ -1,0 +1,20 @@
+[data-theme-pack="spectrum"] .reading-view a,
+[data-theme-pack="spectrum"] .axiom-prose a {
+  text-decoration-color: var(--syntax);
+  text-decoration-thickness: 0.1em;
+  text-underline-offset: 0.22em;
+}
+[data-theme-pack="spectrum"] .editor-properties-caption,
+[data-theme-pack="spectrum"] .document-metadata caption,
+[data-theme-pack="spectrum"] .canvas-resource-caption {
+  color: var(--syntax);
+}
+[data-theme-pack="spectrum"] .reading-view hr,
+[data-theme-pack="spectrum"] .axiom-prose .editor-properties td,
+[data-theme-pack="spectrum"] .prose .document-metadata td {
+  border-color: var(--line);
+}
+[data-theme-pack="spectrum"] .canvas-card-toolbar {
+  color: var(--muted);
+  background-color: var(--paper);
+}

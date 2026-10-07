@@ -11,7 +11,7 @@ shared navigation and creation workflow.
 
 - A shared catalog of 177 locally rendered math-symbol SVGs in both note-editor
   completion menus and Math Studio. Existing insertion text, placeholder navigation,
-  code-language logos, menu icons and section dividers are retained. Code-body
+  neutral code-language symbols, menu icons and section dividers are retained. Code-body
   snippet completion stays disabled.
 - Resource-backed Math and Image Studio projects in the existing application tabs,
   Explorer, workspace permissions, quotas, Trash and database/attachment backups.

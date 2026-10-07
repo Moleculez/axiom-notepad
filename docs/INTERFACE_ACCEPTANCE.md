@@ -5,7 +5,7 @@ scrollers, a single preview toolbar and actions outside the scrolling content.
 Related changes cover account/management forms, Explorer action geometry, tool
 surfaces, contextual editor controls, and flexible Canvas card chrome. Existing
 preference draft/cancel behavior, document formats, access roles and collaboration
-are preserved. The five interface treatments use Appearance schema 11; see the
+are preserved. The eight interface treatments use Appearance schema 12; see the
 [theme contract](THEME_AUTHORING.md) for legacy reads and stale-writer protection.
 
 ## Reproduce safely
@@ -36,7 +36,7 @@ npm run test:editor -- tests/editor-lab/chrome-layout.spec.ts tests/editor-lab/t
 Also run typecheck, lint, unit tests, build, `validate:ui`, `validate:themes` and `docs:check`.
 
 The database-free control matrix uses the **shared real Interface specimen** in
-the built showcase. It covers all five interface styles in both color modes,
+the built showcase. It derives every registered interface style in both color modes,
 native checkbox/switch/slider behavior, scaling, pending/error/mixed states and
 dialog geometry. Build first; do not test against a stale static output:
 
@@ -126,7 +126,7 @@ idempotency/history/future edits, and human-reviewed MCP/in-app change sets with
 revocation. Tests never seed/reset normal research data.
 
 Current screenshots were visually reviewed for the task timeline, dark enlarged
-Gantt, centered picker form and Material/macOS field specimens. Artifacts remain
+Gantt, centered picker form and historical field specimens. Artifacts remain
 in ignored `data/planning-suite-*` and `data/showcase-results` directories. The
 normal development database was backed up (database and 1,017 attachment
 checksums verified), then additively migrated to 39 and its port-8080 web/sync/

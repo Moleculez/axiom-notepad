@@ -147,7 +147,7 @@ for (const pane of [0, 1]) {
 }
 
 for (const mode of ["write", "source"] as const) {
-  test(`${mode} fence suggestions show logos and selecting the logo completes only the language`, async ({
+  test(`${mode} fence suggestions show semantic icons and selecting the icon completes only the language`, async ({
     page,
   }) => {
     await page.evaluate(async (mode) => {
@@ -161,18 +161,10 @@ for (const mode of ["write", "source"] as const) {
       exact: true,
     });
     await expect(
-      option.locator('.language-logo[data-brand="python"] img'),
+      option.locator('.language-logo[data-language="python"] svg'),
     ).toBeVisible();
-    await expect
-      .poll(() =>
-        option
-          .locator("img")
-          .evaluate(
-            (img: HTMLImageElement) => img.complete && img.naturalWidth > 0,
-          ),
-      )
-      .toBe(true);
-    await option.locator("img").click();
+    await expect(option.locator("img")).toHaveCount(0);
+    await option.locator("svg").click();
     await expect
       .poll(async () => (await snapshot(page)).map((s) => s.source))
       .toEqual(["```python", "```python"]);
@@ -181,7 +173,7 @@ for (const mode of ["write", "source"] as const) {
 }
 
 for (const variant of ["light", "dark", "large", "forced"] as const) {
-  test(`language field logos remain readable in ${variant} appearance and offline`, async ({
+  test(`language field semantic icons remain readable in ${variant} appearance and offline`, async ({
     page,
   }, info) => {
     if (variant === "forced")
@@ -211,24 +203,13 @@ for (const variant of ["light", "dark", "large", "forced"] as const) {
     const before = await snapshot(page);
     const logos = languageMenu(page).locator(".language-logo");
     await expect(logos).toHaveCount(12);
-    const failed = await languageMenu(page)
-      .locator("img")
-      .evaluateAll((images) =>
-        images.some(
-          (image) =>
-            !(image as HTMLImageElement).src.startsWith("data:image/svg+xml,"),
-        ),
-      );
-    expect(failed).toBe(false);
-    if (variant === "forced") {
-      await expect(logos.first().locator("img")).not.toBeVisible();
-      await expect(logos.first().locator("svg")).toBeVisible();
-    } else await expect(logos.first().locator("img")).toBeVisible();
+    await expect(languageMenu(page).locator("img")).toHaveCount(0);
+    await expect(logos.first().locator("svg")).toBeVisible();
     const box = await page.locator(".axiom-language-completions").boundingBox();
     expect(box!.x).toBeGreaterThanOrEqual(0);
     expect(box!.x + box!.width).toBeLessThanOrEqual(1440);
     await page.screenshot({
-      path: info.outputPath(`language-logos-${variant}.png`),
+      path: info.outputPath(`language-icons-${variant}.png`),
     });
     expect(await snapshot(page)).toEqual(before);
     await page.context().setOffline(true);
@@ -238,7 +219,7 @@ for (const variant of ["light", "dark", "large", "forced"] as const) {
       exact: true,
     });
     await expect(
-      julia.locator('.language-logo[data-brand="julia"]'),
+      julia.locator('.language-logo[data-language="julia"] svg'),
     ).toHaveCount(1);
     await input.press("Tab");
     await expect

@@ -1687,7 +1687,7 @@ function ReleaseReview({
                   checked={includeGoogle}
                   onChange={(e) => setIncludeGoogle(e.target.checked)}
                 />
-                Include configured Google Analytics (visitor consent required)
+                Include external analytics (visitor consent required)
               </label>
               <HelpText>
                 First-party analytics and live counters are not included.

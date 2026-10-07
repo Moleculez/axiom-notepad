@@ -9,12 +9,20 @@ uses the reviewed fictional Spectral Lab screenshots.
 
 ## Try it
 
-The new **mind-map surface** is available in the latest source build, not yet
-verified or published by this increment. Choose Mind map for the research fixture
+The **mind-map surface** is available in the latest source build and verified
+locally; this increment does not publish the hosted site. Choose Mind map for the research fixture
 or an existing notebook: edit/search/fold branches, move representable structure,
 open Source/Block details and export Markdown/SVG/PNG/PDF/offline HTML. It shares
 the editor's local source, undo and persistence, adding no sync/API/provider calls.
 ZIP backups retain the profile. See [mind-map limits and acceptance](MINDMAP.md).
+
+The eight interface systems and five optional palette packs below are shared with
+production. **Appearance → Theme & interface → Compare all styles** opens native,
+interactive samples with identical colors and fonts. The gallery uses a full-width
+comparison track; closing it restores the mounted live preview.
+Local build/browser evidence
+is in [Verification](VERIFICATION.md); dated images are earlier visual checkpoints,
+not proof that the hosted site has received these source changes.
 
 - **Editor:** choose a notebook, or create a new one. Write, Source and Read modes
   share canonical Markdown. Try `/`, math, tables, highlighted code, nested lists,
@@ -37,8 +45,11 @@ ZIP backups retain the profile. See [mind-map limits and acceptance](MINDMAP.md)
   diagrams and images, and Print / Save as PDF. Canvas offers JSON Canvas,
   Markdown, SVG, PNG, JPEG, PDF and a portable ZIP. ZIP includes local notes and
   uploads, and can be restored additively through Local files → Import files.
-- **Appearance:** Axiom, Paper Research and Technical Slate packs; light, dark
-  and system modes; Axiom, Material Tonal, Fluent Studio, Editorial and macOS Studio component styles;
+- **Appearance:** Axiom, Paper Research, Technical Slate, Botanical, Spectrum and
+  Graphite Ink packs; light, dark
+  and system modes; eight original interface systems (Axiom, Contour, Vector,
+  Folio, Harbor, Signal, Gridwork and Cutline) with representative miniatures and
+  a real-control comparison gallery;
   separate body/heading/code fonts, weights and sizes, line/paragraph/letter/word
   spacing, reading width, equation scale, LaTeX-style numbering, folding guides,
   focus/typewriter behavior, code wrapping/numbers/indentation, table navigation
@@ -57,7 +68,7 @@ Write, Source and Read modes; its toolbar and word count stay fixed.
 
 The preview toolbar switches between Writing and the shared interactive Interface
 specimen without losing either surface's state. Compare native switch/slider,
-mixed selection, validation and pending actions in all five treatments. Theme &
+mixed selection, validation and pending actions in all registered treatments. Theme &
 interface also controls the UI font/size, density, corner radius and shadows;
 reading settings use precise numeric fields, visible units and per-control Reset
 alongside the same filled-track sliders as production.

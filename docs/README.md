@@ -53,6 +53,7 @@ their own deployment-specific acceptance checks.
 ## For contributors
 
 - [Repository structure and contribution workflow](../CONTRIBUTING.md)
+- [Project MIT license](../LICENSE) — first-party source and documentation; upstream notices remain applicable
 - [Extension development and acceptance](EXTENSIONS.md#package-format-and-sdk)
 - [Architecture and data boundaries](ARCHITECTURE.md)
 - [Performance and regression contracts](PERFORMANCE.md) — bounded caches, source-safe scheduling, offline upgrades and isolated measurements

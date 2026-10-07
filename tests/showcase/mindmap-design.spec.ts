@@ -149,7 +149,9 @@ for (const mode of ["light", "dark"] as const) {
       const appearance = page.getByRole("dialog", {
         name: "Appearance & editor",
       });
-      await appearance.getByLabel("Interface design").selectOption(style.id);
+      await appearance
+        .getByRole("radio", { name: style.name, exact: true })
+        .check();
       await appearance.getByRole("button", { name: mode, exact: true }).click();
       const size = appearance.getByLabel("Interface font size value", {
         exact: true,

@@ -17,8 +17,58 @@ import {
   settingsCategory,
   appearanceSections,
 } from "../apps/web/lib/settings-registry";
+import { defaults, APPEARANCE_SCHEMA } from "../packages/shared/src/appearance";
 
 describe("versioned preference bundle", () => {
+  it("upgrades old cache values and restore points independently while preserving pending edits", () => {
+    const value = emptyBundle();
+    const old = {
+      ...defaults,
+      schemaVersion: 11,
+      interfaceStyle: "macos",
+      radius: 0,
+      shadows: "none",
+      proseFont: "atkinson",
+      themePack: "paper-research",
+      lightColors: { accent: "#123456" },
+    };
+    const normalized = normalizeBundle({
+      ...value,
+      appearance: {
+        version: 9,
+        preferences: old,
+        previousPreferences: {
+          ...old,
+          interfaceStyle: "editorial",
+          proseSize: 24,
+        },
+      },
+    } as unknown as typeof value);
+    expect(normalized.appearance.version).toBe(9);
+    expect(normalized.appearance.preferences).toEqual({
+      ...old,
+      schemaVersion: APPEARANCE_SCHEMA,
+      interfaceStyle: "harbor",
+    });
+    expect(normalized.appearance.previousPreferences).toEqual({
+      ...old,
+      schemaVersion: APPEARANCE_SCHEMA,
+      interfaceStyle: "folio",
+      proseSize: 24,
+    });
+    const pending = bundleValues(normalized);
+    const remote = bundleValues(emptyBundle());
+    pending.appearance.proseSize = 29;
+    remote.editor.defaultCodeLanguage = "julia";
+    const merged = mergeBundle(bundleValues(normalized), pending, {
+      ...bundleValues(normalized),
+      editor: remote.editor,
+    });
+    expect(merged.values.appearance.proseSize).toBe(29);
+    expect(merged.values.appearance.interfaceStyle).toBe("harbor");
+    expect(merged.values.appearance.themePack).toBe("paper-research");
+    expect(merged.values.editor.defaultCodeLanguage).toBe("julia");
+  });
   it("normalizes old writing profiles without losing shortcuts", () => {
     const previous = {
       schemaVersion: 1,

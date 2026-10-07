@@ -108,14 +108,7 @@ test("8080 previews all six coordinated theme families without saving", async ({
   ).text();
   await page.goto("/workbench/settings/theme");
   await expect(page.locator(".theme-family-card")).toHaveCount(6);
-  for (const family of [
-    "Neutral",
-    "Zinc",
-    "Stone",
-    "Material Indigo",
-    "Material Sage",
-    "Material Teal",
-  ]) {
+  for (const family of ["Neutral", "Zinc", "Stone", "Indigo", "Sage", "Teal"]) {
     const button = page.getByRole("button", {
       name: `Use ${family} theme family`,
       exact: true,

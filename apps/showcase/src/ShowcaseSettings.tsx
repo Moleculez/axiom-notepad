@@ -28,7 +28,7 @@ import { fonts, type Preferences } from "@axiom/shared/appearance";
 import { NumberPreference } from "../../web/components/PreferenceControls";
 import { editorDefaults, type EditorPreferences } from "@axiom/shared/editor";
 import { themePacks } from "@axiom/shared/theme-packs";
-import { interfaceStyles } from "@axiom/shared/interface-styles";
+import InterfaceStylePicker from "../../web/components/ui/InterfaceStylePicker";
 import Dialog, { DialogFooter } from "../../web/components/Dialog";
 import ReadingView from "../../web/components/ReadingView";
 import ThemeWorkbench from "../../web/components/ThemeWorkbench";
@@ -174,7 +174,9 @@ export default function ShowcaseSettings({
     { changeAppearance, notify, navigate, renderContext, dark } = useDemo();
   const [section, setSection] = useState<Section>("Theme & interface"),
     [busy, setBusy] = useState<"backup" | "clear" | null>(null),
+    [comparingStyles, setComparingStyles] = useState(false),
     [preview, setPreview] = useState<"writing" | "interface">("writing");
+  const comparing = section === "Theme & interface" && comparingStyles;
   const id = useId(),
     selected = categories.findIndex((category) => category.name === section),
     context = useMemo(() => renderContext(), [renderContext]);
@@ -213,7 +215,7 @@ export default function ShowcaseSettings({
         if (busy !== "clear") onClose();
       }}
     >
-      <div className="demo-settings-layout">
+      <div className="demo-settings-layout" data-style-comparison={comparing}>
         <nav
           className="demo-settings-navigation"
           role="tablist"
@@ -277,7 +279,10 @@ export default function ShowcaseSettings({
           </header>
           <div className="demo-settings-fields" key={section}>
             {section === "Theme & interface" ? (
-              <ThemeSettings />
+              <ThemeSettings
+                comparing={comparingStyles}
+                onComparingChange={setComparingStyles}
+              />
             ) : section === "Local data" ? (
               <>
                 <div className="demo-local-summary">
@@ -386,6 +391,7 @@ export default function ShowcaseSettings({
         <aside
           className="demo-settings-preview"
           aria-label="Live appearance preview"
+          hidden={comparing}
         >
           <header>
             <BookOpen size={14} />
@@ -427,7 +433,7 @@ export default function ShowcaseSettings({
             <ThemeWorkbench
               preferences={snapshot.appearance}
               dark={dark}
-              active={preview === "interface"}
+              active={!comparing && preview === "interface"}
             />
           </div>
           <p>
@@ -454,7 +460,13 @@ export default function ShowcaseSettings({
   );
 }
 
-function ThemeSettings() {
+function ThemeSettings({
+  comparing,
+  onComparingChange,
+}: {
+  comparing: boolean;
+  onComparingChange: (comparing: boolean) => void;
+}) {
   const { appearance } = useSnapshot(),
     { changeAppearance } = useDemo();
   return (
@@ -499,6 +511,13 @@ function ThemeSettings() {
           >
             <span
               className={`demo-theme-swatch ${pack.id}`}
+              style={
+                "palettes" in pack
+                  ? {
+                      background: `linear-gradient(135deg, ${pack.palettes.light.paper} 50%, ${pack.palettes.light.accent} 50%)`,
+                    }
+                  : undefined
+              }
               aria-hidden="true"
             />
             <strong>{pack.name}</strong>
@@ -506,30 +525,12 @@ function ThemeSettings() {
           </button>
         ))}
       </div>
-      <h4>Interface treatment</h4>
-      <label className="demo-preference-field">
-        Interface design
-        <NativeSelect
-          aria-label="Interface design"
-          value={appearance.interfaceStyle}
-          onChange={(event) =>
-            changeAppearance({
-              interfaceStyle: event.target
-                .value as Preferences["interfaceStyle"],
-            })
-          }
-        >
-          {interfaceStyles.map((style) => (
-            <option key={style.id} value={style.id}>
-              {style.name}
-            </option>
-          ))}
-        </NativeSelect>
-      </label>
-      <p className="demo-settings-description">
-        Interface treatments change controls and surfaces. They do not replace
-        your palette or reading fonts.
-      </p>
+      <InterfaceStylePicker
+        value={appearance.interfaceStyle}
+        onChange={(interfaceStyle) => changeAppearance({ interfaceStyle })}
+        comparing={comparing}
+        onComparingChange={onComparingChange}
+      />
       <h4>Interface comfort</h4>
       <Field label="Interface font" className="demo-preference-field">
         <NativeSelect

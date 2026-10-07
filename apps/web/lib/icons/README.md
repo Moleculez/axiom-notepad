@@ -7,23 +7,20 @@ controls. Structural table glyphs are first-party 24px geometry. `action-data.js
 contains a curated subset of Lucide 0.577.0 SVG node definitions; its ISC notice is
 in `LUCIDE-LICENSE.txt`. No runtime package or full icon library is loaded.
 
-`language-data.json` records all 136 installed language entries. There are 58
-Devicon SVG assets shared by 63 entries; the other 73 entries have explicit
-semantic fallback icons. The immutable upstream revision and original SVG paths
-are included in that file. `DEVICON-LICENSE.txt` preserves the MIT notice.
-Logos identify languages/tools and do not imply endorsement. Brand ownership
-remains with the respective owners.
+`language-mappings.json` records a neutral semantic icon for all 136 installed
+language entries. The resolver shares the editor's language aliases but never
+writes an info string. Identifying labels retain their correct language names;
+optional vendor marks are not displayed or loaded into the runtime renderer.
 
-The resolver shares the editor's language aliases but never writes an info
-string. SVGs are bundled data, displayed as isolated image data URLs, not injected
-HTML or remotely fetched assets. They therefore travel with hashed editor chunks
-and the existing offline precache. Brand logos retain their colors on a neutral
-backing; forced colors and load failures use their semantic glyph instead.
+Native SVG action icons use current semantic text colors in all modes, including
+forced colors. There are no external image requests or logo-loading failures.
+The historical `language-data.json` source inventory and `DEVICON-LICENSE.txt`
+remain as upstream provenance; their original notices are not removed or rewritten.
 
 When updating the catalog, copy only required SVG node data from the installed
 Lucide icon module's `__iconNode` export (follow re-exported aliases), retaining
-its notice. Pin Devicon updates to a commit and record the source path of each
-reviewed SVG. Prefer compact original logos; Groovy uses the smaller plain mark.
+its notice. Add language mappings using the existing typed action catalog rather
+than adding vendor marks or new image assets.
 Never accept scripts, event attributes, embedded images, external references or
 user-defined SVG. Run the icon catalog units, cross-browser menu/language tests,
 and desktop visual acceptance after changes.

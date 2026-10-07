@@ -1,0 +1,310 @@
+/* Representative presentation, not another native-control implementation.
+   Every miniature consumes the same recipe roles as its real specimen. */
+.interface-style-picker {
+  margin: 0 0 1.5em;
+  padding: 0;
+  border: 0;
+  min-inline-size: 0;
+}
+.interface-style-picker legend {
+  padding: 0;
+  font-weight: 600;
+}
+.interface-style-picker > .ui-help {
+  margin-block: 0.5em 1em;
+}
+.interface-style-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17em), 1fr));
+  gap: 0.8em;
+  margin-block-end: 1em;
+}
+.interface-style-option {
+  display: grid;
+  align-content: start;
+  grid-template-rows: auto auto 1fr;
+  gap: 0.65em;
+  margin: 0;
+  padding: 0.8em;
+  border: 1px solid var(--line);
+  border-radius: var(--control-radius);
+  background: var(--paper);
+  color: var(--text);
+  cursor: pointer;
+  min-inline-size: 0;
+}
+.interface-style-option:has(:checked) {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.interface-style-option:has(:focus-visible) {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.interface-style-option:has(:disabled) {
+  cursor: default;
+}
+.interface-style-option-title {
+  display: flex;
+  align-items: center;
+  gap: 0.55em;
+  min-inline-size: 0;
+}
+.interface-style-option-title > svg {
+  inline-size: 1.15em;
+  block-size: 1.15em;
+  flex: none;
+  color: var(--muted);
+}
+.interface-style-option-title > strong {
+  font-size: var(--size-ui-small);
+  overflow-wrap: anywhere;
+}
+.interface-style-option-description {
+  color: var(--muted);
+  font-size: var(--size-ui-small);
+  line-height: 1.5;
+}
+.interface-style-miniature {
+  display: block;
+  min-inline-size: 0;
+  overflow: hidden;
+  border: 1px solid var(--ui-chrome-line);
+  border-radius: var(--panel-radius);
+  background: var(--paper);
+  color: var(--text);
+  font: var(--weight-ui) var(--size-ui-caption)/1.4 var(--font-ui);
+}
+.interface-miniature-chrome {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.6em;
+  padding: 0.65em;
+  background: var(--ui-panel-band);
+  border-block-end: 1px solid var(--line);
+  box-shadow: var(--ui-panel-rule);
+}
+.interface-miniature-tabs {
+  display: flex;
+  gap: 0.4em;
+}
+.interface-miniature-tabs > span {
+  padding: 0.3em 0.5em;
+  border-radius: var(--control-radius-small);
+}
+.interface-miniature-tabs > .is-selected {
+  background: var(--ui-tab-selected);
+  box-shadow: var(--ui-tab-rule);
+}
+.interface-style-scope[data-interface-style="signal"]
+  .interface-miniature-tabs
+  > .is-selected {
+  color: var(--on-accent);
+}
+.interface-miniature-body {
+  display: grid;
+  grid-template-columns: minmax(0, 0.65fr) minmax(0, 1.8fr);
+  min-inline-size: 0;
+}
+.interface-miniature-navigation {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45em;
+  padding: 0.65em 0.45em;
+  background-color: var(--ui-chrome-bg);
+  background-image: var(--ui-chrome-pattern);
+  background-size: var(--ui-chrome-pattern-size);
+  color: var(--ui-chrome-text);
+  border-inline-end: 1px solid var(--ui-chrome-line);
+}
+.interface-miniature-navigation > span {
+  padding: 0.35em 0.3em;
+  overflow-wrap: anywhere;
+}
+.interface-miniature-navigation > .is-selected,
+.interface-miniature-row.is-selected {
+  background: var(--ui-nav-selected);
+  color: var(--ui-nav-ink);
+  box-shadow: var(--ui-nav-rule);
+  border-radius: var(--ui-nav-radius);
+  text-decoration: var(--ui-nav-line);
+}
+.interface-miniature-content {
+  display: grid;
+  gap: 0.65em;
+  padding: 0.7em;
+  min-inline-size: 0;
+}
+.interface-miniature-field {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  min-inline-size: 0;
+  padding: 0.5em;
+  border-style: solid;
+  border-width: var(--field-border-width);
+  border-color: var(--field-edge);
+  border-radius: var(--field-radius);
+  background: var(--field-surface);
+  box-shadow: var(--field-rule);
+}
+.interface-miniature-field > svg {
+  inline-size: 1em;
+  block-size: 1em;
+  flex: none;
+}
+.interface-miniature-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  padding: 0.4em;
+}
+.interface-miniature-check {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  inline-size: 1.15em;
+  block-size: 1.15em;
+  border: 1px solid var(--accent);
+  border-radius: var(--checkbox-radius);
+  background: var(--checkbox-selected);
+  color: var(--checkbox-ink);
+}
+.interface-miniature-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55em;
+}
+.interface-miniature-actions > span {
+  padding: 0.4em 0.6em;
+  border-radius: var(--control-radius);
+  border: 1px solid var(--control-edge);
+  background: var(--control-surface);
+  box-shadow: var(--action-rule);
+}
+.interface-miniature-actions > .interface-miniature-primary {
+  background: var(--primary-surface);
+  border-color: var(--primary-edge);
+  color: var(--primary-text);
+  box-shadow: var(--primary-rule);
+}
+.interface-style-gallery {
+  margin-block-start: 1.25em;
+  min-inline-size: 0;
+}
+/* Comparison temporarily owns the fields workspace. The right preview remains
+   mounted, preserving its editor, undo and specimen state for the return split. */
+.demo-settings-layout[data-style-comparison="true"] {
+  grid-template-columns: 176px minmax(0, 1fr);
+}
+.demo-settings-layout[data-style-comparison="true"] > .demo-settings-preview {
+  display: none;
+}
+.interface-style-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 23em), 1fr));
+  gap: 1em;
+  margin-block-start: 0.8em;
+}
+.interface-gallery-card {
+  min-inline-size: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--panel-radius);
+  background: var(--paper);
+  color: var(--text);
+  overflow: hidden;
+}
+.interface-gallery-card-heading {
+  padding: 0.85em;
+  border-block-end: 1px solid var(--line);
+  background: var(--ui-panel-band);
+  box-shadow: var(--ui-panel-rule);
+}
+.interface-gallery-card-heading > h5 {
+  margin: 0 0 0.35em;
+  color: var(--text);
+  font: 600 var(--size-ui)/1.4 var(--font-ui);
+}
+.interface-gallery-card-body {
+  display: grid;
+  align-content: start;
+  gap: 1em;
+  padding: 1em;
+  min-inline-size: 0;
+}
+.interface-style-scope .interface-gallery-row {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 0.55em;
+  padding: 0.65em;
+  min-inline-size: 0;
+}
+.interface-gallery-leading {
+  display: flex;
+  align-items: center;
+  gap: 0.55em;
+  block-size: 1.5em;
+  flex: none;
+}
+.interface-gallery-leading > svg {
+  flex: none;
+  inline-size: 1.15em;
+  block-size: 1.15em;
+}
+.interface-gallery-row > span {
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+  line-height: 1.5;
+}
+.interface-gallery-row > span:last-child {
+  flex: 1 1 12em;
+  overflow-wrap: normal;
+}
+.interface-style-scope .interface-gallery-row {
+  color: var(--text);
+}
+.interface-style-scope .interface-gallery-row[data-selected="true"] {
+  color: var(--ui-nav-ink);
+}
+.interface-gallery-setting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8em;
+}
+.interface-gallery-overlay {
+  display: grid;
+  gap: 0.4em;
+  padding: 0.75em;
+  border: 1px solid var(--ui-overlay-edge);
+}
+@media (forced-colors: active) {
+  .interface-style-option:has(:checked),
+  .interface-style-option:has(:focus-visible) {
+    outline-color: Highlight;
+  }
+  .interface-style-miniature,
+  .interface-gallery-card,
+  .interface-miniature-field,
+  .interface-miniature-actions > span {
+    border-color: CanvasText;
+  }
+  .interface-miniature-navigation {
+    background: Canvas;
+    color: CanvasText;
+  }
+  .interface-miniature-row.is-selected,
+  .interface-miniature-navigation > .is-selected {
+    outline: 1px solid Highlight;
+    outline-offset: -1px;
+  }
+  .interface-style-scope .interface-gallery-row {
+    color: CanvasText;
+  }
+  .interface-style-scope .interface-gallery-row[data-selected="true"] {
+    color: HighlightText;
+  }
+}

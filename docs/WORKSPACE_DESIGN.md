@@ -67,7 +67,7 @@ competing with the research document.
 
 ## Theme families
 
-Neutral, Zinc, Stone, Material Indigo, Material Sage and Material Teal each have
+Neutral, Zinc, Stone, Indigo, Sage and Teal each have
 paired light and dark palettes. Applying a family changes colors only: it does
 not reset fonts, color-mode choice or navigation materials. Existing research
 looks and portable theme exports remain supported.

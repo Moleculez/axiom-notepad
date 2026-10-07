@@ -388,7 +388,7 @@ test("paper export controls retain scroll ownership, footer access and keyboard 
           version: prefs.appearance.version,
           preferences: {
             ...prefs.appearance.preferences,
-            interfaceStyle: "editorial",
+            interfaceStyle: "folio",
             uiSize: 22,
             mode: "dark",
             radius: 0,

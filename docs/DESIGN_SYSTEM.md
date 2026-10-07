@@ -55,11 +55,12 @@ paragraph spacing and 14px IBM Plex Mono code. Its heading scale is 0.9. Keep
 the interface in its chosen UI face. Do not simulate paper pagination or justify
 paragraphs; retain reflow, readable spacing and selectable mathematical output.
 New font IDs require schema compatibility, not fallback settings that erase a
-user's choices. Appearance is v11; writing and portable palettes retain v2/v1.
+user's choices. Appearance is v12; writing and portable palettes retain v2/v1.
 Compiled theme packs add paired base palettes and scoped decoration without changing
 user typography or geometry. See [Theme authoring](THEME_AUTHORING.md) for precedence,
-validation, fixtures and the accessibility review contract. Paper Research and
-Technical Slate are opt-in; the default look is unchanged.
+validation, fixtures and the accessibility review contract. Paper Research,
+Technical Slate, Botanical, Spectrum and Graphite Ink are opt-in; the default
+look is unchanged.
 
 The optional minimap is quiet navigation chrome in a separate paper-colored column,
 not a second editable surface. Use the current document's font/color roles for its
@@ -112,7 +113,7 @@ sizes, spacing and colors; another document preset resets it to that preset's lo
 ## Interaction contract
 
 - Every interactive element has resting, hover, keyboard focus, pressed/selected and disabled states. Mutations also expose pending/success/error/recovery states.
-- Quiet filled or borderless inputs; no heavy native outlines in normal themes. Keyboard focus uses a visible semantic inset ring or underline, with an outline fallback in forced colors. Never remove focus without a replacement.
+- Quiet, purposeful input treatments; no heavy native outlines in normal themes. Keyboard focus uses a visible semantic inset ring or underline, with an outline fallback in forced colors. Never remove focus without a replacement.
 - Native labels and accessible names, complete keyboard operation, visible error text, non-color-only state and touch-accessible actions. Icons use the existing Lucide family with consistent stroke/size.
 - Menus/popovers stay within the viewport. Dialogs center in the viewport, scroll internally, trap/restore focus and dismiss with Escape unless doing so would discard unacknowledged destructive work.
 - Confirm irrecoverable operations; prefer trash, recoverable drafts and guarded undo. No silent overwrite, silent permission expansion or fabricated progress.
@@ -211,8 +212,8 @@ component-local aliases that disappear when a preview moves to another host.
 Application controls use `components/ui/controls.tsx` and the canonical
 `ui-controls.css` base: native Button/IconButton, Checkbox/Switch/Radio, Slider,
 Field, ActionRow, HelpText and Notice. Routine guidance is unboxed; important
-warnings remain recognizable. The five trusted interface styles (Axiom, Material
-Tonal, Fluent Studio, Editorial, macOS Studio) share this geometry and state
+warnings remain recognizable. The eight trusted interface styles (Axiom, Contour,
+Vector, Folio, Harbor, Signal, Gridwork and Cutline) share this geometry and state
 contract while changing their component presentation. Do not reintroduce page-local
 checkbox knobs, slider drawing or general button resets. `validate:ui` checks
 the JSX boundary and narrow shared-action CSS drift; see
@@ -223,6 +224,50 @@ tracks, surface and focus; Field owns the associated label, guidance and error.
 Avoid nested bordered search boxes or page-local icon offsets. Use intrinsic
 selector widths and non-shrinking short toolbar actions; wrap whole controls
 instead of splitting labels like “Manage groups” into unintended lines.
+
+## Original interface systems
+
+The typed interface registry is the single source of identity, recipe and
+comparison metadata. Styles change component **construction**, not only color,
+radius or elevation. A palette, font or document pack is never a prerequisite for
+recognizing the style. Production and showcase consume the same recipe and
+presentation roles, including their outer shells and dialogs.
+
+| System | Chrome and hierarchy | Fields and selection |
+| --- | --- | --- |
+| Axiom | Balanced scientific workspace; restrained separators | Quiet fields and understated selected rows |
+| Contour | Broad tonal plates and softly grouped actions | Tonal shells and solid selection plates |
+| Vector | Architectural frames, edge rails and segmented chrome | Outlined fields and leading-edge selection cues |
+| Folio | Continuous paper, publication rules and flat overlays | Straight ruled fields and underline selection |
+| Harbor | Banded headers and recessed control groups | Inset fields and coordinated grouped selection |
+| Signal | Contrasting navigation and instrument-like compartments | Separated icon tracks and emphatic action edges |
+| Gridwork | Fine decorative lattice, brackets and precise rules | Ruled field frames and bracketed selection |
+| Cutline | Strong graphic edges and diagonal chrome accents | Bold straight field edges and offset selected framing |
+
+Every complete system covers actions, text/search/numeric fields, selectors,
+checkboxes/switches/radios/sliders, tabs, menus, dialogs, navigation, item rows and
+inspector chrome. Use one implementation of native control semantics and geometry;
+bound styling through the shared recipe. No page-local field reset or competing
+button/dialog theme is allowed. New recipes require the same full coverage, not a
+single attractive specimen.
+
+Decorative patterns and graphic cuts are chrome-only. Never place a lattice,
+hatch, blur or per-layer shadow behind prose, equations, code, PDFs, data tables
+or editable fields. A stronger decorative edge does not change a hit target or
+the measured control box. Hover, focus, pending and selection preserve geometry.
+
+User radius, shadows, density, font size, motion, contrast and transparency always
+win. Zero radius stays square except functional circular indicators; no-shadow
+preferences keep focus/selection indicators. Forced colors retain visible system
+state cues; reduced transparency uses opaque surfaces. Treat these overrides as a
+final layer rather than duplicating them in each style.
+
+Review the same fixture with identical palette and fonts. Each pair must differ
+in at least three non-color treatments, including fields or selection. The
+comparison gallery displays real components; miniature cards must show the
+style's distinguishing field/chrome/selection behavior, not abstract color bars.
+Recognizability does not justify changing navigation, source, scroll ownership,
+authorization, document layout or saved preferences.
 
 Mixed application action groups opt into `ActionRow size="standard"` or
 `size="compact"` for one text-scaled control edge, not per-page fixed pixel

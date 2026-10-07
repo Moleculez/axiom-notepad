@@ -134,7 +134,7 @@ available) owns fresh local clusters and checks the normal migration
 controller, 45→current/rerun (including migration 46), exact source/state preservation, projection, time isolation
 and outbox coalescing. It does not certify HTTP or concurrent leases. The browser
 suite is fail-closed to attested reliability staging, covers native controls,
-draft retention, stale fields/time/approval, selected Apply and Undo, five styles,
+draft retention, stale fields/time/approval, selected Apply and Undo, all registered styles,
 light/dark, 22px UI, radius zero and forced colors/reduced motion. Screenshots must
 be inspected, not only generated. Paired-recovery receipts include all new tables.
 

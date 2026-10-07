@@ -201,7 +201,7 @@ for (const { id, name } of interfaceStyles) {
       const settings = page.getByRole("dialog", {
         name: "Appearance & editor",
       });
-      await settings.getByLabel("Interface design").selectOption(id);
+      await settings.getByRole("radio", { name, exact: true }).check();
       await settings.getByRole("button", { name: mode, exact: true }).click();
       await expect(page.locator("html")).toHaveAttribute(
         "data-interface-style",
@@ -433,8 +433,8 @@ test("large text, square shapes and no shadows keep the shared fields and action
   await dialog.getByLabel("Shadows", { exact: true }).selectOption("none");
   await dialog.getByLabel("Density", { exact: true }).selectOption("compact");
   const view = await specimen(page);
-  for (const { id } of interfaceStyles) {
-    await dialog.getByLabel("Interface design").selectOption(id);
+  for (const { id, name } of interfaceStyles) {
+    await dialog.getByRole("radio", { name, exact: true }).check();
     await iconFieldsAlign(page);
     await mixedToolbarsAlign(page);
     await noOverflow(page);

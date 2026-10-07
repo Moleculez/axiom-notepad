@@ -191,14 +191,14 @@ export function initializeAnalytics() {
       return b;
     };
     if (runtime.googleMeasurementId && !protectedVisitor) {
-      button("Reject Google", () => {
+      button("Reject external analytics", () => {
         preferences.google = false;
         preferences.googleId = runtime.googleMeasurementId;
         persist();
         stopGoogle();
         close();
       });
-      button("Accept Google", () => {
+      button("Accept external analytics", () => {
         preferences.google = true;
         preferences.googleId = runtime.googleMeasurementId;
         persist();

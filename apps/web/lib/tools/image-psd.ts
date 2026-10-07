@@ -106,7 +106,7 @@ export async function importPsd(data: ArrayBuffer) {
         );
       if (value.effects)
         warnings.add(
-          "Layer effects may not match Photoshop and are not editable.",
+          "Layer effects may differ from the source file's saved appearance and are not editable.",
         );
       if (value.placedLayer)
         warnings.add(

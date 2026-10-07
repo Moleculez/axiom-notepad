@@ -206,7 +206,7 @@ receipt uniqueness and private-ledger cleanup. It is not SQL concurrency accepta
 The runtime gate owns its test-only provider key/allowlist, accounts and storage.
 The browser suite verifies exact request hashes/output caps, held batches,
 narrowing/exclusion/stale consent, source changes, revoked access, unknown usage
-and inert invented citations. It includes five interface styles, both color modes,
+and inert invented citations. It includes all registered interface styles, both color modes,
 large text, forced colors and reduced motion. Inspect the actual screenshots.
 Paired recovery compares contexts, runs, reviews, steps and change receipts too.
 

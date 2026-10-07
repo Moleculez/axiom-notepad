@@ -34,7 +34,7 @@ import SettingsEditorPreview from "./SettingsEditorPreview";
 import MinimapSettings from "./MinimapSettings";
 import SettingsSplitPanel from "./SettingsSplitPanel";
 import { themePacks, type ThemePackId } from "@axiom/shared/theme-packs";
-import { interfaceStyles } from "@axiom/shared/interface-styles";
+import InterfaceStylePicker from "./ui/InterfaceStylePicker";
 import {
   editorThemes,
   applyEditorTheme,
@@ -116,6 +116,7 @@ function AppearanceSettingsReady({
     [message, setMessage] = useState(""),
     [themeName, setThemeName] = useState("");
   const [showPreview, setShowPreview] = useState(true),
+    [comparingStyles, setComparingStyles] = useState(false),
     [emptySearch, setEmptySearch] = useState(false);
   const fields = useRef<HTMLDivElement>(null);
   const previewCategory =
@@ -151,6 +152,12 @@ function AppearanceSettingsReady({
     query
       ? `${category} ${label}`.toLowerCase().includes(query.toLowerCase())
       : section === category;
+  const themeVisible = show(
+    "Theme",
+    "palette colors light dark system custom contrast import export glass material transparency restore previous",
+  );
+  const comparing = comparingStyles && themeVisible;
+  const previewVisible = showPreview && !comparing;
   const number = (
     category: string,
     key: keyof Preferences,
@@ -323,10 +330,15 @@ function AppearanceSettingsReady({
                 type="button"
                 className="button secondary small settings-preview-toggle"
                 aria-label={
-                  showPreview ? "Hide live preview" : "Show live preview"
+                  previewVisible ? "Hide live preview" : "Show live preview"
                 }
-                aria-pressed={showPreview}
-                onClick={() => setShowPreview((value) => !value)}
+                aria-pressed={previewVisible}
+                onClick={() => {
+                  if (comparing) {
+                    setComparingStyles(false);
+                    setShowPreview(true);
+                  } else setShowPreview((value) => !value);
+                }}
               >
                 <PanelRight size={16} />
                 Preview
@@ -335,7 +347,7 @@ function AppearanceSettingsReady({
           </div>
         </div>
         <SettingsSplitPanel
-          showPreview={showPreview}
+          showPreview={previewVisible}
           preview={
             previewCategory ? (
               <SettingsEditorPreview
@@ -344,7 +356,7 @@ function AppearanceSettingsReady({
                 category={previewCategory}
                 showInterface
                 dark={appearance.dark}
-                active={showPreview}
+                active={previewVisible}
                 onAppearanceChange={setDraft}
               />
             ) : undefined
@@ -450,42 +462,15 @@ function AppearanceSettingsReady({
                 onChange={(value) => change("pdfReader", value)}
               />
             )}
-            {show(
-              "Theme",
-              "palette colors light dark system custom contrast import export glass material transparency restore previous",
-            ) && (
+            {themeVisible && (
               <section className="settings-card">
                 <h4>Color & atmosphere</h4>
-                <fieldset className="interface-style-picker">
-                  <legend>Interface style</legend>
-                  <p>
-                    Shape, controls, navigation and surfaces. Your colors and
-                    reading typography stay independent.
-                  </p>
-                  <div>
-                    {interfaceStyles.map(
-                      ({ id: value, name: title, description }) => (
-                        <button
-                          type="button"
-                          key={value}
-                          aria-pressed={draft.interfaceStyle === value}
-                          onClick={() => change("interfaceStyle", value)}
-                        >
-                          <span
-                            className={`interface-style-sample style-${value}`}
-                            aria-hidden="true"
-                          >
-                            <i />
-                            <i />
-                            <i />
-                          </span>
-                          <strong>{title}</strong>
-                          <small>{description}</small>
-                        </button>
-                      ),
-                    )}
-                  </div>
-                </fieldset>
+                <InterfaceStylePicker
+                  value={draft.interfaceStyle}
+                  onChange={(value) => change("interfaceStyle", value)}
+                  comparing={comparingStyles}
+                  onComparingChange={setComparingStyles}
+                />
                 <label className="setting-control">
                   <span>
                     Theme pack

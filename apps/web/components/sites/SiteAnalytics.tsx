@@ -582,7 +582,7 @@ function AnalyticsPreferences({
             "Use the selected public metrics above; never expose the private dashboard.",
           )}
           <label>
-            Google Analytics 4 measurement ID
+            External analytics measurement ID
             <TextInput
               placeholder="G-ABC1234567"
               maxLength={22}
@@ -597,10 +597,10 @@ function AnalyticsPreferences({
             />
           </label>
           <HelpText>
-            Optional integration with your own GA4 property. No Google requests
-            occur until the visitor explicitly accepts. Advertising storage and
-            signals remain disabled. Reports stay in Google Analytics; this
-            dashboard uses only first-party aggregates.
+            Optional Google Analytics 4 integration with your own property. No
+            Google requests occur until the visitor explicitly accepts.
+            Advertising storage and signals remain disabled. Reports stay in
+            Google Analytics; this dashboard uses only first-party aggregates.
           </HelpText>
           {report.settingsVersion !== baseline.version && dirty && (
             <ErrorNotice message="Another manager changed these preferences. Discard your local changes to load the latest settings before saving." />

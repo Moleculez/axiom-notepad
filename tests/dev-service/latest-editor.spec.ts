@@ -379,10 +379,10 @@ test("table menus, code and mathematics use the latest engine in the disposable 
       });
       await language.fill("ma");
       await expect(
-        page.locator('.language-logo[data-brand="matlab"] img'),
+        page.locator('.language-logo[data-language="matlab"] svg'),
       ).toBeVisible();
       await expect(
-        page.locator('.language-logo[data-brand="wolfram"] img'),
+        page.locator('.language-logo[data-language="mathematica"] svg'),
       ).toBeVisible();
       await expect(
         page

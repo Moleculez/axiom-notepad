@@ -1,261 +1,226 @@
-/* Component presentation belongs to the application, not untrusted theme CSS.
-   Explicit radius, font, contrast and motion preferences remain authoritative. */
-html[data-interface-style="material"] {
-  --field-surface: color-mix(in srgb, var(--surface) 80%, var(--accent-bg));
-  --field-edge: transparent;
-  --control-radius: calc(var(--radius) * 1.65);
-  --control-radius-small: calc(var(--radius) * 0.9);
-  --panel-radius: calc(var(--radius) * 1.8);
-  --window-radius: calc(var(--radius) * 2);
-  --control-surface: var(--accent-bg);
-  --control-edge: transparent;
-  --control-hover: color-mix(in srgb, var(--accent-bg) 80%, var(--accent) 20%);
-  --checkbox-radius: min(0.25em, calc(var(--radius) * 0.35));
-  --switch-off: var(--surface);
-  --slider-track-height: 6px;
-  --slider-thumb-width: 6px;
-  --slider-thumb-height: 22px;
-  --slider-thumb-radius: var(--control-radius-small);
-  --slider-thumb-fill: var(--accent);
+/* Original recipes live in the shared typed registry. This sheet owns their
+   surface consumers only; controls are drawn once in ui-controls.css. */
+[data-interface-style] :is(.ws-appbar, .demo-header),
+.interface-style-scope .interface-chrome-header {
+  background: var(--ui-header-bg);
+  color: var(--ui-header-text);
+  border-color: var(--ui-chrome-line);
+  box-shadow: var(--ui-panel-rule);
 }
-html[data-interface-style="material"]
+[data-interface-style] :is(.ws-appbar .brand, .demo-brand),
+[data-interface-style] .ws-appbar .workspace-location nav strong {
+  color: var(--ui-header-text);
+}
+[data-interface-style]
   :is(
-    .button.secondary,
-    .icon-button[aria-pressed="true"],
-    .page-section-link.active
+    .demo-brand > span,
+    .demo-local-badge,
+    .ws-appbar .workspace-connection,
+    .ws-appbar .workspace-docs-trigger,
+    .ws-appbar .workspace-location nav a,
+    .ws-appbar .workspace-location nav > span
   ) {
-  background: var(--accent-bg);
-  border-color: transparent;
-  color: var(--accent);
+  color: var(--ui-header-muted);
 }
-html[data-interface-style="material"] .settings-rail {
-  background: color-mix(in srgb, var(--accent-bg) 35%, var(--paper));
+[data-interface-style] .ws-appbar .workspace-location nav a:hover {
+  color: var(--ui-header-text);
 }
-html[data-interface-style="material"]
-  :is(.ws-side-link.active, .theme-workbench-row.is-selected) {
-  border-radius: calc(var(--radius) * 1.7);
-  background: var(--accent-bg);
+[data-interface-style] .ws-appbar .workspace-docs-trigger:hover {
+  color: var(--ui-header-text);
 }
-html[data-interface-style="material"]
+[data-interface-style] .demo-header nav a {
+  color: var(--ui-header-muted);
+  background: var(--ui-nav-bg);
+  border-radius: var(--ui-nav-radius);
+}
+[data-interface-style] .demo-header nav a:is(:hover, [aria-current="page"]) {
+  color: var(--ui-nav-ink);
+  background: var(--ui-nav-selected);
+}
+[data-interface-style] .demo-header nav a[aria-current="page"] {
+  box-shadow: var(--ui-nav-rule);
+  text-decoration: var(--ui-nav-line);
+  text-underline-offset: 0.35em;
+}
+[data-interface-style] :is(.ws-sidebar, .settings-rail),
+.interface-style-scope .interface-chrome {
+  color: var(--ui-chrome-text);
+  background-color: var(--ui-chrome-bg);
+  background-image: var(--ui-chrome-pattern);
+  background-size: var(--ui-chrome-pattern-size);
+  border-color: var(--ui-chrome-line);
+  backdrop-filter: var(--ui-chrome-filter);
+}
+[data-interface-style]
+  :is(.ws-sidebar, .settings-rail)
   :is(
-    .dialog,
-    .axiom-field-dialog,
-    .action-menu,
-    .editor-context-menu,
-    .axiom-completions
+    .sidebar-section-heading,
+    .sidebar-directory-caption,
+    .ws-sidebar-heading,
+    .settings-page-navigation > section h3
   ) {
-  background: color-mix(in srgb, var(--surface) 70%, var(--paper));
-  border-radius: calc(var(--radius) * 1.8);
-  box-shadow: var(--shadow);
+  color: var(--ui-chrome-muted);
 }
-html[data-interface-style="fluent"] {
-  --field-surface: var(--paper);
-  --field-edge: var(--line);
-  --control-radius: calc(var(--radius) * 0.5);
-  --control-radius-small: calc(var(--radius) * 0.35);
-  --panel-radius: var(--radius);
-  --window-radius: var(--radius);
-  --control-surface: var(--paper);
-  --control-edge: var(--line);
-  --control-hover: var(--surface);
-  --checkbox-radius: min(0.18em, calc(var(--radius) * 0.2));
-  --slider-track-height: 3px;
-  --slider-thumb-width: 16px;
-  --slider-thumb-height: 16px;
+[data-interface-style] :is(.ws-side-link, .sidebar-directory-row),
+.interface-style-scope .interface-navigation-row {
+  color: var(--ui-chrome-text);
+  background: var(--ui-nav-bg);
+  border-radius: var(--ui-nav-radius);
 }
-html[data-interface-style="fluent"]
-  :is(.button.secondary, .theme-workbench-input input) {
-  background: var(--paper);
+[data-interface-style] :is(.ws-side-link, .sidebar-directory-row):hover {
+  color: var(--ui-nav-ink);
+  background: var(--ui-nav-selected);
+}
+[data-interface-style] :is(.ws-side-link.active, .sidebar-directory-row.active),
+.interface-style-scope .interface-navigation-row[aria-current="page"],
+.interface-style-scope .interface-navigation-row[data-selected="true"] {
+  color: var(--ui-nav-ink);
+  background: var(--ui-nav-selected);
+  box-shadow: var(--ui-nav-rule);
+  text-decoration: var(--ui-nav-line);
+  text-underline-offset: 0.35em;
+}
+[data-interface-style]
+  :is(.page-section-link.active, .theme-workbench-row.is-selected),
+.interface-style-scope .interface-page-tab[aria-selected="true"] {
+  background: var(--ui-tab-selected);
+  box-shadow: var(--ui-tab-rule);
+}
+[data-interface-style="signal"] .page-section-link.active,
+.interface-style-scope[data-interface-style="signal"]
+  .interface-page-tab[aria-selected="true"] {
+  color: var(--on-accent);
+}
+[data-interface-style]
+  :is(.dialog-heading, .dialog-footer, .scratchpad-toolbar),
+.interface-style-scope .interface-panel-band {
+  background: var(--ui-panel-band);
+  box-shadow: var(--ui-panel-rule);
   border-color: var(--line);
 }
-html[data-interface-style="fluent"]
-  :is(.ws-side-link.active, .page-section-link.active) {
-  box-shadow: inset 3px 0 var(--accent);
-  background: var(--surface);
-}
-html[data-interface-style="fluent"]
+[data-interface-style]
   :is(
     .dialog,
     .axiom-field-dialog,
     .action-menu,
+    .ws-menu > div,
+    .workspace-recent-popover,
+    .native-popup,
     .editor-context-menu,
-    .axiom-completions
-  ) {
-  background: var(--paper);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-}
-html[data-interface-style="editorial"] {
-  --field-surface: var(--paper);
-  --field-edge: var(--line);
-  --control-radius: calc(var(--radius) * 0.25);
-  --control-radius-small: calc(var(--radius) * 0.2);
-  --panel-radius: calc(var(--radius) * 0.5);
-  --window-radius: calc(var(--radius) * 0.5);
-  --control-surface: var(--paper);
-  --control-edge: var(--line);
-  --control-hover: var(--surface);
-  --checkbox-radius: 0;
-  --slider-track-height: 2px;
-}
-html[data-interface-style="editorial"]
-  :is(
-    .ws-appbar,
-    .ws-sidebar,
-    .settings-rail,
-    .settings-form-section,
-    .dialog,
-    .axiom-field-dialog
-  ) {
-  background: var(--paper);
-  backdrop-filter: none;
-  box-shadow: none;
-}
-html[data-interface-style="macos"] {
-  --field-surface: color-mix(in srgb, var(--surface) 55%, var(--paper));
-  --field-edge: var(--line);
-  --control-radius: calc(var(--radius) * 0.65);
-  --control-radius-small: calc(var(--radius) * 0.45);
-  --panel-radius: calc(var(--radius) * 1.1);
-  --window-radius: calc(var(--radius) * 1.6);
-  --control-surface: color-mix(in srgb, var(--paper) 70%, var(--surface));
-  --control-edge: var(--line);
-  --control-hover: var(--surface);
-  --checkbox-radius: min(0.3em, calc(var(--radius) * 0.3));
-  --switch-width: 2.4em;
-  --switch-height: 1.4em;
-  --slider-track-height: 3px;
-  --slider-thumb-width: 17px;
-  --slider-thumb-height: 17px;
-}
-html[data-interface-style="macos"] :is(.settings-rail, .ws-sidebar) {
-  background: var(--chrome-background, var(--sidebar));
-}
-html[data-interface-style="macos"]
-  :is(
-    .ws-side-link.active,
-    .page-section-link.active,
-    .theme-workbench-row.is-selected
-  ) {
-  background: var(--accent-bg);
-  color: var(--accent);
-  border-radius: var(--control-radius);
-}
-html[data-interface-style="macos"]
-  :is(
-    .dialog,
-    .axiom-field-dialog,
-    .action-menu,
-    .editor-context-menu,
-    .axiom-completions
-  ) {
-  background: var(--paper);
-  border-color: var(--line);
-  border-radius: var(--window-radius);
-  box-shadow: var(--shadow);
-}
-html[data-interface-style="macos"] :is(.dialog-heading, .dialog-footer) {
-  background: color-mix(in srgb, var(--paper) 85%, var(--surface));
-}
-html[data-interface-style="material"] .dialog-footer {
-  background: color-mix(in srgb, var(--accent-bg) 25%, var(--paper));
-}
-html[data-interface-style="fluent"] .dialog-heading {
-  border-block-end: 1px solid var(--line);
-}
-html[data-interface-style="editorial"]
-  :is(.ws-side-link.active, .page-section-link.active) {
-  color: var(--accent);
-  background: transparent;
-  text-decoration: underline;
-  text-underline-offset: 0.4em;
-}
-html[data-interface-style="editorial"]
-  :is(
-    .button.secondary,
-    .action-menu,
-    .editor-context-menu,
-    .axiom-completions
-  ) {
-  background: var(--paper);
-  border: 1px solid var(--line);
-  border-radius: calc(var(--radius) * 0.25);
-  box-shadow: none;
-}
-.interface-style-picker {
-  border: 0;
-  padding: 0;
-  margin: 0 0 28px;
-  min-width: 0;
-}
-.interface-style-picker legend {
-  font-weight: 600;
-}
-.interface-style-picker > p {
-  color: var(--muted);
-  font-size: 0.83em;
-  line-height: 1.6;
-}
-.interface-style-picker > div {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-.interface-style-picker button {
-  text-align: left;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 14px;
+    .axiom-completions,
+    .theme-workbench-menu,
+    .ui-picker-popup
+  ),
+.interface-style-scope .interface-overlay {
+  background: var(--ui-overlay-bg);
+  /* Portaled and nested menus use paper ink, not an inverse header's ink. */
   color: var(--text);
-  border: 1px solid var(--line);
-  border-radius: var(--control-radius);
-  background: var(--paper);
+  border-color: var(--ui-overlay-edge);
+  border-radius: var(--window-radius);
+  box-shadow: var(--ui-overlay-shadow);
 }
-.interface-style-picker button[aria-pressed="true"] {
-  border-color: var(--accent);
-  box-shadow: inset 0 0 0 1px var(--accent);
+.interface-style-scope .interface-overlay {
+  position: relative;
 }
-.interface-style-picker small {
-  font-size: 0.8em;
-  color: var(--muted);
-  line-height: 1.5;
+/* Structural edge drawing and optional elevation have separate owners, so
+   Shadows None never removes a rule or yields an invalid shadow list. */
+[data-interface-style]
+  :is(
+    .dialog,
+    .axiom-field-dialog,
+    .action-menu,
+    .ws-menu > div,
+    .workspace-recent-popover,
+    .native-popup,
+    .editor-context-menu,
+    .axiom-completions,
+    .theme-workbench-menu,
+    .ui-picker-popup
+  )::before,
+.interface-style-scope .interface-overlay::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: var(--ui-overlay-rule);
+  pointer-events: none;
 }
-.interface-style-sample {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-  height: 32px;
-  width: 100%;
+[data-interface-style] :is(.dialog-heading, .dialog-footer) {
+  border-color: var(--ui-overlay-edge);
 }
-.interface-style-sample i {
-  width: 25%;
-  height: 22px;
-  border: 1px solid var(--line);
-  border-radius: calc(var(--radius) * 0.7);
-  background: var(--surface);
+/* Contrast/transparency overrides are deliberately last and more specific
+   than recipes. Textures never enter the document, inputs or data surfaces. */
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  html[data-interface-style] {
+    /* OS accessibility overrides must outrank inline, preference-derived roles. */
+    --ui-chrome-text: var(--text) !important;
+    --ui-chrome-muted: var(--muted) !important;
+    --ui-header-bg: var(--paper) !important;
+    --ui-header-text: var(--text) !important;
+    --ui-header-muted: var(--muted) !important;
+  }
+  html[data-interface-style] :is(.ws-sidebar, .settings-rail),
+  .interface-style-scope .interface-chrome {
+    background: var(--sidebar);
+    color: var(--text);
+    backdrop-filter: none;
+  }
+  html[data-interface-style] :is(.ws-side-link, .sidebar-directory-row),
+  .interface-style-scope .interface-navigation-row {
+    color: var(--text);
+  }
+  html[data-interface-style]
+    :is(.ws-side-link.active, .sidebar-directory-row.active),
+  .interface-style-scope .interface-navigation-row[data-selected="true"] {
+    background: var(--accent-bg);
+    color: var(--accent);
+  }
 }
-.interface-style-sample i:first-child {
-  background: var(--accent);
-  border-color: var(--accent);
-}
-.interface-style-sample.style-material i {
-  border-radius: calc(var(--radius) * 1.6);
-  background: var(--accent-bg);
-}
-.interface-style-sample.style-fluent i {
-  border-radius: calc(var(--radius) * 0.3);
-  border-bottom-color: var(--muted);
-}
-.interface-style-sample.style-editorial i {
-  border-radius: 0;
-  background: transparent;
-  border-width: 0 0 2px;
-}
-.interface-style-sample.style-macos i {
-  border-radius: calc(var(--radius) * 0.65);
-  background: var(--paper);
+@media (forced-colors: active) {
+  html[data-interface-style] {
+    --ui-chrome-text: CanvasText !important;
+    --ui-chrome-muted: CanvasText !important;
+    --ui-header-text: CanvasText !important;
+    --ui-header-muted: CanvasText !important;
+  }
+  html[data-interface-style]
+    :is(.ws-appbar, .ws-sidebar, .settings-rail, .demo-header),
+  .interface-style-scope
+    :is(
+      .interface-chrome,
+      .interface-chrome-header,
+      .interface-panel-band,
+      .interface-overlay
+    ) {
+    background: Canvas;
+    color: CanvasText;
+    border-color: CanvasText;
+    box-shadow: none;
+    backdrop-filter: none;
+  }
+  html[data-interface-style] :is(.ws-side-link, .sidebar-directory-row),
+  .interface-style-scope .interface-navigation-row {
+    background: Canvas;
+    color: CanvasText;
+    box-shadow: none;
+  }
+  html[data-interface-style]
+    :is(
+      .ws-side-link.active,
+      .sidebar-directory-row.active,
+      .page-section-link.active,
+      .demo-header nav a[aria-current="page"]
+    ),
+  .interface-style-scope
+    :is(
+      .interface-navigation-row[aria-current="page"],
+      .interface-navigation-row[data-selected="true"],
+      .interface-page-tab[aria-selected="true"]
+    ) {
+    background: Highlight;
+    color: HighlightText;
+    outline: 1px solid Highlight;
+  }
 }
 
 /* One settings frame, irrespective of the category or preview visibility. */

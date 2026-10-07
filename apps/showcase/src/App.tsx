@@ -15,7 +15,7 @@ import {
   PenLine,
   Network,
   Palette,
-  Github,
+  Code2,
   Upload,
   Plus,
   FolderOpen,
@@ -298,10 +298,10 @@ export default function App() {
                 href="https://github.com/Moleculez/axiom-notepad"
                 target="_blank"
                 rel="noopener noreferrer"
-                title="Source on GitHub"
-                aria-label="Source on GitHub"
+                title="Source repository"
+                aria-label="Source repository"
               >
-                <Github size={17} />
+                <Code2 size={17} />
               </a>
             </div>
           </header>
