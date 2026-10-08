@@ -14,6 +14,11 @@ import {
 import { reserveCapacity } from "./uploads-api";
 import { notifyWorkspace } from "./documents";
 import { removeAttachment } from "./storage";
+import { currentAuditContext } from "./audit-context";
+import {
+  activeConnection,
+  connectionAllowsSpace,
+} from "./integration-security";
 
 const uuid = z.uuid();
 const mutation = z.object({
@@ -123,6 +128,54 @@ export async function resourceOperationsApi(
     );
     return json(
       await transaction(async (client) => {
+        const context = currentAuditContext();
+        if (context?.integrationId) {
+          if (
+            context.actorId !== userId ||
+            !context.integrationClient ||
+            !context.integrationVersion ||
+            context.integrationScope !== "workspace:read"
+          )
+            throw new HttpError(
+              403,
+              "The connected application's read authority is unavailable.",
+            );
+          const live = await activeConnection(
+            context.integrationId,
+            userId,
+            "workspace:read",
+            client,
+            context.integrationVersion,
+          );
+          if (live.client_id !== context.integrationClient)
+            throw new HttpError(
+              403,
+              "The connected application's identity changed.",
+            );
+          connectionAllowsSpace(live, resource.space_id);
+          const { rows } = await client.query(
+            `WITH visible_sources AS (
+              SELECT DISTINCT r.id,r.name,rr.snapshot_id IS NOT NULL AS snapshot
+              FROM resource_references rr JOIN resources r ON r.id=rr.source_id
+              WHERE rr.version_id=ANY($2::uuid[]) AND r.space_id=$3
+              AND axiom_space_role($1,r.space_id) IS NOT NULL
+            ) SELECT *,count(*) OVER()::int AS visible_count FROM visible_sources ORDER BY name,id,snapshot LIMIT 101`,
+            [userId, versions.map((v) => v.id), resource.space_id],
+          );
+          // Global protection counts remain native-only. Do not weaken purge
+          // guards or imply that a scoped discovery response proves eligibility.
+          return {
+            references: rows[0]?.visible_count ?? 0,
+            sources: rows
+              .slice(0, 100)
+              .map(({ visible_count: _count, ...source }) => source),
+            sourcesTruncated: rows.length > 100,
+            countsScope: "selected_workspace",
+            deletionEligibility: "requires_in_app_review",
+            policy:
+              "Only reference sources in the selected workspace are shown. In-app review checks all retained evidence before deletion.",
+          };
+        }
         const counts = await fileUsage(
           client,
           versions.map((v) => v.id),

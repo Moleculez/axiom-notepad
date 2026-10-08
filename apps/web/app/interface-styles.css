@@ -220,6 +220,11 @@
     background: Highlight;
     color: HighlightText;
     outline: 1px solid Highlight;
+    /* Use the paired system colors as one surface. Automatic text backplates
+       can otherwise paint Canvas behind HighlightText and hide link labels. */
+    forced-color-adjust: none;
+    background-image: none;
+    box-shadow: none;
   }
 }
 

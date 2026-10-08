@@ -22,6 +22,7 @@ import { withAuditContext } from "./audit-context";
 import { activeConnection } from "./integration-security";
 import { pruneImageDraftAssets } from "./image-cloud-api";
 import { HttpError } from "./access";
+import { recoverUploadVerifications } from "./upload-verification";
 import {
   finishWorkspaceImport,
   blockWorkspaceImport,
@@ -213,7 +214,7 @@ export async function processWorkspaceJob() {
     const {
       rows: [row],
     } = await client.query(
-      "SELECT * FROM workspace_jobs WHERE (status='queued' AND available_at<=now()) OR (status='running' AND leased_until<now()) ORDER BY available_at LIMIT 1 FOR UPDATE SKIP LOCKED",
+      "SELECT * FROM workspace_jobs WHERE (status='queued' AND available_at<=now()) OR (status='running' AND coalesce(leased_until,'-infinity'::timestamptz)<now()) ORDER BY available_at LIMIT 1 FOR UPDATE SKIP LOCKED",
     );
     if (!row) return null;
     const lease = randomUUID();
@@ -296,21 +297,31 @@ export async function processWorkspaceJob() {
       (["complete-upload", "finalize-import"].includes(job.kind) &&
         error instanceof HttpError &&
         [400, 403, 404, 409, 413].includes(error.status));
-    const updated = await query(
-      "UPDATE workspace_jobs SET status=$2,error=$3,available_at=now()+($4::int*interval '1 second'),leased_until=NULL,updated_at=now() WHERE id=$1 AND lease_id=$5 RETURNING id",
-      [
-        job.id,
-        exhausted ? "failed" : "queued",
-        message,
-        Math.min(300, 2 ** job.attempts),
-        job.lease,
-      ],
-    );
-    if (updated.length && job.kind === "complete-upload")
-      await query(
-        "UPDATE upload_sessions SET error=$2,status=CASE WHEN $3 THEN 'failed' ELSE status END,updated_at=now() WHERE id=$1 AND status NOT IN ('complete','cancelled','staged')",
-        [job.payload.id, message, exhausted],
+    const updated = await transaction(async (client) => {
+      // Match complete/recheck's upload-before-job lock order. Keep job failure
+      // and its visible status atomic, so a late failure cannot undo a Retry.
+      if (job.kind === "complete-upload")
+        await client.query(
+          "SELECT id FROM upload_sessions WHERE id=$1 FOR UPDATE",
+          [job.payload.id],
+        );
+      const { rows } = await client.query(
+        "UPDATE workspace_jobs SET status=$2,error=$3,available_at=now()+($4::int*interval '1 second'),leased_until=NULL,updated_at=now() WHERE id=$1 AND lease_id=$5 AND status='running' RETURNING id",
+        [
+          job.id,
+          exhausted ? "failed" : "queued",
+          message,
+          Math.min(300, 2 ** job.attempts),
+          job.lease,
+        ],
       );
+      if (rows.length && job.kind === "complete-upload")
+        await client.query(
+          "UPDATE upload_sessions SET error=$2,status=CASE WHEN $3 THEN 'failed' ELSE status END,updated_at=now() WHERE id=$1 AND status='verifying'",
+          [job.payload.id, message, exhausted],
+        );
+      return rows;
+    });
     if (updated.length && exhausted && job.kind === "finalize-import")
       await blockWorkspaceImport(job.payload.id, message);
     if (updated.length && exhausted && job.kind === "trash-operation")
@@ -338,6 +349,7 @@ export async function processWorkspaceJob() {
   return true;
 }
 export async function workspaceMaintenance() {
+  await recoverUploadVerifications();
   await expireWorkspaceImports();
   await assistantMaintenance();
   await query("DELETE FROM pdf_ocr_jobs WHERE expires_at<now()");

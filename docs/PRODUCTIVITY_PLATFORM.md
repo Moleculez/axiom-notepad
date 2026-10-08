@@ -83,19 +83,22 @@ metadata and supports the SDK's JSON-RPC protocol negotiation. Connect using the
 browser OAuth flow, choose the allowed workspaces and grant only needed scopes:
 `workspace:read`, `workspace:write`, `workspace:manage`.
 
-Settings → Connections lists grants, calls and pending approvals. Current tools
+Settings → Connected apps shows the canonical endpoint, diagnostics, grants,
+calls and reviewed proposals. Current tools
 cover workspace/file discovery, search, native documents, Canvas commands, file
 operations, projects, tasks, discussions, groups/invitations, workspace lifecycle,
-Trash and audit reads. The advertised `tools/list` is the exact supported catalog;
-binary uploads/downloads, complete PDF annotation/reference workflows and all
-Math/Image Studio manipulation are not exposed yet.
+Trash and audit reads. Scoped reference-library, graph and visual/PDF annotation
+reads complement study/research prompts and resources. The advertised `tools/list`
+is the exact token-scoped catalog; binary transfers, reference mutations and
+arbitrary Math/Image Studio manipulation are not exposed.
+See [MCP setup and workflows](MCP.md) for local/proxy configuration and authority.
 
 Tools reuse the same authenticated business handlers as the UI. Every action
 rechecks workspace scope and current account permissions. Grants are bound to the
 issued token's revision; revoking/recreating a grant cannot revive an old token.
-Destructive/access-changing requests require a separate, in-app approval bound
-to the exact arguments. An assistant cannot approve its own request or change the
-approved arguments. Replays are idempotent. Native document edits go through the
+Every workspace write, including creation and document edits, returns an in-app
+reviewed change set bound to proposed actions. An assistant cannot approve its own
+request or change approved arguments. Replays are idempotent. Native edits go through the
 live synchronization service with generation/hash checks and immutable receipts;
 they do not overwrite the document database behind connected editors. Queued
 workspace operations retain integration attribution and recheck grants on execution.

@@ -52,6 +52,15 @@ without proxy buffering. Do not horizontally scale sync without shared room coor
 
 ## Existing host Nginx
 
+For MCP, preserve the public `Host` including a non-default port; the app's
+internal request URL may name its loopback listener. Include the
+[MCP location snippet](../deploy/nginx/mcp.conf) in the existing HTTPS server and
+adjust its upstream to the working web listener. Streamable HTTP is not a
+WebSocket route and must not inherit `/sync` upgrade headers. Unauthenticated
+`GET /mcp` should reach a 401 OAuth challenge, not a host/Origin 403. Configure
+browser clients only through explicit `MCP_ALLOWED_ORIGINS`; do not disable
+validation or expand session trust. See [MCP setup and workflows](MCP.md).
+
 For the optional website CMS, `/sites/` must also reach the loopback publication
 reader on port 3001 with its prefix and `Host` preserved. Custom-domain hosts must
 route only to this reader, never to private workspace/auth routes. The supplied
@@ -281,6 +290,19 @@ before any separate Docker cleanup, and never use a global prune on a shared hos
 
 The legacy import limit is 50 MiB by default; Explorer allows files up to 1,000,000,000
 bytes in resumable 8 MiB requests. The proxy limit is per request, not per complete file.
+File transfer and verification are separate steps. A healthy web/sync service does
+not establish worker readiness: check `docker compose ps worker` and
+`docker compose logs --tail 50 worker` when a received file remains waiting.
+The runtime image includes the web server adapters used by reviewed actions and
+checks the worker's import graph during image construction. Compose additionally
+checks an ephemeral worker heartbeat; verification does not require sync to be
+healthy. After correcting configuration/image errors, start the worker with
+`docker compose up -d --no-deps worker` (using your existing environment/override
+files). Received parts are retained; do not delete staging or upload the same file
+again just to restart verification. Uploads expose **Recheck** to repair a lost
+job; restarted workers recover old verifying sessions with missing/finished jobs.
+Explicit retries reset an exhausted job's retry budget without replacing files,
+stealing a live lease, or bypassing a scheduled retry's backoff.
 The [workspace Markdown/folder/ZIP importer](WORKSPACE_IMPORTS.md) uses those same
 bounded requests and requires migration 43 plus matching web/worker code. Native
 notes and supporting files publish together after private preparation; do not stop

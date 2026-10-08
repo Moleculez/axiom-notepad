@@ -109,9 +109,14 @@ services:
     <<: *app
     volumes: [attachments:/app/data/attachments]
     command: [node, --import, tsx, scripts/ops/workspace-worker.ts]
+    healthcheck:
+      test: [CMD, node, --import, tsx, scripts/ops/worker-health.ts]
+      interval: 20s
+      timeout: 5s
+      start_period: 15s
+      retries: 3
     depends_on:
       migrate: { condition: service_completed_successfully }
-      sync: { condition: service_healthy }
     stop_grace_period: 5m
     restart: unless-stopped
     networks: [default, office-private]
@@ -127,7 +132,13 @@ services:
     volumes: [attachments:/app/data/attachments:ro]
     ports: ["127.0.0.1:${AXIOM_PUBLISH_HOST_PORT:-3001}:3001"]
     healthcheck:
-      test: [CMD, node, -e, "fetch('http://127.0.0.1:3001/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      test:
+        [
+          CMD,
+          node,
+          -e,
+          "fetch('http://127.0.0.1:3001/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
       interval: 15s
       timeout: 8s
       retries: 5

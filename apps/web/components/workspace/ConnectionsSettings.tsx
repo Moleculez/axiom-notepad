@@ -1,7 +1,22 @@
 "use client";
-import { ActionRow, Button, HelpText, IconButton } from "../ui/controls";
-import { useEffect, useState } from "react";
-import { Check, Copy, Network, ShieldCheck, Unplug, X } from "lucide-react";
+import {
+  ActionRow,
+  Button,
+  HelpText,
+  IconButton,
+  Notice,
+} from "../ui/controls";
+import { useEffect, useRef, useState } from "react";
+import {
+  Check,
+  Copy,
+  Network,
+  RefreshCw,
+  ShieldCheck,
+  Unplug,
+  X,
+} from "lucide-react";
+import type { McpServerStatus } from "@axiom/shared/mcp-diagnostics";
 import { api, post } from "../../lib/client";
 import { ErrorNotice, Loading, useData, useWorkspace, useLocation } from "./ui";
 import ChangeSetReview from "../assistant/ChangeSetReview";
@@ -23,6 +38,14 @@ type Approval = {
   error?: string;
 };
 export default function ConnectionsSettings() {
+  const server = useData<McpServerStatus>("connections/mcp-status");
+  const [checkedServer, setCheckedServer] = useState<McpServerStatus | null>(
+    null,
+  );
+  const [checking, setChecking] = useState(false);
+  const [checkError, setCheckError] = useState("");
+  const checkController = useRef<AbortController | null>(null);
+  const mcp = checkedServer ?? server.data;
   const { params } = useLocation();
   const [review, setReview] = useState<string | null>(params.get("review"));
   const changes = useData<
@@ -49,6 +72,27 @@ export default function ConnectionsSettings() {
     }, 10000);
     return () => clearInterval(timer);
   }, [data.revalidate, changes.revalidate]);
+  useEffect(() => () => checkController.current?.abort(), []);
+  const checkConnection = async () => {
+    checkController.current?.abort();
+    const controller = new AbortController();
+    checkController.current = controller;
+    setChecking(true);
+    setCheckError("");
+    try {
+      const result = await api<McpServerStatus>(
+        "connections/mcp-status?check=1",
+        {
+          signal: controller.signal,
+        },
+      );
+      if (!controller.signal.aborted) setCheckedServer(result);
+    } catch (e) {
+      if (!controller.signal.aborted) setCheckError((e as Error).message);
+    } finally {
+      if (!controller.signal.aborted) setChecking(false);
+    }
+  };
   const run = async (id: string, work: () => Promise<unknown>) => {
     setBusy(id);
     setError("");
@@ -74,16 +118,15 @@ export default function ConnectionsSettings() {
           API key is shared.
         </p>
         <div className="connection-endpoint">
-          <code>
-            {typeof location !== "undefined" ? location.origin : ""}/mcp
-          </code>
+          <code>{mcp?.endpoint ?? "Loading canonical endpoint…"}</code>
           <IconButton
             className="icon-button"
             aria-label="Copy MCP server URL"
             title="Copy MCP server URL"
+            disabled={!mcp?.endpoint}
             onClick={() =>
               void navigator.clipboard
-                .writeText(location.origin + "/mcp")
+                .writeText(mcp!.endpoint)
                 .then(() => notify("MCP server URL copied."))
                 .catch(() =>
                   setError(
@@ -100,6 +143,81 @@ export default function ConnectionsSettings() {
           then review the permission screen. A local server is only reachable
           from this computer unless you deploy it over HTTPS.
         </HelpText>
+        {mcp && (
+          <>
+            <dl className="connection-capabilities">
+              <div>
+                <dt>Connection</dt>
+                <dd>
+                  {mcp.transport} · {mcp.authentication}
+                </dd>
+              </div>
+              <div>
+                <dt>Workspace permissions</dt>
+                <dd>
+                  Read, propose edits or manage—only within reviewed grants
+                </dd>
+              </div>
+              <div>
+                <dt>Changes</dt>
+                <dd>
+                  In-app review before every write · up to{" "}
+                  {mcp.maxChangeSetActions} actions per proposal
+                </dd>
+              </div>
+              <div>
+                <dt>Discovery</dt>
+                <dd>
+                  {mcp.catalogActions} workspace operations, plus research
+                  resources and study prompts
+                </dd>
+              </div>
+            </dl>
+            {typeof location !== "undefined" &&
+              location.origin !== mcp.canonicalOrigin && (
+                <HelpText>
+                  You opened a different address. Use the canonical endpoint
+                  above for OAuth; an alias does not change the token audience.
+                </HelpText>
+              )}
+          </>
+        )}
+        <ActionRow align="between" size="standard">
+          <HelpText as="span">
+            Checks routing and the OAuth challenge without accessing files or
+            changing permissions.
+          </HelpText>
+          <Button
+            type="button"
+            pending={checking}
+            onClick={() => void checkConnection()}
+          >
+            <RefreshCw size={16} />
+            Check connection
+          </Button>
+        </ActionRow>
+        {(checkError || server.error) && (
+          <ErrorNotice message={checkError || server.error} />
+        )}
+        {mcp?.check && (
+          <Notice
+            tone={mcp.check.healthy ? "success" : "warning"}
+            role="status"
+          >
+            <strong>
+              {mcp.check.healthy
+                ? "Endpoint ready"
+                : "Connection needs attention"}
+            </strong>
+            <p>{mcp.check.message}</p>
+            <HelpText as="small">
+              {mcp.check.code.replaceAll("_", " ")}
+              {mcp.check.httpStatus ? ` · HTTP ${mcp.check.httpStatus}` : ""}
+              {" · "}
+              {new Date(mcp.check.checkedAt).toLocaleTimeString()}
+            </HelpText>
+          </Notice>
+        )}
       </section>
       <ErrorNotice message={error || data.error} />
       {data.loading && !data.data ? (

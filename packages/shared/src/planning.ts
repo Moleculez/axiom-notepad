@@ -13,6 +13,26 @@ export const dependencyLinkSchema = z.object({
   lagDays: z.number().int().min(-365).max(365).default(0),
 });
 export type DependencyLink = z.infer<typeof dependencyLinkSchema>;
+/** Pure native task creation contract shared by HTTP and integration discovery. */
+export const taskInput = z.object({
+  title: z.string().trim().min(1).max(300),
+  body: z.string().max(100000).default(""),
+  status: taskStatusSchema.default("todo"),
+  priority: taskPrioritySchema.default("normal"),
+  assigneeId: z.string().max(100).nullable().default(null),
+  parentId: z.uuid().nullable().default(null),
+  startOn: dateOnlySchema.nullable().default(null),
+  dueOn: dateOnlySchema.nullable().default(null),
+  estimateHours: z.number().min(0).max(10000).nullable().default(null),
+  labels: z.array(z.string().trim().min(1).max(40)).max(20).default([]),
+  milestoneId: z.uuid().nullable().default(null),
+  noteId: z.uuid().nullable().default(null),
+  resourceIds: z.array(z.uuid()).max(100).default([]),
+  dependencies: z.array(z.uuid()).max(100).default([]),
+  dependencyLinks: z.array(dependencyLinkSchema).max(100).optional(),
+  progressPercent: z.number().int().min(0).max(100).default(0),
+  position: z.number().finite().default(0),
+});
 export function taskDependencyLinks(task: {
   dependencies?: string[];
   dependencyLinks?: DependencyLink[];

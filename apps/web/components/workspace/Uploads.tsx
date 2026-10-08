@@ -1,9 +1,15 @@
 "use client";
-import { Button, IconButton, NativeSelect } from "../ui/controls";
+import { Button, HelpText, IconButton, NativeSelect } from "../ui/controls";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Check, FileUp, Pause, Play, Upload, X } from "lucide-react";
+import { Check, FileUp, Pause, Play, RefreshCw, Upload, X } from "lucide-react";
 import { MAX_FILE_BYTES } from "@axiom/shared/workspace";
 import { transferUpload } from "../../lib/upload-transfer";
+import {
+  readUploadStatuses,
+  uploadStatusLabel,
+  verificationWaitMessage,
+  type VerificationProgress,
+} from "../../lib/upload-status";
 import { api, post, SIGN_OUT_PENDING } from "../../lib/client";
 import { bytes, ErrorNotice, useWorkspace } from "./ui";
 import { uploadRelativePath } from "@axiom/shared/file-workflows";
@@ -16,7 +22,7 @@ import type {
   ResolvedAsset,
 } from "@axiom/shared/editor-media";
 
-export type Transfer = {
+export type Transfer = VerificationProgress & {
   id: string;
   space_id: string;
   parent_id: string | null;
@@ -28,6 +34,8 @@ export type Transfer = {
   status: string;
   received: number;
   error?: string;
+  statusError?: string;
+  rechecking?: boolean;
   completed_resource_id?: string;
   completed_version_id?: string;
   expires_at?: string;
@@ -89,12 +97,15 @@ export function useUploads(userId: string | undefined, onComplete: () => void) {
     if (userId)
       void api<Transfer[]>("uploads")
         .then((items) => {
-          if (alive)
-            setTransfers(
-              items
+          if (alive && owner.current === userId)
+            setTransfers((previous) => [
+              ...previous,
+              ...items
                 .filter(
                   (item) =>
-                    !["cancelled", "expired", "complete"].includes(item.status),
+                    !["cancelled", "expired", "complete"].includes(
+                      item.status,
+                    ) && !previous.some((current) => current.id === item.id),
                 )
                 .map((item) => ({
                   ...item,
@@ -102,7 +113,7 @@ export function useUploads(userId: string | undefined, onComplete: () => void) {
                   received: Number(item.received),
                   status: item.status === "uploading" ? "paused" : item.status,
                 })),
-            );
+            ]);
         })
         .catch(() => {});
     return () => {
@@ -250,22 +261,32 @@ export function useUploads(userId: string | undefined, onComplete: () => void) {
     },
     [userId],
   );
+  const hasVerifying = transfers.some((item) => item.status === "verifying");
   useEffect(() => {
-    if (!transfers.some((item) => item.status === "verifying")) return;
+    if (!userId || !hasVerifying) return;
     let alive = true,
       inFlight = false;
-    const timer = setInterval(() => {
+    const controller = new AbortController();
+    const poll = () => {
       if (inFlight || !navigator.onLine) return;
+      const pending = snapshot.current.filter(
+        (item) => item.status === "verifying",
+      );
+      if (!pending.length) return;
+      const pendingIds = new Set(pending.map((item) => item.id));
       inFlight = true;
-      void api<Transfer[]>("uploads")
+      void readUploadStatuses<Transfer>(
+        pending.map((item) => item.id),
+        controller.signal,
+      )
         .then((remote) => {
-          if (!alive) return;
+          if (!alive || owner.current !== userId) return;
           let changed = false;
           const byId = new Map(remote.map((item) => [item.id, item]));
           for (const current of remote)
             if (
               current.status === "complete" &&
-              files.current.has(current.id) &&
+              pendingIds.has(current.id) &&
               !completed.current.has(current.id)
             ) {
               files.current.delete(current.id);
@@ -275,7 +296,8 @@ export function useUploads(userId: string | undefined, onComplete: () => void) {
           if (changed) onDone.current();
           setTransfers((previous) =>
             previous.map((item) => {
-              if (item.status !== "verifying") return item;
+              if (item.status !== "verifying" || !pendingIds.has(item.id))
+                return item;
               const current = byId.get(item.id);
               if (!current)
                 return {
@@ -285,23 +307,43 @@ export function useUploads(userId: string | undefined, onComplete: () => void) {
                     "Destination access changed. Reconnect or ask a project lead.",
                 };
               return {
+                ...item,
                 ...current,
                 bytes: Number(current.bytes),
                 received: Number(current.received),
+                statusError: "",
               };
             }),
           );
         })
-        .catch(() => {})
+        .catch(() => {
+          if (!alive || owner.current !== userId) return;
+          setTransfers((previous) =>
+            previous.map((item) =>
+              item.status === "verifying" && pendingIds.has(item.id)
+                ? {
+                    ...item,
+                    statusError:
+                      "Could not check verification. Your uploaded parts are retained. Recheck or reconnect; no re-upload is needed.",
+                  }
+                : item,
+            ),
+          );
+        })
         .finally(() => {
           inFlight = false;
         });
-    }, 1800);
+    };
+    poll();
+    const timer = setInterval(poll, 1800);
+    window.addEventListener("online", poll);
     return () => {
       alive = false;
+      controller.abort();
       clearInterval(timer);
+      window.removeEventListener("online", poll);
     };
-  }, [transfers.some((item) => item.status === "verifying")]);
+  }, [hasVerifying, userId]);
   useEffect(() => {
     const byId = new Map(transfers.map((item) => [item.id, item]));
     for (const [key, batch] of batches.current) {
@@ -490,8 +532,37 @@ export function useUploads(userId: string | undefined, onComplete: () => void) {
       }
     },
     retryVerification: async (item: Transfer) => {
-      await post(`uploads/${item.id}/complete`);
-      update(item.id, { status: "verifying", error: "" });
+      if (
+        snapshot.current.find((current) => current.id === item.id)?.rechecking
+      )
+        return;
+      update(item.id, { rechecking: true });
+      try {
+        const remote = await api<{
+          status: string;
+          resourceId?: string;
+          versionId?: string;
+        }>(`uploads/${item.id}/complete`, {
+          method: "POST",
+          body: "{}",
+          signal: AbortSignal.timeout(15_000),
+        });
+        if (owner.current !== userId) return;
+        update(item.id, {
+          status: remote.status,
+          error: "",
+          statusError: "",
+          completed_resource_id: remote.resourceId,
+          completed_version_id: remote.versionId,
+        });
+        if (remote.status === "complete" && !completed.current.has(item.id)) {
+          completed.current.add(item.id);
+          files.current.delete(item.id);
+          onDone.current();
+        }
+      } finally {
+        if (owner.current === userId) update(item.id, { rechecking: false });
+      }
     },
     saveCopy: async (item: Transfer) => {
       await post(`uploads/${item.id}/save-copy`, {
@@ -666,16 +737,17 @@ export default function Uploads({
                   <strong>{item.name}</strong>
                   <span>
                     {bytes(item.received)} / {bytes(item.bytes)} ·{" "}
-                    {item.status === "verifying"
-                      ? "Verifying file on server…"
-                      : item.status}
+                    {uploadStatusLabel(item)}
                   </span>
                   <progress
                     max={Math.max(1, item.bytes)}
                     value={item.received}
                     aria-label={`${item.name} uploaded bytes`}
                   />
-                  <ErrorNotice message={item.error} />
+                  {verificationWaitMessage(item) && (
+                    <HelpText>{verificationWaitMessage(item)}</HelpText>
+                  )}
+                  <ErrorNotice message={item.statusError || item.error} />
                 </div>
                 {item.status === "uploading" && (
                   <IconButton
@@ -701,19 +773,26 @@ export default function Uploads({
                     <Play size={16} />
                   </IconButton>
                 )}
-                {item.status === "failed" && (
+                {["failed", "verifying"].includes(item.status) && (
                   <>
                     <Button
                       className="button secondary"
+                      size="compact"
+                      pending={!!item.rechecking}
+                      aria-label={`${item.status === "verifying" ? "Recheck" : "Retry verification for"} ${item.name}`}
+                      title="Recheck verification without uploading the file again"
                       onClick={() =>
                         void controller
                           .retryVerification(item)
                           .catch((e) => setError(e.message))
                       }
                     >
-                      Retry verification
+                      <RefreshCw size={15} />
+                      {item.status === "verifying"
+                        ? "Recheck"
+                        : "Retry verification"}
                     </Button>
-                    {item.resource_id && (
+                    {item.status === "failed" && item.resource_id && (
                       <Button
                         className="button secondary"
                         onClick={() =>

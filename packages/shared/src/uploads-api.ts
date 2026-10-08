@@ -26,6 +26,7 @@ import { uploadInputSchema, uploadHeadMatches } from "./upload-contract";
 import { mapPdfAnnotation } from "./pdf-annotations";
 import type { Annotation } from "./research";
 import { lockImportUpload } from "./workspace-import-access";
+import { enqueueUploadVerification } from "./upload-verification";
 
 const uuid = z.uuid();
 type Upload = {
@@ -115,13 +116,29 @@ export async function uploadsApi(
 ): Promise<Response | null> {
   const [endpoint, id, action, partId] = path,
     method = request.method;
-  if (endpoint === "uploads" && !id && method === "GET")
+  if (endpoint === "uploads" && !id && method === "GET") {
+    const requested = new URL(request.url).searchParams.get("ids");
+    const ids =
+      requested === null
+        ? null
+        : z.array(uuid).min(1).max(100).parse(requested.split(","));
     return json(
       await query(
-        "SELECT u.id,u.space_id,u.parent_id,u.resource_id,u.expected_version_id,u.expected_resource_version,u.name,u.bytes,u.status,u.error,u.completed_resource_id,u.completed_version_id,u.created_at,u.expires_at,coalesce((SELECT sum(c.bytes) FROM upload_chunks c WHERE c.upload_id=u.id),0) AS received FROM upload_sessions u WHERE u.owner_id=$1 AND u.import_entry_id IS NULL AND axiom_space_role($1,u.space_id)='editor' ORDER BY u.created_at DESC LIMIT 100",
-        [userId],
+        `SELECT u.id,u.space_id,u.parent_id,u.resource_id,u.expected_version_id,u.expected_resource_version,u.name,u.bytes,u.status,u.error,u.completed_resource_id,u.completed_version_id,u.created_at,u.updated_at,u.expires_at,
+         coalesce((SELECT sum(c.bytes) FROM upload_chunks c WHERE c.upload_id=u.id),0) AS received,
+         CASE WHEN u.status<>'verifying' THEN NULL
+           WHEN j.status='running' AND j.leased_until>now() THEN 'running'
+           WHEN j.status='queued' AND j.error IS NOT NULL THEN 'retrying'
+           WHEN j.status IN ('queued','running') THEN 'queued'
+           ELSE 'unavailable' END AS verification_state
+         FROM upload_sessions u LEFT JOIN workspace_jobs j ON j.dedupe_key='upload:'||u.id::text AND j.kind='complete-upload'
+         WHERE u.owner_id=$1 AND u.import_entry_id IS NULL AND axiom_space_role($1,u.space_id)='editor'
+           AND ($2::uuid[] IS NULL OR u.id=ANY($2::uuid[]))
+         ORDER BY (u.status IN ('uploading','verifying','failed')) DESC,u.created_at DESC LIMIT 100`,
+        [userId, ids],
       ),
     );
+  }
   if (endpoint === "uploads" && !id && method === "POST") {
     const input = uploadInputSchema.parse(await request.json());
     await spaceAccess(userId, input.spaceId, "edit");
@@ -310,7 +327,7 @@ export async function uploadsApi(
           "UPDATE upload_sessions SET resource_id=NULL,expected_version_id=NULL,expected_resource_version=NULL,parent_id=$2,name=$3,status='verifying',error=NULL,updated_at=now() WHERE id=$1",
           [id, input.parentId, input.name],
         );
-        await enqueueJob("complete-upload", "upload:" + id, { id }, client);
+        await enqueueUploadVerification(client, id);
       });
       return json({ status: "verifying" }, 202);
     }
@@ -405,7 +422,7 @@ export async function uploadsApi(
       return json({ part, bytes: count, sha256 });
     }
     if (action === "complete" && method === "POST") {
-      await transaction(async (client) => {
+      const result = await transaction(async (client) => {
         await lockImportUpload(client, upload);
         const {
           rows: [current],
@@ -414,10 +431,9 @@ export async function uploadsApi(
           [id],
         );
         await requireScope(client, userId, current.space_id, "edit");
-        if (["complete", "verifying", "staged"].includes(current.status))
-          return;
+        if (["complete", "staged"].includes(current.status)) return current;
         if (
-          !["uploading", "failed"].includes(current.status) ||
+          !["uploading", "failed", "verifying"].includes(current.status) ||
           new Date(current.expires_at).valueOf() <= Date.now()
         )
           throw new HttpError(409, "This upload has expired or was cancelled.");
@@ -436,18 +452,19 @@ export async function uploadsApi(
             409,
             "Some file parts are missing. Resume the upload first.",
           );
-        await client.query(
-          "UPDATE upload_sessions SET status='verifying',error=NULL,updated_at=now() WHERE id=$1",
-          [id],
-        );
-        await enqueueJob("complete-upload", "upload:" + id, { id }, client);
+        if (current.status !== "verifying")
+          await client.query(
+            "UPDATE upload_sessions SET status='verifying',error=NULL,updated_at=now() WHERE id=$1",
+            [id],
+          );
+        await enqueueUploadVerification(client, id);
+        return { ...current, status: "verifying" };
       });
       return json(
         {
-          status: ["complete", "staged"].includes(upload.status)
-            ? upload.status
-            : "verifying",
-          resourceId: upload.completed_resource_id,
+          status: result.status,
+          resourceId: result.completed_resource_id,
+          versionId: result.completed_version_id,
         },
         202,
       );

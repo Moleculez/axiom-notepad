@@ -3,36 +3,9 @@ import { query, transaction } from "./db";
 import { resourceAccess, HttpError } from "./access";
 import { requireScope, workspaceJson as json } from "./workspace-service";
 import { parseCanvas } from "./canvas";
+import { resourceAnchor } from "./resource-comments";
+export { resourceAnchor } from "./resource-comments";
 const uuid = z.uuid();
-export const resourceAnchor = z.discriminatedUnion("kind", [
-  z.object({ kind: z.literal("whole") }),
-  z.object({
-    kind: z.literal("canvas-node"),
-    nodeId: z.string().min(1).max(200),
-  }),
-  z.object({
-    kind: z.literal("time"),
-    seconds: z.number().finite().min(0).max(604800),
-  }),
-  z.object({
-    kind: z.literal("image"),
-    x: z.number().min(0).max(1),
-    y: z.number().min(0).max(1),
-  }),
-  z.object({
-    kind: z.literal("line"),
-    line: z.number().int().min(1).max(10000000),
-  }),
-  z.object({
-    kind: z.literal("page"),
-    page: z.number().int().min(1).max(100000),
-  }),
-  z.object({
-    kind: z.literal("cell"),
-    sheet: z.string().max(160),
-    cell: z.string().regex(/^[A-Z]{1,3}[1-9]\d{0,6}$/),
-  }),
-]);
 export async function resourceCommentsApi(
   request: Request,
   path: string[],

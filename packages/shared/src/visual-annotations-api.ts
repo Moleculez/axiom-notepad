@@ -2,6 +2,8 @@ import { createHash } from "node:crypto";
 import { z } from "zod";
 import { HttpError, resourceAccess } from "./access";
 import { query, transaction } from "./db";
+import { currentAuditContext } from "./audit-context";
+import { requireResearchIntegrationRead } from "./integration-research-authority";
 import { notifyWorkspace } from "./documents";
 import {
   assertSpaceActive,
@@ -49,6 +51,61 @@ function present(r: Row, visibility = r.visibility): VisualAnnotation {
 }
 const missing = () =>
   new HttpError(404, "This visual annotation is unavailable.");
+
+/** Native visibility rules with bounded pagination for explicit MCP reads. */
+export async function readVisualAnnotations(
+  user: string,
+  resourceId: string,
+  page?: { offset: number; limit: number; spaceId: string },
+) {
+  const { resource, space } = await resourceAccess(user, resourceId);
+  if (
+    ["trashed", "purging"].includes(space.effective_status) ||
+    (page && resource.space_id !== page.spaceId)
+  )
+    throw missing();
+  const selectedSpace = currentAuditContext()?.integrationId
+    ? currentAuditContext()?.allowedSpaceIds?.[0]
+    : null;
+  if (
+    currentAuditContext()?.integrationId &&
+    (currentAuditContext()?.integrationReadArea !== "resource-annotations" ||
+      !page ||
+      selectedSpace !== page.spaceId)
+  )
+    throw new HttpError(
+      403,
+      "Select an explicitly granted annotation workspace.",
+    );
+  await requireResearchIntegrationRead(
+    user,
+    resource.space_id,
+    "resource-annotations",
+  );
+  const rows = await query<Row & { root_visibility: Row["visibility"] }>(
+    `SELECT a.*,u.name AS author_name,root.visibility AS root_visibility
+     FROM visual_annotations a JOIN visual_annotations root ON root.id=coalesce(a.parent_id,a.id)
+     JOIN "user" u ON u.id=a.author_id
+     LEFT JOIN file_versions v ON v.id=(a.data->'placement'->>'versionId')::uuid
+     LEFT JOIN resources ref ON ref.id=v.resource_id
+     WHERE a.resource_id=$1 AND (root.visibility='shared' OR root.author_id=$2)
+     AND (a.data->'placement'->>'resourceId')=$1::text
+     AND (a.data->'placement'->>'versionId' IS NULL OR
+       (ref.deleted_at IS NULL AND axiom_space_role($2,ref.space_id) IS NOT NULL
+        AND axiom_space_state(ref.space_id) IN ('active','archived')
+        AND ($3::uuid IS NULL OR ref.space_id=$3)))
+     ${page ? "AND NOT a.deleted" : ""}
+     ORDER BY a.created_at,a.id LIMIT $4 OFFSET $5`,
+    [
+      resourceId,
+      user,
+      selectedSpace,
+      page ? page.limit + 1 : 5000,
+      page?.offset ?? 0,
+    ],
+  );
+  return rows.map((r) => present(r, r.root_visibility));
+}
 export async function visualAnnotationsApi(
   request: Request,
   path: string[],
@@ -62,6 +119,8 @@ export async function visualAnnotationsApi(
   const entry = endpoint === "visual-annotations" && path.length === 2;
   if (!collection && !entry) return null;
   z.uuid().parse(id);
+  if (collection && request.method === "GET")
+    return json(await readVisualAnnotations(user.id, id));
   const [initial] = entry
     ? await query<Row>(
         'SELECT a.*,u.name AS author_name FROM visual_annotations a JOIN "user" u ON u.id=a.author_id WHERE a.id=$1',
@@ -81,22 +140,6 @@ export async function visualAnnotationsApi(
     space.effective_status === "purging"
   )
     throw missing();
-  if (collection && request.method === "GET") {
-    const rows = await query<Row & { root_visibility: Row["visibility"] }>(
-      `SELECT a.*,u.name AS author_name,root.visibility AS root_visibility
-       FROM visual_annotations a JOIN visual_annotations root ON root.id=coalesce(a.parent_id,a.id)
-       JOIN "user" u ON u.id=a.author_id
-       LEFT JOIN file_versions v ON v.id=(a.data->'placement'->>'versionId')::uuid
-       LEFT JOIN resources ref ON ref.id=v.resource_id
-       WHERE a.resource_id=$1 AND (root.visibility='shared' OR root.author_id=$2)
-       AND (a.data->'placement'->>'versionId' IS NULL OR
-         (ref.deleted_at IS NULL AND axiom_space_role($2,ref.space_id) IS NOT NULL
-          AND axiom_space_state(ref.space_id) IN ('active','archived')))
-       ORDER BY a.created_at,a.id LIMIT 5000`,
-      [resourceId, user.id],
-    );
-    return json(rows.map((r) => present(r, r.root_visibility)));
-  }
   if (
     !(collection && request.method === "POST") &&
     !(entry && ["PATCH", "DELETE"].includes(request.method))

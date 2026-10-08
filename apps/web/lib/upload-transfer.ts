@@ -64,11 +64,13 @@ export async function transferUpload(
     valid();
     options.progress(received);
   }
-  await api(`${base}/complete`, {
+  const accepted = await api<Omit<UploadState, "chunks">>(`${base}/complete`, {
     method: "POST",
     signal: options.signal,
     body: "{}",
   });
   valid();
-  return { ...remote, status: "verifying" };
+  // Completion may have already committed (including after a lost response).
+  // Preserve its terminal state and immutable IDs instead of inventing verifying.
+  return { ...remote, ...accepted };
 }

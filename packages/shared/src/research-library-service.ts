@@ -4,6 +4,7 @@ import { query, transaction } from "./db";
 import { HttpError } from "./access";
 import { requireScope, workspaceMutation } from "./workspace-service";
 import { currentAuditContext } from "./audit-context";
+import { requireResearchIntegrationRead } from "./integration-research-authority";
 import {
   libraryScopeSchema,
   type LibraryReference,
@@ -11,7 +12,14 @@ import {
 } from "./research-library";
 
 export const libraryPredicate = (alias = "b", space = "$2", user = "$1") =>
-  `(${alias}.space_id=${space}::uuid AND ${user}::text IS NOT NULL)`;
+  `(${alias}.space_id=${space}::uuid AND ${user}::text IS NOT NULL AND (${alias}.owner_user_id IS NULL OR ${alias}.owner_user_id=${user}))`;
+
+/** Keep native linked evidence within the adapter's one selected workspace. */
+export function libraryLinkedSpacePredicate(alias = "r", space = "$2") {
+  return currentAuditContext()?.integrationReadArea === "research-library"
+    ? ` AND ${alias}.space_id=${space}::uuid`
+    : "";
+}
 
 /** Only the compatibility boundary understands group/account libraries. */
 export async function resolveLibraryScope(
@@ -20,6 +28,8 @@ export async function resolveLibraryScope(
 ): Promise<LibraryScope> {
   const parsed = libraryScopeSchema.safeParse(input);
   if (parsed.success) return parsed.data;
+  if (currentAuditContext()?.integrationId)
+    throw new HttpError(403, "Select an explicitly granted workspace.");
   const legacy = z
     .object({ groupId: z.uuid().nullable().default(null) })
     .strict()
@@ -48,11 +58,17 @@ export async function requireLibraryScope(
   scope: LibraryScope,
   edit = false,
 ) {
-  if (
-    currentAuditContext()?.integrationId ||
-    currentAuditContext()?.allowedSpaceIds
-  )
-    throw new HttpError(403, "Manage reference libraries in the workbench.");
+  const context = currentAuditContext();
+  if (context?.integrationId || context?.allowedSpaceIds) {
+    if (edit)
+      throw new HttpError(403, "Manage reference libraries in the workbench.");
+    await requireResearchIntegrationRead(
+      user,
+      scope.spaceId,
+      "research-library",
+      client,
+    );
+  }
   const {
     rows: [space],
   } = await client.query(
@@ -167,18 +183,22 @@ export async function referenceLinks(
   id: string,
   c?: pg.PoolClient,
 ) {
+  const selectedSpace =
+    currentAuditContext()?.integrationReadArea === "research-library"
+      ? currentAuditContext()?.allowedSpaceIds?.[0]
+      : null;
   const run = async (sql: string, v: unknown[]) =>
     c ? (await c.query(sql, v)).rows : query(sql, v);
   const notes = await run(
     `SELECT id,title,space_id,bool_or(manual) AS manual,bool_or(cited) AS cited FROM (
-     SELECT n.id,n.title,r.space_id,true AS manual,false AS cited FROM reference_notes l JOIN notes n ON n.id=l.note_id JOIN resources r ON r.note_id=n.id WHERE l.reference_id=$1 AND axiom_space_role($2,r.space_id) IS NOT NULL AND ${liveResource()}
-     UNION ALL SELECT n.id,n.title,r.space_id,false,true FROM note_citations nc JOIN notes n ON n.id=nc.note_id JOIN resources r ON r.note_id=n.id CROSS JOIN LATERAL axiom_note_bibliography(n.id) b WHERE nc.cite_key=b.cite_key AND b.reference_id=$1 AND axiom_space_role($2,r.space_id) IS NOT NULL AND ${liveResource()}
-    ) sources GROUP BY id,title,space_id ORDER BY title,id`,
-    [id, user],
+     SELECT n.id,n.title,r.space_id,true AS manual,false AS cited FROM reference_notes l JOIN notes n ON n.id=l.note_id JOIN resources r ON r.note_id=n.id WHERE l.reference_id=$1 AND axiom_space_role($2,r.space_id) IS NOT NULL AND ${liveResource()} AND ($3::uuid IS NULL OR r.space_id=$3)
+     UNION ALL SELECT n.id,n.title,r.space_id,false,true FROM note_citations nc JOIN notes n ON n.id=nc.note_id JOIN resources r ON r.note_id=n.id CROSS JOIN LATERAL axiom_note_bibliography(n.id) b WHERE nc.cite_key=b.cite_key AND b.reference_id=$1 AND axiom_space_role($2,r.space_id) IS NOT NULL AND ${liveResource()} AND ($3::uuid IS NULL OR r.space_id=$3)
+    ) sources GROUP BY id,title,space_id ORDER BY title,id${selectedSpace ? " LIMIT 201" : ""}`,
+    [id, user, selectedSpace],
   );
   const attachments = await run(
-    `SELECT a.id,r.id AS resource_id,r.name,a.note_id,v.ordinal,a.bytes FROM reference_attachments l JOIN attachments a ON a.id=l.attachment_id JOIN file_versions v ON v.id=a.id JOIN resources r ON r.id=v.resource_id WHERE l.reference_id=$1 AND axiom_space_role($2,r.space_id) IS NOT NULL AND ${liveResource()}`,
-    [id, user],
+    `SELECT a.id,r.id AS resource_id,r.name,r.space_id,a.note_id,v.ordinal,a.bytes FROM reference_attachments l JOIN attachments a ON a.id=l.attachment_id JOIN file_versions v ON v.id=a.id JOIN resources r ON r.id=v.resource_id WHERE l.reference_id=$1 AND axiom_space_role($2,r.space_id) IS NOT NULL AND ${liveResource()} AND ($3::uuid IS NULL OR r.space_id=$3) ORDER BY r.name,a.id${selectedSpace ? " LIMIT 201" : ""}`,
+    [id, user, selectedSpace],
   );
   return { notes, attachments };
 }

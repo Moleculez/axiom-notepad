@@ -24,7 +24,10 @@ vi.mock("@axiom/shared/integration-change-sets", () => ({
   prepareIntegrationChange: vi.fn(),
 }));
 vi.mock("../apps/web/lib/api-handler", () => ({ handleAuthorized: f.handle }));
-import { executeIntegrationAction } from "../apps/web/lib/integration-executor";
+import {
+  boundedIntegrationResponse,
+  executeIntegrationAction,
+} from "../apps/web/lib/integration-executor";
 import { integrationActions } from "../packages/shared/src/integration-catalog";
 const space = randomUUID(),
   other = randomUUID(),
@@ -43,6 +46,45 @@ beforeEach(() => {
   f.space.mockResolvedValue({ id: space });
   f.connection.mockResolvedValue(connection);
   f.handle.mockResolvedValue(new Response(JSON.stringify({ items: [] })));
+});
+describe("integration response byte bounds", () => {
+  it("preserves multibyte text split across streaming chunks at the exact limit", async () => {
+    const bytes = new TextEncoder().encode("α🙂"),
+      stream = new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(bytes.slice(0, 3));
+          controller.enqueue(bytes.slice(3));
+          controller.close();
+        },
+      });
+    expect(
+      await boundedIntegrationResponse(new Response(stream), bytes.byteLength),
+    ).toBe("α🙂");
+  });
+  it("counts UTF-8 bytes rather than characters and cancels oversized streams", async () => {
+    const cancel = vi.fn(),
+      stream = new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode("🙂"));
+        },
+        cancel,
+      });
+    await expect(
+      boundedIntegrationResponse(new Response(stream), 3),
+    ).rejects.toMatchObject({ status: 413 });
+    expect(cancel).toHaveBeenCalledOnce();
+    expect(stream.locked).toBe(false);
+  });
+  it("rejects oversized action responses before native output reaches the client", async () => {
+    f.handle.mockResolvedValueOnce(
+      new Response(JSON.stringify({ items: ["🙂".repeat(1_000_001)] })),
+    );
+    await expect(
+      executeIntegrationAction(connection as never, "files_list", {
+        spaceId: space,
+      }),
+    ).rejects.toThrow(/response limit/);
+  });
 });
 describe("MCP evidence tools reuse native reads without broadening OAuth scope", () => {
   it("forces search to the granted workspace even when the user could read another group workspace", async () => {
@@ -104,5 +146,19 @@ describe("MCP evidence tools reuse native reads without broadening OAuth scope",
         { spaceId: space },
       ),
     ).rejects.toThrow(/revoked/);
+  });
+  it("does not return content after the account loses its native workspace role", async () => {
+    f.space
+      .mockResolvedValueOnce({ id: space })
+      .mockResolvedValueOnce({ id: space })
+      .mockRejectedValueOnce(new Error("Native read role revoked"));
+    await expect(
+      executeIntegrationAction(
+        connection as never,
+        "workspace_evidence_search",
+        { spaceId: space },
+      ),
+    ).rejects.toThrow(/role revoked/);
+    expect(f.handle).toHaveBeenCalledTimes(1);
   });
 });

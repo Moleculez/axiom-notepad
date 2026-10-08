@@ -431,12 +431,29 @@ test("Explorer marquee selection clears on blank click and details resize persis
   });
 });
 
-test("MCP OAuth consent, tools, approval, stale edits and revoked tokens are enforced", async ({
+test("MCP OAuth discovery, reviewed course setup, stale edits and revoked tokens are enforced", async ({
   playwright,
 }, info) => {
-  test.setTimeout(120000);
+  test.setTimeout(240000);
   const request = f.owner.request;
   const external = await playwright.request.newContext({ baseURL: origin });
+  const challenge = await external.get("/mcp");
+  expect(challenge.status(), await challenge.text()).toBe(401);
+  expect(challenge.headers()["www-authenticate"]).toContain(
+    "resource_metadata",
+  );
+  const metadata = await external.get(
+    "/.well-known/oauth-protected-resource/mcp",
+  );
+  expect((await metadata.json()).resource).toBe(`${origin}/mcp`);
+  const forbiddenOrigin = await external.get("/mcp", {
+    headers: { origin: "https://untrusted.example.test" },
+  });
+  expect(forbiddenOrigin.status()).toBe(403);
+  const alias = await external.get(
+    `${origin.replace("localhost", "127.0.0.1")}/mcp`,
+  );
+  expect(alias.status(), await alias.text()).toBe(401);
   const registration = await external.post("/api/auth/oauth2/register", {
     data: {
       client_name: "Research assistant acceptance",
@@ -503,7 +520,7 @@ test("MCP OAuth consent, tools, approval, stale edits and revoked tokens are enf
       headers: {
         authorization: `Bearer ${accessToken}`,
         accept: "application/json, text/event-stream",
-        "mcp-protocol-version": "2025-06-18",
+        "mcp-protocol-version": "2025-11-25",
       },
       data: { jsonrpc: "2.0", id: randomUUID(), method, params: parameters },
     });
@@ -522,98 +539,369 @@ test("MCP OAuth consent, tools, approval, stale edits and revoked tokens are enf
     return result.result;
   };
   await mcp("initialize", {
-    protocolVersion: "2025-06-18",
+    protocolVersion: "2025-11-25",
     capabilities: {},
     clientInfo: { name: "acceptance", version: "1" },
   });
   const list = await mcp("tools/list", {});
   expect(list.tools.some((t: any) => t.name === "document_edit")).toBe(true);
+  expect(list.tools.some((t: any) => t.name === "change_set_prepare")).toBe(
+    true,
+  );
+  expect(
+    list.tools.some(
+      (t: any) => /approve|apply/.test(t.name) && /^change_set_/.test(t.name),
+    ),
+  ).toBe(false);
+  expect(
+    list.tools.find((t: any) => t.name === "file_create").inputSchema.properties
+      .payload.properties.type.enum,
+  ).toContain("markdown");
+  expect(
+    list.tools.find((t: any) => t.name === "workspace_task_update").inputSchema
+      .properties.payload.required,
+  ).toContain("version");
+  for (const name of [
+    "mcp_connection_status",
+    "workspace_references_list",
+    "workspace_reference_read",
+    "workspace_reference_collections",
+    "workspace_reference_provenance",
+    "workspace_knowledge_graph",
+    "resource_annotations_read",
+  ])
+    expect(
+      list.tools.some((t: any) => t.name === name),
+      name,
+    ).toBe(true);
+  const resources = await mcp("resources/list", {}),
+    templates = await mcp("resources/templates/list", {}),
+    prompts = await mcp("prompts/list", {});
+  for (const uri of [
+    "axiom://guide",
+    "axiom://capabilities",
+    "axiom://workflows",
+  ])
+    expect(
+      resources.resources.some((r: any) => r.uri === uri),
+      uri,
+    ).toBe(true);
+  expect(
+    templates.resourceTemplates.some(
+      (r: any) =>
+        r.uriTemplate === "axiom://workspaces/{spaceId}/documents/{resourceId}",
+    ),
+  ).toBe(true);
+  expect(prompts.prompts.map((p: any) => p.name).sort()).toEqual([
+    "course_setup",
+    "research_synthesis",
+    "study_next_steps",
+  ]);
+  const workflow = await mcp("prompts/get", {
+    name: "course_setup",
+    arguments: {
+      spaceId,
+      request: "Prepare a linear algebra course with one vectors lesson.",
+    },
+  });
+  expect(workflow.messages[0].content.text).toContain("change_set_prepare");
+  expect(workflow.messages[0].content.text).toContain("@{key}");
+  const workflowResource = await mcp("resources/read", {
+    uri: "axiom://workflows",
+  });
+  const courseTemplates = JSON.parse(workflowResource.contents[0].text);
+  expect(courseTemplates.approvalRequired).toBe(true);
+  expect(courseTemplates.maximumActions).toBe(50);
   const tool = async (name: string, args: unknown) => {
     const result = await mcp("tools/call", { name, arguments: args });
-    return { ...JSON.parse(result.content[0].text), isError: result.isError };
+    const value = JSON.parse(result.content[0].text);
+    expect(result.structuredContent.result).toEqual(value);
+    return { ...value, isError: result.isError };
   };
-  const source = await tool("note_read", { spaceId, id: f.note.id });
+  const complete = async (id: string) => {
+    let value: any;
+    await expect
+      .poll(
+        async () => {
+          value = await tool("change_set_status", { id });
+          return value.status;
+        },
+        { timeout: 60000, intervals: [500, 1000, 2000] },
+      )
+      .toBe("complete");
+    expect(
+      value.actions.every((action: any) => action.state === "complete"),
+    ).toBe(true);
+    return value;
+  };
+  const approve = async (id: string, interactive = false) => {
+    const set = await tool("change_set_status", { id });
+    expect(set.status).toBe("draft");
+    if (interactive) {
+      await page.goto(`${origin}/workbench/settings/connections?review=${id}`);
+      const dialog = page.getByRole("dialog", {
+        name: "Review workspace changes",
+        exact: true,
+      });
+      await expect(dialog).toBeVisible();
+      await dialog
+        .getByRole("button", { name: "Prepare review", exact: true })
+        .click();
+      const consent = dialog.getByRole("checkbox", {
+        name: "I approve these exact changes and their destinations.",
+      });
+      await expect(consent).toBeEnabled();
+      await consent.check();
+      await page.screenshot({
+        path: info.outputPath("mcp-course-review-current.png"),
+        fullPage: true,
+      });
+      await dialog
+        .getByRole("button", { name: "Approve & apply", exact: true })
+        .click();
+    } else {
+      const preview = await call(
+        request,
+        `assistant/change-sets/${id}/preview`,
+        {
+          version: set.version,
+          keys: set.actions.map((action: any) => action.data.key),
+        },
+      );
+      await call(request, `assistant/change-sets/${id}/apply`, {
+        fingerprint: preview.preview.fingerprint,
+        consent: true,
+      });
+    }
+    return complete(id);
+  };
+  const status = await tool("mcp_connection_status", {});
+  expect(status.endpoint).toBe(`${origin}/mcp`);
+  expect(status.workspaces.map((space: any) => space.id)).toContain(spaceId);
+  expect(status.approvalRequired).toBe(true);
+  expect(
+    (await tool("workspace_references_list", { spaceId })).isError,
+  ).not.toBe(true);
+  expect(
+    (await tool("workspace_knowledge_graph", { spaceId })).isError,
+  ).not.toBe(true);
+  const courseName = "MCP linear algebra " + randomUUID().slice(0, 8);
+  const courseInput = {
+    mutationId: randomUUID(),
+    title: courseName,
+    spaceIds: [spaceId],
+    actions: [
+      {
+        key: "folder",
+        action: "folder_create",
+        spaceId,
+        title: "Course folder",
+        payload: { kind: "folder", name: courseName },
+      },
+      {
+        key: "index",
+        action: "file_create",
+        spaceId,
+        title: "Course index",
+        payload: {
+          type: "markdown",
+          name: courseName + " index",
+          parentId: "@{folder}",
+          source:
+            courseTemplates.templates.courseIndex +
+            "\n[Vectors](/workbench/notes/@{lesson})\n",
+        },
+      },
+      {
+        key: "lesson",
+        action: "file_create",
+        spaceId,
+        title: "Vectors lesson",
+        payload: {
+          type: "markdown",
+          name: courseName + " vectors",
+          parentId: "@{folder}",
+          source: courseTemplates.templates.lesson,
+        },
+      },
+      {
+        key: "task",
+        action: "workspace_task_create",
+        spaceId,
+        title: "Study vectors",
+        payload: {
+          title: courseName + " study vectors",
+          resourceIds: ["@{lesson}"],
+        },
+      },
+    ],
+  };
+  const course = await tool("change_set_prepare", courseInput);
+  expect(course.requiresApproval).toBe(true);
+  expect(course.changeSetId).toBe(courseInput.mutationId);
+  expect((await tool("change_set_prepare", courseInput)).changeSetId).toBe(
+    course.changeSetId,
+  );
+  expect(
+    (
+      await tool("files_list", {
+        spaceId,
+        query: { q: courseName, view: "all" },
+      })
+    ).items,
+  ).toHaveLength(0);
+  expect(
+    (await tool("workspace_planning", { spaceId, query: { q: courseName } }))
+      .items,
+  ).toHaveLength(0);
+  const bearerApproval = await external.post(
+    `/api/v1/assistant/change-sets/${course.changeSetId}/apply`,
+    {
+      headers: { origin, authorization: `Bearer ${token.access_token}` },
+      data: { fingerprint: "0".repeat(64), consent: true },
+    },
+  );
+  expect([401, 403]).toContain(bearerApproval.status());
+  const courseDone = await approve(course.changeSetId, true);
+  const lesson = courseDone.actions.find(
+    (action: any) => action.data.key === "lesson",
+  ).result;
+  const folder = courseDone.actions.find(
+    (action: any) => action.data.key === "folder",
+  ).result;
+  const studyTask = courseDone.actions.find(
+    (action: any) => action.data.key === "task",
+  ).result;
+  expect(lesson.parent_id).toBe(folder.id);
+  expect(
+    (await tool("workspace_task", { spaceId, id: studyTask.id })).resource_ids,
+  ).toContain(lesson.id);
+  const repeatedCourse = await tool("change_set_prepare", courseInput);
+  expect(repeatedCourse.changeSetId).toBe(courseDone.id);
+  expect(repeatedCourse.status).toBe("complete");
+  expect(
+    (
+      await tool("files_list", {
+        spaceId,
+        query: { q: courseName, view: "all" },
+      })
+    ).items,
+  ).toHaveLength(3);
+  expect(
+    (await tool("workspace_planning", { spaceId, query: { q: courseName } }))
+      .items,
+  ).toHaveLength(1);
+  const evidence = await mcp("resources/read", {
+    uri: `axiom://workspaces/${spaceId}/documents/${lesson.id}`,
+  });
+  expect(JSON.parse(evidence.contents[0].text).hash).toMatch(/^[a-f\d]{64}$/);
+  const source = await tool("note_read", { spaceId, id: lesson.id });
   expect(source.contentHash).toMatch(/^[a-f\d]{64}$/);
   const privateCard = await tool("note_comment", {
     spaceId,
-    id: f.note.id,
+    id: lesson.id,
     payload: {
       body: "Private automation note",
       kind: "annotation",
       bodyFormat: "markdown",
+      mutationId: randomUUID(),
     },
   });
   expect(privateCard.isError).not.toBe(true);
-  expect(privateCard.visibility).toBe("private");
+  expect(privateCard.requiresApproval).toBe(true);
+  expect(
+    JSON.stringify(await tool("note_comments", { spaceId, id: lesson.id })),
+  ).not.toContain("Private automation note");
+  const cardDone = await approve(privateCard.changeSetId);
+  expect(cardDone.actions[0].result.visibility).toBe("private");
   const hiddenCard = await call(
     f.member.request,
-    `notes/${f.note.id}/comments`,
+    `notes/${lesson.id}/comments`,
     {
       body: "Another author's private evidence",
       kind: "annotation",
     },
   );
-  const visibleCards = await tool("note_comments", { spaceId, id: f.note.id });
+  const visibleCards = await tool("note_comments", { spaceId, id: lesson.id });
   expect(JSON.stringify(visibleCards)).toContain("Private automation note");
   expect(JSON.stringify(visibleCards)).not.toContain(hiddenCard.id);
   const thread = await tool("note_comment", {
     spaceId,
-    id: f.note.id,
-    payload: { body: "Shared review" },
+    id: lesson.id,
+    payload: { body: "Shared review", mutationId: randomUUID() },
   });
+  const threadDone = await approve(thread.changeSetId),
+    threadId = threadDone.actions[0].result.id;
   const reply = await tool("note_comment", {
     spaceId,
-    id: f.note.id,
-    payload: { body: "Follow-up", parentId: thread.id },
+    id: lesson.id,
+    payload: {
+      body: "Follow-up",
+      parentId: threadId,
+      mutationId: randomUUID(),
+    },
   });
   expect(reply.isError).not.toBe(true);
-  expect(reply.parent_id).toBe(thread.id);
+  expect((await approve(reply.changeSetId)).actions[0].result.parent_id).toBe(
+    threadId,
+  );
   const edit = {
     mutationId: randomUUID(),
-    noteId: f.note.id,
+    noteId: lesson.id,
     generation: source.generation,
     expectedHash: source.contentHash,
     source: source.body + "\nAutomation reviewed.\n",
   };
-  expect((await tool("document_edit", edit)).isError).not.toBe(true);
-  expect((await tool("document_edit", edit)).isError).not.toBe(true);
-  expect(
-    (await tool("document_edit", { ...edit, mutationId: randomUUID() }))
-      .isError,
-  ).toBe(true);
-  const resource = await call(request, `resources/${f.note.id}`),
+  const pendingEdit = await tool("document_edit", edit);
+  expect(pendingEdit.requiresApproval).toBe(true);
+  expect((await tool("note_read", { spaceId, id: lesson.id })).body).toBe(
+    source.body,
+  );
+  expect((await tool("document_edit", edit)).changeSetId).toBe(
+    pendingEdit.changeSetId,
+  );
+  await approve(pendingEdit.changeSetId);
+  expect((await tool("note_read", { spaceId, id: lesson.id })).body).toBe(
+    edit.source,
+  );
+  expect((await tool("document_edit", edit)).status).toBe("complete");
+  const staleEdit = await tool("document_edit", {
+    ...edit,
+    mutationId: randomUUID(),
+  });
+  const stalePreview = await request.post(
+    `/api/v1/assistant/change-sets/${staleEdit.changeSetId}/preview`,
+    { headers: { origin }, data: { version: 1, keys: ["action"] } },
+  );
+  expect(stalePreview.status(), await stalePreview.text()).toBe(409);
+  expect((await tool("note_read", { spaceId, id: lesson.id })).body).toBe(
+    edit.source,
+  );
+  await tool("change_set_cancel", { id: staleEdit.changeSetId });
+  const resource = await call(request, `resources/${lesson.id}`),
     trashArgs = {
       spaceId,
-      id: f.note.id,
+      id: lesson.id,
       payload: { version: resource.version, mutationId: randomUUID() },
     };
   const pending = await tool("file_trash", trashArgs);
   expect(pending.requiresApproval).toBe(true);
-  expect((await call(request, `resources/${f.note.id}`)).deleted_at).toBeNull();
-  await call(request, `connections/approvals/${pending.approvalId}`, {
-    decision: "approve",
-  });
+  expect((await call(request, `resources/${lesson.id}`)).deleted_at).toBeNull();
   expect(
     (
       await tool("file_trash", {
         ...trashArgs,
         payload: { ...trashArgs.payload, version: resource.version + 1 },
-        approvalId: pending.approvalId,
       })
     ).isError,
   ).toBe(true);
-  const approved = await tool("file_trash", {
-    ...trashArgs,
-    approvalId: pending.approvalId,
-  });
+  await approve(pending.changeSetId);
+  const approved = await tool("file_trash", trashArgs);
   expect(approved.isError).not.toBe(true);
   expect(
-    (await call(request, `resources/${f.note.id}`)).deleted_at,
+    (await call(request, `resources/${lesson.id}`)).deleted_at,
   ).not.toBeNull();
-  expect(
-    (await tool("file_trash", { ...trashArgs, approvalId: pending.approvalId }))
-      .isError,
-  ).not.toBe(true);
+  expect((await tool("file_trash", trashArgs)).isError).not.toBe(true);
   const connection = (await call(request, "connections")).connections.find(
     (c: any) => c.client_id === client.client_id,
   );

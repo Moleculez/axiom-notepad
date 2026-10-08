@@ -33,33 +33,15 @@ import {
 import {
   calendarSchema,
   dependencyOrder,
-  dependencyLinkSchema,
   resolveDependencyLinks,
   taskDependencyLinks,
+  taskInput,
   type PlanningTask,
 } from "./planning";
+export { taskInput } from "./planning";
 
 const uuid = z.uuid(),
   mutationId = uuid.default(() => randomUUID());
-export const taskInput = z.object({
-  title: z.string().trim().min(1).max(300),
-  body: z.string().max(100000).default(""),
-  status: taskStatusSchema.default("todo"),
-  priority: taskPrioritySchema.default("normal"),
-  assigneeId: z.string().max(100).nullable().default(null),
-  parentId: uuid.nullable().default(null),
-  startOn: dateOnlySchema.nullable().default(null),
-  dueOn: dateOnlySchema.nullable().default(null),
-  estimateHours: z.number().min(0).max(10000).nullable().default(null),
-  labels: z.array(z.string().trim().min(1).max(40)).max(20).default([]),
-  milestoneId: uuid.nullable().default(null),
-  noteId: uuid.nullable().default(null),
-  resourceIds: z.array(uuid).max(100).default([]),
-  dependencies: z.array(uuid).max(100).default([]),
-  dependencyLinks: z.array(dependencyLinkSchema).max(100).optional(),
-  progressPercent: z.number().int().min(0).max(100).default(0),
-  position: z.number().finite().default(0),
-});
 const changeSchema = z.object({
   id: uuid,
   version: z.number().int().positive(),

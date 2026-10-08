@@ -10,6 +10,8 @@ export type AuditContext = {
   integrationScope?: string;
   integrationVersion?: string;
   allowedSpaceIds?: string[];
+  /** Narrow read-only native adapters. This never authorizes a mutation. */
+  integrationReadArea?: "research-library" | "resource-annotations";
   assistantContextId?: string;
   changeSetId?: string;
   pluginGrantId?: string;

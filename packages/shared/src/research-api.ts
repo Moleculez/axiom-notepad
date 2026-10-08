@@ -12,6 +12,8 @@ import {
 } from "./research";
 import { lookupReference } from "./reference-lookup";
 import { requireScope } from "./workspace-service";
+import { currentAuditContext } from "./audit-context";
+import { requireResearchIntegrationRead } from "./integration-research-authority";
 import {
   referenceAccess,
   checkLibraryScope,
@@ -45,6 +47,44 @@ async function attachmentAccess(user: string, id: string, pdfOnly = true) {
   if (pdfOnly && file.mime !== "application/pdf")
     throw new HttpError(400, "Choose a PDF attachment.");
   return { file, note, space };
+}
+
+/** Shared PDF visibility; MCP adapters must pin a version to their resource. */
+export async function readPaperAnnotations(
+  user: string,
+  versionId: string,
+  page?: { resourceId: string; spaceId: string; offset: number; limit: number },
+) {
+  const { file, space } = await attachmentAccess(user, versionId);
+  if (
+    page &&
+    (file.resource_id !== page.resourceId || space.id !== page.spaceId)
+  )
+    throw new HttpError(
+      404,
+      "This PDF version is unavailable in the selected workspace.",
+    );
+  if (
+    currentAuditContext()?.integrationId &&
+    (currentAuditContext()?.integrationReadArea !== "resource-annotations" ||
+      !page ||
+      currentAuditContext()?.allowedSpaceIds?.[0] !== page.spaceId)
+  )
+    throw new HttpError(
+      403,
+      "Select an explicitly granted annotation workspace.",
+    );
+  await requireResearchIntegrationRead(user, space.id, "resource-annotations");
+  return query(
+    `SELECT a.*,u.name AS author_name,
+      (SELECT count(*)::int FROM paper_annotation_replies r WHERE r.annotation_id=a.id AND NOT r.deleted) AS reply_count,
+      (SELECT count(*)::int FROM paper_annotation_replies r WHERE r.annotation_id=a.id AND NOT r.deleted AND r.author_id<>$2 AND r.updated_at>coalesce((SELECT read_at FROM paper_annotation_reads WHERE annotation_id=a.id AND user_id=$2),'-infinity')) AS unread_replies
+     FROM paper_annotations a JOIN "user" u ON u.id=a.author_id
+     WHERE a.attachment_id=$1 AND (a.author_id=$2 OR a.shared)
+     ${page ? "AND NOT a.deleted" : ""} ORDER BY a.created_at,a.id
+     ${page ? "LIMIT $3 OFFSET $4" : ""}`,
+    page ? [versionId, user, page.limit + 1, page.offset] : [versionId, user],
+  );
 }
 export async function requireLibraryEditor(
   userId: string,
@@ -127,6 +167,8 @@ export async function researchApi(
     method = request.method,
     url = new URL(request.url);
   if (resource === "attachments" && ["meta", "annotations"].includes(action)) {
+    if (action === "annotations" && method === "GET")
+      return json(await readPaperAnnotations(userId, id));
     // Metadata also resolves image versions for the visual viewer. Paper
     // annotations and reading actions still require PDF attachments.
     const { file, note, space } = await attachmentAccess(
@@ -150,16 +192,6 @@ export async function researchApi(
         content_role: space.role,
       });
     }
-    if (action === "annotations" && method === "GET")
-      return json(
-        await query(
-          `SELECT a.*,u.name AS author_name,
-          (SELECT count(*)::int FROM paper_annotation_replies r WHERE r.annotation_id=a.id AND NOT r.deleted) AS reply_count,
-          (SELECT count(*)::int FROM paper_annotation_replies r WHERE r.annotation_id=a.id AND NOT r.deleted AND r.author_id<>$2 AND r.updated_at>coalesce((SELECT read_at FROM paper_annotation_reads WHERE annotation_id=a.id AND user_id=$2),'-infinity')) AS unread_replies
-          FROM paper_annotations a JOIN "user" u ON u.id=a.author_id WHERE a.attachment_id=$1 AND (a.author_id=$2 OR a.shared) ORDER BY a.created_at`,
-          [id, userId],
-        ),
-      );
     if (action === "annotations" && method === "PUT") {
       const input = z
         .object({

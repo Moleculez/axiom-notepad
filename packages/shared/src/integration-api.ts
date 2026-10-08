@@ -3,6 +3,12 @@ import { query, transaction } from "./db";
 import { HttpError, spaceAccess } from "./access";
 import { workspaceJson as json } from "./workspace-service";
 import { integrationScopes } from "./integration-catalog";
+import { checkMcpConnection, mcpServerStatus } from "./mcp-diagnostics";
+import {
+  createMcpTransportLimiter,
+  getMcpTransportConfig,
+} from "./mcp-transport";
+const diagnosticLimit = createMcpTransportLimiter({ limit: 6 });
 export async function integrationApi(
   request: Request,
   path: string[],
@@ -11,6 +17,26 @@ export async function integrationApi(
   if (path[0] !== "connections") return null;
   const [, id, action] = path,
     method = request.method;
+  if (id === "mcp-status" && method === "GET") {
+    const config = getMcpTransportConfig();
+    const status = mcpServerStatus(config);
+    if (new URL(request.url).searchParams.get("check") === "1") {
+      const limit = diagnosticLimit(userId);
+      if (!limit.allowed) {
+        const response = json(
+          {
+            error:
+              "Connection checks are limited to six per minute. Wait briefly and retry.",
+          },
+          429,
+        );
+        response.headers.set("retry-after", String(limit.retryAfter));
+        return response;
+      }
+      status.check = await checkMcpConnection(config, fetch, request.signal);
+    }
+    return json(status);
+  }
   if (!id && method === "GET")
     return json({
       connections: await query(

@@ -10,7 +10,6 @@ import {
 } from "@axiom/shared/integration-security";
 import {
   integrationActions,
-  integrationActionInput,
   integrationPath,
 } from "@axiom/shared/integration-catalog";
 import { withAuditContext } from "@axiom/shared/audit-context";
@@ -36,7 +35,7 @@ export async function executeIntegrationAction(
   if (!action) throw new HttpError(404, "Unknown workspace action.");
   if (isWorkspaceMutation(name))
     return prepareIntegrationChange(connection, name, raw);
-  const input = integrationActionInput.parse(raw),
+  const input = action.inputSchema.parse(raw),
     live = await activeConnection(
       connection.id,
       connection.user_id,
@@ -47,6 +46,8 @@ export async function executeIntegrationAction(
   connectionAllowsSpace(live, input.spaceId);
   const space = await spaceAccess(live.user_id, input.spaceId);
   const verifyTargets = async () => {
+    // Account roles can change independently of the connection grant revision.
+    await spaceAccess(live.user_id, input.spaceId);
     await activeConnection(
       live.id,
       live.user_id,
@@ -237,12 +238,7 @@ export async function executeIntegrationAction(
           path.split("/"),
           user,
         );
-        const text = await response.text();
-        if (text.length > 4_000_000)
-          throw new HttpError(
-            413,
-            "Result is too large. Use pagination or the file download tool.",
-          );
+        const text = await boundedIntegrationResponse(response);
         const output = JSON.parse(text);
         if (!response.ok)
           throw new HttpError(
@@ -281,5 +277,37 @@ export async function executeIntegrationAction(
       [live.id, live.user_id, name, action.scope, input.id ? [input.id] : []],
     );
     throw e;
+  }
+}
+
+/** Bound decoded UTF-8 bytes while streaming, rather than buffering an
+ * unbounded response or treating UTF-16 character counts as byte limits. */
+export async function boundedIntegrationResponse(
+  response: Response,
+  limit = 4_000_000,
+) {
+  const reader = response.body?.getReader();
+  if (!reader) return "";
+  const decoder = new TextDecoder(),
+    chunks: string[] = [];
+  let bytes = 0;
+  try {
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      bytes += value.byteLength;
+      if (bytes > limit) {
+        await reader.cancel();
+        throw new HttpError(
+          413,
+          "Result exceeds the 4 MB response limit. Use pagination, a smaller excerpt, or narrower filters.",
+        );
+      }
+      chunks.push(decoder.decode(value, { stream: true }));
+    }
+    chunks.push(decoder.decode());
+    return chunks.join("");
+  } finally {
+    reader.releaseLock();
   }
 }

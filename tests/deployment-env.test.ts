@@ -16,7 +16,7 @@ describe("deployment configuration", () => {
   });
   it.each([
     { APP_URL: "http://localhost:8080" },
-    { APP_URL: "https://notes.example.org/" },
+    { APP_URL: "https://notes.example.org/app" },
     { APP_URL: "https://user:password@notes.example.org" },
     { BETTER_AUTH_URL: "https://different.example.org" },
     { NEXT_PUBLIC_SYNC_URL: "ws://localhost:1234" },
@@ -49,6 +49,23 @@ describe("deployment configuration", () => {
       environmentErrors({ ...valid, SYNC_SECRET: secret }).join(),
     ).not.toContain(secret);
   });
+  it("normalizes equivalent canonical origins consistently with MCP and authentication", () => {
+    expect(
+      environmentErrors({ ...valid, APP_URL: "https://notes.example.org/" }),
+    ).toEqual([]);
+    expect(
+      environmentErrors({
+        ...valid,
+        BETTER_AUTH_URL: "https://notes.example.org:443/",
+      }),
+    ).toEqual([]);
+    expect(
+      environmentErrors({
+        ...valid,
+        APP_URL: "https://notes.example.org/?path=override",
+      }),
+    ).not.toEqual([]);
+  });
   it("accepts a complete private OCR configuration", () => {
     expect(
       environmentErrors({
@@ -66,5 +83,30 @@ describe("deployment configuration", () => {
         PUBLISH_DOMAIN_TARGET: "sites.example.org",
       }),
     ).toEqual([]);
+  });
+  it("validates MCP browser origins without widening account trust", () => {
+    expect(
+      environmentErrors({
+        ...valid,
+        MCP_ALLOWED_ORIGINS:
+          "https://assistant.axiom.test,http://localhost:8080",
+      }),
+    ).toEqual([]);
+    for (const origin of [
+      "*",
+      "https://*.axiom.test",
+      "null",
+      "https://user:secret@assistant.axiom.test",
+      "https://assistant.axiom.test/mcp",
+    ])
+      expect(
+        environmentErrors({ ...valid, MCP_ALLOWED_ORIGINS: origin }).join(" "),
+      ).toContain("MCP_ALLOWED_ORIGINS");
+    expect(
+      environmentErrors({
+        ...valid,
+        MCP_ALLOWED_ORIGINS: "https://user:private-secret@assistant.axiom.test",
+      }).join(" "),
+    ).not.toContain("private-secret");
   });
 });

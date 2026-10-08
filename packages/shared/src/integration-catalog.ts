@@ -1,11 +1,12 @@
 import { z } from "zod";
+import { buildIntegrationActionSchema } from "./integration-catalog-schemas";
 export const integrationScopes = [
   "workspace:read",
   "workspace:write",
   "workspace:manage",
 ] as const;
 export type IntegrationScope = (typeof integrationScopes)[number];
-type Action = {
+type ActionDefinition = {
   name: string;
   description: string;
   scope: IntegrationScope;
@@ -14,12 +15,15 @@ type Action = {
   target: "workspace" | "resource" | "project" | "group" | "account" | "task";
   approval?: boolean;
 };
+export type IntegrationAction = ActionDefinition & {
+  inputSchema: ReturnType<typeof buildIntegrationActionSchema>;
+};
 const read = (
   name: string,
   path: string,
-  target: Action["target"],
+  target: ActionDefinition["target"],
   description: string,
-): Action => ({
+): ActionDefinition => ({
   name,
   path,
   target,
@@ -30,12 +34,12 @@ const read = (
 const write = (
   name: string,
   path: string,
-  target: Action["target"],
+  target: ActionDefinition["target"],
   description: string,
   method = "POST",
   approval = false,
   manage = false,
-): Action => ({
+): ActionDefinition => ({
   name,
   path,
   target,
@@ -46,7 +50,7 @@ const write = (
 });
 /** Deliberately no shell, SQL, password, secrets, authentication, or provider
  * credentials. Payloads are validated again by the same application services. */
-export const integrationActions: Action[] = [
+const actionDefinitions: ActionDefinition[] = [
   read(
     "workspace_evidence_search",
     "spaces/:id/assistant/search",
@@ -680,6 +684,18 @@ export const integrationActions: Action[] = [
     true,
   ),
 ];
+export const integrationActions: IntegrationAction[] = actionDefinitions.map(
+  (action) => ({
+    ...action,
+    inputSchema: buildIntegrationActionSchema(action),
+  }),
+);
+/** Discovery and execution share the same operation-specific validator. */
+export function getIntegrationActionSchema(name: string) {
+  const action = integrationActions.find((item) => item.name === name);
+  if (!action) throw new Error(`Unknown workspace action: ${name}`);
+  return action.inputSchema;
+}
 export const integrationActionInput = z
   .object({
     spaceId: z.uuid(),
@@ -692,7 +708,7 @@ export const integrationActionInput = z
 export type IntegrationActionInput = z.infer<typeof integrationActionInput>;
 /** The only secondary path parameter is a validated entity within a workspace. */
 export function integrationPath(
-  action: Pick<Action, "path" | "target">,
+  action: Pick<ActionDefinition, "path" | "target">,
   spaceId: string,
   id?: string,
 ) {

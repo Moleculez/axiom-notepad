@@ -10,8 +10,10 @@ import nodemailer from "nodemailer";
 import { db, query } from "./db";
 import * as schema from "./schema";
 import * as oauthSchema from "./oauth-schema";
-export const appUrl =
-  process.env.APP_URL ?? process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
+import { normalizeApplicationOrigin } from "./mcp-transport";
+export const appUrl = normalizeApplicationOrigin(
+  process.env.APP_URL ?? process.env.BETTER_AUTH_URL ?? "http://localhost:8080",
+);
 export const institutionalIdentity = {
   enabled: !!(
     process.env.OIDC_DISCOVERY_URL &&

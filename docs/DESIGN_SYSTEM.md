@@ -348,6 +348,16 @@ formula/status bars and sheet navigation remain outside the viewport.
 
 Each document pane owns its scroll area and a footer outside that area. Statistics open in a viewport-contained panel, not a card clipped by the document. At narrow widths the inspector starts closed and opens only on request. Presence colors supplement collaborator names; another device for the same account remains a distinct session. Share describes actual inherited permissions and never implies that copying a link grants access.
 
+Standalone authorization screens use one shared-recipe frame with stationary
+identity/header and decision/footer bands; only the access details and bounded
+workspace picker scroll. Align native checkboxes beside the first line of their
+labels, with enough room for long names and descriptions. Never inherit ordinary
+form-label column stacking into a consent choice. Keep the trust/content-sharing
+notice visible with Allow/Deny, disclose requested account/session permissions,
+and retain explicit selections through search and failed submissions. Pending
+decisions lock the choices without changing action geometry. Client identities
+and URLs wrap as readable text, not remotely loaded branding or preview content.
+
 ## Review checklist
 
 Extensions never define a competing interface. Their native inspector, settings

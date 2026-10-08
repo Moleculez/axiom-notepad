@@ -31,13 +31,19 @@ COPY --from=build --chown=node:node /app/package.json /app/package-lock.json /ap
 COPY --from=build --chown=node:node /app/apps/web/package.json /app/apps/web/next.config.ts ./apps/web/
 COPY --from=build --chown=node:node /app/apps/web/.next ./apps/web/.next
 COPY --from=build --chown=node:node /app/apps/web/public ./apps/web/public
+# The worker invokes the same server adapter as reviewed application actions.
+# Next's compiled output does not ship these TypeScript runtime dependencies.
+COPY --from=build --chown=node:node /app/apps/web/lib ./apps/web/lib
 COPY --from=build --chown=node:node /app/apps/sync ./apps/sync
 COPY --from=build --chown=node:node /app/apps/publish ./apps/publish
 COPY --from=build --chown=node:node /app/packages ./packages
-COPY --from=build --chown=node:node /app/scripts/ops/admin.ts /app/scripts/ops/backup.ts /app/scripts/ops/migrate.ts /app/scripts/ops/workspace-worker.ts /app/scripts/ops/environment.ts /app/scripts/ops/validate-env.ts ./scripts/ops/
+COPY --from=build --chown=node:node /app/scripts/ops/admin.ts /app/scripts/ops/backup.ts /app/scripts/ops/migrate.ts /app/scripts/ops/workspace-worker.ts /app/scripts/ops/worker-health.ts /app/scripts/ops/environment.ts /app/scripts/ops/validate-env.ts ./scripts/ops/
 COPY --chmod=755 deploy/docker/entrypoint.sh /usr/local/bin/axiom-entrypoint
 RUN mkdir -p /app/data/attachments && chown -R node:node /app/data
 USER node
+# Fail image construction if pruning/COPY omissions break the worker's real
+# import graph. Build-only values do not persist in the runtime environment.
+RUN AXIOM_BUILD=1 BETTER_AUTH_SECRET=build-only-auth-placeholder-0123456789 SYNC_SECRET=build-only-sync-placeholder-0123456789 node --import tsx scripts/ops/workspace-worker.ts --check
 EXPOSE 3000 1234 3001
 ENTRYPOINT ["axiom-entrypoint"]
 CMD ["node", "node_modules/next/dist/bin/next", "start", "apps/web", "--hostname", "0.0.0.0"]

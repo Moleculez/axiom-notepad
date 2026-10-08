@@ -170,6 +170,10 @@ open files in the same workbench. Scoped OAuth/MCP integration and selected offl
 work are included. Provider-assisted OCR/AI and private Office conversion stay
 disabled until explicitly configured. See [feature boundaries](docs/RESEARCH_TOOLS.md)
 and [offline/MCP behavior](docs/PRODUCTIVITY_PLATFORM.md).
+MCP includes typed token-scoped tools, course/research prompts, reference and
+annotation reads, graph resources and reviewed multi-action workflows. See
+[MCP connection setup](docs/MCP.md) for local development, proxy configuration
+and connection diagnostics.
 
 The [PDF research workbench](docs/PDF_READER.md) adds continuous/facing pages,
 collapsible contents, selection popups, exact text search, editable bookmarks,

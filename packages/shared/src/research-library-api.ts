@@ -2,6 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import type pg from "pg";
 import { z } from "zod";
 import { query, transaction } from "./db";
+import { currentAuditContext } from "./audit-context";
 import { researchLocation } from "./research-location";
 import { HttpError, resourceAccess, fileAccess } from "./access";
 import { notifyWorkspace } from "./documents";
@@ -37,6 +38,7 @@ import {
   liveResource,
   resolveLibraryScope,
   libraryRequestInput,
+  libraryLinkedSpacePredicate,
 } from "./research-library-service";
 
 const id = z.uuid(),
@@ -238,10 +240,22 @@ export async function researchLibraryApi(
   if (method === "GET" && section === "collections") {
     const scope = await scopeOf(url, user);
     await checkLibraryScope(user, scope);
+    const integrationRead =
+      currentAuditContext()?.integrationReadArea === "research-library";
+    const page = integrationRead
+      ? z
+          .object({
+            cursor: z.coerce.number().int().min(0).max(1_000_000).default(0),
+            limit: z.coerce.number().int().min(1).max(100).default(50),
+          })
+          .parse(Object.fromEntries(url.searchParams))
+      : null;
     return json(
       await query(
-        `SELECT b.id,b.name,b.parent_id,b.version FROM reference_collections b WHERE ${libraryPredicate()} ORDER BY lower(name),id`,
-        [user, scope.spaceId],
+        `SELECT b.id,b.name,b.parent_id,b.version FROM reference_collections b WHERE ${libraryPredicate()} ORDER BY lower(name),id${page ? " LIMIT $3 OFFSET $4" : ""}`,
+        page
+          ? [user, scope.spaceId, page.limit + 1, page.cursor]
+          : [user, scope.spaceId],
       ),
     );
   }
@@ -317,14 +331,14 @@ export async function researchLibraryApi(
       );
     const rows = await query<LibraryReference>(
       `SELECT b.*,coalesce(ri.data->>'status','want') AS status,ARRAY(SELECT collection_id FROM reference_collection_items WHERE reference_id=b.id) AS collections,
-   (SELECT count(*)::int FROM reference_notes l JOIN resources r ON r.note_id=l.note_id WHERE l.reference_id=b.id AND axiom_space_role($1,r.space_id) IS NOT NULL AND ${liveResource()}) AS note_count,
-   (SELECT count(*)::int FROM reference_attachments l JOIN file_versions v ON v.id=l.attachment_id JOIN resources r ON r.id=v.resource_id WHERE l.reference_id=b.id AND axiom_space_role($1,r.space_id) IS NOT NULL AND ${liveResource()}) AS pdf_count
+   (SELECT count(*)::int FROM reference_notes l JOIN resources r ON r.note_id=l.note_id WHERE l.reference_id=b.id AND axiom_space_role($1,r.space_id) IS NOT NULL AND ${liveResource()}${libraryLinkedSpacePredicate()}) AS note_count,
+   (SELECT count(*)::int FROM reference_attachments l JOIN file_versions v ON v.id=l.attachment_id JOIN resources r ON r.id=v.resource_id WHERE l.reference_id=b.id AND axiom_space_role($1,r.space_id) IS NOT NULL AND ${liveResource()}${libraryLinkedSpacePredicate()}) AS pdf_count
    ${from} ORDER BY b.${p.sort} ${p.direction},b.id LIMIT ${p.format ? 10000 : p.limit} OFFSET ${p.format ? 0 : p.cursor}`,
       values,
     );
     if (p.format) return exportResponse(rows, p.format);
     const collections = await query(
-      `SELECT b.*, (SELECT count(*)::int FROM reference_collection_items ci JOIN bibliography r ON r.id=ci.reference_id WHERE ci.collection_id=b.id AND r.deleted_at IS NULL AND r.merged_into IS NULL) AS count FROM reference_collections b WHERE ${libraryPredicate()} ORDER BY lower(name),id`,
+      `SELECT b.*, (SELECT count(*)::int FROM reference_collection_items ci JOIN bibliography r ON r.id=ci.reference_id WHERE ci.collection_id=b.id AND r.deleted_at IS NULL AND r.merged_into IS NULL AND r.space_id=b.space_id AND (r.owner_user_id IS NULL OR r.owner_user_id=$1)) AS count FROM reference_collections b WHERE ${libraryPredicate()} ORDER BY lower(name),id${currentAuditContext()?.integrationReadArea === "research-library" ? " LIMIT 201" : ""}`,
       [user, scope.spaceId],
     );
     const tags = await query(

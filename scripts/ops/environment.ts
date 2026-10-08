@@ -1,3 +1,4 @@
+import { normalizeApplicationOrigin } from "../../packages/shared/src/mcp-transport";
 export function environmentErrors(env: NodeJS.ProcessEnv) {
   const errors: string[] = [];
   const production = env.NODE_ENV === "production";
@@ -18,21 +19,31 @@ export function environmentErrors(env: NodeJS.ProcessEnv) {
     errors.push("Authentication and synchronization secrets must differ.");
   let origin: URL | undefined;
   try {
-    origin = new URL(env.APP_URL ?? "");
-    if (
-      !["https:", "http:"].includes(origin.protocol) ||
-      origin.origin !== env.APP_URL
-    )
-      errors.push(
-        "APP_URL must be an HTTP(S) origin without credentials, path or trailing slash.",
-      );
+    origin = new URL(normalizeApplicationOrigin(env.APP_URL ?? ""));
     if (production && origin.protocol !== "https:")
       errors.push("Production APP_URL must use HTTPS.");
   } catch {
     errors.push("APP_URL must be a valid origin.");
   }
-  if (env.BETTER_AUTH_URL && env.BETTER_AUTH_URL !== env.APP_URL)
-    errors.push("BETTER_AUTH_URL must match APP_URL.");
+  if (env.BETTER_AUTH_URL) {
+    try {
+      if (normalizeApplicationOrigin(env.BETTER_AUTH_URL) !== origin?.origin)
+        errors.push("BETTER_AUTH_URL must match APP_URL.");
+    } catch {
+      errors.push("BETTER_AUTH_URL must be a valid origin matching APP_URL.");
+    }
+  }
+  for (const allowed of (env.MCP_ALLOWED_ORIGINS ?? "").split(",")) {
+    if (!allowed.trim()) continue;
+    try {
+      normalizeApplicationOrigin(allowed);
+    } catch {
+      errors.push(
+        "MCP_ALLOWED_ORIGINS must contain exact HTTP(S) origins without credentials, paths, query strings or wildcards.",
+      );
+      break;
+    }
+  }
   if (
     env.PUBLISH_DOMAIN_TARGET &&
     (!/^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/i.test(
