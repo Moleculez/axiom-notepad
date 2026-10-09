@@ -2,6 +2,7 @@ import { IntlMessageFormat } from "intl-messageformat";
 import type { MessageFormatElement } from "@formatjs/icu-messageformat-parser";
 import english from "./messages/en.json" with { type: "json" };
 import type { Locale } from "./locales";
+import { localeTag } from "./locales";
 export * from "./locales";
 export type MessageId = keyof typeof english;
 export type MessageValues = Record<string, string | number | boolean | Date>;
@@ -18,7 +19,7 @@ export function createTranslator(
     if (!message) return id;
     let format = formats.get(id);
     if (!format) {
-      format = new IntlMessageFormat(message, locale, undefined, {
+      format = new IntlMessageFormat(message, localeTag(locale), undefined, {
         ignoreTag: true,
       });
       formats.set(id, format);
@@ -38,7 +39,7 @@ export function formatNumber(
   value: number,
   options?: Intl.NumberFormatOptions,
 ) {
-  return new Intl.NumberFormat(locale, options).format(value);
+  return new Intl.NumberFormat(localeTag(locale), options).format(value);
 }
 export function formatDate(
   locale: Locale,
@@ -47,7 +48,7 @@ export function formatDate(
 ) {
   const date = value instanceof Date ? value : new Date(value);
   if (!Number.isFinite(date.getTime())) return "—";
-  return new Intl.DateTimeFormat(locale, options).format(date);
+  return new Intl.DateTimeFormat(localeTag(locale), options).format(date);
 }
 export function formatRelativeTime(
   locale: Locale,
@@ -70,8 +71,7 @@ export function formatRelativeTime(
               : Math.abs(seconds) < 31557600
                 ? ["month", 2629800]
                 : ["year", 31557600];
-  return new Intl.RelativeTimeFormat(locale, { numeric: "auto" }).format(
-    Math.round(seconds / divisor),
-    unit,
-  );
+  return new Intl.RelativeTimeFormat(localeTag(locale), {
+    numeric: "auto",
+  }).format(Math.round(seconds / divisor), unit);
 }

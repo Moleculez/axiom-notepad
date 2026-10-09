@@ -10,6 +10,7 @@ import {
 import {
   resolveLocale,
   localeDirection,
+  localeTag,
   type Locale,
   type LocaleChoice,
 } from "./locales";
@@ -24,7 +25,7 @@ export type LocaleSnapshot = Readonly<{
 }>;
 const initial: LocaleSnapshot = Object.freeze({
   locale: "en",
-  choice: "auto",
+  choice: "en",
   ready: false,
   loading: false,
   error: "",
@@ -125,7 +126,7 @@ export const browserLanguages = () =>
     ? []
     : (navigator.languages ?? [navigator.language]);
 export function applyDocumentLocale(locale: Locale) {
-  document.documentElement.lang = locale;
+  document.documentElement.lang = localeTag(locale);
   document.documentElement.dir = localeDirection(locale);
   document.documentElement.dataset.locale = locale;
 }

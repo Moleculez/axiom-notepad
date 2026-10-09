@@ -1,7 +1,12 @@
 "use client";
 import { Field, NativeSelect } from "./ui/controls";
 import { useI18n } from "@axiom/i18n/react";
-import { locales, resolveLocale, type LocaleChoice } from "@axiom/i18n";
+import {
+  locales,
+  localeTag,
+  resolveLocale,
+  type LocaleChoice,
+} from "@axiom/i18n";
 import { browserLanguages } from "@axiom/i18n/client";
 export default function LanguageField({
   value,
@@ -35,7 +40,7 @@ export default function LanguageField({
           <option
             key={locale.id}
             value={locale.id}
-            lang={locale.id}
+            lang={localeTag(locale.id)}
             dir={locale.direction}
           >
             {locale.name}

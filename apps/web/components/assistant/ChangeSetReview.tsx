@@ -18,6 +18,7 @@ import {
   ListChecks,
   Pencil,
   ShieldCheck,
+  RefreshCw,
   Square,
   Undo2,
 } from "lucide-react";
@@ -35,6 +36,7 @@ import { canvasSchema } from "@axiom/shared/canvas";
 import { calendarSchema, type PlanningTask } from "@axiom/shared/planning";
 import RevisionDiff from "../revisions/RevisionDiff";
 import PlanningGantt from "../workspace/PlanningGantt";
+import { changeSetLifecycle } from "@axiom/shared/change-set-lifecycle";
 
 export default function ChangeSetReview({
   id,
@@ -45,7 +47,7 @@ export default function ChangeSetReview({
   onClose: () => void;
   onChange?: () => void;
 }) {
-  useInterfaceLocale();
+  const { t } = useInterfaceLocale();
   const { spaces, refresh, navigate } = useWorkspace();
   const [activeId, setActiveId] = useState(id),
     [value, setValue] = useState<WorkspaceChangeSet | null>(null),
@@ -55,6 +57,7 @@ export default function ChangeSetReview({
     [busy, setBusy] = useState(false),
     [edited, setEdited] = useState<ChangeAction[] | null>(null),
     [confirmed, setConfirmed] = useState(false),
+    [delayed, setDelayed] = useState(false),
     [plan, setPlan] = useState(false);
   const alive = useRef(true),
     recoveryReceipt = useRef(crypto.randomUUID()),
@@ -66,18 +69,20 @@ export default function ChangeSetReview({
     setConfirmed(false);
     onChange?.();
   };
+  useEffect(() => setActiveId(id), [id]);
   useEffect(() => {
     alive.current = true;
     recoveryReceipt.current = crypto.randomUUID();
     const controller = new AbortController();
     setValue(null);
+    setError("");
     setEdited(null);
     setConfirmed(false);
     void api<WorkspaceChangeSet>(`assistant/change-sets/${activeId}`, {
       signal: controller.signal,
     })
       .then((next) => {
-        if (!alive.current) return;
+        if (controller.signal.aborted) return;
         setValue(next);
         const selected = next.preview
           ? next.actions.filter((a) => a.selected).map((a) => a.data.key)
@@ -94,7 +99,24 @@ export default function ChangeSetReview({
       controller.abort();
     };
   }, [activeId]);
-  const running = value && ["queued", "applying"].includes(value.status);
+  const state = value ? changeSetLifecycle(value.status) : null,
+    running = !!state?.processing,
+    progressSignature = value
+      ? JSON.stringify([
+          value.status,
+          value.actions.map((action) => [
+            action.id,
+            action.state,
+            action.error,
+          ]),
+        ])
+      : "";
+  useEffect(() => {
+    setDelayed(false);
+    if (!running) return;
+    const timer = setTimeout(() => setDelayed(true), 60_000);
+    return () => clearTimeout(timer);
+  }, [activeId, running, progressSignature]);
   useEffect(() => {
     if (!running) return;
     const controller = new AbortController();
@@ -106,6 +128,7 @@ export default function ChangeSetReview({
         signal: controller.signal,
       })
         .then((next) => {
+          if (controller.signal.aborted) return;
           setValue(next);
           setError("");
           if (!["queued", "applying"].includes(next.status)) {
@@ -164,14 +187,23 @@ export default function ChangeSetReview({
       wide
       title={uiText("Review workspace changes")}
       subtitle={
-        value
-          ? `${value.title} · ${value.status} · Nothing applies without your approval`
+        value && state
+          ? t("{title} · {status} · {message}", {
+              title: value.title,
+              status: t(state.label),
+              message: t(state.message),
+            })
           : uiText("Loading private draft…")
       }
       className="change-set-dialog"
       onClose={onClose}
     >
       <ErrorNotice message={error || value?.error || ""} />
+      {running && delayed && (
+        <Notice tone="warning">
+          <I18nText id="This request has made no progress for a minute. Background processing may be paused or unavailable. You can close this dialog; do not submit a duplicate request. A server administrator should check the background worker." />
+        </Notice>
+      )}
       {value && (
         <>
           {value.plugin_package_hash && (
@@ -368,6 +400,21 @@ export default function ChangeSetReview({
         </>
       )}
       <div className="dialog-footer">
+        {value && value.status !== "draft" && (
+          <Button
+            variant="secondary"
+            pending={busy}
+            disabled={busy}
+            onClick={() =>
+              void run(() =>
+                api<WorkspaceChangeSet>(`assistant/change-sets/${activeId}`),
+              )
+            }
+          >
+            <RefreshCw size={14} />
+            <I18nText id="Refresh status" />
+          </Button>
+        )}
         {value?.status === "draft" && (
           <>
             <label className="assistant-consent">

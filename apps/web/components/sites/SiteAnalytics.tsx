@@ -1,5 +1,7 @@
 "use client";
 import { currentLocale } from "@axiom/i18n/client";
+import { formatNumber, type MessageId } from "@axiom/i18n";
+import { t } from "@axiom/i18n/client";
 import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
 
 import {
@@ -28,12 +30,13 @@ import {
   useWorkspace,
 } from "../workspace/ui";
 import DraftGuard from "../workspace/DraftGuard";
+import { publicationKindLabel } from "../../lib/interface-labels";
 
 const today = () => new Date().toISOString().slice(0, 10);
 const start = (days: number) =>
   new Date(Date.now() - (days - 1) * 86400000).toISOString().slice(0, 10);
 const count = (value: number) => value.toLocaleString(currentLocale());
-const metrics: [keyof SiteMetrics, string][] = [
+const metrics: [keyof SiteMetrics, MessageId][] = [
   ["views", "Page views"],
   ["engaged", "Engaged views"],
   ["seconds", "Active seconds"],
@@ -44,10 +47,16 @@ const metrics: [keyof SiteMetrics, string][] = [
 ];
 const change = (value: number, previous: number) =>
   previous
-    ? `${value >= previous ? "+" : ""}${Math.round(((value - previous) / previous) * 100)}% vs previous period`
+    ? t("Change from previous period: {change}", {
+        change: formatNumber(currentLocale(), (value - previous) / previous, {
+          style: "percent",
+          signDisplay: "always",
+          maximumFractionDigits: 0,
+        }),
+      })
     : value
-      ? "No prior-period activity"
-      : "No change";
+      ? t("No prior-period activity")
+      : t("No change");
 
 export default function SiteAnalytics({
   spaceId,
@@ -118,7 +127,10 @@ export default function SiteAnalytics({
                 setDates(next);
               }}
             >
-              {days} <I18nText id="days" />
+              <I18nText
+                id="{days, plural, one {# day} other {# days}}"
+                values={{ days }}
+              />
             </button>
           ))}
         </div>
@@ -196,7 +208,9 @@ export default function SiteAnalytics({
                 <I18nText id="All types" />
               </option>
               {["post", "paper", "page", "resource"].map((k) => (
-                <option key={k}>{k}</option>
+                <option key={k} value={k}>
+                  {publicationKindLabel(k)}
+                </option>
               ))}
             </NativeSelect>
           </label>
@@ -248,7 +262,7 @@ export default function SiteAnalytics({
           <div className="site-insights-metrics">
             {metrics.map(([key, label]) => (
               <section key={key}>
-                <span>{label}</span>
+                <span>{uiText(label)}</span>
                 <strong>{count(report.current[key])}</strong>
                 <small>
                   {change(report.current[key], report.previous[key])}
@@ -276,7 +290,7 @@ export default function SiteAnalytics({
                 >
                   {metrics.map(([key, label]) => (
                     <option key={key} value={key}>
-                      {label}
+                      {uiText(label)}
                     </option>
                   ))}
                 </NativeSelect>
@@ -285,7 +299,14 @@ export default function SiteAnalytics({
             <svg
               viewBox="0 0 800 160"
               role="img"
-              aria-label={`${metrics.find(([key]) => key === chartMetric)?.[1]} by day; equivalent data in the table below`}
+              aria-label={t(
+                "{metric} by day; equivalent data in the table below",
+                {
+                  metric: uiText(
+                    metrics.find(([key]) => key === chartMetric)![1],
+                  ),
+                },
+              )}
             >
               <path
                 d="M0 150H800M0 80H800M0 10H800"
@@ -329,7 +350,7 @@ export default function SiteAnalytics({
                       </th>
                       {metrics.map(([key, label]) => (
                         <th scope="col" key={key}>
-                          {label}
+                          {uiText(label)}
                         </th>
                       ))}
                     </tr>
@@ -367,7 +388,7 @@ export default function SiteAnalytics({
                   ] as const
                 ).map(([label, n]) => (
                   <div key={label}>
-                    <dt>{label}</dt>
+                    <dt>{uiText(label)}</dt>
                     <dd>{count(n)}</dd>
                   </div>
                 ))}
@@ -379,7 +400,7 @@ export default function SiteAnalytics({
                 {report.publishing.cadence.map((d) => (
                   <li key={d.month}>
                     <span>{d.month}</span>
-                    <strong>{d.entries}</strong>
+                    <strong>{count(d.entries)}</strong>
                   </li>
                 ))}
               </ul>
@@ -390,7 +411,7 @@ export default function SiteAnalytics({
                 {report.publishing.topics.map((t) => (
                   <li key={t.tag}>
                     <span>{t.tag}</span>
-                    <strong>{t.entries}</strong>
+                    <strong>{count(t.entries)}</strong>
                   </li>
                 ))}
               </ul>
@@ -457,14 +478,18 @@ export default function SiteAnalytics({
                     <tr key={e.id}>
                       <th scope="row">
                         {e.title}
-                        <small>{e.kind}</small>
+                        <small>{publicationKindLabel(e.kind)}</small>
                       </th>
                       <td>{e.reading ? count(e.reading.words) : "—"}</td>
                       <td>{count(e.views)}</td>
                       <td>{count(e.engaged)}</td>
                       <td>
                         {e.views
-                          ? `${Math.round((e.completed / e.views) * 100)}%`
+                          ? formatNumber(
+                              currentLocale(),
+                              e.completed / e.views,
+                              { style: "percent", maximumFractionDigits: 0 },
+                            )
                           : "—"}
                       </td>
                       <td>{count(e.downloads)}</td>
@@ -518,7 +543,7 @@ export default function SiteAnalytics({
                   {report.authors.map((a) => (
                     <tr key={a.id}>
                       <th scope="row">{a.name}</th>
-                      <td>{a.entries}</td>
+                      <td>{count(a.entries)}</td>
                       <td>{count(a.words)}</td>
                       <td>{count(a.views)}</td>
                       <td>{count(a.engaged)}</td>

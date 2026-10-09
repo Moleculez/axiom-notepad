@@ -6,6 +6,7 @@ import { createChangeSet } from "./workspace-change-sets";
 import { getIntegrationActionSchema } from "./integration-catalog";
 import { documentCommandSchema } from "./document-commands";
 import type { IntegrationConnection } from "./integration-security";
+import { changeSetReceipt } from "./change-set-lifecycle";
 
 export async function prepareIntegrationChange(
   connection: IntegrationConnection,
@@ -79,18 +80,16 @@ export async function prepareIntegrationChange(
     ],
   );
   return {
-    requiresApproval: value.status === "draft",
+    ...changeSetReceipt(value, appUrl),
     approvalId: value.id,
-    changeSetId: value.id,
     status: value.status,
-    approvalUrl: `${appUrl}/workbench/settings/connections?review=${value.id}`,
     results: value.actions.map((a) => ({
       key: a.data.key,
       status: a.state,
       result: a.result,
       error: a.error,
     })),
-    message:
-      "Review and apply in Axiom. The client cannot approve its own request. Poll change_set_status; retries return the existing receipt, not a second write.",
+    pollingInstructions:
+      "Poll change_set_status using changeSetId. Queued and applying requests are already approved; do not ask for approval again or create a duplicate request. Only completed action receipts confirm a write. Clients cannot approve their own requests.",
   };
 }

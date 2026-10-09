@@ -3,7 +3,12 @@ import { localeIds, type LocaleChoice } from "@axiom/i18n/locales";
 export const localeChoiceSchema = z.enum(["auto", ...localeIds]);
 export const localeRecordSchema = z
   .object({
-    locale: localeChoiceSchema,
+    // Accept retired Arabic records only at the read/cache boundary. New writes
+    // use the strict choice schema, and never replay an old Arabic outbox as Auto.
+    locale: z.preprocess(
+      (value) => (value === "ar" ? "auto" : value),
+      localeChoiceSchema,
+    ),
     version: z.number().int().nonnegative(),
     mutationId: z.uuid().nullable(),
   })
@@ -15,7 +20,7 @@ export type LocaleMutation = {
   mutationId: string;
 };
 export const defaultLocaleRecord: LocaleRecord = {
-  locale: "auto",
+  locale: "en",
   version: 0,
   mutationId: null,
 };

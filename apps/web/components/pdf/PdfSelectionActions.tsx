@@ -12,6 +12,7 @@ import {
   Strikethrough,
 } from "lucide-react";
 import type { AnnotationData } from "@axiom/shared/research";
+import { annotationColorLabel } from "../../lib/interface-labels";
 export type PdfSelection = {
   data: AnnotationData;
   anchor: { left: number; right: number; top: number; bottom: number };
@@ -35,7 +36,7 @@ export default function PdfSelectionActions({
   onQuote: () => void;
   onClose: () => void;
 }) {
-  useInterfaceLocale();
+  const { t } = useInterfaceLocale();
   const root = useRef<HTMLDivElement>(null),
     close = useRef(onClose);
   close.current = onClose;
@@ -105,8 +106,12 @@ export default function PdfSelectionActions({
           key={color}
           className={`highlight-color ${color}`}
           disabled={busy}
-          title={`Highlight privately in ${color}`}
-          aria-label={`Highlight privately in ${color}`}
+          title={t("Highlight privately in {color}", {
+            color: annotationColorLabel(color),
+          })}
+          aria-label={t("Highlight privately in {color}", {
+            color: annotationColorLabel(color),
+          })}
           onClick={() => onHighlight(color)}
         />
       ))}

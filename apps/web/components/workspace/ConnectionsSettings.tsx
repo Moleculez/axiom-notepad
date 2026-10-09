@@ -21,8 +21,16 @@ import {
 } from "lucide-react";
 import type { McpServerStatus } from "@axiom/shared/mcp-diagnostics";
 import { api, post } from "../../lib/client";
-import { ErrorNotice, Loading, useData, useWorkspace, useLocation } from "./ui";
+import {
+  ErrorNotice,
+  Loading,
+  useData,
+  useWorkspace,
+  useLocation,
+  go,
+} from "./ui";
 import ChangeSetReview from "../assistant/ChangeSetReview";
+import { changeSetLifecycle } from "@axiom/shared/change-set-lifecycle";
 type Connection = {
   id: string;
   name: string;
@@ -50,8 +58,17 @@ export default function ConnectionsSettings() {
   const [checkError, setCheckError] = useState("");
   const checkController = useRef<AbortController | null>(null);
   const mcp = checkedServer ?? server.data;
-  const { params } = useLocation();
-  const [review, setReview] = useState<string | null>(params.get("review"));
+  const { params, path, hash } = useLocation();
+  const reviewParam = params.get("review");
+  const [review, setReview] = useState<string | null>(reviewParam);
+  useEffect(() => setReview(reviewParam), [reviewParam]);
+  const showReview = (id: string | null) => {
+    const query = new URLSearchParams(params);
+    if (id) query.set("review", id);
+    else query.delete("review");
+    setReview(id);
+    go(path + (query.size ? `?${query}` : "") + hash, true);
+  };
   const changes = useData<
     { id: string; title: string; status: string; connection_id?: string }[]
   >("assistant/change-sets");
@@ -236,7 +253,7 @@ export default function ConnectionsSettings() {
           <section className="settings-card">
             <h2>
               <ShieldCheck size={19} />
-              <I18nText id="Requests for approval" />
+              <I18nText id="Change requests" />
             </h2>
             {!data.data?.approvals.length &&
               !changes.data?.some((s) => s.connection_id) && (
@@ -257,13 +274,15 @@ export default function ConnectionsSettings() {
                     </span>
                   </header>
                   <HelpText>
-                    {s.status} <I18nText id="· all writes require review" />
+                    <I18nText id={changeSetLifecycle(s.status).message} />
                   </HelpText>
                   <Button
                     className="button secondary"
-                    onClick={() => setReview(s.id)}
+                    onClick={() => showReview(s.id)}
                   >
-                    <I18nText id="Review changes" />
+                    {s.status === "draft"
+                      ? uiText("Review changes")
+                      : uiText("View request")}
                   </Button>
                 </article>
               ))}
@@ -391,7 +410,7 @@ export default function ConnectionsSettings() {
       {review && (
         <ChangeSetReview
           id={review}
-          onClose={() => setReview(null)}
+          onClose={() => showReview(null)}
           onChange={() => {
             changes.revalidate();
             data.revalidate();

@@ -36,3 +36,47 @@ export function invitationStatusLabel(status: string) {
     ? label(invitationStatusLabels[status])
     : status;
 }
+
+const providerCapabilityLabels: Readonly<Record<string, MessageId>> = {
+  math: "Mathematical assistance",
+  ocr: "Optical character recognition",
+  paper: "Paper reading assistance",
+  assistant: "Workspace assistant",
+};
+
+const evidenceKindLabels: Readonly<Record<string, MessageId>> = {
+  document: "Document",
+  office: "Office document",
+  planning: "Planning",
+  task: "Task",
+  canvas: "Canvas",
+  pdf: "PDF",
+  ocr: "Optical character recognition",
+};
+
+const publicationKindLabels: Readonly<Record<string, MessageId>> = {
+  post: "Post",
+  paper: "Paper",
+  page: "Page",
+  resource: "Resource",
+};
+
+const annotationColorLabels: Readonly<Record<string, MessageId>> = {
+  yellow: "Yellow",
+  green: "Green",
+  blue: "Blue",
+  pink: "Pink",
+};
+
+function enumLabel(labels: Readonly<Record<string, MessageId>>, value: string) {
+  return Object.hasOwn(labels, value) ? label(labels[value]) : value;
+}
+
+export const providerCapabilityLabel = (value: string) =>
+  enumLabel(providerCapabilityLabels, value);
+export const evidenceKindLabel = (value: string) =>
+  enumLabel(evidenceKindLabels, value);
+export const publicationKindLabel = (value: string) =>
+  enumLabel(publicationKindLabels, value);
+export const annotationColorLabel = (value: string) =>
+  enumLabel(annotationColorLabels, value);

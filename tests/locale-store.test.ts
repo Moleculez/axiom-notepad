@@ -12,12 +12,15 @@ vi.mock("../apps/web/lib/client", () => ({
     }
   },
 }));
-import { AccountLocaleStore } from "../apps/web/lib/locale-preferences";
+import {
+  AccountLocaleStore,
+  readGuestLocale,
+} from "../apps/web/lib/locale-preferences";
 import { ApiError } from "../apps/web/lib/client";
 const values = new Map<string, string>();
 const cacheKey = "axiom:locale:account:v1:locale-test-A";
 const stores: AccountLocaleStore[] = [];
-const empty = { locale: "auto", version: 0, mutationId: null };
+const empty = { locale: "en", version: 0, mutationId: null };
 const browser = { onLine: false, languages: ["en"], language: "en" };
 beforeEach(() => {
   vi.useFakeTimers();
@@ -48,23 +51,56 @@ function start(account = "locale-test-A") {
   return store;
 }
 describe("locale account isolation and durable saves", () => {
+  it("defaults to US English and preserves an explicit Automatic choice", () => {
+    expect(readGuestLocale()).toBe("en");
+    values.set("axiom:locale:guest:v1", "auto");
+    expect(readGuestLocale()).toBe("auto");
+    values.set("axiom:locale:guest:v1", "ar");
+    expect(readGuestLocale()).toBe("auto");
+  });
+  it("retires only an Arabic outbox without replaying a different choice under its receipt", () => {
+    values.set(
+      cacheKey,
+      JSON.stringify({
+        schema: 1,
+        base: {
+          locale: "ar",
+          version: 7,
+          mutationId: "00000000-0000-4000-8000-000000000011",
+        },
+        outbox: {
+          locale: "ar",
+          version: 7,
+          mutationId: "00000000-0000-4000-8000-000000000012",
+        },
+      }),
+    );
+    const store = start();
+    expect(store.snapshot()).toMatchObject({ locale: "auto", pending: false });
+    expect(fixture.api).not.toHaveBeenCalled();
+    expect(store.save("ja")).toBe(true);
+    const sent = JSON.parse(values.get(cacheKey)!).outbox;
+    expect(sent.version).toBe(7);
+    expect(sent.locale).toBe("ja");
+    expect(sent.mutationId).not.toBe("00000000-0000-4000-8000-000000000012");
+  });
   it("previews without writing preferences or an outbox", async () => {
     const store = start();
     await store.previewChoice("es");
-    expect(store.snapshot()).toMatchObject({ locale: "auto", pending: false });
+    expect(store.snapshot()).toMatchObject({ locale: "en", pending: false });
     expect(values.has(cacheKey)).toBe(false);
     expect(fixture.api).not.toHaveBeenCalled();
     store.cancelPreview();
   });
   it("saves offline durably and keeps accounts separate", () => {
     const a = start();
-    expect(a.save("ar")).toBe(true);
-    expect(a.snapshot()).toMatchObject({ locale: "ar", pending: true });
+    expect(a.save("ko")).toBe(true);
+    expect(a.snapshot()).toMatchObject({ locale: "ko", pending: true });
     const cached = JSON.parse(values.get(cacheKey)!);
-    expect(cached.outbox).toMatchObject({ locale: "ar", version: 0 });
+    expect(cached.outbox).toMatchObject({ locale: "ko", version: 0 });
     expect(cached.outbox.mutationId).toMatch(/^[0-9a-f-]{36}$/);
     const b = start("locale-test-B");
-    expect(b.snapshot().locale).toBe("auto");
+    expect(b.snapshot().locale).toBe("en");
     expect(fixture.api).not.toHaveBeenCalled();
   });
   it("replays the exact mutation and acknowledges only the saved record", async () => {
@@ -166,7 +202,7 @@ describe("locale account isolation and durable saves", () => {
       throw new Error("Quota exceeded");
     };
     expect(store.save("hi")).toBe(false);
-    expect(store.snapshot()).toMatchObject({ locale: "auto", pending: false });
+    expect(store.snapshot()).toMatchObject({ locale: "en", pending: false });
     expect(fixture.api).not.toHaveBeenCalled();
   });
   it("stopped accounts cannot apply late network responses", async () => {
@@ -187,7 +223,7 @@ describe("locale account isolation and durable saves", () => {
       mutationId: "00000000-0000-4000-8000-000000000012",
     });
     await refresh;
-    expect(a.snapshot().locale).toBe("auto");
+    expect(a.snapshot().locale).toBe("en");
     expect(values.has(cacheKey)).toBe(false);
   });
   it("ignores another account's storage event", () => {
@@ -196,7 +232,7 @@ describe("locale account isolation and durable saves", () => {
       "axiom:locale:account:v1:locale-test-B",
       JSON.stringify({
         schema: 1,
-        base: { ...empty, locale: "ar" },
+        base: { ...empty, locale: "ko" },
         outbox: null,
       }),
     );
@@ -204,6 +240,6 @@ describe("locale account isolation and durable saves", () => {
       key: "axiom:locale:account:v1:locale-test-B",
     });
     window.dispatchEvent(event);
-    expect(a.snapshot().locale).toBe("auto");
+    expect(a.snapshot().locale).toBe("en");
   });
 });

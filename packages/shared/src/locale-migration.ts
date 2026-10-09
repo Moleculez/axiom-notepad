@@ -8,3 +8,12 @@ CREATE TABLE user_locale_preferences (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 `;
+
+/** Extend the deployed constraint forward; never rewrite migration 51. */
+export const localeExpansionMigration = `
+ALTER TABLE user_locale_preferences DROP CONSTRAINT user_locale_preferences_locale_check;
+ALTER TABLE user_locale_preferences ALTER COLUMN locale SET DEFAULT 'en';
+UPDATE user_locale_preferences SET locale='auto',version=version+1,mutation_id=gen_random_uuid(),updated_at=now() WHERE locale='ar';
+ALTER TABLE user_locale_preferences ADD CONSTRAINT user_locale_preferences_locale_check
+  CHECK (locale IN ('auto','en','zh-Hans','es','fr','ja','ko','de','hi','pt-BR','ru','bn','id'));
+`;

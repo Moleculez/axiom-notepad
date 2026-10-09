@@ -43,10 +43,10 @@ if (errors.length) {
   process.exitCode = 1;
 } else {
   console.log(
-    `Ten catalogs: ${Object.keys(englishMessages).length} matching message IDs; ICU syntax, parameter types and HTML boundaries validated.`,
+    `${locales.length} catalogs: ${Object.keys(englishMessages).length} matching message IDs; ICU syntax, parameter types and HTML boundaries validated.`,
   );
   console.log(
-    `${Object.values(requiredTranslations).flat().length} required translations per non-English language protected against fallback regressions across six UI areas.`,
+    `${Object.values(requiredTranslations).flat().length} required translations per non-English language protected against fallback regressions across ${Object.keys(requiredTranslations).length} UI areas.`,
   );
   for (const locale of locales.filter((locale) => locale.id !== "en"))
     console.log(

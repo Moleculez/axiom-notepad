@@ -1,10 +1,15 @@
 import { parse } from "@formatjs/icu-messageformat-parser";
-import { readFile, mkdir, writeFile } from "node:fs/promises";
+import { readFile, mkdir, writeFile, unlink } from "node:fs/promises";
 import { locales } from "../../packages/i18n/src/locales";
 import { englishMessages } from "../../packages/i18n/src/index";
 import { catalogsRevision } from "./catalogs.mjs";
 export async function buildCatalogs() {
   await mkdir("apps/web/public/locales", { recursive: true });
+  // Retire only this generated asset; old locale blobs must not enter new offline
+  // manifests or showcase builds. Source documents may still use Arabic text.
+  await unlink("apps/web/public/locales/ar.json").catch((error) => {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+  });
   for (const locale of locales) {
     const source: Record<string, string> = JSON.parse(
       await readFile(`packages/i18n/src/messages/${locale.id}.json`, "utf8"),

@@ -15,6 +15,7 @@ import {
 import Dialog, { DialogFooter } from "../Dialog";
 import { post } from "../../lib/client";
 import { ErrorNotice, useData } from "../workspace/ui";
+import { evidenceKindLabel } from "../../lib/interface-labels";
 
 export default function AssistantContextReview({
   runId,
@@ -27,7 +28,7 @@ export default function AssistantContextReview({
   onClose: () => void;
   onChange: () => void;
 }) {
-  useInterfaceLocale();
+  const { t } = useInterfaceLocale();
   const data = useData<ContextReview | { legacy: true; message: string }>(
     `assistant/runs/${runId}/review`,
   );
@@ -83,7 +84,7 @@ export default function AssistantContextReview({
             e.to <= e.from,
         )
       )
-        throw new Error("Enter a valid, nonempty character range.");
+        throw new Error(t("Enter a valid, nonempty character range."));
       await post(`assistant/runs/${runId}/review/refresh`, {
         fingerprint: value?.fingerprint ?? legacyFingerprint,
         excludeKeys: excluded,
@@ -99,7 +100,15 @@ export default function AssistantContextReview({
       title={uiText("Review next outgoing batch")}
       subtitle={
         value
-          ? `${value.provider.name} · ${value.provider.model} · round ${value.ordinal} of ${value.budget.maxRounds}`
+          ? t(
+              "{provider} · {model} · round {round, number} of {total, number}",
+              {
+                provider: value.provider.name,
+                model: value.provider.model,
+                round: value.ordinal,
+                total: value.budget.maxRounds,
+              },
+            )
           : uiText("Private local context")
       }
       className="assistant-context-dialog"
@@ -117,7 +126,7 @@ export default function AssistantContextReview({
             ? uiText("Loading captured context…")
             : data.data && "message" in data.data
               ? data.data.message
-              : "The review could not be loaded."}
+              : t("The review could not be loaded.")}
         </HelpText>
       )}
       {value && (
@@ -128,8 +137,10 @@ export default function AssistantContextReview({
                 <I18nText id="Outgoing" />
               </dt>
               <dd>
-                {value.characters.toLocaleString(currentLocale())} / 60,000
-                characters
+                <I18nText
+                  id="{used, number} / {limit, number} characters"
+                  values={{ used: value.characters, limit: 60000 }}
+                />
               </dd>
             </div>
             <div>
@@ -137,8 +148,13 @@ export default function AssistantContextReview({
                 <I18nText id="New excerpts" />
               </dt>
               <dd>
-                {value.newEvidenceKeys.length} · {value.spaceIds.length}{" "}
-                <I18nText id="selected workspace(s)" />
+                <I18nText
+                  id="{excerpts, plural, one {# new excerpt} other {# new excerpts}} · {spaces, plural, one {# selected workspace} other {# selected workspaces}}"
+                  values={{
+                    excerpts: value.newEvidenceKeys.length,
+                    spaces: value.spaceIds.length,
+                  }}
+                />
               </dd>
             </div>
             <div>
@@ -146,8 +162,10 @@ export default function AssistantContextReview({
                 <I18nText id="Output ceiling" />
               </dt>
               <dd>
-                {value.budget.maxOutputTokens.toLocaleString(currentLocale())}{" "}
-                <I18nText id="tokens for this call" />
+                <I18nText
+                  id="{count, plural, one {# token for this call} other {# tokens for this call}}"
+                  values={{ count: value.budget.maxOutputTokens }}
+                />
               </dd>
             </div>
             <div>
@@ -155,17 +173,32 @@ export default function AssistantContextReview({
                 <I18nText id="Requests so far" />
               </dt>
               <dd>
-                {value.usage.requests} <I18nText id="· input" />{" "}
-                {value.usage.inputTokens ?? "unknown"}
-                <I18nText id=", output" />{" "}
-                {value.usage.outputTokens ?? "unknown"} <I18nText id="tokens" />
+                <I18nText
+                  id="{requests, number} requests · input {input} · output {output} tokens"
+                  values={{
+                    requests: value.usage.requests,
+                    input:
+                      value.usage.inputTokens?.toLocaleString(
+                        currentLocale(),
+                      ) ?? t("Unknown usage"),
+                    output:
+                      value.usage.outputTokens?.toLocaleString(
+                        currentLocale(),
+                      ) ?? t("Unknown usage"),
+                  }}
+                />
               </dd>
             </div>
           </dl>
           <HelpText>
-            <I18nText id="Expires" />{" "}
-            {new Date(value.expiresAt).toLocaleTimeString(currentLocale())}
-            <I18nText id=". Monetary cost is not configured; provider billing and retention apply." />
+            <I18nText
+              id="Expires {time}. Monetary cost is not configured; provider billing and retention apply."
+              values={{
+                time: new Date(value.expiresAt).toLocaleTimeString(
+                  currentLocale(),
+                ),
+              }}
+            />
           </HelpText>
           {expired && (
             <Notice tone="warning">
@@ -189,10 +222,16 @@ export default function AssistantContextReview({
                       {e.locator ? " · " + e.locator : ""}
                     </summary>
                     <HelpText>
-                      <I18nText id="Captured" />{" "}
-                      {new Date(e.capturedAt).toLocaleString(currentLocale())} ·{" "}
-                      {e.source.length.toLocaleString(currentLocale())}{" "}
-                      <I18nText id="characters ·" /> {e.kind}
+                      <I18nText
+                        id="Captured {date} · {count, plural, one {# character} other {# characters}} · {kind}"
+                        values={{
+                          date: new Date(e.capturedAt).toLocaleString(
+                            currentLocale(),
+                          ),
+                          count: e.source.length,
+                          kind: evidenceKindLabel(e.kind),
+                        }}
+                      />
                     </HelpText>
                     <label className="assistant-consent">
                       <Checkbox
@@ -276,12 +315,12 @@ export default function AssistantContextReview({
             {value.messages.map((m, i) => (
               <details key={i}>
                 <summary>
-                  {i + 1} ·{" "}
+                  {(i + 1).toLocaleString(currentLocale())} ·{" "}
                   {m.role === "system"
                     ? uiText("Application instructions")
                     : m.role === "assistant"
-                      ? "Previous model output"
-                      : "Request, history or local evidence"}
+                      ? t("Previous model output")
+                      : t("Request, history or local evidence")}
                 </summary>
                 <pre>{m.content}</pre>
               </details>

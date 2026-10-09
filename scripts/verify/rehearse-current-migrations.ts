@@ -22,17 +22,24 @@ const stamp = randomUUID().replaceAll("-", "").slice(0, 12);
 const administrator = new URL(configured);
 administrator.pathname = "/postgres";
 const admin = new pg.Client({ connectionString: administrator.href });
+const modes = [
+  "fresh",
+  "upgrade",
+  "assistant_upgrade",
+  "planning_upgrade",
+  "extensions_upgrade",
+  "intake_upgrade",
+  "import_upgrade",
+  "locale_upgrade",
+] as const;
+const requested = process.argv[2];
+assert(
+  !requested || modes.some((mode) => mode === requested),
+  "Unknown rehearsal mode.",
+);
 await admin.connect();
 try {
-  for (const mode of [
-    "fresh",
-    "upgrade",
-    "assistant_upgrade",
-    "planning_upgrade",
-    "extensions_upgrade",
-    "intake_upgrade",
-    "import_upgrade",
-  ] as const) {
+  for (const mode of modes.filter((mode) => !requested || mode === requested)) {
     const name = `axiom_${mode}_test_${stamp}`;
     assert(configured.pathname !== `/${name}`);
     await admin.query(`CREATE DATABASE "${name}"`);
@@ -54,6 +61,8 @@ try {
       let before: unknown;
       let beforeIntake: unknown;
       let beforeUpload: unknown;
+      let beforeLocales: unknown;
+      const oldLocaleReceipt = randomUUID();
       const uploadId = randomUUID();
       if (mode !== "fresh") {
         await db.query(migration);
@@ -63,17 +72,19 @@ try {
         for (const item of forwardMigrations.filter(
           (m) =>
             m.version <=
-            (mode === "import_upgrade"
-              ? 42
-              : mode === "intake_upgrade"
-                ? 41
-                : mode === "extensions_upgrade"
-                  ? 39
-                  : mode === "planning_upgrade"
-                    ? 28
-                    : mode === "assistant_upgrade"
-                      ? 27
-                      : 18),
+            (mode === "locale_upgrade"
+              ? 51
+              : mode === "import_upgrade"
+                ? 42
+                : mode === "intake_upgrade"
+                  ? 41
+                  : mode === "extensions_upgrade"
+                    ? 39
+                    : mode === "planning_upgrade"
+                      ? 28
+                      : mode === "assistant_upgrade"
+                        ? 27
+                        : 18),
         )) {
           await db.query("SET CONSTRAINTS ALL IMMEDIATE");
           await db.query("SET CONSTRAINTS ALL DEFERRED");
@@ -114,6 +125,28 @@ try {
             [noteId],
           )
         ).rows;
+        if (mode === "locale_upgrade") {
+          await db.query(
+            `INSERT INTO "user"(id,name,email) VALUES
+             ('locale-auto','Automatic','automatic@axiom.test'),
+             ('locale-en','English','english@axiom.test'),
+             ('locale-other','Existing language','existing@axiom.test'),
+             ('locale-default','New preference','default@axiom.test')`,
+          );
+          await db.query(
+            `INSERT INTO user_locale_preferences(user_id,locale,version,mutation_id,updated_at)
+             VALUES ('rehearsal','ar',7,$1,'2026-10-01T00:00:00Z'),
+             ('locale-auto','auto',4,gen_random_uuid(),'2026-10-01T00:00:00Z'),
+             ('locale-en','en',5,gen_random_uuid(),'2026-10-01T00:00:00Z'),
+             ('locale-other','zh-Hans',3,gen_random_uuid(),'2026-10-01T00:00:00Z')`,
+            [oldLocaleReceipt],
+          );
+          beforeLocales = (
+            await db.query(
+              "SELECT to_jsonb(p) AS preference FROM user_locale_preferences p WHERE user_id<>'rehearsal' ORDER BY user_id",
+            )
+          ).rows;
+        }
         if (mode === "import_upgrade") {
           await db.query(
             "INSERT INTO upload_sessions(id,owner_id,space_id,name,bytes,storage_key) SELECT $1,'rehearsal',id,'Preserved.csv',4,$2 FROM spaces WHERE group_id=$3 AND kind='team'",
@@ -177,6 +210,44 @@ try {
         "assistant_contexts",
       );
       if (mode !== "fresh") {
+        if (mode === "locale_upgrade") {
+          const retired = (
+            await db.query(
+              "SELECT locale,version,mutation_id FROM user_locale_preferences WHERE user_id='rehearsal'",
+            )
+          ).rows[0];
+          assert.equal(retired.locale, "auto");
+          assert.equal(retired.version, 8);
+          assert.notEqual(retired.mutation_id, oldLocaleReceipt);
+          assert.deepEqual(
+            (
+              await db.query(
+                "SELECT to_jsonb(p) AS preference FROM user_locale_preferences p WHERE user_id<>'rehearsal' ORDER BY user_id",
+              )
+            ).rows,
+            beforeLocales,
+          );
+          const added = (
+            await db.query(
+              "INSERT INTO user_locale_preferences(user_id,mutation_id) VALUES('locale-default',gen_random_uuid()) RETURNING locale",
+            )
+          ).rows[0];
+          assert.equal(added.locale, "en");
+          for (const locale of ["ja", "ko", "de"])
+            await db.query(
+              "UPDATE user_locale_preferences SET locale=$1 WHERE user_id='locale-default'",
+              [locale],
+            );
+          await db.query("SAVEPOINT rejected_locale");
+          await assert.rejects(
+            db.query(
+              "UPDATE user_locale_preferences SET locale='ar' WHERE user_id='locale-default'",
+            ),
+            { code: "23514" },
+          );
+          await db.query("ROLLBACK TO SAVEPOINT rejected_locale");
+          await db.query("RELEASE SAVEPOINT rejected_locale");
+        }
         assert.deepEqual(
           (
             await db.query(

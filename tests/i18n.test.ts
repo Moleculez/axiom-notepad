@@ -8,6 +8,8 @@ import {
   formatNumber,
   formatRelativeTime,
   locales,
+  localeTag,
+  savedLocaleChoice,
   englishMessages,
   type Catalog,
 } from "../packages/i18n/src/index";
@@ -17,22 +19,30 @@ import {
   validateTranslationCoverage,
 } from "../scripts/verify/i18n-contract";
 import { requiredTranslations } from "../packages/i18n/src/translation-coverage";
-import { accessRoleMessage } from "../apps/web/lib/interface-labels";
+import {
+  accessRoleMessage,
+  annotationColorLabel,
+  evidenceKindLabel,
+  providerCapabilityLabel,
+  publicationKindLabel,
+} from "../apps/web/lib/interface-labels";
 describe("locale matching and formatting", () => {
-  it("provides the ten chosen languages and autonyms", () => {
+  it("provides the twelve chosen languages and autonyms", () => {
     expect(locales.map((locale) => locale.id)).toEqual([
       "en",
       "zh-Hans",
       "es",
       "fr",
-      "ar",
+      "ja",
+      "ko",
+      "de",
       "hi",
       "pt-BR",
       "ru",
       "bn",
       "id",
     ]);
-    expect(new Set(locales.map((locale) => locale.name)).size).toBe(10);
+    expect(new Set(locales.map((locale) => locale.name)).size).toBe(12);
   });
   it.each([
     [["zh-CN"], "zh-Hans"],
@@ -40,9 +50,13 @@ describe("locale matching and formatting", () => {
     [["zh-Hans-CN"], "zh-Hans"],
     [["zh-TW"], "en"],
     [["zh-Hant", "es-MX"], "es"],
-    [["de-DE", "fr-CA"], "fr"],
+    [["it-IT", "fr-CA"], "fr"],
     [["pt-PT"], "pt-BR"],
-    [["ar-EG"], "ar"],
+    [["ar-EG"], "en"],
+    [["ar-EG", "ja-JP"], "ja"],
+    [["ko-KR"], "ko"],
+    [["de-AT"], "de"],
+    [["en-GB"], "en"],
     [["hi-IN"], "hi"],
     [["ru-RU"], "ru"],
     [["bn-BD"], "bn"],
@@ -53,8 +67,23 @@ describe("locale matching and formatting", () => {
   });
   it("an explicit selection wins; unsupported browser languages fall back", () => {
     expect(resolveLocale("en", ["ar"])).toBe("en");
-    expect(localeDirection("ar")).toBe("rtl");
+    expect(localeDirection("ja")).toBe("ltr");
     expect(localeDirection("bn")).toBe("ltr");
+  });
+  it("uses American English by default and safely retires Arabic choices", () => {
+    expect(localeTag("en")).toBe("en-US");
+    expect(savedLocaleChoice(null)).toBe("en");
+    expect(savedLocaleChoice("ar")).toBe("auto");
+    expect(savedLocaleChoice("en-US")).toBe("en");
+    expect(savedLocaleChoice("ko")).toBe("ko");
+    expect(locales.some(({ id }) => String(id) === "ar")).toBe(false);
+    expect(formatNumber("en", 1234.5)).toBe("1,234.5");
+    expect(
+      formatDate("en", "2026-10-09T12:00:00Z", {
+        dateStyle: "short",
+        timeZone: "UTC",
+      }),
+    ).toBe("10/9/26");
   });
   it("formats visible values without changing their stored values", () => {
     expect(formatNumber("es", 1234567)).toContain("1.234.567");
@@ -153,6 +182,25 @@ describe("reviewed catalog contracts", () => {
     ])
       expect(accessRoleMessage(authored)).toBeUndefined();
   });
+  it("maps only closed research enums and preserves unknown authored values", () => {
+    expect(providerCapabilityLabel("math")).toBe("Mathematical assistance");
+    expect(evidenceKindLabel("office")).toBe("Office document");
+    expect(publicationKindLabel("post")).toBe("Post");
+    expect(annotationColorLabel("yellow")).toBe("Yellow");
+    for (const display of [
+      providerCapabilityLabel,
+      evidenceKindLabel,
+      publicationKindLabel,
+      annotationColorLabel,
+    ])
+      for (const value of [
+        "Settings — α研究",
+        "toString",
+        "__proto__",
+        "unknown future type",
+      ])
+        expect(display(value)).toBe(value);
+  });
   it.each(locales)(
     "preserves authored values and canonical confirmation tokens in $id messages",
     async ({ id }) => {
@@ -225,9 +273,9 @@ describe("atomic client preview", () => {
         }),
     );
     await runtime.choose("en");
-    const preview = runtime.choose("ar");
+    const preview = runtime.choose("ja");
     await runtime.choose("en");
-    finish({ Save: "حفظ" });
+    finish({ Save: "保存" });
     expect(await preview).toBe(false);
     expect(runtime.snapshot().locale).toBe("en");
   });

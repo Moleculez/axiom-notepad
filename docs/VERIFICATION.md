@@ -5,7 +5,52 @@ Do not treat historical browser totals or local build IDs as current release evi
 
 ## October 9 interface localization increment
 
+### Twelve-language and MCP lifecycle follow-up
+
+- Twelve interface choices include Japanese, Korean and German; Arabic is retired
+  as an interface choice without removing authored content/font support. American
+  English is the default with canonical `en` storage and explicit `en-US`
+  formatting. Explicit Automatic choices remain intact. Forward migration **52**
+  expands the constraint and fences retired preferences with a new version/receipt.
+- The inventory has **5,393 typed IDs**. The eight earlier non-English catalogs
+  have **1,974–2,023 differing translations**; Japanese/Korean have **616** each
+  and German **604**. **178 reviewed IDs** across ten areas protect settings,
+  administration, files/Trash, planning/research, selected provider/assistant/PDF/
+  publication copy and connection lifecycle messages. This remains partial
+  localization with substantial English fallback, especially in new languages;
+  native-language acceptance is not inferred from these counts.
+- MCP preparation/status receipts distinguish unapproved drafts from approved
+  queued/applying requests. Repeat-safe batch preparation no longer unconditionally
+  requests approval. The dialog uses lifecycle-specific copy, non-mutating status
+  refresh and a delayed-processing warning. Closing removes only the review query
+  parameter; reloading does not reopen it. Connection boundaries, exact approval,
+  repeat-safe identity and completed-action receipts remain authoritative.
+- **2,865 unit tests / 179 files**, typecheck, lint, UI (**215 JSX / 49 CSS**), all
+  five theme packs, ICU/parameter/coverage checks, documentation links and whitespace
+  checks pass. Production-mode isolated application and static showcase builds pass
+  with catalog revision **`7ed1202ee32b15ba`** and **1,064 application offline assets**.
+- The broader isolated account/review checkpoint passed **21 cases** across
+  Chromium, Firefox and WebKit: US default, Automatic Japanese, all twelve profile
+  languages, real locale CAS/Save/Cancel/reload, large-text group dialogs and queued
+  review states. After final deep-link and native review-copy polish, a freshly
+  rebuilt **six-case MCP replay** and **15-case showcase language replay** pass in
+  all three engines. The six-case replay also covers Close/reload/reopen while
+  retaining unrelated query parameters. These are scoped gates, not a full route
+  or editor-conformance replay.
+- Inspected screenshots cover light/dark Japanese, Korean and German, enlarged
+  interface text, keyboard focus, forced colors, warning wrapping and visible
+  footer actions. Read-only review/theme fixtures never approve changes or create
+  workspace files. Account mutations remain confined to attested local staging.
+- A fresh disposable database rehearses migration **51 → 52**, retires Arabic once,
+  preserves explicit Automatic/English/other choices and canonical Markdown/Yjs/
+  discussion data, accepts the three new languages, verifies the US default and
+  rejects retired writes. The working database is not migrated by this rehearsal.
+  Generated local types and unrelated changes are preserved. No push, publication,
+  deployment or remote service mutation is performed.
+
 ### Translation follow-up
+
+The following entries are earlier checkpoints, not totals for the follow-up above.
 
 - The inventory now has **5,303 typed message IDs** and **1,744–1,792 differing
   translations per non-English catalog**, an increase of **773–778** from the

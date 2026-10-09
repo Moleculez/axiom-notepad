@@ -125,6 +125,50 @@ content and supplied requests are untrusted data, never permission overrides.
    identity; cancellation stops unapplied proposals, never rolls back completed
    work. Pending, rejected and failed proposals are not completed files/tasks.
 
+### Approval versus processing
+
+Connection grants and per-request approval are separate. A connection with
+`workspace:write` can propose changes; it cannot approve its own proposal. Once a
+request is **queued**, its exact preview has already been approved. Reconnecting
+or approving the same request again will not make a paused worker run.
+
+| Receipt status        | Next step                                                                  |
+| --------------------- | -------------------------------------------------------------------------- |
+| `draft`               | Open the review link, prepare the exact preview and explicitly approve it. |
+| `queued`, `applying`  | Wait and poll the same `changeSetId`; do not prepare a duplicate write.    |
+| `complete`            | Inspect completed action receipts and open the results.                    |
+| `partial`             | Inspect completed results and errors before reviewing remaining changes.   |
+| `cancelled`, `undone` | Inspect receipts; these states do not authorize another write.             |
+
+Preparation and status results include `requiresApproval`, `nextStep`, `message`
+and the same `approvalUrl`. Repeat-safe batch preparation reports the existing
+state rather than always requesting consent. Only `draft` requires approval;
+`queued` is not proof that a file exists. The review dialog remains open so users
+can inspect the result, refresh status or stop remaining actions. It does not
+automatically dismiss or approve requests. A minute without progress exposes a
+non-destructive worker troubleshooting message, not an automatic retry.
+Closing removes the `review` query parameter while preserving other page state,
+so a reload does not unexpectedly reopen the dialog. Reopening a request restores
+its deep link and authoritative status.
+
+Status reads are connection-scoped. A request created by one client is deliberately
+unavailable to another client's token, even for the same account. Inspect the
+original client's receipt or the signed-in review page; do not weaken that boundary.
+
+If an approved request stays queued, the background worker must be checked. A
+healthy web app and a working MCP connection do not establish worker readiness.
+Use your deployment's Compose environment/override files when reading status and
+logs:
+
+```sh
+docker compose --env-file .env.production ps worker
+docker compose --env-file .env.production logs --tail 50 worker
+```
+
+Do not restart, rebuild or replay work merely to clear the dialog. Check service
+state and errors first, particularly on resource-constrained hosts. Local fixes do
+not update the deployed endpoint; deployment remains a separate, explicit action.
+
 `document_edit` uses this same review gate and current generation/hash checks,
 preserving source-backed collaboration and receipts. Clients cannot approve
 themselves or bypass review by calling a native business handler.

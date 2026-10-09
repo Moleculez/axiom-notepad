@@ -125,12 +125,12 @@ beforeEach(() => {
   fixture.prepare.mockResolvedValue({
     requiresApproval: true,
     changeSetId: fixture.set,
-    status: "pending",
+    status: "draft",
   });
-  fixture.createSet.mockResolvedValue({ id: fixture.set, status: "pending" });
+  fixture.createSet.mockResolvedValue({ id: fixture.set, status: "draft" });
   fixture.view.mockResolvedValue({
     id: fixture.set,
-    status: "pending",
+    status: "draft",
     actions: [],
   });
   fixture.research.mockResolvedValue({ items: [] });
@@ -224,7 +224,7 @@ describe("authenticated MCP server discovery and reviewed study workflows", () =
     expect(response.result.isError).not.toBe(true);
     expect(response.result.structuredContent.result).toMatchObject({
       changeSetId: fixture.set,
-      status: "pending",
+      status: "draft",
       requiresApproval: true,
     });
     expect(fixture.createSet.mock.calls[0][1]).toMatchObject(input);
@@ -235,6 +235,80 @@ describe("authenticated MCP server discovery and reviewed study workflows", () =
     });
     expect(selfApprove.error || selfApprove.result?.isError).toBeTruthy();
   });
+  it.each([
+    "draft",
+    "queued",
+    "applying",
+    "complete",
+    "partial",
+    "cancelled",
+    "undone",
+  ])(
+    "repeated batch preparation reports the actual review state (%s)",
+    async (status) => {
+      fixture.createSet.mockResolvedValue({ id: fixture.set, status });
+      const response = await rpc("tools/call", {
+        name: "change_set_prepare",
+        arguments: {
+          mutationId: fixture.set,
+          title: "Repeat-safe request",
+          spaceIds: [fixture.space],
+          actions: [
+            {
+              key: "note",
+              action: "file_create",
+              spaceId: fixture.space,
+              title: "Private note",
+              payload: { type: "markdown", name: "Draft" },
+            },
+          ],
+        },
+      });
+      expect(response.result.isError).not.toBe(true);
+      expect(response.result.structuredContent.result).toMatchObject({
+        changeSetId: fixture.set,
+        status,
+        requiresApproval: status === "draft",
+        approvalUrl: `${origin}/workbench/settings/connections?review=${fixture.set}`,
+      });
+      expect(fixture.execute).not.toHaveBeenCalled();
+      expect(fixture.cancel).not.toHaveBeenCalled();
+    },
+  );
+  it.each(["draft", "queued", "applying", "complete", "partial"])(
+    "status reads guide clients without requesting renewed approval (%s)",
+    async (status) => {
+      const actions = [
+        { key: "note", state: status === "complete" ? "complete" : "pending" },
+      ];
+      fixture.view.mockResolvedValue({ id: fixture.set, status, actions });
+      const response = await rpc("tools/call", {
+        name: "change_set_status",
+        arguments: { id: fixture.set },
+      });
+      expect(response.result.structuredContent.result).toMatchObject({
+        id: fixture.set,
+        status,
+        actions,
+        requiresApproval: status === "draft",
+        nextStep:
+          status === "draft"
+            ? "review"
+            : status === "complete"
+              ? "open_results"
+              : status === "partial"
+                ? "inspect_results"
+                : "wait",
+      });
+      expect(fixture.view).toHaveBeenCalledWith(
+        fixture.set,
+        connection.user_id,
+        connection.id,
+      );
+      expect(fixture.execute).not.toHaveBeenCalled();
+      expect(fixture.createSet).not.toHaveBeenCalled();
+    },
+  );
   it("denies management actions hidden inside a write-only batch", async () => {
     const response = await rpc(
       "tools/call",

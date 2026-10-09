@@ -165,11 +165,13 @@ See [showcase storage, settings and GitHub Pages deployment](docs/STATIC_SHOWCAS
   action bars and dialogs consistent. Reusable field shells align icons, labels
   and clear actions without nested borders. See [UI criteria](docs/UI_CONTROLS.md).
 - **Interface languages (partial coverage).** Account-synced language preview,
-  Save/Cancel, browser detection and ten choices; a browser-local selector in the
-  showcase. Shared ICU messages, self-hosted fonts and Arabic chrome preserve
-  document content and editor state. Expanded settings, group, file/Trash, planning
-  and reference-library controls are translated; long-tail copy still falls back
-  to English. See [localization scope](docs/LOCALIZATION.md).
+  Save/Cancel, optional browser detection and twelve choices, including Japanese,
+  Korean and German; American English is the default. A browser-local selector
+  serves the showcase. Shared ICU messages and self-hosted fonts preserve document
+  content and editor state. Reviewed settings, group, file/Trash, planning,
+  reference-library and selected provider/PDF/publication controls have translations;
+  new languages and long-tail copy still have substantial English fallback.
+  See [localization scope](docs/LOCALIZATION.md).
 
 Math Studio, layered Image Studio, Text Studio and protected media/document viewers
 open files in the same workbench. Scoped OAuth/MCP integration and selected offline
@@ -305,9 +307,10 @@ docker compose --env-file .env.production exec web node --import tsx scripts/ops
 ```
 
 Read [deployment, backups and upgrades](docs/DEPLOYMENT.md) before using real data.
-Current features require database migrations through **51**, including workspace
+Current features require database migrations through **52**, including workspace
 research/planning, controlled extensions, atomic imports, native mind maps and the
-reverse-link performance index, plus account-synced interface language preferences.
+reverse-link performance index, plus account-synced interface language preferences
+and the expanded language/default contract.
 Back up database and stored files, stop old writers, migrate, and restart matching
 web/sync/worker/publish versions; do not mix old services with the new schema.
 Production configuration never loads the development `.env` into containers.

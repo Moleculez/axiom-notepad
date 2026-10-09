@@ -10,7 +10,7 @@ export default function PdfReaderSettings({
   value: Preferences["pdfReader"];
   onChange: (value: Preferences["pdfReader"]) => void;
 }) {
-  useInterfaceLocale();
+  const { t } = useInterfaceLocale();
   return (
     <section className="settings-card pdf-reader-settings">
       <h4>
@@ -81,12 +81,16 @@ export default function PdfReaderSettings({
       </label>
       <label className="settings-row">
         <span>
-          <I18nText id="Navigator width ·" /> {value.navigatorWidth}
-          <I18nText id="px" />
+          <I18nText
+            id="Navigator width · {width, number} px"
+            values={{ width: value.navigatorWidth }}
+          />
         </span>
         <Slider
           aria-label={uiText("Default PDF navigator width")}
-          aria-valuetext={`${value.navigatorWidth} pixels`}
+          aria-valuetext={t("{count, number} pixels", {
+            count: value.navigatorWidth,
+          })}
           min={200}
           max={440}
           step={10}

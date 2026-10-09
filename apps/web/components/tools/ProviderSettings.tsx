@@ -21,6 +21,7 @@ import { api, post } from "../../lib/client";
 import { ErrorNotice, Loading, useData, useWorkspace } from "../workspace/ui";
 import Dialog, { DialogFooter } from "../Dialog";
 import DraftGuard from "../workspace/DraftGuard";
+import { providerCapabilityLabel } from "../../lib/interface-labels";
 type Provider = {
   id: string;
   name: string;
@@ -34,7 +35,7 @@ type Provider = {
   used_today: number;
 };
 export default function ProviderSettings({ groupId }: { groupId: string }) {
-  useInterfaceLocale();
+  const { t } = useInterfaceLocale();
   const data = useData<{ configured: boolean; providers: Provider[] }>(
       `group-admin/${groupId}/providers`,
     ),
@@ -131,12 +132,16 @@ export default function ProviderSettings({ groupId }: { groupId: string }) {
               <strong>
                 {p.name}
                 <small className="provider-subtitle">
-                  {p.model} · {p.capabilities.join(", ")}
+                  <bdi>{p.model}</bdi> ·{" "}
+                  {p.capabilities.map(providerCapabilityLabel).join(", ")}
                 </small>
               </strong>
               <span>
                 {p.enabled ? uiText("Enabled") : uiText("Disabled")} ·{" "}
-                {p.used_today}/{p.daily_limit} <I18nText id="today (UTC)" />
+                <I18nText
+                  id="{used, number} / {limit, number} requests today (UTC)"
+                  values={{ used: p.used_today, limit: p.daily_limit }}
+                />
               </span>
               <Button
                 className="button secondary"
@@ -146,7 +151,9 @@ export default function ProviderSettings({ groupId }: { groupId: string }) {
                   void post(`group-admin/${groupId}/providers/${p.id}/test`, {})
                     .then(() =>
                       notify(
-                        "Provider connection test succeeded. No research content was sent.",
+                        t(
+                          "Provider connection test succeeded. No research content was sent.",
+                        ),
                       ),
                     )
                     .catch((e) => setError(e.message))

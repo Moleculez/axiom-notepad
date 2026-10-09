@@ -2,6 +2,7 @@ import { query } from "./db";
 import {
   defaultLocaleRecord,
   localeMutationSchema,
+  localeRecordSchema,
   type LocaleRecord,
 } from "./locale-preferences";
 const returning = 'locale,version,mutation_id AS "mutationId"';
@@ -19,7 +20,9 @@ export async function localeApi(
       `SELECT ${returning} FROM user_locale_preferences WHERE user_id=$1`,
       [userId],
     );
-    return json(record ?? defaultLocaleRecord);
+    return json(
+      record ? localeRecordSchema.parse(record) : defaultLocaleRecord,
+    );
   }
   if (request.method !== "PATCH")
     return json(
@@ -37,7 +40,7 @@ export async function localeApi(
           `UPDATE user_locale_preferences SET locale=$2,version=version+1,mutation_id=$4,updated_at=now() WHERE user_id=$1 AND version=$3 AND mutation_id IS DISTINCT FROM $4 RETURNING ${returning}`,
           [userId, input.locale, input.version, input.mutationId],
         );
-  if (record) return json(record);
+  if (record) return json(localeRecordSchema.parse(record));
   const [current] = await query<LocaleRecord>(
     `SELECT ${returning} FROM user_locale_preferences WHERE user_id=$1`,
     [userId],
@@ -53,7 +56,9 @@ export async function localeApi(
       error:
         "Language changed on another device. Choose which version to keep.",
       code: "locale_conflict",
-      current: current ?? defaultLocaleRecord,
+      current: current
+        ? localeRecordSchema.parse(current)
+        : defaultLocaleRecord,
     },
     409,
   );

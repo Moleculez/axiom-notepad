@@ -19,6 +19,10 @@ type Target = {
   space_id: string;
   parent_id: string | null;
 };
+type SaveStatus =
+  | { kind: "uploading"; progress: number }
+  | { kind: "verifying" | "saved" }
+  | null;
 export default function PdfSaveCopy({
   bytes,
   meta,
@@ -34,7 +38,7 @@ export default function PdfSaveCopy({
   operation?: "organize" | "annotated-copy" | "ocr";
   onClose: () => void;
 }) {
-  useInterfaceLocale();
+  const { t } = useInterfaceLocale();
   const [mode, setMode] = useState("copy"),
     [name, setName] = useState(meta.name.replace(/\.pdf$/i, "") + "-copy.pdf");
   const [target, setTarget] = useState<Target | null>(null),
@@ -49,7 +53,7 @@ export default function PdfSaveCopy({
     [ack, setAck] = useState(false),
     [busy, setBusy] = useState(false);
   const [error, setError] = useState(""),
-    [status, setStatus] = useState(""),
+    [status, setStatus] = useState<SaveStatus>(null),
     [saved, setSaved] = useState("");
   const upload = useRef<string | null>(null),
     uploadInput = useRef<Record<string, unknown> | null>(null),
@@ -123,7 +127,9 @@ export default function PdfSaveCopy({
           });
         } else if (!["complete", "verifying"].includes(state.status)) {
           throw new Error(
-            "This upload cannot be recovered. Download your prepared PDF below.",
+            t(
+              "This upload cannot be recovered. Download your prepared PDF below.",
+            ),
           );
         }
       } else {
@@ -193,9 +199,10 @@ export default function PdfSaveCopy({
             offset += UPLOAD_CHUNK_BYTES
           ) {
             if (parts.has(offset / UPLOAD_CHUNK_BYTES + 1)) continue;
-            setStatus(
-              `Uploading ${Math.round((offset / bytes.length) * 100)}%`,
-            );
+            setStatus({
+              kind: "uploading",
+              progress: Math.round((offset / bytes.length) * 100) / 100,
+            });
             await api(
               `uploads/${upload.current}/chunks/${offset / UPLOAD_CHUNK_BYTES + 1}`,
               {
@@ -215,31 +222,33 @@ export default function PdfSaveCopy({
           });
         }
       }
-      setStatus("Verifying and saving…");
+      setStatus({ kind: "verifying" });
       for (let attempt = 0; attempt < 120; attempt++) {
         signal.throwIfAborted();
         const result = await api(`uploads/${upload.current}`, { signal });
         if (result.status === "complete") {
           setSaved(result.resourceId);
-          setStatus("Saved. The original version is unchanged.");
+          setStatus({ kind: "saved" });
           return;
         }
         if (result.status === "failed" || result.status === "cancelled") {
           setRecoverable(result.status === "failed" && mode === "version");
           throw new Error(
             result.error ||
-              "Saving stopped. Your prepared PDF remains available here.",
+              t("Saving stopped. Your prepared PDF remains available here."),
           );
         }
         await new Promise<void>((resolve) => setTimeout(resolve, 1000));
       }
       throw new Error(
-        "Verification is still running. Check File transfers before starting another save.",
+        t(
+          "Verification is still running. Check File transfers before starting another save.",
+        ),
       );
     } catch (e) {
       if (!controller.signal.aborted) {
         setError((e as Error).message);
-        setStatus("");
+        setStatus(null);
       }
     } finally {
       setBusy(false);
@@ -346,8 +355,10 @@ export default function PdfSaveCopy({
             disabled={busy || locked || annotations.length > 500 || !!saved}
             onChange={(e) => setInclude(e.target.checked)}
           />
-          <I18nText id="Copy" /> {annotations.length}{" "}
-          <I18nText id="visible annotations as private notes" />
+          <I18nText
+            id="Copy {count, plural, one {# visible annotation as a private note} other {# visible annotations as private notes}}"
+            values={{ count: annotations.length }}
+          />
         </label>
       )}
       {include && (
@@ -362,8 +373,10 @@ export default function PdfSaveCopy({
             disabled={busy || locked}
             onChange={(e) => setAck(e.target.checked)}
           />
-          <I18nText id="I understand" /> {omitted}{" "}
-          <I18nText id="annotation page segments will be omitted." />
+          <I18nText
+            id="I understand {count, plural, one {# annotation page segment will be omitted.} other {# annotation page segments will be omitted.}}"
+            values={{ count: omitted }}
+          />
         </label>
       )}
       {error && (
@@ -380,7 +393,16 @@ export default function PdfSaveCopy({
           </button>
         </div>
       )}
-      <p role="status">{status}</p>
+      <p role="status">
+        {status &&
+          (status.kind === "uploading"
+            ? t("Uploading {progress, number, percent}", {
+                progress: status.progress,
+              })
+            : status.kind === "verifying"
+              ? t("Verifying and saving…")
+              : t("Saved. The original version is unchanged."))}
+      </p>
       <div className="dialog-footer">
         <Button className="button secondary" onClick={onClose}>
           {busy ? uiText("Close (upload may continue)") : uiText("Close")}
@@ -405,8 +427,8 @@ export default function PdfSaveCopy({
               {busy
                 ? uiText("Saving…")
                 : locked
-                  ? "Retry / check save"
-                  : "Save PDF"}
+                  ? uiText("Retry / check save")
+                  : uiText("Save PDF")}
             </Button>
             {recoverable && upload.current && mode === "version" && (
               <Button

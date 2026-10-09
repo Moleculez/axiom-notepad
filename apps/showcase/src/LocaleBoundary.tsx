@@ -6,7 +6,7 @@ import {
   configureLocaleAssets,
   localeRuntime,
 } from "@axiom/i18n/client";
-import { isLocaleChoice, type LocaleChoice } from "@axiom/i18n";
+import { savedLocaleChoice, type LocaleChoice } from "@axiom/i18n";
 import { runtimeAsset } from "../../web/lib/runtime-assets";
 import BrandMark from "../../web/components/BrandMark";
 export const showcaseLocaleKey = "axiom:locale:showcase:v1";
@@ -25,10 +25,10 @@ export default function LocaleBoundary({ children }: { children: ReactNode }) {
   const locale = useI18n();
   useEffect(() => {
     configureLocaleAssets(runtimeAsset(""));
-    let choice: LocaleChoice = "auto";
+    let choice: LocaleChoice = "en";
     try {
       const stored = localStorage.getItem(showcaseLocaleKey);
-      if (isLocaleChoice(stored)) choice = stored;
+      choice = savedLocaleChoice(stored);
     } catch {
       /* Storage disabled. */
     }

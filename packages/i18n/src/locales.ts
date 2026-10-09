@@ -1,10 +1,12 @@
 /** Persistent values, never translated labels or URL segments. */
 export const locales = [
-  { id: "en", name: "English", direction: "ltr" },
+  { id: "en", name: "English (United States)", direction: "ltr" },
   { id: "zh-Hans", name: "简体中文", direction: "ltr" },
   { id: "es", name: "Español", direction: "ltr" },
   { id: "fr", name: "Français", direction: "ltr" },
-  { id: "ar", name: "العربية", direction: "rtl" },
+  { id: "ja", name: "日本語", direction: "ltr" },
+  { id: "ko", name: "한국어", direction: "ltr" },
+  { id: "de", name: "Deutsch", direction: "ltr" },
   { id: "hi", name: "हिन्दी", direction: "ltr" },
   { id: "pt-BR", name: "Português (Brasil)", direction: "ltr" },
   { id: "ru", name: "Русский", direction: "ltr" },
@@ -15,6 +17,16 @@ export type Locale = (typeof locales)[number]["id"];
 export type LocaleChoice = Locale | "auto";
 export const localeIds = locales.map((locale) => locale.id);
 export const localeChoices = ["auto", ...localeIds] as const;
+export const defaultLocale: Locale = "en";
+/** The stable English preference ID predates the explicit US presentation tag. */
+export const localeTag = (locale: Locale) =>
+  locale === "en" ? "en-US" : locale;
+/** Read old saved choices without making unsupported languages selectable. */
+export function savedLocaleChoice(value: unknown): LocaleChoice {
+  if (value === "ar") return "auto";
+  if (value === "en-US") return "en";
+  return isLocaleChoice(value) ? value : defaultLocale;
+}
 export function isLocale(value: unknown): value is Locale {
   return typeof value === "string" && localeIds.includes(value as Locale);
 }
@@ -41,7 +53,7 @@ export function resolveLocale(
     const match = matchLocale(language);
     if (match) return match;
   }
-  return "en";
+  return defaultLocale;
 }
-export const localeDirection = (locale: Locale) =>
+export const localeDirection = (locale: Locale): "ltr" | "rtl" =>
   locales.find((entry) => entry.id === locale)!.direction;

@@ -149,11 +149,10 @@ function WebsiteSetup({
         <I18nText id="A home for your research" />
       </h2>
       <p>
-        <I18nText id="Publish a" />{" "}
-        {space.kind === "personal"
-          ? uiText("personal researcher homepage")
-          : uiText("research team website")}
-        <I18nText id=", papers and a blog from this workspace. Working files stay private until a manager approves a frozen release." />
+        <I18nText
+          id="Publish {kind, select, personal {a personal researcher homepage} other {a research team website}}, papers and a blog from this workspace. Working files stay private until a manager approves a frozen release."
+          values={{ kind: space.kind }}
+        />
       </p>
       <div className="website-principles">
         <span>

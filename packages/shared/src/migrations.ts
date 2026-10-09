@@ -353,8 +353,13 @@ INSERT INTO app_instance(singleton,setup_completed_at) SELECT true,CASE WHEN EXI
     sql: linkPerformanceMigration,
   },
   { version: 51, name: "account-interface-language", sql: localeMigration },
+  {
+    version: 52,
+    name: "interface-language-expansion",
+    sql: localeExpansionMigration,
+  },
 ];
-import { localeMigration } from "./locale-migration";
+import { localeMigration, localeExpansionMigration } from "./locale-migration";
 import { linkPerformanceMigration } from "./link-performance-migration";
 import { mindmapMigration } from "./mindmap-migration";
 import { stagePortabilityMigration } from "./stage-portability-migration";

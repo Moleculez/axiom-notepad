@@ -23,7 +23,7 @@ describe("account locale API", () => {
     });
     expect(migration!.sql).toContain('REFERENCES "user"(id) ON DELETE CASCADE');
   });
-  it("defaults an existing account to automatic without a write", async () => {
+  it("defaults an existing account to American English without a write", async () => {
     mockQuery.mockResolvedValue([]);
     const response = await localeApi(
       new Request("http://localhost"),
@@ -35,7 +35,7 @@ describe("account locale API", () => {
     ]);
     expect(response.headers.get("cache-control")).toBe("private, no-store");
   });
-  it.each(["de", "zh-TW", "", "AUTO"])(
+  it.each(["ar", "it", "zh-TW", "", "AUTO"])(
     "rejects unsupported %s before SQL",
     async (locale) => {
       await expect(
@@ -54,17 +54,41 @@ describe("account locale API", () => {
     expect(mockQuery).not.toHaveBeenCalled();
   });
   it("uses the authenticated account, not a client-supplied identity", async () => {
-    mockQuery.mockResolvedValue([{ locale: "ar", version: 1, mutationId }]);
+    mockQuery.mockResolvedValue([{ locale: "ja", version: 1, mutationId }]);
     const response = await localeApi(
-      request({ locale: "ar", version: 0, mutationId }),
+      request({ locale: "ja", version: 0, mutationId }),
       "account-A",
     );
     expect(response.status).toBe(200);
     expect(mockQuery).toHaveBeenCalledWith(expect.stringMatching(/^INSERT/), [
       "account-A",
-      "ar",
+      "ja",
       mutationId,
     ]);
+  });
+  it("adds new language choices through a forward-only constraint migration", () => {
+    const original = migrations.find((item) => item.version === 51)!;
+    const expansion = migrations.find((item) => item.version === 52)!;
+    expect(original.sql).toContain("'ar'");
+    expect(original.sql).not.toContain("'ja'");
+    expect(expansion.sql).toContain("'ja','ko','de'");
+    expect(expansion.sql).toContain(
+      "version=version+1,mutation_id=gen_random_uuid()",
+    );
+    expect(expansion.sql).toContain("SET DEFAULT 'en'");
+  });
+  it("reads a retired locale as Automatic without rewriting its receipt", async () => {
+    mockQuery.mockResolvedValue([{ locale: "ar", version: 4, mutationId }]);
+    const response = await localeApi(
+      new Request("http://localhost"),
+      "account-A",
+    );
+    expect(await response.json()).toEqual({
+      locale: "auto",
+      version: 4,
+      mutationId,
+    });
+    expect(mockQuery).toHaveBeenCalledTimes(1);
   });
   it("retries the same mutation idempotently", async () => {
     mockQuery

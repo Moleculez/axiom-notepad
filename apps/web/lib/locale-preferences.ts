@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useSyncExternalStore } from "react";
 import { browserLanguages, localeRuntime } from "@axiom/i18n/client";
-import { isLocaleChoice, type LocaleChoice } from "@axiom/i18n";
+import { savedLocaleChoice, type LocaleChoice } from "@axiom/i18n";
 import {
   defaultLocaleRecord,
   localeRecordSchema,
@@ -21,7 +21,7 @@ type State = Readonly<{
 }>;
 const empty: State = Object.freeze({
   ready: false,
-  locale: "auto",
+  locale: "en",
   pending: false,
   saving: false,
   error: "",
@@ -32,9 +32,9 @@ export const guestLocaleKey = "axiom:locale:guest:v1";
 export function readGuestLocale(): LocaleChoice {
   try {
     const value = localStorage.getItem(guestLocaleKey);
-    return isLocaleChoice(value) ? value : "auto";
+    return savedLocaleChoice(value);
   } catch {
-    return "auto";
+    return "en";
   }
 }
 export function cachedInitialLocale(): LocaleChoice {
@@ -55,9 +55,12 @@ function readCache(account: string): Cache | null {
   try {
     const raw = JSON.parse(localStorage.getItem(cacheKey(account)) ?? "null");
     const base = localeRecordSchema.safeParse(raw?.base);
-    const outbox = raw?.outbox
-      ? localeMutationSchema.safeParse(raw.outbox)
-      : null;
+    // A retired choice must not be turned into a different mutation with the
+    // same receipt. Keep the applied version and discard only that obsolete job.
+    const outbox =
+      raw?.outbox && raw.outbox.locale !== "ar"
+        ? localeMutationSchema.safeParse(raw.outbox)
+        : null;
     return raw?.schema === 1 && base.success && (!outbox || outbox.success)
       ? { schema: 1, base: base.data, outbox: outbox?.data ?? null }
       : null;

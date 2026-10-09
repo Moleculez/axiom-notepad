@@ -2,33 +2,49 @@
 
 Axiom has a shared localization layer for the private workbench and browser-local
 showcase. **This is a partial localization release, not a fully translated app.**
-Ten choices work; navigation, common actions, language settings and selected
+Twelve choices work; navigation, common actions, language settings and selected
 editor/research/planning controls have authored translations. The follow-up expands
 settings descriptions and profile/security controls, group administration, file
 management and import, Trash protection/removal, scheduling/goals/intake/time, and
-reference-library/graph controls. Less-used copy and some dynamic messages still
+reference-library/graph controls. The current pass adds provider/assistant consent,
+selected PDF tools, publication/analytics controls and MCP request lifecycle copy.
+Japanese, Korean and German have a smaller reviewed vocabulary than the original
+eight non-English choices. Less-used copy and some dynamic messages still
 show English. Key parity is not linguistic acceptance.
 
 ## Languages and behavior
 
-| Choice             | Locale    | Direction |
-| ------------------ | --------- | --------- |
-| English            | `en`      | LTR       |
-| 简体中文           | `zh-Hans` | LTR       |
-| Español            | `es`      | LTR       |
-| Français           | `fr`      | LTR       |
-| العربية            | `ar`      | RTL       |
-| हिन्दी             | `hi`      | LTR       |
-| Português (Brasil) | `pt-BR`   | LTR       |
-| Русский            | `ru`      | LTR       |
-| বাংলা              | `bn`      | LTR       |
-| Bahasa Indonesia   | `id`      | LTR       |
+| Choice                  | Locale    | Direction |
+| ----------------------- | --------- | --------- |
+| English (United States) | `en`      | LTR       |
+| 简体中文                | `zh-Hans` | LTR       |
+| Español                 | `es`      | LTR       |
+| Français                | `fr`      | LTR       |
+| 日本語                  | `ja`      | LTR       |
+| 한국어                  | `ko`      | LTR       |
+| Deutsch                 | `de`      | LTR       |
+| हिन्दी                  | `hi`      | LTR       |
+| Português (Brasil)      | `pt-BR`   | LTR       |
+| Русский                 | `ru`      | LTR       |
+| বাংলা                   | `bn`      | LTR       |
+| Bahasa Indonesia        | `id`      | LTR       |
 
-**Settings → Account → Language** offers Automatic and the ten autonyms. Automatic
+**American English is the default** for new accounts, guests, unset preferences
+and showcase. Its persisted ID remains `en`; document language and shared `Intl`
+formatters explicitly use `en-US`. Existing explicit Automatic choices remain
+Automatic rather than being overwritten.
+
+**Settings → Account → Language** offers Automatic and the twelve native names. Automatic
 matches browser preferences in order, including regional variants; unsupported
 languages fall back to English. Traditional Chinese is not silently treated as
 Simplified Chinese. Explicit choices override the browser; Automatic responds
 to its `languagechange` event.
+
+Arabic is no longer an interface-language choice. A retired `ar` preference is
+read as Automatic, while authored Arabic text and its self-hosted font fallback
+remain untouched. Local caches discard a retired Arabic pending mutation instead
+of silently changing its payload under the same retry ID. Regional `en-US` cache
+values normalize to the stable `en` choice.
 
 Changing the selector previews the interface. **Save changes** commits the account
 preference; **Cancel** restores the applied choice. Appearance, Writing and Profile
@@ -63,8 +79,11 @@ language, change export content or send content to a translation service.
   Next uses a native ESM config to avoid compiler-hook resolution of sibling helpers.
   Docker includes this helper and the source catalogs at runtime.
 - `GET/PATCH /api/v1/me/locale` reads/writes only the authenticated account. Forward
-  migration **51** creates `user_locale_preferences`; applied schemas are not
-  rewritten. Run the usual migration workflow before starting an updated app.
+  migration **51** creates `user_locale_preferences`; forward migration **52**
+  expands the allowed languages, defaults new records to `en` and retires `ar`
+  to Automatic with a new version/receipt to fence old pending writes. Other
+  saved choices are retained and applied migration 51 is not rewritten. Run the
+  usual backup/migration workflow before starting an updated app.
   Language is separate from the versioned appearance/editor preference bundle.
 - `apps/web/lib/locale-preferences.ts` owns cache, preview, version checks, exact
   retry and account fencing. Saves during an initial read drain immediately after
@@ -110,6 +129,18 @@ Extraction helpers produce inventory/migration suggestions, **not translations o
 proof of coverage**. Review authored samples, protocol strings, templates and rich
 sentences explicitly. Prefer normal catalog/component edits for future changes.
 
+### Native interface wording
+
+Write the action a native user expects, not the English sentence word for word.
+Use concise labels, the locale's usual politeness/register and consistent terms
+for workspaces, reading, editing and approval. Japanese uses 設定 and 閲覧/編集;
+Korean uses 설정 and 읽기/편집; German uses Einstellungen and Arbeitsbereich.
+Do not force English capitalization, word order or noun plurals onto another
+language. Preserve the full consequences of security, deletion and provider
+consent warnings. Technical identifiers, Markdown and user-authored names are
+not translation targets. Final linguistic acceptance still needs native-speaker
+review; authored copy and structural tests are not that certification.
+
 ## Layout and typography
 
 Follow [design criteria](DESIGN_SYSTEM.md) and [UI controls](UI_CONTROLS.md). Use
@@ -140,7 +171,7 @@ npm run test:showcase -- tests/showcase/localization.spec.ts
 ```
 
 The catalog gate checks keys, ICU, argument contracts and HTML boundaries. It also
-protects **120 reviewed message IDs** across six UI areas against missing, blank or
+protects **178 reviewed message IDs** across ten UI areas against missing, blank or
 English-fallback regressions in every non-English catalog. The scope lives in
 `packages/i18n/src/translation-coverage.ts`, outside runtime bundles. Extend it
 when completing a UI increment. Legitimately identical native wording requires an
@@ -149,9 +180,11 @@ and must not exempt an entire area. This is a structural review gate, not native
 linguistic certification.
 
 The gate writes matching-English entries to ignored `data/i18n/coverage.json`.
-On 2026-10-09 the follow-up inventory has **5,303 messages**; non-English catalogs
-have **1,744–1,792 differing translations each**, up by **773–778** from the first
-localization checkpoint. **3,511–3,559 values per catalog still match English**.
+On 2026-10-09 the current inventory has **5,393 messages**. The eight earlier
+non-English catalogs have **1,974–2,023 differing translations each**, with
+**3,370–3,419 values per catalog still matching English**. Japanese and Korean
+have **616 differing translations each**; German has **604**, leaving
+**4,777–4,789 matching-English values** in the three new catalogs.
 Some are legitimate technical names, but most are untranslated UI. These counts
 are not a completion threshold or a claim that an entire feature area is translated.
 
@@ -168,15 +201,19 @@ npm run plugins:staging -- test --config localization.config.ts
 
 Unit tests cover negotiation, plurals, fallbacks, stale/failed loads, account
 isolation, offline exact retry and preview. Account browser tests exercise real
-Save/Cancel, CAS and reload persistence, all ten profile languages without changing
-authored values, and Arabic group dialogs at large text. The latter use read-only
+Save/Cancel, CAS and reload persistence, all twelve profile languages without changing
+authored values, the US default, explicit automatic Japanese matching and Japanese
+group dialogs at large text. The latter use read-only
 theme response fixtures for both color modes, never saving appearance or creating
 a group. Only that read-only layout fixture blocks service-worker registration so
 network interception is reliable; it is not an offline/PWA acceptance test. The
 other account flows retain normal worker behavior. Browser number expectations
 use the engine's resolved numbering system rather than assuming Node's CLDR
-defaults. Showcase tests cover ten choices,
-route/source/undo preservation, Arabic, light/dark, large text, keyboard, forced
+defaults. Read-only MCP review fixtures cover approved queued requests, delayed
+processing, manual refresh and completed receipts, with Japanese/Korean/German
+large-text dialogs in both color modes. They never approve or create actual files.
+Showcase tests cover twelve choices,
+route/source/undo preservation, German, light/dark, large text, keyboard, forced
 colors and reduced motion. Inspect screenshots: structural assertions alone are
 not layout acceptance. Mutations run only on isolated data.
 
@@ -189,8 +226,8 @@ The next translation passes should prioritize:
 
 - Specialized PDF/annotation, image, math and diagram controls, including long
   inspection/export dialogs and recovery instructions.
-- Assistant/provider consent and configuration, followed by website publication,
-  domain setup and author analytics.
+- Remaining assistant/provider details and website publication, domain setup and
+  author analytics after the reviewed consent/usage/lifecycle increment.
 - Remaining composed messages, lifecycle/status displays, accessibility labels and
   user-visible API errors. Convert whole messages with canonical parameters;
   do not translate protocol error codes or arbitrary returned values.

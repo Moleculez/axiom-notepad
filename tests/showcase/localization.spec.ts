@@ -1,5 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
-import { locales } from "../../packages/i18n/src/locales";
+import { locales, localeTag } from "../../packages/i18n/src/locales";
 
 const note = "3f000000-0000-4000-8000-000000000001";
 const key = "axiom:locale:showcase:v1";
@@ -38,7 +38,7 @@ async function savedSource(page: Page): Promise<string> {
   );
 }
 
-test("all ten languages, automatic matching and recovery names are available", async ({
+test("all twelve languages, automatic matching and recovery names are available", async ({
   page,
 }, info) => {
   const errors: string[] = [],
@@ -56,10 +56,13 @@ test("all ten languages, automatic matching and recovery names are available", a
   const source = await savedSource(page);
   const url = page.url();
   const language = await openLanguage(page);
-  await expect(language.locator("option")).toHaveCount(11);
+  await expect(language.locator("option")).toHaveCount(13);
   for (const locale of locales) {
     await language.selectOption(locale.id);
-    await expect(page.locator("html")).toHaveAttribute("lang", locale.id);
+    await expect(page.locator("html")).toHaveAttribute(
+      "lang",
+      localeTag(locale.id),
+    );
     await expect(page.locator("html")).toHaveAttribute("dir", locale.direction);
     await expect(language).toHaveValue(locale.id);
     await expect(language.locator(`option[value="${locale.id}"]`)).toHaveText(
@@ -71,15 +74,15 @@ test("all ten languages, automatic matching and recovery names are available", a
     expect(page.url()).toBe(url);
     expect(await savedSource(page)).toBe(source);
   }
-  await language.selectOption("ar");
+  await language.selectOption("de");
   expect(
     await settings(page)
       .locator(".reading-view")
       .evaluate((element) => getComputedStyle(element).direction),
   ).toBe("ltr");
-  await page.screenshot({ path: info.outputPath("language-arabic-light.png") });
+  await page.screenshot({ path: info.outputPath("language-german-light.png") });
   await page.reload();
-  await expect(page.locator("html")).toHaveAttribute("lang", "ar");
+  await expect(page.locator("html")).toHaveAttribute("lang", "de");
   await expect(page.locator(".axiom-editor")).toBeVisible();
   expect(await savedSource(page)).toBe(source);
   expect(errors).toEqual([]);
@@ -126,10 +129,10 @@ test("unsupported browser locales fall back and a failed catalog leaves the sele
   page,
   browser,
 }) => {
-  const context = await browser.newContext({ locale: "de-DE" });
+  const context = await browser.newContext({ locale: "it-IT" });
   const fallback = await context.newPage();
   await fallback.goto("http://127.0.0.1:3010/axiom-notepad/#editor");
-  await expect(fallback.locator("html")).toHaveAttribute("lang", "en");
+  await expect(fallback.locator("html")).toHaveAttribute("lang", "en-US");
   await context.close();
   await page.goto(`./#editor&note=${note}`);
   await expect(page.locator(".axiom-editor")).toBeVisible();
@@ -137,8 +140,8 @@ test("unsupported browser locales fall back and a failed catalog leaves the sele
   await page.route("**/locales/es.json*", (route) => route.abort());
   await language.selectOption("es");
   await expect(settings(page).getByRole("alert")).toBeVisible();
-  await expect(language).toHaveValue("auto");
-  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  await expect(language).toHaveValue("en");
+  await expect(page.locator("html")).toHaveAttribute("lang", "en-US");
   expect(
     await page.evaluate((key) => localStorage.getItem(key), key),
   ).toBeNull();
@@ -146,18 +149,18 @@ test("unsupported browser locales fall back and a failed catalog leaves the sele
   await expect(page.locator("html")).toHaveAttribute("lang", "fr");
 });
 
-test("Arabic controls remain usable in dark mode, large text and accessibility modes", async ({
+test("German controls remain usable in dark mode, large text and accessibility modes", async ({
   page,
   browserName,
 }, info) => {
   await page.emulateMedia({ colorScheme: "dark", reducedMotion: "reduce" });
-  await page.addInitScript(({ key }) => localStorage.setItem(key, "ar"), {
+  await page.addInitScript(({ key }) => localStorage.setItem(key, "de"), {
     key,
   });
   await page.goto(`./#editor&note=${note}`);
   await expect(page.locator(".axiom-editor")).toBeVisible();
   const language = await openLanguage(page);
-  await expect(language).toHaveValue("ar");
+  await expect(language).toHaveValue("de");
   await expect(language).toBeVisible();
   await language.focus();
   // Native macOS tab navigation includes non-text controls with Option-Tab.
@@ -174,20 +177,20 @@ test("Arabic controls remain usable in dark mode, large text and accessibility m
     .fill("20");
   await page.keyboard.press("Tab");
   await page.screenshot({
-    path: info.outputPath("language-arabic-dark-large.png"),
+    path: info.outputPath("language-german-dark-large.png"),
   });
   await page.emulateMedia({ forcedColors: "active" });
   await settings(page).getByRole("tab").first().click();
   await expect(language).toBeVisible();
   await page.screenshot({
-    path: info.outputPath("language-arabic-forced-colors.png"),
+    path: info.outputPath("language-german-forced-colors.png"),
   });
 });
 
 test("localized table scopes and destructive dialog focus use stable identities", async ({
   page,
 }) => {
-  await page.addInitScript(({ key }) => localStorage.setItem(key, "ar"), {
+  await page.addInitScript(({ key }) => localStorage.setItem(key, "de"), {
     key,
   });
   await page.goto(`./#editor&note=${note}`);

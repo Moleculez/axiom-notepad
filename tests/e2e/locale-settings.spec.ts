@@ -2,7 +2,11 @@ import { test, expect, type APIRequestContext } from "@playwright/test";
 import { signInOwner } from "./auth";
 import type { LocaleRecord } from "../../packages/shared/src/locale-preferences";
 import { readFile } from "node:fs/promises";
-import { createTranslator, locales } from "../../packages/i18n/src/index";
+import {
+  createTranslator,
+  locales,
+  localeTag,
+} from "../../packages/i18n/src/index";
 import { IntlMessageFormat } from "intl-messageformat";
 import { APPEARANCE_SCHEMA } from "../../packages/shared/src/appearance";
 const origin = "http://localhost:3004";
@@ -49,20 +53,20 @@ test("account language previews, cancels and saves without a route change", asyn
   await expect(page.locator("html")).toHaveAttribute("lang", "zh-Hans");
   expect(await record(page.request)).toEqual(before);
   await panel.locator("footer button").first().click();
-  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  await expect(page.locator("html")).toHaveAttribute("lang", "en-US");
   await expect(choice).toHaveValue("en");
-  await choice.selectOption("ar");
-  await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
+  await choice.selectOption("ja");
+  await expect(page.locator("html")).toHaveAttribute("dir", "ltr");
   await panel.locator("footer button").last().click();
-  await expect.poll(async () => (await record(page.request)).locale).toBe("ar");
+  await expect.poll(async () => (await record(page.request)).locale).toBe("ja");
   await expect(panel.locator("footer button").last()).toBeDisabled();
   expect(page.url()).toBe(url);
   await page.screenshot({
-    path: info.outputPath("account-language-arabic.png"),
+    path: info.outputPath("account-language-japanese.png"),
   });
   await page.reload();
-  await expect(choice).toHaveValue("ar");
-  await expect(page.locator("html")).toHaveAttribute("lang", "ar");
+  await expect(choice).toHaveValue("ja");
+  await expect(page.locator("html")).toHaveAttribute("lang", "ja");
   expect(errors).toEqual([]);
 });
 
@@ -110,7 +114,7 @@ test("real account writes have exact retry, validation and concurrent conflict s
   const invalid = await page.request.patch(endpoint, {
     headers: { origin },
     data: {
-      locale: "ja",
+      locale: "it",
       version: conflict.current.version,
       mutationId: crypto.randomUUID(),
     },
@@ -119,18 +123,23 @@ test("real account writes have exact retry, validation and concurrent conflict s
   expect((await record(page.request)).version).toBe(conflict.current.version);
 });
 
-test("automatic Arabic sign-in keeps email and mathematics independent of chrome", async ({
+test("automatic Japanese sign-in keeps email and mathematics independent of chrome", async ({
   browser,
 }, info) => {
-  const context = await browser.newContext({ locale: "ar-SA" });
+  const context = await browser.newContext({ locale: "ja-JP" });
   const fresh = await context.newPage();
   const errors: string[] = [];
   fresh.on("pageerror", (error) => errors.push(error.message));
   try {
     await fresh.goto(`${origin}/workbench/home`);
     await expect(fresh.locator(".auth-layout")).toBeVisible();
-    await expect(fresh.locator("html")).toHaveAttribute("lang", "ar");
-    await expect(fresh.locator("html")).toHaveAttribute("dir", "rtl");
+    await expect(fresh.locator("html")).toHaveAttribute("lang", "en-US");
+    await fresh.evaluate(() =>
+      localStorage.setItem("axiom:locale:guest:v1", "auto"),
+    );
+    await fresh.reload();
+    await expect(fresh.locator("html")).toHaveAttribute("lang", "ja");
+    await expect(fresh.locator("html")).toHaveAttribute("dir", "ltr");
     await expect(fresh.locator(".auth-form-card h2")).not.toHaveText(
       "Welcome back.",
     );
@@ -145,7 +154,7 @@ test("automatic Arabic sign-in keeps email and mathematics independent of chrome
         await target.evaluate((node) => getComputedStyle(node).direction),
       ).toBe("ltr");
     await fresh.screenshot({
-      path: info.outputPath("language-arabic-sign-in.png"),
+      path: info.outputPath("language-japanese-sign-in.png"),
     });
     expect(errors).toEqual([]);
   } finally {
@@ -153,7 +162,7 @@ test("automatic Arabic sign-in keeps email and mathematics independent of chrome
   }
 });
 
-test("translated profiles retain authored values across all ten languages", async ({
+test("translated profiles retain authored values across all twelve languages", async ({
   page,
 }) => {
   const response = await page.request.get("/api/v1/me/profile");
@@ -162,7 +171,7 @@ test("translated profiles retain authored values across all ten languages", asyn
   for (const { id } of locales) {
     await setLocale(page.request, id);
     await page.goto("/workbench/settings/profile");
-    await expect(page.locator("html")).toHaveAttribute("lang", id);
+    await expect(page.locator("html")).toHaveAttribute("lang", localeTag(id));
     const catalog = JSON.parse(
       await readFile(`packages/i18n/src/messages/${id}.json`, "utf8"),
     );
@@ -222,13 +231,13 @@ test.describe("localized group dialog with read-only theme fixtures", () => {
   // their normal worker behavior. Offline acceptance belongs to its own gates.
   test.use({ serviceWorkers: "block" });
 
-  test("Arabic group creation remains keyboard accessible at large text without creating a group", async ({
+  test("Japanese group creation remains keyboard accessible at large text without creating a group", async ({
     page,
   }, info) => {
-    await setLocale(page.request, "ar");
+    await setLocale(page.request, "ja");
     const t = createTranslator(
-      "ar",
-      JSON.parse(await readFile("packages/i18n/src/messages/ar.json", "utf8")),
+      "ja",
+      JSON.parse(await readFile("packages/i18n/src/messages/ja.json", "utf8")),
     );
     const errors: string[] = [];
     page.on("pageerror", (error) => errors.push(error.message));
@@ -252,7 +261,7 @@ test.describe("localized group dialog with read-only theme fixtures", () => {
       });
       await page.emulateMedia({ colorScheme: mode, reducedMotion: "reduce" });
       await page.goto("/workbench/settings/groups");
-      await expect(page.locator("html")).toHaveAttribute("lang", "ar");
+      await expect(page.locator("html")).toHaveAttribute("lang", "ja");
       await expect(page.locator("html")).toHaveAttribute("data-theme", mode);
       await expect(
         page.getByRole("heading", {
@@ -295,7 +304,7 @@ test.describe("localized group dialog with read-only theme fixtures", () => {
         ),
       ).toBe(true);
       await page.screenshot({
-        path: info.outputPath(`group-dialog-arabic-${mode}-large.png`),
+        path: info.outputPath(`group-dialog-japanese-${mode}-large.png`),
       });
       await name.press("Escape");
       await expect(dialog).not.toBeVisible();

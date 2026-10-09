@@ -18,6 +18,7 @@ import {
   productivityLimits,
 } from "@axiom/shared/productivity";
 import { prepareIntegrationChange } from "@axiom/shared/integration-change-sets";
+import { changeSetReceipt } from "@axiom/shared/change-set-lifecycle";
 import {
   createChangeSet,
   changeSetView,
@@ -262,10 +263,8 @@ export function createWorkspaceMcpServer(
             input,
           );
           return {
-            changeSetId: result.id,
+            ...changeSetReceipt(result, canonicalOrigin),
             status: result.status,
-            requiresApproval: true,
-            approvalUrl: `${canonicalOrigin}/workbench/settings/connections?review=${result.id}`,
           };
         }, "workspace:write"),
     );
@@ -276,7 +275,7 @@ export function createWorkspaceMcpServer(
       {
         description:
           operation === "status"
-            ? "Read this connection's change-set review and execution receipts."
+            ? "Read this connection's change-set review and execution receipts. Queued and applying requests are already approved: wait and poll, do not request approval again or prepare duplicate writes. Completed action receipts confirm results."
             : "Cancel this connection's unapplied proposals. Completed work is never rolled back.",
         inputSchema: z.object({ id: z.uuid() }).strict(),
         annotations: {
@@ -286,11 +285,12 @@ export function createWorkspaceMcpServer(
         },
       },
       ({ id }) =>
-        run(() =>
-          operation === "status"
+        run(async () => {
+          const result = await (operation === "status"
             ? changeSetView(id, connection.user_id, connection.id)
-            : cancelChangeSet(id, connection.user_id, connection.id),
-        ),
+            : cancelChangeSet(id, connection.user_id, connection.id));
+          return { ...result, ...changeSetReceipt(result, canonicalOrigin) };
+        }),
     );
   const resource = (uri: URL, value: unknown) => ({
     contents: [
