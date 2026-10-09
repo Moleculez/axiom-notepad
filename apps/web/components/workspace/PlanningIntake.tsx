@@ -1,4 +1,7 @@
 "use client";
+import { currentLocale } from "@axiom/i18n/client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import {
@@ -48,7 +51,7 @@ import {
 } from "./ui";
 
 const Markdown = dynamic(() => import("./PlanningMarkdown"), {
-  loading: () => <Loading label="Opening editor…" />,
+  loading: () => <Loading label={uiText("Opening editor…")} />,
 });
 type IntakeInput = z.infer<typeof intakeInputSchema>;
 const requestTemplates: Record<
@@ -93,6 +96,7 @@ export function PlanningIntake({
   people: Array<{ id: string; name: string }>;
   online: boolean;
 }) {
+  useInterfaceLocale();
   const { revision, refresh, session, notify } = useWorkspace();
   const [filters, setFilters] = useState(defaults),
     [search, setSearch] = useState("");
@@ -138,7 +142,7 @@ export function PlanningIntake({
   const counts = data.data?.statusCounts;
   const countLabel = (statuses: Array<keyof typeof intakeStatusLabels>) =>
     counts
-      ? ` (${statuses.reduce((total, status) => total + counts[status], 0).toLocaleString()})`
+      ? ` (${statuses.reduce((total, status) => total + counts[status], 0).toLocaleString(currentLocale())})`
       : "";
   const rows = data.data?.items ?? [],
     filtered =
@@ -169,14 +173,15 @@ export function PlanningIntake({
   return (
     <section
       className="planning-suite-panel planning-intake"
-      aria-label="Research intake"
+      aria-label={uiText("Research intake")}
     >
       <header>
         <div>
-          <h2>Intake</h2>
+          <h2>
+            <I18nText id="Intake" />
+          </h2>
           <HelpText>
-            Workspace requests and decision history. Accepting creates exactly
-            one task.
+            <I18nText id="Workspace requests and decision history. Accepting creates exactly one task." />
           </HelpText>
         </div>
         <Button
@@ -185,17 +190,17 @@ export function PlanningIntake({
           onClick={() => setCreating(true)}
         >
           <Plus size={16} />
-          Submit request
+          <I18nText id="Submit request" />
         </Button>
       </header>
       <div
         className="planning-intake-filters"
         role="search"
-        aria-label="Filter research requests"
+        aria-label={uiText("Filter research requests")}
       >
         <SearchField
-          aria-label="Search requests"
-          placeholder="Search requests and review notes…"
+          aria-label={uiText("Search requests")}
+          placeholder={uiText("Search requests and review notes…")}
           maxLength={200}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -205,18 +210,20 @@ export function PlanningIntake({
           }}
         />
         <NativeSelect
-          aria-label="Request filter"
+          aria-label={uiText("Request filter")}
           value={filters.filter}
           onChange={(e) => set({ filter: e.target.value as Filters["filter"] })}
         >
           <option value="open">
-            Open requests{countLabel(["pending", "needs-changes"])}
+            <I18nText id="Open requests" />
+            {countLabel(["pending", "needs-changes"])}
           </option>
           <option value="history">
-            Decision history{countLabel(["accepted", "rejected", "withdrawn"])}
+            <I18nText id="Decision history" />
+            {countLabel(["accepted", "rejected", "withdrawn"])}
           </option>
           <option value="all">
-            All requests
+            <I18nText id="All requests" />
             {countLabel([
               "pending",
               "needs-changes",
@@ -238,22 +245,23 @@ export function PlanningIntake({
           onClick={() => setFiltering(true)}
         >
           <ListFilter size={16} />
-          Filters{extraFilters ? ` · ${extraFilters}` : ""}
+          <I18nText id="Filters" />
+          {extraFilters ? ` · ${extraFilters}` : ""}
         </Button>
       </div>
       <div className="planning-intake-summary">
         <HelpText role="status" aria-live="polite">
           {data.data
-            ? `${data.data.total.toLocaleString()} matching ${data.data.total === 1 ? "request" : "requests"}`
+            ? `${data.data.total.toLocaleString(currentLocale())} matching ${data.data.total === 1 ? "request" : "requests"}`
             : data.loading
               ? "Finding requests…"
               : "Requests unavailable"}
-          {data.loading && data.data ? " · Updating…" : ""}
+          {data.loading && data.data ? uiText(" · Updating…") : ""}
         </HelpText>
         <ActionRow>
           {filtered && (
             <Button size="compact" variant="ghost" onClick={reset}>
-              Reset filters
+              <I18nText id="Reset filters" />
             </Button>
           )}
           <Button
@@ -263,7 +271,7 @@ export function PlanningIntake({
             onClick={recheck}
           >
             <RefreshCw size={14} />
-            Refresh
+            <I18nText id="Refresh" />
           </Button>
         </ActionRow>
       </div>
@@ -278,12 +286,14 @@ export function PlanningIntake({
           <Empty
             title={
               cursor
-                ? "No requests remain on this page"
-                : "No matching requests"
+                ? uiText("No requests remain on this page")
+                : uiText("No matching requests")
             }
           >
             {cursor
-              ? "Requests may have been reviewed. Refresh to return to the first page."
+              ? uiText(
+                  "Requests may have been reviewed. Refresh to return to the first page.",
+                )
               : filtered
                 ? "Try another status or type, or clear the search."
                 : "Capture a question, experiment, review or data need before turning it into work."}
@@ -311,13 +321,21 @@ export function PlanningIntake({
                   <span>{r.author_name ?? "Former member"}</span>
                   <time
                     dateTime={r.created_at}
-                    title={new Date(r.created_at).toLocaleString()}
+                    title={new Date(r.created_at).toLocaleString(
+                      currentLocale(),
+                    )}
                   >
-                    {new Date(r.created_at).toLocaleDateString()}
+                    {new Date(r.created_at).toLocaleDateString(currentLocale())}
                   </time>
-                  {r.due_on && <span>Desired {r.due_on.slice(0, 10)}</span>}
+                  {r.due_on && (
+                    <span>
+                      <I18nText id="Desired" /> {r.due_on.slice(0, 10)}
+                    </span>
+                  )}
                   {r.priority !== "normal" && (
-                    <span>{r.priority} priority</span>
+                    <span>
+                      {r.priority} <I18nText id="priority" />
+                    </span>
                   )}
                 </div>
                 {r.decision_note && (
@@ -330,7 +348,7 @@ export function PlanningIntake({
                   <WorkspaceLink
                     to={`/workspaces/${space.id}/planning?task=${r.task_id}`}
                   >
-                    Open accepted task ↗
+                    <I18nText id="Open accepted task ↗" />
                   </WorkspaceLink>
                 )}
               </div>
@@ -340,7 +358,7 @@ export function PlanningIntake({
                     size="compact"
                     onClick={() => setOpening({ id: r.id, intent: "review" })}
                   >
-                    Review
+                    <I18nText id="Review" />
                   </Button>
                 )}
                 {r.created_by === session.user.id &&
@@ -361,7 +379,7 @@ export function PlanningIntake({
                         })
                       }
                     >
-                      Withdraw
+                      <I18nText id="Withdraw" />
                     </Button>
                   )}
                 <Button
@@ -370,26 +388,30 @@ export function PlanningIntake({
                   onClick={() => setHistory(r.id)}
                 >
                   <Clock size={14} />
-                  History
+                  <I18nText id="History" />
                 </Button>
               </ActionRow>
             </article>
           ))
         )}
       </div>
-      <nav className="planning-intake-pagination" aria-label="Request pages">
+      <nav
+        className="planning-intake-pagination"
+        aria-label={uiText("Request pages")}
+      >
         <HelpText>
-          Page {cursors.length} · {rows.length} shown
-          {cursor ? " · New submissions appear after Refresh" : ""}
+          <I18nText id="Page" /> {cursors.length} · {rows.length}{" "}
+          <I18nText id="shown" />
+          {cursor ? uiText(" · New submissions appear after Refresh") : ""}
         </HelpText>
         <NativeSelect
-          aria-label="Requests per page"
+          aria-label={uiText("Requests per page")}
           value={filters.limit}
           onChange={(e) => set({ limit: Number(e.target.value) })}
         >
           {[15, 30, 60, 100].map((limit) => (
             <option key={limit} value={limit}>
-              {limit} per page
+              {limit} <I18nText id="per page" />
             </option>
           ))}
         </NativeSelect>
@@ -400,7 +422,7 @@ export function PlanningIntake({
             onClick={() => setCursors((old) => old.slice(0, -1))}
           >
             <ArrowLeft size={14} />
-            Previous
+            <I18nText id="Previous" />
           </Button>
           <Button
             size="compact"
@@ -410,7 +432,7 @@ export function PlanningIntake({
                 setCursors((old) => [...old, data.data!.nextCursor]);
             }}
           >
-            Next
+            <I18nText id="Next" />
             <ArrowRight size={14} />
           </Button>
         </ActionRow>
@@ -453,7 +475,7 @@ export function PlanningIntake({
         <PlanningHistoryDialog
           spaceId={space.id}
           id={history}
-          title="Request history"
+          title={uiText("Request history")}
           onClose={() => setHistory(null)}
         />
       )}
@@ -470,13 +492,18 @@ function IntakeFilters({
   onClose: () => void;
   onApply: (filters: Pick<Filters, "kind" | "sort" | "mine">) => void;
 }) {
+  useInterfaceLocale();
   const [draft, setDraft] = useState({
     kind: filters.kind,
     sort: filters.sort,
     mine: filters.mine,
   });
   return (
-    <Dialog title="Filter research requests" size="compact" onClose={onClose}>
+    <Dialog
+      title={uiText("Filter research requests")}
+      size="compact"
+      onClose={onClose}
+    >
       <form
         onSubmit={(event) => {
           event.preventDefault();
@@ -485,7 +512,7 @@ function IntakeFilters({
       >
         <DialogBody>
           <div className="planning-suite-form">
-            <Field label="Request type">
+            <Field label={uiText("Request type")}>
               <NativeSelect
                 value={draft.kind}
                 onChange={(e) =>
@@ -495,7 +522,9 @@ function IntakeFilters({
                   }))
                 }
               >
-                <option value="">All types</option>
+                <option value="">
+                  <I18nText id="All types" />
+                </option>
                 {Object.entries(requestTemplates).map(([value, t]) => (
                   <option key={value} value={value}>
                     {t.label}
@@ -503,7 +532,7 @@ function IntakeFilters({
                 ))}
               </NativeSelect>
             </Field>
-            <Field label="Request order">
+            <Field label={uiText("Request order")}>
               <NativeSelect
                 value={draft.sort}
                 onChange={(e) =>
@@ -513,8 +542,12 @@ function IntakeFilters({
                   }))
                 }
               >
-                <option value="newest">Newest submitted</option>
-                <option value="oldest">Oldest submitted</option>
+                <option value="newest">
+                  <I18nText id="Newest submitted" />
+                </option>
+                <option value="oldest">
+                  <I18nText id="Oldest submitted" />
+                </option>
               </NativeSelect>
             </Field>
             <label className="planning-check-label">
@@ -527,16 +560,16 @@ function IntakeFilters({
                   }))
                 }
               />
-              My requests only
+              <I18nText id="My requests only" />
             </label>
           </div>
         </DialogBody>
         <DialogFooter>
-          <Button type="button" onClick={onClose}>
-            Cancel
+          <Button data-dialog-cancel type="button" onClick={onClose}>
+            <I18nText id="Cancel" />
           </Button>
           <Button type="submit" variant="primary">
-            Apply filters
+            <I18nText id="Apply filters" />
           </Button>
         </DialogFooter>
       </form>
@@ -561,6 +594,7 @@ function IntakeDetails({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  useInterfaceLocale();
   const { revision, session, notify } = useWorkspace();
   const data = useData<IntakeDetail>(
     `spaces/${space.id}/intake/${id}`,
@@ -583,22 +617,25 @@ function IntakeDetails({
   const onError = <ErrorNotice message={data.error} retry={data.reload} />;
   const stale = changed ? (
     <Notice tone="warning">
-      This request changed while you were viewing it. Your draft is retained.
-      Close and reopen it before resubmitting or deciding.
+      <I18nText id="This request changed while you were viewing it. Your draft is retained. Close and reopen it before resubmitting or deciding." />
     </Notice>
   ) : null;
   if (!snapshot)
     return (
       <Dialog
         title={
-          intent === "review" ? "Review research request" : "Request details"
+          intent === "review"
+            ? uiText("Review research request")
+            : uiText("Request details")
         }
         onClose={onClose}
       >
         {onError}
-        {data.loading && <Loading label="Opening request…" />}
+        {data.loading && <Loading label={uiText("Opening request…")} />}
         <DialogFooter>
-          <Button onClick={onClose}>Close</Button>
+          <Button onClick={onClose}>
+            <I18nText id="Close" />
+          </Button>
         </DialogFooter>
       </Dialog>
     );
@@ -675,6 +712,7 @@ function IntakeReview({
   onClose: () => void;
   onSaved: (accepted: boolean) => void;
 }) {
+  useInterfaceLocale();
   const [initialDecision] = useState(canAccept ? "accepted" : "needs-changes");
   const [decision, setDecision] = useState(initialDecision),
     [note, setNote] = useState(""),
@@ -685,7 +723,7 @@ function IntakeReview({
     closePlanningDraft(dirty, action.busy, onClose, "Unsaved review");
   return (
     <Dialog
-      title="Review research request"
+      title={uiText("Review research request")}
       subtitle={request.title}
       onClose={close}
     >
@@ -708,14 +746,14 @@ function IntakeReview({
           });
         }}
       >
-        <DraftGuard dirty={dirty} title="Unsaved review" />
+        <DraftGuard dirty={dirty} title={uiText("Unsaved review")} />
         <DialogBody>
           {notice}
           <ErrorNotice message={action.error} />
           <Markdown
             initial={request.body}
             onChange={() => {}}
-            label="Request contents"
+            label={uiText("Request contents")}
             readOnly
             preview
           />
@@ -723,35 +761,38 @@ function IntakeReview({
             disabled={!enabled || action.busy}
             className="planning-suite-form"
           >
-            <Field label="Decision">
+            <Field label={uiText("Decision")}>
               <NativeSelect
                 value={decision}
                 onChange={(e) => setDecision(e.target.value)}
               >
                 <option value="accepted" disabled={!canAccept}>
-                  Accept and create task
+                  <I18nText id="Accept and create task" />
                 </option>
-                <option value="needs-changes">Ask for changes</option>
-                <option value="rejected">Reject</option>
+                <option value="needs-changes">
+                  <I18nText id="Ask for changes" />
+                </option>
+                <option value="rejected">
+                  <I18nText id="Reject" />
+                </option>
               </NativeSelect>
             </Field>
             {!canAccept && (
               <HelpText>
-                Accepting and creating a task requires workspace editing access.
-                You can still ask for changes or reject the request.
+                <I18nText id="Accepting and creating a task requires workspace editing access. You can still ask for changes or reject the request." />
               </HelpText>
             )}
             {decision === "accepted" && (
-              <Field label="Task assignee">
+              <Field label={uiText("Task assignee")}>
                 <PersonPicker
-                  label="Accepted task assignee"
+                  label={uiText("Accepted task assignee")}
                   people={people}
                   value={assignee}
                   onChange={setAssignee}
                 />
               </Field>
             )}
-            <Field label="Review note">
+            <Field label={uiText("Review note")}>
               <TextArea
                 rows={3}
                 maxLength={4000}
@@ -763,8 +804,13 @@ function IntakeReview({
           </fieldset>
         </DialogBody>
         <DialogFooter>
-          <Button type="button" disabled={action.busy} onClick={close}>
-            Cancel
+          <Button
+            data-dialog-cancel
+            type="button"
+            disabled={action.busy}
+            onClick={close}
+          >
+            <I18nText id="Cancel" />
           </Button>
           <Button
             type="submit"
@@ -777,7 +823,7 @@ function IntakeReview({
             }
           >
             <Check size={15} />
-            Save decision
+            <I18nText id="Save decision" />
           </Button>
         </DialogFooter>
       </form>
@@ -800,6 +846,7 @@ function IntakeEditor({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  useInterfaceLocale();
   const [initial] = useState<IntakeInput>(() =>
     request
       ? {
@@ -827,7 +874,9 @@ function IntakeEditor({
     closePlanningDraft(dirty, action.busy, onClose, "Unsaved request");
   return (
     <Dialog
-      title={request ? "Request details" : "New research request"}
+      title={
+        request ? uiText("Request details") : uiText("New research request")
+      }
       onClose={close}
     >
       <form
@@ -847,7 +896,7 @@ function IntakeEditor({
           });
         }}
       >
-        <DraftGuard dirty={dirty} title="Unsaved request" />
+        <DraftGuard dirty={dirty} title={uiText("Unsaved request")} />
         <DialogBody>
           {notice}
           <ErrorNotice message={action.error} />
@@ -856,7 +905,7 @@ function IntakeEditor({
               disabled={readOnly || action.busy}
               className="planning-suite-form"
             >
-              <Field label="Template">
+              <Field label={uiText("Template")}>
                 <NativeSelect
                   value={draft.kind}
                   onChange={(e) => {
@@ -878,7 +927,7 @@ function IntakeEditor({
                   ))}
                 </NativeSelect>
               </Field>
-              <Field label="Request">
+              <Field label={uiText("Request")}>
                 <TextInput
                   autoFocus
                   data-dialog-initial-focus
@@ -889,14 +938,14 @@ function IntakeEditor({
                 />
               </Field>
               <div className="planning-field-grid">
-                <Field label="Desired date">
+                <Field label={uiText("Desired date")}>
                   <TextInput
                     type="date"
                     value={draft.dueOn ?? ""}
                     onChange={(e) => set({ dueOn: e.target.value || null })}
                   />
                 </Field>
-                <Field label="Priority">
+                <Field label={uiText("Priority")}>
                   <NativeSelect
                     value={draft.priority}
                     onChange={(e) =>
@@ -917,7 +966,7 @@ function IntakeEditor({
               initial={draft.body}
               onChange={(body) => set({ body })}
               readOnly={readOnly || action.busy}
-              label="Request contents"
+              label={uiText("Request contents")}
               preview={!!request && readOnly && !dirty}
             />
           </div>
@@ -925,7 +974,7 @@ function IntakeEditor({
             <Notice tone="info">
               {request.reviewer_name
                 ? `${request.reviewer_name}: `
-                : "Review: "}
+                : uiText("Review: ")}
               {request.decision_note}
             </Notice>
           )}
@@ -933,13 +982,13 @@ function IntakeEditor({
             <WorkspaceLink
               to={`/workspaces/${spaceId}/planning?task=${request.task_id}`}
             >
-              Open accepted task ↗
+              <I18nText id="Open accepted task ↗" />
             </WorkspaceLink>
           )}
         </DialogBody>
         <DialogFooter>
           <Button type="button" disabled={action.busy} onClick={close}>
-            Close
+            <I18nText id="Close" />
           </Button>
           {!readOnly && (
             <Button
@@ -951,7 +1000,7 @@ function IntakeEditor({
                 !draft.title.trim()
               }
             >
-              {request ? "Resubmit" : "Submit request"}
+              {request ? uiText("Resubmit") : uiText("Submit request")}
             </Button>
           )}
         </DialogFooter>

@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { Slider, SearchField } from "./ui/controls";
 import { useMemo, useState } from "react";
 import { Network } from "lucide-react";
@@ -12,6 +14,7 @@ export default function Graph({
   links: { source_id: string; target_id: string }[];
   open: (id: string) => void;
 }) {
+  useInterfaceLocale();
   const [search, setSearch] = useState(""),
     [selected, setSelected] = useState<string | null>(null),
     [zoom, setZoom] = useState(1);
@@ -49,10 +52,14 @@ export default function Graph({
     <section className="graph-page">
       <div className="section-heading">
         <div>
-          <div className="eyebrow">FOLLOW THE CONNECTIONS</div>
-          <h1>Knowledge graph</h1>
+          <div className="eyebrow">
+            <I18nText id="FOLLOW THE CONNECTIONS" />
+          </div>
+          <h1>
+            <I18nText id="Knowledge graph" />
+          </h1>
           <p className="muted">
-            Ideas become more useful when you can see what connects them.
+            <I18nText id="Ideas become more useful when you can see what connects them." />
           </p>
         </div>
         <Network size={32} strokeWidth={1} />
@@ -62,13 +69,13 @@ export default function Graph({
           wrapperClassName="search-field"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Filter notes or tags…"
-          aria-label="Filter graph"
+          placeholder={uiText("Filter notes or tags…")}
+          aria-label={uiText("Filter graph")}
         />
         <label className="zoom-control">
-          Zoom
+          <I18nText id="Zoom" />
           <Slider
-            aria-label="Graph zoom"
+            aria-label={uiText("Graph zoom")}
             aria-valuetext={`${Math.round(zoom * 100)}%`}
             min="0.6"
             max="1.5"
@@ -82,7 +89,7 @@ export default function Graph({
         <svg
           viewBox="0 0 900 600"
           role="img"
-          aria-label="Connected research notes"
+          aria-label={uiText("Connected research notes")}
         >
           <defs>
             <pattern
@@ -160,22 +167,26 @@ export default function Graph({
           </g>
         </svg>
         {!visible.length && (
-          <div className="graph-empty">No notes match this filter.</div>
+          <div className="graph-empty">
+            <I18nText id="No notes match this filter." />
+          </div>
         )}
       </div>
       <div className="graph-legend">
         <span>
           <i className="legend-dot" />
-          {visible.length} notes
+          {visible.length} <I18nText id="notes" />
         </span>
         <span>
           {
             links.filter((l) => ids.has(l.source_id) && ids.has(l.target_id))
               .length
           }{" "}
-          connections
+          <I18nText id="connections" />
         </span>
-        <span>Choose a note to open it</span>
+        <span>
+          <I18nText id="Choose a note to open it" />
+        </span>
       </div>
     </section>
   );

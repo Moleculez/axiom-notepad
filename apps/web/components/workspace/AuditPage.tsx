@@ -1,4 +1,7 @@
 "use client";
+import { currentLocale } from "@axiom/i18n/client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import {
   Button,
   HelpText,
@@ -48,6 +51,7 @@ export default function AuditPage({
   spaceId?: string;
   embedded?: boolean;
 }) {
+  useInterfaceLocale();
   const { revision, spaces, navigate, refresh } = useWorkspace(),
     { params } = useLocation();
   const [localFilters, setLocalFilters] = useState<Record<string, string>>({}),
@@ -163,26 +167,25 @@ export default function AuditPage({
   const content = (
     <>
       {!embedded && (
-        <PageHeading eyebrow="WORKSPACE RECORDS" title="Audit">
-          A durable record of changes, saved versions and background operations.
-          History follows your current access.
+        <PageHeading eyebrow="WORKSPACE RECORDS" title={uiText("Audit")}>
+          <I18nText id="A durable record of changes, saved versions and background operations. History follows your current access." />
         </PageHeading>
       )}
       {!embedded && (
-        <nav className="productivity-tabs" aria-label="Audit views">
+        <nav className="productivity-tabs" aria-label={uiText("Audit views")}>
           <WorkspaceLink
             to={`/audit${space ? `?space=${space}` : ""}`}
             className={!operations ? "active" : ""}
           >
             <History size={16} />
-            History
+            <I18nText id="History" />
           </WorkspaceLink>
           <WorkspaceLink
             to="/audit?view=operations"
             className={operations ? "active" : ""}
           >
             <ListChecks size={16} />
-            Operations
+            <I18nText id="Operations" />
           </WorkspaceLink>
         </nav>
       )}
@@ -197,16 +200,17 @@ export default function AuditPage({
         <>
           <div className="console-toolbar">
             <HelpText>
-              Completed changes persist. Cancel only stops work that has not yet
-              completed.
+              <I18nText id="Completed changes persist. Cancel only stops work that has not yet completed." />
             </HelpText>
             <label>
-              Status
+              <I18nText id="Status" />
               <NativeSelect
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
               >
-                <option value="">All statuses</option>
+                <option value="">
+                  <I18nText id="All statuses" />
+                </option>
                 {[
                   "queued",
                   "running",
@@ -232,9 +236,7 @@ export default function AuditPage({
                 />
               ) : operationKind === "workspace" ? (
                 <HelpText>
-                  Workspace deletion is processed in the background. Open its
-                  Lifecycle page to review blockers or cancel during the grace
-                  period.
+                  <I18nText id="Workspace deletion is processed in the background. Open its Lifecycle page to review blockers or cancel during the grace period." />
                 </HelpText>
               ) : (
                 <FileOperationActivity
@@ -245,9 +247,13 @@ export default function AuditPage({
                   onOpen={(id) => openOperation(id)}
                 />
               )}
-              <button className="text-button" onClick={() => openOperation("")}>
+              <button
+                data-dialog-cancel
+                className="text-button"
+                onClick={() => openOperation("")}
+              >
                 <ArrowLeft size={15} />
-                Back to operations
+                <I18nText id="Back to operations" />
               </button>
             </>
           ) : (
@@ -269,12 +275,14 @@ export default function AuditPage({
                       <strong>
                         {auditLabel(job.command)} ·{" "}
                         {job.kind === "workspace"
-                          ? "Workspace"
+                          ? uiText("Workspace")
                           : `${job.total} items`}
                       </strong>
                       <small>
-                        {new Date(job.created_at).toLocaleString()} · {job.done}{" "}
-                        completed
+                        {new Date(job.created_at).toLocaleString(
+                          currentLocale(),
+                        )}{" "}
+                        · {job.done} <I18nText id="completed" />
                         {job.blocked ? ` · ${job.blocked} need attention` : ""}
                       </small>
                     </span>
@@ -282,8 +290,8 @@ export default function AuditPage({
                   </button>
                 ))}
               {!jobs.loading && !jobs.data?.items.length && (
-                <Empty title="No operations yet">
-                  Moves, batch changes and cleanup progress appear here.
+                <Empty title={uiText("No operations yet")}>
+                  <I18nText id="Moves, batch changes and cleanup progress appear here." />
                 </Empty>
               )}
             </div>
@@ -295,14 +303,14 @@ export default function AuditPage({
                 disabled={!operationOffset}
                 onClick={() => setOperationOffset((n) => Math.max(0, n - 50))}
               >
-                Previous
+                <I18nText id="Previous" />
               </Button>
               <Button
                 className="button secondary"
                 disabled={jobs.data?.nextOffset == null}
                 onClick={() => setOperationOffset(jobs.data!.nextOffset!)}
               >
-                Next
+                <I18nText id="Next" />
               </Button>
             </div>
           )}
@@ -311,23 +319,25 @@ export default function AuditPage({
         <>
           <div className="console-toolbar">
             <label className="console-search">
-              Search history
+              <I18nText id="Search history" />
               <TextInput
                 type="search"
-                placeholder="Item or person…"
+                placeholder={uiText("Item or person…")}
                 value={search}
                 onChange={(e) => updateFilters({ q: e.target.value })}
               />
             </label>
             {!spaceId && (
               <label>
-                Workspace
+                <I18nText id="Workspace" />
                 <NativeSelect
-                  aria-label="Workspace"
+                  aria-label={uiText("Workspace")}
                   value={space}
                   onChange={(e) => updateFilters({ space: e.target.value })}
                 >
-                  <option value="">All accessible</option>
+                  <option value="">
+                    <I18nText id="All accessible" />
+                  </option>
                   {space && !spaces.some((s) => s.id === space) && (
                     <option value={space}>
                       {scopeDetails.data?.space.name ?? "Selected workspace"}
@@ -342,13 +352,15 @@ export default function AuditPage({
               </label>
             )}
             <label>
-              Action
+              <I18nText id="Action" />
               <NativeSelect
-                aria-label="Action"
+                aria-label={uiText("Action")}
                 value={actionFilter}
                 onChange={(e) => updateFilters({ action: e.target.value })}
               >
-                <option value="">All actions</option>
+                <option value="">
+                  <I18nText id="All actions" />
+                </option>
                 {[
                   "create",
                   "rename",
@@ -373,13 +385,15 @@ export default function AuditPage({
               </NativeSelect>
             </label>
             <label>
-              Item type
+              <I18nText id="Item type" />
               <NativeSelect
-                aria-label="Item type"
+                aria-label={uiText("Item type")}
                 value={entity}
                 onChange={(e) => updateFilters({ entity: e.target.value })}
               >
-                <option value="">All types</option>
+                <option value="">
+                  <I18nText id="All types" />
+                </option>
                 {[
                   "note",
                   "folder",
@@ -403,8 +417,8 @@ export default function AuditPage({
             </label>
             <IconButton
               className="icon-button"
-              title="Export up to 200 records from this page (JSON)"
-              aria-label="Export audit page"
+              title={uiText("Export up to 200 records from this page (JSON)")}
+              aria-label={uiText("Export audit page")}
               disabled={action.busy}
               onClick={exportPage}
             >
@@ -412,18 +426,20 @@ export default function AuditPage({
             </IconButton>
             <IconButton
               className="icon-button"
-              title="Refresh history"
-              aria-label="Refresh history"
+              title={uiText("Refresh history")}
+              aria-label={uiText("Refresh history")}
               onClick={data.reload}
             >
               <RefreshCw size={17} />
             </IconButton>
           </div>
           <details className="console-filter-details">
-            <summary>Date and person filters</summary>
+            <summary>
+              <I18nText id="Date and person filters" />
+            </summary>
             <div className="console-toolbar">
               <label>
-                From
+                <I18nText id="From" />
                 <TextInput
                   type="date"
                   value={after}
@@ -431,7 +447,7 @@ export default function AuditPage({
                 />
               </label>
               <label>
-                Through
+                <I18nText id="Through" />
                 <TextInput
                   type="date"
                   value={before}
@@ -439,10 +455,10 @@ export default function AuditPage({
                 />
               </label>
               <label>
-                Person ID
+                <I18nText id="Person ID" />
                 <TextInput
                   value={actor}
-                  placeholder="Select a person from record details"
+                  placeholder={uiText("Select a person from record details")}
                   onChange={(e) => updateFilters({ actor: e.target.value })}
                 />
               </label>
@@ -459,7 +475,7 @@ export default function AuditPage({
                   });
                 }}
               >
-                Clear filters
+                <I18nText id="Clear filters" />
               </button>
             </div>
           </details>
@@ -470,9 +486,8 @@ export default function AuditPage({
               {data.loading && !data.data ? (
                 <Loading />
               ) : !data.data?.items.length ? (
-                <Empty title="No matching history" icon={History}>
-                  Try another filter. Older records contain only the evidence
-                  that was actually retained.
+                <Empty title={uiText("No matching history")} icon={History}>
+                  <I18nText id="Try another filter. Older records contain only the evidence that was actually retained." />
                 </Empty>
               ) : (
                 <div className="console-records">
@@ -491,7 +506,9 @@ export default function AuditPage({
                         </small>
                       </span>
                       <time dateTime={event.created_at}>
-                        {new Date(event.created_at).toLocaleString()}
+                        {new Date(event.created_at).toLocaleString(
+                          currentLocale(),
+                        )}
                       </time>
                     </button>
                   ))}
@@ -507,7 +524,7 @@ export default function AuditPage({
                   }}
                 >
                   <ArrowLeft size={15} />
-                  Newer
+                  <I18nText id="Newer" />
                 </Button>
                 <Button
                   className="button secondary"
@@ -517,23 +534,26 @@ export default function AuditPage({
                     setCursor(data.data!.nextCursor);
                   }}
                 >
-                  Older
+                  <I18nText id="Older" />
                   <ArrowRight size={15} />
                 </Button>
               </div>
               <HelpText>
-                Metadata history is retained. Automatic document versions expire
-                after 30 days; named versions and review evidence are kept. A
-                purge removes content, not its authorized audit record.
+                <I18nText id="Metadata history is retained. Automatic document versions expire after 30 days; named versions and review evidence are kept. A purge removes content, not its authorized audit record." />
               </HelpText>
             </div>
             {selected && (
-              <aside className="console-inspector" aria-label="Change details">
+              <aside
+                className="console-inspector"
+                aria-label={uiText("Change details")}
+              >
                 <div className="ws-section-heading">
-                  <h2>Change details</h2>
+                  <h2>
+                    <I18nText id="Change details" />
+                  </h2>
                   <IconButton
                     className="icon-button"
-                    aria-label="Close change details"
+                    aria-label={uiText("Close change details")}
                     onClick={() => setSelected(null)}
                   >
                     <X size={17} />
@@ -572,6 +592,7 @@ function AuditDetails({
   event: AuditEvent;
   onActor: (id: string) => void;
 }) {
+  useInterfaceLocale();
   const [compare, setCompare] = useState(false),
     { revision } = useWorkspace();
   const version = useData<{
@@ -593,21 +614,22 @@ function AuditDetails({
       <h3>{event.entity_name}</h3>
       <p>
         {auditLabel(event.action)} ·{" "}
-        {new Date(event.created_at).toLocaleString()}
+        {new Date(event.created_at).toLocaleString(currentLocale())}
       </p>
       {event.actor_id ? (
         <button
           className="text-button"
           onClick={() => onActor(event.actor_id!)}
         >
-          By {event.actor_name}
+          <I18nText id="By" /> {event.actor_name}
         </button>
       ) : (
         <p>{event.actor_name}</p>
       )}
       {event.contributors.length > 1 && (
         <HelpText>
-          {event.contributors.length} contributors in this editing checkpoint.
+          {event.contributors.length}{" "}
+          <I18nText id="contributors in this editing checkpoint." />
         </HelpText>
       )}
       {event.space_name && <HelpText>{event.space_name}</HelpText>}
@@ -617,11 +639,15 @@ function AuditDetails({
             <div key={change.key}>
               <strong>{auditLabel(change.key)}</strong>
               <del>
-                <small>Before · </small>
+                <small>
+                  <I18nText id="Before ·" />{" "}
+                </small>
                 {display(change.before)}
               </del>
               <ins>
-                <small>After · </small>
+                <small>
+                  <I18nText id="After ·" />{" "}
+                </small>
                 {display(change.after)}
               </ins>
             </div>
@@ -630,8 +656,10 @@ function AuditDetails({
       ) : (
         <HelpText>
           {event.evidence === "legacy-summary"
-            ? "Legacy summary. Before and after values were not recorded."
-            : "No field-level comparison is available for this event."}
+            ? uiText(
+                "Legacy summary. Before and after values were not recorded.",
+              )
+            : uiText("No field-level comparison is available for this event.")}
         </HelpText>
       )}
       {event.resource_available && (
@@ -646,7 +674,7 @@ function AuditDetails({
           }
         >
           <ExternalLink size={15} />
-          Open item
+          <I18nText id="Open item" />
         </WorkspaceLink>
       )}
       {event.version_id &&
@@ -656,32 +684,34 @@ function AuditDetails({
               className="button secondary"
               to={`/files/${event.entity_id}?version=${event.version_id}`}
             >
-              Open retained file version
+              <I18nText id="Open retained file version" />
             </WorkspaceLink>
           ) : (
             <Button
               className="button secondary"
               onClick={() => setCompare((v) => !v)}
             >
-              {compare ? "Hide" : "Compare"} saved version
+              {compare ? uiText("Hide") : uiText("Compare")}{" "}
+              <I18nText id="saved version" />
             </Button>
           )
         ) : (
           <HelpText>
-            The version body has expired, was purged, or is no longer
-            accessible. Its metadata remains in history.
+            <I18nText id="The version body has expired, was purged, or is no longer accessible. Its metadata remains in history." />
           </HelpText>
         ))}
       <ErrorNotice message={version.error} retry={version.reload} />
       {compare && version.data && (
         <div className="audit-version-comparison">
-          <h4>Changes from the previous retained version</h4>
+          <h4>
+            <I18nText id="Changes from the previous retained version" />
+          </h4>
           {!version.data.previous_body && (
             <HelpText>
-              No earlier retained body. This version is shown as added text.
+              <I18nText id="No earlier retained body. This version is shown as added text." />
             </HelpText>
           )}
-          <pre aria-label="Saved version line comparison">
+          <pre aria-label={uiText("Saved version line comparison")}>
             {auditVersionDiff(
               version.data.previous_body ?? "",
               version.data.body,

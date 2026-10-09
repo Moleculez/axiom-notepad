@@ -6,6 +6,9 @@ preferences; it must not impose fixed brand colors on document or account themes
 Use [theme authoring criteria](THEME_AUTHORING.md) for reviewed pack extensions.
 The [shared UI contract](UI_CONTROLS.md) is required for control implementations,
 numeric validation, action hierarchy, dialogs and screenshot acceptance.
+Follow [localization criteria](LOCALIZATION.md) for whole messages, script
+fallbacks, bidirectional chrome and source-preserving switches. Use logical
+spacing/alignment; do not mirror scientific content or diagram geometry.
 
 ## Principles
 
@@ -233,16 +236,16 @@ radius or elevation. A palette, font or document pack is never a prerequisite fo
 recognizing the style. Production and showcase consume the same recipe and
 presentation roles, including their outer shells and dialogs.
 
-| System | Chrome and hierarchy | Fields and selection |
-| --- | --- | --- |
-| Axiom | Balanced scientific workspace; restrained separators | Quiet fields and understated selected rows |
-| Contour | Broad tonal plates and softly grouped actions | Tonal shells and solid selection plates |
-| Vector | Architectural frames, edge rails and segmented chrome | Outlined fields and leading-edge selection cues |
-| Folio | Continuous paper, publication rules and flat overlays | Straight ruled fields and underline selection |
-| Harbor | Banded headers and recessed control groups | Inset fields and coordinated grouped selection |
-| Signal | Contrasting navigation and instrument-like compartments | Separated icon tracks and emphatic action edges |
-| Gridwork | Fine decorative lattice, brackets and precise rules | Ruled field frames and bracketed selection |
-| Cutline | Strong graphic edges and diagonal chrome accents | Bold straight field edges and offset selected framing |
+| System   | Chrome and hierarchy                                    | Fields and selection                                  |
+| -------- | ------------------------------------------------------- | ----------------------------------------------------- |
+| Axiom    | Balanced scientific workspace; restrained separators    | Quiet fields and understated selected rows            |
+| Contour  | Broad tonal plates and softly grouped actions           | Tonal shells and solid selection plates               |
+| Vector   | Architectural frames, edge rails and segmented chrome   | Outlined fields and leading-edge selection cues       |
+| Folio    | Continuous paper, publication rules and flat overlays   | Straight ruled fields and underline selection         |
+| Harbor   | Banded headers and recessed control groups              | Inset fields and coordinated grouped selection        |
+| Signal   | Contrasting navigation and instrument-like compartments | Separated icon tracks and emphatic action edges       |
+| Gridwork | Fine decorative lattice, brackets and precise rules     | Ruled field frames and bracketed selection            |
+| Cutline  | Strong graphic edges and diagonal chrome accents        | Bold straight field edges and offset selected framing |
 
 Every complete system covers actions, text/search/numeric fields, selectors,
 checkboxes/switches/radios/sliders, tabs, menus, dialogs, navigation, item rows and

@@ -1,10 +1,13 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { Button, TextInput } from "../ui/controls";
 import { useEffect, useState } from "react";
 import type { Space } from "@axiom/shared/workspace";
 import { api } from "../../lib/client";
 import { ErrorNotice, useData } from "../workspace/ui";
 export default function ReferencePrefix({ space }: { space: Space }) {
+  useInterfaceLocale();
   const data = useData<{ reference_prefix: string | null }>(
     `spaces/${space.id}/reference-prefix`,
   );
@@ -17,11 +20,11 @@ export default function ReferencePrefix({ space }: { space: Space }) {
   }, [data.data]);
   return (
     <section className="settings-card">
-      <h2>File reference codes</h2>
+      <h2>
+        <I18nText id="File reference codes" />
+      </h2>
       <p>
-        Give new notes and files a readable identity, such as LAB-42. Existing
-        codes stay unchanged when files are renamed, moved, or the prefix
-        changes.
+        <I18nText id="Give new notes and files a readable identity, such as LAB-42. Existing codes stay unchanged when files are renamed, moved, or the prefix changes." />
       </p>
       <ErrorNotice message={error || data.error} />
       <form
@@ -46,15 +49,15 @@ export default function ReferencePrefix({ space }: { space: Space }) {
         }}
       >
         <label>
-          Prefix
+          <I18nText id="Prefix" />
           <TextInput
-            aria-label="File code prefix"
+            aria-label={uiText("File code prefix")}
             value={prefix}
             disabled={!space.can_manage}
             maxLength={12}
             pattern="[A-Z][A-Z0-9]{1,11}"
             onChange={(event) => setPrefix(event.target.value.toUpperCase())}
-            placeholder="LAB"
+            placeholder={uiText("LAB")}
           />
         </label>
         {space.can_manage && (
@@ -62,7 +65,7 @@ export default function ReferencePrefix({ space }: { space: Space }) {
             className="button secondary"
             disabled={busy || !/^[A-Z][A-Z0-9]{1,11}$/.test(prefix)}
           >
-            Save prefix
+            <I18nText id="Save prefix" />
           </Button>
         )}
       </form>

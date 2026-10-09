@@ -3,6 +3,13 @@ import type { EditorPreferences } from "@axiom/shared/editor";
 
 export const settingsCategories = [
   {
+    id: "language",
+    group: "Account",
+    label: "Language",
+    description:
+      "Choose the language of menus, controls and messages. Your documents are not translated.",
+  },
+  {
     id: "extensions",
     group: "Extensions",
     label: "Extensions",

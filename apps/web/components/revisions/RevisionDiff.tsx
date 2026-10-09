@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { Button, Checkbox, IconButton, Slider } from "../ui/controls";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowDown, ArrowUp, Columns2, Rows2 } from "lucide-react";
@@ -28,6 +30,7 @@ export default function RevisionDiff({
   before: RevisionContent;
   after: RevisionContent;
 }) {
+  useInterfaceLocale();
   const [mode, setMode] = useState<"rendered" | "source">("rendered"),
     [split, setSplit] = useState(true),
     [whitespace, setWhitespace] = useState(false),
@@ -157,7 +160,9 @@ export default function RevisionDiff({
         <code>
           {pieces}
           {(line?.text.length ?? 0) > 20000 && (
-            <em>… long line truncated; export to read all characters.</em>
+            <em>
+              <I18nText id="… long line truncated; export to read all characters." />
+            </em>
           )}
         </code>
       </div>
@@ -166,11 +171,17 @@ export default function RevisionDiff({
   const raw = () => (
     <div
       className={"revision-source-grid" + (split ? " is-split" : "")}
-      aria-label="Source differences"
+      aria-label={uiText("Source differences")}
     >
       <div className="revision-source-row revision-source-head">
-        <span>Before</span>
-        {split && <span>After</span>}
+        <span>
+          <I18nText id="Before" />
+        </span>
+        {split && (
+          <span>
+            <I18nText id="After" />
+          </span>
+        )}
       </div>
       {lines.slice(0, limit).map((r, index) =>
         r.omitted ? (
@@ -179,7 +190,7 @@ export default function RevisionDiff({
             key={index}
             onClick={() => setAll(true)}
           >
-            Show {r.omitted} unchanged lines
+            <I18nText id="Show" /> {r.omitted} <I18nText id="unchanged lines" />
           </button>
         ) : (
           <div className="revision-source-row" key={index}>
@@ -245,20 +256,20 @@ export default function RevisionDiff({
       <div
         className="revision-compare-toolbar"
         role="toolbar"
-        aria-label="Comparison options"
+        aria-label={uiText("Comparison options")}
       >
         <div className="ws-segmented">
           <button
             aria-pressed={mode === "rendered"}
             onClick={() => setMode("rendered")}
           >
-            Rendered
+            <I18nText id="Rendered" />
           </button>
           <button
             aria-pressed={mode === "source"}
             onClick={() => setMode("source")}
           >
-            Source
+            <I18nText id="Source" />
           </button>
         </div>
         <Button
@@ -267,18 +278,18 @@ export default function RevisionDiff({
           onClick={() => setSplit(!split)}
         >
           {split ? <Columns2 size={15} /> : <Rows2 size={15} />}
-          {split ? "Side by side" : "Unified"}
+          {split ? uiText("Side by side") : uiText("Unified")}
         </Button>
         <IconButton
           className="icon-button"
-          aria-label="Previous change"
+          aria-label={uiText("Previous change")}
           onClick={() => jump(-1)}
         >
           <ArrowUp size={15} />
         </IconButton>
         <IconButton
           className="icon-button"
-          aria-label="Next change"
+          aria-label={uiText("Next change")}
           onClick={() => jump(1)}
         >
           <ArrowDown size={15} />
@@ -289,7 +300,7 @@ export default function RevisionDiff({
               checked={all}
               onChange={(e) => setAll(e.target.checked)}
             />
-            Show unchanged lines
+            <I18nText id="Show unchanged lines" />
           </label>
         )}
         {!rendered && (
@@ -298,25 +309,23 @@ export default function RevisionDiff({
               checked={whitespace}
               onChange={(e) => setWhitespace(e.target.checked)}
             />
-            Hide whitespace-only lines
+            <I18nText id="Hide whitespace-only lines" />
           </label>
         )}
       </div>
       <ErrorNotice message={error} />
       {!comparison && !error ? (
-        <Loading label="Comparing revisions…" />
+        <Loading label={uiText("Comparing revisions…")} />
       ) : (
         <>
           {comparison?.diff.coarse && (
             <p className="revision-notice">
-              Large change: some regions use a coarse comparison. Both sources
-              remain complete.
+              <I18nText id="Large change: some regions use a coarse comparison. Both sources remain complete." />
             </p>
           )}
           {mode === "rendered" && !rendered && (
             <p className="revision-notice">
-              Source view is used for raw text and revisions above 200,000
-              characters.
+              <I18nText id="Source view is used for raw text and revisions above 200,000 characters." />
             </p>
           )}
           <div
@@ -331,7 +340,7 @@ export default function RevisionDiff({
             comparison.afterParsed ? (
               <div
                 className="revision-unified"
-                aria-label="Unified rendered differences"
+                aria-label={uiText("Unified rendered differences")}
               >
                 {comparison.blocks.map((group, i) => {
                   const parsed =
@@ -351,7 +360,9 @@ export default function RevisionDiff({
                     >
                       {group.kind !== "equal" && (
                         <span className="revision-block-label">
-                          {group.kind === "remove" ? "Removed" : "Added"}
+                          {group.kind === "remove"
+                            ? uiText("Removed")
+                            : uiText("Added")}
                         </span>
                       )}
                       <ReadingView
@@ -374,7 +385,9 @@ export default function RevisionDiff({
                 {comparison.beforeParsed.definitions?.length ||
                 comparison.afterParsed.definitions?.length ? (
                   <details>
-                    <summary>Footnote definitions · before and after</summary>
+                    <summary>
+                      <I18nText id="Footnote definitions · before and after" />
+                    </summary>
                     {[comparison.beforeParsed, comparison.afterParsed].map(
                       (p, i) => (
                         <ReadingView
@@ -411,22 +424,22 @@ export default function RevisionDiff({
                 className="button secondary"
                 onClick={() => setLimit((n) => n + 200)}
               >
-                Show more comparison regions
+                <I18nText id="Show more comparison regions" />
               </Button>
             )}
           </div>
           {before.format === "latex" && (
             <details className="revision-settings">
               <summary>
-                Project settings{" "}
+                <I18nText id="Project settings" />{" "}
                 {JSON.stringify(before.settings) ===
                 JSON.stringify(after.settings)
-                  ? "(unchanged)"
-                  : "(changed)"}
+                  ? uiText("(unchanged)")
+                  : uiText("(changed)")}
               </summary>
               {!before.settings && (
                 <p>
-                  Historical checkpoint: project settings were not recorded.
+                  <I18nText id="Historical checkpoint: project settings were not recorded." />
                 </p>
               )}
               <pre>
@@ -440,7 +453,7 @@ export default function RevisionDiff({
           )}
           {!spans.some((s) => s.kind !== "equal") && (
             <p className="revision-notice">
-              No source changes between these revisions.
+              <I18nText id="No source changes between these revisions." />
             </p>
           )}
         </>
@@ -456,6 +469,7 @@ function ImageComparison({
   before: RevisionContent;
   after: RevisionContent;
 }) {
+  useInterfaceLocale();
   const [wipe, setWipe] = useState(false),
     [position, setPosition] = useState(50),
     [zoom, setZoom] = useState(1);
@@ -483,12 +497,12 @@ function ImageComparison({
           aria-pressed={wipe}
           onClick={() => setWipe(!wipe)}
         >
-          {wipe ? "Wipe comparison" : "Side by side"}
+          {wipe ? uiText("Wipe comparison") : uiText("Side by side")}
         </Button>
         <label>
-          Zoom
+          <I18nText id="Zoom" />
           <Slider
-            aria-label="Comparison zoom"
+            aria-label={uiText("Comparison zoom")}
             aria-valuetext={`${Math.round(zoom * 100)}%`}
 
             min=".25"
@@ -499,13 +513,13 @@ function ImageComparison({
           />
         </label>
         <Button className="button ghost" onClick={() => setZoom(1)}>
-          Fit images
+          <I18nText id="Fit images" />
         </Button>
         {wipe && (
           <label>
-            Reveal
+            <I18nText id="Reveal" />
             <Slider
-              aria-label="Image comparison reveal"
+              aria-label={uiText("Image comparison reveal")}
               aria-valuetext={`${position}%`}
 
               min="0"
@@ -544,8 +558,8 @@ function ImageComparison({
         {describe(after)}
         <br />
         {before.hash === after.hash
-          ? "These saved images have the same content checksum."
-          : "Saved image revisions · original files are unchanged."}
+          ? uiText("These saved images have the same content checksum.")
+          : uiText("Saved image revisions · original files are unchanged.")}
       </p>
     </div>
   );

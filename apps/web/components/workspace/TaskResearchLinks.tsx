@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import { Button, IconButton, HelpText } from "../ui/controls";
@@ -17,6 +19,7 @@ export default function TaskResearchLinks({
   taskId: string;
   readOnly: boolean;
 }) {
+  useInterfaceLocale();
   const { revision, refresh } = useWorkspace(),
     action = useAction(),
     data = useData<ResearchTaskLink[]>(
@@ -30,8 +33,13 @@ export default function TaskResearchLinks({
   } | null>(null);
   if (!data.data?.length && !data.error) return null;
   return (
-    <section className="task-paper-links" aria-label="Linked research sources">
-      <h3>Research sources</h3>
+    <section
+      className="task-paper-links"
+      aria-label={uiText("Linked research sources")}
+    >
+      <h3>
+        <I18nText id="Research sources" />
+      </h3>
       <ErrorNotice message={action.error || data.error} retry={data.reload} />
       {data.data?.map((link) => (
         <div key={link.id}>
@@ -72,12 +80,12 @@ export default function TaskResearchLinks({
               {link.source_kind === "manuscript"
                 ? link.label || "Saved manuscript"
                 : `Reference v${link.version}`}
-              {!link.available ? " · unavailable" : ""}
+              {!link.available ? uiText(" · unavailable") : ""}
             </small>
           </Button>
           {!readOnly && (
             <IconButton
-              label="Remove research link"
+              label={uiText("Remove research link")}
               disabled={action.busy}
               onClick={() =>
                 void action.run(async () => {
@@ -98,13 +106,14 @@ export default function TaskResearchLinks({
       {source && (
         <Dialog
           title={source.title}
-          subtitle="Immutable linked source · never substituted with the current version"
+          subtitle={uiText(
+            "Immutable linked source · never substituted with the current version",
+          )}
           wide
           onClose={() => setSource(null)}
         >
           <HelpText>
-            Images and external resources are disabled in this isolated source
-            preview.
+            <I18nText id="Images and external resources are disabled in this isolated source preview." />
           </HelpText>
           {source.markdown ? (
             <PlanningMarkdown
@@ -114,14 +123,14 @@ export default function TaskResearchLinks({
               readOnly
               preview
               isolated
-              label="Linked manuscript"
+              label={uiText("Linked manuscript")}
             />
           ) : (
             <pre className="reference-original">{source.body}</pre>
           )}
           <DialogFooter>
             <Button variant="secondary" onClick={() => setSource(null)}>
-              Close
+              <I18nText id="Close" />
             </Button>
           </DialogFooter>
         </Dialog>

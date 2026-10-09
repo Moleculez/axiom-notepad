@@ -20,7 +20,7 @@ const origin = "http://localhost:8080";
 let cookies: Awaited<ReturnType<BrowserContext["cookies"]>>;
 const fingerprint = createHash("sha256");
 for (const file of [
-  "apps/web/next.config.ts",
+  "apps/web/next.config.mjs",
   "apps/web/lib/editor-view.ts",
   "apps/web/lib/editor-vnext/view.ts",
   "apps/web/lib/editor-vnext/language-menu.ts",

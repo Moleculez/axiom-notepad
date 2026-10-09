@@ -1,4 +1,7 @@
 "use client";
+import { currentLocale } from "@axiom/i18n/client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import {
   Button,
   HelpText,
@@ -119,6 +122,7 @@ export default function WorkspacesPage({
   id?: string;
   section?: string;
 }) {
+  useInterfaceLocale();
   const { revision, navigate } = useWorkspace(),
     management = useManagement();
   const data = useData<Space[]>("spaces?manage=1&summary=1", revision),
@@ -161,64 +165,73 @@ export default function WorkspacesPage({
   if (!id)
     return (
       <main className="ws-page console-page">
-        <PageHeading eyebrow="YOUR ORGANIZATION" title="Workspaces">
-          One place for shared libraries, project access, storage and lifecycle.
-          Personal research stays account-owned.
+        <PageHeading eyebrow="YOUR ORGANIZATION" title={uiText("Workspaces")}>
+          <I18nText id="One place for shared libraries, project access, storage and lifecycle. Personal research stays account-owned." />
         </PageHeading>
         <div className="console-toolbar">
           <label className="console-search">
-            Find a workspace
+            <I18nText id="Find a workspace" />
             <TextInput
               type="search"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Name or description…"
+              placeholder={uiText("Name or description…")}
             />
           </label>
           <label>
-            Status
+            <I18nText id="Status" />
             <NativeSelect
               value={status}
               onChange={(e) => setStatus(e.target.value)}
             >
-              <option value="">All states</option>
+              <option value="">
+                <I18nText id="All states" />
+              </option>
               {["active", "archived", "trashed", "purging"].map((v) => (
                 <option key={v}>{v}</option>
               ))}
             </NativeSelect>
           </label>
           <label>
-            Kind
+            <I18nText id="Kind" />
             <NativeSelect
               value={kind}
               onChange={(e) => setKind(e.target.value)}
             >
-              <option value="">All workspaces</option>
+              <option value="">
+                <I18nText id="All workspaces" />
+              </option>
               {["personal", "team", "project"].map((v) => (
                 <option key={v}>{v}</option>
               ))}
             </NativeSelect>
           </label>
           <label>
-            Access
+            <I18nText id="Access" />
             <NativeSelect
               value={role}
               onChange={(e) => setRole(e.target.value)}
             >
-              <option value="">All roles</option>
-              <option value="manage">Can manage</option>
+              <option value="">
+                <I18nText id="All roles" />
+              </option>
+              <option value="manage">
+                <I18nText id="Can manage" />
+              </option>
               {["editor", "commenter", "viewer"].map((v) => (
                 <option key={v}>{v}</option>
               ))}
             </NativeSelect>
           </label>
           <label>
-            Group
+            <I18nText id="Group" />
             <NativeSelect
               value={group}
               onChange={(e) => setGroup(e.target.value)}
             >
-              <option value="">All groups</option>
+              <option value="">
+                <I18nText id="All groups" />
+              </option>
               {data.data
                 ?.filter((s) => s.kind === "team")
                 .map((s) => (
@@ -229,18 +242,22 @@ export default function WorkspacesPage({
             </NativeSelect>
           </label>
           <label>
-            Sort
+            <I18nText id="Sort" />
             <NativeSelect
               value={sort}
               onChange={(e) => setSort(e.target.value)}
             >
-              <option value="name">Name A–Z</option>
-              <option value="storage">Largest storage first</option>
+              <option value="name">
+                <I18nText id="Name A–Z" />
+              </option>
+              <option value="storage">
+                <I18nText id="Largest storage first" />
+              </option>
             </NativeSelect>
           </label>
           <WorkspaceLink className="button primary" to="/groups">
             <Plus size={16} />
-            Create or join
+            <I18nText id="Create or join" />
           </WorkspaceLink>
         </div>
         <ErrorNotice message={data.error} retry={data.reload} />
@@ -282,8 +299,14 @@ export default function WorkspacesPage({
                       : "A shared home for research and collaboration.")}
                 </p>
                 <div className="console-card-meta">
-                  {s.item_count != null && <span>{s.item_count} items</span>}
-                  <span>{bytes(s.stored_bytes ?? 0)} stored</span>
+                  {s.item_count != null && (
+                    <span>
+                      {s.item_count} <I18nText id="items" />
+                    </span>
+                  )}
+                  <span>
+                    {bytes(s.stored_bytes ?? 0)} <I18nText id="stored" />
+                  </span>
                   <span>
                     {s.kind}
                     {s.group_name && s.kind === "project"
@@ -292,22 +315,21 @@ export default function WorkspacesPage({
                   </span>
                   <span>
                     {s.role === "editor"
-                      ? "Can edit"
+                      ? uiText("Can edit")
                       : s.role === "commenter"
                         ? "Can comment"
                         : s.role === "viewer"
                           ? "Read only"
                           : "No content access"}
-                    {s.can_manage ? " · Manager" : ""}
+                    {s.can_manage ? uiText(" · Manager") : ""}
                   </span>
                 </div>
               </article>
             ))}
           </div>
         ) : (
-          <Empty title="No matching workspaces" icon={Blocks}>
-            Adjust your filters, or create or join a group to start
-            collaborating.
+          <Empty title={uiText("No matching workspaces")} icon={Blocks}>
+            <I18nText id="Adjust your filters, or create or join a group to start collaborating." />
           </Empty>
         )}
       </main>
@@ -316,15 +338,15 @@ export default function WorkspacesPage({
     <main className="ws-page console-page">
       <WorkspaceLink className="text-button" to="/workspaces">
         <ArrowLeft size={15} />
-        All workspaces
+        <I18nText id="All workspaces" />
       </WorkspaceLink>
       <ErrorNotice message={detail.error} retry={detail.reload} />
       {!space ? (
         detail.loading ? (
           <Loading />
         ) : (
-          <Empty title="Workspace unavailable">
-            Your access may have changed.
+          <Empty title={uiText("Workspace unavailable")}>
+            <I18nText id="Your access may have changed." />
           </Empty>
         )
       ) : (
@@ -338,11 +360,13 @@ export default function WorkspacesPage({
           </PageHeading>
           <div className="console-toolbar">
             <Badge>
-              {space.can_manage ? "Management access" : `${space.role} access`}
+              {space.can_manage
+                ? uiText("Management access")
+                : `${space.role} access`}
             </Badge>
             {!space.role && (
               <HelpText as="span">
-                Management access does not grant access to private contents.
+                <I18nText id="Management access does not grant access to private contents." />
               </HelpText>
             )}
             {space.role && (
@@ -351,7 +375,7 @@ export default function WorkspacesPage({
                 to={`/explorer?space=${space.id}`}
               >
                 <FolderOpen size={16} />
-                Open files
+                <I18nText id="Open files" />
               </WorkspaceLink>
             )}
             {detail.data?.parentId && (
@@ -359,13 +383,13 @@ export default function WorkspacesPage({
                 className="text-button"
                 to={`/workspaces/${detail.data.parentId}/overview`}
               >
-                Parent group: {space.group_name}
+                <I18nText id="Parent group:" /> {space.group_name}
               </WorkspaceLink>
             )}
             <IconButton
               className="icon-button"
-              title="Workspace actions"
-              aria-label="Workspace actions"
+              title={uiText("Workspace actions")}
+              aria-label={uiText("Workspace actions")}
               onClick={(e) => management.workspaceMenu(e, space)}
             >
               <MoreHorizontal size={18} />
@@ -373,7 +397,7 @@ export default function WorkspacesPage({
           </div>
           <nav
             className="page-section-navigation"
-            aria-label="Workspace sections"
+            aria-label={uiText("Workspace sections")}
           >
             {workspaceSections.map(([key, label, Icon]) => (
               <WorkspaceLink
@@ -404,18 +428,19 @@ export default function WorkspacesPage({
               <ProviderSettings groupId={space.group_id} />
             ) : (
               <Empty
-                title="Group administrator access required"
+                title={uiText("Group administrator access required")}
                 icon={ShieldCheck}
               >
-                Provider settings are shared at group level. Credentials are
-                never included in Audit.
+                <I18nText id="Provider settings are shared at group level. Credentials are never included in Audit." />
               </Empty>
             )
           ) : ["people", "invitations", "general"].includes(section) ? (
             space.kind === "personal" ? (
-              <Empty title="Your personal workspace" icon={ShieldCheck}>
-                Only you can access this library. Manage your identity in
-                account settings.
+              <Empty
+                title={uiText("Your personal workspace")}
+                icon={ShieldCheck}
+              >
+                <I18nText id="Only you can access this library. Manage your identity in account settings." />
               </Empty>
             ) : space.kind === "team" ? (
               space.can_manage ? (
@@ -435,8 +460,8 @@ export default function WorkspacesPage({
                   }
                 />
               ) : (
-                <Empty title="Administrator access required">
-                  Ask the group owner to update membership or settings.
+                <Empty title={uiText("Administrator access required")}>
+                  <I18nText id="Ask the group owner to update membership or settings." />
                 </Empty>
               )
             ) : section === "general" ? (
@@ -450,24 +475,25 @@ export default function WorkspacesPage({
                   }}
                 />
               ) : (
-                <Empty title="Settings are read-only">
-                  Restore this workspace and use a manager account to make
-                  changes.
+                <Empty title={uiText("Settings are read-only")}>
+                  <I18nText id="Restore this workspace and use a manager account to make changes." />
                 </Empty>
               )
             ) : section === "invitations" ? (
               <div className="settings-card">
-                <h3>Invite through the parent group</h3>
+                <h3>
+                  <I18nText id="Invite through the parent group" />
+                </h3>
                 <p>
-                  People must first join {space.group_name}, then receive
-                  explicit project access when its audience is restricted.
+                  <I18nText id="People must first join" /> {space.group_name}
+                  <I18nText id=", then receive explicit project access when its audience is restricted." />
                 </p>
                 <WorkspaceLink
                   className="button secondary"
                   to={`/workspaces/${detail.data?.parentId}/invitations`}
                 >
                   <Users size={16} />
-                  Group invitations
+                  <I18nText id="Group invitations" />
                 </WorkspaceLink>
               </div>
             ) : (
@@ -486,10 +512,14 @@ export default function WorkspacesPage({
                 {Object.entries(detail.data!.counts).map(([key, value]) => (
                   <div key={key}>
                     <span>
-                      {key === "bytes" ? "Stored files & versions" : key}
+                      {key === "bytes"
+                        ? uiText("Stored files & versions")
+                        : key}
                     </span>
                     <strong>
-                      {key === "bytes" ? bytes(value) : value.toLocaleString()}
+                      {key === "bytes"
+                        ? bytes(value)
+                        : value.toLocaleString(currentLocale())}
                     </strong>
                   </div>
                 ))}
@@ -497,10 +527,14 @@ export default function WorkspacesPage({
               <div className="console-directory">
                 <section className="settings-card">
                   <ShieldCheck size={22} />
-                  <h3>Access & ownership</h3>
+                  <h3>
+                    <I18nText id="Access & ownership" />
+                  </h3>
                   <p>
                     {space.kind === "personal"
-                      ? "Personal space cannot be archived, transferred or removed with a group."
+                      ? uiText(
+                          "Personal space cannot be archived, transferred or removed with a group.",
+                        )
                       : space.audience === "restricted"
                         ? "Only explicitly invited project members can read content. Group managers can administer without reading."
                         : "Membership determines access. Changes take effect across files, notes and live collaboration."}
@@ -509,23 +543,23 @@ export default function WorkspacesPage({
                     className="text-button"
                     onClick={() => navigate(`/workspaces/${space.id}/people`)}
                   >
-                    Review people and access
+                    <I18nText id="Review people and access" />
                     <ArrowUpRight size={14} />
                   </button>
                 </section>
                 <section className="settings-card">
                   <History size={22} />
-                  <h3>History & recovery</h3>
+                  <h3>
+                    <I18nText id="History & recovery" />
+                  </h3>
                   <p>
-                    Audit records metadata changes permanently. Trash has no
-                    automatic expiry. Permanent removal is protected by
-                    reference checks.
+                    <I18nText id="Audit records metadata changes permanently. Trash has no automatic expiry. Permanent removal is protected by reference checks." />
                   </p>
                   <WorkspaceLink
                     className="text-button"
                     to={`/workspaces/${space.id}/activity`}
                   >
-                    Review activity
+                    <I18nText id="Review activity" />
                     <ArrowUpRight size={14} />
                   </WorkspaceLink>
                 </section>
@@ -545,6 +579,7 @@ export function WorkspaceLifecycle({
   space: Space;
   parentId: string | null;
 }) {
+  useInterfaceLocale();
   const { revision, refresh, notify } = useWorkspace(),
     [operation, setOperation] = useState<SpaceLifecycleAction | null>(null);
   const data = useData<{
@@ -571,39 +606,43 @@ export function WorkspaceLifecycle({
     <section className="console-lifecycle">
       <HelpText>
         {space.kind === "personal"
-          ? "Personal space is protected and cannot be archived or deleted."
+          ? uiText(
+              "Personal space is protected and cannot be archived or deleted.",
+            )
           : space.kind === "team"
             ? "This is the group's default workspace. You can archive or trash it independently; permanent removal is protected to preserve group services. Group-wide actions are in Group administration."
             : "Archive for read-only access. Trash is recoverable indefinitely. Permanent deletion is owner-only, checks retained research references, and has a 30-second cancellation window."}
       </HelpText>
       {parentId && space.parent_status !== "active" && (
         <div className="settings-card">
-          <h3>State inherited from the parent group</h3>
+          <h3>
+            <I18nText id="State inherited from the parent group" />
+          </h3>
           <p>
-            Restore the parent workspace before managing this project. Its own
-            archived or active state is preserved.
+            <I18nText id="Restore the parent workspace before managing this project. Its own archived or active state is preserved." />
           </p>
           <WorkspaceLink
             className="button secondary"
             to={`/workspaces/${parentId}/lifecycle`}
           >
-            Manage parent workspace
+            <I18nText id="Manage parent workspace" />
           </WorkspaceLink>
         </div>
       )}
       <ErrorNotice message={data.error} retry={data.reload} />
       {data.data?.job && (
         <p role="status">
-          Removal job: {data.data.job.status}
+          <I18nText id="Removal job:" /> {data.data.job.status}
           {data.data.job.error ? ` · ${data.data.job.error}` : ""}
         </p>
       )}
       {!!data.data?.blockers.length && (
         <div className="settings-card">
-          <h3>Protected research & unfinished work</h3>
+          <h3>
+            <I18nText id="Protected research & unfinished work" />
+          </h3>
           <p>
-            These references must be resolved before permanent removal. They do
-            not prevent recovery.
+            <I18nText id="These references must be resolved before permanent removal. They do not prevent recovery." />
           </p>
           <ul>
             {data.data.blockers.map((b) => (
@@ -621,7 +660,9 @@ export function WorkspaceLifecycle({
               <h3>{labels[a]}</h3>
               <p>
                 {a === "purge"
-                  ? "Removes owned content and eligible versions. Audit metadata remains."
+                  ? uiText(
+                      "Removes owned content and eligible versions. Audit metadata remains.",
+                    )
                   : a === "trash"
                     ? "Hide only this workspace. Other workspaces and group membership are unchanged."
                     : a === "archive"

@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { Button } from "./ui/controls";
 import { confirmAction } from "../lib/app-prompt";
 import { useEffect, useState } from "react";
@@ -38,6 +40,7 @@ export default function ResearchDataSettings({
   onOpenPaper: (paper: CachedPaper) => void;
   onOpenBookmark: (item: ReadingItem) => void;
 }) {
+  useInterfaceLocale();
   const [estimate, setEstimate] = useState<StorageEstimate>({}),
     [message, setMessage] = useState("");
   useEffect(() => {
@@ -65,22 +68,21 @@ export default function ResearchDataSettings({
       <section className="settings-card">
         <h3>
           <HardDrive size={20} />
-          Offline papers on this device
+          <I18nText id="Offline papers on this device" />
         </h3>
         <p className="muted">
-          Only papers you choose are downloaded. Browser storage is not an
-          encrypted vault; use a trusted device. Offline copies cannot be
-          remotely recalled. Signing out clears this account’s cached research.
+          <I18nText id="Only papers you choose are downloaded. Browser storage is not an encrypted vault; use a trusted device. Offline copies cannot be remotely recalled. Signing out clears this account’s cached research." />
         </p>
         <div className="storage-meter">
           <strong>
-            {size(research.papers.reduce((n, p) => n + p.meta.bytes, 0))} in{" "}
-            {research.papers.length} papers
+            {size(research.papers.reduce((n, p) => n + p.meta.bytes, 0))}{" "}
+            <I18nText id="in" /> {research.papers.length}{" "}
+            <I18nText id="papers" />
           </strong>
           <span>
             {estimate.usage !== undefined
               ? `${size(estimate.usage)} total site storage / ${size(estimate.quota ?? 0)} estimated quota`
-              : "Storage estimates are unavailable in this browser."}
+              : uiText("Storage estimates are unavailable in this browser.")}
           </span>
         </div>
         {research.papers.map((p) => (
@@ -98,13 +100,13 @@ export default function ResearchDataSettings({
                 })
               }
             >
-              Unpin
+              <I18nText id="Unpin" />
             </button>
           </div>
         ))}
         {!research.papers.length && (
           <p className="muted">
-            Open a PDF and choose Keep offline to add it here.
+            <I18nText id="Open a PDF and choose Keep offline to add it here." />
           </p>
         )}
         <Button
@@ -127,17 +129,16 @@ export default function ResearchDataSettings({
               });
           }}
         >
-          Clear offline PDFs only
+          <I18nText id="Clear offline PDFs only" />
         </Button>
       </section>
       <section className="settings-card">
         <h3>
           <Bookmark size={20} />
-          Personal bookmarks
+          <I18nText id="Personal bookmarks" />
         </h3>
         <p className="muted">
-          Bookmarks in the current reading context. Reading positions resume
-          automatically.
+          <I18nText id="Bookmarks in the current reading context. Reading positions resume automatically." />
         </p>
         <BookmarkManager
           research={research}
@@ -146,16 +147,18 @@ export default function ResearchDataSettings({
         />
         {!bookmarks.length && (
           <p className="muted">
-            Bookmark a note section or a PDF page to return to it later.
+            <I18nText id="Bookmark a note section or a PDF page to return to it later." />
           </p>
         )}
       </section>
       <section className="settings-card">
-        <h3>Synchronization & personal export</h3>
+        <h3>
+          <I18nText id="Synchronization & personal export" />
+        </h3>
         <p role="status">{research.status}</p>
         <p>
-          {research.entries.filter((e) => e.pending).length} pending changes in
-          this reading context.
+          {research.entries.filter((e) => e.pending).length}{" "}
+          <I18nText id="pending changes in this reading context." />
         </p>
         <div className="button-row">
           <Button
@@ -163,7 +166,7 @@ export default function ResearchDataSettings({
             onClick={() => void work(() => research.sync())}
           >
             <RefreshCw size={15} />
-            Retry sync
+            <I18nText id="Retry sync" />
           </Button>
           <Button
             className="button secondary"
@@ -197,14 +200,11 @@ export default function ResearchDataSettings({
             }
           >
             <Download size={15} />
-            Export personal reading data
+            <I18nText id="Export personal reading data" />
           </Button>
         </div>
         <p className="muted">
-          Includes your cached bookmarks, reading state, owned annotations and
-          preferences across workspaces—not PDF files, other researchers’
-          annotations, account credentials, or history. Keep exports private.
-          Full restoration uses an administrator backup.
+          <I18nText id="Includes your cached bookmarks, reading state, owned annotations and preferences across workspaces—not PDF files, other researchers’ annotations, account credentials, or history. Keep exports private. Full restoration uses an administrator backup." />
         </p>
         {research.entries
           .filter((e) => e.error)
@@ -212,7 +212,7 @@ export default function ResearchDataSettings({
             <article className="research-conflict" key={entry.key}>
               <strong>
                 {entry.kind === "annotation"
-                  ? "Annotation"
+                  ? uiText("Annotation")
                   : (entry.value as ReadingItem).data.label || "Reading item"}
               </strong>
               <p>{entry.error}</p>
@@ -224,7 +224,7 @@ export default function ResearchDataSettings({
                       void work(() => research.resolve(entry, true))
                     }
                   >
-                    Retry this item
+                    <I18nText id="Retry this item" />
                   </Button>
                 )}
                 <Button
@@ -237,17 +237,18 @@ export default function ResearchDataSettings({
                     )
                   }
                 >
-                  Export local changes
+                  <I18nText id="Export local changes" />
                 </Button>
                 {Object.hasOwn(entry, "conflict") ? (
                   <>
                     <Button
+                      data-dialog-cancel
                       className="button secondary small"
                       onClick={() =>
                         void work(() => research.resolve(entry, true))
                       }
                     >
-                      Keep my changes
+                      <I18nText id="Keep my changes" />
                     </Button>
                     <Button
                       className="button secondary small"
@@ -255,7 +256,7 @@ export default function ResearchDataSettings({
                         void work(() => research.resolve(entry, false))
                       }
                     >
-                      Use server version
+                      <I18nText id="Use server version" />
                     </Button>
                   </>
                 ) : (
@@ -277,7 +278,7 @@ export default function ResearchDataSettings({
                         });
                     }}
                   >
-                    Discard local item
+                    <I18nText id="Discard local item" />
                   </Button>
                 )}
               </div>

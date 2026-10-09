@@ -1,4 +1,7 @@
 "use client";
+import { currentLocale } from "@axiom/i18n/client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import {
   Button,
   Checkbox,
@@ -83,6 +86,7 @@ export default function AssistantPanel({
   onClose: () => void;
   onWorkspace: (id: string) => void;
 }) {
+  useInterfaceLocale();
   const { session, spaces, revision, navigate, notify, refresh } =
       useWorkspace(),
     spaceId = intent.spaceId;
@@ -527,21 +531,23 @@ export default function AssistantPanel({
       <header className="assistant-header">
         <div>
           <MessageSquare size={18} />
-          <h2>Research assistant</h2>
+          <h2>
+            <I18nText id="Research assistant" />
+          </h2>
         </div>
         <div>
           <IconButton
             className="icon-button"
-            aria-label="Conversation history"
-            title="Conversation history"
+            aria-label={uiText("Conversation history")}
+            title={uiText("Conversation history")}
             onClick={() => setHistoryOpen(!historyOpen)}
           >
             <History size={16} />
           </IconButton>
           <IconButton
             className="icon-button"
-            aria-label="New conversation"
-            title="New conversation"
+            aria-label={uiText("New conversation")}
+            title={uiText("New conversation")}
             disabled={busy}
             onClick={newConversation}
           >
@@ -549,7 +555,7 @@ export default function AssistantPanel({
           </IconButton>
           <IconButton
             className="icon-button"
-            aria-label="Close assistant"
+            aria-label={uiText("Close assistant")}
             onClick={onClose}
           >
             <X size={17} />
@@ -558,18 +564,24 @@ export default function AssistantPanel({
       </header>
       <div className="assistant-mode-bar">
         <label>
-          Mode
+          <I18nText id="Mode" />
           <NativeSelect
-            aria-label="Assistant mode"
+            aria-label={uiText("Assistant mode")}
             value={assistantMode}
             disabled={busy || !!active}
             onChange={(e) =>
               setAssistantMode(e.target.value as typeof assistantMode)
             }
           >
-            <option value="ask">Ask</option>
-            <option value="prepare">Prepare changes</option>
-            <option value="suggest">Suggest edits</option>
+            <option value="ask">
+              <I18nText id="Ask" />
+            </option>
+            <option value="prepare">
+              <I18nText id="Prepare changes" />
+            </option>
+            <option value="suggest">
+              <I18nText id="Suggest edits" />
+            </option>
           </NativeSelect>
         </label>
         <AssistantWorkflows
@@ -584,9 +596,9 @@ export default function AssistantPanel({
       </div>
       <div className="assistant-scope">
         <label>
-          Workspace
+          <I18nText id="Workspace" />
           <NativeSelect
-            aria-label="Assistant workspace"
+            aria-label={uiText("Assistant workspace")}
             disabled={busy}
             value={spaceId}
             onChange={(e) => onWorkspace(e.target.value)}
@@ -599,14 +611,16 @@ export default function AssistantPanel({
           </NativeSelect>
         </label>
         <label>
-          Provider
+          <I18nText id="Provider" />
           <NativeSelect
-            aria-label="Assistant provider"
+            aria-label={uiText("Assistant provider")}
             disabled={busy}
             value={providerId}
             onChange={(e) => setProviderId(e.target.value)}
           >
-            <option value="">Choose a provider</option>
+            <option value="">
+              <I18nText id="Choose a provider" />
+            </option>
             {providers.data?.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name} · {p.model}
@@ -619,14 +633,16 @@ export default function AssistantPanel({
         <details className="assistant-group-scope">
           <summary>
             {scope.length === 1
-              ? "One workspace"
+              ? uiText("One workspace")
               : `${scope.length} selected group workspaces`}
           </summary>
           <HelpText>
             {discover
-              ? "Excerpts may be retrieved locally from these workspaces. Review each exact batch before it is sent."
-              : "Only selected evidence is sent."}{" "}
-            Start a new conversation to change this boundary.
+              ? uiText(
+                  "Excerpts may be retrieved locally from these workspaces. Review each exact batch before it is sent.",
+                )
+              : uiText("Only selected evidence is sent.")}{" "}
+            <I18nText id="Start a new conversation to change this boundary." />
           </HelpText>
           {spaces
             .filter(
@@ -660,9 +676,11 @@ export default function AssistantPanel({
       {historyOpen && (
         <section
           className="assistant-history"
-          aria-label="Private conversation history"
+          aria-label={uiText("Private conversation history")}
         >
-          <p>Private · retained for 30 days</p>
+          <p>
+            <I18nText id="Private · retained for 30 days" />
+          </p>
           {history.data?.map((c) => (
             <button
               key={c.id}
@@ -678,7 +696,11 @@ export default function AssistantPanel({
               {c.title}
             </button>
           ))}
-          {!history.data?.length && <p>No recent conversations.</p>}
+          {!history.data?.length && (
+            <p>
+              <I18nText id="No recent conversations." />
+            </p>
+          )}
         </section>
       )}
       <div className="assistant-scroll">
@@ -687,33 +709,35 @@ export default function AssistantPanel({
           <p className="form-error" role="alert">
             {storageWarning}{" "}
             <button onClick={() => download("assistant-prompt.txt", prompt)}>
-              Export prompt
+              <I18nText id="Export prompt" />
             </button>
           </p>
         )}
         {!providers.loading && !providers.data?.length && (
           <section className="assistant-empty">
             <ShieldCheck size={26} />
-            <h3>Your research, your choice</h3>
+            <h3>
+              <I18nText id="Your research, your choice" />
+            </h3>
             <p>
-              A group administrator must enable the workspace assistant on a
-              processing provider. No research is sent automatically.
+              <I18nText id="A group administrator must enable the workspace assistant on a processing provider. No research is sent automatically." />
             </p>
             <Button
               className="button secondary"
               onClick={() => navigate("/settings/groups")}
             >
-              Provider settings
+              <I18nText id="Provider settings" />
             </Button>
           </section>
         )}
         {!conversation?.turns.length && providers.data?.length ? (
           <section className="assistant-empty">
             <BookOpen size={27} />
-            <h3>Keep the evidence close.</h3>
+            <h3>
+              <I18nText id="Keep the evidence close." />
+            </h3>
             <p>
-              Choose excerpts, ask a question, then review what leaves your
-              workspace.
+              <I18nText id="Choose excerpts, ask a question, then review what leaves your workspace." />
             </p>
             <div>
               {[
@@ -735,8 +759,8 @@ export default function AssistantPanel({
             <div>
               <IconButton
                 className="icon-button"
-                title="Rename conversation"
-                aria-label="Rename conversation"
+                title={uiText("Rename conversation")}
+                aria-label={uiText("Rename conversation")}
                 onClick={() =>
                   void run(async () => {
                     const title = await promptValue("Conversation title", {
@@ -760,8 +784,8 @@ export default function AssistantPanel({
               </IconButton>
               <IconButton
                 className="icon-button"
-                title="Export conversation"
-                aria-label="Export conversation"
+                title={uiText("Export conversation")}
+                aria-label={uiText("Export conversation")}
                 onClick={() =>
                   void run(async () => {
                     const v = await api<{ title: string; markdown: string }>(
@@ -779,8 +803,8 @@ export default function AssistantPanel({
               </IconButton>
               <IconButton
                 className="icon-button"
-                title="Delete private conversation"
-                aria-label="Delete private conversation"
+                title={uiText("Delete private conversation")}
+                aria-label={uiText("Delete private conversation")}
                 onClick={() =>
                   void run(async () => {
                     if (
@@ -831,29 +855,29 @@ export default function AssistantPanel({
                     })
                   }
                 >
-                  <Copy size={13} /> Copy answer
+                  <Copy size={13} /> <I18nText id="Copy answer" />
                 </button>
               </>
             )}
             {turn.warning && <Notice tone="warning">{turn.warning}</Notice>}
             {turn.usage && (
               <HelpText>
-                {turn.usage.requests} request(s) · input{" "}
-                {turn.usage.inputTokens ?? "unknown"}, output{" "}
-                {turn.usage.outputTokens ?? "unknown"} tokens
+                {turn.usage.requests} <I18nText id="request(s) · input" />{" "}
+                {turn.usage.inputTokens ?? "unknown"}
+                <I18nText id=", output" />{" "}
+                {turn.usage.outputTokens ?? "unknown"} <I18nText id="tokens" />
                 {turn.usage.missingUsage
-                  ? " · Some usage was not reported"
+                  ? uiText(" · Some usage was not reported")
                   : ""}
               </HelpText>
             )}
             {turn.status === "failed" && turn.recoveryFingerprint && (
               <section
                 className="assistant-awaiting"
-                aria-label="Local response recovery"
+                aria-label={uiText("Local response recovery")}
               >
                 <HelpText>
-                  The provider response is saved. Finish local processing
-                  without another provider call.
+                  <I18nText id="The provider response is saved. Finish local processing without another provider call." />
                 </HelpText>
                 <Button
                   type="button"
@@ -873,25 +897,24 @@ export default function AssistantPanel({
                     })
                   }
                 >
-                  Finish saved response
+                  <I18nText id="Finish saved response" />
                 </Button>
               </section>
             )}
             {turn.status === "awaiting-review" && (
               <section
                 className="assistant-awaiting"
-                aria-label="Awaiting context approval"
+                aria-label={uiText("Awaiting context approval")}
               >
                 <HelpText>
-                  New context is held locally. Review it before the next model
-                  call.
+                  <I18nText id="New context is held locally. Review it before the next model call." />
                 </HelpText>
                 <Button
                   type="button"
                   variant="primary"
                   onClick={() => setBatchReview(turn)}
                 >
-                  Review next batch
+                  <I18nText id="Review next batch" />
                 </Button>
                 <Button
                   type="button"
@@ -906,7 +929,7 @@ export default function AssistantPanel({
                     })
                   }
                 >
-                  Stop this run
+                  <I18nText id="Stop this run" />
                 </Button>
               </section>
             )}
@@ -914,7 +937,7 @@ export default function AssistantPanel({
               <details className="assistant-activity">
                 <summary>
                   {turn.activity.at(-1)?.message} · {turn.round}/
-                  {turn.budget?.maxRounds ?? 8} rounds
+                  {turn.budget?.maxRounds ?? 8} <I18nText id="rounds" />
                 </summary>
                 <ol>
                   {turn.activity.map((item, i) => (
@@ -926,18 +949,21 @@ export default function AssistantPanel({
             {turn.changeSetId && (
               <section className="assistant-proposal">
                 <header>
-                  <strong>Workspace changes</strong>
-                  <span>Review required</span>
+                  <strong>
+                    <I18nText id="Workspace changes" />
+                  </strong>
+                  <span>
+                    <I18nText id="Review required" />
+                  </span>
                 </header>
                 <p>
-                  Review files, diffs, destinations and planning impact before
-                  applying.
+                  <I18nText id="Review files, diffs, destinations and planning impact before applying." />
                 </p>
                 <Button
                   className="button secondary"
                   onClick={() => setChangeSet(turn.changeSetId!)}
                 >
-                  Review changes
+                  <I18nText id="Review changes" />
                 </Button>
               </section>
             )}
@@ -949,10 +975,11 @@ export default function AssistantPanel({
                 <LoaderCircle size={15} />
                 <span>
                   {turn.status === "queued"
-                    ? "Queued"
-                    : "Reading the reviewed context…"}
+                    ? uiText("Queued")
+                    : uiText("Reading the reviewed context…")}
                 </span>
                 <button
+                  data-dialog-cancel
                   onClick={() =>
                     void run(async () => {
                       await post(
@@ -963,15 +990,15 @@ export default function AssistantPanel({
                     })
                   }
                 >
-                  <Square size={12} /> Cancel
+                  <Square size={12} /> <I18nText id="Cancel" />
                 </button>
               </div>
             ) : turn.status !== "awaiting-review" &&
               !turn.answer &&
               !turn.error ? (
               <HelpText>
-                {turn.status.replaceAll("-", " ")}. Nothing is automatically
-                resubmitted.
+                {turn.status.replaceAll("-", " ")}
+                <I18nText id=". Nothing is automatically resubmitted." />
               </HelpText>
             ) : null}
             {turn.proposals?.map((item) => (
@@ -979,7 +1006,7 @@ export default function AssistantPanel({
                 <header>
                   <strong>
                     {item.data.kind === "schedule"
-                      ? "Schedule proposal"
+                      ? uiText("Schedule proposal")
                       : item.data.kind === "document"
                         ? "Document suggestion"
                         : item.data.kind === "task-create"
@@ -997,7 +1024,7 @@ export default function AssistantPanel({
                         disabled={busy}
                         onClick={() => setReview({ item, turn })}
                       >
-                        Review draft
+                        <I18nText id="Review draft" />
                       </Button>
                       <Button
                         className="button ghost"
@@ -1012,7 +1039,7 @@ export default function AssistantPanel({
                           })
                         }
                       >
-                        Dismiss
+                        <I18nText id="Dismiss" />
                       </Button>
                     </>
                   )}
@@ -1031,7 +1058,7 @@ export default function AssistantPanel({
                         })
                       }
                     >
-                      <Undo2 size={14} /> Undo task change
+                      <Undo2 size={14} /> <I18nText id="Undo task change" />
                     </Button>
                   )}
                 </div>
@@ -1049,7 +1076,7 @@ export default function AssistantPanel({
       >
         <div className="assistant-context-heading">
           <button type="button" onClick={() => setSearchOpen(!searchOpen)}>
-            <Plus size={14} /> Add evidence
+            <Plus size={14} /> <I18nText id="Add evidence" />
           </button>
           <small>{picked.length}/20 · private until sent</small>
         </div>
@@ -1057,10 +1084,10 @@ export default function AssistantPanel({
           <div className="assistant-search">
             <label>
               <SearchField
-                aria-label="Search assistant evidence"
+                aria-label={uiText("Search assistant evidence")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search selected workspaces…"
+                placeholder={uiText("Search selected workspaces…")}
               />
             </label>
             <ErrorNotice message={searchData.error} />
@@ -1084,9 +1111,15 @@ export default function AssistantPanel({
                   )}
                 </button>
               ))}
-              {searchData.loading && <p>Searching…</p>}
+              {searchData.loading && (
+                <p>
+                  <I18nText id="Searching…" />
+                </p>
+              )}
               {!searchData.loading && !searchData.data?.items.length && (
-                <p>No matching research sources.</p>
+                <p>
+                  <I18nText id="No matching research sources." />
+                </p>
               )}
             </div>
             <nav>
@@ -1095,14 +1128,14 @@ export default function AssistantPanel({
                 disabled={!offset}
                 onClick={() => setOffset(Math.max(0, offset - 30))}
               >
-                Previous
+                <I18nText id="Previous" />
               </button>
               <button
                 type="button"
                 disabled={searchData.data?.nextOffset == null}
                 onClick={() => setOffset(searchData.data!.nextOffset!)}
               >
-                Next
+                <I18nText id="Next" />
               </button>
             </nav>
           </div>
@@ -1130,7 +1163,7 @@ export default function AssistantPanel({
                         );
                       }}
                     />
-                    Allow proposal
+                    <I18nText id="Allow proposal" />
                   </label>
                 )}
                 {s.kind === "document" && (
@@ -1140,8 +1173,8 @@ export default function AssistantPanel({
                     aria-label={`Choose excerpt ${i + 1}`}
                     title={
                       s.from !== undefined
-                        ? "Edit selected excerpt"
-                        : "Choose an excerpt"
+                        ? uiText("Edit selected excerpt")
+                        : uiText("Choose an excerpt")
                     }
                     onClick={() => setExcerpt(s)}
                   >
@@ -1167,7 +1200,7 @@ export default function AssistantPanel({
               checked={allowTasks}
               onChange={(e) => setAllowTasks(e.target.checked)}
             />
-            Allow private new-task drafts
+            <I18nText id="Allow private new-task drafts" />
           </label>
         ) : (
           <label className="assistant-task-consent">
@@ -1175,13 +1208,13 @@ export default function AssistantPanel({
               checked={discover}
               onChange={(e) => setDiscover(e.target.checked)}
             />
-            Search and read within selected workspaces
+            <I18nText id="Search and read within selected workspaces" />
           </label>
         )}
         <TextArea
           ref={promptRef}
-          aria-label="Assistant request"
-          placeholder="Ask about your research…"
+          aria-label={uiText("Assistant request")}
+          placeholder={uiText("Ask about your research…")}
           rows={3}
           maxLength={10000}
           value={prompt}
@@ -1195,9 +1228,11 @@ export default function AssistantPanel({
         />
         {assistantMode !== "suggest" && (
           <details className="assistant-run-limits">
-            <summary>Run limits</summary>
+            <summary>
+              <I18nText id="Run limits" />
+            </summary>
             <div className="assistant-review-range">
-              <Field label="Maximum model calls">
+              <Field label={uiText("Maximum model calls")}>
                 <TextInput
                   type="number"
                   min={1}
@@ -1207,7 +1242,7 @@ export default function AssistantPanel({
                   onChange={(e) => setMaxRounds(e.target.value)}
                 />
               </Field>
-              <Field label="Output tokens per call">
+              <Field label={uiText("Output tokens per call")}>
                 <TextInput
                   type="number"
                   min={128}
@@ -1219,55 +1254,54 @@ export default function AssistantPanel({
               </Field>
             </div>
             <HelpText>
-              Each additional call requires exact-content review. These limits
-              do not guarantee provider billing.
+              <I18nText id="Each additional call requires exact-content review. These limits do not guarantee provider billing." />
             </HelpText>
           </details>
         )}
         <div className="assistant-compose-footer">
           <small>
-            {recovered ? "Device draft recovered · " : ""}⌘/Ctrl Enter to review
+            {recovered ? uiText("Device draft recovered · ") : ""}
+            <I18nText id="⌘/Ctrl Enter to review" />
           </small>
           <Button
             className="button primary"
             disabled={busy || !!active || !prompt.trim() || !selectedProvider}
           >
             <ArrowUp size={15} />
-            Review & send
+            <I18nText id="Review & send" />
           </Button>
         </div>
       </form>
       {prepared && (
         <Dialog
-          title="Review outgoing context"
+          title={uiText("Review outgoing context")}
           subtitle={`${prepared.provider.name} · ${prepared.provider.model} · managed by ${prepared.provider.group_name}`}
           onClose={() => setPrepared(null)}
         >
           <p>
-            No content has been sent to the provider. This preview includes your
-            request, instructions and the conversation history that will be
-            transmitted.
+            <I18nText id="No content has been sent to the provider. This preview includes your request, instructions and the conversation history that will be transmitted." />
           </p>
           <HelpText>
-            {prepared.characters.toLocaleString()} characters ·{" "}
-            {prepared.evidence.length} current excerpts · expires{" "}
-            {new Date(prepared.expiresAt).toLocaleTimeString()}
+            {prepared.characters.toLocaleString(currentLocale())}{" "}
+            <I18nText id="characters ·" /> {prepared.evidence.length}{" "}
+            <I18nText id="current excerpts · expires" />{" "}
+            {new Date(prepared.expiresAt).toLocaleTimeString(currentLocale())}
           </HelpText>
           <HelpText>
-            Output ceiling: {prepared.budget?.maxOutputTokens ?? 4096} tokens
-            per call.{" "}
+            <I18nText id="Output ceiling:" />{" "}
+            {prepared.budget?.maxOutputTokens ?? 4096}{" "}
+            <I18nText id="tokens per call." />{" "}
             {prepared.agent
               ? `${prepared.budget?.maxRounds ?? 8} calls maximum; every additional batch needs review.`
-              : "One model call."}{" "}
-            Monetary cost is not configured.
+              : uiText("One model call.")}{" "}
+            <I18nText id="Monetary cost is not configured." />
           </HelpText>
           {prepared.agent?.discover && (
             <p className="assistant-scope-consent">
-              This run may search and capture relevant excerpts locally from the{" "}
-              {scope.length} selected workspace{scope.length === 1 ? "" : "s"} .
-              Each additional outgoing batch pauses for exact-content review.
-              Nothing is sent under blanket discovery consent. Workspace changes
-              require separate review.
+              <I18nText id="This run may search and capture relevant excerpts locally from the" />{" "}
+              {scope.length} <I18nText id="selected workspace" />
+              {scope.length === 1 ? "" : "s"}{" "}
+              <I18nText id=". Each additional outgoing batch pauses for exact-content review. Nothing is sent under blanket discovery consent. Workspace changes require separate review." />
             </p>
           )}
           <div className="assistant-outgoing">
@@ -1275,7 +1309,7 @@ export default function AssistantPanel({
               <details key={i} open={i === prepared.messages.length - 1}>
                 <summary>
                   {message.role === "system"
-                    ? "Application instructions"
+                    ? uiText("Application instructions")
                     : message.role === "assistant"
                       ? "Previous answer"
                       : "Request and evidence"}
@@ -1290,16 +1324,21 @@ export default function AssistantPanel({
               onChange={(e) => setConsent(e.target.checked)}
             />
             {prepared.agent?.discover
-              ? "I approve this exact context and local retrieval in the selected scope, not future model calls. The provider's billing and retention policies apply."
-              : "I approve sending this exact context to this provider. Its billing and retention policies apply."}
+              ? uiText(
+                  "I approve this exact context and local retrieval in the selected scope, not future model calls. The provider's billing and retention policies apply.",
+                )
+              : uiText(
+                  "I approve sending this exact context to this provider. Its billing and retention policies apply.",
+                )}
           </label>
           <ErrorNotice message={error} />
           <div className="dialog-footer">
             <Button
+              data-dialog-cancel
               className="button secondary"
               onClick={() => setPrepared(null)}
             >
-              Back
+              <I18nText id="Back" />
             </Button>
             <Button
               className="button primary"
@@ -1325,7 +1364,7 @@ export default function AssistantPanel({
                 })
               }
             >
-              Send approved context
+              <I18nText id="Send approved context" />
             </Button>
           </div>
         </Dialog>
@@ -1388,7 +1427,7 @@ export default function AssistantPanel({
   );
   return narrow ? (
     <Dialog
-      title="Research assistant"
+      title={uiText("Research assistant")}
       className="assistant-dialog"
       onClose={onClose}
     >
@@ -1397,12 +1436,12 @@ export default function AssistantPanel({
   ) : (
     <aside
       className="assistant-panel"
-      aria-label="Workspace research assistant"
+      aria-label={uiText("Workspace research assistant")}
       style={{ width }}
     >
       <div
         role="separator"
-        aria-label="Resize assistant"
+        aria-label={uiText("Resize assistant")}
         aria-orientation="vertical"
         aria-valuemin={360}
         aria-valuemax={640}

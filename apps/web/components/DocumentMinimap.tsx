@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { IconButton } from "./ui/controls";
 import {
   useEffect,
@@ -48,6 +50,7 @@ type Props = {
 };
 
 export default function DocumentMinimap(props: Props) {
+  useInterfaceLocale();
   const p = props.preferences,
     n = props.navigation;
   const enabled = props.active && p.enabled && p[props.mode];
@@ -549,7 +552,7 @@ export default function DocumentMinimap(props: Props) {
       data-mode={props.mode}
       data-slider={p.slider}
       data-measures={n.measures}
-      aria-label="Document minimap"
+      aria-label={uiText("Document minimap")}
       style={{ width }}
       onContextMenu={(e) => {
         e.preventDefault();
@@ -572,7 +575,7 @@ export default function DocumentMinimap(props: Props) {
         className="minimap-scroll-control"
         role="scrollbar"
         tabIndex={0}
-        aria-label="Document minimap scroll position"
+        aria-label={uiText("Document minimap scroll position")}
         aria-orientation="vertical"
         aria-controls={props.root.current?.id || undefined}
         aria-valuemin={0}
@@ -714,7 +717,10 @@ export default function DocumentMinimap(props: Props) {
             {h.text}
           </button>
         ))}
-      <div className="minimap-marker-lane" aria-label="Minimap markers">
+      <div
+        className="minimap-marker-lane"
+        aria-label={uiText("Minimap markers")}
+      >
         {groups.map(({ key, top, entries }, i) => (
           <button
             key={key}
@@ -776,8 +782,12 @@ export default function DocumentMinimap(props: Props) {
       </div>
       <IconButton
         className="minimap-menu icon-button"
-        aria-label="Minimap options"
-        title={compact ? "Minimap options · compact pane" : "Minimap options"}
+        aria-label={uiText("Minimap options")}
+        title={
+          compact
+            ? uiText("Minimap options · compact pane")
+            : uiText("Minimap options")
+        }
         onPointerDown={(e) => e.preventDefault()}
         onClick={(e) => {
           const b = e.currentTarget.getBoundingClientRect();
@@ -799,7 +809,9 @@ export default function DocumentMinimap(props: Props) {
           >
             <strong>{preview.label}</strong>
             <p>{preview.text}</p>
-            <small>Click or drag to scroll · cursor stays in place</small>
+            <small>
+              <I18nText id="Click or drag to scroll · cursor stays in place" />
+            </small>
           </div>,
           document.body,
         )}

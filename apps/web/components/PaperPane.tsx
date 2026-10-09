@@ -1,4 +1,6 @@
 "use client";
+import { uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import type { ResearchController } from "../lib/research-store";
@@ -22,6 +24,7 @@ export default function PaperPane({
   onClose: () => void;
   onInsert: (value: string, privateMaterial?: boolean) => void;
 }) {
+  useInterfaceLocale();
   const [width, setWidth] = useState(50),
     root = useRef<HTMLElement>(null);
   const adjust = (value: number) => setWidth(Math.max(30, Math.min(70, value)));
@@ -30,7 +33,7 @@ export default function PaperPane({
       <div
         className="paper-divider"
         role="separator"
-        aria-label="Resize note and paper panes"
+        aria-label={uiText("Resize note and paper panes")}
         aria-orientation="vertical"
         tabIndex={0}
         aria-valuemin={30}

@@ -1,0 +1,135 @@
+/* Chrome follows the interface direction; document/source coordinates do not. */
+.language-settings {
+  display: grid;
+  gap: var(--space-4, 1rem);
+}
+.language-settings > header {
+  display: grid;
+  gap: 0.375rem;
+}
+.language-settings > footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  border-block-start: 1px solid var(--border);
+  padding-block-start: 1rem;
+}
+.language-settings > footer > [role="status"] {
+  color: var(--muted);
+  font-size: 0.875em;
+  min-inline-size: 0;
+}
+:where(.ws-app, .dialog, .demo-app, .settings-page-navigation)
+  :where(
+    input[type="email"],
+    input[type="url"],
+    input[type="password"],
+    [data-editor-field],
+    .cm-content,
+    pre,
+    code,
+    kbd
+  ) {
+  unicode-bidi: isolate;
+}
+:where(
+  input[type="email"],
+  input[type="url"],
+  input[type="password"],
+  [data-editor-field],
+  .cm-content,
+  pre,
+  code,
+  kbd
+) {
+  direction: ltr;
+}
+:where(
+  .ws-resource-name,
+  .ws-crumb-label,
+  .ws-breadcrumb,
+  .ws-profile-name,
+  .action-label,
+  .ws-file-title
+) {
+  unicode-bidi: isolate;
+}
+:where(
+  .reading-view,
+  .document-presentation,
+  .axiom-editor,
+  .rendered-document,
+  .markdown,
+  .editor-vnext-rich,
+  .research-editor-shell,
+  .canvas-board,
+  .canvas-viewport,
+  .mindmap-viewport,
+  .pdf-page-surface,
+  .auth-equation > div
+) {
+  direction: ltr;
+}
+/* Chromium's native RTL range thumb moves right-to-left; its authored progress
+   track must follow that direction too. Firefox uses native range-progress. */
+html[dir="rtl"] input.ui-slider::-webkit-slider-runnable-track {
+  background: linear-gradient(
+    to left,
+    var(--accent) var(--slider-progress),
+    var(--line) var(--slider-progress)
+  );
+}
+/* Directional navigation glyphs only. Do not mirror math, artwork or diagrams. */
+html[dir="rtl"]
+  :where(
+    .ws-side-link,
+    .settings-center-heading,
+    .auth-submit,
+    .ws-crumbs,
+    .workspace-breadcrumbs
+  )
+  :where(
+    .lucide-arrow-left,
+    .lucide-arrow-right,
+    .lucide-chevron-left,
+    .lucide-chevron-right
+  ) {
+  transform: scaleX(-1);
+}
+html[dir="rtl"]
+  .editor-context-menu
+  .action-trailing
+  > [data-icon="chevronRight"] {
+  transform: scaleX(-1);
+}
+html[dir="rtl"] .ws-sidebar {
+  border-inline-end: 1px solid var(--border);
+  border-right: 0;
+}
+html[dir="rtl"] .ws-document-context {
+  border-inline-start: 1px solid var(--border);
+  border-left: 0;
+}
+html[dir="rtl"]
+  :where(
+    .ws-side-link,
+    .settings-navigation,
+    .ws-profile-menu,
+    .dialog-heading,
+    .ws-page-heading
+  ) {
+  text-align: start;
+}
+html[dir="rtl"] :where(.ui-input-leading, .ui-field-label-icon) {
+  margin-inline: 0;
+}
+html[dir="rtl"] .ws-nav-row {
+  padding-inline-start: var(--space-3, 0.75rem);
+}
+@media (forced-colors: active) {
+  .language-settings > footer {
+    border-block-start-color: CanvasText;
+  }
+}

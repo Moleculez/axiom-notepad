@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { Button, HelpText, IconButton, SearchField } from "../ui/controls";
 import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
@@ -85,6 +87,7 @@ export default function OfficePreview({
   file: FilePreviewManifest;
   onConvert: () => Promise<void>;
 }) {
+  useInterfaceLocale();
   const office = file.office!,
     source = office.originalSource;
   const [snapshot, setSnapshot] = useState<OfficeSnapshot | null>(null),
@@ -282,9 +285,9 @@ export default function OfficePreview({
       <div className="office-toolbar">
         <IconButton
           className="icon-button"
-          aria-label="Toggle document navigator"
+          aria-label={uiText("Toggle document navigator")}
           aria-pressed={navigator}
-          title="Toggle document navigator"
+          title={uiText("Toggle document navigator")}
           onClick={() => setNavigator(!navigator)}
         >
           {navigator ? (
@@ -293,24 +296,30 @@ export default function OfficePreview({
             <PanelLeftOpen size={17} />
           )}
         </IconButton>
-        <div className="office-mode" role="group" aria-label="Document view">
+        <div
+          className="office-mode"
+          role="group"
+          aria-label={uiText("Document view")}
+        >
           <button
             aria-pressed={mode === "reading"}
             onClick={() => setMode("reading")}
           >
-            {office.format === "pptx" ? "Slide text" : "Reading"}
+            {office.format === "pptx"
+              ? uiText("Slide text")
+              : uiText("Reading")}
           </button>
           <button
             aria-pressed={mode === "pages"}
             onClick={() => setMode("pages")}
           >
-            {office.format === "pptx" ? "Slides" : "Pages"}
+            {office.format === "pptx" ? uiText("Slides") : uiText("Pages")}
           </button>
         </div>
         <SearchField
           wrapperClassName="office-search"
-          aria-label="Search document text"
-          placeholder="Find in text…"
+          aria-label={uiText("Search document text")}
+          placeholder={uiText("Find in text…")}
           value={query}
           maxLength={200}
           onChange={(e) => {
@@ -322,8 +331,8 @@ export default function OfficePreview({
         <span className="tool-spacer" />
         <IconButton
           className="icon-button"
-          aria-label="Copy reading link"
-          title="Copy reading link"
+          aria-label={uiText("Copy reading link")}
+          title={uiText("Copy reading link")}
           disabled={!snapshot}
           onClick={() => void copy(true)}
         >
@@ -331,8 +340,8 @@ export default function OfficePreview({
         </IconButton>
         <IconButton
           className="icon-button"
-          aria-label="Copy displayed text"
-          title="Copy displayed text"
+          aria-label={uiText("Copy displayed text")}
+          title={uiText("Copy displayed text")}
           disabled={!snapshot}
           onClick={() => void copy()}
         >
@@ -340,8 +349,8 @@ export default function OfficePreview({
         </IconButton>
         <a
           className="icon-button"
-          aria-label="Download original"
-          title="Download original"
+          aria-label={uiText("Download original")}
+          title={uiText("Download original")}
           href={`/api/v1/files/${file.resourceId}/download?version=${file.versionId}`}
         >
           <Download size={16} />
@@ -349,9 +358,11 @@ export default function OfficePreview({
         <IconButton
           className="icon-button"
           aria-label={
-            fullscreen ? "Exit document fullscreen" : "Document fullscreen"
+            fullscreen
+              ? uiText("Exit document fullscreen")
+              : uiText("Document fullscreen")
           }
-          title={fullscreen ? "Exit fullscreen" : "Fullscreen"}
+          title={fullscreen ? uiText("Exit fullscreen") : uiText("Fullscreen")}
           onClick={() => {
             const action =
               document.fullscreenElement === stage.current
@@ -375,16 +386,19 @@ export default function OfficePreview({
         <p className="office-notice" role="status">
           {notice}
           <button className="text-button" onClick={() => setNotice("")}>
-            Dismiss
+            <I18nText id="Dismiss" />
           </button>
         </p>
       )}
       <div className={`office-layout ${navigator ? "with-navigator" : ""}`}>
         {navigator && (
-          <nav className="office-navigator" aria-label="Document navigator">
+          <nav
+            className="office-navigator"
+            aria-label={uiText("Document navigator")}
+          >
             <span className="office-section-label">
               {term
-                ? "Search results"
+                ? uiText("Search results")
                 : office.format === "pptx"
                   ? "Slides"
                   : "Outline"}
@@ -411,7 +425,7 @@ export default function OfficePreview({
                     >
                       <small>
                         {String(index + 1).padStart(2, "0")}
-                        {item.hidden ? " · hidden" : ""}
+                        {item.hidden ? uiText(" · hidden") : ""}
                       </small>
                       <span>
                         <Marked text={item.title} query={term} />
@@ -441,7 +455,9 @@ export default function OfficePreview({
             {snapshot?.format === "docx" &&
               !(term ? matches : headings).length && (
                 <HelpText>
-                  {term ? "No text matches." : "No headings in this document."}
+                  {term
+                    ? uiText("No text matches.")
+                    : uiText("No headings in this document.")}
                 </HelpText>
               )}
             {snapshot?.format === "pptx" &&
@@ -450,10 +466,14 @@ export default function OfficePreview({
                 `${item.title}\n${item.blocks.map(officeBlockText).join("\n")}\n${item.notes}`
                   .toLocaleLowerCase()
                   .includes(term.toLocaleLowerCase()),
-              ) && <HelpText>No matching slides.</HelpText>}
+              ) && (
+                <HelpText>
+                  <I18nText id="No matching slides." />
+                </HelpText>
+              )}
             {matches.length === 200 && (
               <HelpText>
-                First 200 matching blocks. Refine your search.
+                <I18nText id="First 200 matching blocks. Refine your search." />
               </HelpText>
             )}
           </nav>
@@ -466,8 +486,8 @@ export default function OfficePreview({
               <div className="office-conversion">
                 <h3>
                   {office.format === "pptx"
-                    ? "Slide-layout preview"
-                    : "Page-layout preview"}
+                    ? uiText("Slide-layout preview")
+                    : uiText("Page-layout preview")}
                 </h3>
                 <p>{file.message}</p>
                 <Button
@@ -484,25 +504,26 @@ export default function OfficePreview({
                   }}
                 >
                   {file.status === "queued"
-                    ? "Converting privately…"
-                    : "Generate private preview"}
+                    ? uiText("Converting privately…")
+                    : uiText("Generate private preview")}
                 </Button>
                 {!office.converterAvailable && (
                   <small>
-                    Private conversion is not configured. Reading view remains
-                    available; no files are sent to public services.
+                    <I18nText id="Private conversion is not configured. Reading view remains available; no files are sent to public services." />
                   </small>
                 )}
                 <button
                   className="text-button"
                   onClick={() => setMode("reading")}
                 >
-                  Return to reading view
+                  <I18nText id="Return to reading view" />
                 </button>
               </div>
             )
           ) : !snapshot && !error ? (
-            <Loading label="Reading document in an isolated worker…" />
+            <Loading
+              label={uiText("Reading document in an isolated worker…")}
+            />
           ) : (
             snapshot && (
               <>
@@ -510,22 +531,23 @@ export default function OfficePreview({
                   <div className="office-slide-controls">
                     <IconButton
                       className="icon-button"
-                      aria-label="Previous slide"
+                      aria-label={uiText("Previous slide")}
                       disabled={slide <= 0}
                       onClick={() => setSlide(slide - 1)}
                     >
                       <ChevronLeft size={17} />
                     </IconButton>
                     <span>
-                      Slide {snapshot.slides.length ? slide + 1 : 0} of{" "}
-                      {snapshot.slides.length}
+                      <I18nText id="Slide" />{" "}
+                      {snapshot.slides.length ? slide + 1 : 0}{" "}
+                      <I18nText id="of" /> {snapshot.slides.length}
                       {snapshot.slides[slide]?.hidden
-                        ? " · hidden in original"
+                        ? uiText(" · hidden in original")
                         : ""}
                     </span>
                     <IconButton
                       className="icon-button"
-                      aria-label="Next slide"
+                      aria-label={uiText("Next slide")}
                       disabled={slide >= snapshot.slides.length - 1}
                       onClick={() => setSlide(slide + 1)}
                     >
@@ -538,7 +560,9 @@ export default function OfficePreview({
                   ref={reading}
                   tabIndex={0}
                   aria-label={
-                    snapshot.format === "pptx" ? "Slide text" : "Document text"
+                    snapshot.format === "pptx"
+                      ? uiText("Slide text")
+                      : uiText("Document text")
                   }
                 >
                   <article>
@@ -547,8 +571,7 @@ export default function OfficePreview({
                     ))}
                     {!blocks.length && (
                       <HelpText>
-                        No extractable text. Use the page preview or download
-                        the original.
+                        <I18nText id="No extractable text. Use the page preview or download the original." />
                       </HelpText>
                     )}
                     {blocks.length > limit && (
@@ -556,13 +579,15 @@ export default function OfficePreview({
                         className="button secondary"
                         onClick={() => setLimit(limit + 100)}
                       >
-                        Show 100 more blocks
+                        <I18nText id="Show 100 more blocks" />
                       </Button>
                     )}
                     {snapshot.format === "pptx" &&
                       snapshot.slides[slide]?.notes && (
                         <section className="office-speaker-notes">
-                          <h3>Speaker notes</h3>
+                          <h3>
+                            <I18nText id="Speaker notes" />
+                          </h3>
                           <p>
                             <Marked
                               text={snapshot.slides[slide].notes}
@@ -574,7 +599,8 @@ export default function OfficePreview({
                     {!!snapshot.footnotes.length && (
                       <details className="office-notes">
                         <summary>
-                          Footnotes & endnotes ({snapshot.footnotes.length})
+                          <I18nText id="Footnotes & endnotes (" />
+                          {snapshot.footnotes.length})
                         </summary>
                         {snapshot.footnotes.map((note, index) => (
                           <div key={`${note.id}-${index}`}>
@@ -589,12 +615,11 @@ export default function OfficePreview({
                     {!!snapshot.comments.length && (
                       <details className="office-notes">
                         <summary>
-                          Original document comments ({snapshot.comments.length}
-                          )
+                          <I18nText id="Original document comments (" />
+                          {snapshot.comments.length})
                         </summary>
                         <HelpText>
-                          Imported author labels, not workspace identities.
-                          Comment anchors and threads are not reconstructed.
+                          <I18nText id="Imported author labels, not workspace identities. Comment anchors and threads are not reconstructed." />
                         </HelpText>
                         {snapshot.comments.map((comment, index) => (
                           <div key={`${comment.id}-${index}`}>
@@ -618,8 +643,10 @@ export default function OfficePreview({
       <footer className="office-status">
         <details>
           <summary>
-            Read-only ·{" "}
-            {mode === "reading" ? "text extraction" : "private conversion"}
+            <I18nText id="Read-only ·" />{" "}
+            {mode === "reading"
+              ? uiText("text extraction")
+              : uiText("private conversion")}
           </summary>
           {(snapshot?.warnings ?? ["Original files remain unchanged."]).map(
             (warning) => (
@@ -643,7 +670,7 @@ export default function OfficePreview({
               setTimeout(() => URL.revokeObjectURL(url), 1000);
             }}
           >
-            Export text
+            <I18nText id="Export text" />
           </button>
         )}
       </footer>

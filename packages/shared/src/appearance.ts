@@ -650,7 +650,10 @@ export function appearanceVariables(
       : "#000000";
   result["--ink-chrome-muted"] = result["--ink-chrome-text"];
   for (const role of ["ui", "prose", "heading", "code"] as const)
-    result[`--font-${role}`] = fonts[p[`${role}Font`]].family;
+    result[`--font-${role}`] = fonts[p[`${role}Font`]].family.replace(
+      /(?=(?:sans-serif|serif|monospace)$)/,
+      '"Noto Sans Arabic", "Noto Sans Devanagari", "Noto Sans Bengali", ',
+    );
   for (const role of ["ui", "prose", "code"] as const)
     result[`--size-${role}`] =
       `${(p[`${role}Size`] / 16) * (role === "ui" ? p.uiScale : 1)}rem`;

@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import {
   Button,
   HelpText,
@@ -126,6 +128,7 @@ export function CanvasSurface({
   shared: CanvasSession;
   sandbox?: boolean;
 }) {
+  useInterfaceLocale();
   const host = useCanvasHost(),
     { notify } = host;
   const parsed = useMemo(() => {
@@ -1199,8 +1202,8 @@ export function CanvasSurface({
         <span className="tool-spacer" />
         <IconButton
           className="icon-button"
-          title="Undo (⌘Z)"
-          aria-label="Undo"
+          title={uiText("Undo (⌘Z)")}
+          aria-label={uiText("Undo")}
           disabled={shared.readOnly}
           onClick={() => undo.current?.undo()}
         >
@@ -1208,8 +1211,8 @@ export function CanvasSurface({
         </IconButton>
         <IconButton
           className="icon-button"
-          title="Redo (⇧⌘Z)"
-          aria-label="Redo"
+          title={uiText("Redo (⇧⌘Z)")}
+          aria-label={uiText("Redo")}
           disabled={shared.readOnly}
           onClick={() => undo.current?.redo()}
         >
@@ -1217,8 +1220,8 @@ export function CanvasSurface({
         </IconButton>
         <IconButton
           className="icon-button"
-          title="Import JSON Canvas"
-          aria-label="Import JSON Canvas"
+          title={uiText("Import JSON Canvas")}
+          aria-label={uiText("Import JSON Canvas")}
           disabled={sandbox || shared.readOnly}
           onClick={() => importInput.current?.click()}
         >
@@ -1236,8 +1239,8 @@ export function CanvasSurface({
         />
         <IconButton
           className="icon-button"
-          title="Export canvas"
-          aria-label="Export canvas"
+          title={uiText("Export canvas")}
+          aria-label={uiText("Export canvas")}
           onClick={() =>
             sandbox
               ? downloadText(JSON.stringify(data, null, 2), "example.canvas")
@@ -1248,8 +1251,8 @@ export function CanvasSurface({
         </IconButton>
         <IconButton
           className="icon-button"
-          title="Find cards"
-          aria-label="Find cards"
+          title={uiText("Find cards")}
+          aria-label={uiText("Find cards")}
           aria-pressed={panel === "cards"}
           onClick={() => setPanel(panel === "cards" ? null : "cards")}
         >
@@ -1258,8 +1261,8 @@ export function CanvasSurface({
         {host.discussion && (
           <IconButton
             className="icon-button"
-            title="Discussion"
-            aria-label="Discussion"
+            title={uiText("Discussion")}
+            aria-label={uiText("Discussion")}
             disabled={sandbox}
             aria-pressed={panel === "discussion"}
             onClick={() =>
@@ -1271,8 +1274,8 @@ export function CanvasSurface({
         )}
         <IconButton
           className="icon-button"
-          aria-label="Properties"
-          title="Properties"
+          aria-label={uiText("Properties")}
+          title={uiText("Properties")}
           aria-pressed={panel === "properties"}
           onClick={() => setPanel(panel === "properties" ? null : "properties")}
         >
@@ -1286,10 +1289,10 @@ export function CanvasSurface({
             className="button secondary"
             onClick={() => downloadText(shared.recovery!, "recovered.canvas")}
           >
-            Export retained canvas
+            <I18nText id="Export retained canvas" />
           </Button>
           <Button className="button ghost" onClick={shared.reopen}>
-            Reopen server version
+            <I18nText id="Reopen server version" />
           </Button>
         </div>
       )}
@@ -1299,7 +1302,9 @@ export function CanvasSurface({
           ref={board}
           tabIndex={0}
           role="region"
-          aria-label={host.local ? "Local canvas" : "Collaborative canvas"}
+          aria-label={
+            host.local ? uiText("Local canvas") : uiText("Collaborative canvas")
+          }
           style={
             {
               backgroundSize: `${24 * view.zoom}px ${24 * view.zoom}px`,
@@ -1730,8 +1735,8 @@ export function CanvasSurface({
                   selection.includes(node.id) && (
                     <button
                       className="canvas-resize"
-                      aria-label="Resize card"
-                      title="Drag to resize"
+                      aria-label={uiText("Resize card")}
+                      title={uiText("Drag to resize")}
                       onPointerDown={(e) => start(e, "resize", node)}
                     />
                   )}
@@ -1756,22 +1761,26 @@ export function CanvasSurface({
           {!data.nodes.length && (
             <div className="canvas-empty">
               <Group size={40} strokeWidth={1} />
-              <h2>Space to connect your ideas</h2>
+              <h2>
+                <I18nText id="Space to connect your ideas" />
+              </h2>
               <p>
-                Use the text-card button or press N to write. Drag between card
-                ports to connect ideas.
+                <I18nText id="Use the text-card button or press N to write. Drag between card ports to connect ideas." />
               </p>
               <p>
-                Scroll to pan · ⌘/Ctrl + scroll to zoom · hold Space to move
-                around
+                <I18nText id="Scroll to pan · ⌘/Ctrl + scroll to zoom · hold Space to move around" />
               </p>
             </div>
           )}
-          <div className="canvas-dock" role="toolbar" aria-label="Canvas tools">
+          <div
+            className="canvas-dock"
+            role="toolbar"
+            aria-label={uiText("Canvas tools")}
+          >
             <IconButton
               className="icon-button"
-              title="Select"
-              aria-label="Select"
+              title={uiText("Select")}
+              aria-label={uiText("Select")}
               aria-pressed={!hand}
               onClick={() => setHand(false)}
             >
@@ -1779,8 +1788,8 @@ export function CanvasSurface({
             </IconButton>
             <IconButton
               className="icon-button"
-              title="Pan (hold Space)"
-              aria-label="Pan"
+              title={uiText("Pan (hold Space)")}
+              aria-label={uiText("Pan")}
               aria-pressed={hand}
               onClick={() => setHand(true)}
             >
@@ -1789,8 +1798,8 @@ export function CanvasSurface({
             <span className="canvas-dock-separator" />
             <IconButton
               className="icon-button"
-              title="Text card (N)"
-              aria-label="Add text card"
+              title={uiText("Text card (N)")}
+              aria-label={uiText("Add text card")}
               disabled={shared.readOnly}
               onClick={() => add("text")}
             >
@@ -1798,8 +1807,8 @@ export function CanvasSurface({
             </IconButton>
             <IconButton
               className="icon-button"
-              title="File card"
-              aria-label="Add file card"
+              title={uiText("File card")}
+              aria-label={uiText("Add file card")}
               disabled={sandbox || shared.readOnly}
               onClick={() => setPicker(true)}
             >
@@ -1807,8 +1816,8 @@ export function CanvasSurface({
             </IconButton>
             <IconButton
               className="icon-button"
-              title="Web link"
-              aria-label="Add web link"
+              title={uiText("Web link")}
+              aria-label={uiText("Add web link")}
               disabled={sandbox || shared.readOnly}
               onClick={() => add("link")}
             >
@@ -1816,8 +1825,12 @@ export function CanvasSurface({
             </IconButton>
             <IconButton
               className="icon-button"
-              title={selected.length ? "Group selection" : "Add group"}
-              aria-label="Add group"
+              title={
+                selected.length
+                  ? uiText("Group selection")
+                  : uiText("Add group")
+              }
+              aria-label={uiText("Add group")}
               disabled={shared.readOnly}
               onClick={() =>
                 selected.length ? groupSelection() : add("group")
@@ -1827,8 +1840,8 @@ export function CanvasSurface({
             </IconButton>
             <IconButton
               className="icon-button"
-              aria-label="Research templates"
-              title="Research templates"
+              aria-label={uiText("Research templates")}
+              title={uiText("Research templates")}
               disabled={shared.readOnly}
               onClick={(e) => {
                 const r = e.currentTarget.getBoundingClientRect();
@@ -1849,8 +1862,8 @@ export function CanvasSurface({
             </IconButton>
             <IconButton
               className="icon-button"
-              aria-label="Snap to grid"
-              title="Snap to grid"
+              aria-label={uiText("Snap to grid")}
+              title={uiText("Snap to grid")}
               aria-pressed={snap}
               onClick={() => setSnap(!snap)}
             >
@@ -1861,7 +1874,7 @@ export function CanvasSurface({
             <div
               className="canvas-selection-bar"
               role="toolbar"
-              aria-label="Selected card actions"
+              aria-label={uiText("Selected card actions")}
             >
               {host.assistant && (
                 <Button
@@ -1873,7 +1886,7 @@ export function CanvasSurface({
                       .catch((e) => notify(e.message))
                   }
                 >
-                  Ask assistant
+                  <I18nText id="Ask assistant" />
                 </Button>
               )}
               {Object.entries(canvasColors).map(([key, color]) => (
@@ -1906,8 +1919,8 @@ export function CanvasSurface({
               ))}
               {selectedEdge && (
                 <TextInput
-                  aria-label="Connection label"
-                  placeholder="Connection label"
+                  aria-label={uiText("Connection label")}
+                  placeholder={uiText("Connection label")}
                   maxLength={1000}
                   value={selectedEdge.label ?? ""}
                   disabled={shared.readOnly}
@@ -1927,8 +1940,8 @@ export function CanvasSurface({
               )}
               <IconButton
                 className="icon-button"
-                title="Duplicate selection (⌘D)"
-                aria-label="Duplicate selection"
+                title={uiText("Duplicate selection (⌘D)")}
+                aria-label={uiText("Duplicate selection")}
                 disabled={shared.readOnly || !selected.length}
                 onClick={() => duplicate()}
               >
@@ -1936,8 +1949,8 @@ export function CanvasSurface({
               </IconButton>
               <IconButton
                 className="icon-button"
-                title="Remove selection"
-                aria-label="Remove selection"
+                title={uiText("Remove selection")}
+                aria-label={uiText("Remove selection")}
                 disabled={shared.readOnly}
                 onClick={remove}
               >
@@ -1949,7 +1962,7 @@ export function CanvasSurface({
             <svg
               viewBox="0 0 200 130"
               role="img"
-              aria-label="Canvas overview"
+              aria-label={uiText("Canvas overview")}
               onClick={(e) => {
                 const r = e.currentTarget.getBoundingClientRect(),
                   x =
@@ -1983,8 +1996,8 @@ export function CanvasSurface({
             <div>
               <IconButton
                 className="icon-button"
-                aria-label="Zoom out"
-                title="Zoom out"
+                aria-label={uiText("Zoom out")}
+                title={uiText("Zoom out")}
                 onClick={() =>
                   setView((v) => ({ ...v, zoom: clamp(v.zoom / 1.2, 0.08, 3) }))
                 }
@@ -1994,8 +2007,8 @@ export function CanvasSurface({
               <span>{Math.round(view.zoom * 100)}%</span>
               <IconButton
                 className="icon-button"
-                aria-label="Zoom in"
-                title="Zoom in"
+                aria-label={uiText("Zoom in")}
+                title={uiText("Zoom in")}
                 onClick={() =>
                   setView((v) => ({ ...v, zoom: clamp(v.zoom * 1.2, 0.08, 3) }))
                 }
@@ -2004,8 +2017,8 @@ export function CanvasSurface({
               </IconButton>
               <IconButton
                 className="icon-button"
-                aria-label="Zoom to fit"
-                title="Zoom to fit (0)"
+                aria-label={uiText("Zoom to fit")}
+                title={uiText("Zoom to fit (0)")}
                 onClick={() => fit()}
               >
                 <Maximize size={15} />
@@ -2018,14 +2031,14 @@ export function CanvasSurface({
             <header>
               <h2>
                 {panel === "discussion"
-                  ? "Discussion"
+                  ? uiText("Discussion")
                   : panel === "properties"
                     ? "Properties"
                     : "Find cards"}
               </h2>
               <IconButton
                 className="icon-button"
-                aria-label="Close panel"
+                aria-label={uiText("Close panel")}
                 onClick={() => setPanel(null)}
               >
                 <X size={16} />
@@ -2034,18 +2047,22 @@ export function CanvasSurface({
             {panel === "discussion" ? (
               <>
                 <NativeSelect
-                  aria-label="Discussion scope"
+                  aria-label={uiText("Discussion scope")}
                   value={commentCard ?? ""}
                   onChange={(e) => setCommentCard(e.target.value || null)}
                 >
-                  <option value="">Whole canvas</option>
+                  <option value="">
+                    <I18nText id="Whole canvas" />
+                  </option>
                   {nodes.map((n) => (
                     <option key={n.id} value={n.id}>
                       {canvasTitle(n)}
                     </option>
                   ))}
                   {commentCard && !nodeMap.has(commentCard) && (
-                    <option value={commentCard}>Removed card</option>
+                    <option value={commentCard}>
+                      <I18nText id="Removed card" />
+                    </option>
                   )}
                 </NativeSelect>
                 {host.discussion?.(
@@ -2112,19 +2129,19 @@ export function CanvasSurface({
             ) : (
               <>
                 <TextInput
-                  aria-label="Search cards"
-                  placeholder="Names, content, tags…"
+                  aria-label={uiText("Search cards")}
+                  placeholder={uiText("Names, content, tags…")}
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                 />
                 <NativeSelect
-                  aria-label="Card type"
+                  aria-label={uiText("Card type")}
                   value={cardType}
                   onChange={(e) => setCardType(e.target.value)}
                 >
                   {["all", "text", "file", "link", "group"].map((type) => (
                     <option key={type} value={type}>
-                      {type === "all" ? "All card types" : type}
+                      {type === "all" ? uiText("All card types") : type}
                     </option>
                   ))}
                 </NativeSelect>
@@ -2175,8 +2192,8 @@ export function CanvasSurface({
             ) && (
               <IconButton
                 className="icon-button"
-                aria-label="Reconnect canvas"
-                title="Reconnect without discarding local work"
+                aria-label={uiText("Reconnect canvas")}
+                title={uiText("Reconnect without discarding local work")}
                 onClick={shared.reconnect}
               >
                 <RefreshCw size={13} />
@@ -2184,12 +2201,13 @@ export function CanvasSurface({
             )}
         </span>
         <span>
-          {data.nodes.length} cards · {data.edges.length} connections
+          {data.nodes.length} <I18nText id="cards ·" /> {data.edges.length}{" "}
+          <I18nText id="connections" />
           {selection.length ? ` · ${selection.length} selected` : ""}
         </span>
         <span>
           {sandbox
-            ? "Temporary example · never saved"
+            ? uiText("Temporary example · never saved")
             : shared.readOnly
               ? "Read only"
               : host.local
@@ -2216,7 +2234,7 @@ export function CanvasSurface({
         <Dialog
           title={
             replaceFile
-              ? "Change linked file"
+              ? uiText("Change linked file")
               : host.local
                 ? "Add a local file"
                 : "Add a workspace file"
@@ -2228,12 +2246,16 @@ export function CanvasSurface({
         >
           <HelpText>
             {host.local
-              ? "Choose a note or file saved in this browser. Import images, PDFs, audio and video from your computer."
-              : "Cards follow the latest resource by default. You can pin a saved file version in Properties. Every preview checks access again."}
+              ? uiText(
+                  "Choose a note or file saved in this browser. Import images, PDFs, audio and video from your computer.",
+                )
+              : uiText(
+                  "Cards follow the latest resource by default. You can pin a saved file version in Properties. Every preview checks access again.",
+                )}
           </HelpText>
           {host.importFiles && (
             <label className="button secondary">
-              Import files
+              <I18nText id="Import files" />
               <input
                 type="file"
                 multiple
@@ -2250,8 +2272,8 @@ export function CanvasSurface({
           )}
           <TextInput
             autoFocus
-            aria-label="Search files"
-            placeholder="Find a note, figure, or paper…"
+            aria-label={uiText("Search files")}
+            placeholder={uiText("Find a note, figure, or paper…")}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />

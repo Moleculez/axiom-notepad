@@ -59,12 +59,17 @@ not proof that the hosted site has received these source changes.
 ## Settings without the clutter
 
 **Appearance** opens one consistent desktop dialog. Its grouped navigation has
-seven categories: Theme & interface, Typography, Page, Code & tables, Typing &
+eight categories: Language, Theme & interface, Typography, Page, Code & tables, Typing &
 math, Minimap and Local data. Up/Down and Home/End navigate the category rail.
 Fields scroll independently while the category heading, live preview and
 Done button stay visible. Controls retain interface typography even when the
 document font changes. The document's own scrollbar sits at the pane edge in
 Write, Source and Read modes; its toolbar and word count stay fixed.
+
+**General → Language** offers Automatic and ten autonyms, applied immediately and
+saved only in this browser. It uses the shared catalogs/direction without account
+APIs; changing it preserves source, undo and the URL. Core controls are translated
+while less-used copy remains English. See [localization](LOCALIZATION.md).
 
 The preview toolbar switches between Writing and the shared interactive Interface
 specimen without losing either surface's state. Compare native switch/slider,

@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { useEffect, useRef, useState } from "react";
 import { Copy, Download, RefreshCw } from "lucide-react";
 import {
@@ -44,6 +46,7 @@ export default function LatexExportDialog({
   onFormat: (format: "html" | "pdf" | "md" | "zip") => void;
   onClose: () => void;
 }) {
+  useInterfaceLocale();
   const [options, setOptions] = useState<LatexOptions>(() =>
     latexOptionsSchema.parse({}),
   );
@@ -176,8 +179,10 @@ export default function LatexExportDialog({
     status === "Preparing archive…";
   return (
     <Dialog
-      title="Export document"
-      subtitle="A frozen, editable research project. No compiler or external service runs; your note is not changed."
+      title={uiText("Export document")}
+      subtitle={uiText(
+        "A frozen, editable research project. No compiler or external service runs; your note is not changed.",
+      )}
       size="visual"
       className="document-export-dialog"
       onClose={onClose}
@@ -185,50 +190,66 @@ export default function LatexExportDialog({
       <div className="document-export-layout">
         <div className="document-export-settings">
           <label>
-            Format
+            <I18nText id="Format" />
             <NativeSelect
-              aria-label="Format"
+              aria-label={uiText("Format")}
               value="latex"
               onChange={(e) =>
                 onFormat(e.target.value as "html" | "pdf" | "md" | "zip")
               }
               disabled={busy}
             >
-              <option value="html">Standalone HTML</option>
-              <option value="pdf">Print / Save as PDF</option>
-              <option value="md">Markdown source</option>
-              <option value="zip">Markdown + assets (ZIP)</option>
-              <option value="latex">LaTeX research project (ZIP)</option>
+              <option value="html">
+                <I18nText id="Standalone HTML" />
+              </option>
+              <option value="pdf">
+                <I18nText id="Print / Save as PDF" />
+              </option>
+              <option value="md">
+                <I18nText id="Markdown source" />
+              </option>
+              <option value="zip">
+                <I18nText id="Markdown + assets (ZIP)" />
+              </option>
+              <option value="latex">
+                <I18nText id="LaTeX research project (ZIP)" />
+              </option>
             </NativeSelect>
           </label>
           <label>
-            File name
+            <I18nText id="File name" />
             <TextInput
-              aria-label="File name"
+              aria-label={uiText("File name")}
               maxLength={150}
               value={filename}
               onChange={(e) => setFilename(e.target.value)}
             />
           </label>
           <fieldset disabled={busy}>
-            <legend>Academic article</legend>
+            <legend>
+              <I18nText id="Academic article" />
+            </legend>
             <label>
-              Bibliography
+              <I18nText id="Bibliography" />
               <NativeSelect
-                aria-label="Bibliography backend"
+                aria-label={uiText("Bibliography backend")}
                 value={options.backend}
                 onChange={(e) =>
                   update("backend", e.target.value as LatexOptions["backend"])
                 }
               >
-                <option value="biber">BibLaTeX / Biber · Unicode</option>
-                <option value="bibtex">natbib / BibTeX · classic</option>
+                <option value="biber">
+                  <I18nText id="BibLaTeX / Biber · Unicode" />
+                </option>
+                <option value="bibtex">
+                  <I18nText id="natbib / BibTeX · classic" />
+                </option>
               </NativeSelect>
             </label>
             <label>
-              Citations
+              <I18nText id="Citations" />
               <NativeSelect
-                aria-label="Citation style"
+                aria-label={uiText("Citation style")}
                 value={options.citations}
                 onChange={(e) =>
                   update(
@@ -237,48 +258,54 @@ export default function LatexExportDialog({
                   )
                 }
               >
-                <option value="numeric">Numbered</option>
-                <option value="author-year">Author–year</option>
+                <option value="numeric">
+                  <I18nText id="Numbered" />
+                </option>
+                <option value="author-year">
+                  <I18nText id="Author–year" />
+                </option>
               </NativeSelect>
             </label>
             <label>
-              Authors
+              <I18nText id="Authors" />
               <TextInput
-                aria-label="Paper authors"
+                aria-label={uiText("Paper authors")}
                 value={options.authors}
                 maxLength={2000}
                 onChange={(e) => update("authors", e.target.value)}
-                placeholder="Optional · not taken from your account"
+                placeholder={uiText("Optional · not taken from your account")}
               />
             </label>
             <label>
-              Date
+              <I18nText id="Date" />
               <TextInput
-                aria-label="Paper date"
+                aria-label={uiText("Paper date")}
                 value={options.date}
                 maxLength={100}
                 onChange={(e) => update("date", e.target.value)}
-                placeholder="Optional"
+                placeholder={uiText("Optional")}
               />
             </label>
             <div className="document-export-fields">
               <label>
-                Paper
+                <I18nText id="Paper" />
                 <NativeSelect
-                  aria-label="Paper"
+                  aria-label={uiText("Paper")}
                   value={options.paper}
                   onChange={(e) =>
                     update("paper", e.target.value as "A4" | "Letter")
                   }
                 >
                   <option>A4</option>
-                  <option>Letter</option>
+                  <option>
+                    <I18nText id="Letter" />
+                  </option>
                 </NativeSelect>
               </label>
               <label>
-                Margins (mm)
+                <I18nText id="Margins (mm)" />
                 <TextInput
-                  aria-label="Margins (mm)"
+                  aria-label={uiText("Margins (mm)")}
                   type="number"
                   min={8}
                   max={40}
@@ -297,29 +324,26 @@ export default function LatexExportDialog({
                 checked={options.title}
                 onChange={(e) => update("title", e.target.checked)}
               />
-              Include document title
+              <I18nText id="Include document title" />
             </label>
             <label className="document-export-check">
               <Checkbox
                 checked={options.toc}
                 onChange={(e) => update("toc", e.target.checked)}
               />
-              Add table of contents
+              <I18nText id="Add table of contents" />
             </label>
             <HelpText>
-              XeLaTeX · 11-point Latin Modern. CJK support is included when
-              needed. The project contains local compile instructions, original
-              source and exact attached versions—not linked notes.
+              <I18nText id="XeLaTeX · 11-point Latin Modern. CJK support is included when needed. The project contains local compile instructions, original source and exact attached versions—not linked notes." />
             </HelpText>
           </fieldset>
           <HelpText>
-            Original files can contain EXIF or other metadata. Comments, private
-            annotations, bookmarks and account details are excluded.
+            <I18nText id="Original files can contain EXIF or other metadata. Comments, private annotations, bookmarks and account details are excluded." />
           </HelpText>
         </div>
         <section
           className="document-export-preview"
-          aria-label="LaTeX project review"
+          aria-label={uiText("LaTeX project review")}
         >
           <div className="document-export-preview-toolbar">
             <span role="status">{status}</span>
@@ -332,17 +356,17 @@ export default function LatexExportDialog({
               disabled={busy}
             >
               <RefreshCw size={14} />
-              Refresh snapshot
+              <I18nText id="Refresh snapshot" />
             </Button>
           </div>
           {changed && (
             <Notice tone="warning">
-              The document has changed. Refresh to include newer edits.
+              <I18nText id="The document has changed. Refresh to include newer edits." />
             </Notice>
           )}
           <ActionRow
             className="latex-review-tabs"
-            aria-label="Project review views"
+            aria-label={uiText("Project review views")}
           >
             {(
               ["tex", "reading", "bibliography", "files", "checks"] as const
@@ -354,7 +378,7 @@ export default function LatexExportDialog({
                 onClick={() => setView(v)}
               >
                 {v === "tex"
-                  ? "TeX"
+                  ? uiText("TeX")
                   : v === "reading"
                     ? "Reading"
                     : v === "bibliography"
@@ -384,7 +408,8 @@ export default function LatexExportDialog({
                 }
               >
                 <Copy size={14} />
-                Copy {view === "bibliography" ? "BibTeX" : "TeX"}
+                <I18nText id="Copy" />{" "}
+                {view === "bibliography" ? uiText("BibTeX") : uiText("TeX")}
               </Button>
             )}
           </ActionRow>
@@ -397,8 +422,8 @@ export default function LatexExportDialog({
               <pre
                 aria-label={
                   view === "tex"
-                    ? "Generated LaTeX source"
-                    : "Generated bibliography"
+                    ? uiText("Generated LaTeX source")
+                    : uiText("Generated bibliography")
                 }
               >
                 {prepared.files[view === "tex" ? "main.tex" : "references.bib"]}
@@ -413,7 +438,9 @@ export default function LatexExportDialog({
               />
             ) : view === "files" ? (
               <>
-                <h3>Project files</h3>
+                <h3>
+                  <I18nText id="Project files" />
+                </h3>
                 <ul>
                   {Object.keys(prepared.files).map((path) => (
                     <li key={path}>
@@ -421,9 +448,11 @@ export default function LatexExportDialog({
                     </li>
                   ))}
                   <li>
-                    <code>export-manifest.json</code>
+                    <code>
+                      <I18nText id="export-manifest.json" />
+                    </code>
                     <small>
-                      Checksums, citation mapping and export diagnostics
+                      <I18nText id="Checksums, citation mapping and export diagnostics" />
                     </small>
                   </li>
                   {prepared.assets.map((a) => (
@@ -431,26 +460,29 @@ export default function LatexExportDialog({
                       <code>{a.originalPath}</code>
                       {a.figurePath && <code>{a.figurePath}</code>}
                       <small>
-                        {a.name} · immutable version ·{" "}
-                        {(a.bytes / 1024).toFixed(1)} KiB
+                        {a.name} <I18nText id="· immutable version ·" />{" "}
+                        {(a.bytes / 1024).toFixed(1)} <I18nText id="KiB" />
                       </small>
                     </li>
                   ))}
                   {prepared.diagrams.map((d) => (
                     <li key={d.from}>
                       <code>{d.path}</code>
-                      <small>Rendered locally when preparing the archive</small>
+                      <small>
+                        <I18nText id="Rendered locally when preparing the archive" />
+                      </small>
                     </li>
                   ))}
                 </ul>
               </>
             ) : (
               <>
-                <h3>Research checks</h3>
+                <h3>
+                  <I18nText id="Research checks" />
+                </h3>
                 {!prepared.diagnostics.length && !diagramWarnings.length && (
                   <HelpText>
-                    No issues found in the supported export subset. Local
-                    compilation remains a separate check.
+                    <I18nText id="No issues found in the supported export subset. Local compilation remains a separate check." />
                   </HelpText>
                 )}
                 <ul>
@@ -461,7 +493,7 @@ export default function LatexExportDialog({
                     >
                       <strong>
                         {d.severity === "error"
-                          ? "Error"
+                          ? uiText("Error")
                           : d.severity === "info"
                             ? "Information"
                             : "Review"}
@@ -470,13 +502,15 @@ export default function LatexExportDialog({
                       <small>
                         {d.to > d.from
                           ? `Source characters ${d.from + 1}–${d.to}`
-                          : "Bibliography / project"}
+                          : uiText("Bibliography / project")}
                       </small>
                     </li>
                   ))}
                   {diagramWarnings.map((message) => (
                     <li key={message}>
-                      <strong>Review</strong>
+                      <strong>
+                        <I18nText id="Review" />
+                      </strong>
                       <span>{message}</span>
                     </li>
                   ))}
@@ -491,8 +525,7 @@ export default function LatexExportDialog({
                 onChange={(e) => setAcknowledged(e.target.checked)}
               />
               <span>
-                I reviewed the warnings and understand that unsupported content
-                uses a source-preserving fallback.
+                <I18nText id="I reviewed the warnings and understand that unsupported content uses a source-preserving fallback." />
               </span>
             </label>
           )}
@@ -502,18 +535,18 @@ export default function LatexExportDialog({
         <Notice tone="danger" role="alert">
           {error}
           <Button variant="ghost" onClick={() => setAttempt((n) => n + 1)}>
-            Retry review
+            <I18nText id="Retry review" />
           </Button>
         </Notice>
       )}
       <DialogFooter>
         <HelpText>
           {job && !job.ready
-            ? "Background archive · Settings → Exports"
-            : "Editable project only · no automatic compilation"}
+            ? uiText("Background archive · Settings → Exports")
+            : uiText("Editable project only · no automatic compilation")}
         </HelpText>
         <Button variant="secondary" onClick={onClose}>
-          Close
+          <I18nText id="Close" />
         </Button>
         {job?.ready ? (
           <a
@@ -522,7 +555,7 @@ export default function LatexExportDialog({
             download={exportFilename(filename, "zip")}
           >
             <Download size={16} />
-            Download project
+            <I18nText id="Download project" />
           </a>
         ) : (
           <Button
@@ -540,7 +573,7 @@ export default function LatexExportDialog({
             onClick={() => void prepare()}
           >
             <Download size={16} />
-            Prepare project
+            <I18nText id="Prepare project" />
           </Button>
         )}
       </DialogFooter>

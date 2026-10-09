@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import {
   Button,
   Checkbox,
@@ -26,7 +28,7 @@ import ReadingView from "../ReadingView";
 import { Empty, ErrorNotice, Loading, useData, useWorkspace } from "./ui";
 const CanvasPreview = dynamic(() => import("../tools/CanvasPlayground"), {
   ssr: false,
-  loading: () => <Loading label="Opening Canvas preview…" />,
+  loading: () => <Loading label={uiText("Opening Canvas preview…")} />,
 });
 
 export default function ResearchWorkbench({
@@ -40,6 +42,7 @@ export default function ResearchWorkbench({
   embeddedParams: URLSearchParams;
   onRoute: (changes: Record<string, string>) => void;
 }) {
+  useInterfaceLocale();
   const params = embeddedParams;
   const groupId = space.group_id ?? "";
   const spaceId = space.id;
@@ -62,18 +65,24 @@ export default function ResearchWorkbench({
       <div className="evidence-discovery">
         {view === "evidence" && (
           <NativeSelect
-            aria-label="Evidence visibility"
+            aria-label={uiText("Evidence visibility")}
             value={params.get("author") ?? "mine"}
             onChange={(e) => route({ author: e.target.value })}
           >
-            <option value="mine">My annotations & bookmarks</option>
-            <option value="shared">Shared annotations</option>
-            <option value="all">All accessible evidence</option>
+            <option value="mine">
+              <I18nText id="My annotations & bookmarks" />
+            </option>
+            <option value="shared">
+              <I18nText id="Shared annotations" />
+            </option>
+            <option value="all">
+              <I18nText id="All accessible evidence" />
+            </option>
           </NativeSelect>
         )}
         <ResearchSearch
-          label="Search research"
-          placeholder="Find a paper, passage or bookmark…"
+          label={uiText("Search research")}
+          placeholder={uiText("Find a paper, passage or bookmark…")}
           value={search}
           onChange={(value) => {
             setSearch(value);
@@ -83,11 +92,13 @@ export default function ResearchWorkbench({
         />
         {view === "queue" && (
           <NativeSelect
-            aria-label="Reading status filter"
+            aria-label={uiText("Reading status filter")}
             value={params.get("status") ?? "all"}
             onChange={(e) => route({ status: e.target.value })}
           >
-            <option value="all">All statuses</option>
+            <option value="all">
+              <I18nText id="All statuses" />
+            </option>
             {Object.entries(readingStatuses).map(([value, label]) => (
               <option key={value} value={value}>
                 {label}
@@ -100,10 +111,10 @@ export default function ResearchWorkbench({
         <div className="evidence-introduction">
           <BookOpen size={20} />
           <p>
-            <strong>Keep the source beside the thought.</strong> Your recent
-            reading positions, PDF annotations and bookmarks appear alongside
-            papers and references. Reading statuses are private; shared
-            annotations keep their original audience.
+            <strong>
+              <I18nText id="Keep the source beside the thought." />
+            </strong>{" "}
+            <I18nText id="Your recent reading positions, PDF annotations and bookmarks appear alongside papers and references. Reading statuses are private; shared annotations keep their original audience." />
           </p>
         </div>
       )}
@@ -116,7 +127,7 @@ export default function ResearchWorkbench({
           active={active}
         />
       ) : (
-        <Loading label="Opening your research context…" />
+        <Loading label={uiText("Opening your research context…")} />
       )}
     </div>
   );
@@ -132,6 +143,7 @@ function EvidenceList({
   groupId: string | null;
   spaceId: string | null;
 }) {
+  useInterfaceLocale();
   const { session, revision, navigate, notify, refresh } = useWorkspace();
   const [cursor, setCursor] = useState<string | null>(null),
     [items, setItems] = useState<EvidenceItem[]>([]),
@@ -192,31 +204,31 @@ function EvidenceList({
         <div
           className="evidence-selection"
           role="toolbar"
-          aria-label="Selected evidence"
+          aria-label={uiText("Selected evidence")}
         >
-          <span>{selected.size} selected</span>
+          <span>
+            {selected.size} <I18nText id="selected" />
+          </span>
           <Button
             className="button secondary"
             onClick={() => setSynthesizing(true)}
           >
             <FileText size={15} />
-            Create from evidence
+            <I18nText id="Create from evidence" />
           </Button>
           <Button
             className="button ghost"
             onClick={() => setSelected(new Map())}
           >
-            Clear selection
+            <I18nText id="Clear selection" />
           </Button>
         </div>
       )}
       {!items.length && result.loading ? (
-        <Loading label="Gathering evidence…" />
+        <Loading label={uiText("Gathering evidence…")} />
       ) : !items.length ? (
-        <Empty title="A little room for discovery">
-          Upload a PDF, bookmark a passage or add a reference to this
-          workspace’s library. Try another filter if you expected to find
-          something here.
+        <Empty title={uiText("A little room for discovery")}>
+          <I18nText id="Upload a PDF, bookmark a passage or add a reference to this workspace’s library. Try another filter if you expected to find something here." />
         </Empty>
       ) : (
         <div className="evidence-list">
@@ -261,11 +273,19 @@ function EvidenceList({
                   <div className="evidence-row-meta">
                     <span>
                       {item.kind === "progress"
-                        ? "Continue reading"
+                        ? uiText("Continue reading")
                         : item.kind}
                     </span>
-                    {item.page && <span>Page {item.page}</span>}
-                    {item.private && <span>Private</span>}
+                    {item.page && (
+                      <span>
+                        <I18nText id="Page" /> {item.page}
+                      </span>
+                    )}
+                    {item.private && (
+                      <span>
+                        <I18nText id="Private" />
+                      </span>
+                    )}
                     <time>{timeAgo(item.updated_at)}</time>
                   </div>
                   <button
@@ -284,7 +304,7 @@ function EvidenceList({
                   {item.kind === "progress" &&
                     item.reading?.data.fraction !== undefined && (
                       <progress
-                        aria-label="Reading progress"
+                        aria-label={uiText("Reading progress")}
                         max={1}
                         value={item.reading.data.fraction}
                       />
@@ -307,7 +327,7 @@ function EvidenceList({
                   <IconButton
                     className="icon-button"
                     aria-label={`Open ${item.title}`}
-                    title="Open source"
+                    title={uiText("Open source")}
                     onClick={() => navigate(item.route)}
                   >
                     <ExternalLink size={16} />
@@ -325,7 +345,7 @@ function EvidenceList({
           onClick={() => setCursor(result.data!.next)}
           pending={!!result.loading}
         >
-          {"Load more evidence"}
+          {uiText("Load more evidence")}
         </Button>
       )}
       {synthesizing && (
@@ -356,6 +376,7 @@ function SynthesisDialog({
   onClose: () => void;
   onCreated: () => void;
 }) {
+  useInterfaceLocale();
   const { spaces, navigate, appearance } = useWorkspace();
   const writable = spaces.filter(
     (s) => s.role === "editor" && s.effective_status === "active",
@@ -438,49 +459,55 @@ function SynthesisDialog({
   };
   return (
     <Dialog
-      title="Create from evidence"
+      title={uiText("Create from evidence")}
       onClose={() => {
         if (!busy) onClose();
       }}
       wide
     >
       <p className="muted">
-        A structured starting point from {items.length} selected sources. No AI
-        is used; review the evidence and add your own conclusions.
+        <I18nText id="A structured starting point from" /> {items.length}{" "}
+        <I18nText id="selected sources. No AI is used; review the evidence and add your own conclusions." />
       </p>
       <ErrorNotice message={error} />
       <fieldset disabled={busy} className="synthesis-fields">
         <label>
-          File name
+          <I18nText id="File name" />
           <TextInput
-            aria-label="File name"
+            aria-label={uiText("File name")}
             value={name}
             maxLength={200}
             onChange={(e) => setName(e.target.value)}
           />
         </label>
         <label>
-          Format
+          <I18nText id="Format" />
           <NativeSelect
-            aria-label="Format"
+            aria-label={uiText("Format")}
             value={type}
             onChange={(e) => setType(e.target.value as typeof type)}
           >
-            <option value="markdown">Research note</option>
-            <option value="canvas">Evidence Canvas</option>
+            <option value="markdown">
+              <I18nText id="Research note" />
+            </option>
+            <option value="canvas">
+              <I18nText id="Evidence Canvas" />
+            </option>
           </NativeSelect>
         </label>
         <label>
-          Destination workspace
+          <I18nText id="Destination workspace" />
           <NativeSelect
-            aria-label="Destination workspace"
+            aria-label={uiText("Destination workspace")}
             value={destination}
             onChange={(e) => setDestination(e.target.value)}
           >
             {writable.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name}
-                {s.kind === "personal" ? " · private" : " · shared"}
+                {s.kind === "personal"
+                  ? uiText(" · private")
+                  : uiText(" · shared")}
               </option>
             ))}
           </NativeSelect>
@@ -488,12 +515,15 @@ function SynthesisDialog({
       </fieldset>
       {!writable.length && (
         <p role="status">
-          You need an editable workspace to create a synthesis.
+          <I18nText id="You need an editable workspace to create a synthesis." />
         </p>
       )}
       {preview && (
         <>
-          <div className="synthesis-preview" aria-label="Synthesis preview">
+          <div
+            className="synthesis-preview"
+            aria-label={uiText("Synthesis preview")}
+          >
             {type === "markdown" ? (
               <ReadingView
                 source={preview.source}
@@ -506,17 +536,18 @@ function SynthesisDialog({
             )}
           </div>
           <details>
-            <summary>Exact file source</summary>
+            <summary>
+              <I18nText id="Exact file source" />
+            </summary>
             <TextArea
               className="synthesis-source"
               readOnly
               value={preview.source}
-              aria-label="Exact synthesis source"
+              aria-label={uiText("Exact synthesis source")}
             />
           </details>
           <p className="muted">
-            Source links keep their existing permissions. Creating this file
-            does not grant its readers access to linked originals.
+            <I18nText id="Source links keep their existing permissions. Creating this file does not grant its readers access to linked originals." />
           </p>
           {preview.sharedDestination && preview.privateCount > 0 && (
             <label className="synthesis-consent">
@@ -524,22 +555,32 @@ function SynthesisDialog({
                 checked={ack}
                 onChange={(e) => setAck(e.target.checked)}
               />
-              I understand that text from {preview.privateCount} private sources
-              will be copied into this shared workspace.
+              <I18nText id="I understand that text from" />{" "}
+              {preview.privateCount}{" "}
+              <I18nText id="private sources will be copied into this shared workspace." />
             </label>
           )}
         </>
       )}
       <DialogFooter>
-        <Button className="button ghost" disabled={busy} onClick={onClose}>
-          Cancel
+        <Button
+          data-dialog-cancel
+          className="button ghost"
+          disabled={busy}
+          onClick={onClose}
+        >
+          <I18nText id="Cancel" />
         </Button>
         <Button
           className="button secondary"
           disabled={busy || !destination || !name.trim()}
           onClick={() => void perform(false)}
         >
-          {busy ? "Working…" : preview ? "Refresh preview" : "Preview draft"}
+          {busy
+            ? uiText("Working…")
+            : preview
+              ? "Refresh preview"
+              : "Preview draft"}
         </Button>
         {preview && (
           <Button
@@ -550,7 +591,8 @@ function SynthesisDialog({
             }
             onClick={() => void perform(true)}
           >
-            Create {type === "canvas" ? "Canvas" : "note"}
+            <I18nText id="Create" />{" "}
+            {type === "canvas" ? uiText("Canvas") : uiText("note")}
           </Button>
         )}
       </DialogFooter>

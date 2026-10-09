@@ -1,4 +1,7 @@
 "use client";
+import { currentLocale } from "@axiom/i18n/client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { NativeSelect } from "../ui/controls";
 import { useState } from "react";
 import { Copy, FolderOpen } from "lucide-react";
@@ -11,6 +14,7 @@ export default function FileIdentity({
   resource: Resource;
   onVersion?: (id: string, mime: string) => void;
 }) {
+  useInterfaceLocale();
   const { navigate } = useWorkspace(),
     [expanded, setExpanded] = useState(false),
     [error, setError] = useState(""),
@@ -53,34 +57,44 @@ export default function FileIdentity({
       open={expanded}
       onToggle={(e) => setExpanded(e.currentTarget.open)}
     >
-      <summary>File identity & versions</summary>
+      <summary>
+        <I18nText id="File identity & versions" />
+      </summary>
       <ErrorNotice
         message={error || location.error || versions.error || usage.error}
       />
       <dl>
         <div>
-          <dt>File code</dt>
+          <dt>
+            <I18nText id="File code" />
+          </dt>
           <dd>{resource.reference_code || "Not assigned"}</dd>
         </div>
         <div>
-          <dt>Location</dt>
+          <dt>
+            <I18nText id="Location" />
+          </dt>
           <dd>
             {location.data
               ? [
                   location.data.space.name,
                   ...location.data.ancestors.map((entry) => entry.name),
                 ].join(" / ")
-              : "Loading…"}
+              : uiText("Loading…")}
           </dd>
         </div>
         <div>
-          <dt>Internal ID</dt>
+          <dt>
+            <I18nText id="Internal ID" />
+          </dt>
           <dd>
             <code>{resource.id}</code>
           </dd>
         </div>
         <div>
-          <dt>Pinned version ID</dt>
+          <dt>
+            <I18nText id="Pinned version ID" />
+          </dt>
           <dd>
             <code>{resource.current_version_id}</code>
           </dd>
@@ -88,9 +102,9 @@ export default function FileIdentity({
       </dl>
       {versions.data && (
         <label>
-          Version
+          <I18nText id="Version" />
           <NativeSelect
-            aria-label="File version"
+            aria-label={uiText("File version")}
             value={resource.current_version_id ?? ""}
             disabled={!onVersion}
             onChange={(e) => {
@@ -102,8 +116,11 @@ export default function FileIdentity({
           >
             {versions.data.map((version) => (
               <option key={version.id} value={version.id}>
-                Version {version.ordinal} · {bytes(version.bytes)} ·{" "}
-                {new Date(version.created_at).toLocaleDateString()}
+                <I18nText id="Version" /> {version.ordinal} ·{" "}
+                {bytes(version.bytes)} ·{" "}
+                {new Date(version.created_at).toLocaleDateString(
+                  currentLocale(),
+                )}
               </option>
             ))}
           </NativeSelect>
@@ -111,13 +128,14 @@ export default function FileIdentity({
       )}
       {usage.data && (
         <p className="ws-small muted">
-          {usage.data.references} saved references · {usage.data.annotations}{" "}
-          annotations · {usage.data.citations} citation links
+          {usage.data.references} <I18nText id="saved references ·" />{" "}
+          {usage.data.annotations} <I18nText id="annotations ·" />{" "}
+          {usage.data.citations} <I18nText id="citation links" />
         </p>
       )}
       <div className="media-identity-actions">
         <button
-          title="Copy file link"
+          title={uiText("Copy file link")}
           onClick={() =>
             void copy(
               `${locationOrigin()}/workbench/notes/${resource.id}`,
@@ -126,22 +144,22 @@ export default function FileIdentity({
           }
         >
           <Copy size={14} />
-          Link
+          <I18nText id="Link" />
         </button>
         <button
-          title="Copy readable code"
+          title={uiText("Copy readable code")}
           disabled={!resource.reference_code}
           onClick={() => void copy(resource.reference_code!, "File code")}
         >
           <Copy size={14} />
-          Code
+          <I18nText id="Code" />
         </button>
         <button
-          title="Copy internal ID"
+          title={uiText("Copy internal ID")}
           onClick={() => void copy(resource.id, "Internal ID")}
         >
           <Copy size={14} />
-          ID
+          <I18nText id="ID" />
         </button>
         <button
           onClick={() =>
@@ -151,7 +169,7 @@ export default function FileIdentity({
           }
         >
           <FolderOpen size={14} />
-          Reveal
+          <I18nText id="Reveal" />
         </button>
       </div>
       <small role="status">{copied}</small>

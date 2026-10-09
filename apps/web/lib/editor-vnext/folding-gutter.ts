@@ -1,3 +1,4 @@
+import { bindAttribute } from "@axiom/i18n/dom";
 import type { ProjectedBlock } from "@axiom/editor/projection";
 import { canFold, foldDescription } from "@axiom/editor/folding";
 import type { EditorView } from "@milkdown/kit/prose/view";
@@ -21,7 +22,7 @@ export class FoldingGutter {
     this.dom.className = "axiom-folding-gutter";
     this.dom.contentEditable = "false";
     this.dom.setAttribute("role", "group");
-    this.dom.setAttribute("aria-label", "Block folding");
+    bindAttribute(this.dom, "aria-label", "Block folding");
   }
   update(view: EditorView, source: string, blocks: ProjectedBlock[]) {
     if (this.view !== view) {

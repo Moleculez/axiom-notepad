@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { Switch, NativeSelect } from "./ui/controls";
 import {
   minimapDefaults,
@@ -15,6 +17,7 @@ export default function MinimapSettings({
   onChange: (value: MinimapPreferences) => void;
   onInvalid: (invalid: boolean) => void;
 }) {
+  useInterfaceLocale();
   const change = <K extends keyof MinimapPreferences>(
     key: K,
     next: MinimapPreferences[K],
@@ -66,14 +69,17 @@ export default function MinimapSettings({
   );
   return (
     <section className="settings-card minimap-settings">
-      <h4>Document minimap</h4>
+      <h4>
+        <I18nText id="Document minimap" />
+      </h4>
       <p className="settings-note">
-        A miniature of your current view. Click or drag to scroll without moving
-        your editing cursor. Reading marks share its overview lane.
+        <I18nText id="A miniature of your current view. Click or drag to scroll without moving your editing cursor. Reading marks share its overview lane." />
       </p>
       {toggle("enabled", "Show document minimap")}
       <fieldset disabled={!value.enabled}>
-        <legend>Show in</legend>
+        <legend>
+          <I18nText id="Show in" />
+        </legend>
         <div className="minimap-mode-options">
           {toggle("write", "Write")}
           {toggle("source", "Source")}
@@ -94,7 +100,7 @@ export default function MinimapSettings({
         ])}
         <NumberPreference
           key={String(value.enabled)}
-          label="Minimap width"
+          label={uiText("Minimap width")}
           value={value.width}
           min={80}
           max={200}
@@ -105,7 +111,9 @@ export default function MinimapSettings({
           onInvalid={onInvalid}
         />
         <details className="minimap-advanced">
-          <summary>Indicators & interaction</summary>
+          <summary>
+            <I18nText id="Indicators & interaction" />
+          </summary>
           {select("slider", "Viewport highlight", [
             ["hover", "On hover or focus"],
             ["always", "Always visible"],
@@ -129,8 +137,7 @@ export default function MinimapSettings({
           )}
         </details>
         <p className="settings-note">
-          Narrow document panes use a compact overview. Bookmark and annotation
-          visibility follows “Show reading marks overview” above.
+          <I18nText id="Narrow document panes use a compact overview. Bookmark and annotation visibility follows “Show reading marks overview” above." />
         </p>
       </fieldset>
     </section>

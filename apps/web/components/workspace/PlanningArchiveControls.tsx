@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ArrowLeft, ArrowRight, RefreshCw } from "lucide-react";
 import type { ArchivePage } from "@axiom/shared/planning-archives";
@@ -98,6 +100,7 @@ export function ArchiveSearch({
   onRefresh: () => void;
   children?: ReactNode;
 }) {
+  const { t } = useInterfaceLocale();
   return (
     <div className="planning-archive-search">
       <SearchField
@@ -110,12 +113,16 @@ export function ArchiveSearch({
       {children}
       {sort && onSort && (
         <NativeSelect
-          aria-label={`${label} order`}
+          aria-label={t("Sort {section}", { section: label })}
           value={sort}
           onChange={(e) => onSort(e.target.value as Filters["sort"])}
         >
-          <option value="newest">Newest first</option>
-          <option value="oldest">Oldest first</option>
+          <option value="newest">
+            <I18nText id="Newest first" />
+          </option>
+          <option value="oldest">
+            <I18nText id="Oldest first" />
+          </option>
         </NativeSelect>
       )}
       <Button
@@ -125,7 +132,7 @@ export function ArchiveSearch({
         onClick={onRefresh}
       >
         <RefreshCw size={14} />
-        Refresh
+        <I18nText id="Refresh" />
       </Button>
     </div>
   );
@@ -153,19 +160,26 @@ export function ArchivePagination({
   onNext: () => void;
   onLimit: (limit: number) => void;
 }) {
+  const { t } = useInterfaceLocale();
   return (
-    <nav className="planning-archive-pagination" aria-label={`${label} pages`}>
+    <nav
+      className="planning-archive-pagination"
+      aria-label={t("{section} pages", { section: label })}
+    >
       <HelpText aria-live="polite">
-        Page {page} · {count} shown
+        <I18nText
+          id="Page {page, number} · {count, plural, one {# item shown} other {# items shown}}"
+          values={{ page, count }}
+        />
       </HelpText>
       <NativeSelect
-        aria-label={`${label} per page`}
+        aria-label={t("{section} per page", { section: label })}
         value={limit}
         onChange={(e) => onLimit(Number(e.target.value))}
       >
         {[15, 30, 60, 100].map((n) => (
           <option key={n} value={n}>
-            {n} per page
+            <I18nText id="{count, number} per page" values={{ count: n }} />
           </option>
         ))}
       </NativeSelect>
@@ -176,10 +190,10 @@ export function ArchivePagination({
           onClick={onPrevious}
         >
           <ArrowLeft size={14} />
-          Previous
+          <I18nText id="Previous" />
         </Button>
         <Button size="compact" disabled={loading || !hasNext} onClick={onNext}>
-          Next
+          <I18nText id="Next" />
           <ArrowRight size={14} />
         </Button>
       </ActionRow>

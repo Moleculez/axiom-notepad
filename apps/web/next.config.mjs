@@ -1,7 +1,8 @@
-import type { NextConfig } from "next";
-import { PHASE_DEVELOPMENT_SERVER } from "next/constants";
+import { PHASE_DEVELOPMENT_SERVER } from "next/constants.js";
+import { catalogsRevision } from "../../scripts/i18n/catalogs.mjs";
 
-export default function config(phase: string): NextConfig {
+/** @param {string} phase @returns {import("next").NextConfig} */
+export default function config(phase) {
   const development = phase === PHASE_DEVELOPMENT_SERVER;
   const requestedEngine = process.env.NEXT_PUBLIC_AXIOM_EDITOR_ENGINE;
   return {
@@ -11,6 +12,7 @@ export default function config(phase: string): NextConfig {
       ? process.env.AXIOM_DEV_DIST_DIR || ".next/dev-8080"
       : process.env.AXIOM_DIST_DIR || ".next",
     transpilePackages: [
+      "@axiom/i18n",
       "@axiom/markdown",
       "@axiom/shared",
       "@axiom/editor",
@@ -21,6 +23,7 @@ export default function config(phase: string): NextConfig {
     // slashes so their portable relative URLs resolve exactly as in static ZIPs.
     skipTrailingSlashRedirect: true,
     env: {
+      NEXT_PUBLIC_AXIOM_LOCALE_REVISION: catalogsRevision(),
       NEXT_PUBLIC_AXIOM_EDITOR_ENGINE:
         requestedEngine === "milkdown" || requestedEngine === "native"
           ? requestedEngine

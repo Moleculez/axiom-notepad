@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { Button, HelpText, TextInput } from "../ui/controls";
 import { useState } from "react";
 import type {
@@ -19,6 +21,7 @@ export default function AssistantScheduleReview({
   onClose: () => void;
   onChange: () => void;
 }) {
+  useInterfaceLocale();
   const [value, setValue] = useState(
       item.data as Extract<AssistantProposal, { kind: "schedule" }>,
     ),
@@ -32,14 +35,16 @@ export default function AssistantScheduleReview({
     { refresh, spaces } = useWorkspace();
   return (
     <Dialog
-      title="Review schedule proposal"
-      subtitle="Dates are applied only to this workspace. Dependency changes are included below."
+      title={uiText("Review schedule proposal")}
+      subtitle={uiText(
+        "Dates are applied only to this workspace. Dependency changes are included below.",
+      )}
       onClose={onClose}
     >
       <p>{value.explanation}</p>
       <div className="productivity-subtoolbar">
         <label>
-          Start
+          <I18nText id="Start" />
           <TextInput
             type="date"
             disabled={action.busy}
@@ -51,7 +56,7 @@ export default function AssistantScheduleReview({
           />
         </label>
         <label>
-          Finish
+          <I18nText id="Finish" />
           <TextInput
             type="date"
             disabled={action.busy}
@@ -67,7 +72,7 @@ export default function AssistantScheduleReview({
         <>
           <h3>
             {spaces.find((s) => s.id === preview.spaceId)?.name} ·{" "}
-            {preview.plan.proposed.length} affected tasks
+            {preview.plan.proposed.length} <I18nText id="affected tasks" />
           </h3>
           <div className="planning-insight-rows">
             {preview.plan.proposed.map((row) => {
@@ -90,15 +95,18 @@ export default function AssistantScheduleReview({
             <HelpText key={w}>{w}</HelpText>
           ))}
           <HelpText>
-            A newer task, calendar or availability change invalidates this
-            preview. Undo will not overwrite a collaborator's later edits.
+            <I18nText id="A newer task, calendar or availability change invalidates this preview. Undo will not overwrite a collaborator's later edits." />
           </HelpText>
         </>
       )}
       <ErrorNotice message={action.error} />
       <DialogFooter>
-        <Button className="button secondary" onClick={onClose}>
-          Keep private draft
+        <Button
+          data-dialog-cancel
+          className="button secondary"
+          onClick={onClose}
+        >
+          <I18nText id="Keep private draft" />
         </Button>
         {preview ? (
           <Button
@@ -116,7 +124,7 @@ export default function AssistantScheduleReview({
               })
             }
           >
-            Apply reviewed schedule
+            <I18nText id="Apply reviewed schedule" />
           </Button>
         ) : (
           <Button
@@ -130,7 +138,7 @@ export default function AssistantScheduleReview({
               )
             }
           >
-            Preview affected tasks
+            <I18nText id="Preview affected tasks" />
           </Button>
         )}
       </DialogFooter>

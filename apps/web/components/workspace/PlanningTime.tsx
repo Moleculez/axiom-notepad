@@ -1,4 +1,7 @@
 "use client";
+import { currentLocale } from "@axiom/i18n/client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { useState } from "react";
 import {
   Clock3,
@@ -81,6 +84,7 @@ export default function PlanningTime({
   taskId?: string;
   taskDeleted?: boolean;
 }) {
+  useInterfaceLocale();
   const { revision } = useWorkspace(),
     today = localDay(space.timezone ?? "UTC"),
     monday = dateFromDay(
@@ -140,17 +144,18 @@ export default function PlanningTime({
   return (
     <section
       className="planning-suite-panel planning-archive-content planning-time"
-      aria-label={taskId ? "Task time ledger" : "Workspace time ledger"}
+      aria-label={
+        taskId ? uiText("Task time ledger") : uiText("Workspace time ledger")
+      }
     >
       <ActionRow align="between">
         <div>
           <h2>
             <Clock3 size={18} />
-            Time ledger
+            <I18nText id="Time ledger" />
           </h2>
           <HelpText>
-            Recorded work, not estimates. Entries are shared with workspace
-            members.
+            <I18nText id="Recorded work, not estimates. Entries are shared with workspace members." />
           </HelpText>
         </div>
         <Button
@@ -158,11 +163,11 @@ export default function PlanningTime({
           onClick={() => setEditing("new")}
         >
           <Plus size={15} />
-          Log time
+          <I18nText id="Log time" />
         </Button>
       </ActionRow>
       <ArchiveSearch
-        label="Find time entries"
+        label={uiText("Find time entries")}
         search={archive.search}
         onSearch={archive.setSearch}
         loading={archive.data.loading && !page}
@@ -170,7 +175,7 @@ export default function PlanningTime({
       >
         <Button size="compact" onClick={() => setFilterOpen(true)}>
           <SlidersHorizontal size={14} />
-          Filters
+          <I18nText id="Filters" />
         </Button>
         <Button
           size="compact"
@@ -179,7 +184,7 @@ export default function PlanningTime({
           onClick={exportCsv}
         >
           <Download size={14} />
-          CSV
+          <I18nText id="CSV" />
         </Button>
       </ArchiveSearch>
       <ErrorNotice message={archive.data.error} retry={archive.refresh} />
@@ -187,11 +192,11 @@ export default function PlanningTime({
       <div className="planning-archive-summary">
         <strong>{page ? duration(page.totals.minutes) : "…"}</strong>
         <HelpText>
-          {page?.total ?? 0} entries · {archive.filters.from} –{" "}
-          {archive.filters.to}
+          {page?.total ?? 0} <I18nText id="entries ·" /> {archive.filters.from}{" "}
+          – {archive.filters.to}
           {archive.filters.descendants === "1"
-            ? " · Includes descendants"
-            : " · Direct task entries"}
+            ? uiText(" · Includes descendants")
+            : uiText(" · Direct task entries")}
           {archive.filters.state !== "active"
             ? ` · ${archive.filters.state} entries`
             : ""}
@@ -201,8 +206,8 @@ export default function PlanningTime({
         {!page ? (
           archive.data.loading && <Loading />
         ) : !page.items.length ? (
-          <Empty title="No time recorded">
-            Choose another date range, or log work on a task.
+          <Empty title={uiText("No time recorded")}>
+            <I18nText id="Choose another date range, or log work on a task." />
           </Empty>
         ) : (
           <div className="planning-lab-list">
@@ -211,12 +216,12 @@ export default function PlanningTime({
                 <div>
                   <Button variant="ghost" onClick={() => setEditing(e.id)}>
                     {e.task_title}
-                    {e.task_deleted_at ? " · Deleted task" : ""}
+                    {e.task_deleted_at ? uiText(" · Deleted task") : ""}
                   </Button>
                   <HelpText>
                     {e.spent_on} · {e.author_name ?? "Unavailable member"} ·{" "}
                     {duration(e.minutes)}
-                    {e.withdrawn ? " · Withdrawn" : ""}
+                    {e.withdrawn ? uiText(" · Withdrawn") : ""}
                   </HelpText>
                   {e.note_preview && (
                     <p className="planning-time-note">
@@ -231,7 +236,7 @@ export default function PlanningTime({
                   onClick={() => setHistory(e.id)}
                 >
                   <History size={14} />
-                  History
+                  <I18nText id="History" />
                 </Button>
               </article>
             ))}
@@ -239,10 +244,14 @@ export default function PlanningTime({
         )}
         {page && (
           <details className="planning-time-report">
-            <summary>By member and week</summary>
+            <summary>
+              <I18nText id="By member and week" />
+            </summary>
             <div className="planning-field-grid">
               <section>
-                <h3>Members</h3>
+                <h3>
+                  <I18nText id="Members" />
+                </h3>
                 {page.totals.byMember.map((m) => (
                   <p key={m.id ?? "deleted"}>
                     {m.name ?? "Unavailable member"}{" "}
@@ -251,7 +260,9 @@ export default function PlanningTime({
                 ))}
               </section>
               <section>
-                <h3>Weeks starting Monday</h3>
+                <h3>
+                  <I18nText id="Weeks starting Monday" />
+                </h3>
                 {page.totals.byWeek.map((w) => (
                   <p key={w.week}>
                     {w.week} <strong>{duration(w.minutes)}</strong>
@@ -263,25 +274,27 @@ export default function PlanningTime({
         )}
       </div>
       <HelpText>
-        Creation-bounded pages; later corrections remain live. Withdrawn entries
-        are excluded unless selected.
+        <I18nText id="Creation-bounded pages; later corrections remain live. Withdrawn entries are excluded unless selected." />
       </HelpText>
-      <ArchivePagination label="Time entries" {...archive.pagination} />
+      <ArchivePagination
+        label={uiText("Time entries")}
+        {...archive.pagination}
+      />
       {filterOpen && (
         <Dialog
-          title="Time report filters"
+          title={uiText("Time report filters")}
           onClose={() => setFilterOpen(false)}
         >
           <DialogBody>
             <div className="planning-field-grid">
-              <Field label="From">
+              <Field label={uiText("From")}>
                 <TextInput
                   type="date"
                   value={archive.filters.from}
                   onChange={(e) => archive.set({ from: e.target.value })}
                 />
               </Field>
-              <Field label="To">
+              <Field label={uiText("To")}>
                 <TextInput
                   type="date"
                   value={archive.filters.to}
@@ -289,18 +302,18 @@ export default function PlanningTime({
                 />
               </Field>
             </div>
-            <Field label="Member">
+            <Field label={uiText("Member")}>
               <PersonPicker
-                label="Time report member"
+                label={uiText("Time report member")}
                 people={people}
                 value={archive.filters.member}
                 onChange={(member) => archive.set({ member })}
               />
             </Field>
             {!taskId && (
-              <Field label="Task">
+              <Field label={uiText("Task")}>
                 <PlanningEntityPicker
-                  label="Time report task"
+                  label={uiText("Time report task")}
                   spaceId={space.id}
                   kind="task"
                   value={archive.filters.task}
@@ -308,7 +321,7 @@ export default function PlanningTime({
                 />
               </Field>
             )}
-            <Field label="State">
+            <Field label={uiText("State")}>
               <NativeSelect
                 value={archive.filters.state}
                 onChange={(e) =>
@@ -317,9 +330,15 @@ export default function PlanningTime({
                   })
                 }
               >
-                <option value="active">Active</option>
-                <option value="withdrawn">Withdrawn</option>
-                <option value="all">All</option>
+                <option value="active">
+                  <I18nText id="Active" />
+                </option>
+                <option value="withdrawn">
+                  <I18nText id="Withdrawn" />
+                </option>
+                <option value="all">
+                  <I18nText id="All" />
+                </option>
               </NativeSelect>
             </Field>
             {archive.filters.task && (
@@ -330,14 +349,16 @@ export default function PlanningTime({
                     archive.set({ descendants: e.target.checked ? "1" : "0" })
                   }
                 />
-                Include descendant tasks (each entry counts once)
+                <I18nText id="Include descendant tasks (each entry counts once)" />
               </label>
             )}
           </DialogBody>
           <DialogFooter>
-            <Button onClick={archive.reset}>Reset</Button>
+            <Button onClick={archive.reset}>
+              <I18nText id="Reset" />
+            </Button>
             <Button variant="primary" onClick={() => setFilterOpen(false)}>
-              Done
+              <I18nText id="Done" />
             </Button>
           </DialogFooter>
         </Dialog>
@@ -375,12 +396,13 @@ function TimeEntryDialog({
   readOnly: boolean;
   onClose: () => void;
 }) {
+  useInterfaceLocale();
   const data = useData<{ item: TimeEntry }>(
     entryId !== "new" ? `spaces/${space.id}/planning-time/${entryId}` : null,
   );
   if (entryId !== "new" && !data.data)
     return (
-      <Dialog title="Time entry" onClose={onClose}>
+      <Dialog title={uiText("Time entry")} onClose={onClose}>
         <DialogBody>
           <ErrorNotice message={data.error} retry={data.reload} />
           {data.loading && <Loading />}
@@ -410,6 +432,7 @@ function TimeEditor({
   readOnly: boolean;
   onClose: () => void;
 }) {
+  useInterfaceLocale();
   const [initial] = useState(received);
   const { session, refresh, notify } = useWorkspace(),
     action = useAction(),
@@ -452,7 +475,10 @@ function TimeEditor({
       onClose();
     });
   return (
-    <Dialog title={initial ? "Time entry" : "Log time"} onClose={close}>
+    <Dialog
+      title={initial ? uiText("Time entry") : uiText("Log time")}
+      onClose={close}
+    >
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -460,30 +486,30 @@ function TimeEditor({
         }}
       >
         <DialogBody>
-          <DraftGuard dirty={dirty} title="Unsaved time entry" />
+          <DraftGuard dirty={dirty} title={uiText("Unsaved time entry")} />
           <ErrorNotice message={action.error} />
           {initial && (
             <HelpText>
-              By {initial.author_name ?? "Unavailable member"} · Revision{" "}
-              {initial.version}
-              {initial.withdrawn ? " · Withdrawn" : ""}
+              <I18nText id="By" /> {initial.author_name ?? "Unavailable member"}{" "}
+              <I18nText id="· Revision" /> {initial.version}
+              {initial.withdrawn ? uiText(" · Withdrawn") : ""}
             </HelpText>
           )}
           <fieldset
             className="planning-suite-form"
             disabled={!canEdit || action.busy}
           >
-            <Field label="Task">
+            <Field label={uiText("Task")}>
               {initial ? (
                 <HelpText>
                   {initial.task_title}
                   {initial.task_deleted_at
-                    ? " · Deleted (history retained)"
+                    ? uiText(" · Deleted (history retained)")
                     : ""}
                 </HelpText>
               ) : (
                 <PlanningEntityPicker
-                  label="Task for time entry"
+                  label={uiText("Task for time entry")}
                   spaceId={space.id}
                   kind="task"
                   value={draft.taskId}
@@ -492,7 +518,7 @@ function TimeEditor({
               )}
             </Field>
             <div className="planning-field-grid">
-              <Field label="Work date">
+              <Field label={uiText("Work date")}>
                 <TextInput
                   required
                   type="date"
@@ -504,7 +530,10 @@ function TimeEditor({
                   }
                 />
               </Field>
-              <Field label="Minutes" hint="1–1,440 minutes per entry">
+              <Field
+                label={uiText("Minutes")}
+                hint={uiText("1–1,440 minutes per entry")}
+              >
                 <TextInput
                   required
                   type="number"
@@ -525,7 +554,7 @@ function TimeEditor({
                 />
               </Field>
             </div>
-            <Field label="Note">
+            <Field label={uiText("Note")}>
               <TextArea
                 maxLength={2000}
                 rows={4}
@@ -536,8 +565,8 @@ function TimeEditor({
             </Field>
             {correction && (
               <Field
-                label="Correction reason"
-                hint="Required for changes to another member’s entry"
+                label={uiText("Correction reason")}
+                hint={uiText("Required for changes to another member’s entry")}
               >
                 <TextArea
                   required
@@ -560,11 +589,16 @@ function TimeEditor({
               }
               onClick={() => save(initial.withdrawn ? "restore" : "withdraw")}
             >
-              {initial.withdrawn ? "Restore" : "Withdraw"}
+              {initial.withdrawn ? uiText("Restore") : uiText("Withdraw")}
             </Button>
           )}
-          <Button type="button" disabled={action.busy} onClick={close}>
-            Cancel
+          <Button
+            data-dialog-cancel
+            type="button"
+            disabled={action.busy}
+            onClick={close}
+          >
+            <I18nText id="Cancel" />
           </Button>
           <Button
             type="submit"
@@ -578,7 +612,7 @@ function TimeEditor({
               (!!initial && !dirty)
             }
           >
-            Save entry
+            <I18nText id="Save entry" />
           </Button>
         </DialogFooter>
       </form>
@@ -602,6 +636,7 @@ function TimeHistory({
   entryId: string;
   onClose: () => void;
 }) {
+  useInterfaceLocale();
   const archive = usePlanningArchive<
     Omit<HistoryQuery, "cursor">,
     ArchivePage<TimeHistoryEntry>
@@ -612,24 +647,28 @@ function TimeHistory({
     limit: 30,
   });
   return (
-    <Dialog title="Time entry history" onClose={onClose}>
+    <Dialog title={uiText("Time entry history")} onClose={onClose}>
       <DialogBody>
         <ArchiveSearch
-          label="Find time corrections"
+          label={uiText("Find time corrections")}
           search={archive.search}
           onSearch={archive.setSearch}
           loading={archive.data.loading && !archive.data.data}
           onRefresh={archive.refresh}
         >
           <NativeSelect
-            aria-label="Time history order"
+            aria-label={uiText("Time history order")}
             value={archive.filters.sort}
             onChange={(e) =>
               archive.set({ sort: e.target.value as HistoryQuery["sort"] })
             }
           >
-            <option value="newest">Newest first</option>
-            <option value="oldest">Oldest first</option>
+            <option value="newest">
+              <I18nText id="Newest first" />
+            </option>
+            <option value="oldest">
+              <I18nText id="Oldest first" />
+            </option>
           </NativeSelect>
           <label className="planning-check-label">
             <Checkbox
@@ -638,7 +677,7 @@ function TimeHistory({
                 archive.set({ mine: e.target.checked ? "1" : "0" })
               }
             />
-            My changes
+            <I18nText id="My changes" />
           </label>
         </ArchiveSearch>
         <ErrorNotice message={archive.data.error} retry={archive.refresh} />
@@ -655,24 +694,28 @@ function TimeHistory({
                       : h.before_data.withdrawn
                         ? "Restored"
                         : "Corrected"
-                    : "Recorded"}
+                    : uiText("Recorded")}
                 </h3>
                 <HelpText>
                   {h.actor_name ?? "Unavailable member"} ·{" "}
-                  {new Date(h.created_at).toLocaleString()}
+                  {new Date(h.created_at).toLocaleString(currentLocale())}
                 </HelpText>
                 {h.reason && <p>{h.reason}</p>}
                 <dl>
                   <div>
-                    <dt>Before</dt>
+                    <dt>
+                      <I18nText id="Before" />
+                    </dt>
                     <dd>
                       {h.before_data
                         ? `${h.before_data.spent_on} · ${duration(h.before_data.minutes)} · ${h.before_data.note ?? ""}`
-                        : "No entry"}
+                        : uiText("No entry")}
                     </dd>
                   </div>
                   <div>
-                    <dt>After</dt>
+                    <dt>
+                      <I18nText id="After" />
+                    </dt>
                     <dd>
                       {h.after_data.spent_on} · {duration(h.after_data.minutes)}{" "}
                       · {h.after_data.note}
@@ -685,8 +728,13 @@ function TimeHistory({
         )}
       </DialogBody>
       <DialogFooter>
-        <ArchivePagination label="Time history" {...archive.pagination} />
-        <Button onClick={onClose}>Done</Button>
+        <ArchivePagination
+          label={uiText("Time history")}
+          {...archive.pagination}
+        />
+        <Button onClick={onClose}>
+          <I18nText id="Done" />
+        </Button>
       </DialogFooter>
     </Dialog>
   );

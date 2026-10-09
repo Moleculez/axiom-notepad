@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import {
   BookOpen,
@@ -70,6 +72,7 @@ export default function MindmapDetails({
   onToggleTask: (node: MindmapNode) => void;
   onVisual?: (node: MindmapNode) => void;
 }) {
+  useInterfaceLocale();
   const [limit, setLimit] = useState(40);
   const tabs = useRef<HTMLDivElement>(null),
     id = useId();
@@ -134,7 +137,8 @@ export default function MindmapDetails({
     <>
       <div className="mindmap-detail-summary">
         <HelpText as="span">
-          Lines {fromLine}–{toLine} · {facts.count} nodes
+          <I18nText id="Lines" /> {fromLine}–{toLine} · {facts.count}{" "}
+          <I18nText id="nodes" />
         </HelpText>
         {facts.tasks.length > 0 && (
           <HelpText as="span">
@@ -142,7 +146,7 @@ export default function MindmapDetails({
               facts.tasks.filter((n) => mindmapTaskChecked(n, liveSource))
                 .length
             }
-            /{facts.tasks.length} tasks complete
+            /{facts.tasks.length} <I18nText id="tasks complete" />
           </HelpText>
         )}
       </div>
@@ -150,7 +154,7 @@ export default function MindmapDetails({
         className="mindmap-detail-tabs"
         ref={tabs}
         role="tablist"
-        aria-label="Branch research"
+        aria-label={uiText("Branch research")}
         onKeyDown={(event) => {
           if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key))
             return;
@@ -208,18 +212,18 @@ export default function MindmapDetails({
                 disabled={!node.to}
               >
                 <Braces size={16} />
-                {readOnly ? "View source" : "Edit in Source"}
+                {readOnly ? uiText("View source") : uiText("Edit in Source")}
               </Button>
               {onDocument && (
                 <Button onClick={() => onDocument(node.from)}>
                   <FileText size={16} />
-                  Open document
+                  <I18nText id="Open document" />
                 </Button>
               )}
               {onVisual && (
                 <Button onClick={() => onVisual(node)}>
                   <Image size={16} />
-                  Inspect visual
+                  <I18nText id="Inspect visual" />
                 </Button>
               )}
             </ActionRow>
@@ -229,8 +233,7 @@ export default function MindmapDetails({
           <>
             {!facts.evidence.length && (
               <HelpText>
-                No linked evidence in this branch. Link a note, cite a
-                reference, or add a footnote or equation reference in Markdown.
+                <I18nText id="No linked evidence in this branch. Link a note, cite a reference, or add a footnote or equation reference in Markdown." />
               </HelpText>
             )}
             <ul className="mindmap-evidence-list">
@@ -330,7 +333,7 @@ export default function MindmapDetails({
             </ul>
             {facts.evidence.length > limit && (
               <Button onClick={() => setLimit((n) => n + 40)}>
-                Show more evidence
+                <I18nText id="Show more evidence" />
               </Button>
             )}
           </>
@@ -339,8 +342,7 @@ export default function MindmapDetails({
           <>
             {!facts.tasks.length && (
               <HelpText>
-                No tasks in this branch. Add a Markdown task item to track
-                research work.
+                <I18nText id="No tasks in this branch. Add a Markdown task item to track research work." />
               </HelpText>
             )}
             <ul className="mindmap-task-list">
@@ -360,14 +362,16 @@ export default function MindmapDetails({
                     {task.label}
                   </Button>
                   <HelpText as="span">
-                    {mindmapTaskChecked(task, liveSource) ? "Complete" : "Open"}
+                    {mindmapTaskChecked(task, liveSource)
+                      ? uiText("Complete")
+                      : uiText("Open")}
                   </HelpText>
                 </li>
               ))}
             </ul>
             {facts.tasks.length > limit && (
               <Button onClick={() => setLimit((n) => n + 40)}>
-                Show more tasks
+                <I18nText id="Show more tasks" />
               </Button>
             )}
           </>

@@ -5,6 +5,9 @@ the browser-local showcase. Use it with the [design system](DESIGN_SYSTEM.md),
 [theme contract](THEME_AUTHORING.md) and [interface acceptance](INTERFACE_ACCEPTANCE.md).
 Document content is a separate boundary: property tables, code/TeX source fields
 and Markdown task nodes keep their transparent, source-backed editor treatment.
+The [localization contract](LOCALIZATION.md) covers whole-message labels, native
+language controls and RTL. ARIA copy is presentation, never an internal selector
+or a persisted enum. Keep editable scientific values canonical and source-backed.
 
 ## One implementation, native semantics
 

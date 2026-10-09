@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { Button, IconButton } from "../ui/controls";
 import BrandMark from "../BrandMark";
 import AssistantHost from "../assistant/AssistantHost";
@@ -29,6 +31,7 @@ import {
 } from "../../lib/client";
 import { useAppearance } from "../../lib/appearance";
 import { useEditorPreferences } from "../../lib/editor-preferences";
+import { useAccountLocale } from "../../lib/locale-preferences";
 import { tabRoute } from "@axiom/shared/application-tabs";
 import { fileRoute, isFileView } from "@axiom/shared/file-routes";
 import Auth from "../Auth";
@@ -61,9 +64,9 @@ import Uploads, { useUploads } from "./Uploads";
 import WorkspaceImportsHost, { useWorkspaceImports } from "./WorkspaceImports";
 import dynamic from "next/dynamic";
 const Workbench = dynamic(() => import("./Workbench"), {
-  loading: () => <Loading label="Opening file…" />,
+  loading: () => <Loading label={uiText("Opening file…")} />,
 });
-const pageLoading = () => <Loading label="Opening page…" />;
+const pageLoading = () => <Loading label={uiText("Opening page…")} />;
 const Explorer = dynamic(() => import("./Explorer"), { loading: pageLoading });
 const HomePage = dynamic(
   () => import("./Pages").then((module) => module.HomePage),
@@ -129,6 +132,7 @@ import {
 } from "./ui";
 
 export default function WorkspaceApp() {
+  useInterfaceLocale();
   const [settingsRail, setSettingsRail] = useState(true);
   const [session, setSession] = useState<Session | null>(null),
     [booting, setBooting] = useState(true),
@@ -148,6 +152,7 @@ export default function WorkspaceApp() {
     page = parts[0] || "home",
     sessionRef = useRef(session);
   sessionRef.current = session;
+  useAccountLocale(session?.user.id, !booting);
   const workSessions = useWorkspaceSessions(session?.user.id, setNotice);
   const [settingsVisit, setSettingsVisit] = useState<string | null>(null);
   useEffect(() => {
@@ -515,7 +520,7 @@ export default function WorkspaceApp() {
     return (
       <div className="ws-boot">
         <BrandMark />
-        <Loading label="Opening your research workspace…" />
+        <Loading label={uiText("Opening your research workspace…")} />
       </div>
     );
   if (
@@ -571,7 +576,7 @@ export default function WorkspaceApp() {
                 <VisualViewerHost />
                 <FileCreationHost />
                 <a className="ws-skip-link" href="#workspace-content">
-                  Skip to workspace content
+                  <I18nText id="Skip to workspace content" />
                 </a>
                 <header className="ws-appbar">
                   <WorkspaceProgress />
@@ -580,8 +585,8 @@ export default function WorkspaceApp() {
                       className="icon-button"
                       aria-label={
                         page === "settings"
-                          ? "Toggle settings navigation"
-                          : "Toggle workspace sidebar"
+                          ? uiText("Toggle settings navigation")
+                          : uiText("Toggle workspace sidebar")
                       }
                       aria-expanded={
                         page === "settings" ? settingsRail : sidebar
@@ -597,11 +602,12 @@ export default function WorkspaceApp() {
                     <WorkspaceLink
                       to="/home"
                       className="brand"
-                      aria-label="Axiom home"
+                      aria-label={uiText("Axiom home")}
                     >
                       <BrandMark />
                       <span>
-                        Axiom<span className="brand-dot">.</span>
+                        <I18nText id="Axiom" />
+                        <span className="brand-dot">.</span>
                       </span>
                     </WorkspaceLink>
                   </div>
@@ -609,27 +615,33 @@ export default function WorkspaceApp() {
                   <WorkspaceLink
                     className="workspace-docs-trigger"
                     to="/docs"
-                    title="Product guide"
-                    aria-label="Open Docs"
+                    title={uiText("Product guide")}
+                    aria-label={uiText("Open Docs")}
                   >
                     <BookOpen size={16} />
-                    <span>Docs</span>
+                    <span>
+                      <I18nText id="Docs" />
+                    </span>
                   </WorkspaceLink>
                   <button
                     className="workspace-command-trigger"
-                    aria-label="Search workspace"
-                    title="Search & commands · ⌘/Ctrl K"
+                    aria-label={uiText("Search workspace")}
+                    title={uiText("Search & commands · ⌘/Ctrl K")}
                     onClick={() => setSearchOpen(true)}
                   >
                     <Search size={16} />
-                    <span>Search & commands</span>
-                    <kbd>⌘/Ctrl K</kbd>
+                    <span>
+                      <I18nText id="Search & commands" />
+                    </span>
+                    <kbd>
+                      <I18nText id="⌘/Ctrl K" />
+                    </kbd>
                   </button>
                   <div className="ws-app-tools">
                     <IconButton
                       className="icon-button"
-                      aria-label="Open research assistant"
-                      title="Research assistant"
+                      aria-label={uiText("Open research assistant")}
+                      title={uiText("Research assistant")}
                       onClick={() => openAssistant()}
                     >
                       <MessageSquare size={18} />
@@ -638,15 +650,15 @@ export default function WorkspaceApp() {
                     <WorkspaceLink
                       className="icon-button"
                       to="/inbox"
-                      aria-label="Open inbox"
-                      title="Inbox · Mentions and reviews"
+                      aria-label={uiText("Open inbox")}
+                      title={uiText("Inbox · Mentions and reviews")}
                     >
                       <Bell size={18} />
                     </WorkspaceLink>
                     <IconButton
                       className="icon-button"
-                      aria-label="Activity & recovery"
-                      title="Uploads and background work"
+                      aria-label={uiText("Activity & recovery")}
+                      title={uiText("Uploads and background work")}
                       onClick={() => transfers.setShown(!transfers.shown)}
                     >
                       <Upload size={18} />
@@ -668,7 +680,7 @@ export default function WorkspaceApp() {
                       className="ws-menu ws-account-menu"
                       name="workspace-toolbar-popover"
                     >
-                      <summary aria-label="Account menu">
+                      <summary aria-label={uiText("Account menu")}>
                         <Avatar
                           person={session.user}
                           className="ws-account-avatar"
@@ -692,18 +704,18 @@ export default function WorkspaceApp() {
                         </p>
                         <WorkspaceLink to="/settings/profile">
                           <UserRound size={16} />
-                          Account settings
+                          <I18nText id="Account settings" />
                         </WorkspaceLink>
                         <WorkspaceLink to="/settings/appearance">
                           <Palette size={16} />
-                          Appearance & editor
+                          <I18nText id="Appearance & editor" />
                         </WorkspaceLink>
                         {session.groups.some((group) =>
                           ["owner", "admin"].includes(group.role),
                         ) && (
                           <WorkspaceLink to="/workspaces">
                             <Users size={16} />
-                            Manage workspaces
+                            <I18nText id="Manage workspaces" />
                           </WorkspaceLink>
                         )}
                         <div
@@ -712,7 +724,7 @@ export default function WorkspaceApp() {
                         />
                         <button type="button" onClick={() => setSignout(true)}>
                           <LogOut size={16} />
-                          Sign out
+                          <I18nText id="Sign out" />
                         </button>
                       </div>
                     </details>
@@ -720,18 +732,19 @@ export default function WorkspaceApp() {
                 </header>
                 {offline && (
                   <div className="ws-offline" role="status">
-                    Offline · Open cached notes remain available. File
-                    management and planning changes need a connection.
+                    <I18nText id="Offline · Open cached notes remain available. File management and planning changes need a connection." />
                   </div>
                 )}
                 <div className="ws-body">
                   {page === "settings" && settingsRail && (
                     <aside
                       className="settings-rail"
-                      aria-label="Settings navigation"
+                      aria-label={uiText("Settings navigation")}
                     >
                       <div className="ws-sidebar-heading">
-                        <strong>Settings</strong>
+                        <strong>
+                          <I18nText id="Settings" />
+                        </strong>
                       </div>
                       <SettingsRail />
                     </aside>
@@ -741,21 +754,23 @@ export default function WorkspaceApp() {
                       <button
                         className="ws-sidebar-scrim"
                         tabIndex={-1}
-                        aria-label="Close navigation"
+                        aria-label={uiText("Close navigation")}
                         onClick={() => setSidebar(false)}
                       />
                       <ResizablePanel
                         className="ws-sidebar"
-                        label="Workspace navigation"
+                        label={uiText("Workspace navigation")}
                         account={session.user.id}
                         name="sidebar"
                         edge="right"
                       >
                         <div className="ws-sidebar-heading">
-                          <span>Workspace</span>
+                          <span>
+                            <I18nText id="Workspace" />
+                          </span>
                           <IconButton
                             className="icon-button"
-                            aria-label="Collapse sidebar"
+                            aria-label={uiText("Collapse sidebar")}
                             onClick={() => setSidebar(false)}
                           >
                             <Menu size={16} />
@@ -814,7 +829,7 @@ export default function WorkspaceApp() {
                         onSplitHandled={() => setSplitTarget(null)}
                       />
                     ) : page === "tools" ? (
-                      <Loading label="Opening Explorer…" />
+                      <Loading label={uiText("Opening Explorer…")} />
                     ) : page === "home" ? (
                       <HomePage />
                     ) : page === "explorer" ? (
@@ -861,7 +876,7 @@ export default function WorkspaceApp() {
                     <span>{notice}</span>
                     <IconButton
                       className="icon-button"
-                      aria-label="Dismiss notification"
+                      aria-label={uiText("Dismiss notification")}
                       onClick={() => setNotice("")}
                     >
                       <X size={15} />
@@ -875,21 +890,22 @@ export default function WorkspaceApp() {
                 )}
                 {signout && (
                   <Dialog
-                    title="Sign out of this device?"
-                    subtitle="Account caches and offline copies will be removed from this browser."
+                    title={uiText("Sign out of this device?")}
+                    subtitle={uiText(
+                      "Account caches and offline copies will be removed from this browser.",
+                    )}
                     onClose={() => setSignout(false)}
                   >
                     <p>
-                      Make sure your notes show “Saved” first. If you have
-                      unsynchronized work, cancel and export it before signing
-                      out. Other devices’ offline copies are not affected.
+                      <I18nText id="Make sure your notes show “Saved” first. If you have unsynchronized work, cancel and export it before signing out. Other devices’ offline copies are not affected." />
                     </p>
                     <div className="dialog-footer">
                       <Button
+                        data-dialog-cancel
                         className="button secondary"
                         onClick={() => setSignout(false)}
                       >
-                        Cancel
+                        <I18nText id="Cancel" />
                       </Button>
                       <Button
                         className="button primary"
@@ -899,7 +915,7 @@ export default function WorkspaceApp() {
                           )
                         }
                       >
-                        Sign out and clear caches
+                        <I18nText id="Sign out and clear caches" />
                       </Button>
                     </div>
                   </Dialog>

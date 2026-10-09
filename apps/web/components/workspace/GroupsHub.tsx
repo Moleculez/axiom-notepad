@@ -1,4 +1,7 @@
 "use client";
+import { currentLocale } from "@axiom/i18n/client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import {
   ActionRow,
   Button,
@@ -10,6 +13,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link2, Plus, Users, Mail } from "lucide-react";
 import { invitationToken } from "@axiom/shared/invitation-input";
 import { post } from "../../lib/client";
+import { accessRoleLabel } from "../../lib/interface-labels";
 import { pendingInvitation } from "../../lib/pending-invitation";
 import Dialog from "../Dialog";
 import {
@@ -40,6 +44,7 @@ export default function GroupsHub({
 }: {
   embedded?: boolean;
 }) {
+  const { t } = useInterfaceLocale();
   const { session, revision, refresh, refreshSession, navigate, notify } =
     useWorkspace();
   const invitations = useData<Invitation[]>("group-invitations", revision);
@@ -64,8 +69,8 @@ export default function GroupsHub({
       await changed();
       notify(
         decline
-          ? "Invitation declined."
-          : `You are a member of ${invite.group_name}.`,
+          ? t("Invitation declined.")
+          : t("You are a member of {group}.", { group: invite.group_name }),
       );
       if (!decline && !embedded) navigate(`/people?groupId=${invite.group_id}`);
     });
@@ -76,25 +81,24 @@ export default function GroupsHub({
   return (
     <Container className={embedded ? "groups-hub" : "ws-page groups-hub"}>
       {!embedded && (
-        <PageHeading eyebrow="RESEARCH COMMUNITY" title="Your groups">
-          Private places for shared research. Your personal workspace always
-          remains yours.
+        <PageHeading eyebrow="RESEARCH COMMUNITY" title={uiText("Your groups")}>
+          <I18nText id="Private places for shared research. Your personal workspace always remains yours." />
         </PageHeading>
       )}
       <ActionRow className="workspace-action-row" size="standard">
         <TextInput
-          aria-label="Search your groups"
-          placeholder="Find a group…"
+          aria-label={uiText("Search your groups")}
+          placeholder={uiText("Find a group…")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
         <Button className="button secondary" onClick={() => setJoining(true)}>
           <Link2 size={16} />
-          Join with invitation
+          <I18nText id="Join with invitation" />
         </Button>
         <Button className="button primary" onClick={() => setCreating(true)}>
           <Plus size={16} />
-          Create group
+          <I18nText id="Create group" />
         </Button>
       </ActionRow>
       <ErrorNotice
@@ -102,29 +106,46 @@ export default function GroupsHub({
         retry={invitations.error ? invitations.reload : undefined}
       />
       {invitations.loading && !invitations.data && (
-        <Loading label="Checking invitations…" />
+        <Loading label={uiText("Checking invitations…")} />
       )}
       {!!invitations.data?.length && (
         <section
           className="group-invitations"
-          aria-label="Pending group invitations"
+          aria-label={uiText("Pending group invitations")}
         >
           <h2>
             <Mail size={18} />
-            Invitations for you
+            <I18nText id="Invitations for you" />
           </h2>
           <p className="muted">
-            Sent to {session.user.email}. Joining never shares your personal
-            files.
+            <I18nText
+              id="Sent to {email}. Joining never shares your personal files."
+              slots={{ email: <bdi>{session.user.email}</bdi> }}
+            />
           </p>
           {invitations.data.map((invite) => (
             <div className="group-invitation-row" key={invite.id}>
               <div>
-                <strong>{invite.group_name}</strong>
-                <p>{invite.description || "A private research group"}</p>
+                <strong>
+                  <bdi>{invite.group_name}</bdi>
+                </strong>
+                <p>
+                  {invite.description || uiText("A private research group")}
+                </p>
                 <small>
-                  {invite.content_role} access · expires{" "}
-                  {new Date(invite.expires_at).toLocaleDateString()}
+                  <I18nText
+                    id="{role} access · expires {date}"
+                    values={{ role: accessRoleLabel(invite.content_role) }}
+                    slots={{
+                      date: (
+                        <time dateTime={invite.expires_at}>
+                          {new Date(invite.expires_at).toLocaleDateString(
+                            currentLocale(),
+                          )}
+                        </time>
+                      ),
+                    }}
+                  />
                 </small>
               </div>
               <ActionRow>
@@ -133,14 +154,16 @@ export default function GroupsHub({
                   disabled={action.busy}
                   onClick={() => respond(invite, true)}
                 >
-                  Decline
+                  <I18nText id="Decline" />
                 </Button>
                 <Button
                   className="button primary"
                   disabled={action.busy}
                   onClick={() => respond(invite, false)}
                 >
-                  {invite.already_joined ? "Open group" : "Accept invitation"}
+                  {invite.already_joined
+                    ? uiText("Open group")
+                    : uiText("Accept invitation")}
                 </Button>
               </ActionRow>
             </div>
@@ -150,11 +173,17 @@ export default function GroupsHub({
       {!groups.length ? (
         <Empty
           icon={Users}
-          title={search ? "No matching groups" : "A shared space starts here"}
+          title={
+            search
+              ? uiText("No matching groups")
+              : uiText("A shared space starts here")
+          }
         >
           {search
-            ? "Try a different name."
-            : "Create a group or accept an invitation to begin collaborating."}
+            ? uiText("Try a different name.")
+            : uiText(
+                "Create a group or accept an invitation to begin collaborating.",
+              )}
         </Empty>
       ) : (
         <div className="group-card-grid">
@@ -162,32 +191,34 @@ export default function GroupsHub({
             <section className="group-membership-card" key={group.id}>
               <div className="group-card-heading">
                 <Users size={22} />
-                <Badge>{group.role}</Badge>
+                <Badge>{accessRoleLabel(group.role)}</Badge>
               </div>
-              <h2>{group.name}</h2>
+              <h2>
+                <bdi>{group.name}</bdi>
+              </h2>
               <p>
                 {group.description ||
-                  "A private home for your group’s research."}
+                  uiText("A private home for your group’s research.")}
               </p>
               <div className="group-card-actions">
                 <WorkspaceLink
                   className="button secondary"
                   to={`/groups/${group.id}/planning`}
                 >
-                  Planning
+                  <I18nText id="Planning" />
                 </WorkspaceLink>
                 <WorkspaceLink
                   className="button secondary"
                   to={`/people?groupId=${group.id}`}
                 >
-                  Members
+                  <I18nText id="Members" />
                 </WorkspaceLink>
                 {group.role !== "member" && (
                   <WorkspaceLink
                     className="button secondary"
                     to={`/admin/${group.id}/overview`}
                   >
-                    Manage group
+                    <I18nText id="Manage group" />
                   </WorkspaceLink>
                 )}
                 <button
@@ -197,7 +228,7 @@ export default function GroupsHub({
                     setConfirmation("");
                   }}
                 >
-                  Leave…
+                  <I18nText id="Leave…" />
                 </button>
               </div>
             </section>
@@ -212,7 +243,9 @@ export default function GroupsHub({
             setCreating(false);
             if (embedded)
               notify(
-                "Group created. You can invite collaborators from Manage group.",
+                t(
+                  "Group created. You can invite collaborators from Manage group.",
+                ),
               );
             else navigate(`/admin/${id}/overview`);
           }}
@@ -229,29 +262,27 @@ export default function GroupsHub({
             await changed();
             setJoining(false);
             if (!embedded) navigate(`/people?groupId=${id}`);
-            notify("Group membership is ready.");
+            notify(t("Group membership is ready."));
           }}
         />
       )}
       {leave && (
         <Dialog
-          title={`Leave ${leave.name}?`}
+          title={t("Leave {group}?", { group: leave.name })}
           onClose={() => !action.busy && setLeave(null)}
         >
           <p>
-            Shared group and project access will end. Your personal workspace,
-            notes, and account stay yours.
+            <I18nText id="Shared group and project access will end. Your personal workspace, notes, and account stay yours." />
           </p>
           {leave.role === "owner" ? (
             <HelpText>
-              Transfer group ownership before leaving. The last project lead
-              must also appoint a replacement.
+              <I18nText id="Transfer group ownership before leaving. The last project lead must also appoint a replacement." />
             </HelpText>
           ) : (
             <label>
-              Type the group name
+              <I18nText id="Type the group name" />
               <TextInput
-                aria-label="Confirm group departure"
+                aria-label={uiText("Confirm group departure")}
                 value={confirmation}
                 onChange={(e) => setConfirmation(e.target.value)}
               />
@@ -260,18 +291,19 @@ export default function GroupsHub({
           <ErrorNotice message={action.error} />
           <div className="dialog-footer">
             <Button
+              data-dialog-cancel
               className="button secondary"
               disabled={action.busy}
               onClick={() => setLeave(null)}
             >
-              Cancel
+              <I18nText id="Cancel" />
             </Button>
             {leave.role === "owner" ? (
               <Button
                 className="button primary"
                 onClick={() => navigate(`/admin/${leave.id}/members`)}
               >
-                Transfer ownership
+                <I18nText id="Transfer ownership" />
               </Button>
             ) : (
               <Button
@@ -285,7 +317,7 @@ export default function GroupsHub({
                   })
                 }
               >
-                Leave group
+                <I18nText id="Leave group" />
               </Button>
             )}
           </div>
@@ -302,13 +334,14 @@ export function CreateGroupDialog({
   onClose: () => void;
   onCreated: (id: string) => Promise<void> | void;
 }) {
+  useInterfaceLocale();
   const [name, setName] = useState(""),
     [description, setDescription] = useState("");
   const identity = useRef({ key: "", id: "" });
   const action = useAction();
   return (
     <Dialog
-      title="Create a research group"
+      title={uiText("Create a research group")}
       onClose={() => !action.busy && onClose()}
       size="compact"
     >
@@ -332,22 +365,24 @@ export function CreateGroupDialog({
         }}
       >
         <p className="muted">
-          You will own this private group. Invite collaborators after creating
-          it.
+          <I18nText id="You will own this private group. Invite collaborators after creating it." />
         </p>
         <label>
-          Group name
+          <I18nText id="Group name" />
           <TextInput
             autoFocus
             required
             maxLength={200}
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Research group name"
+            placeholder={uiText("Research group name")}
           />
         </label>
         <label>
-          Description <span className="muted">(optional)</span>
+          <I18nText id="Description" />{" "}
+          <span className="muted">
+            <I18nText id="(optional)" />
+          </span>
           <TextArea
             rows={3}
             maxLength={2000}
@@ -358,19 +393,20 @@ export function CreateGroupDialog({
         <ErrorNotice message={action.error} />
         <div className="dialog-footer">
           <Button
+            data-dialog-cancel
             type="button"
             className="button secondary"
             disabled={action.busy}
             onClick={onClose}
           >
-            Cancel
+            <I18nText id="Cancel" />
           </Button>
           <Button
             className="button primary"
             disabled={action.busy || !name.trim()}
             pending={!!action.busy}
           >
-            {"Create group"}
+            {uiText("Create group")}
           </Button>
         </div>
       </form>
@@ -385,6 +421,7 @@ function JoinGroupDialog({
   onClose: () => void;
   onJoined: (id: string) => Promise<void>;
 }) {
+  useInterfaceLocale();
   const [value, setValue] = useState(pendingInvitation()),
     [invite, setInvite] = useState<Invitation | null>(null);
   const action = useAction();
@@ -392,7 +429,7 @@ function JoinGroupDialog({
     const token = invitationToken(value, location.origin);
     if (!token)
       throw new Error(
-        "Paste an invitation token or a link from this Axiom server.",
+        uiText("Paste an invitation token or a link from this Axiom server."),
       );
     setInvite(await post("group-invitations/inspect", { token }));
   };
@@ -401,7 +438,7 @@ function JoinGroupDialog({
   }, []);
   return (
     <Dialog
-      title="Join a research group"
+      title={uiText("Join a research group")}
       onClose={() => !action.busy && onClose()}
       size="compact"
     >
@@ -412,11 +449,10 @@ function JoinGroupDialog({
         }}
       >
         <p className="muted">
-          Invitations are private and tied to your account email. Preview the
-          group before joining.
+          <I18nText id="Invitations are private and tied to your account email. Preview the group before joining." />
         </p>
         <label>
-          Invitation link or token
+          <I18nText id="Invitation link or token" />
           <TextInput
             autoFocus
             autoComplete="off"
@@ -431,22 +467,33 @@ function JoinGroupDialog({
         <ErrorNotice message={action.error} />
         {invite && (
           <section className="group-invitation-preview">
-            <h3>{invite.group_name}</h3>
-            <p>{invite.description || "A private research workspace"}</p>
+            <h3>
+              <bdi>{invite.group_name}</bdi>
+            </h3>
             <p>
-              {invite.email} · {invite.content_role} access
+              {invite.description || uiText("A private research workspace")}
             </p>
-            <small>Your personal notes and files remain private.</small>
+            <p>
+              <I18nText
+                id="{email} · {role} access"
+                values={{ role: accessRoleLabel(invite.content_role) }}
+                slots={{ email: <bdi>{invite.email}</bdi> }}
+              />
+            </p>
+            <small>
+              <I18nText id="Your personal notes and files remain private." />
+            </small>
           </section>
         )}
         <div className="dialog-footer">
           <Button
+            data-dialog-cancel
             type="button"
             className="button secondary"
             disabled={action.busy}
             onClick={onClose}
           >
-            Cancel
+            <I18nText id="Cancel" />
           </Button>
           {invite ? (
             <Button
@@ -461,7 +508,9 @@ function JoinGroupDialog({
                 })
               }
             >
-              {invite.already_joined ? "Open group" : "Accept invitation"}
+              {invite.already_joined
+                ? uiText("Open group")
+                : uiText("Accept invitation")}
             </Button>
           ) : (
             <Button
@@ -469,7 +518,7 @@ function JoinGroupDialog({
               disabled={action.busy || !value.trim()}
               pending={!!action.busy}
             >
-              {"Preview invitation"}
+              {uiText("Preview invitation")}
             </Button>
           )}
         </div>

@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { IconButton, SearchField } from "../ui/controls";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -38,7 +40,11 @@ function folderLocation(spaceId: string, parentId?: string | null) {
 
 /** A directory, not a nested tree: keyboard navigation stays in this level. */
 function directoryKey(event: React.KeyboardEvent<HTMLElement>, up: () => void) {
-  if (event.key === "ArrowLeft" || (event.altKey && event.key === "ArrowUp")) {
+  if (
+    event.key ===
+      (document.documentElement.dir === "rtl" ? "ArrowRight" : "ArrowLeft") ||
+    (event.altKey && event.key === "ArrowUp")
+  ) {
     event.preventDefault();
     up();
     return true;
@@ -70,7 +76,11 @@ function directoryKey(event: React.KeyboardEvent<HTMLElement>, up: () => void) {
     next?.focus();
   } else if (event.key === "Enter" && event.target === row) {
     row.querySelector<HTMLElement>(".sidebar-directory-open")?.click();
-  } else if (event.key === "ArrowRight" && event.target === row) {
+  } else if (
+    event.key ===
+      (document.documentElement.dir === "rtl" ? "ArrowLeft" : "ArrowRight") &&
+    event.target === row
+  ) {
     row.querySelector<HTMLElement>("[data-enter-directory]")?.click();
   } else return false;
   event.preventDefault();
@@ -79,6 +89,7 @@ function directoryKey(event: React.KeyboardEvent<HTMLElement>, up: () => void) {
 }
 
 export default function WorkspaceSidebar() {
+  useInterfaceLocale();
   const { revision } = useWorkspace();
   const { params, path } = useLocation();
   const resourceId = fileRouteId(path);
@@ -104,9 +115,11 @@ export default function WorkspaceSidebar() {
     <>
       <nav
         className="ws-tree-section sidebar-quick-access"
-        aria-label="Quick access"
+        aria-label={uiText("Quick access")}
       >
-        <span className="ws-section-label">Quick access</span>
+        <span className="ws-section-label">
+          <I18nText id="Quick access" />
+        </span>
         {views.map(([to, Icon, label]) => {
           const [target, query] = to.split("?");
           const active =
@@ -121,21 +134,21 @@ export default function WorkspaceSidebar() {
               aria-current={active ? "page" : undefined}
             >
               <Icon size={16} />
-              <span>{label}</span>
+              <span>{uiText(label)}</span>
             </WorkspaceLink>
           );
         })}
       </nav>
       <SavedViews />
       {resourceId && !location.data ? (
-        <section className="sidebar-directory" aria-label="Files">
+        <section className="sidebar-directory" aria-label={uiText("Files")}>
           <WorkspaceLink className="ws-section-label" to="/workspaces">
-            All workspaces
+            <I18nText id="All workspaces" />
           </WorkspaceLink>
           <p className="sidebar-directory-message">
             {location.error ? (
               <button onClick={location.reload}>
-                Could not locate this file. Retry
+                <I18nText id="Could not locate this file. Retry" />
               </button>
             ) : (
               "Locating file…"
@@ -163,6 +176,7 @@ function Directory({
   parentId: string | null;
   activeId: string | null;
 }) {
+  useInterfaceLocale();
   const { spaces, revision, navigate } = useWorkspace();
   const management = useManagement();
   const space = spaces.find((s) => s.id === spaceId);
@@ -226,7 +240,7 @@ function Directory({
   return (
     <section
       className="sidebar-directory"
-      aria-label="Files"
+      aria-label={uiText("Files")}
       onContextMenu={(event) => {
         if (
           !(event.target as Element).closest(
@@ -244,13 +258,15 @@ function Directory({
       }}
     >
       <div className="sidebar-directory-heading">
-        <span className="ws-section-label">Files</span>
+        <span className="ws-section-label">
+          <I18nText id="Files" />
+        </span>
         <div>
           <WorkspaceLink
             className="icon-button"
             to="/workspaces"
-            aria-label="All workspaces"
-            title="All workspaces"
+            aria-label={uiText("All workspaces")}
+            title={uiText("All workspaces")}
           >
             <House size={15} />
           </WorkspaceLink>
@@ -258,8 +274,8 @@ function Directory({
             className="icon-button"
             type="button"
             disabled={!spaceId || (!!parentId && !trail.length)}
-            aria-label="Up one level"
-            title="Up one level · Alt+↑"
+            aria-label={uiText("Up one level")}
+            title={uiText("Up one level · Alt+↑")}
             onClick={up}
           >
             <ArrowUp size={16} />
@@ -268,7 +284,7 @@ function Directory({
       </div>
       <nav
         className="sidebar-directory-breadcrumbs"
-        aria-label="Sidebar directory path"
+        aria-label={uiText("Sidebar directory path")}
       >
         {breadcrumbs.map((crumb, index) => (
           <span key={crumb.to}>
@@ -289,13 +305,17 @@ function Directory({
         wrapperClassName="sidebar-directory-filter"
         ref={input}
         aria-label={
-          spaceId ? "Filter files in this folder" : "Filter workspaces"
+          spaceId
+            ? uiText("Filter files in this folder")
+            : uiText("Filter workspaces")
         }
-        placeholder={spaceId ? "Filter this folder…" : "Find a workspace…"}
+        placeholder={
+          spaceId ? uiText("Filter this folder…") : uiText("Find a workspace…")
+        }
         value={filter}
         maxLength={200}
         onClear={() => setFilter("")}
-        clearLabel="Clear sidebar filter"
+        clearLabel={uiText("Clear sidebar filter")}
         onChange={(event) => setFilter(event.target.value)}
         onKeyDown={(event) => {
           if (event.key === "Escape" && filter) {
@@ -313,7 +333,7 @@ function Directory({
       <ul
         ref={list}
         className="sidebar-directory-list"
-        aria-label={spaceId ? `Files in ${title}` : "Workspaces"}
+        aria-label={spaceId ? `Files in ${title}` : uiText("Workspaces")}
       >
         {!spaceId
           ? visibleSpaces.map((item) => (
@@ -360,7 +380,7 @@ function Directory({
                       <span>{item.name}</span>
                       <small>
                         {item.kind === "personal"
-                          ? "Personal"
+                          ? uiText("Personal")
                           : (item.group_name ?? "Shared workspace")}
                       </small>
                     </span>
@@ -390,14 +410,14 @@ function Directory({
         <p className="sidebar-directory-message">
           <button type="button" onClick={data.reload}>
             {data.data
-              ? "Could not refresh items. Retry"
-              : "Could not load items. Retry"}
+              ? uiText("Could not refresh items. Retry")
+              : uiText("Could not load items. Retry")}
           </button>
         </p>
       )}
       {spaceId && data.loading && !data.data && (
         <p className="sidebar-directory-message" role="status">
-          Loading files…
+          <I18nText id="Loading files…" />
         </p>
       )}
       {((!spaceId && !visibleSpaces.length) ||
@@ -413,22 +433,24 @@ function Directory({
       {spaceId && (cursors.length > 0 || data.data?.nextCursor) && (
         <nav
           className="sidebar-directory-pagination"
-          aria-label="Directory pages"
+          aria-label={uiText("Directory pages")}
         >
           <IconButton
             type="button"
             className="icon-button"
-            aria-label="Previous files"
+            aria-label={uiText("Previous files")}
             disabled={!cursors.length || data.loading}
             onClick={() => setCursors((value) => value.slice(0, -1))}
           >
             <ChevronLeft size={15} />
           </IconButton>
-          <span>Page {cursors.length + 1}</span>
+          <span>
+            <I18nText id="Page" /> {cursors.length + 1}
+          </span>
           <IconButton
             type="button"
             className="icon-button"
-            aria-label="Next files"
+            aria-label={uiText("Next files")}
             disabled={!data.data?.nextCursor || data.loading}
             onClick={() =>
               setCursors((value) => [...value, data.data!.nextCursor!])
@@ -451,6 +473,7 @@ function DirectoryRow({
   active: boolean;
   up: () => void;
 }) {
+  useInterfaceLocale();
   const management = useManagement();
   const { open } = useWorkspace();
   const folder = item.kind === "folder";
@@ -528,7 +551,7 @@ function DirectoryRow({
             data-enter-directory
             to={destination}
             aria-label={`Browse contents of ${item.name}`}
-            title="Browse attached files and child notes"
+            title={uiText("Browse attached files and child notes")}
           >
             <FolderOpen size={14} />
           </WorkspaceLink>
@@ -537,7 +560,7 @@ function DirectoryRow({
           type="button"
           className="icon-button sidebar-row-more"
           aria-label={`Actions for ${item.name}`}
-          title="File actions"
+          title={uiText("File actions")}
           onClick={(event) => management.resourceMenu(event, [item])}
         >
           <Ellipsis size={15} />
@@ -555,7 +578,9 @@ function SavedViews() {
   if (!data.data?.length) return null;
   return (
     <div className="ws-tree-section">
-      <span className="ws-section-label">Saved searches</span>
+      <span className="ws-section-label">
+        <I18nText id="Saved searches" />
+      </span>
       {data.data.map((view) => {
         const query = new URLSearchParams({
           ...view.filters,

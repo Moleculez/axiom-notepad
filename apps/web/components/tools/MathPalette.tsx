@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { SearchField, NativeSelect } from "../ui/controls";
 import { useEffect, useId, useRef, useState } from "react";
 import type { MathRequest } from "@axiom/markdown";
@@ -33,6 +35,7 @@ export default function MathPalette({
   insert: (value: string, fields?: [number, number][]) => void;
   onError: (message: string) => void;
 }) {
+  useInterfaceLocale();
   const [tab, setTab] = useState<"symbols" | "favorites" | "templates">(
       "symbols",
     ),
@@ -102,30 +105,34 @@ export default function MathPalette({
   );
   const count = tab === "templates" ? templates.length : symbols.length;
   return (
-    <aside className="math-symbol-palette" aria-label="Math library">
+    <aside className="math-symbol-palette" aria-label={uiText("Math library")}>
       <header className="math-library-header">
         <div>
           <Sigma size={16} />
-          <h2>Math library</h2>
-          <small>{mathSymbols.length} symbols</small>
+          <h2>
+            <I18nText id="Math library" />
+          </h2>
+          <small>
+            {mathSymbols.length} <I18nText id="symbols" />
+          </small>
         </div>
         <SearchField
           wrapperClassName="tool-search math-library-search"
-          aria-label="Search math library"
+          aria-label={uiText("Search math library")}
           placeholder={
             tab === "templates"
-              ? "Find a template…"
-              : "Name, command, or topic…"
+              ? uiText("Find a template…")
+              : uiText("Name, command, or topic…")
           }
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           onClear={() => setSearch("")}
-          clearLabel="Clear library search"
+          clearLabel={uiText("Clear library search")}
         />
         <div
           className="studio-segmented math-library-tabs"
           role="tablist"
-          aria-label="Math library sections"
+          aria-label={uiText("Math library sections")}
         >
           {(
             [
@@ -171,12 +178,14 @@ export default function MathPalette({
         {tab === "symbols" && (
           <NativeSelect
             className="math-category"
-            aria-label="Symbol category"
+            aria-label={uiText("Symbol category")}
             value={search.trim() ? "all" : category}
             onChange={(event) => setCategory(event.target.value)}
             disabled={!!search.trim()}
           >
-            <option value="all">All symbols</option>
+            <option value="all">
+              <I18nText id="All symbols" />
+            </option>
             {mathCategories.map((value) => (
               <option key={value}>{value}</option>
             ))}
@@ -185,7 +194,7 @@ export default function MathPalette({
         <div className="math-library-count" role="status">
           {count}{" "}
           {tab === "templates"
-            ? "template"
+            ? uiText("template")
             : tab === "favorites"
               ? "saved symbol"
               : "symbol"}
@@ -203,11 +212,17 @@ export default function MathPalette({
         {!count ? (
           <div className="math-library-empty">
             <Search size={24} strokeWidth={1.3} />
-            <strong>{search ? "No matches" : "Save your go-to symbols"}</strong>
+            <strong>
+              {search
+                ? uiText("No matches")
+                : uiText("Save your go-to symbols")}
+            </strong>
             <p>
               {search
-                ? "Try a command, a name, or a topic such as calculus."
-                : "Use the star on a symbol to keep it here. Saved symbols stay on this device."}
+                ? uiText("Try a command, a name, or a topic such as calculus.")
+                : uiText(
+                    "Use the star on a symbol to keep it here. Saved symbols stay on this device.",
+                  )}
             </p>
           </div>
         ) : tab === "templates" ? (
@@ -327,8 +342,8 @@ export default function MathPalette({
                         aria-pressed={favorites.includes(symbol.id)}
                         title={
                           favorites.includes(symbol.id)
-                            ? "Remove from saved symbols"
-                            : "Save symbol"
+                            ? uiText("Remove from saved symbols")
+                            : uiText("Save symbol")
                         }
                         onClick={() => favorite(symbol)}
                       >
@@ -351,12 +366,16 @@ export default function MathPalette({
         ) : (
           <>
             <strong>
-              {readOnly ? "Read-only library" : "Insert at your cursor"}
+              {readOnly
+                ? uiText("Read-only library")
+                : uiText("Insert at your cursor")}
             </strong>
             <span>
               {tab === "templates"
-                ? "Choose a preview to insert its LaTeX."
-                : "Type \\ in Source for suggestions. Tab moves through placeholders."}
+                ? uiText("Choose a preview to insert its LaTeX.")
+                : uiText(
+                    "Type \\ in Source for suggestions. Tab moves through placeholders.",
+                  )}
             </span>
           </>
         )}

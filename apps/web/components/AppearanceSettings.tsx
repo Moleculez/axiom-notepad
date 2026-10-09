@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import {
   Button,
   HelpText,
@@ -85,7 +87,11 @@ type AppearanceSettingsProps = {
 };
 export default function AppearanceSettings(props: AppearanceSettingsProps) {
   if (!props.appearance.ready || !props.editorSettings.ready)
-    return <p role="status">Loading your preferences…</p>;
+    return (
+      <p role="status">
+        <I18nText id="Loading your preferences…" />
+      </p>
+    );
   return <AppearanceSettingsReady {...props} key={props.appearance.userId} />;
 }
 function AppearanceSettingsReady({
@@ -99,6 +105,7 @@ function AppearanceSettingsReady({
   routed = false,
   onSection,
 }: AppearanceSettingsProps) {
+  useInterfaceLocale();
   const internal = useSettingsDraft(appearance, editorSettings, !session);
   const settings = session ?? internal;
   const {
@@ -150,7 +157,9 @@ function AppearanceSettingsReady({
   }, [query, section]);
   const show = (category: string, label = "") =>
     query
-      ? `${category} ${label}`.toLowerCase().includes(query.toLowerCase())
+      ? `${uiText(category)} ${uiText(label)} ${category} ${label}`
+          .toLowerCase()
+          .includes(query.toLowerCase())
       : section === category;
   const themeVisible = show(
     "Theme",
@@ -245,12 +254,12 @@ function AppearanceSettingsReady({
         <div className="settings-navigation">
           <SearchField
             wrapperClassName="settings-search"
-            aria-label="Search settings"
-            placeholder="Find a setting…"
+            aria-label={uiText("Search settings")}
+            placeholder={uiText("Find a setting…")}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
-          <nav aria-label="Personal settings">
+          <nav aria-label={uiText("Personal settings")}>
             {[
               ["General", SlidersHorizontal],
               ["Theme", Palette],
@@ -281,32 +290,36 @@ function AppearanceSettingsReady({
               );
             })}
           </nav>
-          <p>PERSONAL WORKSPACE</p>
+          <p>
+            <I18nText id="PERSONAL WORKSPACE" />
+          </p>
           <button className="text-button" onClick={onData}>
-            Offline files & reading data
+            <I18nText id="Offline files & reading data" />
           </button>
           <button className="text-button" onClick={onWorkspace}>
-            Account & group administration
+            <I18nText id="Account & group administration" />
           </button>
           <small>
-            Your reading preferences never change a collaborator’s view.
+            <I18nText id="Your reading preferences never change a collaborator’s view." />
           </small>
         </div>
       )}
       <div className="settings-stage">
         <div className="settings-intro">
           <div className="settings-intro-copy">
-            <div className="eyebrow">MAKE SPACE FOR YOUR THINKING</div>
+            <div className="eyebrow">
+              <I18nText id="MAKE SPACE FOR YOUR THINKING" />
+            </div>
             {routed ? (
               <h1>
                 {query
-                  ? "Search results"
+                  ? uiText("Search results")
                   : section === "Editor"
                     ? "Writing"
                     : section}
               </h1>
             ) : (
-              <h3>{query ? "Search results" : section}</h3>
+              <h3>{query ? uiText("Search results") : uiText(section)}</h3>
             )}
             <p className="muted">
               {description ??
@@ -317,12 +330,12 @@ function AppearanceSettingsReady({
             {routed && section !== "Keyboard shortcuts" && (
               <SearchField
                 wrapperClassName="settings-search settings-content-search"
-                aria-label="Search settings"
-                placeholder="Search settings…"
+                aria-label={uiText("Search settings")}
+                placeholder={uiText("Search settings…")}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onClear={() => setQuery("")}
-                clearLabel="Clear settings search"
+                clearLabel={uiText("Clear settings search")}
               />
             )}
             {previewCategory && (
@@ -330,7 +343,9 @@ function AppearanceSettingsReady({
                 type="button"
                 className="button secondary small settings-preview-toggle"
                 aria-label={
-                  previewVisible ? "Hide live preview" : "Show live preview"
+                  previewVisible
+                    ? uiText("Hide live preview")
+                    : uiText("Show live preview")
                 }
                 aria-pressed={previewVisible}
                 onClick={() => {
@@ -341,7 +356,7 @@ function AppearanceSettingsReady({
                 }}
               >
                 <PanelRight size={16} />
-                Preview
+                <I18nText id="Preview" />
               </Button>
             )}
           </div>
@@ -365,20 +380,24 @@ function AppearanceSettingsReady({
           <div
             className="settings-content"
             ref={fields}
-            aria-label="Settings fields"
+            aria-label={uiText("Settings fields")}
             tabIndex={0}
           >
             {emptySearch && (
               <div className="settings-empty" role="status">
                 <Search size={22} />
-                <h3>No matching settings</h3>
-                <p>Try “font”, “color”, “table”, or another keyword.</p>
+                <h3>
+                  <I18nText id="No matching settings" />
+                </h3>
+                <p>
+                  <I18nText id="Try “font”, “color”, “table”, or another keyword." />
+                </p>
                 <button
                   type="button"
                   className="text-button"
                   onClick={() => setQuery("")}
                 >
-                  Clear search
+                  <I18nText id="Clear search" />
                 </button>
               </div>
             )}
@@ -418,10 +437,11 @@ function AppearanceSettingsReady({
               "block ranges guides nesting structure bookmarks annotations reading overview",
             ) && (
               <section className="settings-card">
-                <h4>Document structure</h4>
+                <h4>
+                  <I18nText id="Document structure" />
+                </h4>
                 <p className="settings-note">
-                  Follow nested blocks with a quiet margin. Use its chevrons to
-                  fold longer blocks.
+                  <I18nText id="Follow nested blocks with a quiet margin. Use its chevrons to fold longer blocks." />
                 </p>
                 {toggle(
                   "General",
@@ -464,7 +484,9 @@ function AppearanceSettingsReady({
             )}
             {themeVisible && (
               <section className="settings-card">
-                <h4>Color & atmosphere</h4>
+                <h4>
+                  <I18nText id="Color & atmosphere" />
+                </h4>
                 <InterfaceStylePicker
                   value={draft.interfaceStyle}
                   onChange={(value) => change("interfaceStyle", value)}
@@ -473,20 +495,21 @@ function AppearanceSettingsReady({
                 />
                 <label className="setting-control">
                   <span>
-                    Theme pack
+                    <I18nText id="Theme pack" />
                     <small>
-                      Reviewed, built-in styles. Your explicit color and
-                      typography choices stay in control.
+                      <I18nText id="Reviewed, built-in styles. Your explicit color and typography choices stay in control." />
                     </small>
                   </span>
                   <NativeSelect
-                    aria-label="Theme pack"
+                    aria-label={uiText("Theme pack")}
                     value={draft.themePack}
                     onChange={(e) =>
                       change("themePack", e.target.value as ThemePackId)
                     }
                   >
-                    <option value="default">Axiom default</option>
+                    <option value="default">
+                      <I18nText id="Axiom default" />
+                    </option>
                     {themePacks.map((pack) => (
                       <option key={pack.id} value={pack.id}>
                         {pack.name}
@@ -501,7 +524,7 @@ function AppearanceSettingsReady({
                         themePacks.find((pack) => pack.id === draft.themePack)
                           ?.description
                       }{" "}
-                      Custom color overrides take priority.
+                      <I18nText id="Custom color overrides take priority." />
                     </HelpText>
                     <Button
                       type="button"
@@ -517,16 +540,17 @@ function AppearanceSettingsReady({
                         );
                       }}
                     >
-                      Preview pack colors without overrides
+                      <I18nText id="Preview pack colors without overrides" />
                     </Button>
                   </div>
                 )}
                 <div className="appearance-look">
                   <div>
-                    <strong>A clearer space to think</strong>
+                    <strong>
+                      <I18nText id="A clearer space to think" />
+                    </strong>
                     <p className="muted">
-                      Frost & Graphite, fluid glass, and a considered sans-serif
-                      reading experience.
+                      <I18nText id="Frost & Graphite, fluid glass, and a considered sans-serif reading experience." />
                     </p>
                   </div>
                   <Button
@@ -539,7 +563,7 @@ function AppearanceSettingsReady({
                       );
                     }}
                   >
-                    Try the modern look
+                    <I18nText id="Try the modern look" />
                   </Button>
                 </div>
                 {select("Theme", "mode", "Color mode", [
@@ -549,9 +573,9 @@ function AppearanceSettingsReady({
                 ])}
                 <div className="setting-pair">
                   <label>
-                    Light palette
+                    <I18nText id="Light palette" />
                     <NativeSelect
-                      aria-label="Light palette"
+                      aria-label={uiText("Light palette")}
                       value={matchingEditorTheme(draft, false)}
                       onChange={(e) => {
                         setDraft((d) =>
@@ -560,7 +584,7 @@ function AppearanceSettingsReady({
                       }}
                     >
                       <option value="custom" disabled>
-                        Custom colors
+                        <I18nText id="Custom colors" />
                       </option>
                       {Object.entries(editorThemes)
                         .filter(([, p]) => p.mode === "light")
@@ -572,9 +596,9 @@ function AppearanceSettingsReady({
                     </NativeSelect>
                   </label>
                   <label>
-                    Dark palette
+                    <I18nText id="Dark palette" />
                     <NativeSelect
-                      aria-label="Dark palette"
+                      aria-label={uiText("Dark palette")}
                       value={matchingEditorTheme(draft, true)}
                       onChange={(e) => {
                         setDraft((d) =>
@@ -583,7 +607,7 @@ function AppearanceSettingsReady({
                       }}
                     >
                       <option value="custom" disabled>
-                        Custom colors
+                        <I18nText id="Custom colors" />
                       </option>
                       {Object.entries(editorThemes)
                         .filter(([, p]) => p.mode === "dark")
@@ -597,7 +621,7 @@ function AppearanceSettingsReady({
                 </div>
                 <div
                   className="theme-family-gallery"
-                  aria-label="Coordinated light and dark themes"
+                  aria-label={uiText("Coordinated light and dark themes")}
                 >
                   {Object.entries(workspaceThemeFamilies).map(
                     ([id, family]) => (
@@ -633,7 +657,7 @@ function AppearanceSettingsReady({
                                 }}
                               >
                                 <i style={{ background: colors.accent }} />
-                                Aa
+                                <I18nText id="Aa" />
                               </span>
                             );
                           })}
@@ -645,10 +669,11 @@ function AppearanceSettingsReady({
                   )}
                 </div>
                 <p className="muted">
-                  A family sets matching light and dark colors. Your color mode,
-                  fonts and navigation surfaces stay unchanged.
+                  <I18nText id="A family sets matching light and dark colors. Your color mode, fonts and navigation surfaces stay unchanged." />
                 </p>
-                <h5>Research and classic palettes</h5>
+                <h5>
+                  <I18nText id="Research and classic palettes" />
+                </h5>
                 <div className="palette-gallery">
                   {Object.entries(editorThemes)
                     .filter(([id]) => !Object.hasOwn(workspaceThemes, id))
@@ -672,14 +697,17 @@ function AppearanceSettingsReady({
                         }}
                       >
                         <span style={{ color: p.colors.accent }}>
-                          Aa <i style={{ background: p.colors.accent }} />
+                          <I18nText id="Aa" />{" "}
+                          <i style={{ background: p.colors.accent }} />
                         </span>
                         {p.name}
                       </button>
                     ))}
                 </div>
                 <details className="advanced-appearance">
-                  <summary>Advanced appearance</summary>
+                  <summary>
+                    <I18nText id="Advanced appearance" />
+                  </summary>
                   {select("Theme", "material", "Navigation surfaces", [
                     ["glass", "Glass · translucent chrome"],
                     ["solid", "Solid · opaque chrome"],
@@ -695,17 +723,14 @@ function AppearanceSettingsReady({
                       "%",
                     )}
                   <p className="muted material-hint">
-                    Only navigation and windows use glass. Your notes, equations
-                    and papers stay on a solid surface. High contrast and
-                    reduced transparency always use solid chrome.
+                    <I18nText id="Only navigation and windows use glass. Your notes, equations and papers stay on a solid surface. High contrast and reduced transparency always use solid chrome." />
                   </p>
                 </details>
                 <label className="setting-toggle">
                   <span>
-                    Keep current look as a restore point
+                    <I18nText id="Keep current look as a restore point" />
                     <small>
-                      Replaces the previous restore point when you Apply. Device
-                      overrides are unchanged.
+                      <I18nText id="Replaces the previous restore point when you Apply. Device overrides are unchanged." />
                     </small>
                   </span>
                   <Switch
@@ -725,25 +750,30 @@ function AppearanceSettingsReady({
                     }}
                   >
                     <RotateCcw size={15} />
-                    Restore previous appearance
+                    <I18nText id="Restore previous appearance" />
                   </Button>
                 )}
                 <details className="theme-editor">
-                  <summary>Visual theme editor</summary>
+                  <summary>
+                    <I18nText id="Visual theme editor" />
+                  </summary>
                   <label>
-                    Edit palette
+                    <I18nText id="Edit palette" />
                     <NativeSelect
-                      aria-label="Palette to customize"
+                      aria-label={uiText("Palette to customize")}
                       value={editDark ? "dark" : "light"}
                       onChange={(e) => setEditDark(e.target.value === "dark")}
                     >
-                      <option value="light">Light colors</option>
-                      <option value="dark">Dark colors</option>
+                      <option value="light">
+                        <I18nText id="Light colors" />
+                      </option>
+                      <option value="dark">
+                        <I18nText id="Dark colors" />
+                      </option>
                     </NativeSelect>
                   </label>
                   <p className="muted">
-                    Pick a swatch or enter HEX / RGB. Text values commit on
-                    Enter or blur; Escape restores the last valid value.
+                    <I18nText id="Pick a swatch or enter HEX / RGB. Text values commit on Enter or blur; Escape restores the last valid value." />
                   </p>
                   <div className="palette-preview-pair">
                     {[false, true].map((dark) => (
@@ -752,14 +782,27 @@ function AppearanceSettingsReady({
                         className="palette-preview"
                         style={appearanceVariables(draft, dark)}
                       >
-                        <small>{dark ? "Dark" : "Light"} palette</small>
-                        <strong>A clear space for discovery</strong>
+                        <small>
+                          {dark ? uiText("Dark") : uiText("Light")}{" "}
+                          <I18nText id="palette" />
+                        </small>
+                        <strong>
+                          <I18nText id="A clear space for discovery" />
+                        </strong>
                         <p>
-                          Readable notes,{" "}
-                          <span className="palette-link">connected ideas</span>,
-                          and <code>E = mc²</code>.
+                          <I18nText id="Readable notes," />{" "}
+                          <span className="palette-link">
+                            <I18nText id="connected ideas" />
+                          </span>
+                          <I18nText id=", and" />{" "}
+                          <code>
+                            <I18nText id="E = mc²" />
+                          </code>
+                          .
                         </p>
-                        <span className="palette-chip">Selected workspace</span>
+                        <span className="palette-chip">
+                          <I18nText id="Selected workspace" />
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -804,7 +847,7 @@ function AppearanceSettingsReady({
                     ] as [string, [keyof ThemePalette, string][]][]
                   ).map(([group, entries]) => (
                     <fieldset className="palette-group" key={group}>
-                      <legend>{group}</legend>
+                      <legend>{uiText(group)}</legend>
                       <div className="color-controls">
                         {entries.map(([key, label]) => (
                           <ColorPreference
@@ -834,7 +877,9 @@ function AppearanceSettingsReady({
                     className="button secondary small"
                     onClick={() => change(colorKey, {})}
                   >
-                    Restore {editDark ? "dark" : "light"} palette defaults
+                    <I18nText id="Restore" />{" "}
+                    {editDark ? uiText("dark") : uiText("light")}{" "}
+                    <I18nText id="palette defaults" />
                   </Button>
                   <div className="contrast-checks">
                     {checks.map(([label, a, b]) => (
@@ -845,18 +890,19 @@ function AppearanceSettingsReady({
                         key={label}
                       >
                         {label}: {contrastRatio(a, b).toFixed(2)}:1{" "}
-                        {contrastRatio(a, b) < 4.5 ? "— below 4.5:1" : "✓"}
+                        {contrastRatio(a, b) < 4.5
+                          ? uiText("— below 4.5:1")
+                          : "✓"}
                       </span>
                     ))}
                   </div>
                   <p className="muted">
-                    Custom colors may reduce readability. Built-in palettes and
-                    Reset remain available.
+                    <I18nText id="Custom colors may reduce readability. Built-in palettes and Reset remain available." />
                   </p>
                   <div className="button-row">
                     <TextInput
-                      aria-label="Custom theme name"
-                      placeholder="Name this palette"
+                      aria-label={uiText("Custom theme name")}
+                      placeholder={uiText("Name this palette")}
                       maxLength={60}
                       value={themeName}
                       onChange={(e) => setThemeName(e.target.value)}
@@ -877,7 +923,7 @@ function AppearanceSettingsReady({
                         setThemeName("");
                       }}
                     >
-                      Save palette
+                      <I18nText id="Save palette" />
                     </Button>
                   </div>
                   {draft.themes.map((t) => (
@@ -905,7 +951,7 @@ function AppearanceSettingsReady({
                           )
                         }
                       >
-                        Remove
+                        <I18nText id="Remove" />
                       </button>
                     </div>
                   ))}
@@ -931,13 +977,13 @@ function AppearanceSettingsReady({
                       }
                     >
                       <Download size={15} />
-                      Export palette
+                      <I18nText id="Export palette" />
                     </Button>
                     <label className="button secondary file-button">
                       <Upload size={15} />
-                      Import palette
+                      <I18nText id="Import palette" />
                       <input
-                        aria-label="Import theme JSON"
+                        aria-label={uiText("Import theme JSON")}
                         type="file"
                         accept=".json,application/json"
                         onChange={(e) => {
@@ -995,11 +1041,11 @@ function AppearanceSettingsReady({
                   "document styles latex article latin modern journal compact research accessible presets",
                 ) && (
                   <div className="document-style-picker">
-                    <h4>Document styles</h4>
+                    <h4>
+                      <I18nText id="Document styles" />
+                    </h4>
                     <p className="muted">
-                      A starting point for your notes. Interface fonts and
-                      colors stay unchanged; every value remains adjustable
-                      below.
+                      <I18nText id="A starting point for your notes. Interface fonts and colors stay unchanged; every value remains adjustable below." />
                     </p>
                     <div className="document-style-gallery">
                       {Object.entries(documentStyles).map(([id, style]) => (
@@ -1022,7 +1068,7 @@ function AppearanceSettingsReady({
                               ),
                             }}
                           >
-                            A place for careful thinking.
+                            <I18nText id="A place for careful thinking." />
                           </span>
                           <strong>{style.name}</strong>
                           <small>{style.description}</small>
@@ -1160,9 +1206,7 @@ function AppearanceSettingsReady({
               <section className="settings-card settings-controls">
                 {!query && (
                   <p className="settings-panel-resize-hint">
-                    Resize the sidebar and document panel at their edges. Widths
-                    save on this device; double-click to reset, or focus the
-                    edge and use arrow keys.
+                    <I18nText id="Resize the sidebar and document panel at their edges. Widths save on this device; double-click to reset, or focus the edge and use arrow keys." />
                   </p>
                 )}
                 {number(
@@ -1229,10 +1273,11 @@ function AppearanceSettingsReady({
             )}
             {show("Device", "scale overrides density") && (
               <section className="settings-card">
-                <h4>Only on this device</h4>
+                <h4>
+                  <I18nText id="Only on this device" />
+                </h4>
                 <p className="muted">
-                  Unchecked controls follow your account. Overrides are private
-                  to this account and browser.
+                  <I18nText id="Unchecked controls follow your account. Overrides are private to this account and browser." />
                 </p>
                 {(["uiScale", "density"] as const).map((key) => (
                   <div className="device-override" key={key}>
@@ -1263,7 +1308,7 @@ function AppearanceSettingsReady({
                     {device[key] !== undefined &&
                       (key === "density" ? (
                         <NativeSelect
-                          aria-label="Device density"
+                          aria-label={uiText("Device density")}
                           value={device.density}
                           onChange={(e) =>
                             setDevice((d) => ({
@@ -1273,13 +1318,17 @@ function AppearanceSettingsReady({
                             }))
                           }
                         >
-                          <option value="comfortable">Comfortable</option>
-                          <option value="compact">Compact</option>
+                          <option value="comfortable">
+                            <I18nText id="Comfortable" />
+                          </option>
+                          <option value="compact">
+                            <I18nText id="Compact" />
+                          </option>
                         </NativeSelect>
                       ) : (
                         <label className="setting-control">
                           <span>
-                            Device value
+                            <I18nText id="Device value" />
                             <output>{device[key]}×</output>
                           </span>
                           <Slider
@@ -1309,7 +1358,7 @@ function AppearanceSettingsReady({
             )}
             <p
               role="status"
-              aria-label="Appearance synchronization"
+              aria-label={uiText("Appearance synchronization")}
               className="settings-sync"
               hidden={!settings.dirty}
             >
@@ -1317,7 +1366,7 @@ function AppearanceSettingsReady({
             </p>
             <p
               role="status"
-              aria-label="Editor settings synchronization"
+              aria-label={uiText("Editor settings synchronization")}
               className="editor-settings-sync"
               hidden={!settings.dirty}
             >
@@ -1326,16 +1375,17 @@ function AppearanceSettingsReady({
             {settings.conflicts.length > 0 && (
               <div className="settings-conflict">
                 <p>
-                  These settings changed while you were editing:{" "}
+                  <I18nText id="These settings changed while you were editing:" />{" "}
                   {settings.conflicts.join(", ")}
                 </p>
                 <Button
+                  data-dialog-cancel
                   className="button secondary"
                   onClick={() => {
                     settings.resolve(true);
                   }}
                 >
-                  Keep my edited values
+                  <I18nText id="Keep my edited values" />
                 </Button>
                 <Button
                   className="button secondary"
@@ -1343,24 +1393,25 @@ function AppearanceSettingsReady({
                     settings.resolve(false);
                   }}
                 >
-                  Use latest conflicting values
+                  <I18nText id="Use latest conflicting values" />
                 </Button>
               </div>
             )}
             {editorSettings.conflicts.length > 0 && (
               <div className="settings-conflict">
                 <p>
-                  Conflicting editor settings:{" "}
+                  <I18nText id="Conflicting editor settings:" />{" "}
                   {editorSettings.conflicts.join(", ")}
                 </p>
                 <Button
+                  data-dialog-cancel
                   className="button secondary"
                   onClick={() => {
                     const p = editorSettings.resolve(true);
                     if (p) setEditorDraft(p);
                   }}
                 >
-                  Keep my editor settings
+                  <I18nText id="Keep my editor settings" />
                 </Button>
                 <Button
                   className="button secondary"
@@ -1369,18 +1420,22 @@ function AppearanceSettingsReady({
                     if (p) setEditorDraft(p);
                   }}
                 >
-                  Use synced editor settings
+                  <I18nText id="Use synced editor settings" />
                 </Button>
               </div>
             )}
             {appearance.conflicts.length > 0 && (
               <div className="settings-conflict">
-                <p>Conflicting settings: {appearance.conflicts.join(", ")}</p>
+                <p>
+                  <I18nText id="Conflicting settings:" />{" "}
+                  {appearance.conflicts.join(", ")}
+                </p>
                 <Button
+                  data-dialog-cancel
                   className="button secondary"
                   onClick={() => appearance.resolve(true)}
                 >
-                  Keep my conflicting values
+                  <I18nText id="Keep my conflicting values" />
                 </Button>
                 <Button
                   className="button secondary"
@@ -1389,7 +1444,7 @@ function AppearanceSettingsReady({
                     if (synced) setDraft(synced);
                   }}
                 >
-                  Use synced values
+                  <I18nText id="Use synced values" />
                 </Button>
               </div>
             )}
@@ -1399,7 +1454,7 @@ function AppearanceSettingsReady({
       <div className="settings-footer">
         <span role="status" className="settings-draft-status">
           {settings.dirty
-            ? "Unsaved changes · live preview"
+            ? uiText("Unsaved changes · live preview")
             : [
                 ...new Set(
                   [appearance.status, editorSettings.status].filter(Boolean),
@@ -1428,7 +1483,7 @@ function AppearanceSettingsReady({
             }}
           >
             <RotateCcw size={15} />
-            Reset all
+            <I18nText id="Reset all" />
           </Button>
           <Button
             className="button secondary"
@@ -1468,11 +1523,12 @@ function AppearanceSettingsReady({
                 }));
             }}
           >
-            Reset section
+            <I18nText id="Reset section" />
           </Button>
         </div>
         <div className="settings-confirm-actions">
           <Button
+            data-dialog-cancel
             className="button secondary"
             onClick={() => {
               settings.discard();
@@ -1480,7 +1536,7 @@ function AppearanceSettingsReady({
               if (!routed) onClose();
             }}
           >
-            Cancel
+            <I18nText id="Cancel" />
           </Button>
           <Button
             className="button primary"
@@ -1488,7 +1544,7 @@ function AppearanceSettingsReady({
             disabled={Object.values(invalid).some(Boolean)}
           >
             <Check size={15} />
-            Apply
+            <I18nText id="Apply" />
           </Button>
         </div>
       </div>

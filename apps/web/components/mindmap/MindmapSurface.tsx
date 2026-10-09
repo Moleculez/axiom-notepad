@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import {
   useEffect,
   useMemo,
@@ -127,6 +129,7 @@ export type MindmapProps = {
 
 /** A projection of the host's binding, never a second editor session/document. */
 export default function MindmapSurface(props: MindmapProps) {
+  useInterfaceLocale();
   const { binding } = props;
   const key = `axiom:mindmap:${props.scope}`;
   const initialSettings = mindmapSettingsSchema
@@ -2144,7 +2147,7 @@ export default function MindmapSurface(props: MindmapProps) {
   return (
     <section
       className="mindmap-surface"
-      aria-label="Markdown mind map"
+      aria-label={uiText("Markdown mind map")}
       data-map-layout={settings.layout}
       aria-busy={result?.source !== source}
       onKeyDownCapture={(event) => {
@@ -2186,11 +2189,11 @@ export default function MindmapSurface(props: MindmapProps) {
           onClick={() => changePane(pane === "source" ? null : "source")}
         >
           <Braces size={16} />
-          Source
+          <I18nText id="Source" />
         </Button>
         <SearchField
-          aria-label="Find in mind map"
-          placeholder="Find a branch…"
+          aria-label={uiText("Find in mind map")}
+          placeholder={uiText("Find a branch…")}
           value={query}
           onChange={(e) => updateQuery(e.target.value)}
           onClear={() => updateQuery("")}
@@ -2207,7 +2210,7 @@ export default function MindmapSurface(props: MindmapProps) {
         />
         <Button
           variant="ghost"
-          aria-label="Research lens"
+          aria-label={uiText("Research lens")}
           aria-pressed={presentation.lens !== "all"}
           onClick={(event) => {
             const box = event.currentTarget.getBoundingClientRect();
@@ -2226,7 +2229,7 @@ export default function MindmapSurface(props: MindmapProps) {
         >
           <Filter size={16} />
           {presentation.lens === "all"
-            ? "Lens"
+            ? uiText("Lens")
             : mindmapResearchLenses.find(
                 (lens) => lens.id === presentation.lens,
               )?.label}
@@ -2235,20 +2238,20 @@ export default function MindmapSurface(props: MindmapProps) {
           <span className="mindmap-search-count" role="status">
             {matches.length
               ? `${Math.max(0, matches.findIndex((n) => n.id === selected) + 1)} / ${matches.length}`
-              : "No matches"}
+              : uiText("No matches")}
           </span>
         )}
         {researchActive && (
           <>
             <IconButton
-              label="Previous map match"
+              label={uiText("Previous map match")}
               disabled={!matches.length}
               onClick={() => findNext(-1)}
             >
               <ChevronLeft size={15} />
             </IconButton>
             <IconButton
-              label="Next map match"
+              label={uiText("Next map match")}
               disabled={!matches.length}
               onClick={() => findNext()}
             >
@@ -2261,10 +2264,12 @@ export default function MindmapSurface(props: MindmapProps) {
                 setPresentation((p) => ({ ...p, resultsOnly: !p.resultsOnly }))
               }
             >
-              {presentation.resultsOnly ? "Show context" : "Focus results"}
+              {presentation.resultsOnly
+                ? uiText("Show context")
+                : uiText("Focus results")}
             </Button>
             <IconButton
-              label="Clear research lens and search"
+              label={uiText("Clear research lens and search")}
               onClick={() => {
                 setQuery("");
                 setPresentation((p) => ({
@@ -2280,7 +2285,7 @@ export default function MindmapSurface(props: MindmapProps) {
         )}
         <span className="tool-spacer" />
         <IconButton
-          label="Undo map edit"
+          label={uiText("Undo map edit")}
           disabled={props.readOnly}
           onClick={() => {
             if (latest.current.canEdit()) binding.history(false);
@@ -2289,7 +2294,7 @@ export default function MindmapSurface(props: MindmapProps) {
           <Undo2 size={16} />
         </IconButton>
         <IconButton
-          label="Redo map edit"
+          label={uiText("Redo map edit")}
           disabled={props.readOnly}
           onClick={() => {
             if (latest.current.canEdit()) binding.history(true);
@@ -2298,7 +2303,7 @@ export default function MindmapSurface(props: MindmapProps) {
           <Redo2 size={16} />
         </IconButton>
         <IconButton
-          label="Fit mind map"
+          label={uiText("Fit mind map")}
           disabled={!layout}
           onClick={() => {
             fitPending.current = false;
@@ -2310,7 +2315,7 @@ export default function MindmapSurface(props: MindmapProps) {
         >
           <Focus size={16} />
         </IconButton>
-        <IconButton label="Zoom out" onClick={() => zoom(1 / 1.2)}>
+        <IconButton label={uiText("Zoom out")} onClick={() => zoom(1 / 1.2)}>
           <Minus size={16} />
         </IconButton>
         <Button
@@ -2320,22 +2325,22 @@ export default function MindmapSurface(props: MindmapProps) {
             fitPending.current = false;
             setCamera((c) => ({ ...c, scale: 1 }));
           }}
-          aria-label="Reset zoom to 100 percent"
+          aria-label={uiText("Reset zoom to 100 percent")}
         >
           {Math.round(camera.scale * 100)}%
         </Button>
-        <IconButton label="Zoom in" onClick={() => zoom(1.2)}>
+        <IconButton label={uiText("Zoom in")} onClick={() => zoom(1.2)}>
           <Plus size={16} />
         </IconButton>
         <IconButton
-          label="Branch details"
+          label={uiText("Branch details")}
           aria-pressed={pane === "details"}
           onClick={() => changePane(pane === "details" ? null : "details")}
         >
           <Info size={16} />
         </IconButton>
         <IconButton
-          label="More map options"
+          label={uiText("More map options")}
           onClick={(event) => {
             const owner = event.currentTarget,
               box = owner.getBoundingClientRect();
@@ -2437,10 +2442,10 @@ export default function MindmapSurface(props: MindmapProps) {
       {focusBranch && (
         <nav
           className="mindmap-focus-path"
-          aria-label="Focused branch ancestors"
+          aria-label={uiText("Focused branch ancestors")}
         >
           <IconButton
-            label="Show entire map"
+            label={uiText("Show entire map")}
             onClick={() => setFocusBranch(null)}
           >
             <ArrowLeft size={15} />
@@ -2461,7 +2466,7 @@ export default function MindmapSurface(props: MindmapProps) {
         <Notice tone="warning">
           <span>{message}</span>
           <IconButton
-            label="Dismiss map message"
+            label={uiText("Dismiss map message")}
             onClick={() => setMessage("")}
           >
             <X size={14} />
@@ -2471,7 +2476,7 @@ export default function MindmapSurface(props: MindmapProps) {
       {draft && !draftInView && (
         <div className="mindmap-retained-draft">
           <TextInput
-            aria-label="Retained node draft"
+            aria-label={uiText("Retained node draft")}
             value={draft.value}
             onChange={(e) => setDraft({ ...draft, value: e.target.value })}
           />
@@ -2486,9 +2491,11 @@ export default function MindmapSurface(props: MindmapProps) {
                 )
             }
           >
-            Copy draft
+            <I18nText id="Copy draft" />
           </Button>
-          <Button onClick={() => setDraft(null)}>Cancel</Button>
+          <Button data-dialog-cancel onClick={() => setDraft(null)}>
+            <I18nText id="Cancel" />
+          </Button>
         </div>
       )}
       <div className="mindmap-body">
@@ -2498,16 +2505,18 @@ export default function MindmapSurface(props: MindmapProps) {
             name="mindmap-source"
             edge="right"
             className="mindmap-source-pane"
-            label="Mind-map source"
+            label={uiText("Mind-map source")}
             minWidth={240}
             defaultWidth={360}
             maxWidth={900}
             reserveWidth={360}
           >
             <div className="mindmap-pane-heading">
-              <span>Canonical Markdown</span>
+              <span>
+                <I18nText id="Canonical Markdown" />
+              </span>
               <IconButton
-                label="Close map source"
+                label={uiText("Close map source")}
                 onClick={() => setPane(null)}
               >
                 <X size={15} />
@@ -2526,10 +2535,12 @@ export default function MindmapSurface(props: MindmapProps) {
           ref={host}
           tabIndex={0}
           role="tree"
-          aria-label="Markdown hierarchy"
+          aria-label={uiText("Markdown hierarchy")}
           aria-roledescription="Mind map"
           aria-multiselectable="true"
-          title="Drag empty space or middle-drag to pan; command/control scroll to zoom."
+          title={uiText(
+            "Drag empty space or middle-drag to pan; command/control scroll to zoom.",
+          )}
           onPointerDown={(e) => {
             if (
               (e.button !== 0 && e.button !== 1) ||
@@ -2728,19 +2739,19 @@ export default function MindmapSurface(props: MindmapProps) {
         >
           {!result && (
             <p className="mindmap-empty" role="status">
-              Building your map…
+              <I18nText id="Building your map…" />
             </p>
           )}
           {result?.error && (
             <div className="mindmap-empty">
               <Notice tone="warning">{result.error}</Notice>
               <Button onClick={() => changePane("source")}>
-                Open complete source
+                <I18nText id="Open complete source" />
               </Button>
               <Button
                 onClick={() => props.onDocument?.(binding.selection().head)}
               >
-                Document view
+                <I18nText id="Document view" />
               </Button>
             </div>
           )}
@@ -2922,7 +2933,7 @@ export default function MindmapSurface(props: MindmapProps) {
                         <TextInput
                           ref={input}
                           data-editor-field="inline"
-                          aria-label="Edit map node label"
+                          aria-label={uiText("Edit map node label")}
                           value={draft.value}
                           onChange={(e) =>
                             setDraft({ ...draft, value: e.target.value })
@@ -2961,8 +2972,8 @@ export default function MindmapSurface(props: MindmapProps) {
                             (index?.tasks.get(node.id)?.total ?? 0) > 0 && (
                               <div className="mindmap-branch-summary">
                                 {index?.tasks.get(node.id)?.complete}/
-                                {index?.tasks.get(node.id)?.total} tasks
-                                complete
+                                {index?.tasks.get(node.id)?.total}{" "}
+                                <I18nText id="tasks complete" />
                               </div>
                             )}
                         </div>
@@ -2988,7 +2999,7 @@ export default function MindmapSurface(props: MindmapProps) {
               {draft && draftInView && draftBox && (
                 <div
                   className="mindmap-draft-actions"
-                  aria-label="Node edit actions"
+                  aria-label={uiText("Node edit actions")}
                   style={{
                     left: Math.max(
                       8,
@@ -3010,11 +3021,14 @@ export default function MindmapSurface(props: MindmapProps) {
                     ),
                   }}
                 >
-                  <IconButton label="Apply node edit" onClick={commit}>
+                  <IconButton
+                    label={uiText("Apply node edit")}
+                    onClick={commit}
+                  >
                     <Check size={16} />
                   </IconButton>
                   <IconButton
-                    label="Cancel node edit"
+                    label={uiText("Cancel node edit")}
                     onClick={() => setDraft(null)}
                   >
                     <X size={16} />
@@ -3104,7 +3118,7 @@ export default function MindmapSurface(props: MindmapProps) {
           {chosen && placements.has(chosen.id) && (
             <div
               className="mindmap-node-actions"
-              aria-label="Selected block actions"
+              aria-label={uiText("Selected block actions")}
             >
               {chosen.checked !== undefined && (
                 <IconButton
@@ -3118,26 +3132,26 @@ export default function MindmapSurface(props: MindmapProps) {
               {(index?.tasks.get(chosen.id)?.total ?? 0) > 0 && (
                 <HelpText as="span">
                   {index?.tasks.get(chosen.id)?.complete}/
-                  {index?.tasks.get(chosen.id)?.total} tasks
+                  {index?.tasks.get(chosen.id)?.total} <I18nText id="tasks" />
                 </HelpText>
               )}
               {chosen.kind === "content" || chosen.kind === "container" ? (
                 <IconButton
-                  label="Open full block"
+                  label={uiText("Open full block")}
                   onClick={() => changePane("details")}
                 >
                   <Info size={15} />
                 </IconButton>
               ) : null}
               <IconButton
-                label="Reveal selected in Source"
+                label={uiText("Reveal selected in Source")}
                 disabled={!chosen.to}
                 onClick={() => revealSource(chosen)}
               >
                 <Braces size={15} />
               </IconButton>
               <IconButton
-                label="Center selected branch"
+                label={uiText("Center selected branch")}
                 onClick={() => fitSelection(chosen)}
               >
                 <Focus size={15} />
@@ -3170,12 +3184,12 @@ export default function MindmapSurface(props: MindmapProps) {
             name="mindmap-details"
             edge="left"
             className="mindmap-details-pane"
-            label="Mind-map branch details"
+            label={uiText("Mind-map branch details")}
           >
             <div className="mindmap-pane-heading">
               <span>{chosen.label}</span>
               <IconButton
-                label="Close branch details"
+                label={uiText("Close branch details")}
                 onClick={() => setPane(null)}
               >
                 <X size={15} />
@@ -3236,46 +3250,89 @@ export default function MindmapSurface(props: MindmapProps) {
         />
       )}
       {help && (
-        <Dialog title="Mind-map shortcuts" onClose={() => setHelp(false)}>
+        <Dialog
+          title={uiText("Mind-map shortcuts")}
+          onClose={() => setHelp(false)}
+        >
           <dl className="mindmap-shortcuts">
-            <dt>Arrow keys · Home / End</dt>
-            <dd>Navigate visible branches; Left folds, Right expands.</dd>
-            <dt>Enter · ⌘/Ctrl Enter</dt>
-            <dd>Add a sibling or child. The root always adds a child.</dd>
-            <dt>F2 · double-click</dt>
-            <dd>Edit an inline label; other blocks open their source range.</dd>
-            <dt>T · Space</dt>
-            <dd>Toggle the selected task or fold its branch.</dd>
-            <dt>⌘/Ctrl click · Shift click</dt>
-            <dd>Toggle selection or select a visible range.</dd>
-            <dt>⌘/Ctrl A · ⌘/Ctrl C</dt>
-            <dd>Select visible branches or copy selected Markdown.</dd>
-            <dt>Alt ↑ / ↓ / ←</dt>
-            <dd>Move a compatible branch up, down or outdent.</dd>
-            <dt>⌘/Ctrl / · ⌘/Ctrl Z</dt>
-            <dd>Toggle source or undo. Add Shift to redo.</dd>
-            <dt>Drag blank space · middle-drag</dt>
+            <dt>
+              <I18nText id="Arrow keys · Home / End" />
+            </dt>
             <dd>
-              Pan without modifying Markdown. Command/control wheel zooms.
+              <I18nText id="Navigate visible branches; Left folds, Right expands." />
             </dd>
-            <dt>Shift F10 · Escape</dt>
-            <dd>Open branch actions; cancel gestures or leave focused view.</dd>
+            <dt>
+              <I18nText id="Enter · ⌘/Ctrl Enter" />
+            </dt>
+            <dd>
+              <I18nText id="Add a sibling or child. The root always adds a child." />
+            </dd>
+            <dt>
+              <I18nText id="F2 · double-click" />
+            </dt>
+            <dd>
+              <I18nText id="Edit an inline label; other blocks open their source range." />
+            </dd>
+            <dt>
+              <I18nText id="T · Space" />
+            </dt>
+            <dd>
+              <I18nText id="Toggle the selected task or fold its branch." />
+            </dd>
+            <dt>
+              <I18nText id="⌘/Ctrl click · Shift click" />
+            </dt>
+            <dd>
+              <I18nText id="Toggle selection or select a visible range." />
+            </dd>
+            <dt>
+              <I18nText id="⌘/Ctrl A · ⌘/Ctrl C" />
+            </dt>
+            <dd>
+              <I18nText id="Select visible branches or copy selected Markdown." />
+            </dd>
+            <dt>
+              <I18nText id="Alt ↑ / ↓ / ←" />
+            </dt>
+            <dd>
+              <I18nText id="Move a compatible branch up, down or outdent." />
+            </dd>
+            <dt>
+              <I18nText id="⌘/Ctrl / · ⌘/Ctrl Z" />
+            </dt>
+            <dd>
+              <I18nText id="Toggle source or undo. Add Shift to redo." />
+            </dd>
+            <dt>
+              <I18nText id="Drag blank space · middle-drag" />
+            </dt>
+            <dd>
+              <I18nText id="Pan without modifying Markdown. Command/control wheel zooms." />
+            </dd>
+            <dt>
+              <I18nText id="Shift F10 · Escape" />
+            </dt>
+            <dd>
+              <I18nText id="Open branch actions; cancel gestures or leave focused view." />
+            </dd>
           </dl>
           <DialogFooter>
             <Button variant="primary" onClick={() => setHelp(false)}>
-              Done
+              <I18nText id="Done" />
             </Button>
           </DialogFooter>
         </Dialog>
       )}
       {leaving && draft && (
-        <Dialog title="Keep your node edit?" onClose={() => setLeaving(null)}>
+        <Dialog
+          title={uiText("Keep your node edit?")}
+          onClose={() => setLeaving(null)}
+        >
           <p>
-            Your label has not been applied to Markdown. Apply it before
-            leaving, or keep editing.
+            <I18nText id="Your label has not been applied to Markdown. Apply it before leaving, or keep editing." />
           </p>
           <TextInput
-            aria-label="Unsaved node label"
+            aria-label={uiText("Unsaved node label")}
             value={draft.value}
             readOnly
           />
@@ -3290,11 +3347,13 @@ export default function MindmapSurface(props: MindmapProps) {
               )
             }
           >
-            Copy draft
+            <I18nText id="Copy draft" />
           </Button>
           {message && <Notice tone="warning">{message}</Notice>}
           <DialogFooter>
-            <Button onClick={() => setLeaving(null)}>Stay</Button>
+            <Button onClick={() => setLeaving(null)}>
+              <I18nText id="Stay" />
+            </Button>
             <Button
               variant="danger"
               onClick={() => {
@@ -3304,7 +3363,7 @@ export default function MindmapSurface(props: MindmapProps) {
                 proceed();
               }}
             >
-              Discard and leave
+              <I18nText id="Discard and leave" />
             </Button>
             <Button
               variant="primary"
@@ -3315,7 +3374,7 @@ export default function MindmapSurface(props: MindmapProps) {
                 proceed();
               }}
             >
-              Apply and leave
+              <I18nText id="Apply and leave" />
             </Button>
           </DialogFooter>
         </Dialog>

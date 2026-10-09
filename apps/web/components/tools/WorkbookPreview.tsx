@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { HelpText, NativeSelect } from "../ui/controls";
 import { useEffect, useState } from "react";
 import type { FilePreviewManifest } from "@axiom/shared/file-preview";
@@ -11,6 +13,7 @@ export default function WorkbookPreview({
 }: {
   file: FilePreviewManifest;
 }) {
+  useInterfaceLocale();
   const [snapshot, setSnapshot] = useState<WorkbookSnapshot>({
       sheets: [],
       styles: [],
@@ -92,9 +95,9 @@ export default function WorkbookPreview({
     <>
       <div className="tool-controls">
         <label>
-          Sheet{" "}
+          <I18nText id="Sheet" />{" "}
           <NativeSelect
-            aria-label="Workbook sheet"
+            aria-label={uiText("Workbook sheet")}
             value={selected}
             onChange={(e) => setSelected(Number(e.target.value))}
           >
@@ -107,13 +110,16 @@ export default function WorkbookPreview({
         </label>
         <span className="tool-spacer" />
         <small>
-          Read-only · cached formula values · no macros or links executed
+          <I18nText id="Read-only · cached formula values · no macros or links executed" />
         </small>
       </div>
       <ErrorNotice message={error} />
       {!!snapshot.warnings.length && (
         <details className="workbook-notice">
-          <summary>Preview information ({snapshot.warnings.length})</summary>
+          <summary>
+            <I18nText id="Preview information (" />
+            {snapshot.warnings.length})
+          </summary>
           {snapshot.warnings.map((warning) => (
             <p key={warning}>{warning}</p>
           ))}
@@ -128,7 +134,10 @@ export default function WorkbookPreview({
             resourceId={file.resourceId}
             versionId={file.versionId}
           />
-          <nav className="workbook-sheet-tabs" aria-label="Workbook worksheets">
+          <nav
+            className="workbook-sheet-tabs"
+            aria-label={uiText("Workbook worksheets")}
+          >
             {sheets.map((sheet, index) => (
               <button
                 key={index}
@@ -136,23 +145,24 @@ export default function WorkbookPreview({
                 onClick={() => setSelected(index)}
               >
                 {sheet.name}
-                {sheet.hidden ? " (hidden in original)" : ""}
+                {sheet.hidden ? uiText(" (hidden in original)") : ""}
               </button>
             ))}
           </nav>
           {sheets[selected].truncated && (
             <HelpText>
-              This large sheet is limited to 50,000 rows and 256 columns in
-              preview.
+              <I18nText id="This large sheet is limited to 50,000 rows and 256 columns in preview." />
             </HelpText>
           )}
         </>
       ) : (
         !error &&
         (loaded ? (
-          <HelpText>This workbook has no worksheets.</HelpText>
+          <HelpText>
+            <I18nText id="This workbook has no worksheets." />
+          </HelpText>
         ) : (
-          <Loading label="Decoding workbook in an isolated worker…" />
+          <Loading label={uiText("Decoding workbook in an isolated worker…")} />
         ))
       )}
     </>

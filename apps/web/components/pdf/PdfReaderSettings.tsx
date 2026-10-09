@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { Slider, Switch, NativeSelect } from "../ui/controls";
 import type { Preferences } from "@axiom/shared/appearance";
 export default function PdfReaderSettings({
@@ -8,18 +10,21 @@ export default function PdfReaderSettings({
   value: Preferences["pdfReader"];
   onChange: (value: Preferences["pdfReader"]) => void;
 }) {
+  useInterfaceLocale();
   return (
     <section className="settings-card pdf-reader-settings">
-      <h4>PDF research reader</h4>
+      <h4>
+        <I18nText id="PDF research reader" />
+      </h4>
       <p className="settings-note">
-        Defaults for new reading sessions. Original PDF colors are preserved
-        except when you explicitly choose warm paper. Exports retain original
-        colors.
+        <I18nText id="Defaults for new reading sessions. Original PDF colors are preserved except when you explicitly choose warm paper. Exports retain original colors." />
       </p>
       <label className="settings-row">
-        <span>Page layout</span>
+        <span>
+          <I18nText id="Page layout" />
+        </span>
         <NativeSelect
-          aria-label="Default PDF page layout"
+          aria-label={uiText("Default PDF page layout")}
           value={value.layout}
           onChange={(e) =>
             onChange({
@@ -28,38 +33,59 @@ export default function PdfReaderSettings({
             })
           }
         >
-          <option value="continuous">Continuous</option>
-          <option value="single">Single page</option>
-          <option value="facing">Facing pages</option>
+          <option value="continuous">
+            <I18nText id="Continuous" />
+          </option>
+          <option value="single">
+            <I18nText id="Single page" />
+          </option>
+          <option value="facing">
+            <I18nText id="Facing pages" />
+          </option>
         </NativeSelect>
       </label>
       <label className="settings-row">
-        <span>Paper appearance</span>
+        <span>
+          <I18nText id="Paper appearance" />
+        </span>
         <NativeSelect
-          aria-label="Default PDF paper appearance"
+          aria-label={uiText("Default PDF paper appearance")}
           value={value.theme}
           onChange={(e) =>
             onChange({ ...value, theme: e.target.value as typeof value.theme })
           }
         >
-          <option value="original">Original</option>
-          <option value="warm">Warm paper</option>
-          <option value="graphite">Graphite surround</option>
-          <option value="contrast">High contrast surround</option>
+          <option value="original">
+            <I18nText id="Original" />
+          </option>
+          <option value="warm">
+            <I18nText id="Warm paper" />
+          </option>
+          <option value="graphite">
+            <I18nText id="Graphite surround" />
+          </option>
+          <option value="contrast">
+            <I18nText id="High contrast surround" />
+          </option>
         </NativeSelect>
       </label>
       <label className="settings-row">
-        <span>Show reading navigator</span>
+        <span>
+          <I18nText id="Show reading navigator" />
+        </span>
         <Switch
-          aria-label="Show PDF reading navigator by default"
+          aria-label={uiText("Show PDF reading navigator by default")}
           checked={value.navigator}
           onChange={(e) => onChange({ ...value, navigator: e.target.checked })}
         />
       </label>
       <label className="settings-row">
-        <span>Navigator width · {value.navigatorWidth}px</span>
+        <span>
+          <I18nText id="Navigator width ·" /> {value.navigatorWidth}
+          <I18nText id="px" />
+        </span>
         <Slider
-          aria-label="Default PDF navigator width"
+          aria-label={uiText("Default PDF navigator width")}
           aria-valuetext={`${value.navigatorWidth} pixels`}
           min={200}
           max={440}

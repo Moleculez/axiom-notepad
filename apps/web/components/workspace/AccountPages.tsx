@@ -1,4 +1,6 @@
 "use client";
+import { uiText, useInterfaceLocale, I18nText } from "@axiom/i18n/react";
+
 import { ActionRow, Button, HelpText } from "../ui/controls";
 import { useEffect, useState } from "react";
 import { Download } from "lucide-react";
@@ -16,6 +18,7 @@ import {
 } from "./ui";
 
 export function ExportsPage() {
+  useInterfaceLocale();
   const { revision, spaces } = useWorkspace(),
     result = useData<any[]>("exports", revision),
     action = useAction();
@@ -31,12 +34,7 @@ export function ExportsPage() {
   return (
     <section>
       <HelpText>
-        Select items in Explorer to prepare a portable ZIP. Exports contain
-        current Markdown, matching BibTeX, and exact linked file versions. They
-        do not contain comments, account data, or full edit history; use an
-        administrator backup for full recovery. Up to 1,000 items, 25 MB of
-        Markdown, and 100 GB of files per export. Finished archives stay until
-        you remove them.
+        <I18nText id="Select items in Explorer to prepare a portable ZIP. Exports contain current Markdown, matching BibTeX, and exact linked file versions. They do not contain comments, account data, or full edit history; use an administrator backup for full recovery. Up to 1,000 items, 25 MB of Markdown, and 100 GB of files per export. Finished archives stay until you remove them." />
       </HelpText>
       <ErrorNotice
         message={result.error || action.error}
@@ -53,7 +51,8 @@ export function ExportsPage() {
                 <Badge>{item.status}</Badge>
               </strong>
               <small>
-                {item.items} source items · {timeAgo(item.created_at)}
+                {item.items} <I18nText id="source items ·" />{" "}
+                {timeAgo(item.created_at)}
                 {item.bytes ? ` · ${bytes(item.bytes)}` : ""}
               </small>
               <ErrorNotice message={item.error} />
@@ -64,7 +63,7 @@ export function ExportsPage() {
                     href={`/api/v1/exports/${item.id}/download`}
                   >
                     <Download size={15} />
-                    Download ZIP
+                    <I18nText id="Download ZIP" />
                   </a>
                 )}
                 {!["queued", "running"].includes(item.status) && (
@@ -72,7 +71,7 @@ export function ExportsPage() {
                     className="button secondary"
                     onClick={() => setRemove(item.id)}
                   >
-                    Remove archive…
+                    <I18nText id="Remove archive…" />
                   </Button>
                 )}
               </ActionRow>
@@ -81,29 +80,28 @@ export function ExportsPage() {
         </div>
       ) : (
         !result.loading && (
-          <Empty title="No exports yet">
-            Choose a folder or select files in Explorer, then choose Export
-            selection.
+          <Empty title={uiText("No exports yet")}>
+            <I18nText id="Choose a folder or select files in Explorer, then choose Export selection." />
           </Empty>
         )
       )}
       {remove && (
         <Dialog
-          title="Remove this prepared archive?"
+          title={uiText("Remove this prepared archive?")}
           onClose={() => !action.busy && setRemove(null)}
         >
           <p>
-            The ZIP on the server will be permanently removed. Your original
-            notes and files are unchanged; you can export them again.
+            <I18nText id="The ZIP on the server will be permanently removed. Your original notes and files are unchanged; you can export them again." />
           </p>
           <ErrorNotice message={action.error} />
           <div className="dialog-footer">
             <Button
+              data-dialog-cancel
               className="button secondary"
               disabled={action.busy}
               onClick={() => setRemove(null)}
             >
-              Cancel
+              <I18nText id="Cancel" />
             </Button>
             <Button
               className="button danger"
@@ -116,7 +114,7 @@ export function ExportsPage() {
                 })
               }
             >
-              Remove archive
+              <I18nText id="Remove archive" />
             </Button>
           </div>
         </Dialog>

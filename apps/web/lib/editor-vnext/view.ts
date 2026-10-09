@@ -1,4 +1,5 @@
 import { mediaNodeView } from "./media-view";
+import { bindText, bindAttribute } from "@axiom/i18n/dom";
 import {
   readingBlocks,
   readingBlockTypes,
@@ -556,7 +557,7 @@ export class AxiomEditorView {
       this.rich?.view.dom,
       this.sourceView?.view.contentDOM,
     ]) {
-      element?.setAttribute("aria-label", label);
+      if (element) bindAttribute(element, "aria-label", label);
       if (element) element.dataset.testid = testId;
     }
   }
@@ -3329,7 +3330,7 @@ export class AxiomEditorView {
       Array.from(this.embedded).find(
         (view) => view.sourceNode()?.from === block.from,
       )?.dom;
-    const menuButton = menuOwner?.querySelector('[aria-label="Block actions"]');
+    const menuButton = menuOwner?.querySelector("[data-editor-block-menu]");
     this.menu = openContextMenu({
       owner: this.dom,
       x,
@@ -4581,7 +4582,7 @@ function dividerView(
   dom.contentEditable = "false";
   dom.tabIndex = 0;
   dom.setAttribute("role", "separator");
-  dom.setAttribute("aria-label", "Divider");
+  bindAttribute(dom, "aria-label", "Divider");
   dom.setAttribute("aria-orientation", "horizontal");
   preview.className = "axiom-block-preview";
   rule.setAttribute("aria-hidden", "true");
@@ -4644,7 +4645,7 @@ class TableView implements NodeView {
     this.controls.dataset.editorChrome = "true";
     this.controls.contentEditable = "false";
     this.controls.role = "toolbar";
-    this.controls.setAttribute("aria-label", "Table tools");
+    bindAttribute(this.controls, "aria-label", "Table tools");
     this.alignment = iconButton("Column alignment", "alignLeft", () =>
       owner.tableControl(this, "alignment"),
     );
@@ -4908,7 +4909,7 @@ class EmbeddedView implements NodeView {
     if (node.attrs.kind !== "codeBlock" || node.attrs.lang === "mermaid") {
       this.preview.role = "button";
       this.preview.tabIndex = 0;
-      this.preview.setAttribute("aria-label", "Edit " + this.blockName());
+      bindAttribute(this.preview, "aria-label", "Edit " + this.blockName());
     }
     this.host.className = "axiom-block-source";
     const label = this.label;
@@ -4921,13 +4922,15 @@ class EmbeddedView implements NodeView {
     label.disabled =
       node.attrs.kind !== "codeBlock" || owner.options.readOnly();
     label.addEventListener("click", () => this.editLanguage());
-    label.textContent =
+    bindText(
+      label,
       node.attrs.kind === "mathBlock"
         ? "TeX"
         : node.attrs.lang ||
-          (node.type.name === "raw_block"
-            ? node.attrs.kind + " · source"
-            : "Plain text");
+            (node.type.name === "raw_block"
+              ? node.attrs.kind + " · source"
+              : "Plain text"),
+    );
     const copy = iconButton("Copy block contents", "copy", () => {
       void navigator.clipboard
         .writeText(this.node.textContent)
@@ -4947,6 +4950,7 @@ class EmbeddedView implements NodeView {
       const box = menu.getBoundingClientRect();
       owner.openMenu(box.left, box.bottom + 4);
     });
+    menu.dataset.editorBlockMenu = "";
     menu.setAttribute("aria-haspopup", "menu");
     menu.setAttribute("aria-expanded", "false");
     this.controls.append(label, copy, menu);
@@ -5027,7 +5031,7 @@ class EmbeddedView implements NodeView {
     const input = document.createElement("input");
     input.value = match[2];
     input.maxLength = 40;
-    input.setAttribute("aria-label", "Code language");
+    bindAttribute(input, "aria-label", "Code language");
     input.className = "axiom-language-input";
     input.dataset.editorField = "inline";
     this.label.hidden = true;
@@ -5177,7 +5181,11 @@ class EmbeddedView implements NodeView {
       wrap: this.wrap ?? this.owner.options.preferences().codeWrap,
       numbers: this.numbers ?? this.owner.options.preferences().codeLineNumbers,
     });
-    this.surface.view.contentDOM.setAttribute("aria-label", this.sourceLabel());
+    bindAttribute(
+      this.surface.view.contentDOM,
+      "aria-label",
+      this.sourceLabel(),
+    );
     this.preview.setAttribute(
       "aria-disabled",
       String(this.owner.options.readOnly()),
@@ -5230,7 +5238,7 @@ class EmbeddedView implements NodeView {
     this.preview.hidden = false;
     this.preview.role = "button";
     this.preview.tabIndex = 0;
-    this.preview.setAttribute("aria-label", "Edit " + this.blockName());
+    bindAttribute(this.preview, "aria-label", "Edit " + this.blockName());
     this.dom.dataset.preview = "true";
     const source = this.owner.source.slice(node.from, node.to);
     const math = this.preview.querySelector<HTMLElement>(".math-block");

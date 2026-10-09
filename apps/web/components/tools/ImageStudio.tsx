@@ -1,4 +1,7 @@
 "use client";
+import { currentLocale } from "@axiom/i18n/client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import {
   Button,
   IconButton,
@@ -132,6 +135,7 @@ export default function ImageStudio({
   importFile: string | null;
   importVersion: string | null;
 }) {
+  useInterfaceLocale();
   const { session, notify, refresh } = useWorkspace();
   const [doc, setDoc] = useState<ImageDocument | null>(null),
     [, repaint] = useState(0),
@@ -1019,20 +1023,22 @@ export default function ImageStudio({
         <WorkspaceLink
           to={`/explorer?space=${project.space_id}${project.parent_id ? `&folder=${project.parent_id}` : ""}`}
           className="icon-button"
-          aria-label="Back to folder"
+          aria-label={uiText("Back to folder")}
         >
           <ArrowLeft size={18} />
         </WorkspaceLink>
         <div className="studio-title">
-          <span>Image Studio</span>
+          <span>
+            <I18nText id="Image Studio" />
+          </span>
           <h1>{project.name.replace(/\.axiom-image$/i, "")}</h1>
         </div>
         <span className="tool-spacer" />
         <ResourceSharing resourceId={project.resource_id} />
         <IconButton
           className="icon-button"
-          aria-label="Image version history"
-          title="Compare image versions and working draft"
+          aria-label={uiText("Image version history")}
+          title={uiText("Compare image versions and working draft")}
           disabled={busy}
           onClick={() => void openHistory()}
         >
@@ -1040,8 +1046,8 @@ export default function ImageStudio({
         </IconButton>
         <IconButton
           className="icon-button"
-          aria-label="Recover previous cloud draft"
-          title="Recover previous cloud working draft"
+          aria-label={uiText("Recover previous cloud draft")}
+          title={uiText("Recover previous cloud working draft")}
           disabled={!editable}
           onClick={() => void showCloudRecovery()}
         >
@@ -1060,8 +1066,8 @@ export default function ImageStudio({
         />
         <IconButton
           className="icon-button"
-          title="Import image as layer"
-          aria-label="Import image as layer"
+          title={uiText("Import image as layer")}
+          aria-label={uiText("Import image as layer")}
           disabled={!editable}
           onClick={() => upload.current?.click()}
         >
@@ -1073,14 +1079,14 @@ export default function ImageStudio({
           disabled={!doc}
         >
           <Download size={15} />
-          Export
+          <I18nText id="Export" />
         </Button>
         <Button
           className="button secondary"
           disabled={!baseVersion}
           onClick={() => setDialog("discussion")}
         >
-          Discussion
+          <I18nText id="Discussion" />
         </Button>
         <Button
           className="button secondary"
@@ -1088,7 +1094,7 @@ export default function ImageStudio({
           onClick={() => void save(true)}
         >
           <Copy size={15} />
-          Save copy
+          <I18nText id="Save copy" />
         </Button>
         <Button
           className="button primary"
@@ -1097,13 +1103,15 @@ export default function ImageStudio({
           pending={!!busy}
         >
           <Save size={15} />
-          {"Save version"}
+          {uiText("Save version")}
         </Button>
       </header>
       <ErrorNotice message={error} />
       {!lease && doc && project.role === "editor" && !busy && (
         <div className="tool-controls">
-          <span>Saved preview and local draft remain available.</span>
+          <span>
+            <I18nText id="Saved preview and local draft remain available." />
+          </span>
           <Button
             className="button secondary"
             onClick={() =>
@@ -1112,13 +1120,16 @@ export default function ImageStudio({
                 .catch((e) => setError(e.message))
             }
           >
-            Acquire editing access
+            <I18nText id="Acquire editing access" />
           </Button>
         </div>
       )}
       {warnings.length > 0 && (
         <details className="image-import-warnings">
-          <summary>PSD compatibility notes ({warnings.length})</summary>
+          <summary>
+            <I18nText id="PSD compatibility notes (" />
+            {warnings.length})
+          </summary>
           <ul>
             {warnings.map((w) => (
               <li key={w}>{w}</li>
@@ -1132,7 +1143,7 @@ export default function ImageStudio({
         </strong>
         <span className="tool-separator" />
         <label>
-          Color
+          <I18nText id="Color" />
           <input
             type="color"
             value={color}
@@ -1140,9 +1151,9 @@ export default function ImageStudio({
           />
         </label>
         <label>
-          Size
+          <I18nText id="Size" />
           <Slider
-            aria-label="Brush size"
+            aria-label={uiText("Brush size")}
             aria-valuetext={`${brushSize} pixels`}
 
             min={1}
@@ -1153,9 +1164,9 @@ export default function ImageStudio({
           <span>{brushSize}</span>
         </label>
         <label>
-          Opacity
+          <I18nText id="Opacity" />
           <Slider
-            aria-label="Brush opacity"
+            aria-label={uiText("Brush opacity")}
             aria-valuetext={`${Math.round(brushOpacity * 100)}%`}
 
             min={0.05}
@@ -1168,8 +1179,8 @@ export default function ImageStudio({
         <span className="tool-spacer" />
         <IconButton
           className="icon-button"
-          title="Undo"
-          aria-label="Undo"
+          title={uiText("Undo")}
+          aria-label={uiText("Undo")}
           disabled={!editable || !doc?.canUndo}
           onClick={() => safely(() => doc?.undo())}
         >
@@ -1177,8 +1188,8 @@ export default function ImageStudio({
         </IconButton>
         <IconButton
           className="icon-button"
-          title="Redo"
-          aria-label="Redo"
+          title={uiText("Redo")}
+          aria-label={uiText("Redo")}
           disabled={!editable || !doc?.canRedo}
           onClick={() => safely(() => doc?.redo())}
         >
@@ -1187,20 +1198,20 @@ export default function ImageStudio({
         <Button
           className="button ghost"
           disabled={!editable}
-          title="Crop image (C)"
+          title={uiText("Crop image (C)")}
           onClick={() => setGeometry("crop")}
         >
           <Crop size={15} />
-          Crop
+          <I18nText id="Crop" />
         </Button>
         <Button
           className="button ghost"
           disabled={!editable}
-          title="Resize image (⌘/Ctrl+Alt+I)"
+          title={uiText("Resize image (⌘/Ctrl+Alt+I)")}
           onClick={() => setGeometry("resize")}
         >
           <Maximize size={15} />
-          Resize
+          <I18nText id="Resize" />
         </Button>
         <Button
           className="button ghost"
@@ -1210,15 +1221,18 @@ export default function ImageStudio({
           onClick={() => setDialog("adjust")}
         >
           <SlidersHorizontal size={15} />
-          Adjust
+          <I18nText id="Adjust" />
         </Button>
       </div>
       <div className="studio-body image-body">
-        <nav className="image-tool-rail" aria-label="Image editing tools">
+        <nav
+          className="image-tool-rail"
+          aria-label={uiText("Image editing tools")}
+        >
           <IconButton
             className="icon-button"
-            aria-label="Crop image (C)"
-            title="Crop image (C)"
+            aria-label={uiText("Crop image (C)")}
+            title={uiText("Crop image (C)")}
             disabled={!editable}
             onClick={() => setGeometry("crop")}
           >
@@ -1291,7 +1305,7 @@ export default function ImageStudio({
         >
           {!doc ? (
             error ? null : (
-              <Loading label="Opening image project…" />
+              <Loading label={uiText("Opening image project…")} />
             )
           ) : (
             <div
@@ -1300,7 +1314,7 @@ export default function ImageStudio({
             >
               <canvas
                 ref={canvas}
-                aria-label="Image canvas"
+                aria-label={uiText("Image canvas")}
                 style={{ width: "100%", height: "100%" }}
               />
               <canvas
@@ -1515,12 +1529,14 @@ export default function ImageStudio({
         <aside className="image-layer-panel">
           <header>
             <Layers size={16} />
-            <strong>Layers</strong>
+            <strong>
+              <I18nText id="Layers" />
+            </strong>
             <span className="tool-spacer" />
             <IconButton
               className="icon-button"
-              title="Add layer"
-              aria-label="Add layer"
+              title={uiText("Add layer")}
+              aria-label={uiText("Add layer")}
               disabled={!editable}
               onClick={() => safely(() => doc?.addLayer())}
             >
@@ -1528,8 +1544,8 @@ export default function ImageStudio({
             </IconButton>
             <IconButton
               className="icon-button"
-              title="Add group"
-              aria-label="Add group"
+              title={uiText("Add group")}
+              aria-label={uiText("Add group")}
               disabled={!editable}
               onClick={() =>
                 safely(() => doc?.addLayer("Group", undefined, "group"))
@@ -1541,7 +1557,7 @@ export default function ImageStudio({
           {active && (
             <div className="image-layer-properties">
               <NativeSelect
-                aria-label="Layer blend mode"
+                aria-label={uiText("Layer blend mode")}
                 value={active.blend}
                 disabled={!editable}
                 onChange={(e) =>
@@ -1555,15 +1571,15 @@ export default function ImageStudio({
                 {blendModes.map((mode) => (
                   <option key={mode} value={mode}>
                     {mode === "source-over"
-                      ? "Normal"
+                      ? uiText("Normal")
                       : mode.replace(/-/g, " ")}
                   </option>
                 ))}
               </NativeSelect>
               <label>
-                Opacity
+                <I18nText id="Opacity" />
                 <Slider
-                  aria-label="Layer opacity"
+                  aria-label={uiText("Layer opacity")}
                   aria-valuetext={`${Math.round(active.opacity * 100)}%`}
                   min={0}
                   max={1}
@@ -1711,7 +1727,11 @@ export default function ImageStudio({
                   </span>
                   <span className="image-layer-name">
                     {layer.name}
-                    {layer.mask && <small>Masked</small>}
+                    {layer.mask && (
+                      <small>
+                        <I18nText id="Masked" />
+                      </small>
+                    )}
                   </span>
                   {layer.locked && <Lock size={12} />}
                 </div>
@@ -1720,7 +1740,7 @@ export default function ImageStudio({
           {active && (
             <div className="image-inspector">
               <label>
-                Name
+                <I18nText id="Name" />
                 <TextInput
                   value={active.name}
                   disabled={!editable}
@@ -1734,7 +1754,7 @@ export default function ImageStudio({
                 />
               </label>
               <label>
-                Group
+                <I18nText id="Group" />
                 <NativeSelect
                   disabled={!editable || active.kind === "group"}
                   value={active.parent ?? ""}
@@ -1746,7 +1766,9 @@ export default function ImageStudio({
                     )
                   }
                 >
-                  <option value="">Ungrouped</option>
+                  <option value="">
+                    <I18nText id="Ungrouped" />
+                  </option>
                   {doc?.layers
                     .filter((l) => l.kind === "group")
                     .map((l) => (
@@ -1797,8 +1819,8 @@ export default function ImageStudio({
                 })}
                 <IconButton
                   className="icon-button"
-                  title="Delete layer"
-                  aria-label="Delete layer"
+                  title={uiText("Delete layer")}
+                  aria-label={uiText("Delete layer")}
                   disabled={!editable}
                   onClick={() => safely(() => doc?.removeLayer())}
                 >
@@ -1810,24 +1832,26 @@ export default function ImageStudio({
                 disabled={!editable || active.locked || active.kind === "group"}
                 onClick={() => safely(() => doc?.addMask())}
               >
-                Selection → mask
+                <I18nText id="Selection → mask" />
               </Button>
               <Button
                 className="button ghost"
                 disabled={!editable}
                 onClick={() => safely(() => doc?.mergeVisible())}
               >
-                Merge visible layers
+                <I18nText id="Merge visible layers" />
               </Button>
             </div>
           )}
           {doc?.selection && (
             <div className="image-inspector">
-              <h3>Selection</h3>
+              <h3>
+                <I18nText id="Selection" />
+              </h3>
               <label>
-                Feather
+                <I18nText id="Feather" />
                 <Slider
-                  aria-label="Selection feather"
+                  aria-label={uiText("Selection feather")}
                   aria-valuetext={`${feather} pixels`}
                   min={0}
                   max={50}
@@ -1846,7 +1870,7 @@ export default function ImageStudio({
                   repaint((n) => n + 1);
                 }}
               >
-                Invert selection
+                <I18nText id="Invert selection" />
               </Button>
               <Button
                 className="button secondary"
@@ -1854,7 +1878,7 @@ export default function ImageStudio({
                 onClick={() => setGeometry("crop")}
               >
                 <Crop size={14} />
-                Crop to selection
+                <I18nText id="Crop to selection" />
               </Button>
               <Button
                 className="button ghost"
@@ -1864,7 +1888,7 @@ export default function ImageStudio({
                   repaint((n) => n + 1);
                 }}
               >
-                Deselect
+                <I18nText id="Deselect" />
               </Button>
             </div>
           )}
@@ -1880,8 +1904,8 @@ export default function ImageStudio({
         </span>
         <IconButton
           className="icon-button"
-          title="Zoom out"
-          aria-label="Zoom out"
+          title={uiText("Zoom out")}
+          aria-label={uiText("Zoom out")}
           onClick={() => setZoom(Math.max(0.1, zoom / 1.2))}
         >
           <ZoomOut size={14} />
@@ -1891,8 +1915,8 @@ export default function ImageStudio({
         </Button>
         <IconButton
           className="icon-button"
-          title="Zoom in"
-          aria-label="Zoom in"
+          title={uiText("Zoom in")}
+          aria-label={uiText("Zoom in")}
           onClick={() => setZoom(Math.min(4, zoom * 1.2))}
         >
           <ZoomIn size={14} />
@@ -1900,13 +1924,11 @@ export default function ImageStudio({
       </footer>
       {leaving && (
         <Dialog
-          title="Keep your image draft before leaving"
+          title={uiText("Keep your image draft before leaving")}
           onClose={() => !busy && setLeaving(null)}
         >
           <p>
-            Your latest edits have not been published as a cloud version. Keep a
-            recovery copy on this device before switching pages. Use Save
-            version to share the changes with collaborators.
+            <I18nText id="Your latest edits have not been published as a cloud version. Keep a recovery copy on this device before switching pages. Use Save version to share the changes with collaborators." />
           </p>
           <ErrorNotice message={error} />
           <div className="dialog-footer">
@@ -1915,9 +1937,10 @@ export default function ImageStudio({
               disabled={busy}
               onClick={() => setLeaving(null)}
             >
-              Stay here
+              <I18nText id="Stay here" />
             </Button>
             <Button
+              data-dialog-cancel
               className="button primary"
               disabled={busy || !doc}
               onClick={() => {
@@ -1947,32 +1970,35 @@ export default function ImageStudio({
                   });
               }}
             >
-              Keep draft &amp; leave
+              <I18nText id="Keep draft & leave" />
             </Button>
           </div>
         </Dialog>
       )}
       {draft && (
         <Dialog
-          title="Restore local image draft?"
+          title={uiText("Restore local image draft?")}
           onClose={() => setDraft(null)}
         >
           <p>
-            A recovery draft from {new Date(draft.updatedAt).toLocaleString()}{" "}
-            is available on this device.{" "}
+            <I18nText id="A recovery draft from" />{" "}
+            {new Date(draft.updatedAt).toLocaleString(currentLocale())}{" "}
+            <I18nText id="is available on this device." />{" "}
             {draft.baseVersion !== baseVersion
-              ? "The cloud version has changed; restore for review and Save copy to preserve both versions."
-              : "Restore it to continue where you left off."}
+              ? uiText(
+                  "The cloud version has changed; restore for review and Save copy to preserve both versions.",
+                )
+              : uiText("Restore it to continue where you left off.")}
           </p>
           <div className="dialog-footer">
             <Button
               className="button secondary"
               onClick={() => downloadBlob(draft.blob, "recovered.axiom-image")}
             >
-              Download draft
+              <I18nText id="Download draft" />
             </Button>
             <Button className="button secondary" onClick={() => setDraft(null)}>
-              Use saved version
+              <I18nText id="Use saved version" />
             </Button>
             <Button
               className="button primary"
@@ -1990,7 +2016,7 @@ export default function ImageStudio({
                   .catch((e) => setError(e.message));
               }}
             >
-              Restore draft
+              <I18nText id="Restore draft" />
             </Button>
           </div>
         </Dialog>
@@ -2020,7 +2046,7 @@ export default function ImageStudio({
         <Dialog
           title={
             dialog === "export"
-              ? "Export image"
+              ? uiText("Export image")
               : dialog === "text"
                 ? editingText.current
                   ? "Edit text layer"
@@ -2041,9 +2067,7 @@ export default function ImageStudio({
           ) : dialog === "export" ? (
             <>
               <p>
-                Exports are copies. PSD export preserves common raster layers,
-                masks and transforms as raster appearance; advanced source-format
-                features are not recreated.
+                <I18nText id="Exports are copies. PSD export preserves common raster layers, masks and transforms as raster appearance; advanced source-format features are not recreated." />
               </p>
               <div className="tool-export-grid">
                 {["png", "jpeg", "webp", "axiom-image", "psd"].map((format) => (
@@ -2088,7 +2112,7 @@ export default function ImageStudio({
           ) : dialog === "text" ? (
             <div className="tool-settings-fields">
               <label className="tool-setting-stack">
-                Text
+                <I18nText id="Text" />
                 <TextArea
                   maxLength={10000}
                   value={text}
@@ -2096,9 +2120,9 @@ export default function ImageStudio({
                 />
               </label>
               <label>
-                Font
+                <I18nText id="Font" />
                 <NativeSelect
-                  aria-label="Text layer font"
+                  aria-label={uiText("Text layer font")}
                   value={fontFamily}
                   onChange={(e) => setFontFamily(e.target.value)}
                 >
@@ -2108,7 +2132,7 @@ export default function ImageStudio({
                 </NativeSelect>
               </label>
               <label>
-                Font size
+                <I18nText id="Font size" />
                 <TextInput
                   type="number"
                   min={8}
@@ -2135,13 +2159,15 @@ export default function ImageStudio({
                   })
                 }
               >
-                {editingText.current ? "Update text" : "Add text"}
+                {editingText.current
+                  ? uiText("Update text")
+                  : uiText("Add text")}
               </Button>
             </div>
           ) : (
             <div className="tool-settings-fields">
               <label>
-                Adjustment
+                <I18nText id="Adjustment" />
                 <NativeSelect
                   value={filter}
                   onChange={(e) => setFilter(e.target.value)}
@@ -2163,7 +2189,7 @@ export default function ImageStudio({
                 </NativeSelect>
               </label>
               <label>
-                Amount
+                <I18nText id="Amount" />
                 <Slider
                   aria-label={`${filter} amount`}
                   aria-valuetext={
@@ -2183,9 +2209,7 @@ export default function ImageStudio({
                 <span>{amount}</span>
               </label>
               <p>
-                Applies to the active layer or selection. Processing runs in a
-                worker and is undoable. Curves adjusts midtone gamma; Levels
-                trims black/white points.
+                <I18nText id="Applies to the active layer or selection. Processing runs in a worker and is undoable. Curves adjusts midtone gamma; Levels trims black/white points." />
               </p>
               <Button
                 className="button primary"
@@ -2200,7 +2224,7 @@ export default function ImageStudio({
                     .finally(() => setBusy(false));
                 }}
               >
-                Apply adjustment
+                <I18nText id="Apply adjustment" />
               </Button>
             </div>
           )}
@@ -2225,12 +2249,11 @@ export default function ImageStudio({
       )}
       {cloudRecovery?.previousManifest && (
         <Dialog
-          title="Recover previous working draft?"
+          title={uiText("Recover previous working draft?")}
           onClose={() => !busy && setCloudRecovery(null)}
         >
           <p>
-            The previous draft becomes your working image. The current draft
-            remains recoverable, and saved milestones are unchanged.
+            <I18nText id="The previous draft becomes your working image. The current draft remains recoverable, and saved milestones are unchanged." />
           </p>
           <div className="revision-recovery-images">
             {[cloudRecovery.manifest, cloudRecovery.previousManifest].map(
@@ -2246,9 +2269,9 @@ export default function ImageStudio({
                     }
                   />
                   <figcaption>
-                    {i ? "Recover this draft" : "Current draft"} ·{" "}
-                    {m.project.width} × {m.project.height} ·{" "}
-                    {m.project.layers.length} layers
+                    {i ? uiText("Recover this draft") : uiText("Current draft")}{" "}
+                    · {m.project.width} × {m.project.height} ·{" "}
+                    {m.project.layers.length} <I18nText id="layers" />
                   </figcaption>
                 </figure>
               ),
@@ -2257,18 +2280,19 @@ export default function ImageStudio({
           <ErrorNotice message={error} />
           <div className="dialog-footer">
             <Button
+              data-dialog-cancel
               className="button secondary"
               disabled={busy}
               onClick={() => setCloudRecovery(null)}
             >
-              Cancel
+              <I18nText id="Cancel" />
             </Button>
             <Button
               className="button primary"
               disabled={busy}
               onClick={() => void recoverCloudDraft()}
             >
-              Recover previous draft
+              <I18nText id="Recover previous draft" />
             </Button>
           </div>
         </Dialog>

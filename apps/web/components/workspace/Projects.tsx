@@ -1,4 +1,7 @@
 "use client";
+import { currentLocale } from "@axiom/i18n/client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import {
   ActionRow,
   Button,
@@ -65,6 +68,7 @@ export default function ProjectsPage({
   id?: string;
   section?: string;
 }) {
+  useInterfaceLocale();
   const { revision, navigate, refresh, spaces } = useWorkspace(),
     data = useData<any>(id ? `projects/${id}` : "projects", revision),
     [create, setCreate] = useState(false);
@@ -75,12 +79,14 @@ export default function ProjectsPage({
       <main className="ws-page ws-project-page">
         <ErrorNotice message={data.error} retry={data.reload} />
         {!project ? (
-          data.loading && <Loading label="Opening research project…" />
+          data.loading && (
+            <Loading label={uiText("Opening research project…")} />
+          )
         ) : (
           <>
             <WorkspaceLink className="ws-back-link" to="/projects">
               <ArrowLeft size={14} />
-              All projects
+              <I18nText id="All projects" />
             </WorkspaceLink>
             <PageHeading
               eyebrow="RESEARCH PROJECT"
@@ -101,16 +107,20 @@ export default function ProjectsPage({
             <div className="ws-project-meta">
               <Badge>
                 {project.audience === "restricted"
-                  ? "Invited project members"
-                  : "Entire group"}
+                  ? uiText("Invited project members")
+                  : uiText("Entire group")}
               </Badge>
               <Badge>{project.role}</Badge>
-              {project.archived_at && <Badge tone="warning">Archived</Badge>}
+              {project.archived_at && (
+                <Badge tone="warning">
+                  <I18nText id="Archived" />
+                </Badge>
+              )}
               <span>{project.timezone}</span>
             </div>
             <nav
               className="page-section-navigation"
-              aria-label="Project sections"
+              aria-label={uiText("Project sections")}
             >
               {[
                 "tasks",
@@ -153,7 +163,7 @@ export default function ProjectsPage({
     <main className="ws-page">
       <PageHeading
         eyebrow="PROJECTS"
-        title="From open questions to shared progress"
+        title={uiText("From open questions to shared progress")}
         actions={
           <Button className="button primary" onClick={() => setCreate(true)}>
             <Plus size={17} />
@@ -161,16 +171,17 @@ export default function ProjectsPage({
           </Button>
         }
       >
-        Give each line of research its own files, tasks, discussions, and review
-        space.
+        <I18nText id="Give each line of research its own files, tasks, discussions, and review space." />
       </PageHeading>
       <ErrorNotice message={data.error} retry={data.reload} />
       {data.loading && !data.data ? (
         <Loading />
       ) : !data.data?.length ? (
-        <Empty icon={FlaskConical} title="Every project starts with a question">
-          Create a private-by-default project and invite the right
-          collaborators.
+        <Empty
+          icon={FlaskConical}
+          title={uiText("Every project starts with a question")}
+        >
+          <I18nText id="Create a private-by-default project and invite the right collaborators." />
         </Empty>
       ) : (
         <div className="ws-project-grid">
@@ -186,7 +197,7 @@ export default function ProjectsPage({
                 </span>
                 <Badge>
                   {project.archived_at
-                    ? "Archived"
+                    ? uiText("Archived")
                     : project.audience === "restricted"
                       ? "Restricted"
                       : "Group"}
@@ -199,8 +210,8 @@ export default function ProjectsPage({
               <small>{project.group_name}</small>
               <footer>
                 <span>
-                  {project.open_tasks} open tasks · {project.resource_count}{" "}
-                  items
+                  {project.open_tasks} <I18nText id="open tasks ·" />{" "}
+                  {project.resource_count} <I18nText id="items" />
                 </span>
                 <ArrowUpRight size={17} />
               </footer>
@@ -228,6 +239,7 @@ function CreateProject({
   onClose: () => void;
   onCreated: (project: any) => void;
 }) {
+  useInterfaceLocale();
   const { session } = useWorkspace(),
     [name, setName] = useState(""),
     [description, setDescription] = useState(""),
@@ -238,8 +250,10 @@ function CreateProject({
     action = useAction();
   return (
     <Dialog
-      title="A new direction"
-      subtitle="Projects start restricted to you. Invite collaborators after creating the project."
+      title={uiText("A new direction")}
+      subtitle={uiText(
+        "Projects start restricted to you. Invite collaborators after creating the project.",
+      )}
       onClose={() => !action.busy && onClose()}
     >
       <form
@@ -259,18 +273,18 @@ function CreateProject({
         }}
       >
         <label>
-          Project name
+          <I18nText id="Project name" />
           <TextInput
             autoFocus
             required
             value={name}
             maxLength={200}
             onChange={(event) => setName(event.target.value)}
-            placeholder="e.g. Learning physical structure"
+            placeholder={uiText("e.g. Learning physical structure")}
           />
         </label>
         <label>
-          Research question or purpose
+          <I18nText id="Research question or purpose" />
           <TextArea
             value={description}
             maxLength={3000}
@@ -280,7 +294,7 @@ function CreateProject({
         </label>
         <div className="ws-form-grid">
           <label>
-            Research group
+            <I18nText id="Research group" />
             <NativeSelect
               required
               value={groupId}
@@ -294,10 +308,10 @@ function CreateProject({
             </NativeSelect>
           </label>
           <label>
-            Calendar time zone
+            <I18nText id="Calendar time zone" />
             <TimeZoneInput
               required
-              aria-label="Calendar time zone"
+              aria-label={uiText("Calendar time zone")}
               value={timezone}
               onChange={setTimezone}
             />
@@ -306,15 +320,16 @@ function CreateProject({
         <ErrorNotice message={action.error} />
         <div className="dialog-footer">
           <Button
+            data-dialog-cancel
             className="button secondary"
             type="button"
             disabled={action.busy}
             onClick={onClose}
           >
-            Cancel
+            <I18nText id="Cancel" />
           </Button>
           <Button className="button primary" disabled={action.busy || !groupId}>
-            Create project
+            <I18nText id="Create project" />
           </Button>
         </div>
       </form>
@@ -322,6 +337,7 @@ function CreateProject({
   );
 }
 function Tasks({ project }: { project: any }) {
+  useInterfaceLocale();
   const { revision, refresh, navigate, session } = useWorkspace(),
     { params } = useLocation(),
     [offset, setOffset] = useState(0),
@@ -405,8 +421,8 @@ function Tasks({ project }: { project: any }) {
         </div>
         <SearchField
           wrapperClassName="ws-search-field"
-          aria-label="Filter tasks"
-          placeholder="Filter tasks or labels…"
+          aria-label={uiText("Filter tasks")}
+          placeholder={uiText("Filter tasks or labels…")}
           value={search}
           onChange={(event) => setSearch(event.target.value)}
         />
@@ -415,20 +431,20 @@ function Tasks({ project }: { project: any }) {
           aria-pressed={mine}
           onClick={() => setMine(!mine)}
         >
-          Assigned to me
+          <I18nText id="Assigned to me" />
         </Button>
         {editable && (
           <>
             <IconButton
               className="icon-button"
-              aria-label="Recurring tasks"
+              aria-label={uiText("Recurring tasks")}
               onClick={() => setRecurring(true)}
             >
               <Repeat2 size={17} />
             </IconButton>
             <Button className="button primary" onClick={() => setCreate(true)}>
               <Plus size={16} />
-              Task
+              <I18nText id="Task" />
             </Button>
           </>
         )}
@@ -438,7 +454,7 @@ function Tasks({ project }: { project: any }) {
         retry={result.error ? result.reload : undefined}
       />
       {result.loading && !result.data && !previous.length ? (
-        <Loading label="Loading tasks…" />
+        <Loading label={uiText("Loading tasks…")} />
       ) : view === "calendar" ? (
         <TaskCalendar tasks={tasks} onOpen={edit} timezone={project.timezone} />
       ) : view === "board" ? (
@@ -475,7 +491,9 @@ function Tasks({ project }: { project: any }) {
                       />
                     ))}
                   {!tasks.some((task) => task.status === status) && (
-                    <p className="ws-board-empty">Nothing here yet.</p>
+                    <p className="ws-board-empty">
+                      <I18nText id="Nothing here yet." />
+                    </p>
                   )}
                 </div>
               </section>
@@ -497,8 +515,8 @@ function Tasks({ project }: { project: any }) {
             />
           ))}
           {!tasks.length && (
-            <Empty icon={CheckCircle2} title="No matching tasks">
-              Add a task to turn a question into a next step.
+            <Empty icon={CheckCircle2} title={uiText("No matching tasks")}>
+              <I18nText id="Add a task to turn a question into a next step." />
             </Empty>
           )}
         </div>
@@ -506,15 +524,17 @@ function Tasks({ project }: { project: any }) {
       {tasks.some((task) => task.status === "cancelled") &&
         view === "board" && (
           <p className="ws-small muted">
-            Cancelled tasks remain available in List view.
+            <I18nText id="Cancelled tasks remain available in List view." />
           </p>
         )}
       <footer className="ws-list-footer">
         <span>
-          {all.length} tasks loaded
+          {all.length} <I18nText id="tasks loaded" />
           {result.data?.nextOffset !== null &&
           result.data?.nextOffset !== undefined
-            ? " · Load more to include later tasks in filters and calendar"
+            ? uiText(
+                " · Load more to include later tasks in filters and calendar",
+              )
             : ""}
         </span>
         {result.data?.nextOffset !== null &&
@@ -527,7 +547,7 @@ function Tasks({ project }: { project: any }) {
                 setOffset(result.data!.nextOffset!);
               }}
             >
-              Load more tasks
+              <I18nText id="Load more tasks" />
             </Button>
           )}
       </footer>
@@ -581,7 +601,11 @@ function TaskCard({
   return (
     <article className="ws-task-card">
       <button className="ws-task-title" onClick={onOpen}>
-        {task.parent_id && <span className="ws-small muted">Subtask · </span>}
+        {task.parent_id && (
+          <span className="ws-small muted">
+            <I18nText id="Subtask ·" />{" "}
+          </span>
+        )}
         {task.title}
       </button>
       <div className="ws-task-badges">
@@ -590,7 +614,11 @@ function TaskCard({
             {task.priority}
           </Badge>
         )}
-        {task.blocked && <Badge tone="warning">Blocked</Badge>}
+        {task.blocked && (
+          <Badge tone="warning">
+            <I18nText id="Blocked" />
+          </Badge>
+        )}
         {task.labels.map((label) => (
           <Badge key={label}>{label}</Badge>
         ))}
@@ -639,6 +667,7 @@ function TaskDialog({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  useInterfaceLocale();
   const [draft, setDraft] = useState({
       title: task?.title ?? "",
       body: task?.body ?? "",
@@ -659,7 +688,7 @@ function TaskDialog({
     setDraft((previous) => ({ ...previous, [key]: value }));
   return (
     <Dialog
-      title={task ? "Research task" : "One clear next step"}
+      title={task ? uiText("Research task") : uiText("One clear next step")}
       subtitle={project.name}
       onClose={() => !action.busy && onClose()}
       wide
@@ -696,7 +725,7 @@ function TaskDialog({
       >
         <fieldset disabled={!editable || action.busy} className="ws-fieldset">
           <label>
-            Title
+            <I18nText id="Title" />
             <TextInput
               autoFocus
               required
@@ -706,18 +735,18 @@ function TaskDialog({
             />
           </label>
           <label>
-            Details & acceptance criteria
+            <I18nText id="Details & acceptance criteria" />
             <TextArea
               rows={4}
               maxLength={100000}
               value={draft.body}
               onChange={(event) => field("body", event.target.value)}
-              placeholder="What evidence will tell us this is done?"
+              placeholder={uiText("What evidence will tell us this is done?")}
             />
           </label>
           <div className="ws-form-grid">
             <label>
-              Status
+              <I18nText id="Status" />
               <NativeSelect
                 value={draft.status}
                 onChange={(event) => field("status", event.target.value)}
@@ -730,7 +759,7 @@ function TaskDialog({
               </NativeSelect>
             </label>
             <label>
-              Priority
+              <I18nText id="Priority" />
               <NativeSelect
                 value={draft.priority}
                 onChange={(event) => field("priority", event.target.value)}
@@ -741,12 +770,14 @@ function TaskDialog({
               </NativeSelect>
             </label>
             <label>
-              Assignee
+              <I18nText id="Assignee" />
               <NativeSelect
                 value={draft.assigneeId}
                 onChange={(event) => field("assigneeId", event.target.value)}
               >
-                <option value="">Unassigned</option>
+                <option value="">
+                  <I18nText id="Unassigned" />
+                </option>
                 {members.map((person) => (
                   <option key={person.id} value={person.id}>
                     {person.name}
@@ -755,7 +786,7 @@ function TaskDialog({
               </NativeSelect>
             </label>
             <label>
-              Estimate (hours)
+              <I18nText id="Estimate (hours)" />
               <TextInput
                 type="number"
                 min={0}
@@ -766,7 +797,7 @@ function TaskDialog({
               />
             </label>
             <label>
-              Start date
+              <I18nText id="Start date" />
               <TextInput
                 type="date"
                 value={draft.startOn}
@@ -774,7 +805,7 @@ function TaskDialog({
               />
             </label>
             <label>
-              Due date
+              <I18nText id="Due date" />
               <TextInput
                 type="date"
                 min={draft.startOn || undefined}
@@ -783,12 +814,14 @@ function TaskDialog({
               />
             </label>
             <label>
-              Milestone
+              <I18nText id="Milestone" />
               <NativeSelect
                 value={draft.milestoneId}
                 onChange={(event) => field("milestoneId", event.target.value)}
               >
-                <option value="">No milestone</option>
+                <option value="">
+                  <I18nText id="No milestone" />
+                </option>
                 {milestones.map((item) => (
                   <option key={item.id} value={item.id}>
                     {item.title}
@@ -797,12 +830,14 @@ function TaskDialog({
               </NativeSelect>
             </label>
             <label>
-              Linked note
+              <I18nText id="Linked note" />
               <NativeSelect
                 value={draft.noteId}
                 onChange={(event) => field("noteId", event.target.value)}
               >
-                <option value="">No linked note</option>
+                <option value="">
+                  <I18nText id="No linked note" />
+                </option>
                 {notes.map((item) => (
                   <option key={item.id} value={item.id}>
                     {item.name}
@@ -811,12 +846,14 @@ function TaskDialog({
               </NativeSelect>
             </label>
             <label>
-              Parent task
+              <I18nText id="Parent task" />
               <NativeSelect
                 value={draft.parentId}
                 onChange={(event) => field("parentId", event.target.value)}
               >
-                <option value="">Top-level task</option>
+                <option value="">
+                  <I18nText id="Top-level task" />
+                </option>
                 {tasks
                   .filter((item) => item.id !== task?.id)
                   .map((item) => (
@@ -827,7 +864,7 @@ function TaskDialog({
               </NativeSelect>
             </label>
             <label>
-              Labels (comma-separated)
+              <I18nText id="Labels (comma-separated)" />
               <TextInput
                 value={draft.labels}
                 onChange={(event) => field("labels", event.target.value)}
@@ -835,7 +872,9 @@ function TaskDialog({
             </label>
           </div>
           <fieldset className="ws-dependencies">
-            <legend>Blocked by</legend>
+            <legend>
+              <I18nText id="Blocked by" />
+            </legend>
             {tasks
               .filter((item) => item.id !== task?.id)
               .map((item) => (
@@ -855,7 +894,9 @@ function TaskDialog({
                 </label>
               ))}
             {!tasks.length && (
-              <p className="muted">Create another task to add a dependency.</p>
+              <p className="muted">
+                <I18nText id="Create another task to add a dependency." />
+              </p>
             )}
           </fieldset>
         </fieldset>
@@ -867,11 +908,15 @@ function TaskDialog({
             disabled={action.busy}
             onClick={onClose}
           >
-            {editable ? "Cancel" : "Close"}
+            {editable ? uiText("Cancel") : uiText("Close")}
           </Button>
           {editable && (
             <Button className="button primary" disabled={action.busy}>
-              {action.busy ? "Saving…" : task ? "Save changes" : "Create task"}
+              {action.busy
+                ? uiText("Saving…")
+                : task
+                  ? "Save changes"
+                  : "Create task"}
             </Button>
           )}
         </div>
@@ -888,6 +933,7 @@ function TaskCalendar({
   onOpen: (task: Task) => void;
   timezone: string;
 }) {
+  useInterfaceLocale();
   const [month, setMonth] = useState(() => {
     const now = new Date();
     return new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
@@ -905,7 +951,7 @@ function TaskCalendar({
       <header>
         <IconButton
           className="icon-button"
-          aria-label="Previous month"
+          aria-label={uiText("Previous month")}
           onClick={() =>
             setMonth(
               new Date(
@@ -917,7 +963,7 @@ function TaskCalendar({
           <ChevronLeft size={18} />
         </IconButton>
         <h2>
-          {month.toLocaleDateString(undefined, {
+          {month.toLocaleDateString(currentLocale(), {
             month: "long",
             year: "numeric",
             timeZone: "UTC",
@@ -925,7 +971,7 @@ function TaskCalendar({
         </h2>
         <IconButton
           className="icon-button"
-          aria-label="Next month"
+          aria-label={uiText("Next month")}
           onClick={() =>
             setMonth(
               new Date(
@@ -936,7 +982,9 @@ function TaskCalendar({
         >
           <ChevronRight size={18} />
         </IconButton>
-        <span>{timezone} · Due dates</span>
+        <span>
+          {timezone} <I18nText id="· Due dates" />
+        </span>
       </header>
       <div className="ws-calendar-grid">
         {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
@@ -967,8 +1015,8 @@ function TaskCalendar({
         ))}
       </div>
       <p className="ws-small muted">
-        {tasks.filter((task) => !task.due_on).length} loaded tasks without due
-        dates are available in Board or List view.
+        {tasks.filter((task) => !task.due_on).length}{" "}
+        <I18nText id="loaded tasks without due dates are available in Board or List view." />
       </p>
     </section>
   );
@@ -986,6 +1034,7 @@ function Recurrences({
   onClose: () => void;
   onChanged: () => void;
 }) {
+  useInterfaceLocale();
   const [title, setTitle] = useState(""),
     [frequency, setFrequency] = useState("weekly"),
     [interval, setInterval] = useState(1),
@@ -995,7 +1044,7 @@ function Recurrences({
     action = useAction();
   return (
     <Dialog
-      title="Recurring research tasks"
+      title={uiText("Recurring research tasks")}
       subtitle={`Calendar dates use ${project.timezone}. Each occurrence becomes an independent task.`}
       onClose={() => !action.busy && onClose()}
       wide
@@ -1005,8 +1054,8 @@ function Recurrences({
           <div>
             <strong>{row.template.title}</strong>
             <small>
-              Every {row.rule.interval} {row.rule.frequency} · From{" "}
-              {row.rule.start}
+              <I18nText id="Every" /> {row.rule.interval} {row.rule.frequency}{" "}
+              <I18nText id="· From" /> {row.rule.start}
             </small>
           </div>
           <Button
@@ -1023,7 +1072,7 @@ function Recurrences({
               })
             }
           >
-            {row.enabled ? "Pause" : "Resume"}
+            {row.enabled ? uiText("Pause") : uiText("Resume")}
           </Button>
         </div>
       ))}
@@ -1040,20 +1089,22 @@ function Recurrences({
           });
         }}
       >
-        <h3>New recurring task</h3>
+        <h3>
+          <I18nText id="New recurring task" />
+        </h3>
         <label>
-          Title
+          <I18nText id="Title" />
           <TextInput
             required
             value={title}
             maxLength={200}
             onChange={(event) => setTitle(event.target.value)}
-            placeholder="e.g. Weekly literature review"
+            placeholder={uiText("e.g. Weekly literature review")}
           />
         </label>
         <div className="ws-form-grid">
           <label>
-            Frequency
+            <I18nText id="Frequency" />
             <NativeSelect
               value={frequency}
               onChange={(event) => setFrequency(event.target.value)}
@@ -1064,7 +1115,7 @@ function Recurrences({
             </NativeSelect>
           </label>
           <label>
-            Every (interval)
+            <I18nText id="Every (interval)" />
             <TextInput
               type="number"
               min={1}
@@ -1075,7 +1126,7 @@ function Recurrences({
             />
           </label>
           <label>
-            Start
+            <I18nText id="Start" />
             <TextInput
               type="date"
               required
@@ -1084,7 +1135,7 @@ function Recurrences({
             />
           </label>
           <label>
-            Until (optional)
+            <I18nText id="Until (optional)" />
             <TextInput
               type="date"
               min={start}
@@ -1093,12 +1144,14 @@ function Recurrences({
             />
           </label>
           <label>
-            Assignee
+            <I18nText id="Assignee" />
             <NativeSelect
               value={assigneeId}
               onChange={(event) => setAssignee(event.target.value)}
             >
-              <option value="">Unassigned</option>
+              <option value="">
+                <I18nText id="Unassigned" />
+              </option>
               {members.map((person) => (
                 <option key={person.id} value={person.id}>
                   {person.name}
@@ -1115,10 +1168,10 @@ function Recurrences({
             disabled={action.busy}
             onClick={onClose}
           >
-            Close
+            <I18nText id="Close" />
           </Button>
           <Button className="button primary" disabled={action.busy}>
-            Add recurrence
+            <I18nText id="Add recurrence" />
           </Button>
         </div>
       </form>
@@ -1133,6 +1186,7 @@ function ProjectSection({
   project: any;
   section: string;
 }) {
+  useInterfaceLocale();
   const { revision, refresh } = useWorkspace(),
     data = useData<any[]>(`projects/${project.id}/${section}`, revision),
     members = useData<any[]>(`projects/${project.id}/members`, revision),
@@ -1157,18 +1211,19 @@ function ProjectSection({
       ) : section === "milestones" ? (
         <>
           <div className="ws-section-heading">
-            <h2>Research milestones</h2>
+            <h2>
+              <I18nText id="Research milestones" />
+            </h2>
             {editable && (
               <Button className="button primary" onClick={() => setModal(true)}>
                 <Plus size={16} />
-                Milestone
+                <I18nText id="Milestone" />
               </Button>
             )}
           </div>
           {!data.data?.length && !data.loading ? (
-            <Empty icon={Flag} title="Mark the important outcomes">
-              Use milestones for submissions, baselines, replications, or
-              project checkpoints.
+            <Empty icon={Flag} title={uiText("Mark the important outcomes")}>
+              <I18nText id="Use milestones for submissions, baselines, replications, or project checkpoints." />
             </Empty>
           ) : (
             <div className="ws-milestones">
@@ -1177,13 +1232,15 @@ function ProjectSection({
                   <div className="ws-section-heading">
                     <h3>{item.title}</h3>
                     {item.completed_at && (
-                      <Badge tone="success">Complete</Badge>
+                      <Badge tone="success">
+                        <I18nText id="Complete" />
+                      </Badge>
                     )}
                   </div>
                   <p className="muted">
                     {item.due_on
                       ? "Due " + dateOnly(item.due_on)
-                      : "No due date"}
+                      : uiText("No due date")}
                   </p>
                   <progress
                     value={Number(item.completed_tasks)}
@@ -1191,7 +1248,8 @@ function ProjectSection({
                     aria-label={`${item.title} completed tasks`}
                   />
                   <p>
-                    {item.completed_tasks} of {item.tasks} tasks complete
+                    {item.completed_tasks} <I18nText id="of" /> {item.tasks}{" "}
+                    <I18nText id="tasks complete" />
                   </p>
                   {editable && (
                     <Button
@@ -1211,8 +1269,8 @@ function ProjectSection({
                       }
                     >
                       {item.completed_at
-                        ? "Reopen milestone"
-                        : "Mark milestone complete"}
+                        ? uiText("Reopen milestone")
+                        : uiText("Mark milestone complete")}
                     </Button>
                   )}
                 </article>
@@ -1233,8 +1291,12 @@ function ProjectSection({
       ) : section === "discussions" ? (
         <>
           <div className="ws-section-heading">
-            <h2>Think together</h2>
-            <Badge>Project discussion</Badge>
+            <h2>
+              <I18nText id="Think together" />
+            </h2>
+            <Badge>
+              <I18nText id="Project discussion" />
+            </Badge>
           </div>
           {project.role !== "viewer" && !project.archived_at && (
             <form
@@ -1256,29 +1318,34 @@ function ProjectSection({
             >
               {replyTo && (
                 <p>
-                  Replying to a discussion{" "}
+                  <I18nText id="Replying to a discussion" />{" "}
                   <button
+                    data-dialog-cancel
                     type="button"
                     className="text-button"
                     onClick={() => setReplyTo(null)}
                   >
-                    Cancel reply
+                    <I18nText id="Cancel reply" />
                   </button>
                 </p>
               )}
               <label>
-                Discussion
+                <I18nText id="Discussion" />
                 <TextArea
                   required
                   rows={3}
                   value={body}
                   maxLength={20000}
-                  placeholder="Share a result, pose a question, or record a decision…"
+                  placeholder={uiText(
+                    "Share a result, pose a question, or record a decision…",
+                  )}
                   onChange={(event) => setBody(event.target.value)}
                 />
               </label>
               <details>
-                <summary>Notify specific collaborators</summary>
+                <summary>
+                  <I18nText id="Notify specific collaborators" />
+                </summary>
                 <div className="ws-checkboxes">
                   {members.data?.map((person) => (
                     <label key={person.id}>
@@ -1302,7 +1369,7 @@ function ProjectSection({
                 disabled={action.busy || !body.trim()}
               >
                 <MessageSquare size={15} />
-                Post discussion
+                <I18nText id="Post discussion" />
               </Button>
             </form>
           )}
@@ -1336,7 +1403,7 @@ function ProjectSection({
                         ?.focus();
                     }}
                   >
-                    Reply
+                    <I18nText id="Reply" />
                   </button>
                 )}
               </article>
@@ -1344,19 +1411,19 @@ function ProjectSection({
           {!data.data?.length && !data.loading && (
             <Empty
               icon={MessageSquare}
-              title="A conversation waiting to happen"
+              title={uiText("A conversation waiting to happen")}
             >
-              Make space for questions and decisions that should outlast a chat
-              message.
+              <I18nText id="Make space for questions and decisions that should outlast a chat message." />
             </Empty>
           )}
         </>
       ) : section === "workload" ? (
         <>
-          <h2>Workload at a glance</h2>
+          <h2>
+            <I18nText id="Workload at a glance" />
+          </h2>
           <p className="muted">
-            Estimates below cover all open tasks in this project, not only the
-            current week. Weekly capacity is a personal planning reference.
+            <I18nText id="Estimates below cover all open tasks in this project, not only the current week. Weekly capacity is a personal planning reference." />
           </p>
           <div className="ws-workload">
             {data.data?.map((person) => (
@@ -1364,19 +1431,27 @@ function ProjectSection({
                 <h3>{person.name}</h3>
                 <dl className="ws-facts">
                   <div>
-                    <dt>Open tasks</dt>
+                    <dt>
+                      <I18nText id="Open tasks" />
+                    </dt>
                     <dd>{person.open_tasks}</dd>
                   </div>
                   <div>
-                    <dt>Estimated open work</dt>
+                    <dt>
+                      <I18nText id="Estimated open work" />
+                    </dt>
                     <dd>{Number(person.estimated_hours)} h</dd>
                   </div>
                   <div>
-                    <dt>Unestimated tasks</dt>
+                    <dt>
+                      <I18nText id="Unestimated tasks" />
+                    </dt>
                     <dd>{person.unestimated}</dd>
                   </div>
                   <div>
-                    <dt>Weekly capacity</dt>
+                    <dt>
+                      <I18nText id="Weekly capacity" />
+                    </dt>
                     <dd>{Number(person.weekly_capacity)} h</dd>
                   </div>
                 </dl>
@@ -1386,7 +1461,9 @@ function ProjectSection({
         </>
       ) : section === "activity" ? (
         <>
-          <h2>Project activity</h2>
+          <h2>
+            <I18nText id="Project activity" />
+          </h2>
           {data.data?.map((event) => (
             <div key={event.id} className="ws-activity">
               <p>{event.title}</p>
@@ -1397,14 +1474,14 @@ function ProjectSection({
             </div>
           ))}
           {!data.data?.length && !data.loading && (
-            <Empty icon={Circle} title="A fresh chapter">
-              Project changes and decisions will appear here.
+            <Empty icon={Circle} title={uiText("A fresh chapter")}>
+              <I18nText id="Project changes and decisions will appear here." />
             </Empty>
           )}
         </>
       ) : (
-        <Empty title="Section unavailable">
-          Choose a project section above.
+        <Empty title={uiText("Section unavailable")}>
+          <I18nText id="Choose a project section above." />
         </Empty>
       )}
       {data.loading && !data.data && <Loading />}
@@ -1420,12 +1497,13 @@ function MilestoneDialog({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  useInterfaceLocale();
   const [title, setTitle] = useState(""),
     [dueOn, setDue] = useState(""),
     action = useAction();
   return (
     <Dialog
-      title="A meaningful checkpoint"
+      title={uiText("A meaningful checkpoint")}
       onClose={() => !action.busy && onClose()}
     >
       <form
@@ -1441,7 +1519,7 @@ function MilestoneDialog({
         }}
       >
         <label>
-          Milestone title
+          <I18nText id="Milestone title" />
           <TextInput
             required
             autoFocus
@@ -1451,7 +1529,7 @@ function MilestoneDialog({
           />
         </label>
         <label>
-          Target date
+          <I18nText id="Target date" />
           <TextInput
             type="date"
             value={dueOn}
@@ -1461,15 +1539,16 @@ function MilestoneDialog({
         <ErrorNotice message={action.error} />
         <div className="dialog-footer">
           <Button
+            data-dialog-cancel
             type="button"
             className="button secondary"
             onClick={onClose}
             disabled={action.busy}
           >
-            Cancel
+            <I18nText id="Cancel" />
           </Button>
           <Button className="button primary" disabled={action.busy}>
-            Create milestone
+            <I18nText id="Create milestone" />
           </Button>
         </div>
       </form>
@@ -1485,6 +1564,7 @@ function Reviews({
   rows: any[];
   members: any[];
 }) {
+  useInterfaceLocale();
   const { revision, refresh, session, open } = useWorkspace(),
     [create, setCreate] = useState(false),
     [selected, setSelected] = useState<any>(null),
@@ -1512,17 +1592,18 @@ function Reviews({
   return (
     <>
       <div className="ws-section-heading">
-        <h2>Review the evidence</h2>
+        <h2>
+          <I18nText id="Review the evidence" />
+        </h2>
         {project.role === "editor" && !project.archived_at && (
           <Button className="button primary" onClick={() => setCreate(true)}>
             <Plus size={16} />
-            Request review
+            <I18nText id="Request review" />
           </Button>
         )}
       </div>
       <p className="muted">
-        Every review pins an immutable note snapshot. Later edits are clearly
-        marked.
+        <I18nText id="Every review pins an immutable note snapshot. Later edits are clearly marked." />
       </p>
       {rows.map((review) => (
         <button
@@ -1544,20 +1625,23 @@ function Reviews({
             {review.status.replaceAll("_", " ")}
           </Badge>
           {review.outdated && (
-            <Badge tone="warning">Note has newer edits</Badge>
+            <Badge tone="warning">
+              <I18nText id="Note has newer edits" />
+            </Badge>
           )}
         </button>
       ))}
       {!rows.length && (
-        <Empty icon={CheckCircle2} title="A second pair of eyes">
-          Request a review of a project note before relying on a result or
-          sharing a conclusion.
+        <Empty icon={CheckCircle2} title={uiText("A second pair of eyes")}>
+          <I18nText id="Request a review of a project note before relying on a result or sharing a conclusion." />
         </Empty>
       )}
       {create && (
         <Dialog
-          title="Request a note review"
-          subtitle="The server captures the current synchronized revision. Reviewers will read that specific snapshot."
+          title={uiText("Request a note review")}
+          subtitle={uiText(
+            "The server captures the current synchronized revision. Reviewers will read that specific snapshot.",
+          )}
           onClose={() => !action.busy && setCreate(false)}
         >
           <form
@@ -1576,13 +1660,15 @@ function Reviews({
             }}
           >
             <label>
-              Project note
+              <I18nText id="Project note" />
               <NativeSelect
                 required
                 value={noteId}
                 onChange={(event) => setNote(event.target.value)}
               >
-                <option value="">Choose a note</option>
+                <option value="">
+                  <I18nText id="Choose a note" />
+                </option>
                 {notes.data?.items.map((note) => (
                   <option key={note.id} value={note.id}>
                     {note.name}
@@ -1591,13 +1677,15 @@ function Reviews({
               </NativeSelect>
             </label>
             <label>
-              Reviewer
+              <I18nText id="Reviewer" />
               <NativeSelect
                 required
                 value={reviewerId}
                 onChange={(event) => setReviewer(event.target.value)}
               >
-                <option value="">Choose a collaborator</option>
+                <option value="">
+                  <I18nText id="Choose a collaborator" />
+                </option>
                 {members
                   .filter((person) => person.role !== "viewer")
                   .map((person) => (
@@ -1608,7 +1696,7 @@ function Reviews({
               </NativeSelect>
             </label>
             <label>
-              What should they check?
+              <I18nText id="What should they check?" />
               <TextArea
                 rows={3}
                 value={message}
@@ -1619,18 +1707,19 @@ function Reviews({
             <ErrorNotice message={action.error || notes.error} />
             <div className="dialog-footer">
               <Button
+                data-dialog-cancel
                 className="button secondary"
                 type="button"
                 onClick={() => setCreate(false)}
                 disabled={action.busy}
               >
-                Cancel
+                <I18nText id="Cancel" />
               </Button>
               <Button
                 className="button primary"
                 disabled={action.busy || !noteId || !reviewerId}
               >
-                Request review
+                <I18nText id="Request review" />
               </Button>
             </div>
           </form>
@@ -1645,8 +1734,7 @@ function Reviews({
         >
           {selected.outdated && (
             <HelpText>
-              This is an older snapshot. Any decision applies only to this
-              revision, not the newer live note.
+              <I18nText id="This is an older snapshot. Any decision applies only to this revision, not the newer live note." />
             </HelpText>
           )}
           {selected.message && (
@@ -1668,10 +1756,10 @@ function Reviews({
               open({ kind: "note", id: selected.note_id });
             }}
           >
-            Open live note
+            <I18nText id="Open live note" />
           </Button>
           <label>
-            Review response
+            <I18nText id="Review response" />
             <TextArea
               rows={3}
               value={response}
@@ -1690,14 +1778,14 @@ function Reviews({
                     disabled={action.busy}
                     onClick={() => void reply("changes_requested")}
                   >
-                    Request changes
+                    <I18nText id="Request changes" />
                   </Button>
                   <Button
                     className="button primary"
                     disabled={action.busy}
                     onClick={() => void reply("approved")}
                   >
-                    Approve this revision
+                    <I18nText id="Approve this revision" />
                   </Button>
                 </>
               )}
@@ -1705,11 +1793,12 @@ function Reviews({
               (selected.requested_by === session.user.id ||
                 project.can_manage) && (
                 <Button
+                  data-dialog-cancel
                   className="button secondary"
                   disabled={action.busy}
                   onClick={() => void reply("cancelled")}
                 >
-                  Cancel request
+                  <I18nText id="Cancel request" />
                 </Button>
               )}
           </div>
@@ -1719,6 +1808,7 @@ function Reviews({
   );
 }
 export function ProjectMembers({ project }: { project: any }) {
+  useInterfaceLocale();
   const { revision, refresh } = useWorkspace(),
     data = useData<any[]>(`projects/${project.id}/members`, revision),
     people = useData<any[]>(
@@ -1733,20 +1823,25 @@ export function ProjectMembers({ project }: { project: any }) {
   return (
     <>
       <div className="ws-section-heading">
-        <h2>Workspace collaborators</h2>
+        <h2>
+          <I18nText id="Workspace collaborators" />
+        </h2>
         {project.can_manage && (
           <Button className="button primary" onClick={() => setAdding(true)}>
             <Plus size={16} />
-            Add member
+            <I18nText id="Add member" />
           </Button>
         )}
       </div>
       <p className="muted">
         {project.audience === "group"
-          ? "The whole group can access this workspace. Removing an explicit role restores that person’s group content role; it does not remove access."
-          : "Only explicitly invited workspace members can read this workspace. Group administrators manage access without automatic access to its contents."}{" "}
-        Leads manage membership; content roles determine reading, commenting,
-        and editing.
+          ? uiText(
+              "The whole group can access this workspace. Removing an explicit role restores that person’s group content role; it does not remove access.",
+            )
+          : uiText(
+              "Only explicitly invited workspace members can read this workspace. Group administrators manage access without automatic access to its contents.",
+            )}{" "}
+        <I18nText id="Leads manage membership; content roles determine reading, commenting, and editing." />
       </p>
       <ErrorNotice
         message={data.error || action.error}
@@ -1758,8 +1853,10 @@ export function ProjectMembers({ project }: { project: any }) {
           <div>
             <strong>{person.name}</strong>
             <small>
-              {person.can_manage ? "Workspace lead" : "Collaborator"}
-              {!person.explicit ? " · Group access" : ""}
+              {person.can_manage
+                ? uiText("Workspace lead")
+                : uiText("Collaborator")}
+              {!person.explicit ? uiText(" · Group access") : ""}
             </small>
           </div>
           {project.can_manage ? (
@@ -1797,7 +1894,9 @@ export function ProjectMembers({ project }: { project: any }) {
                   })
                 }
               >
-                {person.can_manage ? "Remove lead role" : "Make lead"}
+                {person.can_manage
+                  ? uiText("Remove lead role")
+                  : uiText("Make lead")}
               </Button>
               {person.explicit && (
                 <button
@@ -1813,7 +1912,7 @@ export function ProjectMembers({ project }: { project: any }) {
                     })
                   }
                 >
-                  Remove
+                  <I18nText id="Remove" />
                 </button>
               )}
             </>
@@ -1824,8 +1923,10 @@ export function ProjectMembers({ project }: { project: any }) {
       ))}
       {adding && (
         <Dialog
-          title="Add a workspace collaborator"
-          subtitle="Only existing group members can be invited to a workspace."
+          title={uiText("Add a workspace collaborator")}
+          subtitle={uiText(
+            "Only existing group members can be invited to a workspace.",
+          )}
           onClose={() => !action.busy && setAdding(false)}
         >
           <form
@@ -1843,13 +1944,15 @@ export function ProjectMembers({ project }: { project: any }) {
             }}
           >
             <label>
-              Researcher
+              <I18nText id="Researcher" />
               <NativeSelect
                 required
                 value={person}
                 onChange={(event) => setPerson(event.target.value)}
               >
-                <option value="">Choose a group member</option>
+                <option value="">
+                  <I18nText id="Choose a group member" />
+                </option>
                 {people.data?.map((person) => (
                   <option key={person.id} value={person.id}>
                     {person.name}
@@ -1858,7 +1961,7 @@ export function ProjectMembers({ project }: { project: any }) {
               </NativeSelect>
             </label>
             <label>
-              Content role
+              <I18nText id="Content role" />
               <NativeSelect
                 value={role}
                 onChange={(event) => setRole(event.target.value)}
@@ -1873,23 +1976,24 @@ export function ProjectMembers({ project }: { project: any }) {
                 checked={lead}
                 onChange={(event) => setLead(event.target.checked)}
               />
-              Can manage this workspace’s settings and members
+              <I18nText id="Can manage this workspace’s settings and members" />
             </label>
             <ErrorNotice message={action.error || people.error} />
             <div className="dialog-footer">
               <Button
+                data-dialog-cancel
                 type="button"
                 className="button secondary"
                 disabled={action.busy}
                 onClick={() => setAdding(false)}
               >
-                Cancel
+                <I18nText id="Cancel" />
               </Button>
               <Button
                 className="button primary"
                 disabled={action.busy || !person}
               >
-                Add collaborator
+                <I18nText id="Add collaborator" />
               </Button>
             </div>
           </form>
@@ -1899,6 +2003,7 @@ export function ProjectMembers({ project }: { project: any }) {
   );
 }
 export function ProjectSettings({ project }: { project: any }) {
+  useInterfaceLocale();
   const { refresh } = useWorkspace(),
     [baseVersion, setBaseVersion] = useState(project.version),
     [name, setName] = useState(project.name),
@@ -1971,7 +2076,7 @@ export function ProjectSettings({ project }: { project: any }) {
       }}
     >
       <label>
-        Project name
+        <I18nText id="Project name" />
         <TextInput
           required
           maxLength={200}
@@ -1980,7 +2085,7 @@ export function ProjectSettings({ project }: { project: any }) {
         />
       </label>
       <label>
-        Description
+        <I18nText id="Description" />
         <TextArea
           rows={4}
           maxLength={3000}
@@ -1989,18 +2094,18 @@ export function ProjectSettings({ project }: { project: any }) {
         />
       </label>
       <label>
-        Calendar time zone
+        <I18nText id="Calendar time zone" />
         <TimeZoneInput
           required
-          aria-label="Calendar time zone"
+          aria-label={uiText("Calendar time zone")}
           value={timezone}
           onChange={setTimezone}
         />
       </label>
       <label>
-        Project color
+        <I18nText id="Project color" />
         <NativeSelect
-          aria-label="Project color"
+          aria-label={uiText("Project color")}
           value={color}
           onChange={(event) => setColor(event.target.value)}
         >
@@ -2010,7 +2115,7 @@ export function ProjectSettings({ project }: { project: any }) {
         </NativeSelect>
       </label>
       <label>
-        Who can access this project?
+        <I18nText id="Who can access this project?" />
         <NativeSelect
           value={audience}
           onChange={(event) => {
@@ -2018,8 +2123,12 @@ export function ProjectSettings({ project }: { project: any }) {
             setConfirmed(false);
           }}
         >
-          <option value="restricted">Explicit project members</option>
-          <option value="group">Entire group</option>
+          <option value="restricted">
+            <I18nText id="Explicit project members" />
+          </option>
+          <option value="group">
+            <I18nText id="Entire group" />
+          </option>
         </NativeSelect>
       </label>
       {audience !== project.audience && (
@@ -2028,8 +2137,7 @@ export function ProjectSettings({ project }: { project: any }) {
             checked={confirmed}
             onChange={(event) => setConfirmed(event.target.checked)}
           />
-          I understand that this changes access to every note, file, task,
-          discussion, and review in the project.
+          <I18nText id="I understand that this changes access to every note, file, task, discussion, and review in the project." />
         </label>
       )}
       <label className="ws-checkbox">
@@ -2037,24 +2145,24 @@ export function ProjectSettings({ project }: { project: any }) {
           checked={archived}
           onChange={(event) => setArchived(event.target.checked)}
         />
-        Archive this project (keep its contents)
+        <I18nText id="Archive this project (keep its contents)" />
       </label>
       <ErrorNotice message={action.error} />
       {message && <p role="status">{message}</p>}
       {dirty && baseVersion !== project.version && (
         <HelpText>
-          This project changed elsewhere. Your draft is preserved; saving will
-          reject a stale revision. Cancel changes to load the latest version.
+          <I18nText id="This project changed elsewhere. Your draft is preserved; saving will reject a stale revision. Cancel changes to load the latest version." />
         </HelpText>
       )}
       <ActionRow>
         <Button
+          data-dialog-cancel
           type="button"
           className="button secondary"
           disabled={!dirty || action.busy}
           onClick={reset}
         >
-          Cancel changes
+          <I18nText id="Cancel changes" />
         </Button>
         <Button
           className="button primary"
@@ -2065,10 +2173,10 @@ export function ProjectSettings({ project }: { project: any }) {
           }
           pending={!!action.busy}
         >
-          {"Save project settings"}
+          {uiText("Save project settings")}
         </Button>
       </ActionRow>
-      <DraftGuard dirty={dirty} title="Unsaved project settings" />
+      <DraftGuard dirty={dirty} title={uiText("Unsaved project settings")} />
     </form>
   );
 }

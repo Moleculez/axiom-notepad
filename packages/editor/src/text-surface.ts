@@ -32,6 +32,8 @@ import { search, searchKeymap, openSearchPanel } from "@codemirror/search";
 import { minimalChange, containerText, type TextChange } from "@axiom/markdown";
 import type { NativeTransaction, SourceSelection } from "./transactions";
 import type { NavigationBlock, NavigationPosition } from "./minimap";
+import { bindAttribute } from "@axiom/i18n/dom";
+import { label, localeRuntime } from "@axiom/i18n/client";
 
 export type TextSurfaceValue = {
   text: string;
@@ -143,6 +145,8 @@ export type TextSurfaceOptions = {
 export class TextSurface {
   readonly view: EditorView;
   private settings = new Compartment();
+  private localization = new Compartment();
+  private stopLocale: (() => void) | undefined;
   private language = new Compartment();
   private options: TextSurfaceOptions;
   private value: TextSurfaceValue;
@@ -168,10 +172,12 @@ export class TextSurface {
           markerField,
           syntaxHighlighting(axiomHighlight),
           this.settings.of(this.configuration()),
+          this.localization.of(this.localePhrases()),
           this.language.of([]),
           options.extensions ?? [],
           EditorView.contentAttributes.of({
             "aria-label": options.label,
+            dir: "ltr",
             spellcheck: "false",
             // Keep keyboard focus when permission changes remove contenteditable.
             tabindex: "0",
@@ -214,6 +220,48 @@ export class TextSurface {
       }),
     });
     this.loadLanguage();
+    bindAttribute(this.view.contentDOM, "aria-label", options.label);
+    let locale = localeRuntime.snapshot().locale;
+    this.stopLocale = localeRuntime.subscribe(() => {
+      const current = localeRuntime.snapshot().locale;
+      if (current === locale) return;
+      locale = current;
+      if (!this.destroyed)
+        this.view.dispatch({
+          effects: this.localization.reconfigure(this.localePhrases()),
+          annotations: Transaction.addToHistory.of(false),
+        });
+    });
+  }
+  private localePhrases() {
+    return EditorState.phrases.of(
+      Object.fromEntries(
+        [
+          "Find",
+          "Replace",
+          "Replace all",
+          "next",
+          "previous",
+          "all",
+          "match case",
+          "regexp",
+          "by word",
+          "close",
+          "go",
+          "Search",
+          "No results",
+          "Replace with",
+          "Current match",
+          "replaced $ matches",
+          "replaced match on line $",
+          "on line",
+          "Folded lines",
+          "Unfold lines",
+          "Fold line",
+          "Unfold line",
+        ].map((phrase) => [phrase, label(phrase)]),
+      ),
+    );
   }
   private configuration(): Extension[] {
     return this.configurationValue();
@@ -443,6 +491,8 @@ export class TextSurface {
   configure(options: Partial<TextSurfaceOptions>) {
     const language = this.options.language;
     Object.assign(this.options, options);
+    if (options.label)
+      bindAttribute(this.view.contentDOM, "aria-label", options.label);
     this.view.contentDOM.setAttribute(
       "aria-readonly",
       String(this.options.readOnly),
@@ -513,6 +563,7 @@ export class TextSurface {
     });
   }
   destroy() {
+    this.stopLocale?.();
     this.destroyed = true;
     this.languageVersion++;
     this.view.destroy();

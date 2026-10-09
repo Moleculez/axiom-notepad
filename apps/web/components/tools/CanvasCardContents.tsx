@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { IconButton, TextInput } from "../ui/controls";
 import { useEffect, useRef, useState, type MouseEvent } from "react";
 import type * as Y from "yjs";
@@ -34,6 +36,7 @@ type Props = {
   resolved: (preview: ResourceCardPreview | null) => void;
 };
 export default function CanvasCardContents(props: Props) {
+  useInterfaceLocale();
   const { node } = props,
     host = useRef<HTMLDivElement>(null),
     composing = useRef(false),
@@ -156,15 +159,17 @@ export default function CanvasCardContents(props: Props) {
           {canvasTitle(node)}
         </span>
       )}
-      {node.locked && <LockKeyhole size={12} aria-label="Position locked" />}
+      {node.locked && (
+        <LockKeyhole size={12} aria-label={uiText("Position locked")} />
+      )}
     </div>
   );
   const actions = (
     <IconButton
       type="button"
       className="icon-button canvas-card-more"
-      aria-label="Card actions"
-      title="Card actions"
+      aria-label={uiText("Card actions")}
+      title={uiText("Card actions")}
       onPointerDown={(e) => e.stopPropagation()}
       onClick={props.menu}
     >
@@ -221,7 +226,7 @@ export default function CanvasCardContents(props: Props) {
             </header>
             {props.sandbox && (node.type === "file" || node.type === "link") ? (
               <p className="canvas-placeholder">
-                External previews are disabled in this example.
+                <I18nText id="External previews are disabled in this example." />
               </p>
             ) : node.type === "file" ? (
               <CanvasResourcePreview
@@ -263,6 +268,7 @@ function CardNameInput({
   save: (value: string) => boolean;
   cancel: () => void;
 }) {
+  useInterfaceLocale();
   const [value, setValue] = useState(initial),
     finished = useRef(false);
   const commit = () => {
@@ -271,7 +277,7 @@ function CardNameInput({
   return (
     <TextInput
       autoFocus
-      aria-label="Card name"
+      aria-label={uiText("Card name")}
       maxLength={200}
       value={value}
       onChange={(e) => setValue(e.target.value)}

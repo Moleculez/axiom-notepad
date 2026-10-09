@@ -1,4 +1,7 @@
 "use client";
+import { currentLocale } from "@axiom/i18n/client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { Button, HelpText, TextArea } from "../ui/controls";
 import { useEffect, useRef, useState } from "react";
 import type { Annotation } from "@axiom/shared/research";
@@ -32,6 +35,7 @@ export default function PdfAnnotationThread({
   canComment: boolean;
   onClose: () => void;
 }) {
+  useInterfaceLocale();
   const [thread, setThread] = useState<Thread | null>(null),
     [body, setBody] = useState(""),
     [editing, setEditing] = useState<Reply | null>(null);
@@ -163,7 +167,7 @@ export default function PdfAnnotationThread({
   };
   return (
     <Dialog
-      title="Annotation discussion"
+      title={uiText("Annotation discussion")}
       subtitle={`Page ${annotation.data.page} · ${thread?.shared ? "Shared with paper readers" : "Private"}`}
       onClose={() => {
         if (!body) {
@@ -202,16 +206,15 @@ export default function PdfAnnotationThread({
       {draftNotice && <HelpText role="status">{draftNotice}</HelpText>}
       {!thread && body && (
         <HelpText>
-          Your unsent draft is kept on this device. Reconnect with access to
-          this annotation to continue; nothing will be sent automatically.
+          <I18nText id="Your unsent draft is kept on this device. Reconnect with access to this annotation to continue; nothing will be sent automatically." />
         </HelpText>
       )}
       {thread && (
         <>
           <div className="pdf-thread-status">
             <span>
-              {thread.resolved ? "Resolved" : "Open"} · {thread.replies.length}{" "}
-              replies
+              {thread.resolved ? uiText("Resolved") : uiText("Open")} ·{" "}
+              {thread.replies.length} <I18nText id="replies" />
             </span>
             {(annotation.author_id === userId || canManage) && (
               <button
@@ -225,7 +228,7 @@ export default function PdfAnnotationThread({
                   })
                 }
               >
-                {thread.resolved ? "Reopen" : "Resolve"}
+                {thread.resolved ? uiText("Reopen") : uiText("Resolve")}
               </button>
             )}
           </div>
@@ -235,7 +238,7 @@ export default function PdfAnnotationThread({
                 <header>
                   <strong>{r.author_name}</strong>
                   <time dateTime={r.updated_at}>
-                    {new Date(r.updated_at).toLocaleString()}
+                    {new Date(r.updated_at).toLocaleString(currentLocale())}
                   </time>
                 </header>
                 <p>{r.body}</p>
@@ -248,7 +251,7 @@ export default function PdfAnnotationThread({
                         setBody(r.body);
                       }}
                     >
-                      Edit
+                      <I18nText id="Edit" />
                     </button>
                   )}
                   {(r.author_id === userId || (canManage && thread.shared)) && (
@@ -265,7 +268,7 @@ export default function PdfAnnotationThread({
                         })
                       }
                     >
-                      Remove
+                      <I18nText id="Remove" />
                     </button>
                   )}
                 </div>
@@ -300,9 +303,9 @@ export default function PdfAnnotationThread({
               }}
             >
               <label>
-                {editing ? "Edit reply" : "Reply"}
+                {editing ? uiText("Edit reply") : uiText("Reply")}
                 <TextArea
-                  aria-label={editing ? "Edit reply" : "Reply"}
+                  aria-label={editing ? uiText("Edit reply") : uiText("Reply")}
                   disabled={busy}
                   value={body}
                   maxLength={12000}
@@ -321,30 +324,30 @@ export default function PdfAnnotationThread({
                       setDraftNotice("");
                     }}
                   >
-                    Discard draft
+                    <I18nText id="Discard draft" />
                   </button>
                 )}
                 {editing && (
                   <button
+                    data-dialog-cancel
                     type="button"
                     onClick={() => {
                       setEditing(null);
                       setBody("");
                     }}
                   >
-                    Cancel edit
+                    <I18nText id="Cancel edit" />
                   </button>
                 )}
                 <Button
                   className="button primary"
                   disabled={busy || !body.trim()}
                 >
-                  {editing ? "Save changes" : "Add reply"}
+                  {editing ? uiText("Save changes") : uiText("Add reply")}
                 </Button>
               </div>
               <HelpText>
-                Unsent replies stay on this device until sent, discarded, or you
-                sign out. Sending always requires current access.
+                <I18nText id="Unsent replies stay on this device until sent, discarded, or you sign out. Sending always requires current access." />
               </HelpText>
             </form>
           )}

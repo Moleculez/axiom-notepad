@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 /** Curated public assets only; never copy the application's public/data roots. */
 export async function showcaseAssets(target: string) {
   for (const [from, to] of [
+    ["apps/web/public/locales", "locales"],
     ["docs/assets/showcase", "gallery"],
     ["docs/assets/brand", "brand"],
     ["node_modules/pdfjs-dist/cmaps", "tool-assets/pdfjs/cmaps"],
@@ -29,6 +30,9 @@ export async function showcaseAssets(target: string) {
       "exifreader",
       "@xmldom/xmldom",
       "@fontsource/inter",
+      "@fontsource/noto-sans-arabic",
+      "@fontsource/noto-sans-devanagari",
+      "@fontsource/noto-sans-bengali",
       "@fontsource/source-serif-4",
       "@fontsource/source-sans-3",
       "@fontsource/atkinson-hyperlegible",

@@ -1,4 +1,6 @@
 "use client";
+import { I18nText } from "@axiom/i18n/react";
+
 import BrandMark from "./BrandMark";
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
@@ -21,7 +23,9 @@ export default function WorkspaceEntry() {
   ) : (
     <main className="ws-boot" role="status">
       <BrandMark />
-      <p>Opening your workspace…</p>
+      <p>
+        <I18nText id="Opening your workspace…" />
+      </p>
     </main>
   );
 }

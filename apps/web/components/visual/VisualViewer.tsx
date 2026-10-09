@@ -1,4 +1,7 @@
 "use client";
+import { currentLocale } from "@axiom/i18n/client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import {
   Button,
   Checkbox,
@@ -158,6 +161,7 @@ export default function VisualViewer({
   request: VisualRequest;
   onClose: () => void;
 }) {
+  useInterfaceLocale();
   const { session, notify, revision, open } = useWorkspace();
   const [items, setItems] = useState(request.items),
     [index, setIndex] = useState(request.index),
@@ -633,17 +637,17 @@ export default function VisualViewer({
         <div
           className="visual-toolbar"
           role="toolbar"
-          aria-label="Viewer controls"
+          aria-label={uiText("Viewer controls")}
         >
           <Tool
             icon={ZoomOut}
-            label="Zoom out (-)"
+            label={uiText("Zoom out (-)")}
             disabled={!media}
             onClick={() => changeTransform(zoomVisual(t, t.zoom / 1.25))}
           />
           <label className="visual-zoom">
             <TextInput
-              aria-label="Zoom percentage"
+              aria-label={uiText("Zoom percentage")}
               type="number"
               min={1}
               max={3200}
@@ -656,7 +660,7 @@ export default function VisualViewer({
           </label>
           <Tool
             icon={ZoomIn}
-            label="Zoom in (+)"
+            label={uiText("Zoom in (+)")}
             disabled={!media}
             onClick={() => changeTransform(zoomVisual(t, t.zoom * 1.25))}
           />
@@ -680,7 +684,7 @@ export default function VisualViewer({
                 }));
             }}
           >
-            Fit
+            <I18nText id="Fit" />
           </Button>
           <Button
             type="button"
@@ -703,7 +707,7 @@ export default function VisualViewer({
                 }));
             }}
           >
-            Width
+            <I18nText id="Width" />
           </Button>
           <Button
             type="button"
@@ -715,26 +719,26 @@ export default function VisualViewer({
           <span className="visual-separator" />
           <Tool
             icon={RotateCw}
-            label="Rotate view 90°"
+            label={uiText("Rotate view 90°")}
             onClick={() =>
               changeTransform({ ...t, rotation: (t.rotation + 90) % 360 })
             }
           />
           <Tool
             icon={FlipHorizontal2}
-            label="Flip view horizontally"
+            label={uiText("Flip view horizontally")}
             active={t.flipX}
             onClick={() => changeTransform({ ...t, flipX: !t.flipX })}
           />
           <Tool
             icon={FlipVertical2}
-            label="Flip view vertically"
+            label={uiText("Flip view vertically")}
             active={t.flipY}
             onClick={() => changeTransform({ ...t, flipY: !t.flipY })}
           />
           <Tool
             icon={RefreshCw}
-            label="Reset view"
+            label={uiText("Reset view")}
             onClick={() => {
               setT(initialVisualTransform());
               setFit("contain");
@@ -742,38 +746,50 @@ export default function VisualViewer({
             }}
           />
           <NativeSelect
-            aria-label="Viewer background"
+            aria-label={uiText("Viewer background")}
             value={background}
             onChange={(e) => setBackground(e.target.value)}
           >
-            <option value="checker">Transparency</option>
-            <option value="paper">Theme paper</option>
-            <option value="light">Light</option>
-            <option value="dark">Dark</option>
+            <option value="checker">
+              <I18nText id="Transparency" />
+            </option>
+            <option value="paper">
+              <I18nText id="Theme paper" />
+            </option>
+            <option value="light">
+              <I18nText id="Light" />
+            </option>
+            <option value="dark">
+              <I18nText id="Dark" />
+            </option>
           </NativeSelect>
           <span className="visual-spacer" />
           <Tool
             icon={Columns2}
-            label={compare ? "Close comparison" : "Compare images or diagrams"}
+            label={
+              compare
+                ? uiText("Close comparison")
+                : uiText("Compare images or diagrams")
+            }
             active={!!compare}
             onClick={() => (compare ? setCompare(null) : setPicker((v) => !v))}
           />
           <Tool
             icon={Grid2X2}
-            label="Toggle thumbnail strip"
+            label={uiText("Toggle thumbnail strip")}
             active={filmstrip}
             disabled={items.length < 2}
             onClick={() => setFilmstrip((v) => !v)}
           />
           <Tool
             icon={Info}
-            label="Image or diagram information"
+            label={uiText("Image or diagram information")}
             active={panel === "info"}
             onClick={() => setPanel((p) => (p === "info" ? null : "info"))}
           />
           <Tool
             icon={Scan}
-            label="Pixel inspection and ruler"
+            label={uiText("Pixel inspection and ruler")}
             active={panel === "inspect"}
             onClick={() => {
               setPanel((p) => (p === "inspect" ? null : "inspect"));
@@ -782,7 +798,7 @@ export default function VisualViewer({
           />
           <Tool
             icon={MessageSquare}
-            label="Annotations and markup"
+            label={uiText("Annotations and markup")}
             active={panel === "markup"}
             onClick={() => {
               setPanel((p) => (p === "markup" ? null : "markup"));
@@ -791,7 +807,7 @@ export default function VisualViewer({
           />
           <Tool
             icon={Download}
-            label="Export image"
+            label={uiText("Export image")}
             active={panel === "export"}
             onClick={() => setPanel((p) => (p === "export" ? null : "export"))}
           />
@@ -799,7 +815,7 @@ export default function VisualViewer({
             icon={fullscreen.active ? Minimize : Maximize}
             label={
               fullscreen.expanded
-                ? "Exit expanded view"
+                ? uiText("Exit expanded view")
                 : fullscreen.active
                   ? "Exit fullscreen"
                   : "Enter fullscreen"
@@ -813,7 +829,7 @@ export default function VisualViewer({
           <div
             className="visual-toolbar visual-drawing-tools"
             role="toolbar"
-            aria-label="Markup tools"
+            aria-label={uiText("Markup tools")}
           >
             {editTools.map(([value, icon, label]) => (
               <Tool
@@ -829,10 +845,10 @@ export default function VisualViewer({
                 onClick={() => setTool(value)}
               />
             ))}
-            <label className="visual-color" title="Markup color">
+            <label className="visual-color" title={uiText("Markup color")}>
               <input
                 type="color"
-                aria-label="Markup color"
+                aria-label={uiText("Markup color")}
                 value={color}
                 onChange={(e) => {
                   setColor(e.target.value);
@@ -844,7 +860,7 @@ export default function VisualViewer({
               />
             </label>
             <NativeSelect
-              aria-label="Markup line width"
+              aria-label={uiText("Markup line width")}
               value={stroke}
               onChange={(e) => {
                 setStroke(Number(e.target.value));
@@ -859,32 +875,32 @@ export default function VisualViewer({
             >
               {[1, 2, 3, 4, 6, 8].map((n) => (
                 <option key={n} value={n}>
-                  {n} px
+                  {n} <I18nText id="px" />
                 </option>
               ))}
             </NativeSelect>
             <span className="visual-separator" />
             <Tool
               icon={Undo2}
-              label="Undo markup"
+              label={uiText("Undo markup")}
               disabled={!past.current.length || busy}
               onClick={undo}
             />
             <Tool
               icon={Redo2}
-              label="Redo markup"
+              label={uiText("Redo markup")}
               disabled={!future.current.length || busy}
               onClick={redo}
             />
             <Tool
               icon={showMarks ? Eye : EyeOff}
-              label="Toggle markup visibility"
+              label={uiText("Toggle markup visibility")}
               active={showMarks}
               onClick={() => setShowMarks((v) => !v)}
             />
             <span className="visual-spacer" />
             <span className="visual-caption">
-              Private until shared · this placement only
+              <I18nText id="Private until shared · this placement only" />
             </span>
           </div>
         )}
@@ -892,7 +908,7 @@ export default function VisualViewer({
           <div className="visual-notice is-error" role="alert">
             {error || loadError || store.error}
             <button className="text-button" onClick={() => void store.reload()}>
-              Retry
+              <I18nText id="Retry" />
             </button>
           </div>
         )}
@@ -903,7 +919,7 @@ export default function VisualViewer({
         )}
         {changed && (
           <div className="visual-notice" role="status">
-            This placement changed in its document. You are viewing a snapshot.
+            <I18nText id="This placement changed in its document. You are viewing a snapshot." />
             <button
               className="text-button"
               onClick={() => {
@@ -915,7 +931,7 @@ export default function VisualViewer({
                 }
               }}
             >
-              Refresh snapshot
+              <I18nText id="Refresh snapshot" />
             </button>
           </div>
         )}
@@ -941,13 +957,17 @@ export default function VisualViewer({
                     onClick={() => setLinked((v) => !v)}
                   >
                     <Link2 size={13} />
-                    {linked ? "Linked views" : "Independent views"}
+                    {linked
+                      ? uiText("Linked views")
+                      : uiText("Independent views")}
                   </button>
                 </div>
               )}
               {!media && (
                 <div className="visual-loading" role="status">
-                  {loadError ? "Preview unavailable" : "Opening visual…"}
+                  {loadError
+                    ? uiText("Preview unavailable")
+                    : uiText("Opening visual…")}
                 </div>
               )}
               <VisualStage
@@ -980,7 +1000,7 @@ export default function VisualViewer({
                     className="text-button"
                     onClick={() => setPicker(true)}
                   >
-                    Change
+                    <I18nText id="Change" />
                   </button>
                 </div>
                 {compareError && (
@@ -1019,37 +1039,41 @@ export default function VisualViewer({
                   background={background}
                   pixelated={pixelated}
                   userId={session.user.id}
-                  label="Comparison viewport"
+                  label={uiText("Comparison viewport")}
                 />
               </div>
             )}
           </div>
           {panel && (
-            <aside className="visual-inspector" aria-label="Visual inspector">
+            <aside
+              className="visual-inspector"
+              aria-label={uiText("Visual inspector")}
+            >
               {panel === "info" && <Information asset={asset} media={media} />}
               {panel === "inspect" && (
                 <section>
-                  <h3>Inspect pixels</h3>
+                  <h3>
+                    <I18nText id="Inspect pixels" />
+                  </h3>
                   <p className="visual-caption">
-                    Displayed-image pixels, not calibrated scientific
-                    measurements.
+                    <I18nText id="Displayed-image pixels, not calibrated scientific measurements." />
                   </p>
                   <div className="visual-toolbar">
                     <Tool
                       icon={Scan}
-                      label="Sample pixel color"
+                      label={uiText("Sample pixel color")}
                       active={tool === "inspect"}
                       onClick={() => setTool("inspect")}
                     />
                     <Tool
                       icon={Ruler}
-                      label="Measure pixel distance"
+                      label={uiText("Measure pixel distance")}
                       active={tool === "ruler"}
                       onClick={() => setTool("ruler")}
                     />
                     <Tool
                       icon={Grid2X2}
-                      label="Pixelated rendering"
+                      label={uiText("Pixelated rendering")}
                       active={pixelated}
                       onClick={() => setPixelated((v) => !v)}
                     />
@@ -1066,32 +1090,41 @@ export default function VisualViewer({
               )}
               {panel === "export" && (
                 <section>
-                  <h3>Export a copy</h3>
+                  <h3>
+                    <I18nText id="Export a copy" />
+                  </h3>
                   <p className="visual-caption">
-                    Viewing rotations and flips are temporary. Exports retain
-                    original orientation; markup is included only when selected.
+                    <I18nText id="Viewing rotations and flips are temporary. Exports retain original orientation; markup is included only when selected." />
                   </p>
                   <label>
-                    Format
+                    <I18nText id="Format" />
                     <NativeSelect
-                      aria-label="Format"
+                      aria-label={uiText("Format")}
                       value={format}
                       onChange={(e) =>
                         setFormat(e.target.value as typeof format)
                       }
                     >
-                      <option value="png">PNG · lossless</option>
-                      <option value="jpeg">JPG · opaque</option>
-                      <option value="webp">WebP</option>
+                      <option value="png">
+                        <I18nText id="PNG · lossless" />
+                      </option>
+                      <option value="jpeg">
+                        <I18nText id="JPG · opaque" />
+                      </option>
+                      <option value="webp">
+                        <I18nText id="WebP" />
+                      </option>
                       {asset.kind === "mermaid" && (
-                        <option value="svg">SVG · vector</option>
+                        <option value="svg">
+                          <I18nText id="SVG · vector" />
+                        </option>
                       )}
                     </NativeSelect>
                   </label>
                   <label>
-                    Scale
+                    <I18nText id="Scale" />
                     <NativeSelect
-                      aria-label="Export scale"
+                      aria-label={uiText("Export scale")}
                       value={scale}
                       onChange={(e) => setScale(Number(e.target.value))}
                     >
@@ -1107,14 +1140,14 @@ export default function VisualViewer({
                       checked={opaque}
                       onChange={(e) => setOpaque(e.target.checked)}
                     />
-                    White background
+                    <I18nText id="White background" />
                   </label>
                   <label className="visual-check">
                     <Checkbox
                       checked={includeMarks}
                       onChange={(e) => setIncludeMarks(e.target.checked)}
                     />
-                    Include visible markup
+                    <I18nText id="Include visible markup" />
                   </label>
                   <div className="visual-action-grid">
                     <Button
@@ -1123,7 +1156,7 @@ export default function VisualViewer({
                       onClick={download}
                     >
                       <Download size={15} />
-                      Download copy
+                      <I18nText id="Download copy" />
                     </Button>
                     <Button
                       className="button secondary"
@@ -1131,15 +1164,15 @@ export default function VisualViewer({
                       onClick={copy}
                     >
                       <Copy size={15} />
-                      Copy PNG
+                      <I18nText id="Copy PNG" />
                     </Button>
                   </div>
                   <hr />
                   <Button className="button secondary" onClick={original}>
                     <Download size={15} />
                     {asset.kind === "mermaid"
-                      ? "Download Mermaid source"
-                      : "Download original"}
+                      ? uiText("Download Mermaid source")
+                      : uiText("Download original")}
                   </Button>
                   {asset.kind === "image" && asset.placement?.versionId && (
                     <>
@@ -1162,7 +1195,7 @@ export default function VisualViewer({
                         }
                       >
                         <ImagePlus size={15} />
-                        Edit a copy in Image Studio
+                        <I18nText id="Edit a copy in Image Studio" />
                       </Button>
                       <Button
                         className="button ghost"
@@ -1176,7 +1209,7 @@ export default function VisualViewer({
                           })
                         }
                       >
-                        Open original file
+                        <I18nText id="Open original file" />
                       </Button>
                     </>
                   )}
@@ -1195,10 +1228,10 @@ export default function VisualViewer({
                     }
                   >
                     <Copy size={15} />
-                    Copy{" "}
+                    <I18nText id="Copy" />{" "}
                     {asset.kind === "mermaid"
-                      ? "Mermaid source"
-                      : "image Markdown"}
+                      ? uiText("Mermaid source")
+                      : uiText("image Markdown")}
                   </Button>
                   {asset.url && (
                     <Button
@@ -1210,7 +1243,7 @@ export default function VisualViewer({
                       }
                     >
                       <Link2 size={15} />
-                      Copy image address
+                      <I18nText id="Copy image address" />
                     </Button>
                   )}
                   <Button
@@ -1238,35 +1271,32 @@ export default function VisualViewer({
                     }
                   >
                     <Download size={15} />
-                    Export editable markup JSON
+                    <I18nText id="Export editable markup JSON" />
                   </Button>
                   <p className="visual-caption">
-                    Raster export of an animated image captures one frame. SVG
-                    preserves Mermaid vectors; no raster-to-vector conversion is
-                    implied.
+                    <I18nText id="Raster export of an animated image captures one frame. SVG preserves Mermaid vectors; no raster-to-vector conversion is implied." />
                   </p>
                 </section>
               )}
               {panel === "markup" && (
                 <section>
                   <h3>
-                    Annotations <span className="muted">{matching.length}</span>
+                    <I18nText id="Annotations" />{" "}
+                    <span className="muted">{matching.length}</span>
                   </h3>
                   <p className="visual-caption">
-                    Original content is unchanged. Draw a region or pin to add a
-                    note.
+                    <I18nText id="Original content is unchanged. Draw a region or pin to add a note." />
                   </p>
                   {!asset.placement && (
                     <p className="visual-notice">
-                      This preview has no saved document placement. Open the
-                      original document to save markup.
+                      <I18nText id="This preview has no saved document placement. Open the original document to save markup." />
                     </p>
                   )}
                   {store.pending.length > 0 && (
                     <p className="visual-caption" role="status">
                       {store.pending.some((p) => p.error)
-                        ? "Draft needs attention"
-                        : "Saved locally · awaiting server"}
+                        ? uiText("Draft needs attention")
+                        : uiText("Saved locally · awaiting server")}
                     </p>
                   )}
                   {store.pending
@@ -1280,7 +1310,7 @@ export default function VisualViewer({
                             void run(() => store.resolve(p.id, true))
                           }
                         >
-                          Reapply my draft
+                          <I18nText id="Reapply my draft" />
                         </button>
                         <button
                           className="text-button"
@@ -1288,7 +1318,7 @@ export default function VisualViewer({
                             void run(() => store.resolve(p.id, false))
                           }
                         >
-                          Use server version
+                          <I18nText id="Use server version" />
                         </button>
                         <button
                           className="text-button"
@@ -1301,7 +1331,7 @@ export default function VisualViewer({
                             )
                           }
                         >
-                          Export draft
+                          <I18nText id="Export draft" />
                         </button>
                       </div>
                     ))}
@@ -1325,7 +1355,7 @@ export default function VisualViewer({
                         <span>
                           <strong>
                             {mark.shape?.text || mark.shape?.kind || "Note"}
-                            {mark.resolved ? " · resolved" : ""}
+                            {mark.resolved ? uiText(" · resolved") : ""}
                           </strong>
                           <small>
                             {mark.authorName} · {mark.visibility}
@@ -1339,9 +1369,9 @@ export default function VisualViewer({
                       <h4>{selectedMark.shape?.kind ?? "Annotation"}</h4>
                       {canEdit && selectedMark.shape?.kind === "label" && (
                         <label>
-                          Label
+                          <I18nText id="Label" />
                           <TextInput
-                            aria-label="Annotation label"
+                            aria-label={uiText("Annotation label")}
                             maxLength={500}
                             value={selectedMark.shape.text}
                             onChange={(e) =>
@@ -1385,8 +1415,12 @@ export default function VisualViewer({
                             }
                             title={
                               canShare
-                                ? "Shared with people who can read this document"
-                                : "Sharing requires comment access in an active group workspace"
+                                ? uiText(
+                                    "Shared with people who can read this document",
+                                  )
+                                : uiText(
+                                    "Sharing requires comment access in an active group workspace",
+                                  )
                             }
                             onClick={() =>
                               void modify(selectedMark, {
@@ -1398,8 +1432,8 @@ export default function VisualViewer({
                             }
                           >
                             {selectedMark.visibility === "private"
-                              ? "Share annotation"
-                              : "Make private"}
+                              ? uiText("Share annotation")
+                              : uiText("Make private")}
                           </Button>
                           <Button
                             className="button secondary"
@@ -1410,7 +1444,9 @@ export default function VisualViewer({
                             }
                           >
                             <Check size={14} />
-                            {selectedMark.resolved ? "Reopen" : "Resolve"}
+                            {selectedMark.resolved
+                              ? uiText("Reopen")
+                              : uiText("Resolve")}
                           </Button>
                           <Button
                             className="button ghost danger"
@@ -1419,7 +1455,7 @@ export default function VisualViewer({
                             }
                           >
                             <Trash2 size={14} />
-                            Remove
+                            <I18nText id="Remove" />
                           </Button>
                         </div>
                       )}
@@ -1433,7 +1469,7 @@ export default function VisualViewer({
                             }
                           >
                             <Trash2 size={14} />
-                            Remove shared annotation
+                            <I18nText id="Remove shared annotation" />
                           </Button>
                         )}
                       {selectedMark.visibility === "shared" && (
@@ -1467,12 +1503,11 @@ export default function VisualViewer({
                   {(outdated.length > 0 || unplaced.length > 0) && (
                     <details className="visual-outdated">
                       <summary>
-                        Outdated / unplaced ({outdated.length + unplaced.length}
-                        )
+                        <I18nText id="Outdated / unplaced (" />
+                        {outdated.length + unplaced.length})
                       </summary>
                       <p className="visual-caption">
-                        Review these regions before applying them to changed
-                        content.
+                        <I18nText id="Review these regions before applying them to changed content." />
                       </p>
                       {[...outdated, ...unplaced].map((mark) => (
                         <div key={mark.id}>
@@ -1491,7 +1526,7 @@ export default function VisualViewer({
                                   })
                                 }
                               >
-                                Attach here after review
+                                <I18nText id="Attach here after review" />
                               </button>
                               <button
                                 className="text-button"
@@ -1499,7 +1534,7 @@ export default function VisualViewer({
                                   void modify(mark, { deleted: true })
                                 }
                               >
-                                Remove
+                                <I18nText id="Remove" />
                               </button>
                             </>
                           )}
@@ -1513,7 +1548,10 @@ export default function VisualViewer({
           )}
         </div>
         {filmstrip && (
-          <div className="visual-filmstrip" aria-label="Document visuals">
+          <div
+            className="visual-filmstrip"
+            aria-label={uiText("Document visuals")}
+          >
             {items.map((item, i) => (
               <button
                 key={item.id}
@@ -1536,7 +1574,7 @@ export default function VisualViewer({
         <footer className="visual-footer">
           <Tool
             icon={ArrowLeft}
-            label="Previous visual (←)"
+            label={uiText("Previous visual (←)")}
             disabled={index === 0}
             onClick={() => go(-1)}
           />
@@ -1545,20 +1583,20 @@ export default function VisualViewer({
           </span>
           <Tool
             icon={ArrowRight}
-            label="Next visual (→)"
+            label={uiText("Next visual (→)")}
             disabled={index === items.length - 1}
             onClick={() => go(1)}
           />
           <span className="visual-spacer" />
           <span>
             {media
-              ? `${media.width.toLocaleString()} × ${media.height.toLocaleString()} px${media.blob ? ` · ${bytes(media.blob.size)}` : ""}`
+              ? `${media.width.toLocaleString(currentLocale())} × ${media.height.toLocaleString(currentLocale())} px${media.blob ? ` · ${bytes(media.blob.size)}` : ""}`
               : ""}
           </span>
           <span className="visual-caption">
-            Scroll to zoom · drag to pan · 0 fit · 1 actual size · Esc{" "}
+            <I18nText id="Scroll to zoom · drag to pan · 0 fit · 1 actual size · Esc" />{" "}
             {fullscreen.expanded
-              ? "restore viewer"
+              ? uiText("restore viewer")
               : fullscreen.active
                 ? "leave fullscreen"
                 : "close"}

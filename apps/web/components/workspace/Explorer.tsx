@@ -1,4 +1,7 @@
 "use client";
+import { currentLocale } from "@axiom/i18n/client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import {
   ActionRow,
   Button,
@@ -89,6 +92,7 @@ export default function Explorer() {
   );
 }
 function ResourceExplorer() {
+  useInterfaceLocale();
   const inspectorOwner = useInspectorOwner();
   const management = useManagement();
   const tabs = useWorkSessions(),
@@ -366,7 +370,10 @@ function ResourceExplorer() {
           }
         />
         {space && (
-          <nav className="ws-breadcrumbs" aria-label="Folder breadcrumbs">
+          <nav
+            className="ws-breadcrumbs"
+            aria-label={uiText("Folder breadcrumbs")}
+          >
             <WorkspaceLink
               to={folderLocation(space.id)}
               onDragOver={(e) =>
@@ -399,14 +406,14 @@ function ResourceExplorer() {
                 </WorkspaceLink>
               </span>
             ))}
-            <Badge>{space.kind === "personal" ? "Only you" : space.role}</Badge>
+            <Badge>
+              {space.kind === "personal" ? uiText("Only you") : space.role}
+            </Badge>
           </nav>
         )}
         {view === "trash" && (
           <HelpText>
-            Files and all their versions remain here until you explicitly remove
-            them. Moving an item to trash does not break existing pinned file
-            embeds.
+            <I18nText id="Files and all their versions remain here until you explicitly remove them. Moving an item to trash does not break existing pinned file embeds." />
           </HelpText>
         )}
         <div
@@ -429,48 +436,61 @@ function ResourceExplorer() {
               }}
             >
               <SearchField
-                aria-label="Search files and notes"
-                placeholder="Search name, content, or tags…"
+                aria-label={uiText("Search files and notes")}
+                placeholder={uiText("Search name, content, or tags…")}
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 onClear={() => setSearch("")}
               />
               <button className="text-button" type="submit">
-                Search
+                <I18nText id="Search" />
               </button>
             </form>
             <label className="sr-only" htmlFor="explorer-kind">
-              File type
+              <I18nText id="File type" />
             </label>
             <NativeSelect
               id="explorer-kind"
               value={kind}
               onChange={(event) => setKind(event.target.value)}
             >
-              <option value="">All types</option>
-              <option value="note">Notes</option>
-              <option value="folder">Folders</option>
-              <option value="file">Files</option>
-              <option value="shortcut">Shortcuts</option>
+              <option value="">
+                <I18nText id="All types" />
+              </option>
+              <option value="note">
+                <I18nText id="Notes" />
+              </option>
+              <option value="folder">
+                <I18nText id="Folders" />
+              </option>
+              <option value="file">
+                <I18nText id="Files" />
+              </option>
+              <option value="shortcut">
+                <I18nText id="Shortcuts" />
+              </option>
             </NativeSelect>
             <IconButton
               className="icon-button"
-              aria-label="Advanced file filters"
+              aria-label={uiText("Advanced file filters")}
               aria-expanded={filters}
               onClick={() => setFilters(!filters)}
             >
               <SlidersHorizontal size={17} />
             </IconButton>
-            <div className="ws-segmented" aria-label="Explorer layout">
+            <div
+              className="ws-segmented"
+              aria-label={uiText("Explorer layout")}
+            >
               <button
-                aria-label="List view"
+                aria-label={uiText("List view")}
                 aria-pressed={layout === "list"}
                 onClick={() => setLayout("list")}
               >
                 <List size={17} />
               </button>
               <button
-                aria-label="Grid view"
+                aria-label={uiText("Grid view")}
                 aria-pressed={layout === "grid"}
                 onClick={() => setLayout("grid")}
               >
@@ -480,8 +500,8 @@ function ResourceExplorer() {
             {layout === "list" && (
               <IconButton
                 className="icon-button"
-                aria-label="Choose file columns"
-                title="Choose file columns"
+                aria-label={uiText("Choose file columns")}
+                title={uiText("Choose file columns")}
                 onClick={(event) => {
                   const owner = event.currentTarget,
                     box = owner.getBoundingClientRect();
@@ -518,8 +538,8 @@ function ResourceExplorer() {
             {params.get("q") && (
               <IconButton
                 className="icon-button"
-                title="Save this search"
-                aria-label="Save this search"
+                title={uiText("Save this search")}
+                aria-label={uiText("Save this search")}
                 onClick={() => setModal("save")}
               >
                 <Star size={17} />
@@ -530,7 +550,7 @@ function ResourceExplorer() {
             <div
               className="ws-selection-bar explorer-file-actions"
               role="region"
-              aria-label="Selection actions"
+              aria-label={uiText("Selection actions")}
               onKeyDown={(event) => {
                 if (event.key === "Escape") {
                   event.preventDefault();
@@ -539,13 +559,15 @@ function ResourceExplorer() {
                 }
               }}
             >
-              <strong>{selected.length} selected</strong>
+              <strong>
+                {selected.length} <I18nText id="selected" />
+              </strong>
               <button
                 className="text-button"
                 disabled={!selected.length}
                 onClick={clearSelection}
               >
-                Clear
+                <I18nText id="Clear" />
               </button>
               <span className="ws-spacer" />
               <Button
@@ -556,14 +578,14 @@ function ResourceExplorer() {
                 }
                 onClick={() => management.execute("move", selected)}
               >
-                Move
+                <I18nText id="Move" />
               </Button>
               <Button
                 className="button secondary"
                 disabled={!selected.length}
                 onClick={() => management.execute("copyTo", selected)}
               >
-                Copy
+                <I18nText id="Copy" />
               </Button>
               <Button
                 className="button secondary"
@@ -573,7 +595,7 @@ function ResourceExplorer() {
                 }
                 onClick={() => management.execute("rename", selected)}
               >
-                Rename
+                <I18nText id="Rename" />
               </Button>
               {view !== "trash" && (
                 <Button
@@ -588,7 +610,7 @@ function ResourceExplorer() {
                   onClick={() => management.execute("export", selected)}
                 >
                   <Download size={15} />
-                  Export selection
+                  <I18nText id="Export selection" />
                 </Button>
               )}
               {
@@ -613,7 +635,9 @@ function ResourceExplorer() {
                   }
                 >
                   <Trash2 size={15} />
-                  {view === "trash" ? "Restore selected" : "Move to trash"}
+                  {view === "trash"
+                    ? uiText("Restore selected")
+                    : uiText("Move to trash")}
                 </Button>
               }
             </div>
@@ -642,18 +666,30 @@ function ResourceExplorer() {
             }}
           >
             <label>
-              Content type
+              <I18nText id="Content type" />
               <NativeSelect name="mime" defaultValue={params.get("mime") || ""}>
-                <option value="">All</option>
-                <option value="image/">Images</option>
-                <option value="application/pdf">PDF</option>
-                <option value="text/">Text & code</option>
-                <option value="audio/">Audio</option>
-                <option value="video/">Video</option>
+                <option value="">
+                  <I18nText id="All" />
+                </option>
+                <option value="image/">
+                  <I18nText id="Images" />
+                </option>
+                <option value="application/pdf">
+                  <I18nText id="PDF" />
+                </option>
+                <option value="text/">
+                  <I18nText id="Text & code" />
+                </option>
+                <option value="audio/">
+                  <I18nText id="Audio" />
+                </option>
+                <option value="video/">
+                  <I18nText id="Video" />
+                </option>
               </NativeSelect>
             </label>
             <label>
-              Tag
+              <I18nText id="Tag" />
               <TextInput
                 name="tag"
                 maxLength={40}
@@ -661,7 +697,7 @@ function ResourceExplorer() {
               />
             </label>
             <label>
-              Modified after
+              <I18nText id="Modified after" />
               <TextInput
                 type="date"
                 name="after"
@@ -669,7 +705,7 @@ function ResourceExplorer() {
               />
             </label>
             <label>
-              Modified before
+              <I18nText id="Modified before" />
               <TextInput
                 type="date"
                 name="before"
@@ -677,7 +713,7 @@ function ResourceExplorer() {
               />
             </label>
             <label>
-              Minimum bytes
+              <I18nText id="Minimum bytes" />
               <TextInput
                 type="number"
                 name="minSize"
@@ -686,7 +722,7 @@ function ResourceExplorer() {
               />
             </label>
             <label>
-              Maximum bytes
+              <I18nText id="Maximum bytes" />
               <TextInput
                 type="number"
                 name="maxSize"
@@ -695,7 +731,7 @@ function ResourceExplorer() {
               />
             </label>
             <Button className="button secondary" type="submit">
-              Apply filters
+              <I18nText id="Apply filters" />
             </Button>
             <button
               className="text-button"
@@ -714,7 +750,7 @@ function ResourceExplorer() {
                 navigate(`/explorer?${next}`);
               }}
             >
-              Clear filters
+              <I18nText id="Clear filters" />
             </button>
           </form>
         )}
@@ -723,7 +759,7 @@ function ResourceExplorer() {
         <div
           className="ws-resource-container"
           tabIndex={0}
-          aria-label="Explorer items"
+          aria-label={uiText("Explorer items")}
           onContextMenu={(event) => {
             if (!(event.target as Element).closest(".ws-resource-row"))
               management.backgroundMenu(
@@ -772,19 +808,19 @@ function ResourceExplorer() {
           }}
         >
           {result.loading && !result.data ? (
-            <Loading label="Loading files and notes…" />
+            <Loading label={uiText("Loading files and notes…")} />
           ) : !rows.length && !result.error ? (
             <Empty
               title={
                 params.get("q")
-                  ? "No matching work"
+                  ? uiText("No matching work")
                   : view === "trash"
                     ? "Nothing in the trash"
                     : "A little room to think"
               }
             >
               {params.get("q")
-                ? "Try a shorter search or another space."
+                ? uiText("Try a shorter search or another space.")
                 : canEdit
                   ? "Create a research note, organize a folder, or drop files here."
                   : "Shared notes, folders, and files will appear here."}
@@ -805,7 +841,7 @@ function ResourceExplorer() {
               {layout === "list" && (
                 <div className="ws-resource-head">
                   <Checkbox
-                    aria-label="Select all items on this page"
+                    aria-label={uiText("Select all items on this page")}
                     checked={!!rows.length && selection.length === rows.length}
                     onChange={(event) =>
                       setSelection(
@@ -840,7 +876,11 @@ function ResourceExplorer() {
                         ))}
                     </button>
                   ))}
-                  {columns.includes("kind") && <span>Kind</span>}
+                  {columns.includes("kind") && (
+                    <span>
+                      <I18nText id="Kind" />
+                    </span>
+                  )}
                   <span />
                 </div>
               )}
@@ -987,7 +1027,7 @@ function ResourceExplorer() {
                         event.metaKey || event.ctrlKey,
                       )
                     }
-                    title="Double-click to open · Space to preview"
+                    title={uiText("Double-click to open · Space to preview")}
                   >
                     <span className={`ws-resource-glyph ${item.kind}`}>
                       <ResourceIcon
@@ -999,7 +1039,7 @@ function ResourceExplorer() {
                       <strong>{item.name}</strong>
                       <small>
                         {item.kind === "note"
-                          ? "Research note"
+                          ? uiText("Research note")
                           : item.kind === "folder"
                             ? "Folder"
                             : item.kind === "shortcut"
@@ -1040,7 +1080,8 @@ function ResourceExplorer() {
         </div>
         <footer className="ws-list-footer">
           <span>
-            {rows.length} items on this page{result.loading && " · Refreshing…"}
+            {rows.length} <I18nText id="items on this page" />
+            {result.loading && " · Refreshing…"}
           </span>
           <ActionRow>
             <Button
@@ -1052,7 +1093,7 @@ function ResourceExplorer() {
               }}
             >
               <ArrowLeft size={14} />
-              Previous
+              <I18nText id="Previous" />
             </Button>
             <Button
               className="button secondary"
@@ -1062,7 +1103,7 @@ function ResourceExplorer() {
                 setCursor(result.data!.nextCursor);
               }}
             >
-              Next
+              <I18nText id="Next" />
               <ChevronRight size={14} />
             </Button>
           </ActionRow>
@@ -1112,8 +1153,8 @@ function ResourceExplorer() {
       )}
       {modal === "save" && (
         <NameDialog
-          title="Save this search"
-          label="Search name"
+          title={uiText("Save this search")}
+          label={uiText("Search name")}
           initial={search}
           onClose={() => setModal(null)}
           onSave={async (name) => {
@@ -1148,6 +1189,7 @@ export function NameDialog({
   onClose: () => void;
   onSave: (name: string) => Promise<void>;
 }) {
+  useInterfaceLocale();
   const [name, setName] = useState(initial),
     action = useAction();
   return (
@@ -1175,19 +1217,20 @@ export function NameDialog({
         <ErrorNotice message={action.error} />
         <div className="dialog-footer">
           <Button
+            data-dialog-cancel
             className="button secondary"
             type="button"
             onClick={onClose}
             disabled={action.busy}
           >
-            Cancel
+            <I18nText id="Cancel" />
           </Button>
           <Button
             className="button primary"
             disabled={action.busy || !name.trim()}
             pending={!!action.busy}
           >
-            {"Save"}
+            {uiText("Save")}
           </Button>
         </div>
       </form>
@@ -1207,13 +1250,16 @@ export function CreateResource({
   onClose: () => void;
   onCreated: (item: Resource) => void;
 }) {
+  useInterfaceLocale();
   const [name, setName] = useState(""),
     [template, setTemplate] = useState("blank"),
     action = useAction();
   return (
     <Dialog
       title={
-        kind === "folder" ? "A place for related work" : "Start a research note"
+        kind === "folder"
+          ? uiText("A place for related work")
+          : uiText("Start a research note")
       }
       subtitle={`${space.name} · ${space.kind === "personal" ? "Visible only to you" : "Uses this space’s access permissions"}`}
       onClose={() => !action.busy && onClose()}
@@ -1239,7 +1285,7 @@ export function CreateResource({
         }}
       >
         <label>
-          {kind === "folder" ? "Folder name" : "Note title"}
+          {kind === "folder" ? uiText("Folder name") : uiText("Note title")}
           <TextInput
             autoFocus
             required
@@ -1248,14 +1294,14 @@ export function CreateResource({
             maxLength={200}
             placeholder={
               kind === "folder"
-                ? "e.g. Experiments"
-                : "A question worth exploring"
+                ? uiText("e.g. Experiments")
+                : uiText("A question worth exploring")
             }
           />
         </label>
         {kind === "note" && (
           <label>
-            Start with a template
+            <I18nText id="Start with a template" />
             <NativeSelect
               value={template}
               onChange={(event) => setTemplate(event.target.value)}
@@ -1271,18 +1317,19 @@ export function CreateResource({
         <ErrorNotice message={action.error} />
         <div className="dialog-footer">
           <Button
+            data-dialog-cancel
             className="button secondary"
             type="button"
             onClick={onClose}
             disabled={action.busy}
           >
-            Cancel
+            <I18nText id="Cancel" />
           </Button>
           <Button
             className="button primary"
             disabled={action.busy || !name.trim()}
           >
-            {action.busy ? "Creating…" : "Create " + kind}
+            {action.busy ? uiText("Creating…") : "Create " + kind}
           </Button>
         </div>
       </form>
@@ -1311,7 +1358,7 @@ function useInspectorSizing() {
       <div
         className="ws-inspector-resize"
         role="separator"
-        aria-label="Resize details panel"
+        aria-label={uiText("Resize details panel")}
         aria-orientation="vertical"
         aria-valuemin={280}
         aria-valuemax={560}
@@ -1354,6 +1401,7 @@ function SelectionInspector({
   resources: Resource[];
   onClose: () => void;
 }) {
+  useInterfaceLocale();
   const sizing = useInspectorSizing(),
     management = useManagement();
   const counts = new Map<string, number>();
@@ -1364,15 +1412,17 @@ function SelectionInspector({
   return (
     <aside
       className="ws-inspector"
-      aria-label="Selection details"
+      aria-label={uiText("Selection details")}
       style={sizing.style}
     >
       {sizing.handle}
       <header>
-        <h2>{resources.length} selected</h2>
+        <h2>
+          {resources.length} <I18nText id="selected" />
+        </h2>
         <IconButton
           className="icon-button"
-          aria-label="Close details"
+          aria-label={uiText("Close details")}
           onClick={onClose}
         >
           <X size={18} />
@@ -1385,13 +1435,17 @@ function SelectionInspector({
       </div>
       <dl className="ws-facts">
         <div>
-          <dt>Selection</dt>
+          <dt>
+            <I18nText id="Selection" />
+          </dt>
           <dd>
             {[...counts].map(([kind, count]) => `${count} ${kind}`).join(" · ")}
           </dd>
         </div>
         <div>
-          <dt>File size</dt>
+          <dt>
+            <I18nText id="File size" />
+          </dt>
           <dd>
             {bytes(resources.reduce((n, r) => n + Number(r.bytes ?? 0), 0))}
           </dd>
@@ -1400,20 +1454,20 @@ function SelectionInspector({
       <div className="ws-inspector-command-list">
         <button onClick={() => management.execute("copyTo", resources)}>
           <Copy size={16} />
-          Copy selection to…
+          <I18nText id="Copy selection to…" />
         </button>
         {resources.every((r) => r.role === "editor") && (
           <>
             <button onClick={() => management.execute("move", resources)}>
               <FolderInput size={16} />
-              Move selection to…
+              <I18nText id="Move selection to…" />
             </button>
             <button
               className="danger-text"
               onClick={() => management.execute("trash", resources)}
             >
               <Trash2 size={16} />
-              Move selection to trash
+              <I18nText id="Move selection to trash" />
             </button>
           </>
         )}
@@ -1441,6 +1495,7 @@ export function ResourceInspector({
   onClose: () => void;
   onChanged: (resource: Resource) => void;
 }) {
+  useInterfaceLocale();
   const management = useManagement();
   const { revision, spaces, open, upload, notify } = useWorkspace(),
     result = useData<Resource & { space: Space }>(
@@ -1513,15 +1568,17 @@ export function ResourceInspector({
   return (
     <aside
       className="ws-inspector"
-      aria-label="Item details"
+      aria-label={uiText("Item details")}
       style={sizing.style}
     >
       {sizing.handle}
       <header>
-        <h2>Details</h2>
+        <h2>
+          <I18nText id="Details" />
+        </h2>
         <IconButton
           className="icon-button"
-          aria-label="Close details"
+          aria-label={uiText("Close details")}
           onClick={onClose}
         >
           <X size={18} />
@@ -1540,14 +1597,14 @@ export function ResourceInspector({
         {!resource.deleted_at && resource.kind !== "folder" && (
           <Button className="button primary" onClick={() => open(resource)}>
             <ArrowUpRight size={16} />
-            Open
+            <I18nText id="Open" />
           </Button>
         )}
         {resource.kind !== "folder" && !resource.deleted_at && (
           <IconButton
             className="icon-button"
-            title="Open beside"
-            aria-label="Open beside"
+            title={uiText("Open beside")}
+            aria-label={uiText("Open beside")}
             onClick={() => open(resource, true)}
           >
             <Columns2 size={17} />
@@ -1555,7 +1612,11 @@ export function ResourceInspector({
         )}
         <IconButton
           className="icon-button"
-          aria-label={resource.favorite ? "Remove favorite" : "Add favorite"}
+          aria-label={
+            resource.favorite
+              ? uiText("Remove favorite")
+              : uiText("Add favorite")
+          }
           aria-pressed={!!resource.favorite}
           onClick={() => management.execute("favorite", [resource])}
         >
@@ -1594,7 +1655,10 @@ export function ResourceInspector({
               </div>
             )}
           {location.data && (
-            <nav className="ws-inspector-path" aria-label="File location">
+            <nav
+              className="ws-inspector-path"
+              aria-label={uiText("File location")}
+            >
               <WorkspaceLink to={folderLocation(resource.space_id)}>
                 {location.data.space.name}
               </WorkspaceLink>
@@ -1612,39 +1676,59 @@ export function ResourceInspector({
           )}
           <dl className="ws-facts">
             <div>
-              <dt>Type</dt>
+              <dt>
+                <I18nText id="Type" />
+              </dt>
               <dd>
                 {resource.document_type ?? resource.mime ?? resource.kind}
               </dd>
             </div>
             <div>
-              <dt>Visibility</dt>
+              <dt>
+                <I18nText id="Visibility" />
+              </dt>
               <dd>
-                {space?.kind === "personal" ? "Only you" : "Space members"}
+                {space?.kind === "personal"
+                  ? uiText("Only you")
+                  : uiText("Space members")}
               </dd>
             </div>
             <div>
-              <dt>Your access</dt>
+              <dt>
+                <I18nText id="Your access" />
+              </dt>
               <dd>{resource.role ?? space?.role}</dd>
             </div>
             <div>
-              <dt>Created</dt>
-              <dd title={new Date(resource.created_at).toLocaleString()}>
+              <dt>
+                <I18nText id="Created" />
+              </dt>
+              <dd
+                title={new Date(resource.created_at).toLocaleString(
+                  currentLocale(),
+                )}
+              >
                 {timeAgo(resource.created_at)}
               </dd>
             </div>
             <div>
-              <dt>Modified</dt>
+              <dt>
+                <I18nText id="Modified" />
+              </dt>
               <dd>{timeAgo(resource.updated_at)}</dd>
             </div>
             {resource.kind === "file" && (
               <div>
-                <dt>Current version</dt>
+                <dt>
+                  <I18nText id="Current version" />
+                </dt>
                 <dd>{bytes(resource.bytes)}</dd>
               </div>
             )}
             <div>
-              <dt>Tags</dt>
+              <dt>
+                <I18nText id="Tags" />
+              </dt>
               <dd>{resource.tags.join(", ") || "No tags"}</dd>
             </div>
           </dl>
@@ -1656,34 +1740,34 @@ export function ResourceInspector({
               className="button secondary"
               onClick={() => openModal("copy")}
             >
-              Copy to a space…
+              <I18nText id="Copy to a space…" />
             </Button>
           )}
           {editable && !resource.deleted_at && (
             <div className="ws-inspector-command-list">
               <button onClick={() => openModal("rename")}>
                 <Pencil size={15} />
-                Rename
+                <I18nText id="Rename" />
               </button>
               <button onClick={() => openModal("metadata")}>
                 <Info size={15} />
-                Edit description and tags
+                <I18nText id="Edit description and tags" />
               </button>
               <button onClick={() => openModal("move")}>
                 <FolderInput size={15} />
-                Move to a folder
+                <I18nText id="Move to a folder" />
               </button>
               {space?.can_manage && (
                 <button onClick={() => openModal("transfer")}>
                   <FolderInput size={15} />
-                  Move to another space…
+                  <I18nText id="Move to another space…" />
                 </button>
               )}
               {resource.kind === "file" && (
                 <>
                   <button onClick={() => versionUpload.current?.click()}>
                     <Upload size={15} />
-                    Upload a new version
+                    <I18nText id="Upload a new version" />
                   </button>
                   <input
                     ref={versionUpload}
@@ -1708,7 +1792,7 @@ export function ResourceInspector({
                 onClick={() => openModal("trash")}
               >
                 <Trash2 size={15} />
-                Move to trash
+                <I18nText id="Move to trash" />
               </button>
             </div>
           )}
@@ -1718,7 +1802,7 @@ export function ResourceInspector({
               disabled={action.busy}
               onClick={() => management.execute("restore", [resource])}
             >
-              Restore item
+              <I18nText id="Restore item" />
             </Button>
           )}
           {resource.deleted_at && space?.can_manage && (
@@ -1726,7 +1810,7 @@ export function ResourceInspector({
               className="button danger"
               onClick={() => openModal("purge")}
             >
-              Delete permanently…
+              <I18nText id="Delete permanently…" />
             </Button>
           )}
         </>
@@ -1734,16 +1818,17 @@ export function ResourceInspector({
       {tab === "versions" && (
         <>
           <p className="ws-small muted">
-            Versions are immutable. A copied embed always points to the selected
-            version.
+            <I18nText id="Versions are immutable. A copied embed always points to the selected version." />
           </p>
           <ErrorNotice message={versions.error} retry={versions.reload} />
           {versions.data?.map((version) => (
             <div className="ws-version" key={version.id}>
               <strong>
-                Version {version.ordinal}
+                <I18nText id="Version" /> {version.ordinal}
                 {version.id === resource.current_version_id && (
-                  <Badge>Current</Badge>
+                  <Badge>
+                    <I18nText id="Current" />
+                  </Badge>
                 )}
               </strong>
               <small>
@@ -1756,7 +1841,7 @@ export function ResourceInspector({
                   href={`/api/v1/files/${resource.id}/download?version=${version.id}`}
                 >
                   <Download size={14} />
-                  Download
+                  <I18nText id="Download" />
                 </a>
                 <Button
                   className="button secondary"
@@ -1769,7 +1854,7 @@ export function ResourceInspector({
                     })
                   }
                 >
-                  Copy embed
+                  <I18nText id="Copy embed" />
                 </Button>
                 {editable &&
                   !resource.deleted_at &&
@@ -1785,7 +1870,7 @@ export function ResourceInspector({
                         });
                       }}
                     >
-                      Restore as new version
+                      <I18nText id="Restore as new version" />
                     </Button>
                   )}
                 {space?.can_manage &&
@@ -1801,7 +1886,7 @@ export function ResourceInspector({
                         });
                       }}
                     >
-                      Remove unused version…
+                      <I18nText id="Remove unused version…" />
                     </Button>
                   )}
               </ActionRow>
@@ -1812,9 +1897,7 @@ export function ResourceInspector({
       {tab === "usage" && (
         <>
           <p className="ws-small muted">
-            Pinned links keep their original version. Cleanup protects saved
-            revisions and research records, including private records whose
-            titles you cannot view.
+            <I18nText id="Pinned links keep their original version. Cleanup protects saved revisions and research records, including private records whose titles you cannot view." />
           </p>
           <ErrorNotice message={usage.error} retry={usage.reload} />
           {usage.data && (
@@ -1841,7 +1924,7 @@ export function ResourceInspector({
                   <FileText size={15} />
                   <span>
                     {source.name}
-                    {source.snapshot ? " · saved revision" : ""}
+                    {source.snapshot ? uiText(" · saved revision") : ""}
                   </span>
                 </button>
               ))}
@@ -1853,7 +1936,9 @@ export function ResourceInspector({
         <>
           <ErrorNotice message={activity.error} retry={activity.reload} />
           {!activity.data?.length && (
-            <p className="muted">No recorded changes yet.</p>
+            <p className="muted">
+              <I18nText id="No recorded changes yet." />
+            </p>
           )}
           {activity.data?.map((event) => (
             <div className="ws-activity" key={event.id}>
@@ -1906,13 +1991,14 @@ function MetadataDialog({
   onClose: () => void;
   onSaved: (item: Resource) => void;
 }) {
+  useInterfaceLocale();
   const [base] = useState(resource.version),
     [description, setDescription] = useState(resource.description),
     [tags, setTags] = useState(resource.tags.join(", ")),
     action = useAction();
   return (
     <Dialog
-      title="Describe this item"
+      title={uiText("Describe this item")}
       onClose={() => !action.busy && onClose()}
     >
       <form
@@ -1937,7 +2023,7 @@ function MetadataDialog({
         }}
       >
         <label>
-          Description
+          <I18nText id="Description" />
           <TextArea
             rows={5}
             maxLength={3000}
@@ -1946,29 +2032,29 @@ function MetadataDialog({
           />
         </label>
         <label>
-          Tags
+          <I18nText id="Tags" />
           <TextInput
             value={tags}
             onChange={(event) => setTags(event.target.value)}
-            placeholder="e.g. quantum, experiment, draft"
+            placeholder={uiText("e.g. quantum, experiment, draft")}
           />
         </label>
         <p className="ws-small muted">
-          Separate tags with commas. Descriptions and tags are searchable in
-          Explorer.
+          <I18nText id="Separate tags with commas. Descriptions and tags are searchable in Explorer." />
         </p>
         <ErrorNotice message={action.error} />
         <div className="dialog-footer">
           <Button
+            data-dialog-cancel
             type="button"
             className="button secondary"
             disabled={action.busy}
             onClick={onClose}
           >
-            Cancel
+            <I18nText id="Cancel" />
           </Button>
           <Button className="button primary" disabled={action.busy}>
-            Save details
+            <I18nText id="Save details" />
           </Button>
         </div>
       </form>
@@ -1990,6 +2076,7 @@ export function FileSafetyDialog({
   onClose: () => void;
   onDone: () => void;
 }) {
+  useInterfaceLocale();
   const [base] = useState(resource.version),
     [confirmation, setConfirmation] = useState(""),
     action = useAction();
@@ -2000,14 +2087,18 @@ export function FileSafetyDialog({
       title={
         restore
           ? `Restore version ${operation.ordinal}?`
-          : "Permanently remove stored data?"
+          : uiText("Permanently remove stored data?")
       }
       onClose={() => !action.busy && onClose()}
     >
       <p>
         {restore
-          ? "This creates a new current version from the selected file. Existing versions and pinned links will remain unchanged."
-          : "This cannot be undone from the app. The server will refuse removal if a file is still used by a note, saved revision, annotation, citation or reading record. Folder cleanup includes all nested items."}
+          ? uiText(
+              "This creates a new current version from the selected file. Existing versions and pinned links will remain unchanged.",
+            )
+          : uiText(
+              "This cannot be undone from the app. The server will refuse removal if a file is still used by a note, saved revision, annotation, citation or reading record. Folder cleanup includes all nested items.",
+            )}
       </p>
       <p>
         <strong>{resource.name}</strong>
@@ -2015,7 +2106,7 @@ export function FileSafetyDialog({
       </p>
       {!restore && (
         <label>
-          Type {phrase} to confirm
+          <I18nText id="Type" /> {phrase} <I18nText id="to confirm" />
           <TextInput
             autoComplete="off"
             value={confirmation}
@@ -2026,11 +2117,12 @@ export function FileSafetyDialog({
       <ErrorNotice message={action.error} />
       <div className="dialog-footer">
         <Button
+          data-dialog-cancel
           className="button secondary"
           onClick={onClose}
           disabled={action.busy}
         >
-          Cancel
+          <I18nText id="Cancel" />
         </Button>
         <Button
           className={`button ${restore ? "primary" : "danger"}`}
@@ -2052,7 +2144,7 @@ export function FileSafetyDialog({
           }
         >
           {action.busy
-            ? "Checking…"
+            ? uiText("Checking…")
             : restore
               ? "Restore version"
               : "Delete permanently"}
@@ -2070,6 +2162,7 @@ export function MoveResource({
   onClose: () => void;
   onMoved: (item: Resource) => void;
 }) {
+  useInterfaceLocale();
   const [base] = useState(resource.version),
     [folder, setFolder] = useState<string | null>(null),
     data = useData<ResourcePage>(
@@ -2078,13 +2171,15 @@ export function MoveResource({
     action = useAction();
   return (
     <Dialog
-      title="Move to a folder"
-      subtitle="The audience stays the same. Moving does not change file or note links."
+      title={uiText("Move to a folder")}
+      subtitle={uiText(
+        "The audience stays the same. Moving does not change file or note links.",
+      )}
       onClose={() => !action.busy && onClose()}
     >
-      <nav className="ws-breadcrumbs" aria-label="Destination">
+      <nav className="ws-breadcrumbs" aria-label={uiText("Destination")}>
         <button className="text-button" onClick={() => setFolder(null)}>
-          Space root
+          <I18nText id="Space root" />
         </button>
         {data.data?.breadcrumbs.map((item) => (
           <button
@@ -2112,16 +2207,19 @@ export function MoveResource({
             </button>
           ))}
         {!data.data?.items.length && (
-          <p className="muted">No subfolders here.</p>
+          <p className="muted">
+            <I18nText id="No subfolders here." />
+          </p>
         )}
       </div>
       <div className="dialog-footer">
         <Button
+          data-dialog-cancel
           className="button secondary"
           disabled={action.busy}
           onClick={onClose}
         >
-          Cancel
+          <I18nText id="Cancel" />
         </Button>
         <Button
           className="button primary"
@@ -2138,7 +2236,7 @@ export function MoveResource({
             )
           }
         >
-          Move here
+          <I18nText id="Move here" />
         </Button>
       </div>
     </Dialog>
@@ -2155,6 +2253,7 @@ export function TransferResource({
   onClose: () => void;
   onDone: (item: Resource) => void;
 }) {
+  useInterfaceLocale();
   const { spaces } = useWorkspace(),
     [base] = useState(resource.version),
     [spaceId, setSpaceId] = useState(moving ? "" : resource.space_id),
@@ -2172,16 +2271,22 @@ export function TransferResource({
   );
   return (
     <Dialog
-      title={moving ? "Move to another space" : "Copy to a space"}
+      title={
+        moving ? uiText("Move to another space") : uiText("Copy to a space")
+      }
       onClose={() => !action.busy && onClose()}
     >
       <p className="ws-small muted">
         {moving
-          ? "Moves keep note/file identities, comments, and edit history. Notes linked to formal reviews or project tasks must be copied instead."
-          : "Copies include current notes, folders, current files, and exact linked file versions. Comments, edit history, private reading records and annotations stay with the original."}
+          ? uiText(
+              "Moves keep note/file identities, comments, and edit history. Notes linked to formal reviews or project tasks must be copied instead.",
+            )
+          : uiText(
+              "Copies include current notes, folders, current files, and exact linked file versions. Comments, edit history, private reading records and annotations stay with the original.",
+            )}
       </p>
       <label>
-        Destination space
+        <I18nText id="Destination space" />
         <NativeSelect
           value={spaceId}
           required
@@ -2194,7 +2299,7 @@ export function TransferResource({
           }}
         >
           <option value="" disabled>
-            Choose a space
+            <I18nText id="Choose a space" />
           </option>
           {spaces
             .filter(
@@ -2206,7 +2311,7 @@ export function TransferResource({
               <option value={space.id} key={space.id}>
                 {space.name} ·{" "}
                 {space.kind === "personal"
-                  ? "Only you"
+                  ? uiText("Only you")
                   : space.kind === "project"
                     ? "Project members"
                     : "Group members"}
@@ -2216,7 +2321,10 @@ export function TransferResource({
       </label>
       {destination && (
         <>
-          <nav className="ws-breadcrumbs" aria-label="Transfer destination">
+          <nav
+            className="ws-breadcrumbs"
+            aria-label={uiText("Transfer destination")}
+          >
             <button
               className="text-button"
               onClick={() => {
@@ -2243,8 +2351,8 @@ export function TransferResource({
             ))}
           </nav>
           <TextInput
-            aria-label="Find destination folder"
-            placeholder="Find a folder in this space…"
+            aria-label={uiText("Find destination folder")}
+            placeholder={uiText("Find a folder in this space…")}
             value={search}
             onChange={(event) => {
               setSearch(event.target.value);
@@ -2270,13 +2378,15 @@ export function TransferResource({
               ))}
             {folders.loading && <Loading />}
             {!folders.loading && !folders.data?.items.length && (
-              <p className="muted">No subfolders here.</p>
+              <p className="muted">
+                <I18nText id="No subfolders here." />
+              </p>
             )}
           </div>
           <ActionRow>
             {cursor && (
               <Button className="text-button" onClick={() => setCursor("")}>
-                First folders
+                <I18nText id="First folders" />
               </Button>
             )}
             {folders.data?.nextCursor && (
@@ -2284,7 +2394,7 @@ export function TransferResource({
                 className="text-button"
                 onClick={() => setCursor(folders.data!.nextCursor!)}
               >
-                More folders
+                <I18nText id="More folders" />
               </Button>
             )}
           </ActionRow>
@@ -2298,11 +2408,11 @@ export function TransferResource({
           />
           <span>
             {destination.kind === "personal"
-              ? "I understand this destination is private to me."
+              ? uiText("I understand this destination is private to me.")
               : `I understand the selected contents and linked evidence will be accessible to ${destination.kind === "project" ? "members of this project" : "members of this group"}.`}
             {moving
-              ? " Existing links will follow the new permissions."
-              : " The original permissions will not change."}
+              ? uiText(" Existing links will follow the new permissions.")
+              : uiText(" The original permissions will not change.")}
           </span>
         </label>
       )}
@@ -2312,11 +2422,12 @@ export function TransferResource({
       />
       <div className="dialog-footer">
         <Button
+          data-dialog-cancel
           className="button secondary"
           disabled={action.busy}
           onClick={onClose}
         >
-          Cancel
+          <I18nText id="Cancel" />
         </Button>
         <Button
           className="button primary"
@@ -2337,7 +2448,11 @@ export function TransferResource({
             )
           }
         >
-          {action.busy ? "Preparing…" : moving ? "Move here" : "Copy here"}
+          {action.busy
+            ? uiText("Preparing…")
+            : moving
+              ? "Move here"
+              : "Copy here"}
         </Button>
       </div>
     </Dialog>

@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import {
   useCallback,
   useEffect,
@@ -121,6 +123,7 @@ export function PersonPicker({
   "aria-describedby"?: string;
   "aria-invalid"?: InputHTMLAttributes<HTMLInputElement>["aria-invalid"];
 }) {
+  useInterfaceLocale();
   const options = useMemo(
     () => people.map((p) => ({ value: p.id, label: p.name })),
     [people],
@@ -135,7 +138,7 @@ export function PersonPicker({
       onChange={(v) => onChange(String(v))}
       options={options}
       disabled={disabled}
-      placeholder="Search people…"
+      placeholder={uiText("Search people…")}
     />
   );
 }
@@ -235,7 +238,8 @@ export function PlanningIntegerInput({
       />
       {!valid && (
         <HelpText as="span">
-          Use an integer from {min} to {max}.
+          <I18nText id="Use an integer from" /> {min} <I18nText id="to" /> {max}
+          .
         </HelpText>
       )}
     </span>

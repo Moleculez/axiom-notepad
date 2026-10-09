@@ -1,4 +1,6 @@
 "use client";
+import { uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import {
   useId,
   useRef,
@@ -20,6 +22,7 @@ export default function SettingsSplitPanel({
   preview?: ReactNode;
   showPreview: boolean;
 }) {
+  useInterfaceLocale();
   const root = useRef<HTMLDivElement>(null),
     drag = useRef<{ start: number; width: number; ratio: number } | null>(null),
     fieldsId = useId(),
@@ -42,7 +45,7 @@ export default function SettingsSplitPanel({
           <div
             className="settings-split-handle"
             role="separator"
-            aria-label="Resize settings and preview"
+            aria-label={uiText("Resize settings and preview")}
             aria-orientation="vertical"
             aria-controls={`${fieldsId} ${previewId}`}
             aria-valuemin={32}
@@ -50,7 +53,9 @@ export default function SettingsSplitPanel({
             aria-valuenow={Math.round(width)}
             aria-valuetext={`${Math.round(width)}% settings, ${100 - Math.round(width)}% preview`}
             tabIndex={showPreview ? 0 : -1}
-            title="Drag to resize · Arrow keys to adjust · Double-click to reset"
+            title={uiText(
+              "Drag to resize · Arrow keys to adjust · Double-click to reset",
+            )}
             onDoubleClick={() => setWidth(defaultWidth)}
             onPointerDown={(event) => {
               if (event.button !== 0 || !root.current) return;
@@ -113,7 +118,7 @@ export default function SettingsSplitPanel({
           <aside
             className="settings-preview-pane"
             id={previewId}
-            aria-label="Live settings preview"
+            aria-label={uiText("Live settings preview")}
             hidden={!showPreview}
           >
             {preview}

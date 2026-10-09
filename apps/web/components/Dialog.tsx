@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { Button, IconButton, TextInput } from "./ui/controls";
 import {
   Children,
@@ -157,17 +159,21 @@ function AppPromptHost() {
     setPending(current.current);
   };
   return request ? (
-    <Dialog title={request.title} size="compact" onClose={() => finish(null)}>
+    <Dialog
+      title={uiText(request.title)}
+      size="compact"
+      onClose={() => finish(null)}
+    >
       <form
         onSubmit={(event) => {
           event.preventDefault();
           if (!request.input || text.trim()) finish(text.trim());
         }}
       >
-        <p>{request.message}</p>
+        <p>{uiText(request.message)}</p>
         {request.input && (
           <label>
-            Name
+            <I18nText id="Name" />
             <TextInput
               autoFocus
               maxLength={300}
@@ -178,19 +184,20 @@ function AppPromptHost() {
         )}
         <DialogFooter>
           <Button
+            data-dialog-cancel
             type="button"
             autoFocus={!request.input}
             className="button secondary"
             onClick={() => finish(null)}
           >
-            Cancel
+            <I18nText id="Cancel" />
           </Button>
           <Button
             type="submit"
             className={`button ${request.destructive ? "danger" : "primary"}`}
             disabled={request.input && !text.trim()}
           >
-            {request.confirmLabel}
+            {uiText(request.confirmLabel)}
           </Button>
         </DialogFooter>
       </form>
@@ -228,6 +235,7 @@ export default function Dialog({
   initialFocus?: RefObject<HTMLElement | null>;
   className?: string;
 }) {
+  useInterfaceLocale();
   const ref = useRef<HTMLDialogElement>(null);
   const trigger = useContext(OpenerContext);
   const closeRef = useRef(onClose),
@@ -260,11 +268,7 @@ export default function Dialog({
       dialog.querySelectorAll<HTMLButtonElement>(".dialog-footer button"),
     );
     const cancel = actions.some((button) => button.classList.contains("danger"))
-      ? actions.find((button) =>
-          /^(cancel|keep|go back|back)\b/i.test(
-            button.textContent?.trim() ?? "",
-          ),
-        )
+      ? actions.find((button) => button.hasAttribute("data-dialog-cancel"))
       : undefined;
     const candidates = [
       initialFocus?.current,
@@ -318,7 +322,7 @@ export default function Dialog({
         <IconButton
           className="icon-button"
           type="button"
-          aria-label="Close dialog"
+          aria-label={uiText("Close dialog")}
           onClick={onClose}
         >
           <X size={19} />

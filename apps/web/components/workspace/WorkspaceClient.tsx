@@ -1,4 +1,6 @@
 "use client";
+import { I18nText } from "@axiom/i18n/react";
+
 import dynamic from "next/dynamic";
 
 // The public offline shell contains no account data or browser editor engine.
@@ -8,7 +10,7 @@ const WorkspaceApp = dynamic(() => import("./WorkspaceApp"), {
   ssr: false,
   loading: () => (
     <div className="ws-boot" role="status">
-      Opening your workspace…
+      <I18nText id="Opening your workspace…" />
     </div>
   ),
 });

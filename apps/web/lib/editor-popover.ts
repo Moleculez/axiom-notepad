@@ -1,11 +1,17 @@
+import { bindAttribute } from "@axiom/i18n/dom";
+
 let dismissCurrent: (() => void) | undefined;
 let pinned = 0;
 const activity = new Set<(active: boolean) => void>();
 export const editorOverlayActive = () => !!dismissCurrent || pinned > 0;
 /** Pinned research cards may own nested code/math menus, but suppress hover previews. */
 export function retainEditorCard() {
-  pinned++; changed();
-  return () => { pinned=Math.max(0,pinned-1); changed(); };
+  pinned++;
+  changed();
+  return () => {
+    pinned = Math.max(0, pinned - 1);
+    changed();
+  };
 }
 export function onEditorOverlayChange(listener: (active: boolean) => void) {
   activity.add(listener);
@@ -39,7 +45,7 @@ export function openEditorPopover(options: {
   const element = document.createElement("div");
   element.className = "editor-action-panel";
   element.role = "dialog";
-  element.setAttribute("aria-label", options.label);
+  bindAttribute(element, "aria-label", options.label);
   element.tabIndex = -1;
   const abort = new AbortController();
   let closed = false;

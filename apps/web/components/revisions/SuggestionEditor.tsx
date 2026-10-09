@@ -1,4 +1,7 @@
 "use client";
+import { currentLocale } from "@axiom/i18n/client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { Button, IconButton, TextInput } from "../ui/controls";
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
@@ -51,6 +54,7 @@ type Props = {
   onClose: () => void;
 };
 export default function SuggestionEditor(props: Props) {
+  useInterfaceLocale();
   const { session, appearance, editorSettings, notify } = useWorkspace();
   const [mode, setMode] = useState<"write" | "source">("write"),
     [projection, setProjection] = useState<SuggestionProjection | null>(null),
@@ -298,18 +302,20 @@ export default function SuggestionEditor(props: Props) {
       className="revision-workspace suggestion-workspace"
       ref={root}
       role="region"
-      aria-label="Suggesting edits"
+      aria-label={uiText("Suggesting edits")}
     >
       <header className="revision-header">
         <IconButton
           className="icon-button"
-          aria-label="Return to accepted document"
+          aria-label={uiText("Return to accepted document")}
           onClick={() => void close()}
         >
           <ArrowLeft size={18} />
         </IconButton>
         <div>
-          <h2>Suggesting · {props.title}</h2>
+          <h2>
+            <I18nText id="Suggesting ·" /> {props.title}
+          </h2>
           <p role="status">{status}</p>
         </div>
         <Button
@@ -324,7 +330,7 @@ export default function SuggestionEditor(props: Props) {
           }
         >
           <Download size={15} />
-          Export proposal
+          <I18nText id="Export proposal" />
         </Button>
         <Button
           className="button secondary"
@@ -343,7 +349,7 @@ export default function SuggestionEditor(props: Props) {
           }}
         >
           <Send size={15} />
-          Publish proposal
+          <I18nText id="Publish proposal" />
         </Button>
       </header>
       <div className="revision-compare-toolbar">
@@ -353,21 +359,21 @@ export default function SuggestionEditor(props: Props) {
             onClick={() => setMode("write")}
           >
             <Eye size={15} />
-            Visual
+            <I18nText id="Visual" />
           </button>
           <button
             aria-pressed={mode === "source"}
             onClick={() => setMode("source")}
           >
             <Braces size={15} />
-            Source
+            <I18nText id="Source" />
           </button>
         </div>
         {props.format !== "latex" && (
           <>
             <IconButton
               className="icon-button"
-              aria-label="Bold"
+              aria-label={uiText("Bold")}
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => view.current?.execute("bold")}
             >
@@ -375,7 +381,7 @@ export default function SuggestionEditor(props: Props) {
             </IconButton>
             <IconButton
               className="icon-button"
-              aria-label="Italic"
+              aria-label={uiText("Italic")}
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => view.current?.execute("italic")}
             >
@@ -385,7 +391,7 @@ export default function SuggestionEditor(props: Props) {
               <>
                 <IconButton
                   className="icon-button"
-                  aria-label="Insert proposal attachment"
+                  aria-label={uiText("Insert proposal attachment")}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => {
                     prepare();
@@ -396,7 +402,7 @@ export default function SuggestionEditor(props: Props) {
                 </IconButton>
                 <IconButton
                   className="icon-button"
-                  aria-label="Link a note in proposal"
+                  aria-label={uiText("Link a note in proposal")}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => {
                     prepare();
@@ -409,7 +415,7 @@ export default function SuggestionEditor(props: Props) {
             )}
             <IconButton
               className="icon-button"
-              aria-label="Insert proposal table"
+              aria-label={uiText("Insert proposal table")}
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => view.current?.execute("table")}
             >
@@ -419,20 +425,20 @@ export default function SuggestionEditor(props: Props) {
         )}
         <IconButton
           className="icon-button"
-          aria-label="Undo proposal edit"
+          aria-label={uiText("Undo proposal edit")}
           onClick={() => projection?.history(false)}
         >
           <Undo2 size={15} />
         </IconButton>
         <IconButton
           className="icon-button"
-          aria-label="Redo proposal edit"
+          aria-label={uiText("Redo proposal edit")}
           onClick={() => projection?.history(true)}
         >
           <Redo2 size={15} />
         </IconButton>
         <span className="revision-notice">
-          Edits are proposals, not changes to the shared document.
+          <I18nText id="Edits are proposals, not changes to the shared document." />
         </span>
       </div>
       <ErrorNotice message={error} />
@@ -450,7 +456,7 @@ export default function SuggestionEditor(props: Props) {
       )}
       {picker === "table" && (
         <Dialog
-          title="Insert proposal table"
+          title={uiText("Insert proposal table")}
           onClose={() => {
             setPicker(null);
             insertion.current = null;
@@ -491,11 +497,13 @@ export default function SuggestionEditor(props: Props) {
       </div>
       <footer className="suggestion-message">
         <label>
-          Note to reviewers
+          <I18nText id="Note to reviewers" />
           <TextInput
             maxLength={10000}
             value={message}
-            placeholder="Explain the change or cite supporting evidence"
+            placeholder={uiText(
+              "Explain the change or cite supporting evidence",
+            )}
             onChange={(e) => {
               const value = e.target.value;
               setMessage(value);
@@ -509,7 +517,10 @@ export default function SuggestionEditor(props: Props) {
             }}
           />
         </label>
-        <span>{source.length.toLocaleString()} characters</span>
+        <span>
+          {source.length.toLocaleString(currentLocale())}{" "}
+          <I18nText id="characters" />
+        </span>
       </footer>
     </div>
   );

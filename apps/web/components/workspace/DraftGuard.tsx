@@ -1,4 +1,6 @@
 "use client";
+import { I18nText } from "@axiom/i18n/react";
+
 import { Button } from "../ui/controls";
 import { useEffect, useState } from "react";
 import Dialog from "../Dialog";
@@ -33,12 +35,15 @@ export default function DraftGuard({
   return leave ? (
     <Dialog title={title} onClose={() => setLeave(null)}>
       <p>
-        Your changes have not been saved. Keep editing, or discard them when
-        leaving this page.
+        <I18nText id="Your changes have not been saved. Keep editing, or discard them when leaving this page." />
       </p>
       <div className="dialog-footer">
-        <Button className="button secondary" onClick={() => setLeave(null)}>
-          Keep editing
+        <Button
+          data-dialog-cancel
+          className="button secondary"
+          onClick={() => setLeave(null)}
+        >
+          <I18nText id="Keep editing" />
         </Button>
         <Button
           className="button primary"
@@ -48,7 +53,7 @@ export default function DraftGuard({
             proceed();
           }}
         >
-          Discard and leave
+          <I18nText id="Discard and leave" />
         </Button>
       </div>
     </Dialog>

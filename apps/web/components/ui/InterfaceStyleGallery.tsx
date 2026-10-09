@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { useId, useState, type CSSProperties } from "react";
 import { FileText, MoreHorizontal, Plus } from "lucide-react";
 import {
@@ -30,15 +32,15 @@ export default function InterfaceStyleGallery({
   value: InterfaceStyleId;
   onSelect: (style: InterfaceStyleId) => void;
 }) {
+  useInterfaceLocale();
   return (
     <section
       className="interface-style-gallery"
       id={id}
-      aria-label="Interface style comparison"
+      aria-label={uiText("Interface style comparison")}
     >
       <HelpText>
-        Identical colors and fonts reveal the differences in each system. Try
-        fields, selection and controls; these samples never save real data.
+        <I18nText id="Identical colors and fonts reveal the differences in each system. Try fields, selection and controls; these samples never save real data." />
       </HelpText>
       <div className="interface-style-gallery-grid">
         {interfaceStyles.map((style) => (
@@ -69,6 +71,7 @@ function InterfaceStyleSample({
   selected: boolean;
   onSelect: () => void;
 }) {
+  useInterfaceLocale();
   const [query, setQuery] = useState("Field notes");
   const [density, setDensity] = useState("balanced");
   const [included, setIncluded] = useState(true);
@@ -135,10 +138,10 @@ function InterfaceStyleSample({
           aria-labelledby={`${tabId}-${tab}`}
         >
           {tab === "Details"
-            ? "Fields and control states"
-            : "Local preview activity · no real operations"}
+            ? uiText("Fields and control states")
+            : uiText("Local preview activity · no real operations")}
         </HelpText>
-        <Field label="Find evidence">
+        <Field label={uiText("Find evidence")}>
           <SearchField
             aria-label={`${name} sample search`}
             value={query}
@@ -147,14 +150,18 @@ function InterfaceStyleSample({
             clearLabel={`Clear ${name} sample search`}
           />
         </Field>
-        <Field label="View density">
+        <Field label={uiText("View density")}>
           <NativeSelect
             aria-label={`${name} sample density`}
             value={density}
             onChange={(event) => setDensity(event.target.value)}
           >
-            <option value="balanced">Balanced</option>
-            <option value="compact">Compact</option>
+            <option value="balanced">
+              <I18nText id="Balanced" />
+            </option>
+            <option value="compact">
+              <I18nText id="Compact" />
+            </option>
           </NativeSelect>
         </Field>
         <label
@@ -169,10 +176,14 @@ function InterfaceStyleSample({
             />
             <FileText aria-hidden="true" />
           </span>
-          <span>Field notes — α, β and ∇</span>
+          <span>
+            <I18nText id="Field notes — α, β and ∇" />
+          </span>
         </label>
         <label className="interface-gallery-setting">
-          <span>Reading guides</span>
+          <span>
+            <I18nText id="Reading guides" />
+          </span>
           <Switch
             aria-label={`${name} sample reading guides`}
             checked={enabled}
@@ -190,11 +201,11 @@ function InterfaceStyleSample({
             onChange={(event) => setZoom(Number(event.target.value))}
           />
         </Field>
-        <Field label="Read-only title">
+        <Field label={uiText("Read-only title")}>
           <TextInput value="Research notes" readOnly />
         </Field>
-        <Field label="Validation state" error="A title is required.">
-          <TextInput defaultValue="" placeholder="Enter a title…" />
+        <Field label={uiText("Validation state")} error="A title is required.">
+          <TextInput defaultValue="" placeholder={uiText("Enter a title…")} />
         </Field>
         <ActionRow size="compact">
           <Button
@@ -203,13 +214,13 @@ function InterfaceStyleSample({
             onClick={() => setIncluded((current) => !current)}
           >
             <Plus aria-hidden="true" />
-            Example action
+            <I18nText id="Example action" />
           </Button>
           <Button type="button" disabled>
-            Disabled
+            <I18nText id="Disabled" />
           </Button>
           <Button type="button" pending>
-            Pending
+            <I18nText id="Pending" />
           </Button>
         </ActionRow>
         <Button
@@ -218,7 +229,7 @@ function InterfaceStyleSample({
           onClick={() => setOverlay((current) => !current)}
         >
           <MoreHorizontal aria-hidden="true" />
-          Preview overlay
+          <I18nText id="Preview overlay" />
         </Button>
         {overlay && (
           <div
@@ -226,20 +237,22 @@ function InterfaceStyleSample({
             role="group"
             aria-label={`${name} sample overlay`}
           >
-            <HelpText>Overlay sample</HelpText>
+            <HelpText>
+              <I18nText id="Overlay sample" />
+            </HelpText>
             <Button
               type="button"
               variant="ghost"
               onClick={() => setIncluded((current) => !current)}
             >
-              Mark sample reviewed
+              <I18nText id="Mark sample reviewed" />
             </Button>
             <Button
               type="button"
               variant="ghost"
               onClick={() => setOverlay(false)}
             >
-              Close sample overlay
+              <I18nText id="Close sample overlay" />
             </Button>
           </div>
         )}

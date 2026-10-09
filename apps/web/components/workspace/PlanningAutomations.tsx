@@ -1,4 +1,7 @@
 "use client";
+import { currentLocale } from "@axiom/i18n/client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { useState } from "react";
 import { Archive, Check, Pause, Play, Plus, RotateCcw, X } from "lucide-react";
 import type { Space } from "@axiom/shared/workspace";
@@ -68,16 +71,20 @@ function fieldDefault(f: TaskField): FieldValue {
             : "";
 }
 export default function PlanningLabSettings({ space }: { space: Space }) {
+  useInterfaceLocale();
   const { revision } = useWorkspace(),
     people = useData<People>(`spaces/${space.id}/planning-members`, revision),
     [tab, setTab] = useState("fields");
   return (
     <div className="planning-lab-settings">
-      <nav className="planning-section-tabs" aria-label="Planning settings">
+      <nav
+        className="planning-section-tabs"
+        aria-label={uiText("Planning settings")}
+      >
         {["fields", "rules", "review"].map((v) => (
           <button key={v} aria-pressed={tab === v} onClick={() => setTab(v)}>
             {v === "fields"
-              ? "Task fields"
+              ? uiText("Task fields")
               : v === "rules"
                 ? "Automations"
                 : "Review queue"}
@@ -107,6 +114,7 @@ function AutomationRules({
   people: People;
   onReview: () => void;
 }) {
+  useInterfaceLocale();
   const { revision, refresh, notify } = useWorkspace(),
     data = useData<{ items: AutomationRule[] }>(
       `spaces/${space.id}/planning-automations`,
@@ -145,10 +153,11 @@ function AutomationRules({
     <section className="planning-lab-settings">
       <ActionRow align="between">
         <div>
-          <h2>Reviewed automations</h2>
+          <h2>
+            <I18nText id="Reviewed automations" />
+          </h2>
           <HelpText>
-            Rules only prepare metadata proposals. A manager must review and
-            apply each run.
+            <I18nText id="Rules only prepare metadata proposals. A manager must review and apply each run." />
           </HelpText>
         </div>
         <Button
@@ -156,7 +165,7 @@ function AutomationRules({
           onClick={() => setEditing("new")}
         >
           <Plus size={15} />
-          New rule
+          <I18nText id="New rule" />
         </Button>
       </ActionRow>
       <ErrorNotice
@@ -172,13 +181,13 @@ function AutomationRules({
           checked={showArchived}
           onChange={(e) => setShowArchived(e.target.checked)}
         />
-        Show archived rules
+        <I18nText id="Show archived rules" />
       </label>
       {!data.data ? (
         <Loading />
       ) : !data.data.items.filter((r) => showArchived || !r.archived).length ? (
-        <Empty title="No automation rules">
-          Start with one small rule. New rules are paused by default.
+        <Empty title={uiText("No automation rules")}>
+          <I18nText id="Start with one small rule. New rules are paused by default." />
         </Empty>
       ) : (
         <div className="planning-lab-list">
@@ -191,14 +200,18 @@ function AutomationRules({
                     {r.name}
                   </Button>
                   <HelpText>
-                    {r.archived ? "Archived" : r.enabled ? "Enabled" : "Paused"}{" "}
+                    {r.archived
+                      ? uiText("Archived")
+                      : r.enabled
+                        ? "Enabled"
+                        : "Paused"}{" "}
                     ·{" "}
                     {r.trigger === "daily"
                       ? `Daily at ${r.at} (${space.timezone ?? "UTC"})`
                       : r.trigger === "created"
                         ? "Task created"
                         : "Metadata changed"}{" "}
-                    · {r.actions.length} actions
+                    · {r.actions.length} <I18nText id="actions" />
                   </HelpText>
                 </div>
                 <ActionRow>
@@ -209,7 +222,7 @@ function AutomationRules({
                       onClick={() => operate(r, "run")}
                     >
                       <Play size={14} />
-                      Run now
+                      <I18nText id="Run now" />
                     </Button>
                   )}
                   {r.enabled && (
@@ -219,7 +232,7 @@ function AutomationRules({
                       onClick={() => operate(r, "pause")}
                     >
                       <Pause size={14} />
-                      Pause
+                      <I18nText id="Pause" />
                     </Button>
                   )}
                   <Button
@@ -235,7 +248,7 @@ function AutomationRules({
                     ) : (
                       <Archive size={14} />
                     )}{" "}
-                    {r.archived ? "Reopen" : "Archive"}
+                    {r.archived ? uiText("Reopen") : uiText("Archive")}
                   </Button>
                 </ActionRow>
               </article>
@@ -268,6 +281,7 @@ function RuleEditor({
   initial?: AutomationRule;
   onClose: () => void;
 }) {
+  useInterfaceLocale();
   const { refresh, notify } = useWorkspace(),
     action = useAction(),
     [source] = useState<RuleDraft>(() =>
@@ -334,7 +348,9 @@ function RuleEditor({
     }));
   return (
     <Dialog
-      title={initial ? "Edit automation rule" : "New automation rule"}
+      title={
+        initial ? uiText("Edit automation rule") : uiText("New automation rule")
+      }
       onClose={close}
     >
       <form
@@ -358,13 +374,13 @@ function RuleEditor({
         }}
       >
         <DialogBody>
-          <DraftGuard dirty={dirty} title="Unsaved automation rule" />
+          <DraftGuard dirty={dirty} title={uiText("Unsaved automation rule")} />
           <ErrorNotice message={action.error} />
           <fieldset
             disabled={!canManage || action.busy}
             className="planning-suite-form"
           >
-            <Field label="Rule name">
+            <Field label={uiText("Rule name")}>
               <TextInput
                 required
                 maxLength={120}
@@ -373,7 +389,7 @@ function RuleEditor({
               />
             </Field>
             <div className="planning-field-grid">
-              <Field label="Trigger">
+              <Field label={uiText("Trigger")}>
                 <NativeSelect
                   value={draft.trigger}
                   onChange={(e) =>
@@ -383,9 +399,15 @@ function RuleEditor({
                     })
                   }
                 >
-                  <option value="created">Task created</option>
-                  <option value="changed">Task metadata changed</option>
-                  <option value="daily">Daily schedule</option>
+                  <option value="created">
+                    <I18nText id="Task created" />
+                  </option>
+                  <option value="changed">
+                    <I18nText id="Task metadata changed" />
+                  </option>
+                  <option value="daily">
+                    <I18nText id="Daily schedule" />
+                  </option>
                 </NativeSelect>
               </Field>
               {draft.trigger === "daily" && (
@@ -401,7 +423,9 @@ function RuleEditor({
             </div>
             {draft.trigger === "changed" && (
               <section>
-                <h3>Watch changes to</h3>
+                <h3>
+                  <I18nText id="Watch changes to" />
+                </h3>
                 <ActionRow>
                   {(
                     [
@@ -439,7 +463,9 @@ function RuleEditor({
               </section>
             )}
             <section>
-              <h3>Conditions · all must match</h3>
+              <h3>
+                <I18nText id="Conditions · all must match" />
+              </h3>
               {draft.conditions.map((c, i) => {
                 const f = fields.find((f) => f.id === c.fieldId),
                   ops =
@@ -531,7 +557,7 @@ function RuleEditor({
                         ))}
                       </NativeSelect>
                     </Field>
-                    <Field label="Operator">
+                    <Field label={uiText("Operator")}>
                       <NativeSelect
                         value={c.op}
                         onChange={(e) => {
@@ -575,7 +601,7 @@ function RuleEditor({
                           onChange={(value) => condition(i, { value })}
                         />
                       ) : (
-                        <Field label="Value">
+                        <Field label={uiText("Value")}>
                           {c.field === "status" || c.field === "priority" ? (
                             <NativeSelect
                               value={String(c.value ?? "")}
@@ -592,7 +618,7 @@ function RuleEditor({
                             </NativeSelect>
                           ) : c.field === "assignee" ? (
                             <PersonPicker
-                              label="Condition assignee"
+                              label={uiText("Condition assignee")}
                               people={people}
                               value={String(c.value ?? "")}
                               onChange={(value) => condition(i, { value })}
@@ -605,7 +631,7 @@ function RuleEditor({
                                   condition(i, { value: e.target.checked })
                                 }
                               />
-                              Overdue
+                              <I18nText id="Overdue" />
                             </label>
                           ) : (
                             <TextInput
@@ -620,8 +646,7 @@ function RuleEditor({
                       ))}
                     {c.field === "custom" && !f && (
                       <HelpText>
-                        This field is archived or unavailable. Remove this
-                        condition before enabling.
+                        <I18nText id="This field is archived or unavailable. Remove this condition before enabling." />
                       </HelpText>
                     )}
                   </ActionRow>
@@ -642,15 +667,16 @@ function RuleEditor({
                 }
               >
                 <Plus size={14} />
-                Add condition
+                <I18nText id="Add condition" />
               </Button>
               <HelpText>
-                No conditions means every eligible task. Proposals over 100
-                tasks are blocked, never truncated.
+                <I18nText id="No conditions means every eligible task. Proposals over 100 tasks are blocked, never truncated." />
               </HelpText>
             </section>
             <section>
-              <h3>Proposed changes</h3>
+              <h3>
+                <I18nText id="Proposed changes" />
+              </h3>
               {draft.actions.map((a, i) => {
                 const f =
                   a.kind === "custom"
@@ -708,14 +734,24 @@ function RuleEditor({
                           );
                         }}
                       >
-                        <option value="status">Set status</option>
-                        <option value="priority">Set priority</option>
-                        <option value="assignee">Set assignee</option>
-                        <option value="addLabel">Add label</option>
-                        <option value="removeLabel">Remove label</option>
+                        <option value="status">
+                          <I18nText id="Set status" />
+                        </option>
+                        <option value="priority">
+                          <I18nText id="Set priority" />
+                        </option>
+                        <option value="assignee">
+                          <I18nText id="Set assignee" />
+                        </option>
+                        <option value="addLabel">
+                          <I18nText id="Add label" />
+                        </option>
+                        <option value="removeLabel">
+                          <I18nText id="Remove label" />
+                        </option>
                         {fields.map((f) => (
                           <option key={f.id} value={f.id}>
-                            Set {f.name}
+                            <I18nText id="Set" /> {f.name}
                           </option>
                         ))}
                       </NativeSelect>
@@ -728,7 +764,7 @@ function RuleEditor({
                         onChange={(value) => setAction(i, { ...a, value })}
                       />
                     ) : (
-                      <Field label="Value">
+                      <Field label={uiText("Value")}>
                         {a.kind === "status" || a.kind === "priority" ? (
                           <NativeSelect
                             value={a.value}
@@ -748,7 +784,7 @@ function RuleEditor({
                           </NativeSelect>
                         ) : a.kind === "assignee" ? (
                           <PersonPicker
-                            label="Action assignee"
+                            label={uiText("Action assignee")}
                             people={people}
                             value={a.value ?? ""}
                             onChange={(value) =>
@@ -768,8 +804,7 @@ function RuleEditor({
                     )}
                     {a.kind === "custom" && !f && (
                       <HelpText>
-                        This field is archived or unavailable. Choose another
-                        field or remove this action.
+                        <I18nText id="This field is archived or unavailable. Choose another field or remove this action." />
                       </HelpText>
                     )}
                   </ActionRow>
@@ -790,7 +825,7 @@ function RuleEditor({
                 }
               >
                 <Plus size={14} />
-                Add action
+                <I18nText id="Add action" />
               </Button>
             </section>
             <label className="planning-check-label">
@@ -804,12 +839,10 @@ function RuleEditor({
                   })
                 }
               />
-              Enable this rule
+              <I18nText id="Enable this rule" />
             </label>
             <HelpText>
-              Enabling never applies changes automatically. Apply and Undo do
-              not recursively trigger rules. Run now also requires an enabled
-              rule.
+              <I18nText id="Enabling never applies changes automatically. Apply and Undo do not recursively trigger rules. Run now also requires an enabled rule." />
             </HelpText>
             <ErrorNotice
               message={
@@ -819,8 +852,13 @@ function RuleEditor({
           </fieldset>
         </DialogBody>
         <DialogFooter>
-          <Button type="button" disabled={action.busy} onClick={close}>
-            Cancel
+          <Button
+            data-dialog-cancel
+            type="button"
+            disabled={action.busy}
+            onClick={close}
+          >
+            <I18nText id="Cancel" />
           </Button>
           <Button
             type="submit"
@@ -828,7 +866,7 @@ function RuleEditor({
             pending={action.busy}
             disabled={!canManage || !valid || (!!initial && !dirty)}
           >
-            Save rule
+            <I18nText id="Save rule" />
           </Button>
         </DialogFooter>
       </form>
@@ -842,6 +880,7 @@ function AutomationReviewQueue({
   space: Space;
   people: People;
 }) {
+  useInterfaceLocale();
   const { revision } = useWorkspace(),
     archive = usePlanningArchive<
       { q: string; sort: "newest"; limit: number; status: string },
@@ -858,20 +897,21 @@ function AutomationReviewQueue({
     [open, setOpen] = useState<string | null>(null);
   return (
     <section className="planning-archive-content planning-automation-queue">
-      <h2>Shared review queue</h2>
+      <h2>
+        <I18nText id="Shared review queue" />
+      </h2>
       <HelpText>
-        Proposals are visible to workspace members. Only current editors with
-        management access can approve.
+        <I18nText id="Proposals are visible to workspace members. Only current editors with management access can approve." />
       </HelpText>
       <ArchiveSearch
-        label="Find automation runs"
+        label={uiText("Find automation runs")}
         search={archive.search}
         onSearch={archive.setSearch}
         loading={archive.data.loading && !archive.data.data}
         onRefresh={archive.refresh}
       >
         <NativeSelect
-          aria-label="Automation run status"
+          aria-label={uiText("Automation run status")}
           value={archive.filters.status}
           onChange={(e) => archive.set({ status: e.target.value })}
         >
@@ -889,13 +929,15 @@ function AutomationReviewQueue({
         </NativeSelect>
       </ArchiveSearch>
       <ErrorNotice message={archive.data.error} retry={archive.refresh} />
-      <HelpText>{archive.data.data?.total ?? 0} runs</HelpText>
+      <HelpText>
+        {archive.data.data?.total ?? 0} <I18nText id="runs" />
+      </HelpText>
       <div className="planning-archive-results" ref={archive.resultsRef}>
         {!archive.data.data ? (
           <Loading />
         ) : !archive.data.data.items.length ? (
-          <Empty title="No matching proposals">
-            Use Run now on an enabled rule, or wait for its trigger.
+          <Empty title={uiText("No matching proposals")}>
+            <I18nText id="Use Run now on an enabled rule, or wait for its trigger." />
           </Empty>
         ) : (
           <div className="planning-lab-list">
@@ -906,20 +948,23 @@ function AutomationReviewQueue({
                     {r.rule_name}
                   </Button>
                   <HelpText>
-                    {r.status} · {r.tasks} tasks ·{" "}
-                    {new Date(r.created_at).toLocaleString()}
+                    {r.status} · {r.tasks} <I18nText id="tasks ·" />{" "}
+                    {new Date(r.created_at).toLocaleString(currentLocale())}
                   </HelpText>
                   {r.error && <p>{r.error}</p>}
                 </div>
                 <Button size="compact" onClick={() => setOpen(r.id)}>
-                  Review
+                  <I18nText id="Review" />
                 </Button>
               </article>
             ))}
           </div>
         )}
       </div>
-      <ArchivePagination label="Automation runs" {...archive.pagination} />
+      <ArchivePagination
+        label={uiText("Automation runs")}
+        {...archive.pagination}
+      />
       {open && (
         <RunDialog
           space={space}
@@ -945,12 +990,13 @@ function RunDialog({
   people: People;
   onClose: () => void;
 }) {
+  useInterfaceLocale();
   const data = useData<{ item: AutomationRun }>(
     `spaces/${space.id}/planning-automation-runs/${runId}`,
   );
   if (!data.data)
     return (
-      <Dialog title="Automation proposal" onClose={onClose}>
+      <Dialog title={uiText("Automation proposal")} onClose={onClose}>
         <DialogBody>
           <ErrorNotice message={data.error} retry={data.reload} />
           {data.loading && <Loading />}
@@ -980,6 +1026,7 @@ function RunReview({
   people: People;
   onClose: () => void;
 }) {
+  useInterfaceLocale();
   const { refresh } = useWorkspace(),
     action = useAction(),
     [run, setRun] = useState(initial),
@@ -1047,19 +1094,19 @@ function RunReview({
       <DialogBody>
         <ErrorNotice message={action.error} />
         <HelpText>
-          {run.status} · Revision {run.version}
+          {run.status} <I18nText id="· Revision" /> {run.version}
           {preview
-            ? ` · Preview expires ${new Date(preview.expiresAt).toLocaleTimeString()}`
+            ? ` · Preview expires ${new Date(preview.expiresAt).toLocaleTimeString(currentLocale())}`
             : ""}
         </HelpText>
         {run.error && <p>{run.error}</p>}
         {["applied", "undone"].includes(run.status) && (
           <HelpText>
             {(run.changes ?? []).filter((c) => c.resultVersion != null).length}{" "}
-            applied
-            {run.status === "undone" ? " and undone" : ""} ·{" "}
+            <I18nText id="applied" />
+            {run.status === "undone" ? uiText(" and undone") : ""} ·{" "}
             {(run.changes ?? []).filter((c) => c.resultVersion == null).length}{" "}
-            not selected
+            <I18nText id="not selected" />
           </HelpText>
         )}
         {run.status === "pending" && (
@@ -1078,7 +1125,7 @@ function RunReview({
                 )
               }
             />
-            Select all proposed tasks
+            <I18nText id="Select all proposed tasks" />
           </label>
         )}
         <div className="planning-lab-list">
@@ -1105,7 +1152,7 @@ function RunReview({
               {["applied", "undone"].includes(run.status) && (
                 <HelpText>
                   {c.resultVersion == null
-                    ? "Not selected · No changes applied."
+                    ? uiText("Not selected · No changes applied.")
                     : run.status === "undone"
                       ? "Undone · Applied changes were restored."
                       : `Applied · Confirmed task revision ${c.resultVersion}.`}
@@ -1113,7 +1160,9 @@ function RunReview({
               )}
               <dl>
                 <div>
-                  <dt>Before</dt>
+                  <dt>
+                    <I18nText id="Before" />
+                  </dt>
                   <dd>
                     {values(c.before).map((v, i) => (
                       <p key={i}>{v}</p>
@@ -1121,7 +1170,11 @@ function RunReview({
                   </dd>
                 </div>
                 <div>
-                  <dt>{c.resultVersion != null ? "Applied" : "Proposed"}</dt>
+                  <dt>
+                    {c.resultVersion != null
+                      ? uiText("Applied")
+                      : uiText("Proposed")}
+                  </dt>
                   <dd>
                     {values(c.patch).map((v, i) => (
                       <p key={i}>{v}</p>
@@ -1133,10 +1186,7 @@ function RunReview({
           ))}
         </div>
         <HelpText>
-          Dates, dependencies, document contents, and time logs are never
-          changed by rules. A changed task, rule, field schema or permission
-          blocks Apply. Undo is available only while affected task versions are
-          unchanged.
+          <I18nText id="Dates, dependencies, document contents, and time logs are never changed by rules. A changed task, rule, field schema or permission blocks Apply. Undo is available only while affected task versions are unchanged." />
         </HelpText>
       </DialogBody>
       <DialogFooter>
@@ -1153,15 +1203,16 @@ function RunReview({
             })
           }
         >
-          Reload confirmed state
+          <I18nText id="Reload confirmed state" />
         </Button>
         {["pending", "blocked"].includes(run.status) && (
           <Button
+            data-dialog-cancel
             variant="danger"
             disabled={!canManage || action.busy}
             onClick={() => operate("cancel")}
           >
-            Cancel proposal
+            <I18nText id="Cancel proposal" />
           </Button>
         )}
         {run.status === "applied" && (
@@ -1171,11 +1222,11 @@ function RunReview({
             onClick={() => operate("undo")}
           >
             <RotateCcw size={14} />
-            Undo run
+            <I18nText id="Undo run" />
           </Button>
         )}
         <Button disabled={action.busy} onClick={onClose}>
-          Done
+          <I18nText id="Done" />
         </Button>
         {run.status === "pending" && (
           <Button
@@ -1185,7 +1236,9 @@ function RunReview({
             onClick={() => operate(preview ? "apply" : "preview")}
           >
             <Check size={14} />
-            {preview ? "Apply reviewed changes" : "Preview selection"}
+            {preview
+              ? uiText("Apply reviewed changes")
+              : uiText("Preview selection")}
           </Button>
         )}
       </DialogFooter>

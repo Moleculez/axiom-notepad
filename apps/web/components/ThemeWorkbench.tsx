@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import {
   ActionRow,
   Button,
@@ -45,6 +47,7 @@ export default function ThemeWorkbench({
   dark: boolean;
   active?: boolean;
 }) {
+  useInterfaceLocale();
   const [selected, setSelected] = useState(true),
     [query, setQuery] = useState(""),
     [menu, setMenu] = useState(false),
@@ -70,10 +73,9 @@ export default function ThemeWorkbench({
   useEffect(() => () => clearTimeout(timer.current), []);
   const p = paletteFor(preferences, dark);
   return (
-    <section className="theme-workbench" aria-label="Theme workbench">
+    <section className="theme-workbench" aria-label={uiText("Theme workbench")}>
       <HelpText>
-        Try everyday controls with your current draft. Switch color mode to
-        review both palettes.
+        <I18nText id="Try everyday controls with your current draft. Switch color mode to review both palettes." />
       </HelpText>
       <div className="theme-workbench-palette">
         {(
@@ -85,30 +87,37 @@ export default function ThemeWorkbench({
           </span>
         ))}
       </div>
-      <Field label="Search specimen" className="theme-workbench-input">
+      <Field
+        label={uiText("Search specimen")}
+        className="theme-workbench-input"
+      >
         <SearchField
-          aria-label="Specimen search"
+          aria-label={uiText("Specimen search")}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onClear={() => setQuery("")}
-          clearLabel="Clear specimen search"
-          placeholder="A long research project name…"
+          clearLabel={uiText("Clear specimen search")}
+          placeholder={uiText("A long research project name…")}
         />
       </Field>
       <div className="theme-workbench-field-grid">
-        <Field label="Native selector">
+        <Field label={uiText("Native selector")}>
           <NativeSelect
-            aria-label="Specimen native selector"
+            aria-label={uiText("Specimen native selector")}
             value={density}
             onChange={(e) => setDensity(e.target.value)}
           >
-            <option value="comfortable">Comfortable</option>
-            <option value="compact">Compact</option>
+            <option value="comfortable">
+              <I18nText id="Comfortable" />
+            </option>
+            <option value="compact">
+              <I18nText id="Compact" />
+            </option>
           </NativeSelect>
         </Field>
-        <Field label="Searchable single choice">
+        <Field label={uiText("Searchable single choice")}>
           <Picker
-            label="Specimen person"
+            label={uiText("Specimen person")}
             value={person}
             onChange={(v) => setPerson(String(v))}
             options={[
@@ -130,9 +139,9 @@ export default function ThemeWorkbench({
             ]}
           />
         </Field>
-        <Field label="Multiple choices">
+        <Field label={uiText("Multiple choices")}>
           <Picker
-            label="Specimen topics"
+            label={uiText("Specimen topics")}
             multiple
             value={tags}
             onChange={(v) => setTags(v as string[])}
@@ -144,23 +153,27 @@ export default function ThemeWorkbench({
           />
         </Field>
         <Field
-          label="Multiline field"
-          hint="Application fields follow the interface style; editor fields stay transparent."
+          label={uiText("Multiline field")}
+          hint={uiText(
+            "Application fields follow the interface style; editor fields stay transparent.",
+          )}
         >
           <TextArea
-            aria-label="Specimen notes"
+            aria-label={uiText("Specimen notes")}
             rows={2}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder="Research context…"
+            placeholder={uiText("Research context…")}
           />
         </Field>
       </div>
       <section
         className="theme-workbench-toolbars"
-        aria-label="Mixed toolbar sizes"
+        aria-label={uiText("Mixed toolbar sizes")}
       >
-        <h3>Toolbar alignment</h3>
+        <h3>
+          <I18nText id="Toolbar alignment" />
+        </h3>
         {(["standard", "compact"] as const).map((size) => (
           <ActionRow
             key={size}
@@ -173,19 +186,23 @@ export default function ThemeWorkbench({
               onChange={(event) => setQuery(event.target.value)}
               onClear={() => setQuery("")}
               clearLabel={`Clear ${size} toolbar query`}
-              placeholder="Find evidence…"
+              placeholder={uiText("Find evidence…")}
             />
             <NativeSelect
               aria-label={`${size} toolbar density`}
               value={density}
               onChange={(event) => setDensity(event.target.value)}
             >
-              <option value="comfortable">Comfortable</option>
-              <option value="compact">Compact</option>
+              <option value="comfortable">
+                <I18nText id="Comfortable" />
+              </option>
+              <option value="compact">
+                <I18nText id="Compact" />
+              </option>
             </NativeSelect>
             <Button type="button" onClick={() => setSelected(!selected)}>
               <Plus aria-hidden="true" />
-              Select sample
+              <I18nText id="Select sample" />
             </Button>
             <IconButton
               type="button"
@@ -203,29 +220,31 @@ export default function ThemeWorkbench({
           onClick={() => setSelected(!selected)}
         >
           <Plus size={15} />
-          Select item
+          <I18nText id="Select item" />
         </Button>
         <Button className="button secondary" onClick={() => setQuery("")}>
-          Clear
+          <I18nText id="Clear" />
         </Button>
         <Button className="button secondary" disabled>
-          Disabled
+          <I18nText id="Disabled" />
         </Button>
       </ActionRow>
       <div className={`theme-workbench-row ${selected ? "is-selected" : ""}`}>
         <Checkbox
-          aria-label="Select specimen paper"
+          aria-label={uiText("Select specimen paper")}
           checked={selected}
           onChange={(e) => setSelected(e.target.checked)}
         />
         <FileText size={20} />
         <div>
           <strong>{sampleTitle}</strong>
-          <small>Markdown · sample only</small>
+          <small>
+            <I18nText id="Markdown · sample only" />
+          </small>
         </div>
         <IconButton
           className="icon-button"
-          aria-label="Specimen actions"
+          aria-label={uiText("Specimen actions")}
           aria-expanded={menu}
           onClick={() => setMenu(!menu)}
         >
@@ -236,41 +255,49 @@ export default function ThemeWorkbench({
         <div
           className="theme-workbench-menu"
           role="group"
-          aria-label="Sample action menu"
+          aria-label={uiText("Sample action menu")}
         >
           <button onClick={() => setMenu(false)}>
             <Copy size={15} />
-            Copy <kbd>⌘C</kbd>
+            <I18nText id="Copy" /> <kbd>⌘C</kbd>
           </button>
           <hr />
           <button onClick={() => setMenu(false)}>
             <Trash2 size={15} />
-            Move to trash
+            <I18nText id="Move to trash" />
           </button>
         </div>
       )}
       <div className="theme-workbench-status">
         <Check size={15} />
-        Saved state preview <span>Not a real save</span>
+        <I18nText id="Saved state preview" />{" "}
+        <span>
+          <I18nText id="Not a real save" />
+        </span>
       </div>
       <section
         className="theme-workbench-control-section"
-        aria-label="Control states"
+        aria-label={uiText("Control states")}
       >
-        <h3>Controls & states</h3>
+        <h3>
+          <I18nText id="Controls & states" />
+        </h3>
         <label className="theme-workbench-switch">
           <span>
-            Preview preference<small>Sample only · no account changes</small>
+            <I18nText id="Preview preference" />
+            <small>
+              <I18nText id="Sample only · no account changes" />
+            </small>
           </span>
           <Switch
-            aria-label="Specimen preference"
+            aria-label={uiText("Specimen preference")}
             checked={enabled}
             onChange={(event) => setEnabled(event.target.checked)}
           />
         </label>
         <Field label={`Preview zoom · ${zoom}%`}>
           <Slider
-            aria-label="Specimen zoom"
+            aria-label={uiText("Specimen zoom")}
             aria-valuetext={`${zoom}%`}
             min={50}
             max={200}
@@ -280,17 +307,19 @@ export default function ThemeWorkbench({
           />
         </Field>
         <fieldset className="theme-workbench-choices">
-          <legend>Sample selection</legend>
+          <legend>
+            <I18nText id="Sample selection" />
+          </legend>
           <label>
             <Checkbox
-              aria-label="Select all specimen options"
+              aria-label={uiText("Select all specimen options")}
               checked={choices.every(Boolean)}
               indeterminate={choices.some(Boolean) && !choices.every(Boolean)}
               onChange={(event) =>
                 setChoices([event.target.checked, event.target.checked])
               }
             />
-            All options
+            <I18nText id="All options" />
           </label>
           {choices.map((checked, index) => (
             <label key={index}>
@@ -305,20 +334,20 @@ export default function ThemeWorkbench({
                   )
                 }
               />
-              Option {index + 1}
+              <I18nText id="Option" /> {index + 1}
             </label>
           ))}
           <label>
             <Checkbox disabled defaultChecked />
-            Unavailable option
+            <I18nText id="Unavailable option" />
           </label>
         </fieldset>
         <Field
-          label="Validation example"
+          label={uiText("Validation example")}
           error="Keep the draft and explain how to correct it."
         >
           <TextInput
-            aria-label="Specimen invalid field"
+            aria-label={uiText("Specimen invalid field")}
             defaultValue="Unfinished value"
           />
         </Field>
@@ -333,27 +362,29 @@ export default function ThemeWorkbench({
               timer.current = setTimeout(() => setPending(false), 1000);
             }}
           >
-            Save sample
+            <I18nText id="Save sample" />
           </Button>
           <Button
             type="button"
             variant="danger"
             onClick={() => setChoices([false, false])}
           >
-            Clear selection
+            <I18nText id="Clear selection" />
           </Button>
         </ActionRow>
         <Notice>
-          These controls are interactive specimens, not real file operations.
+          <I18nText id="These controls are interactive specimens, not real file operations." />
         </Notice>
         <Button type="button" onClick={() => setSampleDialog(true)}>
-          Open sample dialog
+          <I18nText id="Open sample dialog" />
         </Button>
       </section>
       {sampleDialog && (
         <Dialog
-          title="Sample form"
-          subtitle="A disposable control specimen, not an account or file change."
+          title={uiText("Sample form")}
+          subtitle={uiText(
+            "A disposable control specimen, not an account or file change.",
+          )}
           size="compact"
           onClose={() => setSampleDialog(false)}
         >
@@ -366,9 +397,9 @@ export default function ThemeWorkbench({
             }}
           >
             <Field
-              label="Sample title"
+              label={uiText("Sample title")}
               icon={<FileText />}
-              hint="Try a long title to check wrapping and alignment."
+              hint={uiText("Try a long title to check wrapping and alignment.")}
             >
               <TextInput
                 name="title"
@@ -378,12 +409,14 @@ export default function ThemeWorkbench({
               />
             </Field>
             <Field
-              label="Sample owner"
+              label={uiText("Sample owner")}
               icon={<UserRound />}
-              hint="Select a person; search text alone is not a saved value."
+              hint={uiText(
+                "Select a person; search text alone is not a saved value.",
+              )}
             >
               <Picker
-                label="Sample owner"
+                label={uiText("Sample owner")}
                 name="owner"
                 required
                 value={person}
@@ -396,8 +429,8 @@ export default function ThemeWorkbench({
               />
             </Field>
             <Field
-              label="Sample website"
-              hint="Optional · a link to the research project."
+              label={uiText("Sample website")}
+              hint={uiText("Optional · a link to the research project.")}
             >
               <InputGroup leading={<Globe2 />}>
                 <TextInput
@@ -408,15 +441,23 @@ export default function ThemeWorkbench({
               </InputGroup>
             </Field>
             <DialogFooter>
-              <Button type="button" onClick={() => setSampleDialog(false)}>
-                Cancel
+              <Button
+                data-dialog-cancel
+                type="button"
+                onClick={() => setSampleDialog(false)}
+              >
+                <I18nText id="Cancel" />
               </Button>
-              <Button variant="primary">Save sample title</Button>
+              <Button variant="primary">
+                <I18nText id="Save sample title" />
+              </Button>
             </DialogFooter>
           </form>
         </Dialog>
       )}
-      <h3>Contrast checks</h3>
+      <h3>
+        <I18nText id="Contrast checks" />
+      </h3>
       <dl className="theme-workbench-contrast">
         {[
           ["Body text", p.text, p.paper],
@@ -428,15 +469,15 @@ export default function ThemeWorkbench({
             <div key={label}>
               <dt>{label}</dt>
               <dd>
-                {ratio.toFixed(2)}:1 · {ratio >= 4.5 ? "Pass" : "Review"}
+                {ratio.toFixed(2)}:1 ·{" "}
+                {ratio >= 4.5 ? uiText("Pass") : uiText("Review")}
               </dd>
             </div>
           );
         })}
       </dl>
       <HelpText>
-        Also review keyboard focus, 150% UI scale, reduced motion and forced
-        colors. Automated contrast checks do not replace a visual review.
+        <I18nText id="Also review keyboard focus, 150% UI scale, reduced motion and forced colors. Automated contrast checks do not replace a visual review." />
       </HelpText>
     </section>
   );

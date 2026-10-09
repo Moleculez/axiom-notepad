@@ -1,5 +1,7 @@
 import { datasetRequestHeaders } from "./dataset";
 import { pageRequest } from "./request-lifecycle";
+import { formatRelativeTime } from "@axiom/i18n";
+import { currentLocale } from "@axiom/i18n/client";
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -208,19 +210,7 @@ export function download(name: string, body: BlobPart, mime = "text/markdown") {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 export function timeAgo(value: string) {
-  const seconds = Math.max(0, (Date.now() - new Date(value).getTime()) / 1000);
-  return seconds < 60
-    ? "just now"
-    : seconds < 3600
-      ? `${Math.floor(seconds / 60)}m ago`
-      : seconds < 86400
-        ? `${Math.floor(seconds / 3600)}h ago`
-        : seconds < 604800
-          ? `${Math.floor(seconds / 86400)}d ago`
-          : new Date(value).toLocaleDateString(undefined, {
-              month: "short",
-              day: "numeric",
-            });
+  return formatRelativeTime(currentLocale(), value);
 }
 export const initials = (name: string) =>
   name

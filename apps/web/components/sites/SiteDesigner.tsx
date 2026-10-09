@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import {
   Button,
   Checkbox,
@@ -39,6 +41,7 @@ export default function SiteDesigner({
   disabled: boolean;
   spaceId: string;
 }) {
+  useInterfaceLocale();
   const [selected, setSelected] = useState(config.design.sections[0]?.id ?? "");
   const design = config.design,
     sections = design.sections,
@@ -63,10 +66,11 @@ export default function SiteDesigner({
     <div className="website-designer">
       <div className="website-design-controls">
         <section className="settings-card">
-          <h3>Visual language</h3>
+          <h3>
+            <I18nText id="Visual language" />
+          </h3>
           <p>
-            Choose a complete reading style. Layout, typography and reading
-            controls remain independently adjustable.
+            <I18nText id="Choose a complete reading style. Layout, typography and reading controls remain independently adjustable." />
           </p>
           <fieldset disabled={disabled} className="website-theme-gallery">
             {siteThemes.map((theme) => (
@@ -77,7 +81,9 @@ export default function SiteDesigner({
                 onClick={() => set({ theme: theme.id, font: "theme" })}
               >
                 <span className="website-theme-sample" aria-hidden="true">
-                  <b>Aa</b>
+                  <b>
+                    <I18nText id="Aa" />
+                  </b>
                   <i />
                   <i />
                   <i />
@@ -89,9 +95,11 @@ export default function SiteDesigner({
           </fieldset>
         </section>
         <section className="settings-card">
-          <h3>Choose a layout</h3>
+          <h3>
+            <I18nText id="Choose a layout" />
+          </h3>
           <p>
-            Public site themes are independent of your workspace appearance.
+            <I18nText id="Public site themes are independent of your workspace appearance." />
           </p>
           <fieldset disabled={disabled}>
             <div className="website-template-grid">
@@ -114,38 +122,52 @@ export default function SiteDesigner({
             </div>
             <div className="website-fields">
               <label>
-                Color mode
+                <I18nText id="Color mode" />
                 <NativeSelect
                   value={design.mode}
                   onChange={(e) =>
                     set({ mode: e.target.value as SiteDesign["mode"] })
                   }
                 >
-                  <option value="system">Follow visitor’s system</option>
-                  <option value="light">Light</option>
-                  <option value="dark">Dark</option>
+                  <option value="system">
+                    <I18nText id="Follow visitor’s system" />
+                  </option>
+                  <option value="light">
+                    <I18nText id="Light" />
+                  </option>
+                  <option value="dark">
+                    <I18nText id="Dark" />
+                  </option>
                 </NativeSelect>
               </label>
               <label>
-                Reading typeface
+                <I18nText id="Reading typeface" />
                 <NativeSelect
                   value={design.font}
                   onChange={(e) =>
                     set({ font: e.target.value as SiteDesign["font"] })
                   }
                 >
-                  <option value="theme">Theme default</option>
-                  <option value="latin-modern">Latin Modern · LaTeX</option>
-                  <option value="serif">Source Serif · editorial</option>
-                  <option value="sans">Inter · contemporary</option>
+                  <option value="theme">
+                    <I18nText id="Theme default" />
+                  </option>
+                  <option value="latin-modern">
+                    <I18nText id="Latin Modern · LaTeX" />
+                  </option>
+                  <option value="serif">
+                    <I18nText id="Source Serif · editorial" />
+                  </option>
+                  <option value="sans">
+                    <I18nText id="Inter · contemporary" />
+                  </option>
                 </NativeSelect>
               </label>
               <label>
-                Accent
+                <I18nText id="Accent" />
                 <span className="website-color">
                   <input
                     type="color"
-                    aria-label="Website accent color"
+                    aria-label={uiText("Website accent color")}
                     value={design.accent}
                     onChange={(e) => set({ accent: e.target.value })}
                   />
@@ -153,32 +175,38 @@ export default function SiteDesigner({
                 </span>
               </label>
               <label>
-                Spacing
+                <I18nText id="Spacing" />
                 <NativeSelect
                   value={design.spacing}
                   onChange={(e) =>
                     set({ spacing: e.target.value as SiteDesign["spacing"] })
                   }
                 >
-                  <option value="comfortable">Comfortable</option>
-                  <option value="compact">Compact</option>
+                  <option value="comfortable">
+                    <I18nText id="Comfortable" />
+                  </option>
+                  <option value="compact">
+                    <I18nText id="Compact" />
+                  </option>
                 </NativeSelect>
               </label>
             </div>
           </fieldset>
         </section>
         <section className="settings-card">
-          <h3>Reading & discovery</h3>
+          <h3>
+            <I18nText id="Reading & discovery" />
+          </h3>
           <p>
-            Quiet navigation, comfortable line lengths and a clear research
-            record.
+            <I18nText id="Quiet navigation, comfortable line lengths and a clear research record." />
           </p>
           <fieldset disabled={disabled}>
             <div className="website-fields">
               <label>
-                Text size · {design.reading.fontSize}px
+                <I18nText id="Text size ·" /> {design.reading.fontSize}
+                <I18nText id="px" />
                 <Slider
-                  aria-label="Website reading font size"
+                  aria-label={uiText("Website reading font size")}
                   aria-valuetext={`${design.reading.fontSize} pixels`}
                   min="16"
                   max="24"
@@ -194,9 +222,9 @@ export default function SiteDesigner({
                 />
               </label>
               <label>
-                Line height · {design.reading.lineHeight}
+                <I18nText id="Line height ·" /> {design.reading.lineHeight}
                 <Slider
-                  aria-label="Website reading line height"
+                  aria-label={uiText("Website reading line height")}
                   aria-valuetext={`${design.reading.lineHeight} times the font size`}
                   min="1.4"
                   max="2.2"
@@ -213,9 +241,10 @@ export default function SiteDesigner({
                 />
               </label>
               <label>
-                Line length · {design.reading.measure} characters
+                <I18nText id="Line length ·" /> {design.reading.measure}{" "}
+                <I18nText id="characters" />
                 <Slider
-                  aria-label="Website reading measure"
+                  aria-label={uiText("Website reading measure")}
                   aria-valuetext={`${design.reading.measure} characters`}
                   min="55"
                   max="90"
@@ -253,7 +282,7 @@ export default function SiteDesigner({
               </label>
             ))}
             <label>
-              Archive layout
+              <I18nText id="Archive layout" />
               <NativeSelect
                 value={design.archive.style}
                 onChange={(e) =>
@@ -265,8 +294,12 @@ export default function SiteDesigner({
                   })
                 }
               >
-                <option value="timeline">Timeline · year and month</option>
-                <option value="list">Compact chronological list</option>
+                <option value="timeline">
+                  <I18nText id="Timeline · year and month" />
+                </option>
+                <option value="list">
+                  <I18nText id="Compact chronological list" />
+                </option>
               </NativeSelect>
             </label>
             <label className="website-check">
@@ -281,20 +314,24 @@ export default function SiteDesigner({
                   })
                 }
               />
-              Include ordinary pages in the archive by default
+              <I18nText id="Include ordinary pages in the archive by default" />
             </label>
           </fieldset>
         </section>
         <section className="settings-card">
           <div className="website-section-heading">
             <div>
-              <h3>Homepage sections</h3>
-              <p>Arrange, duplicate, hide or edit each section.</p>
+              <h3>
+                <I18nText id="Homepage sections" />
+              </h3>
+              <p>
+                <I18nText id="Arrange, duplicate, hide or edit each section." />
+              </p>
             </div>
             <IconButton
               className="icon-button"
-              title="Add section"
-              aria-label="Add homepage section"
+              title={uiText("Add section")}
+              aria-label={uiText("Add homepage section")}
               disabled={disabled || sections.length >= 30}
               onClick={() => {
                 const added = siteSectionSchema.parse({
@@ -324,7 +361,7 @@ export default function SiteDesigner({
                 <div>
                   <IconButton
                     className="icon-button"
-                    title="Move section up"
+                    title={uiText("Move section up")}
                     aria-label={`Move ${s.title} up`}
                     disabled={disabled || i === 0}
                     onClick={() => move(i, -1)}
@@ -333,7 +370,7 @@ export default function SiteDesigner({
                   </IconButton>
                   <IconButton
                     className="icon-button"
-                    title="Move section down"
+                    title={uiText("Move section down")}
                     aria-label={`Move ${s.title} down`}
                     disabled={disabled || i === sections.length - 1}
                     onClick={() => move(i, 1)}
@@ -347,7 +384,7 @@ export default function SiteDesigner({
           {section && (
             <fieldset className="website-section-fields" disabled={disabled}>
               <label>
-                Section type
+                <I18nText id="Section type" />
                 <NativeSelect
                   value={section.kind}
                   onChange={(e) =>
@@ -360,7 +397,7 @@ export default function SiteDesigner({
                 </NativeSelect>
               </label>
               <label>
-                Heading
+                <I18nText id="Heading" />
                 <TextInput
                   maxLength={200}
                   value={section.title}
@@ -368,7 +405,7 @@ export default function SiteDesigner({
                 />
               </label>
               <label>
-                Text (Markdown)
+                <I18nText id="Text (Markdown)" />
                 <TextArea
                   rows={5}
                   maxLength={20000}
@@ -380,9 +417,11 @@ export default function SiteDesigner({
                 section.kind,
               ) && (
                 <details>
-                  <summary>Choose specific pages</summary>
+                  <summary>
+                    <I18nText id="Choose specific pages" />
+                  </summary>
                   <HelpText>
-                    Leave unselected to use this section’s automatic collection.
+                    <I18nText id="Leave unselected to use this section’s automatic collection." />
                   </HelpText>
                   {config.entries.map((e) => (
                     <label key={e.id} className="website-check">
@@ -407,12 +446,14 @@ export default function SiteDesigner({
                   onClick={() => edit({ hidden: !section.hidden })}
                 >
                   {section.hidden ? <Eye size={14} /> : <EyeOff size={14} />}
-                  {section.hidden ? "Show section" : "Hide section"}
+                  {section.hidden
+                    ? uiText("Show section")
+                    : uiText("Hide section")}
                 </Button>
                 <IconButton
                   className="icon-button"
-                  title="Duplicate section"
-                  aria-label="Duplicate section"
+                  title={uiText("Duplicate section")}
+                  aria-label={uiText("Duplicate section")}
                   disabled={sections.length >= 30}
                   onClick={() => {
                     const copy = {
@@ -428,8 +469,8 @@ export default function SiteDesigner({
                 </IconButton>
                 <IconButton
                   className="icon-button"
-                  title="Remove section"
-                  aria-label="Remove section"
+                  title={uiText("Remove section")}
+                  aria-label={uiText("Remove section")}
                   onClick={() => {
                     set({
                       sections: sections.filter((s) => s.id !== selected),

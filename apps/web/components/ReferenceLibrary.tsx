@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { Button, IconButton, TextInput, NativeSelect } from "./ui/controls";
 import { promptText } from "../lib/app-prompt";
 import { useCallback, useEffect, useState } from "react";
@@ -73,6 +75,7 @@ export default function ReferenceLibrary({
     citeKey?: string;
   }) => void;
 }) {
+  useInterfaceLocale();
   const [editing, setEditing] = useState<Reference | null | undefined>(
       undefined,
     ),
@@ -129,10 +132,14 @@ export default function ReferenceLibrary({
     <section className="collection-page reference-library">
       <div className="section-heading">
         <div>
-          <div className="eyebrow">THE IDEAS WE BUILD ON</div>
-          <h1>Reference library</h1>
+          <div className="eyebrow">
+            <I18nText id="THE IDEAS WE BUILD ON" />
+          </div>
+          <h1>
+            <I18nText id="Reference library" />
+          </h1>
           <p className="muted">
-            A shared bibliography. A reading journey that is yours.
+            <I18nText id="A shared bibliography. A reading journey that is yours." />
           </p>
         </div>
         <Button
@@ -141,7 +148,7 @@ export default function ReferenceLibrary({
           onClick={() => setEditing(null)}
         >
           <Plus size={16} />
-          Add reference
+          <I18nText id="Add reference" />
         </Button>
       </div>
       <div className="collection-tools">
@@ -151,35 +158,35 @@ export default function ReferenceLibrary({
           onClick={onImport}
         >
           <Upload size={14} />
-          Import BibTeX
+          <I18nText id="Import BibTeX" />
         </Button>
         <a
           className="button secondary small"
           href={`/api/v1/references?groupId=${groupId}&format=bib`}
         >
           <Download size={14} />
-          Export BibTeX
+          <I18nText id="Export BibTeX" />
         </a>
         <span>
-          {filtered.length} / {references.length} references
+          {filtered.length} / {references.length} <I18nText id="references" />
         </span>
       </div>
       <div className="reference-filters">
         <label>
-          Find a paper
+          <I18nText id="Find a paper" />
           <TextInput
-            aria-label="Search reference library"
+            aria-label={uiText("Search reference library")}
             value={filter.query}
-            placeholder="Title, citation key, DOI…"
+            placeholder={uiText("Title, citation key, DOI…")}
             onChange={(e) =>
               setFilter((f) => ({ ...f, query: e.target.value }))
             }
           />
         </label>
         <label>
-          Author
+          <I18nText id="Author" />
           <TextInput
-            aria-label="Filter reference author"
+            aria-label={uiText("Filter reference author")}
             value={filter.author}
             onChange={(e) =>
               setFilter((f) => ({ ...f, author: e.target.value }))
@@ -187,17 +194,17 @@ export default function ReferenceLibrary({
           />
         </label>
         <label>
-          Year
+          <I18nText id="Year" />
           <TextInput
-            aria-label="Filter reference year"
+            aria-label={uiText("Filter reference year")}
             value={filter.year}
             onChange={(e) => setFilter((f) => ({ ...f, year: e.target.value }))}
           />
         </label>
         <label>
-          My reading queue
+          <I18nText id="My reading queue" />
           <NativeSelect
-            aria-label="Filter reading status"
+            aria-label={uiText("Filter reading status")}
             value={filter.filterStatus}
             onChange={(e) =>
               setFilter((f) => ({
@@ -206,7 +213,9 @@ export default function ReferenceLibrary({
               }))
             }
           >
-            <option value="all">All papers</option>
+            <option value="all">
+              <I18nText id="All papers" />
+            </option>
             {Object.entries(readingStatuses).map(([id, label]) => (
               <option key={id} value={id}>
                 {label}
@@ -215,15 +224,17 @@ export default function ReferenceLibrary({
           </NativeSelect>
         </label>
         <label>
-          Linked project
+          <I18nText id="Linked project" />
           <NativeSelect
-            aria-label="Filter linked project"
+            aria-label={uiText("Filter linked project")}
             value={filter.project}
             onChange={(e) =>
               setFilter((f) => ({ ...f, project: e.target.value }))
             }
           >
-            <option value="">Any project</option>
+            <option value="">
+              <I18nText id="Any project" />
+            </option>
             {projects.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
@@ -232,9 +243,9 @@ export default function ReferenceLibrary({
           </NativeSelect>
         </label>
         <label>
-          Linked note tag
+          <I18nText id="Linked note tag" />
           <TextInput
-            aria-label="Filter linked note tag"
+            aria-label={uiText("Filter linked note tag")}
             value={filter.tag}
             onChange={(e) => setFilter((f) => ({ ...f, tag: e.target.value }))}
           />
@@ -254,7 +265,7 @@ export default function ReferenceLibrary({
               });
           }}
         >
-          Save current filter
+          <I18nText id="Save current filter" />
         </button>
         {items
           .filter((i) => i.kind === "filter")
@@ -313,7 +324,7 @@ export default function ReferenceLibrary({
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    View source <ArrowUpRight size={13} />
+                    <I18nText id="View source" /> <ArrowUpRight size={13} />
                   </a>
                 )}
                 <button
@@ -325,10 +336,10 @@ export default function ReferenceLibrary({
                   }
                 >
                   <Copy size={13} />
-                  Copy citation
+                  <I18nText id="Copy citation" />
                 </button>
                 <button disabled={readOnly} onClick={() => setEditing(r)}>
-                  Edit metadata & links
+                  <I18nText id="Edit metadata & links" />
                 </button>
               </div>
               <div className="reference-linked">
@@ -381,26 +392,27 @@ export default function ReferenceLibrary({
           <BookOpen size={30} />
           <h3>
             {references.length
-              ? "No papers match this filter"
-              : "Build your shared reading shelf"}
+              ? uiText("No papers match this filter")
+              : uiText("Build your shared reading shelf")}
           </h3>
           <p>
-            Import BibTeX, add a reference, or look up a DOI or arXiv
-            identifier.
+            <I18nText id="Import BibTeX, add a reference, or look up a DOI or arXiv identifier." />
           </p>
           <Button
             className="button secondary"
             disabled={readOnly}
             onClick={() => setEditing(null)}
           >
-            Add a reference
+            <I18nText id="Add a reference" />
           </Button>
         </div>
       )}
       {message && <p role="status">{message}</p>}
       {editing !== undefined && (
         <Dialog
-          title={editing ? "Reference details" : "Add a reference"}
+          title={
+            editing ? uiText("Reference details") : uiText("Add a reference")
+          }
           onClose={close}
           wide
         >
@@ -435,6 +447,7 @@ export function ReferenceEditor({
   onSaved: () => Promise<void> | void;
   onCancel: () => void;
 }) {
+  useInterfaceLocale();
   const [draft, setDraft] = useState<ReferenceDetails>(() =>
       reference
         ? (Object.fromEntries(
@@ -510,18 +523,17 @@ export function ReferenceEditor({
     <div className="reference-form">
       <div className="reference-lookup">
         <label>
-          DOI or arXiv identifier
+          <I18nText id="DOI or arXiv identifier" />
           <TextInput
-            aria-label="DOI or arXiv lookup identifier"
+            aria-label={uiText("DOI or arXiv lookup identifier")}
             value={identifier}
             onChange={(e) => setIdentifier(e.target.value)}
-            placeholder="10.1000/example or 1706.03762"
+            placeholder={uiText("10.1000/example or 1706.03762")}
             maxLength={500}
           />
         </label>
         <p className="muted">
-          Lookup sends only this identifier to Crossref or arXiv. Notes, files
-          and your email are never sent. Results are previewed before saving.
+          <I18nText id="Lookup sends only this identifier to Crossref or arXiv. Notes, files and your email are never sent. Results are previewed before saving." />
         </p>
         <Button
           className="button secondary"
@@ -535,7 +547,7 @@ export function ReferenceEditor({
           }
         >
           <Search size={15} />
-          Look up metadata
+          <I18nText id="Look up metadata" />
         </Button>
         {preview && (
           <div className="metadata-preview">
@@ -543,7 +555,9 @@ export function ReferenceEditor({
             <p>
               {preview.details.authors} · {preview.details.year}
             </p>
-            <small>Source: {preview.provider}</small>
+            <small>
+              <I18nText id="Source:" /> {preview.provider}
+            </small>
             <Button
               className="button secondary small"
               onClick={() => {
@@ -562,7 +576,7 @@ export function ReferenceEditor({
                 setPreview(null);
               }}
             >
-              Use these details
+              <I18nText id="Use these details" />
             </Button>
           </div>
         )}
@@ -584,9 +598,9 @@ export function ReferenceEditor({
         }}
       >
         <label>
-          Citation key
+          <I18nText id="Citation key" />
           <TextInput
-            aria-label="Citation key"
+            aria-label={uiText("Citation key")}
             value={key}
             readOnly={!!reference}
             required
@@ -595,14 +609,14 @@ export function ReferenceEditor({
           />
           {reference && (
             <small>
-              Keys stay stable so existing citations continue to work.
+              <I18nText id="Keys stay stable so existing citations continue to work." />
             </small>
           )}
         </label>
         <label>
-          Title
+          <I18nText id="Title" />
           <TextInput
-            aria-label="Reference title"
+            aria-label={uiText("Reference title")}
             value={draft.title}
             onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
             required
@@ -610,16 +624,18 @@ export function ReferenceEditor({
           />
         </label>
         <label>
-          Authors
+          <I18nText id="Authors" />
           <TextInput
-            aria-label="Reference authors"
+            aria-label={uiText("Reference authors")}
             value={draft.authors}
             onChange={(e) =>
               setDraft((d) => ({ ...d, authors: e.target.value }))
             }
             maxLength={2000}
           />
-          <small>Separate authors with “and” for BibTeX.</small>
+          <small>
+            <I18nText id="Separate authors with “and” for BibTeX." />
+          </small>
         </label>
         <div className="setting-pair">
           {(["year", "venue", "doi", "arxiv"] as const).map((k) => (
@@ -652,9 +668,9 @@ export function ReferenceEditor({
           ))}
         </div>
         <label>
-          Source URL
+          <I18nText id="Source URL" />
           <TextInput
-            aria-label="Reference URL"
+            aria-label={uiText("Reference URL")}
             type="url"
             value={draft.url}
             onChange={(e) => setDraft((d) => ({ ...d, url: e.target.value }))}
@@ -663,17 +679,20 @@ export function ReferenceEditor({
         </label>
         {duplicate.length > 0 && (
           <p className="form-error" role="status">
-            Possible duplicate: {duplicate.map((r) => r.cite_key).join(", ")}.
-            Existing entries will not be merged or overwritten.
+            <I18nText id="Possible duplicate:" />{" "}
+            {duplicate.map((r) => r.cite_key).join(", ")}
+            <I18nText id=". Existing entries will not be merged or overwritten." />
           </p>
         )}
         {remote && (
           <div className="research-conflict">
             <p>
-              The server now has: {remote.title} · {remote.authors} ·{" "}
-              {remote.year}. Review it before saving your retained changes.
+              <I18nText id="The server now has:" /> {remote.title} ·{" "}
+              {remote.authors} · {remote.year}
+              <I18nText id=". Review it before saving your retained changes." />
             </p>
             <Button
+              data-dialog-cancel
               type="button"
               className="button secondary small"
               onClick={() => {
@@ -684,7 +703,7 @@ export function ReferenceEditor({
                 );
               }}
             >
-              Keep my edits
+              <I18nText id="Keep my edits" />
             </Button>
             <Button
               type="button"
@@ -704,28 +723,34 @@ export function ReferenceEditor({
                 setRemote(null);
               }}
             >
-              Use latest metadata
+              <I18nText id="Use latest metadata" />
             </Button>
           </div>
         )}
         <div className="dialog-footer">
-          <Button type="button" className="button secondary" onClick={onCancel}>
-            Cancel
+          <Button
+            data-dialog-cancel
+            type="button"
+            className="button secondary"
+            onClick={onCancel}
+          >
+            <I18nText id="Cancel" />
           </Button>
           <Button
             className="button primary"
             disabled={busy || !!remote || !navigator.onLine}
           >
-            {reference ? "Save reference" : "Add reference"}
+            {reference ? uiText("Save reference") : uiText("Add reference")}
           </Button>
         </div>
       </form>
       {reference && (
         <section className="reference-links-editor">
-          <h3>Related notes & papers</h3>
+          <h3>
+            <I18nText id="Related notes & papers" />
+          </h3>
           <p className="muted">
-            Links follow note permissions. Linking a private draft does not
-            share it.
+            <I18nText id="Links follow note permissions. Linking a private draft does not share it." />
           </p>
           {links.notes.map((n) => (
             <div className="offline-paper-row" key={n.id}>
@@ -742,7 +767,7 @@ export function ReferenceEditor({
                   })
                 }
               >
-                Unlink note
+                <I18nText id="Unlink note" />
               </button>
             </div>
           ))}
@@ -764,18 +789,20 @@ export function ReferenceEditor({
                   })
                 }
               >
-                Unlink PDF
+                <I18nText id="Unlink PDF" />
               </button>
             </div>
           ))}
           <label>
-            Choose a note
+            <I18nText id="Choose a note" />
             <NativeSelect
-              aria-label="Note to link to reference"
+              aria-label={uiText("Note to link to reference")}
               value={chosenNote}
               onChange={(e) => setChosenNote(e.target.value)}
             >
-              <option value="">Select a note…</option>
+              <option value="">
+                <I18nText id="Select a note…" />
+              </option>
               {notes.map((n) => (
                 <option key={n.id} value={n.id}>
                   {n.title}
@@ -796,21 +823,21 @@ export function ReferenceEditor({
               })
             }
           >
-            Link this note
+            <I18nText id="Link this note" />
           </Button>
           {chosenNote && (
             <>
               <label>
-                PDF attached to this note
+                <I18nText id="PDF attached to this note" />
                 <NativeSelect
-                  aria-label="PDF to link to reference"
+                  aria-label={uiText("PDF to link to reference")}
                   value={chosenPaper}
                   onChange={(e) => setChosenPaper(e.target.value)}
                 >
                   <option value="">
                     {papers.length
-                      ? "Select a PDF…"
-                      : "No PDFs attached to this note"}
+                      ? uiText("Select a PDF…")
+                      : uiText("No PDFs attached to this note")}
                   </option>
                   {papers.map((p) => (
                     <option key={p.id} value={p.id}>
@@ -832,7 +859,7 @@ export function ReferenceEditor({
                   })
                 }
               >
-                Link this PDF
+                <I18nText id="Link this PDF" />
               </Button>
             </>
           )}

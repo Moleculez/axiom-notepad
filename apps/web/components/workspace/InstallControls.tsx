@@ -1,4 +1,6 @@
 "use client";
+import { I18nText } from "@axiom/i18n/react";
+
 import { Button, HelpText } from "../ui/controls";
 import { useEffect, useState } from "react";
 import { Download, RefreshCw } from "lucide-react";
@@ -49,12 +51,11 @@ export default function InstallControls() {
           }
         >
           <Download size={16} />
-          Install Axiom
+          <I18nText id="Install Axiom" />
         </Button>
       ) : (
         <HelpText>
-          Install from your browser’s address bar or “Add to Dock” menu for a
-          dedicated app window. Installation requires HTTPS or localhost.
+          <I18nText id="Install from your browser’s address bar or “Add to Dock” menu for a dedicated app window. Installation requires HTTPS or localhost." />
         </HelpText>
       )}
       {waiting && (
@@ -79,7 +80,7 @@ export default function InstallControls() {
           }}
         >
           <RefreshCw size={16} />
-          Apply downloaded update
+          <I18nText id="Apply downloaded update" />
         </Button>
       )}
     </div>

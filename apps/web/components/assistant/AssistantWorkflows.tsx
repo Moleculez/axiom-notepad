@@ -1,4 +1,6 @@
 "use client";
+import { uiText, useInterfaceLocale, I18nText } from "@axiom/i18n/react";
+
 import {
   ActionRow,
   Button,
@@ -30,6 +32,7 @@ export default function AssistantWorkflows({
   onPick: (text: string) => void;
   onReview: (id: string) => void;
 }) {
+  useInterfaceLocale();
   const [open, setOpen] = useState(false),
     [edit, setEdit] = useState<Preset | null>(null),
     [error, setError] = useState(""),
@@ -63,13 +66,15 @@ export default function AssistantWorkflows({
         onClick={() => setOpen(true)}
       >
         <Layers size={15} />
-        Workflows
+        <I18nText id="Workflows" />
       </Button>
       {open && (
         <Dialog
           wide
-          title="Productivity workflows"
-          subtitle="Reusable starting points · every workspace change is reviewed"
+          title={uiText("Productivity workflows")}
+          subtitle={uiText(
+            "Reusable starting points · every workspace change is reviewed",
+          )}
           onClose={() => {
             setOpen(false);
             setEdit(null);
@@ -80,18 +85,18 @@ export default function AssistantWorkflows({
           {edit ? (
             <div className="change-set-fields">
               <label>
-                Name
+                <I18nText id="Name" />
                 <TextInput
-                  aria-label="Workflow name"
+                  aria-label={uiText("Workflow name")}
                   value={edit.name}
                   maxLength={80}
                   onChange={(e) => setEdit({ ...edit, name: e.target.value })}
                 />
               </label>
               <label>
-                Instructions
+                <I18nText id="Instructions" />
                 <TextArea
-                  aria-label="Workflow instructions"
+                  aria-label={uiText("Workflow instructions")}
                   rows={7}
                   maxLength={8000}
                   value={edit.instructions}
@@ -101,15 +106,17 @@ export default function AssistantWorkflows({
                 />
               </label>
               <label>
-                Default destination
+                <I18nText id="Default destination" />
                 <NativeSelect
-                  aria-label="Workflow destination"
+                  aria-label={uiText("Workflow destination")}
                   value={edit.destination_id ?? ""}
                   onChange={(e) =>
                     setEdit({ ...edit, destination_id: e.target.value || null })
                   }
                 >
-                  <option value="">Ask the assistant / workspace root</option>
+                  <option value="">
+                    <I18nText id="Ask the assistant / workspace root" />
+                  </option>
                   {folders.data?.items.map((f) => (
                     <option key={f.id} value={f.id}>
                       {f.name}
@@ -119,10 +126,11 @@ export default function AssistantWorkflows({
               </label>
               <ActionRow>
                 <Button
+                  data-dialog-cancel
                   className="button secondary"
                   onClick={() => setEdit(null)}
                 >
-                  Cancel editing
+                  <I18nText id="Cancel editing" />
                 </Button>
                 <Button
                   className="button primary"
@@ -147,7 +155,7 @@ export default function AssistantWorkflows({
                     })
                   }
                 >
-                  Save private workflow
+                  <I18nText id="Save private workflow" />
                 </Button>
               </ActionRow>
             </div>
@@ -169,7 +177,9 @@ export default function AssistantWorkflows({
               </div>
               <section className="assistant-workflow-custom">
                 <header>
-                  <h3>Your private workflows</h3>
+                  <h3>
+                    <I18nText id="Your private workflows" />
+                  </h3>
                   <Button
                     className="button ghost"
                     onClick={() =>
@@ -177,7 +187,7 @@ export default function AssistantWorkflows({
                     }
                   >
                     <Plus size={14} />
-                    Save a workflow
+                    <I18nText id="Save a workflow" />
                   </Button>
                 </header>
                 {presets.data?.custom.map((p) => (
@@ -220,7 +230,9 @@ export default function AssistantWorkflows({
                 ))}
               </section>
               <section>
-                <h3>Recent reviewed changes</h3>
+                <h3>
+                  <I18nText id="Recent reviewed changes" />
+                </h3>
                 {changes.data
                   ?.filter((s) => s.space_ids.includes(spaceId))
                   .map((s) => (

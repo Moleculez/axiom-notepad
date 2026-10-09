@@ -1,4 +1,6 @@
 "use client";
+import { uiText, useInterfaceLocale, I18nText } from "@axiom/i18n/react";
+
 import {
   Button,
   Checkbox,
@@ -31,7 +33,9 @@ const SettingsEditorPreview = dynamic(() => import("./SettingsEditorPreview"), {
   ssr: false,
   loading: () => (
     <section className="settings-scratchpad" aria-busy="true">
-      <p role="status">Opening temporary scratchpad…</p>
+      <p role="status">
+        <I18nText id="Opening temporary scratchpad…" />
+      </p>
     </section>
   ),
 });
@@ -52,6 +56,7 @@ export default function EditorSettings({
   appearance?: Preferences;
   preview?: boolean;
 }) {
+  useInterfaceLocale();
   const [platform, setPlatform] = useState<ShortcutPlatform>(shortcutPlatform),
     [filter, setFilter] = useState(""),
     [customOnly, setCustomOnly] = useState(false),
@@ -93,7 +98,7 @@ export default function EditorSettings({
   const commands = editorCommands.filter(
     (c) =>
       (!customOnly || Object.hasOwn(value.keybindings[platform], c.id)) &&
-      `${c.label} ${c.category} ${c.keywords} ${keysFor(c.id, value, platform).join(" ")} ${keysFor(
+      `${uiText(c.label)} ${uiText(c.category)} ${c.label} ${c.category} ${c.keywords} ${keysFor(c.id, value, platform).join(" ")} ${keysFor(
         c.id,
         value,
         platform,
@@ -107,24 +112,26 @@ export default function EditorSettings({
     <section className="settings-card editor-settings-card">
       {!shortcuts ? (
         <>
-          <h4>{category === "Editor" ? "Writing behavior" : category}</h4>
+          <h4>
+            {category === "Editor" ? uiText("Writing behavior") : category}
+          </h4>
           {writingControls
             .filter(
               (control) =>
                 control.category === category &&
                 (!search ||
-                  `${control.label} ${control.hint} ${category}`
+                  `${uiText(control.label)} ${uiText(control.hint)} ${control.label} ${control.hint} ${category}`
                     .toLowerCase()
                     .includes(search.toLowerCase())),
             )
             .map(({ key, label, hint }) => (
               <label className="setting-toggle" key={key}>
                 <span>
-                  {label}
-                  <small>{hint}</small>
+                  {uiText(label)}
+                  <small>{uiText(hint)}</small>
                 </span>
                 <Switch
-                  aria-label={label}
+                  aria-label={uiText(label)}
                   checked={value[key]}
                   onChange={(e) =>
                     onChange({ ...value, [key]: e.target.checked })
@@ -135,9 +142,11 @@ export default function EditorSettings({
           {category === "Code" && (
             <>
               <label className="setting-control">
-                <span>Default code language</span>
+                <span>
+                  <I18nText id="Default code language" />
+                </span>
                 <TextInput
-                  aria-label="Default code language"
+                  aria-label={uiText("Default code language")}
                   value={value.defaultCodeLanguage}
                   maxLength={40}
                   onChange={(e) => {
@@ -170,9 +179,11 @@ export default function EditorSettings({
                 </datalist>
               </label>
               <label className="setting-control">
-                <span>Code indentation</span>
+                <span>
+                  <I18nText id="Code indentation" />
+                </span>
                 <NativeSelect
-                  aria-label="Code indentation"
+                  aria-label={uiText("Code indentation")}
                   value={value.indentSize}
                   onChange={(e) =>
                     onChange({
@@ -183,35 +194,29 @@ export default function EditorSettings({
                 >
                   {[2, 4, 8].map((n) => (
                     <option key={n} value={n}>
-                      {n} spaces
+                      {n} <I18nText id="spaces" />
                     </option>
                   ))}
                 </NativeSelect>
               </label>
               <p className="muted">
-                Language-name suggestions are available in the code language
-                field and after an opening fence. Code-body autocomplete and
-                snippet expansion are disabled; Tab indents the code.
+                <I18nText id="Language-name suggestions are available in the code language field and after an opening fence. Code-body autocomplete and snippet expansion are disabled; Tab indents the code." />
               </p>
               <p className="muted">
-                Block display preferences do not change Markdown. Code is never
-                executed.
+                <I18nText id="Block display preferences do not change Markdown. Code is never executed." />
               </p>
             </>
           )}
           {category === "Tables" && (
             <p className="muted">
-              Right-click a cell or press Shift+F10 for row, column and
-              alignment actions. Tables support up to 100 columns and 1,000
-              rows. Markdown headers are preserved; merged cells and formulas
-              are not supported.
+              <I18nText id="Right-click a cell or press Shift+F10 for row, column and alignment actions. Tables support up to 100 columns and 1,000 rows. Markdown headers are preserved; merged cells and formulas are not supported." />
             </p>
           )}
           {category === "Mathematics" && (
             <p className="muted">
-              MathJax runs locally. AMS and chemistry are included. Physics
-              notation is opt-in with <code>{"\\require{physics}"}</code> in
-              your document. External packages and code execution are disabled.
+              <I18nText id="MathJax runs locally. AMS and chemistry are included. Physics notation is opt-in with" />{" "}
+              <code>{"\\require{physics}"}</code>{" "}
+              <I18nText id="in your document. External packages and code execution are disabled." />
             </p>
           )}
           {!search && preview && (
@@ -224,17 +229,17 @@ export default function EditorSettings({
         </>
       ) : (
         <>
-          <h4>Make every action feel familiar</h4>
+          <h4>
+            <I18nText id="Make every action feel familiar" />
+          </h4>
           <p className="muted">
-            Shortcuts sync to your account, independently for each platform.
-            Click a shortcut to record a replacement. Apply keeps your changes;
-            Cancel restores your saved bindings.
+            <I18nText id="Shortcuts sync to your account, independently for each platform. Click a shortcut to record a replacement. Apply keeps your changes; Cancel restores your saved bindings." />
           </p>
           <div className="shortcut-tools">
             <TextInput
               ref={shortcutSearch}
-              aria-label="Search shortcuts"
-              placeholder="Search commands or keys…"
+              aria-label={uiText("Search shortcuts")}
+              placeholder={uiText("Search commands or keys…")}
               value={filter}
               onChange={(e) => {
                 setFilter(e.target.value);
@@ -242,7 +247,7 @@ export default function EditorSettings({
               }}
             />
             <NativeSelect
-              aria-label="Shortcut platform"
+              aria-label={uiText("Shortcut platform")}
               value={platform}
               onChange={(e) => {
                 setPlatform(e.target.value as ShortcutPlatform);
@@ -251,26 +256,33 @@ export default function EditorSettings({
                 setMessage("");
               }}
             >
-              <option value="mac">macOS</option>
-              <option value="windowsLinux">Windows / Linux</option>
+              <option value="mac">
+                <I18nText id="macOS" />
+              </option>
+              <option value="windowsLinux">
+                <I18nText id="Windows / Linux" />
+              </option>
             </NativeSelect>
             <label className="shortcut-filter">
               <Checkbox
                 checked={customOnly}
                 onChange={(e) => setCustomOnly(e.target.checked)}
               />
-              Customized only
+              <I18nText id="Customized only" />
             </label>
           </div>
           <p className="shortcut-results-count" role="status">
-            {commands.length} {commands.length === 1 ? "command" : "commands"}
-            {customOnly ? " with custom bindings" : " available"}
+            {commands.length}{" "}
+            {commands.length === 1 ? uiText("command") : uiText("commands")}
+            {customOnly
+              ? uiText(" with custom bindings")
+              : uiText(" available")}
           </p>
           {recording && (
             <div
               className="shortcut-recorder"
               role="group"
-              aria-label="Record keyboard shortcut"
+              aria-label={uiText("Record keyboard shortcut")}
               tabIndex={0}
               ref={(node) => node?.focus()}
               onKeyDown={(e) => {
@@ -310,13 +322,13 @@ export default function EditorSettings({
             >
               <Keyboard size={18} />
               <span>
-                Press a shortcut for{" "}
-                {editorCommands.find((c) => c.id === recording)?.label}. Escape
-                cancels.
+                <I18nText id="Press a shortcut for" />{" "}
+                {editorCommands.find((c) => c.id === recording)?.label}
+                <I18nText id=". Escape cancels." />
               </span>
               <button
                 type="button"
-                aria-label="Cancel recording"
+                aria-label={uiText("Cancel recording")}
                 onClick={() => {
                   restoreFocus(recording);
                   setRecording(null);
@@ -329,11 +341,12 @@ export default function EditorSettings({
           {pending && (
             <div className="settings-conflict">
               <p>
-                {shortcutLabel(pending.key, platform)} is used by{" "}
+                {shortcutLabel(pending.key, platform)}{" "}
+                <I18nText id="is used by" />{" "}
                 {pending.conflicts
                   .map((id) => editorCommands.find((c) => c.id === id)?.label)
                   .join(", ")}
-                . Reassigning removes it from those commands.
+                <I18nText id=". Reassigning removes it from those commands." />
               </p>
               <Button
                 className="button secondary"
@@ -341,13 +354,14 @@ export default function EditorSettings({
                   assign(pending.id, [pending.key], pending.conflicts)
                 }
               >
-                Reassign shortcut
+                <I18nText id="Reassign shortcut" />
               </Button>
               <Button
+                data-dialog-cancel
                 className="button secondary"
                 onClick={() => setPending(null)}
               >
-                Keep existing bindings
+                <I18nText id="Keep existing bindings" />
               </Button>
             </div>
           )}
@@ -361,10 +375,12 @@ export default function EditorSettings({
                 }
               >
                 <span>
-                  <strong>{c.label}</strong>
+                  <strong>{uiText(c.label)}</strong>
                   <small>
                     {c.category}
-                    {c.scope === "table" ? " · while editing a table" : ""}
+                    {c.scope === "table"
+                      ? uiText(" · while editing a table")
+                      : ""}
                   </small>
                 </span>
                 <button
@@ -385,7 +401,7 @@ export default function EditorSettings({
                 </button>
                 <button
                   className="shortcut-icon"
-                  title="Disable shortcut"
+                  title={uiText("Disable shortcut")}
                   aria-label={`Disable shortcut for ${c.label}`}
                   disabled={!keysFor(c.id, value, platform).length}
                   onClick={() => assign(c.id, [])}
@@ -394,7 +410,7 @@ export default function EditorSettings({
                 </button>
                 <button
                   className="shortcut-icon"
-                  title="Restore default"
+                  title={uiText("Restore default")}
                   aria-label={`Reset shortcut for ${c.label}`}
                   disabled={!Object.hasOwn(value.keybindings[platform], c.id)}
                   onClick={() => assign(c.id, undefined)}
@@ -408,13 +424,15 @@ export default function EditorSettings({
                 <Keyboard size={22} />
                 <h3>
                   {customOnly && !query
-                    ? "No customized shortcuts"
-                    : "No matching commands"}
+                    ? uiText("No customized shortcuts")
+                    : uiText("No matching commands")}
                 </h3>
                 <p>
                   {customOnly
-                    ? "Clear the filter to see all available commands."
-                    : "Try a command name, category, or key combination."}
+                    ? uiText("Clear the filter to see all available commands.")
+                    : uiText(
+                        "Try a command name, category, or key combination.",
+                      )}
                 </p>
                 <button
                   type="button"
@@ -425,7 +443,7 @@ export default function EditorSettings({
                     shortcutSearch.current?.focus();
                   }}
                 >
-                  Show all commands
+                  <I18nText id="Show all commands" />
                 </button>
               </div>
             )}
@@ -437,7 +455,7 @@ export default function EditorSettings({
                 onChange({ ...value, keybindings: editorDefaults.keybindings })
               }
             >
-              Reset all shortcuts
+              <I18nText id="Reset all shortcuts" />
             </Button>
             <Button
               className="button secondary"
@@ -457,11 +475,11 @@ export default function EditorSettings({
               }
             >
               <Download size={14} />
-              Export
+              <I18nText id="Export" />
             </Button>
             <label className="button secondary">
               <Upload size={14} />
-              Import
+              <I18nText id="Import" />
               <input
                 type="file"
                 hidden

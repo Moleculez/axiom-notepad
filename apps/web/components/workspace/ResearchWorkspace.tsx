@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import dynamic from "next/dynamic";
 import { useEffect, useRef } from "react";
 import {
@@ -27,10 +29,10 @@ const Evidence = dynamic(() => import("./ResearchWorkbench"), {
   loading: () => <Loading />,
 });
 const Library = dynamic(() => import("./ResearchLibrary"), {
-  loading: () => <Loading label="Opening reference library…" />,
+  loading: () => <Loading label={uiText("Opening reference library…")} />,
 });
 const Graph = dynamic(() => import("./ResearchGraph"), {
-  loading: () => <Loading label="Opening knowledge graph…" />,
+  loading: () => <Loading label={uiText("Opening knowledge graph…")} />,
 });
 const viewIcons = {
   overview: PanelsTopLeft,
@@ -48,6 +50,7 @@ export type ResearchPanelProps = {
 
 /** Compatibility only: old saved links resolve through the same content ACLs. */
 export function LegacyResearchRedirect() {
+  useInterfaceLocale();
   const { params, parts } = useLocation();
   const query = new URLSearchParams(params);
   if (parts[1] === "references") query.set("view", "library");
@@ -61,15 +64,20 @@ export function LegacyResearchRedirect() {
   return (
     <div className="ws-page">
       <ErrorNotice message={target.error} retry={target.reload} />
-      {!target.error && <Loading label="Opening workspace research…" />}
+      {!target.error && (
+        <Loading label={uiText("Opening workspace research…")} />
+      )}
       {target.error && (
-        <WorkspaceLink to="/workspaces">Browse workspaces</WorkspaceLink>
+        <WorkspaceLink to="/workspaces">
+          <I18nText id="Browse workspaces" />
+        </WorkspaceLink>
       )}
     </div>
   );
 }
 
 export default function ResearchWorkspace({ space }: { space: Space }) {
+  useInterfaceLocale();
   const { navigate } = useWorkspace(),
     { params } = useLocation();
   const view = researchViews.some(([value]) => value === params.get("view"))
@@ -88,10 +96,10 @@ export default function ResearchWorkspace({ space }: { space: Space }) {
   return (
     <section
       className="research-workspace research-embedded"
-      aria-label="Workspace research"
+      aria-label={uiText("Workspace research")}
     >
       <div className="research-navigation">
-        <nav className="research-tabs" aria-label="Research views">
+        <nav className="research-tabs" aria-label={uiText("Research views")}>
           {researchViews.map(([value, label]) => {
             const Icon = viewIcons[value];
             return (
@@ -116,7 +124,7 @@ export default function ResearchWorkspace({ space }: { space: Space }) {
           to="/docs/research/workbench"
         >
           <BookOpen size={15} />
-          Guide
+          <I18nText id="Guide" />
         </WorkspaceLink>
       </div>
       <div className="research-panels">

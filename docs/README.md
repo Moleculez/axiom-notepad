@@ -31,6 +31,7 @@ not installation instructions or proof of today's test results.
 - [Image and Mermaid viewer](VISUAL_VIEWER.md) — inspection, comparison and annotations
 - [Research media and snippets](EDITOR_MEDIA.md) — insertion previews, file codes, figures, excerpts and reusable content
 - [Settings](SETTINGS.md) — previews, preferences and account/device boundaries
+- [Interface languages](LOCALIZATION.md) — ten choices, account/offline synchronization, Arabic chrome and partial translation coverage
 - [Management console](MANAGEMENT_CONSOLE.md) — workspaces, groups, Audit and Trash
 - [Research file views](RESEARCH_TOOLS.md) — Math/Image/Text Studio, viewers and limits
 - [Productivity expansion status](PRODUCTIVITY_ROADMAP.md) — completed increments and remaining stages
@@ -63,6 +64,7 @@ their own deployment-specific acceptance checks.
 - [Canvas architecture](CANVAS_ARCHITECTURE.md) and [Canvas acceptance](CANVAS_V1_ACCEPTANCE.md)
 - [Design system](DESIGN_SYSTEM.md) and [theme authoring criteria](THEME_AUTHORING.md)
 - [UI controls and layout contract](UI_CONTROLS.md) — native controls, hints/notices, action hierarchy, dialog focus and automated drift guard
+- [Localization contract](LOCALIZATION.md#adding-interface-copy) — whole ICU messages, content boundaries, source-independent bindings and RTL acceptance
 - [Brand identity](BRANDING.md) and [illustrated feature tour and reproducible assets](SHOWCASE.md)
 
 Axiom owns its source-preserving parser, editing contracts and interface. Its current

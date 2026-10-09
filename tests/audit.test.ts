@@ -56,7 +56,7 @@ describe("management console contracts", () => {
     ).toEqual({
       crumbs: [
         { label: "Workspaces", to: "/workspaces" },
-        { label: "Lab", to: "/workspaces/a" },
+        { label: "Lab", to: "/workspaces/a", authored: true },
         { label: "General" },
       ],
       up: "/workspaces/a",

@@ -2,8 +2,10 @@ import { build } from "vite";
 import { writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { showcaseAssets } from "./showcase-assets";
+import { buildCatalogs } from "../i18n/build";
 
 // Build public source only. This command never loads .env or the database.
+await buildCatalogs();
 await build({
   configFile: resolve("apps/showcase/vite.config.ts"),
   logLevel: "warn",

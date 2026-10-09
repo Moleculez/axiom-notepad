@@ -1,3 +1,4 @@
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
 import {
   Switch,
   TextInput,
@@ -31,6 +32,7 @@ export default function ReadingSettings({
 }: {
   section: ReadingSection;
 }) {
+  useInterfaceLocale();
   const { appearance, editor } = useSnapshot(),
     { changeAppearance } = useDemo();
   const id = useId();
@@ -109,7 +111,9 @@ export default function ReadingSettings({
       <div className="demo-preference-fields">
         {section === "Typography" && (
           <>
-            <h4>Typefaces</h4>
+            <h4>
+              <I18nText id="Typefaces" />
+            </h4>
             <div className="demo-preference-pair">
               {font("Reading font", "proseFont")}
               {font("Heading font", "headingFont")}
@@ -120,7 +124,7 @@ export default function ReadingSettings({
             </div>
             <div className="demo-preference-pair">
               <Choice
-                label="Body weight"
+                label={uiText("Body weight")}
                 value={appearance.proseWeight}
                 choices={[
                   ["400", "Regular"],
@@ -135,7 +139,7 @@ export default function ReadingSettings({
                 }
               />
               <Choice
-                label="Heading weight"
+                label={uiText("Heading weight")}
                 value={appearance.headingWeight}
                 choices={[
                   ["400", "Regular"],
@@ -150,7 +154,9 @@ export default function ReadingSettings({
                 }
               />
             </div>
-            <h4>Spacing & rhythm</h4>
+            <h4>
+              <I18nText id="Spacing & rhythm" />
+            </h4>
             {range("Line height", "lineHeight", 1.3, 2.4, 0.05, "×")}
             {range(
               "Paragraph spacing",
@@ -175,7 +181,9 @@ export default function ReadingSettings({
         )}
         {section === "Page" && (
           <>
-            <h4>Document layout</h4>
+            <h4>
+              <I18nText id="Document layout" />
+            </h4>
             {range("Reading width", "readingWidth", 45, 110, 1, " ch")}
             {display(
               "Use the full page width",
@@ -184,7 +192,7 @@ export default function ReadingSettings({
             )}
             {range("Equation size", "mathScale", 0.8, 1.5, 0.05, "×")}
             <Toggle
-              label="LaTeX-inspired section numbering"
+              label={uiText("LaTeX-inspired section numbering")}
               checked={appearance.documentDecorations === "latex"}
               onChange={(value) =>
                 changeAppearance({
@@ -193,7 +201,9 @@ export default function ReadingSettings({
               }
             />
             {display("Folding & block-range guides", "blockGuides")}
-            <h4>Reading comfort</h4>
+            <h4>
+              <I18nText id="Reading comfort" />
+            </h4>
             {display(
               "Focus mode",
               "focusMode",
@@ -205,7 +215,7 @@ export default function ReadingSettings({
               "Keep the active writing line near the center.",
             )}
             <Choice
-              label="Motion"
+              label={uiText("Motion")}
               value={appearance.motion}
               choices={[
                 ["system", "Follow system"],
@@ -220,11 +230,13 @@ export default function ReadingSettings({
         )}
         {section === "Code & tables" && (
           <>
-            <h4>Code appearance</h4>
+            <h4>
+              <I18nText id="Code appearance" />
+            </h4>
             {font("Code font", "codeFont")}
             {range("Code font size", "codeSize", 12, 24, 1, " px")}
             <Choice
-              label="Indentation"
+              label={uiText("Indentation")}
               value={String(editor.indentSize)}
               choices={[
                 ["2", "2 spaces"],
@@ -238,9 +250,9 @@ export default function ReadingSettings({
               }
             />
             <label className="demo-preference-field">
-              Default code language
+              <I18nText id="Default code language" />
               <TextInput
-                aria-label="Default code language"
+                aria-label={uiText("Default code language")}
                 value={editor.defaultCodeLanguage}
                 maxLength={40}
                 list={`${id}-languages`}
@@ -248,7 +260,7 @@ export default function ReadingSettings({
                   if (/^[\w+#.-]*$/.test(event.target.value))
                     edit({ defaultCodeLanguage: event.target.value });
                 }}
-                placeholder="Plain text"
+                placeholder={uiText("Plain text")}
               />
               <datalist id={`${id}-languages`}>
                 {[
@@ -275,7 +287,9 @@ export default function ReadingSettings({
             {behavior("Indent code on Enter", "codeIndentOnEnter")}
             {display("Highlight the active source line", "activeLine")}
             {display("Code font ligatures", "ligatures")}
-            <h4>Tables</h4>
+            <h4>
+              <I18nText id="Tables" />
+            </h4>
             {behavior("Navigate table cells with Tab", "tableTabNavigation")}
             {behavior("Tab creates a row at the end", "tableAutoRow")}
             {behavior(
@@ -287,7 +301,9 @@ export default function ReadingSettings({
         )}
         {section === "Typing & math" && (
           <>
-            <h4>Writing assistance</h4>
+            <h4>
+              <I18nText id="Writing assistance" />
+            </h4>
             {behavior(
               "Slash commands",
               "slashCommands",
@@ -297,7 +313,9 @@ export default function ReadingSettings({
             {behavior("Continue lists and quotes on Enter", "continuation")}
             {behavior("Formatting toolbar", "formattingBar")}
             {behavior("Selection formatting menu", "selectionBar")}
-            <h4>Mathematics</h4>
+            <h4>
+              <I18nText id="Mathematics" />
+            </h4>
             {behavior("Live equation preview", "mathPreview")}
             {behavior("Math symbol completion", "mathCompletion")}
             {behavior(
@@ -306,21 +324,20 @@ export default function ReadingSettings({
               "Avoid a flashing preview while an expression is incomplete.",
             )}
             <p className="demo-fineprint">
-              Shortcuts remain available. These controls also apply to rich-text
-              Canvas cards; Read mode never changes your source.
+              <I18nText id="Shortcuts remain available. These controls also apply to rich-text Canvas cards; Read mode never changes your source." />
             </p>
           </>
         )}
         {section === "Minimap" && (
           <>
             <Toggle
-              label="Document minimap"
+              label={uiText("Document minimap")}
               checked={appearance.minimap.enabled}
               onChange={(value) => minimap({ enabled: value })}
             />
             <div className="demo-preference-pair">
               <Choice
-                label="Minimap side"
+                label={uiText("Minimap side")}
                 value={appearance.minimap.side}
                 choices={[
                   ["right", "Right"],
@@ -331,7 +348,7 @@ export default function ReadingSettings({
                 }
               />
               <Choice
-                label="Minimap rendering"
+                label={uiText("Minimap rendering")}
                 value={appearance.minimap.rendering}
                 choices={[
                   ["text", "Text"],
@@ -345,7 +362,7 @@ export default function ReadingSettings({
               />
             </div>
             <Range
-              label="Minimap width"
+              label={uiText("Minimap width")}
               value={appearance.minimap.width}
               min={80}
               max={200}
@@ -354,7 +371,7 @@ export default function ReadingSettings({
               onChange={(value) => minimap({ width: value })}
             />
             <Choice
-              label="Minimap scale"
+              label={uiText("Minimap scale")}
               value={appearance.minimap.size}
               choices={[
                 ["fit", "Fit document"],
@@ -366,7 +383,7 @@ export default function ReadingSettings({
               }
             />
             <Choice
-              label="Viewport indicator"
+              label={uiText("Viewport indicator")}
               value={appearance.minimap.slider}
               choices={[
                 ["hover", "Show on hover"],
@@ -412,17 +429,18 @@ function Choice({
   choices: string[][];
   onChange: (value: string) => void;
 }) {
+  useInterfaceLocale();
   return (
     <label className="demo-preference-field">
-      {label}
+      {uiText(label)}
       <NativeSelect
-        aria-label={label}
+        aria-label={uiText(label)}
         value={value}
         onChange={(event) => onChange(event.target.value)}
       >
         {choices.map(([id, name]) => (
           <option key={id} value={id}>
-            {name}
+            {uiText(name)}
           </option>
         ))}
       </NativeSelect>
@@ -476,18 +494,19 @@ function Toggle({
   hint?: string;
   onChange: (value: boolean) => void;
 }) {
+  useInterfaceLocale();
   const descriptionId = useId();
   return (
     <label className="demo-toggle">
       <Switch
-        aria-label={label}
+        aria-label={uiText(label)}
         aria-describedby={hint ? descriptionId : undefined}
         checked={checked}
         onChange={(event) => onChange(event.target.checked)}
       />
       <span>
-        {label}
-        {hint && <small id={descriptionId}>{hint}</small>}
+        {uiText(label)}
+        {hint && <small id={descriptionId}>{uiText(hint)}</small>}
       </span>
     </label>
   );

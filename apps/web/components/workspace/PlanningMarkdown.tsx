@@ -1,4 +1,6 @@
 "use client";
+import { uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { useEffect, useRef, useState } from "react";
 import * as Y from "yjs";
 import { NativeBinding } from "../../lib/native-editor/binding";
@@ -21,6 +23,7 @@ export default function PlanningMarkdown({
   label?: string;
   isolated?: boolean;
 }) {
+  useInterfaceLocale();
   const { appearance, editorSettings, notify, open } = useWorkspace(),
     [mode, setMode] = useState<"write" | "source">("write");
   const mount = useRef<HTMLDivElement>(null),
@@ -118,7 +121,11 @@ export default function PlanningMarkdown({
               aria-pressed={mode === value}
               onClick={() => setMode(value)}
             >
-              {value === "write" ? (preview ? "Preview" : "Write") : "Source"}
+              {value === "write"
+                ? preview
+                  ? "Preview"
+                  : "Write"
+                : uiText("Source")}
             </button>
           ))}
         </div>

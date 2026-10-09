@@ -1,4 +1,6 @@
 "use client";
+import { uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { IconButton } from "../ui/controls";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
@@ -33,6 +35,7 @@ export default function PdfSelectionActions({
   onQuote: () => void;
   onClose: () => void;
 }) {
+  useInterfaceLocale();
   const root = useRef<HTMLDivElement>(null),
     close = useRef(onClose);
   close.current = onClose;
@@ -93,7 +96,7 @@ export default function PdfSelectionActions({
       ref={root}
       className="pdf-selection-actions"
       role="toolbar"
-      aria-label="Selected text actions"
+      aria-label={uiText("Selected text actions")}
       style={position}
       onMouseDown={(event) => event.preventDefault()}
     >
@@ -117,13 +120,13 @@ export default function PdfSelectionActions({
             disabled={busy}
             title={
               kind === "underline"
-                ? "Underline privately"
-                : "Strike through privately"
+                ? uiText("Underline privately")
+                : uiText("Strike through privately")
             }
             aria-label={
               kind === "underline"
-                ? "Underline selected PDF text"
-                : "Strike through selected PDF text"
+                ? uiText("Underline selected PDF text")
+                : uiText("Strike through selected PDF text")
             }
             onClick={() => onMarkup(kind)}
           >
@@ -134,8 +137,8 @@ export default function PdfSelectionActions({
       <IconButton
         className="icon-button"
         disabled={busy}
-        title="Copy text"
-        aria-label="Copy selected PDF text"
+        title={uiText("Copy text")}
+        aria-label={uiText("Copy selected PDF text")}
         onClick={onCopy}
       >
         <Copy size={15} />
@@ -143,8 +146,8 @@ export default function PdfSelectionActions({
       <IconButton
         className="icon-button"
         disabled={busy}
-        title="Insert quotation with citation"
-        aria-label="Insert selected PDF quotation"
+        title={uiText("Insert quotation with citation")}
+        aria-label={uiText("Insert selected PDF quotation")}
         onClick={onQuote}
       >
         <Quote size={15} />
@@ -152,16 +155,16 @@ export default function PdfSelectionActions({
       <IconButton
         className="icon-button"
         disabled={busy}
-        title="Add annotation note"
-        aria-label="Add note to selected PDF text"
+        title={uiText("Add annotation note")}
+        aria-label={uiText("Add note to selected PDF text")}
         onClick={onNote}
       >
         <StickyNote size={15} />
       </IconButton>
       <IconButton
         className="icon-button"
-        title="Dismiss selection actions"
-        aria-label="Dismiss selection actions"
+        title={uiText("Dismiss selection actions")}
+        aria-label={uiText("Dismiss selection actions")}
         onClick={onClose}
       >
         <X size={14} />

@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import {
@@ -50,7 +52,7 @@ import {
   useWorkspace,
 } from "./ui";
 const Markdown = dynamic(() => import("./PlanningMarkdown"), {
-  loading: () => <Loading label="Opening editor…" />,
+  loading: () => <Loading label={uiText("Opening editor…")} />,
 });
 type GoalInput = z.infer<typeof goalInputSchema>;
 const asDate = (value: string | null) => value?.slice(0, 10) ?? null;
@@ -70,6 +72,7 @@ export function PlanningGoals({
   people: Array<{ id: string; name: string }>;
   readOnly: boolean;
 }) {
+  useInterfaceLocale();
   const { revision, refresh, notify } = useWorkspace(),
     archive = usePlanningArchive<GoalQuery, GoalPage>(
       `spaces/${space.id}/goals`,
@@ -93,57 +96,64 @@ export function PlanningGoals({
   return (
     <section
       className="planning-suite-panel planning-goals"
-      aria-label="Workspace goals"
+      aria-label={uiText("Workspace goals")}
     >
       <header>
         <div>
-          <h2>Goals</h2>
+          <h2>
+            <I18nText id="Goals" />
+          </h2>
         </div>
         <Button
           variant="primary"
           disabled={readOnly || atLimit || !data.data}
           title={
             atLimit
-              ? "The workspace limit includes archived goals; existing goals can still be edited or reopened."
+              ? uiText(
+                  "The workspace limit includes archived goals; existing goals can still be edited or reopened.",
+                )
               : undefined
           }
           onClick={() => setEditing(null)}
         >
           <Plus size={16} />
-          New goal
+          <I18nText id="New goal" />
         </Button>
       </header>
       <ArchiveSearch
-        label="Search goals"
+        label={uiText("Search goals")}
         search={archive.search}
         onSearch={archive.setSearch}
         loading={data.loading}
         onRefresh={archive.refresh}
       >
         <NativeSelect
-          aria-label="Goal filter"
+          aria-label={uiText("Goal filter")}
           value={archive.filters.filter}
           onChange={(e) =>
             archive.set({ filter: e.target.value as GoalQuery["filter"] })
           }
         >
           <option value="active">
-            Active{counts ? ` · ${counts.active}` : ""}
+            <I18nText id="Active" />
+            {counts ? ` · ${counts.active}` : ""}
           </option>
           <option value="archived">
-            Archived{counts ? ` · ${counts.archived}` : ""}
+            <I18nText id="Archived" />
+            {counts ? ` · ${counts.archived}` : ""}
           </option>
           <option value="all">
-            All goals{counts ? ` · ${counts.active + counts.archived}` : ""}
+            <I18nText id="All goals" />
+            {counts ? ` · ${counts.active + counts.archived}` : ""}
           </option>
         </NativeSelect>
         <Button size="compact" onClick={() => setFiltering(true)}>
           <ListFilter size={14} />
-          Filters
+          <I18nText id="Filters" />
           {archive.filters.kind ||
           archive.filters.mine === "1" ||
           archive.filters.sort !== "newest"
-            ? " · On"
+            ? uiText(" · On")
             : ""}
         </Button>
       </ArchiveSearch>
@@ -151,11 +161,11 @@ export function PlanningGoals({
         <HelpText aria-live="polite">
           {data.data
             ? `${data.data.total} matching goals · ${data.data.workspaceTotal} / ${data.data.goalLimit} in this workspace${atLimit ? " (includes archived)" : ""}`
-            : "Loading goals…"}
+            : uiText("Loading goals…")}
         </HelpText>
         {filtered && (
           <Button size="compact" variant="ghost" onClick={archive.reset}>
-            Reset filters
+            <I18nText id="Reset filters" />
           </Button>
         )}
       </div>
@@ -171,9 +181,8 @@ export function PlanningGoals({
         {data.loading && !data.data ? (
           <Loading />
         ) : data.error && !data.data ? null : !rows.length ? (
-          <Empty title="No matching goals">
-            Try another filter, or track a measurable outcome and link the work
-            that delivers it.
+          <Empty title={uiText("No matching goals")}>
+            <I18nText id="Try another filter, or track a measurable outcome and link the work that delivers it." />
           </Empty>
         ) : (
           <div className="planning-outcome-grid">
@@ -195,12 +204,12 @@ export function PlanningGoals({
                     : `${g.progress.tracked} unique tasks and milestones`}
                   {g.due_on ? ` · Due ${asDate(g.due_on)}` : ""}
                   {g.owner_name ? ` · ${g.owner_name}` : ""}
-                  {g.archived ? " · Archived" : ""}
+                  {g.archived ? uiText(" · Archived") : ""}
                 </p>
                 {g.progress.unavailable > 0 && (
                   <HelpText>
-                    {g.progress.unavailable} unavailable linked items are
-                    excluded.
+                    {g.progress.unavailable}{" "}
+                    <I18nText id="unavailable linked items are excluded." />
                   </HelpText>
                 )}
                 <ActionRow>
@@ -210,7 +219,7 @@ export function PlanningGoals({
                     onClick={() => setHistory(g.id)}
                   >
                     <Clock size={14} />
-                    History
+                    <I18nText id="History" />
                   </Button>
                   <Button
                     size="compact"
@@ -232,7 +241,7 @@ export function PlanningGoals({
                     ) : (
                       <Archive size={14} />
                     )}{" "}
-                    {g.archived ? "Reopen" : "Archive"}
+                    {g.archived ? uiText("Reopen") : uiText("Archive")}
                   </Button>
                 </ActionRow>
               </article>
@@ -240,7 +249,7 @@ export function PlanningGoals({
           </div>
         )}
       </div>
-      <ArchivePagination label="Goals" {...archive.pagination} />
+      <ArchivePagination label={uiText("Goals")} {...archive.pagination} />
       {filtering && (
         <GoalFilters
           filters={archive.filters}
@@ -271,7 +280,7 @@ export function PlanningGoals({
         <PlanningHistoryDialog
           spaceId={space.id}
           id={history}
-          title="Goal history"
+          title={uiText("Goal history")}
           onClose={() => setHistory(null)}
         />
       )}
@@ -287,13 +296,14 @@ function GoalFilters({
   onClose: () => void;
   onApply: (patch: Partial<GoalQuery>) => void;
 }) {
+  useInterfaceLocale();
   const [draft, setDraft] = useState({
     kind: filters.kind,
     mine: filters.mine,
     sort: filters.sort,
   });
   return (
-    <Dialog title="Filter goals" onClose={onClose}>
+    <Dialog title={uiText("Filter goals")} onClose={onClose}>
       <form
         onSubmit={(event) => {
           event.preventDefault();
@@ -302,7 +312,7 @@ function GoalFilters({
       >
         <DialogBody>
           <div className="planning-suite-form">
-            <Field label="Tracking type">
+            <Field label={uiText("Tracking type")}>
               <NativeSelect
                 value={draft.kind ?? ""}
                 onChange={(e) =>
@@ -314,12 +324,18 @@ function GoalFilters({
                   }))
                 }
               >
-                <option value="">All tracking types</option>
-                <option value="linked">Linked work</option>
-                <option value="metric">Manual metrics</option>
+                <option value="">
+                  <I18nText id="All tracking types" />
+                </option>
+                <option value="linked">
+                  <I18nText id="Linked work" />
+                </option>
+                <option value="metric">
+                  <I18nText id="Manual metrics" />
+                </option>
               </NativeSelect>
             </Field>
-            <Field label="Creation order">
+            <Field label={uiText("Creation order")}>
               <NativeSelect
                 value={draft.sort}
                 onChange={(e) =>
@@ -329,8 +345,12 @@ function GoalFilters({
                   }))
                 }
               >
-                <option value="newest">Newest first</option>
-                <option value="oldest">Oldest first</option>
+                <option value="newest">
+                  <I18nText id="Newest first" />
+                </option>
+                <option value="oldest">
+                  <I18nText id="Oldest first" />
+                </option>
               </NativeSelect>
             </Field>
             <label className="planning-check-label">
@@ -343,21 +363,20 @@ function GoalFilters({
                   }))
                 }
               />
-              My goals only
+              <I18nText id="My goals only" />
             </label>
             <HelpText>
-              Search includes saved descriptions. The creation limit counts all
-              goals, including archives and other owners.
+              <I18nText id="Search includes saved descriptions. The creation limit counts all goals, including archives and other owners." />
             </HelpText>
           </div>
         </DialogBody>
         <DialogFooter>
           <ActionRow>
-            <Button type="button" onClick={onClose}>
-              Cancel
+            <Button data-dialog-cancel type="button" onClick={onClose}>
+              <I18nText id="Cancel" />
             </Button>
             <Button type="submit" variant="primary">
-              Apply filters
+              <I18nText id="Apply filters" />
             </Button>
           </ActionRow>
         </DialogFooter>
@@ -376,20 +395,23 @@ function GoalOpener({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  useInterfaceLocale();
   // No background revision dependency: this opened source/version is the draft's fence.
   const data = useData<{ item: GoalDetail }>(
     id ? `spaces/${props.spaceId}/goals/${id}` : null,
   );
   if (id && !data.data)
     return (
-      <Dialog title="Goal details" onClose={props.onClose}>
+      <Dialog title={uiText("Goal details")} onClose={props.onClose}>
         <DialogBody>
           <ErrorNotice message={data.error} retry={data.reload} />
-          {data.loading && <Loading label="Opening goal…" />}
+          {data.loading && <Loading label={uiText("Opening goal…")} />}
         </DialogBody>
         <DialogFooter>
           <ActionRow>
-            <Button onClick={props.onClose}>Close</Button>
+            <Button onClick={props.onClose}>
+              <I18nText id="Close" />
+            </Button>
           </ActionRow>
         </DialogFooter>
       </Dialog>
@@ -411,6 +433,7 @@ function GoalEditor({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  useInterfaceLocale();
   const initial: GoalInput = goal
     ? goalInputSchema.parse({
         ...goal,
@@ -431,9 +454,11 @@ function GoalEditor({
     closePlanningDraft(dirty, action.busy, onClose, "Unsaved goal");
   return (
     <Dialog
-      title={goal ? "Goal details" : "New goal"}
+      title={goal ? uiText("Goal details") : uiText("New goal")}
       onClose={close}
-      subtitle="Linked goals count each non-cancelled descendant leaf once, even when parent and child are both selected."
+      subtitle={uiText(
+        "Linked goals count each non-cancelled descendant leaf once, even when parent and child are both selected.",
+      )}
     >
       <form
         onSubmit={(e) => {
@@ -452,13 +477,13 @@ function GoalEditor({
         }}
       >
         <DialogBody>
-          <DraftGuard dirty={dirty} title="Unsaved goal" />
+          <DraftGuard dirty={dirty} title={uiText("Unsaved goal")} />
           <ErrorNotice message={action.error} />
           <fieldset
             disabled={readOnly || action.busy}
             className="planning-suite-form"
           >
-            <Field label="Outcome">
+            <Field label={uiText("Outcome")}>
               <TextInput
                 autoFocus
                 required
@@ -468,15 +493,15 @@ function GoalEditor({
               />
             </Field>
             <div className="planning-field-grid">
-              <Field label="Owner">
+              <Field label={uiText("Owner")}>
                 <PersonPicker
-                  label="Goal owner"
+                  label={uiText("Goal owner")}
                   people={people}
                   value={draft.ownerId ?? ""}
                   onChange={(v) => set({ ownerId: v || null })}
                 />
               </Field>
-              <Field label="Target date">
+              <Field label={uiText("Target date")}>
                 <TextInput
                   type="date"
                   value={draft.dueOn ?? ""}
@@ -484,34 +509,38 @@ function GoalEditor({
                 />
               </Field>
             </div>
-            <Field label="Track by">
+            <Field label={uiText("Track by")}>
               <NativeSelect
                 value={draft.kind}
                 onChange={(e) =>
                   set({ kind: e.target.value as GoalInput["kind"] })
                 }
               >
-                <option value="linked">Linked work</option>
-                <option value="metric">Manual metric</option>
+                <option value="linked">
+                  <I18nText id="Linked work" />
+                </option>
+                <option value="metric">
+                  <I18nText id="Manual metric" />
+                </option>
               </NativeSelect>
             </Field>
             {draft.kind === "linked" ? (
               <>
-                <Field label="Tasks">
+                <Field label={uiText("Tasks")}>
                   <PlanningEntityPicker
                     spaceId={spaceId}
                     kind="task"
-                    label="Goal tasks"
+                    label={uiText("Goal tasks")}
                     multiple
                     value={draft.taskIds}
                     onChange={(v) => set({ taskIds: v as string[] })}
                   />
                 </Field>
-                <Field label="Milestones">
+                <Field label={uiText("Milestones")}>
                   <PlanningEntityPicker
                     spaceId={spaceId}
                     kind="milestone"
-                    label="Goal milestones"
+                    label={uiText("Goal milestones")}
                     multiple
                     value={draft.milestoneIds}
                     onChange={(v) => set({ milestoneIds: v as string[] })}
@@ -520,7 +549,7 @@ function GoalEditor({
               </>
             ) : (
               <div className="planning-field-grid">
-                <Field label="Current value">
+                <Field label={uiText("Current value")}>
                   <TextInput
                     type="number"
                     min={0}
@@ -532,7 +561,7 @@ function GoalEditor({
                     }
                   />
                 </Field>
-                <Field label="Target">
+                <Field label={uiText("Target")}>
                   <TextInput
                     type="number"
                     min={0.000001}
@@ -542,7 +571,7 @@ function GoalEditor({
                     onChange={(e) => set({ target: Number(e.target.value) })}
                   />
                 </Field>
-                <Field label="Unit">
+                <Field label={uiText("Unit")}>
                   <TextInput
                     maxLength={40}
                     value={draft.unit}
@@ -561,7 +590,7 @@ function GoalEditor({
         <DialogFooter>
           <ActionRow>
             <Button type="button" disabled={action.busy} onClick={close}>
-              Close
+              <I18nText id="Close" />
             </Button>
             <Button
               type="submit"
@@ -573,7 +602,7 @@ function GoalEditor({
                 !goalInputSchema.safeParse(draft).success
               }
             >
-              Save goal
+              <I18nText id="Save goal" />
             </Button>
           </ActionRow>
         </DialogFooter>

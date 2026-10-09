@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { NativeSelect, TextInput } from "../ui/controls";
 import { useState } from "react";
 import type { Annotation } from "@axiom/shared/research";
@@ -13,6 +15,7 @@ export default function PdfBulkActions({
   onClear: () => void;
   onRefresh: () => void;
 }) {
+  useInterfaceLocale();
   const [action, setAction] = useState("color"),
     [value, setValue] = useState("yellow"),
     [busy, setBusy] = useState(false),
@@ -99,13 +102,15 @@ export default function PdfBulkActions({
   return (
     <section
       className="pdf-bulk-actions"
-      aria-label="Selected annotation actions"
+      aria-label={uiText("Selected annotation actions")}
     >
       {!!marks.length && (
         <>
-          <span>{marks.length} selected</span>
+          <span>
+            {marks.length} <I18nText id="selected" />
+          </span>
           <NativeSelect
-            aria-label="Bulk annotation action"
+            aria-label={uiText("Bulk annotation action")}
             value={action}
             disabled={busy}
             onChange={(e) => {
@@ -113,15 +118,25 @@ export default function PdfBulkActions({
               setValue(e.target.value === "color" ? "yellow" : "");
             }}
           >
-            <option value="color">Recolor</option>
-            <option value="tag">Add tag</option>
-            <option value="share">Share</option>
-            <option value="private">Make private</option>
-            <option value="delete">Remove</option>
+            <option value="color">
+              <I18nText id="Recolor" />
+            </option>
+            <option value="tag">
+              <I18nText id="Add tag" />
+            </option>
+            <option value="share">
+              <I18nText id="Share" />
+            </option>
+            <option value="private">
+              <I18nText id="Make private" />
+            </option>
+            <option value="delete">
+              <I18nText id="Remove" />
+            </option>
           </NativeSelect>
           {action === "color" ? (
             <NativeSelect
-              aria-label="Bulk annotation color"
+              aria-label={uiText("Bulk annotation color")}
               value={value}
               onChange={(e) => setValue(e.target.value)}
             >
@@ -131,7 +146,7 @@ export default function PdfBulkActions({
             </NativeSelect>
           ) : action === "tag" ? (
             <TextInput
-              aria-label="Bulk annotation tag"
+              aria-label={uiText("Bulk annotation tag")}
               value={value}
               maxLength={40}
               onChange={(e) => setValue(e.target.value)}
@@ -146,10 +161,10 @@ export default function PdfBulkActions({
             }
             onClick={() => void apply()}
           >
-            Apply
+            <I18nText id="Apply" />
           </button>
           <button disabled={busy} onClick={onClear}>
-            Clear
+            <I18nText id="Clear" />
           </button>
         </>
       )}
@@ -158,7 +173,7 @@ export default function PdfBulkActions({
           disabled={busy || !navigator.onLine}
           onClick={() => void apply(true)}
         >
-          Undo {undo.length} changes
+          <I18nText id="Undo" /> {undo.length} <I18nText id="changes" />
         </button>
       )}
       {message && <p role="status">{message}</p>}

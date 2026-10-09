@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import {
   ActionRow,
   Button,
@@ -31,6 +33,7 @@ export function FolderDestination({
   exclude?: string[];
   sameSpace?: string;
 }) {
+  useInterfaceLocale();
   const { spaces, revision } = useWorkspace();
   const [search, setSearch] = useState(""),
     [cursor, setCursor] = useState<string | null>(null),
@@ -48,9 +51,9 @@ export function FolderDestination({
   return (
     <div className="file-destination">
       <label>
-        Workspace
+        <I18nText id="Workspace" />
         <NativeSelect
-          aria-label="Destination workspace"
+          aria-label={uiText("Destination workspace")}
           value={value.spaceId}
           onChange={(event) =>
             onChange({ spaceId: event.target.value, parentId: null })
@@ -66,21 +69,21 @@ export function FolderDestination({
             .map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name}
-                {s.kind === "personal" ? " · Only you" : ""}
+                {s.kind === "personal" ? uiText(" · Only you") : ""}
               </option>
             ))}
         </NativeSelect>
       </label>
       <label>
-        Find a destination folder
+        <I18nText id="Find a destination folder" />
         <TextInput
           type="search"
           value={search}
-          placeholder="Search folders in this workspace…"
+          placeholder={uiText("Search folders in this workspace…")}
           onChange={(e) => setSearch(e.target.value)}
         />
       </label>
-      <nav aria-label="Destination breadcrumbs">
+      <nav aria-label={uiText("Destination breadcrumbs")}>
         <button
           className="text-button"
           onClick={() => {
@@ -88,7 +91,7 @@ export function FolderDestination({
             onChange({ ...value, parentId: null });
           }}
         >
-          Root
+          <I18nText id="Root" />
         </button>
         {rows.data?.breadcrumbs.map((r) => (
           <span key={r.id}>
@@ -124,7 +127,7 @@ export function FolderDestination({
           ))}
         {!rows.loading && !rows.data?.items.length && (
           <HelpText>
-            No subfolders. Use the current folder as the destination.
+            <I18nText id="No subfolders. Use the current folder as the destination." />
           </HelpText>
         )}
       </div>
@@ -139,7 +142,7 @@ export function FolderDestination({
               setPrevious((items) => items.slice(0, -1));
             }}
           >
-            Previous folders
+            <I18nText id="Previous folders" />
           </Button>
           <Button
             className="button secondary"
@@ -149,7 +152,7 @@ export function FolderDestination({
               setCursor(rows.data!.nextCursor);
             }}
           >
-            Next folders
+            <I18nText id="Next folders" />
           </Button>
         </ActionRow>
       )}
@@ -169,6 +172,7 @@ export function FileOperationDialog({
   onClose: () => void;
   onSubmit: (input: FileOperationInput) => Promise<void>;
 }) {
+  useInterfaceLocale();
   const { spaces } = useWorkspace(),
     action = useAction();
   const [destination, setDestination] = useState(
@@ -215,7 +219,7 @@ export function FileOperationDialog({
       {command === "rename" && (
         <div className="bulk-rename-fields">
           <label>
-            Rename method
+            <I18nText id="Rename method" />
             <NativeSelect
               value={rename.mode}
               onChange={(e) =>
@@ -225,15 +229,23 @@ export function FileOperationDialog({
                 })
               }
             >
-              <option value="prefix">Add prefix</option>
-              <option value="suffix">Add suffix</option>
-              <option value="replace">Find and replace</option>
-              <option value="number">Number sequence</option>
+              <option value="prefix">
+                <I18nText id="Add prefix" />
+              </option>
+              <option value="suffix">
+                <I18nText id="Add suffix" />
+              </option>
+              <option value="replace">
+                <I18nText id="Find and replace" />
+              </option>
+              <option value="number">
+                <I18nText id="Number sequence" />
+              </option>
             </NativeSelect>
           </label>
           {rename.mode === "replace" && (
             <label>
-              Find
+              <I18nText id="Find" />
               <TextInput
                 value={rename.find}
                 onChange={(e) => setRename({ ...rename, find: e.target.value })}
@@ -241,7 +253,9 @@ export function FileOperationDialog({
             </label>
           )}
           <label>
-            {rename.mode === "number" ? "Base name" : "New text"}
+            {rename.mode === "number"
+              ? uiText("Base name")
+              : uiText("New text")}
             <TextInput
               value={rename.text}
               onChange={(e) => setRename({ ...rename, text: e.target.value })}
@@ -249,7 +263,7 @@ export function FileOperationDialog({
           </label>
           {rename.mode === "number" && (
             <label>
-              Start number
+              <I18nText id="Start number" />
               <TextInput
                 type="number"
                 min={1}
@@ -268,8 +282,7 @@ export function FileOperationDialog({
             </label>
           )}
           <HelpText>
-            File extensions are preserved. Each rename is checked against the
-            current revision.
+            <I18nText id="File extensions are preserved. Each rename is checked against the current revision." />
           </HelpText>
         </div>
       )}
@@ -288,14 +301,12 @@ export function FileOperationDialog({
       </ul>
       {command === "copy" && (
         <HelpText>
-          Copies include current content and linked evidence. Comments and
-          version history remain with the originals.
+          <I18nText id="Copies include current content and linked evidence. Comments and version history remain with the originals." />
         </HelpText>
       )}
       {command === "trash" && (
         <HelpText>
-          Selected items and their children remain recoverable in Trash. This
-          does not permanently delete anything.
+          <I18nText id="Selected items and their children remain recoverable in Trash. This does not permanently delete anything." />
         </HelpText>
       )}
       {crossing && (
@@ -305,25 +316,28 @@ export function FileOperationDialog({
             onChange={(e) => setConfirmed(e.target.checked)}
           />
           <span>
-            I confirm that the destination uses{" "}
+            <I18nText id="I confirm that the destination uses" />{" "}
             <strong>
               {spaces.find((s) => s.id === destination.spaceId)?.name}
             </strong>
-            ’s permissions.{" "}
+            <I18nText id="’s permissions." />{" "}
             {command === "move"
-              ? "Existing links will follow those permissions. Moving between workspaces requires management access to the source."
-              : "Original permissions remain unchanged."}
+              ? uiText(
+                  "Existing links will follow those permissions. Moving between workspaces requires management access to the source.",
+                )
+              : uiText("Original permissions remain unchanged.")}
           </span>
         </label>
       )}
       <ErrorNotice message={action.error || renameError} />
       <div className="dialog-footer">
         <Button
+          data-dialog-cancel
           className="button secondary"
           disabled={action.busy}
           onClick={onClose}
         >
-          Cancel
+          <I18nText id="Cancel" />
         </Button>
         <Button
           className={`button ${command === "trash" ? "danger" : "primary"}`}
@@ -347,7 +361,7 @@ export function FileOperationDialog({
           }
         >
           {action.busy
-            ? "Preparing…"
+            ? uiText("Preparing…")
             : command === "rename"
               ? "Rename items"
               : command === "copy"
@@ -373,6 +387,7 @@ export function FileOperationActivity({
   onOpen: (id: string) => void;
   embedded?: boolean;
 }) {
+  useInterfaceLocale();
   const { refresh } = useWorkspace(),
     action = useAction(),
     [tick, setTick] = useState(0),
@@ -413,14 +428,16 @@ export function FileOperationActivity({
         <>
           <button className="text-button" onClick={() => onOpen("")}>
             <ArrowLeft size={14} />
-            All operations
+            <I18nText id="All operations" />
           </button>
           <h3>
-            {op.command} · {op.input.items.length} items
+            {op.command} · {op.input.items.length} <I18nText id="items" />
           </h3>
           <p role="status">
-            {op.status} · {op.results.filter((r) => r.ok).length} completed ·{" "}
-            {op.results.filter((r) => !r.ok).length} need attention
+            {op.status} · {op.results.filter((r) => r.ok).length}{" "}
+            <I18nText id="completed ·" />{" "}
+            {op.results.filter((r) => !r.ok).length}{" "}
+            <I18nText id="need attention" />
           </p>
           <ul className="file-operation-results">
             {op.input.items.map((item) => {
@@ -430,7 +447,7 @@ export function FileOperationActivity({
                   <strong>{item.original.name}</strong>
                   <span>
                     {result?.ok
-                      ? "Completed"
+                      ? uiText("Completed")
                       : result?.error ||
                         (op.status === "cancelled" ? "Cancelled" : "Waiting")}
                   </span>
@@ -441,6 +458,7 @@ export function FileOperationActivity({
           <ActionRow>
             {["queued", "running"].includes(op.status) ? (
               <Button
+                data-dialog-cancel
                 className="button secondary"
                 disabled={action.busy}
                 onClick={() =>
@@ -450,7 +468,7 @@ export function FileOperationActivity({
                   })
                 }
               >
-                Cancel remaining
+                <I18nText id="Cancel remaining" />
               </Button>
             ) : (
               (op.results.some((r) => !r.ok) ||
@@ -465,7 +483,7 @@ export function FileOperationActivity({
                     })
                   }
                 >
-                  Retry remaining
+                  <I18nText id="Retry remaining" />
                 </Button>
               )
             )}
@@ -521,13 +539,12 @@ export function FileOperationActivity({
                     })
                   }
                 >
-                  Undo unchanged items
+                  <I18nText id="Undo unchanged items" />
                 </Button>
               )}
           </ActionRow>
           <HelpText>
-            Undo checks permissions and revisions again; it never overwrites
-            later edits.
+            <I18nText id="Undo checks permissions and revisions again; it never overwrites later edits." />
           </HelpText>
         </>
       ) : (
@@ -540,20 +557,22 @@ export function FileOperationActivity({
             >
               <History size={16} />
               <span>
-                {r.command} · {r.input.items.length} items
+                {r.command} · {r.input.items.length} <I18nText id="items" />
               </span>
               <small>{r.status}</small>
             </Button>
           ))}
           {!data.loading && !data.data?.length && (
-            <p>No file operations yet.</p>
+            <p>
+              <I18nText id="No file operations yet." />
+            </p>
           )}
         </div>
       )}
       {!embedded && (
         <div className="dialog-footer">
           <Button className="button primary" onClick={onClose}>
-            Continue working
+            <I18nText id="Continue working" />
           </Button>
         </div>
       )}
@@ -562,7 +581,7 @@ export function FileOperationActivity({
   return embedded ? (
     <section className="console-operation">{content}</section>
   ) : (
-    <Dialog title="Operation details" onClose={onClose}>
+    <Dialog title={uiText("Operation details")} onClose={onClose}>
       {content}
     </Dialog>
   );
@@ -574,6 +593,7 @@ export function ShortcutDialog({
   item: Resource;
   onClose: () => void;
 }) {
+  useInterfaceLocale();
   const [target, setTarget] = useState({
       spaceId: item.space_id,
       parentId: item.parent_id,
@@ -582,10 +602,11 @@ export function ShortcutDialog({
     action = useAction(),
     { refresh } = useWorkspace();
   return (
-    <Dialog title="Create shortcut" onClose={onClose}>
+    <Dialog title={uiText("Create shortcut")} onClose={onClose}>
       <p>
-        <Link2 size={16} />A shortcut points to {item.name}; it does not copy
-        content or grant access.
+        <Link2 size={16} />
+        <I18nText id="A shortcut points to" /> {item.name}
+        <I18nText id="; it does not copy content or grant access." />
       </p>
       <FolderDestination
         value={target}
@@ -609,7 +630,7 @@ export function ShortcutDialog({
             })
           }
         >
-          Create shortcut here
+          <I18nText id="Create shortcut here" />
         </Button>
       </div>
     </Dialog>

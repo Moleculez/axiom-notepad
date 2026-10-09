@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { useState } from "react";
 import { Bookmark, SlidersHorizontal, X } from "lucide-react";
 import { z } from "zod";
@@ -111,6 +113,7 @@ export function PlanningViewActions({
   params: URLSearchParams;
   change: (changes: Record<string, string | null>) => void;
 }) {
+  useInterfaceLocale();
   const { revision, refresh, session, notify } = useWorkspace(),
     data = useData<SavedView[]>(`spaces/${spaceId}/planning-views`, revision),
     action = useAction();
@@ -121,7 +124,7 @@ export function PlanningViewActions({
   return (
     <>
       <NativeSelect
-        aria-label="Planning presets and saved views"
+        aria-label={uiText("Planning presets and saved views")}
         value=""
         onChange={(e) => {
           const id = e.target.value;
@@ -139,27 +142,39 @@ export function PlanningViewActions({
             });
         }}
       >
-        <option value="">Views & presets</option>
-        <optgroup label="Presets">
-          <option value="all">All work</option>
-          <option value="mine">My work</option>
-          <option value="upcoming">Upcoming · 7 days</option>
-          <option value="blocked">Blocked</option>
-          <option value="overdue">Overdue</option>
+        <option value="">
+          <I18nText id="Views & presets" />
+        </option>
+        <optgroup label={uiText("Presets")}>
+          <option value="all">
+            <I18nText id="All work" />
+          </option>
+          <option value="mine">
+            <I18nText id="My work" />
+          </option>
+          <option value="upcoming">
+            <I18nText id="Upcoming · 7 days" />
+          </option>
+          <option value="blocked">
+            <I18nText id="Blocked" />
+          </option>
+          <option value="overdue">
+            <I18nText id="Overdue" />
+          </option>
         </optgroup>
         {!!data.data?.length && (
-          <optgroup label="Saved views">
+          <optgroup label={uiText("Saved views")}>
             {data.data.map((v) => (
               <option key={v.id} value={v.id}>
                 {v.name}
-                {v.user_id === null ? " · workspace" : ""}
+                {v.user_id === null ? uiText(" · workspace") : ""}
               </option>
             ))}
           </optgroup>
         )}
       </NativeSelect>
       <IconButton
-        label="Manage saved views"
+        label={uiText("Manage saved views")}
         onClick={() => {
           setEditing(null);
           setName("");
@@ -171,8 +186,10 @@ export function PlanningViewActions({
       </IconButton>
       {open && (
         <Dialog
-          title="Saved planning views"
-          subtitle="Save filters, timeline scale, columns and layers. Private views are visible only to you."
+          title={uiText("Saved planning views")}
+          subtitle={uiText(
+            "Save filters, timeline scale, columns and layers. Private views are visible only to you.",
+          )}
           onClose={() => !action.busy && setOpen(false)}
         >
           <ErrorNotice
@@ -183,7 +200,9 @@ export function PlanningViewActions({
             {data.data?.map((v) => (
               <div key={v.id}>
                 <strong>{v.name}</strong>
-                <small>{v.user_id === null ? "Workspace" : "Private"}</small>
+                <small>
+                  {v.user_id === null ? uiText("Workspace") : uiText("Private")}
+                </small>
                 <Button
                   size="compact"
                   variant="ghost"
@@ -192,7 +211,7 @@ export function PlanningViewActions({
                     setOpen(false);
                   }}
                 >
-                  Open
+                  <I18nText id="Open" />
                 </Button>
                 {(v.user_id === session.user.id || canManage) && (
                   <Button
@@ -204,7 +223,7 @@ export function PlanningViewActions({
                       setShared(v.user_id === null);
                     }}
                   >
-                    Edit
+                    <I18nText id="Edit" />
                   </Button>
                 )}
                 {(v.user_id === session.user.id || canManage) && (
@@ -249,7 +268,11 @@ export function PlanningViewActions({
               });
             }}
           >
-            <Field label={editing ? "Rename view" : "Save current view"}>
+            <Field
+              label={
+                editing ? uiText("Rename view") : uiText("Save current view")
+              }
+            >
               <TextInput
                 required
                 maxLength={120}
@@ -263,19 +286,21 @@ export function PlanningViewActions({
                   checked={shared}
                   onChange={(e) => setShared(e.target.checked)}
                 />
-                Share with this workspace
+                <I18nText id="Share with this workspace" />
               </label>
             )}
             {editing && (
               <HelpText>
-                Saving also replaces this view’s settings with the current view.
+                <I18nText id="Saving also replaces this view’s settings with the current view." />
               </HelpText>
             )}
             <ActionRow>
               <Button type="submit" variant="primary" disabled={action.busy}>
-                {editing ? "Update view" : "Save view"}
+                {editing ? uiText("Update view") : uiText("Save view")}
               </Button>
-              <Button onClick={() => setOpen(false)}>Done</Button>
+              <Button onClick={() => setOpen(false)}>
+                <I18nText id="Done" />
+              </Button>
             </ActionRow>
           </form>
         </Dialog>
@@ -299,6 +324,7 @@ export function PlanningBulkActions({
   onClear: () => void;
   onSchedule: (changes: ScheduleChange[]) => void;
 }) {
+  useInterfaceLocale();
   const { refresh, notify } = useWorkspace(),
     action = useAction();
   const [open, setOpen] = useState(false),
@@ -318,13 +344,17 @@ export function PlanningBulkActions({
     <div
       className="planning-selection-bar"
       role="region"
-      aria-label="Selected tasks"
+      aria-label={uiText("Selected tasks")}
     >
-      <strong>{selected.length} selected</strong>
+      <strong>
+        {selected.length} <I18nText id="selected" />
+      </strong>
       <HelpText>
         {selected.length > 1000
-          ? "At most 1,000 tasks per reviewed change."
-          : "Versions are checked together; a conflict changes nothing."}
+          ? uiText("At most 1,000 tasks per reviewed change.")
+          : uiText(
+              "Versions are checked together; a conflict changes nothing.",
+            )}
       </HelpText>
       <Button
         variant="ghost"
@@ -332,19 +362,21 @@ export function PlanningBulkActions({
         onClick={() => setOpen(true)}
       >
         <SlidersHorizontal size={15} />
-        Bulk change
+        <I18nText id="Bulk change" />
       </Button>
-      <IconButton label="Clear task selection" onClick={onClear}>
+      <IconButton label={uiText("Clear task selection")} onClick={onClear}>
         <X size={15} />
       </IconButton>
       {open && (
         <Dialog
           title={`Update ${selected.length} selected tasks`}
           onClose={() => !action.busy && setOpen(false)}
-          subtitle="The operation is all-or-nothing. Current versions and workspace permissions are checked again when saving."
+          subtitle={uiText(
+            "The operation is all-or-nothing. Current versions and workspace permissions are checked again when saving.",
+          )}
         >
           <ErrorNotice message={action.error} />
-          <Field label="Change">
+          <Field label={uiText("Change")}>
             <NativeSelect
               value={operation}
               onChange={(e) => {
@@ -358,18 +390,32 @@ export function PlanningBulkActions({
                 );
               }}
             >
-              <option value="status">Status</option>
-              <option value="priority">Priority</option>
-              <option value="assigneeId">Assignee</option>
-              <option value="labels">Replace labels</option>
-              <option value="shift">Shift scheduled tasks</option>
-              <option value="trash">Move to Trash</option>
-              <option value="restore">Restore</option>
+              <option value="status">
+                <I18nText id="Status" />
+              </option>
+              <option value="priority">
+                <I18nText id="Priority" />
+              </option>
+              <option value="assigneeId">
+                <I18nText id="Assignee" />
+              </option>
+              <option value="labels">
+                <I18nText id="Replace labels" />
+              </option>
+              <option value="shift">
+                <I18nText id="Shift scheduled tasks" />
+              </option>
+              <option value="trash">
+                <I18nText id="Move to Trash" />
+              </option>
+              <option value="restore">
+                <I18nText id="Restore" />
+              </option>
             </NativeSelect>
           </Field>
           {operation === "status" ? (
             <NativeSelect
-              aria-label="New status"
+              aria-label={uiText("New status")}
               value={value}
               onChange={(e) => setValue(e.target.value)}
             >
@@ -381,7 +427,7 @@ export function PlanningBulkActions({
             </NativeSelect>
           ) : operation === "priority" ? (
             <NativeSelect
-              aria-label="New priority"
+              aria-label={uiText("New priority")}
               value={value}
               onChange={(e) => setValue(e.target.value)}
             >
@@ -391,15 +437,17 @@ export function PlanningBulkActions({
             </NativeSelect>
           ) : operation === "assigneeId" ? (
             <PersonPicker
-              label="New assignee"
+              label={uiText("New assignee")}
               people={people}
               value={value}
               onChange={setValue}
             />
           ) : operation === "labels" ? (
             <Field
-              label="New labels, comma separated"
-              hint="Replaces all selected tasks’ labels. Empty clears them."
+              label={uiText("New labels, comma separated")}
+              hint={uiText(
+                "Replaces all selected tasks’ labels. Empty clears them.",
+              )}
             >
               <TextInput
                 value={value}
@@ -408,7 +456,7 @@ export function PlanningBulkActions({
             </Field>
           ) : operation === "shift" ? (
             <Field
-              label="Shift by calendar days"
+              label={uiText("Shift by calendar days")}
               hint={`${dated.length} dated tasks included · ${selected.length - dated.length} unscheduled, completed, cancelled or deleted tasks skipped. A working-calendar proposal and dependent-task review follows.`}
             >
               <TextInput
@@ -423,12 +471,18 @@ export function PlanningBulkActions({
           ) : (
             <HelpText>
               {operation === "trash"
-                ? "Selected children are processed first. An unselected live child prevents the entire removal."
-                : "Selected parents are restored first. An unavailable parent prevents the entire restore."}
+                ? uiText(
+                    "Selected children are processed first. An unselected live child prevents the entire removal.",
+                  )
+                : uiText(
+                    "Selected parents are restored first. An unavailable parent prevents the entire restore.",
+                  )}
             </HelpText>
           )}
           <ActionRow>
-            <Button onClick={() => setOpen(false)}>Cancel</Button>
+            <Button data-dialog-cancel onClick={() => setOpen(false)}>
+              <I18nText id="Cancel" />
+            </Button>
             <Button
               variant={operation === "trash" ? "danger" : "primary"}
               disabled={
@@ -487,7 +541,9 @@ export function PlanningBulkActions({
                 })
               }
             >
-              {operation === "shift" ? "Review schedule" : "Apply change"}
+              {operation === "shift"
+                ? uiText("Review schedule")
+                : uiText("Apply change")}
             </Button>
           </ActionRow>
         </Dialog>

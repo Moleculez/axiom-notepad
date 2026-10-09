@@ -1,4 +1,6 @@
 "use client";
+import { I18nText } from "@axiom/i18n/react";
+
 import { useMemo } from "react";
 import dynamic from "next/dynamic";
 import type { ToolProject } from "@axiom/shared/research-tools";
@@ -82,7 +84,7 @@ export function CanvasSurface({
           className="button ghost"
           to={`/explorer?space=${project.space_id}${project.parent_id ? `&folder=${project.parent_id}` : ""}`}
         >
-          ← Explorer
+          <I18nText id="← Explorer" />
         </WorkspaceLink>
       ),
       discussion: (cardId, names, select) => (

@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { Button, Checkbox, Notice, TextInput } from "../ui/controls";
 import {
   createContext,
@@ -219,6 +221,7 @@ export function ManagementProvider({
 }: {
   children: React.ReactNode;
 }) {
+  useInterfaceLocale();
   const {
     spaces,
     refresh,
@@ -1093,8 +1096,10 @@ export function ManagementProvider({
       )}
       {modal?.kind === "color" && (
         <Dialog
-          title="Personal folder color"
-          subtitle="Synced to your account. Other collaborators keep their own colors."
+          title={uiText("Personal folder color")}
+          subtitle={uiText(
+            "Synced to your account. Other collaborators keep their own colors.",
+          )}
           onClose={closed}
         >
           <div className="folder-color-choices">
@@ -1166,8 +1171,8 @@ export function ManagementProvider({
       )}
       {modal?.kind === "newProject" && (
         <NameDialog
-          title="Create a workspace"
-          label="Workspace name"
+          title={uiText("Create a workspace")}
+          label={uiText("Workspace name")}
           onClose={closed}
           onSave={async (name) => {
             const project = await mutate("spaces", {
@@ -1183,8 +1188,8 @@ export function ManagementProvider({
       )}
       {modal?.kind === "renameSpace" && (
         <NameDialog
-          title="Rename workspace"
-          label="Workspace name"
+          title={uiText("Rename workspace")}
+          label={uiText("Workspace name")}
           initial={modal.space.name}
           onClose={closed}
           onSave={async (name) => {
@@ -1215,9 +1220,9 @@ export function ManagementProvider({
       )}
       {modal?.kind === "leave" && (
         <ConfirmAction
-          title="Leave this workspace?"
+          title={uiText("Leave this workspace?")}
           description={`You will lose access to ${modal.space.name} and its projects. Your personal notes and files remain yours.`}
-          label="Leave workspace"
+          label={uiText("Leave workspace")}
           onClose={closed}
           onConfirm={async () => {
             await post(`group-admin/${modal.space.group_id}/leave`, {});
@@ -1228,8 +1233,8 @@ export function ManagementProvider({
       )}
       {item && resourceModal?.command === "rename" && (
         <NameDialog
-          title="Rename item"
-          label="Name"
+          title={uiText("Rename item")}
+          label={uiText("Name")}
           initial={item.name}
           onClose={closed}
           onSave={async (name) => {
@@ -1269,8 +1274,8 @@ export function ManagementProvider({
           <Dialog
             title={
               resourceModal.command === "versions"
-                ? "Version history"
-                : "Item properties"
+                ? uiText("Version history")
+                : uiText("Item properties")
             }
             onClose={closed}
           >
@@ -1335,6 +1340,7 @@ function ConfirmAction({
   onClose: () => void;
   onConfirm: () => Promise<void>;
 }) {
+  useInterfaceLocale();
   const action = useAction();
   return (
     <Dialog
@@ -1346,18 +1352,19 @@ function ConfirmAction({
       <ErrorNotice message={action.error} />
       <div className="dialog-footer">
         <Button
+          data-dialog-cancel
           className="button secondary"
           disabled={action.busy}
           onClick={onClose}
         >
-          Cancel
+          <I18nText id="Cancel" />
         </Button>
         <Button
           className="button danger"
           disabled={action.busy}
           onClick={() => void action.run(onConfirm)}
         >
-          {action.busy ? "Working…" : label}
+          {action.busy ? uiText("Working…") : label}
         </Button>
       </div>
     </Dialog>
@@ -1378,6 +1385,7 @@ function BulkResourceAction({
   ) => Promise<(ids: string[]) => Promise<void>>;
   operationSignal: () => AbortSignal;
 }) {
+  useInterfaceLocale();
   const { refresh, notify } = useWorkspace();
   const [remaining, setRemaining] = useState(operation.items),
     action = useAction();
@@ -1389,14 +1397,16 @@ function BulkResourceAction({
     >
       <p>
         {restoring
-          ? "These items will return to their original folders where possible."
-          : "Selected items and nested contents remain recoverable in Trash."}
+          ? uiText(
+              "These items will return to their original folders where possible.",
+            )
+          : uiText(
+              "Selected items and nested contents remain recoverable in Trash.",
+            )}
       </p>
       {!restoring && (
         <Notice tone="warning">
-          Published website copies are independent. Trashing a private source
-          does not remove it from a public website; unpublish or replace its
-          website release separately.
+          <I18nText id="Published website copies are independent. Trashing a private source does not remove it from a public website; unpublish or replace its website release separately." />
         </Notice>
       )}
       <ul className="ws-operation-items">
@@ -1407,11 +1417,12 @@ function BulkResourceAction({
       <ErrorNotice message={action.error} />
       <div className="dialog-footer">
         <Button
+          data-dialog-cancel
           className="button secondary"
           disabled={action.busy}
           onClick={onClose}
         >
-          Cancel
+          <I18nText id="Cancel" />
         </Button>
         <Button
           className={`button ${restoring ? "primary" : "danger"}`}
@@ -1453,7 +1464,7 @@ function BulkResourceAction({
           }
         >
           {action.busy
-            ? "Working…"
+            ? uiText("Working…")
             : restoring
               ? "Restore items"
               : "Move to trash"}
@@ -1473,6 +1484,7 @@ function PasteDialog({
   onClose: () => void;
   onDone: (ids: string[]) => void;
 }) {
+  useInterfaceLocale();
   const { spaces, refresh } = useWorkspace(),
     action = useAction();
   const [confirmed, setConfirmed] = useState(false),
@@ -1491,8 +1503,11 @@ function PasteDialog({
       onClose={close}
     >
       <p>
-        Destination: <strong>{destination?.name ?? "Workspace"}</strong>
-        {target.parentId ? " · selected folder" : " · root folder"}
+        <I18nText id="Destination:" />{" "}
+        <strong>{destination?.name ?? "Workspace"}</strong>
+        {target.parentId
+          ? uiText(" · selected folder")
+          : uiText(" · root folder")}
       </p>
       <ul className="ws-operation-items">
         {remaining.map((item) => (
@@ -1506,22 +1521,22 @@ function PasteDialog({
             onChange={(event) => setConfirmed(event.target.checked)}
           />
           <span>
-            I understand that these items and their linked evidence will use the
-            destination workspace’s permissions.{" "}
+            <I18nText id="I understand that these items and their linked evidence will use the destination workspace’s permissions." />{" "}
             {clipboard.cut
-              ? "Existing links will follow the new permissions."
-              : "Original permissions will not change."}
+              ? uiText("Existing links will follow the new permissions.")
+              : uiText("Original permissions will not change.")}
           </span>
         </label>
       )}
       <ErrorNotice message={action.error} />
       <div className="dialog-footer">
         <Button
+          data-dialog-cancel
           className="button secondary"
           disabled={action.busy}
           onClick={close}
         >
-          Cancel
+          <I18nText id="Cancel" />
         </Button>
         <Button
           className="button primary"
@@ -1568,7 +1583,11 @@ function PasteDialog({
             })
           }
         >
-          {action.busy ? "Working…" : clipboard.cut ? "Move here" : "Copy here"}
+          {action.busy
+            ? uiText("Working…")
+            : clipboard.cut
+              ? "Move here"
+              : "Copy here"}
         </Button>
       </div>
     </Dialog>
@@ -1585,6 +1604,7 @@ export function LifecycleDialog({
   onClose: () => void;
   onDone: () => void;
 }) {
+  useInterfaceLocale();
   const action = useAction(),
     data = useData<{
       counts: Record<string, number>;
@@ -1608,11 +1628,13 @@ export function LifecycleDialog({
     <Dialog title={title} onClose={() => !action.busy && onClose()}>
       <p>
         <strong>{space.name}</strong>
-        {space.kind === "team" ? " and its projects" : ""}
+        {space.kind === "team" ? uiText(" and its projects") : ""}
       </p>
       <p>
         {operation === "archive"
-          ? "Members can continue reading and exporting. Editing, uploads, invitations, and scheduled work pause until restored."
+          ? uiText(
+              "Members can continue reading and exporting. Editing, uploads, invitations, and scheduled work pause until restored.",
+            )
           : operation === "trash"
             ? "Content will disappear from normal navigation and collaboration. It remains recoverable indefinitely; nothing is permanently removed."
             : purge
@@ -1621,21 +1643,29 @@ export function LifecycleDialog({
       </p>
       {data.data && (
         <div className="ws-impact-summary">
-          <span>{data.data.counts.projects} projects</span>
-          <span>{data.data.counts.notes} notes</span>
-          <span>{data.data.counts.files} files</span>
-          <span>{bytes(data.data.counts.bytes)} stored</span>
+          <span>
+            {data.data.counts.projects} <I18nText id="projects" />
+          </span>
+          <span>
+            {data.data.counts.notes} <I18nText id="notes" />
+          </span>
+          <span>
+            {data.data.counts.files} <I18nText id="files" />
+          </span>
+          <span>
+            {bytes(data.data.counts.bytes)} <I18nText id="stored" />
+          </span>
         </div>
       )}
       {data.data?.job?.error && (
         <Notice tone="danger">
-          Last removal attempt: {data.data.job.error}
+          <I18nText id="Last removal attempt:" /> {data.data.job.error}
         </Notice>
       )}
       {purge && !!data.data?.blockers.length && (
         <Notice tone="warning">
           <strong>
-            Keep this workspace recoverable until these are resolved:
+            <I18nText id="Keep this workspace recoverable until these are resolved:" />
           </strong>
           <ul>
             {data.data.blockers.map((item) => (
@@ -1648,7 +1678,7 @@ export function LifecycleDialog({
       )}
       {destructive && (
         <label>
-          Type {space.name} to confirm
+          <I18nText id="Type" /> {space.name} <I18nText id="to confirm" />
           <TextInput
             autoComplete="off"
             spellCheck={false}
@@ -1663,11 +1693,12 @@ export function LifecycleDialog({
       />
       <div className="dialog-footer">
         <Button
+          data-dialog-cancel
           className="button secondary"
           disabled={action.busy}
           onClick={onClose}
         >
-          Cancel
+          <I18nText id="Cancel" />
         </Button>
         <Button
           className={`button ${destructive ? "danger" : "primary"}`}
@@ -1687,7 +1718,7 @@ export function LifecycleDialog({
             })
           }
         >
-          {action.busy ? "Working…" : title}
+          {action.busy ? uiText("Working…") : title}
         </Button>
       </div>
     </Dialog>

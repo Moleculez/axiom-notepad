@@ -8,6 +8,7 @@ COPY apps/publish/package.json apps/publish/package.json
 COPY packages/editor/package.json packages/editor/package.json
 COPY packages/markdown/package.json packages/markdown/package.json
 COPY packages/shared/package.json packages/shared/package.json
+COPY packages/i18n/package.json packages/i18n/package.json
 RUN --mount=type=cache,target=/root/.npm npm ci --ignore-scripts --fetch-timeout=60000 --fetch-retries=2
 
 FROM dependencies AS build
@@ -28,7 +29,8 @@ WORKDIR /app
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 AXIOM_DIST_DIR=.next PORT=3000
 COPY --from=production-dependencies --chown=node:node /app/node_modules ./node_modules
 COPY --from=build --chown=node:node /app/package.json /app/package-lock.json /app/tsconfig.json ./
-COPY --from=build --chown=node:node /app/apps/web/package.json /app/apps/web/next.config.ts ./apps/web/
+COPY --from=build --chown=node:node /app/apps/web/package.json /app/apps/web/next.config.mjs ./apps/web/
+COPY --from=build --chown=node:node /app/scripts/i18n/catalogs.mjs ./scripts/i18n/
 COPY --from=build --chown=node:node /app/apps/web/.next ./apps/web/.next
 COPY --from=build --chown=node:node /app/apps/web/public ./apps/web/public
 # The worker invokes the same server adapter as reviewed application actions.

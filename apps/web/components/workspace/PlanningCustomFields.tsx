@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { useEffect, useId, useRef, useState } from "react";
 import { Plus, SlidersHorizontal, X } from "lucide-react";
 import {
@@ -225,7 +227,9 @@ export function TaskCustomFields({
   if (!fields.length && !archived.length) return null;
   return (
     <section className="planning-custom-fields">
-      <h3>Research properties</h3>
+      <h3>
+        <I18nText id="Research properties" />
+      </h3>
       <ErrorNotice message={data.error} retry={data.reload} />
       <div className="planning-field-grid">
         {fields.map((f) => (
@@ -242,7 +246,9 @@ export function TaskCustomFields({
       </div>
       {archived.length > 0 && (
         <details>
-          <summary>Archived properties · {archived.length}</summary>
+          <summary>
+            <I18nText id="Archived properties ·" /> {archived.length}
+          </summary>
           <dl>
             {archived.map((f) => (
               <div key={f.id}>
@@ -277,7 +283,7 @@ export function PlanningPropertyView({
     <>
       <Button size="compact" onClick={() => setOpen(true)}>
         <SlidersHorizontal size={14} />
-        Properties
+        <I18nText id="Properties" />
       </Button>
       {open && (
         <PropertyViewEditor
@@ -313,6 +319,7 @@ function PropertyViewEditor({
   onClose: () => void;
   onApply: (v: Record<string, string | null>) => void;
 }) {
+  useInterfaceLocale();
   const [filterSource] = useState(() => {
       try {
         return {
@@ -372,7 +379,7 @@ function PropertyViewEditor({
   const setFilter = (i: number, p: Partial<FieldFilter>) =>
     setFilters((old) => old.map((v, n) => (n === i ? { ...v, ...p } : v)));
   return (
-    <Dialog title="Task properties and filters" onClose={onClose}>
+    <Dialog title={uiText("Task properties and filters")} onClose={onClose}>
       <DialogBody>
         <ErrorNotice message={error} retry={retry} />
         {!definitions ? (
@@ -380,11 +387,13 @@ function PropertyViewEditor({
         ) : (
           <>
             <Field
-              label="Displayed columns"
-              hint="Up to eight in List and Gantt; only selected values are loaded."
+              label={uiText("Displayed columns")}
+              hint={uiText(
+                "Up to eight in List and Gantt; only selected values are loaded.",
+              )}
             >
               <Picker
-                label="Property columns"
+                label={uiText("Property columns")}
                 multiple
                 value={columns}
                 options={fields.map((f) => ({
@@ -395,17 +404,19 @@ function PropertyViewEditor({
               />
             </Field>
             <div className="planning-field-grid">
-              <Field label="Sort by property">
+              <Field label={uiText("Sort by property")}>
                 <NativeSelect
                   value={sort}
                   onChange={(e) => setSort(e.target.value)}
                 >
-                  <option value="">Standard task order</option>
+                  <option value="">
+                    <I18nText id="Standard task order" />
+                  </option>
                   {sort && !active.some((f) => f.id === sort) && (
                     <option value={sort} disabled>
                       {fields.find((f) => f.id === sort)?.name ??
                         "Unavailable property"}{" "}
-                      (unavailable)
+                      <I18nText id="(unavailable)" />
                     </option>
                   )}
                   {active.map((f) => (
@@ -415,17 +426,23 @@ function PropertyViewEditor({
                   ))}
                 </NativeSelect>
               </Field>
-              <Field label="Direction">
+              <Field label={uiText("Direction")}>
                 <NativeSelect
                   value={direction}
                   onChange={(e) => setDirection(e.target.value)}
                 >
-                  <option value="asc">Ascending</option>
-                  <option value="desc">Descending</option>
+                  <option value="asc">
+                    <I18nText id="Ascending" />
+                  </option>
+                  <option value="desc">
+                    <I18nText id="Descending" />
+                  </option>
                 </NativeSelect>
               </Field>
             </div>
-            <h3>All conditions must match</h3>
+            <h3>
+              <I18nText id="All conditions must match" />
+            </h3>
             {filters.map((c, i) => {
               const field = fields.find((f) => f.id === c.fieldId),
                 ops = !field
@@ -476,18 +493,18 @@ function PropertyViewEditor({
                     >
                       {!field && (
                         <option value={c.fieldId} disabled>
-                          Unavailable property
+                          <I18nText id="Unavailable property" />
                         </option>
                       )}
                       {fields.map((f) => (
                         <option key={f.id} value={f.id} disabled={f.archived}>
                           {f.name}
-                          {f.archived ? " (archived)" : ""}
+                          {f.archived ? uiText(" (archived)") : ""}
                         </option>
                       ))}
                     </NativeSelect>
                   </Field>
-                  <Field label="Condition">
+                  <Field label={uiText("Condition")}>
                     <NativeSelect
                       value={c.op}
                       onChange={(e) =>
@@ -532,9 +549,7 @@ function PropertyViewEditor({
                   )}
                   {(!field || field.archived) && (
                     <HelpText>
-                      This property is unavailable or archived. Remove the
-                      filter or reopen the field; it will not be silently
-                      ignored.
+                      <I18nText id="This property is unavailable or archived. Remove the filter or reopen the field; it will not be silently ignored." />
                     </HelpText>
                   )}
                 </ActionRow>
@@ -549,11 +564,10 @@ function PropertyViewEditor({
               }
             >
               <Plus size={14} />
-              Add condition
+              <I18nText id="Add condition" />
             </Button>
             <HelpText>
-              Filters are ANDed. Saved views retain these conditions and
-              columns.
+              <I18nText id="Filters are ANDed. Saved views retain these conditions and columns." />
             </HelpText>
             <ErrorNotice message={viewError} />
           </>
@@ -568,9 +582,11 @@ function PropertyViewEditor({
             setSort("");
           }}
         >
-          Reset
+          <I18nText id="Reset" />
         </Button>
-        <Button onClick={onClose}>Cancel</Button>
+        <Button data-dialog-cancel onClick={onClose}>
+          <I18nText id="Cancel" />
+        </Button>
         <Button
           variant="primary"
           disabled={!definitions || !!viewError}
@@ -583,13 +599,14 @@ function PropertyViewEditor({
             })
           }
         >
-          Apply view
+          <I18nText id="Apply view" />
         </Button>
       </DialogFooter>
     </Dialog>
   );
 }
 export function PlanningFieldSettings({ space }: { space: Space }) {
+  useInterfaceLocale();
   const { revision } = useWorkspace(),
     data = useData<FieldDefinitions>(
       `spaces/${space.id}/planning-fields`,
@@ -601,15 +618,16 @@ export function PlanningFieldSettings({ space }: { space: Space }) {
     <section className="planning-lab-settings">
       <ActionRow align="between">
         <div>
-          <h2>Task fields</h2>
+          <h2>
+            <I18nText id="Task fields" />
+          </h2>
           <HelpText>
-            Typed properties for research tasks. Archiving preserves existing
-            values.
+            <I18nText id="Typed properties for research tasks. Archiving preserves existing values." />
           </HelpText>
         </div>
         <ActionRow>
           <NativeSelect
-            aria-label="Review field preset"
+            aria-label={uiText("Review field preset")}
             value=""
             disabled={
               !space.can_manage ||
@@ -621,9 +639,15 @@ export function PlanningFieldSettings({ space }: { space: Space }) {
                 setPreset(e.target.value as keyof typeof fieldPresets);
             }}
           >
-            <option value="">Add preset…</option>
-            <option value="experiment">Experiment</option>
-            <option value="paperReview">Paper review</option>
+            <option value="">
+              <I18nText id="Add preset…" />
+            </option>
+            <option value="experiment">
+              <I18nText id="Experiment" />
+            </option>
+            <option value="paperReview">
+              <I18nText id="Paper review" />
+            </option>
           </NativeSelect>
           <Button
             disabled={
@@ -634,7 +658,7 @@ export function PlanningFieldSettings({ space }: { space: Space }) {
             onClick={() => setEditing("new")}
           >
             <Plus size={15} />
-            New field
+            <I18nText id="New field" />
           </Button>
         </ActionRow>
       </ActionRow>
@@ -642,8 +666,8 @@ export function PlanningFieldSettings({ space }: { space: Space }) {
       {!data.data ? (
         <Loading />
       ) : !data.data.items.length ? (
-        <Empty title="No custom fields">
-          Add the properties your research workflow needs.
+        <Empty title={uiText("No custom fields")}>
+          <I18nText id="Add the properties your research workflow needs." />
         </Empty>
       ) : (
         <div className="planning-lab-list">
@@ -655,7 +679,7 @@ export function PlanningFieldSettings({ space }: { space: Space }) {
               <HelpText>
                 {f.kind}
                 {f.unit ? ` · ${f.unit}` : ""}
-                {f.archived ? " · Archived" : ""}
+                {f.archived ? uiText(" · Archived") : ""}
               </HelpText>
             </div>
           ))}
@@ -705,8 +729,7 @@ function FieldPresetDialog({
       <DialogBody>
         <ErrorNotice message={action.error} />
         <HelpText>
-          This creates five new fields, not a template applied to existing
-          values. Conflicting names block the whole preset.
+          <I18nText id="This creates five new fields, not a template applied to existing values. Conflicting names block the whole preset." />
         </HelpText>
         <dl>
           {fieldPresets[preset].map((f) => (
@@ -722,8 +745,8 @@ function FieldPresetDialog({
         </dl>
       </DialogBody>
       <DialogFooter>
-        <Button disabled={action.busy} onClick={onClose}>
-          Cancel
+        <Button data-dialog-cancel disabled={action.busy} onClick={onClose}>
+          <I18nText id="Cancel" />
         </Button>
         <Button
           variant="primary"
@@ -740,7 +763,7 @@ function FieldPresetDialog({
             })
           }
         >
-          Create reviewed fields
+          <I18nText id="Create reviewed fields" />
         </Button>
       </DialogFooter>
     </Dialog>
@@ -757,6 +780,7 @@ function FieldEditor({
   value?: TaskField;
   onClose: () => void;
 }) {
+  useInterfaceLocale();
   const { refresh, notify } = useWorkspace(),
     action = useAction(),
     [initial] = useState(() =>
@@ -782,7 +806,7 @@ function FieldEditor({
     editable = space.can_manage && space.effective_status === "active";
   return (
     <Dialog
-      title={value ? "Edit task field" : "New task field"}
+      title={value ? uiText("Edit task field") : uiText("New task field")}
       onClose={close}
     >
       <form
@@ -806,13 +830,13 @@ function FieldEditor({
         }}
       >
         <DialogBody>
-          <DraftGuard dirty={dirty} title="Unsaved task field" />
+          <DraftGuard dirty={dirty} title={uiText("Unsaved task field")} />
           <ErrorNotice message={action.error} />
           <fieldset
             disabled={!editable || action.busy}
             className="planning-suite-form"
           >
-            <Field label="Name">
+            <Field label={uiText("Name")}>
               <TextInput
                 required
                 maxLength={120}
@@ -821,10 +845,12 @@ function FieldEditor({
               />
             </Field>
             <Field
-              label="Type"
+              label={uiText("Type")}
               hint={
                 value
-                  ? "Types are immutable; create a new field to change type."
+                  ? uiText(
+                      "Types are immutable; create a new field to change type.",
+                    )
                   : undefined
               }
             >
@@ -853,7 +879,7 @@ function FieldEditor({
               </NativeSelect>
             </Field>
             {draft.kind === "number" && (
-              <Field label="Unit">
+              <Field label={uiText("Unit")}>
                 <TextInput
                   maxLength={40}
                   value={draft.unit}
@@ -863,11 +889,13 @@ function FieldEditor({
             )}
             {["select", "multiselect"].includes(draft.kind) && (
               <section>
-                <h3>Choices</h3>
+                <h3>
+                  <I18nText id="Choices" />
+                </h3>
                 {draft.options.map((o) => (
                   <div className="planning-choice-row" key={o.id}>
                     <TextInput
-                      aria-label="Choice label"
+                      aria-label={uiText("Choice label")}
                       required
                       maxLength={100}
                       value={o.label}
@@ -894,11 +922,11 @@ function FieldEditor({
                           })
                         }
                       />
-                      Archived
+                      <I18nText id="Archived" />
                     </label>
                     <IconButton
                       type="button"
-                      label="Remove choice"
+                      label={uiText("Remove choice")}
                       onClick={() =>
                         setDraft({
                           ...draft,
@@ -925,7 +953,7 @@ function FieldEditor({
                   }
                 >
                   <Plus size={14} />
-                  Add choice
+                  <I18nText id="Add choice" />
                 </Button>
               </section>
             )}
@@ -936,7 +964,7 @@ function FieldEditor({
                   setDraft({ ...draft, archived: e.target.checked })
                 }
               />
-              Archive field
+              <I18nText id="Archive field" />
             </label>
             {dirty && !validation.success && (
               <ErrorNotice message={errorMessage(validation.error)} />
@@ -944,8 +972,13 @@ function FieldEditor({
           </fieldset>
         </DialogBody>
         <DialogFooter>
-          <Button type="button" onClick={close} disabled={action.busy}>
-            Cancel
+          <Button
+            data-dialog-cancel
+            type="button"
+            onClick={close}
+            disabled={action.busy}
+          >
+            <I18nText id="Cancel" />
           </Button>
           <Button
             type="submit"
@@ -953,7 +986,7 @@ function FieldEditor({
             pending={action.busy}
             disabled={!editable || !valid || (!!value && !dirty)}
           >
-            Save field
+            <I18nText id="Save field" />
           </Button>
         </DialogFooter>
       </form>

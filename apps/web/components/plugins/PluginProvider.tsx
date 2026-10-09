@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import {
   createContext,
   useCallback,
@@ -130,6 +132,7 @@ export function useEditorExtensions(spaceId?: string) {
   };
 }
 export default function PluginProvider({ children }: { children: ReactNode }) {
+  useInterfaceLocale();
   const { session, revision, spaces, navigate, notify } = useWorkspace(),
     commands = useWorkspaceCommands();
   const data = useData<PluginRegistry>("plugins", revision);
@@ -430,7 +433,7 @@ export default function PluginProvider({ children }: { children: ReactNode }) {
         createPortal(
           <ResizablePanel
             className="plugin-inspector"
-            label="Extension inspector"
+            label={uiText("Extension inspector")}
             account={session.user.id}
             name="document-context"
             edge="left"
@@ -441,19 +444,20 @@ export default function PluginProvider({ children }: { children: ReactNode }) {
               <div>
                 <strong>{selected.manifest.name}</strong>
                 <small>
-                  Extension · {selected.manifest.version} · {status}
+                  <I18nText id="Extension ·" /> {selected.manifest.version} ·{" "}
+                  {status}
                   {scopeName ? " · " + scopeName : ""}
                 </small>
               </div>
               <IconButton
-                label="Stop extension"
+                label={uiText("Stop extension")}
                 disabled={!runtime.current}
                 onClick={stop}
               >
                 <Square size={15} />
               </IconButton>
               <IconButton
-                label="Close extension panel"
+                label={uiText("Close extension panel")}
                 onClick={() => {
                   stop();
                   commands.claimInspector("document");
@@ -464,16 +468,17 @@ export default function PluginProvider({ children }: { children: ReactNode }) {
             </header>
             <div className="plugin-panel-content">
               <HelpText>
-                Native Axiom panel · {selected.manifest.author}. Package author
-                names are declarations, not verified identities.
+                <I18nText id="Native Axiom panel ·" />{" "}
+                {selected.manifest.author}
+                <I18nText id=". Package author names are declarations, not verified identities." />
               </HelpText>
               <ErrorNotice message={error} />
               {busy && (
                 <Loading
                   label={
                     status === "loading"
-                      ? "Starting isolated extension…"
-                      : "Running extension command…"
+                      ? uiText("Starting isolated extension…")
+                      : uiText("Running extension command…")
                   }
                 />
               )}
@@ -573,13 +578,13 @@ export default function PluginProvider({ children }: { children: ReactNode }) {
                     )
                   }
                 >
-                  Restart
+                  <I18nText id="Restart" />
                 </Button>
                 <Button
                   variant="ghost"
                   onClick={() => navigate("/settings/extensions")}
                 >
-                  Permissions & settings
+                  <I18nText id="Permissions & settings" />
                 </Button>
               </ActionRow>
             </div>
@@ -595,16 +600,20 @@ export default function PluginProvider({ children }: { children: ReactNode }) {
       )}
       {destination && (
         <Dialog
-          title="Choose a workspace"
-          subtitle="Extensions run in one explicitly approved workspace at a time."
+          title={uiText("Choose a workspace")}
+          subtitle={uiText(
+            "Extensions run in one explicitly approved workspace at a time.",
+          )}
           onClose={() => setDestination(null)}
         >
-          <Field label="Workspace">
+          <Field label={uiText("Workspace")}>
             <NativeSelect
               value={spaceChoice}
               onChange={(e) => setSpaceChoice(e.target.value)}
             >
-              <option value="">Choose workspace…</option>
+              <option value="">
+                <I18nText id="Choose workspace…" />
+              </option>
               {spaces
                 .filter((s) => s.role && s.effective_status === "active")
                 .map((s) => (
@@ -615,8 +624,12 @@ export default function PluginProvider({ children }: { children: ReactNode }) {
             </NativeSelect>
           </Field>
           <div className="dialog-footer">
-            <Button variant="secondary" onClick={() => setDestination(null)}>
-              Cancel
+            <Button
+              data-dialog-cancel
+              variant="secondary"
+              onClick={() => setDestination(null)}
+            >
+              <I18nText id="Cancel" />
             </Button>
             <Button
               variant="primary"
@@ -630,7 +643,7 @@ export default function PluginProvider({ children }: { children: ReactNode }) {
                 setDestination(null);
               }}
             >
-              Run command
+              <I18nText id="Run command" />
             </Button>
           </div>
         </Dialog>
@@ -696,7 +709,7 @@ function PluginTable({
             disabled={at === 0}
             onClick={() => setPage(at - 1)}
           >
-            Previous
+            <I18nText id="Previous" />
           </Button>
           <span>
             {at + 1} / {max + 1}
@@ -706,7 +719,7 @@ function PluginTable({
             disabled={at === max}
             onClick={() => setPage(at + 1)}
           >
-            Next
+            <I18nText id="Next" />
           </Button>
         </ActionRow>
       )}

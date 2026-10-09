@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { ActionRow, Button, TextInput, NativeSelect } from "../ui/controls";
 import { useEffect, useState } from "react";
 import type { PDFDocumentProxy } from "pdfjs-dist";
@@ -15,6 +17,7 @@ export default function PdfQuickPreview({
   interactive?: boolean;
   initialPage?: number;
 }) {
+  useInterfaceLocale();
   const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null),
     [page, setPage] = useState(initialPage),
     [scale, setScale] = useState<number | "fit" | "page">("page"),
@@ -72,16 +75,16 @@ export default function PdfQuickPreview({
             disabled={!pdf || page <= 1}
             onClick={() => setPage((p) => p - 1)}
           >
-            Previous page
+            <I18nText id="Previous page" />
           </Button>
           <span aria-live="polite">
-            {pdf ? `${page} / ${pdf.numPages}` : "Loading PDF…"}
+            {pdf ? `${page} / ${pdf.numPages}` : uiText("Loading PDF…")}
           </span>
           {pdf && (
             <label className="pdf-preview-page-input">
-              Go to page{" "}
+              <I18nText id="Go to page" />{" "}
               <TextInput
-                aria-label="Preview page"
+                aria-label={uiText("Preview page")}
                 type="number"
                 min={1}
                 max={pdf.numPages}
@@ -103,10 +106,10 @@ export default function PdfQuickPreview({
             disabled={!pdf || page >= pdf.numPages}
             onClick={() => setPage((p) => p + 1)}
           >
-            Next page
+            <I18nText id="Next page" />
           </Button>
           <NativeSelect
-            aria-label="Preview zoom"
+            aria-label={uiText("Preview zoom")}
             value={scale}
             onChange={(event) =>
               setScale(
@@ -116,8 +119,12 @@ export default function PdfQuickPreview({
               )
             }
           >
-            <option value="page">Fit page</option>
-            <option value="fit">Fit width</option>
+            <option value="page">
+              <I18nText id="Fit page" />
+            </option>
+            <option value="fit">
+              <I18nText id="Fit width" />
+            </option>
             {[0.5, 0.75, 1, 1.25, 1.5, 2].map((value) => (
               <option key={value} value={value}>
                 {value * 100}%

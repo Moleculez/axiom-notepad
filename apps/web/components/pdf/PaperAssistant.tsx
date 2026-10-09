@@ -1,4 +1,7 @@
 "use client";
+import { currentLocale } from "@axiom/i18n/client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import {
   Button,
   Checkbox,
@@ -55,6 +58,7 @@ export default function PaperAssistant({
   onClose: () => void;
   onInsert: (text: string, privateMaterial?: boolean) => void;
 }) {
+  useInterfaceLocale();
   const [providers, setProviders] = useState<Provider[]>([]),
     [providerId, setProviderId] = useState("");
   const [jobs, setJobs] = useState<Job[]>([]),
@@ -220,40 +224,43 @@ export default function PaperAssistant({
     }
   };
   return (
-    <aside className="pdf-assistant pdf-composer" aria-label="Paper assistant">
+    <aside
+      className="pdf-assistant pdf-composer"
+      aria-label={uiText("Paper assistant")}
+    >
       <header>
         <strong>
-          <ShieldCheck size={15} /> Paper assistant
+          <ShieldCheck size={15} /> <I18nText id="Paper assistant" />
         </strong>
         <IconButton
           className="icon-button"
-          aria-label="Close paper assistant"
+          aria-label={uiText("Close paper assistant")}
           onClick={onClose}
         >
           <X size={15} />
         </IconButton>
       </header>
       <p className="muted">
-        Private to your account. Only reviewed excerpts go to the selected
-        provider. Responses may be wrong; verify against the paper.
+        <I18nText id="Private to your account. Only reviewed excerpts go to the selected provider. Responses may be wrong; verify against the paper." />
       </p>
       {!providers.length && (
         <p role="status">
-          No paper provider is enabled. A group administrator can opt in under
-          processing providers. The reader works without AI.
+          <I18nText id="No paper provider is enabled. A group administrator can opt in under processing providers. The reader works without AI." />
         </p>
       )}
       <label>
-        Provider
+        <I18nText id="Provider" />
         <NativeSelect
-          aria-label="Paper assistant provider"
+          aria-label={uiText("Paper assistant provider")}
           value={providerId}
           onChange={(e) => {
             setProviderId(e.target.value);
             setConsent(false);
           }}
         >
-          <option value="">Choose a provider</option>
+          <option value="">
+            <I18nText id="Choose a provider" />
+          </option>
           {providers.map((p) => (
             <option key={p.id} value={p.id}>
               {p.name} · {p.model}
@@ -262,7 +269,7 @@ export default function PaperAssistant({
         </NativeSelect>
       </label>
       <label>
-        Task
+        <I18nText id="Task" />
         <NativeSelect
           value={action}
           onChange={(e) => {
@@ -277,16 +284,16 @@ export default function PaperAssistant({
           {Object.keys(prompts).map((kind) => (
             <option key={kind} value={kind}>
               {kind === "ocr"
-                ? "OCR / math transcription"
+                ? uiText("OCR / math transcription")
                 : kind[0].toUpperCase() + kind.slice(1)}
             </option>
           ))}
         </NativeSelect>
       </label>
       <label>
-        Physical page numbers
+        <I18nText id="Physical page numbers" />
         <TextInput
-          aria-label="Assistant page range"
+          aria-label={uiText("Assistant page range")}
           value={range}
           disabled={busy}
           onChange={(e) => {
@@ -305,7 +312,8 @@ export default function PaperAssistant({
           setConsent(false);
         }}
       >
-        Use current page ({page})
+        <I18nText id="Use current page (" />
+        {page})
       </button>
       <Button
         className="button secondary small"
@@ -315,17 +323,17 @@ export default function PaperAssistant({
         onClick={() => void prepare()}
         pending={!!busy}
       >
-        {"Prepare context locally"}
+        {uiText("Prepare context locally")}
       </Button>
       {action === "ocr" && !provider?.capabilities.includes("ocr") && (
         <small>
-          Choose a provider with both paper and image/OCR capabilities.
+          <I18nText id="Choose a provider with both paper and image/OCR capabilities." />
         </small>
       )}
       <label>
-        Your request
+        <I18nText id="Your request" />
         <TextArea
-          aria-label="Paper assistant request"
+          aria-label={uiText("Paper assistant request")}
           rows={4}
           maxLength={10000}
           value={prompt}
@@ -339,11 +347,13 @@ export default function PaperAssistant({
       {evidence && (
         <div className="pdf-evidence">
           <strong>
-            Review before sending · pages {evidence.pages.join(", ")}
+            <I18nText id="Review before sending · pages" />{" "}
+            {evidence.pages.join(", ")}
           </strong>
           <small>
-            PDF version {versionId.slice(0, 8)} ·{" "}
-            {evidence.source.length.toLocaleString()} characters
+            <I18nText id="PDF version" /> {versionId.slice(0, 8)} ·{" "}
+            {evidence.source.length.toLocaleString(currentLocale())}{" "}
+            <I18nText id="characters" />
           </small>
           {evidence.image && (
             <img
@@ -352,7 +362,9 @@ export default function PaperAssistant({
             />
           )}
           <details>
-            <summary>Exact source text</summary>
+            <summary>
+              <I18nText id="Exact source text" />
+            </summary>
             <pre>{evidence.source}</pre>
           </details>
           <label className="pdf-consent">
@@ -360,9 +372,9 @@ export default function PaperAssistant({
               checked={consent}
               onChange={(e) => setConsent(e.target.checked)}
             />
-            Send this context and request to{" "}
-            {provider?.name ?? "the selected provider"}. Its retention and
-            billing policies apply.
+            <I18nText id="Send this context and request to" />{" "}
+            {provider?.name ?? "the selected provider"}
+            <I18nText id=". Its retention and billing policies apply." />
           </label>
         </div>
       )}
@@ -371,24 +383,30 @@ export default function PaperAssistant({
         disabled={busy || !evidence || !provider || !consent || !prompt.trim()}
         onClick={() => void submit()}
       >
-        <Send size={14} /> Submit once
+        <Send size={14} /> <I18nText id="Submit once" />
       </Button>
       {error && <p role="alert">{error}</p>}
       {status && <p role="status">{status}</p>}
-      <h3>Private request history</h3>
+      <h3>
+        <I18nText id="Private request history" />
+      </h3>
       {jobs.length === 0 && (
-        <p className="muted">No requests for this PDF version.</p>
+        <p className="muted">
+          <I18nText id="No requests for this PDF version." />
+        </p>
       )}
       {jobs.map((job) => (
         <article className="pdf-assistant-result" key={job.id}>
           <header>
             <strong>
-              {job.kind === "ocr" ? "Transcription" : "Reading response"} ·{" "}
-              {job.status}
+              {job.kind === "ocr"
+                ? uiText("Transcription")
+                : uiText("Reading response")}{" "}
+              · {job.status}
             </strong>
             <IconButton
               className="icon-button"
-              aria-label="Delete private response"
+              aria-label={uiText("Delete private response")}
               onClick={() => void remove(job)}
             >
               <Trash2 size={14} />
@@ -397,6 +415,7 @@ export default function PaperAssistant({
           {job.error && <p role="alert">{job.error}</p>}
           {["queued", "running"].includes(job.status) && (
             <button
+              data-dialog-cancel
               onClick={() =>
                 void post(`tool-jobs/${job.id}/cancel`, {})
                   .then(() => {
@@ -412,7 +431,7 @@ export default function PaperAssistant({
                   .catch((e) => setError(e.message))
               }
             >
-              Cancel request
+              <I18nText id="Cancel request" />
             </button>
           )}
           {job.result?.text && (
@@ -428,18 +447,17 @@ export default function PaperAssistant({
                       key={citation.page}
                       onClick={() => onPage(citation.page)}
                     >
-                      Page {citation.page}
+                      <I18nText id="Page" /> {citation.page}
                     </button>
                   ) : (
                     <span key={citation.page}>
-                      Unverified page {citation.page}
+                      <I18nText id="Unverified page" /> {citation.page}
                     </span>
                   ),
                 )}
               </div>
               <small>
-                Page links validate supplied context, not the accuracy of the
-                answer.
+                <I18nText id="Page links validate supplied context, not the accuracy of the answer." />
               </small>
               <div className="button-row">
                 <button
@@ -450,7 +468,7 @@ export default function PaperAssistant({
                       .catch((e) => setError(e.message))
                   }
                 >
-                  <Copy size={14} /> Copy
+                  <Copy size={14} /> <I18nText id="Copy" />
                 </button>
                 <button
                   onClick={() =>
@@ -460,7 +478,7 @@ export default function PaperAssistant({
                     )
                   }
                 >
-                  Insert draft
+                  <I18nText id="Insert draft" />
                 </button>
               </div>
             </>

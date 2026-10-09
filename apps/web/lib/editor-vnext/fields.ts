@@ -1,3 +1,4 @@
+import { bindText, bindAttribute } from "@axiom/i18n/dom";
 export type EditorField = {
   key: string;
   label: string;
@@ -20,8 +21,8 @@ export function sourceFields(options: {
     message = document.createElement("p"),
     actions = document.createElement("div");
   dialog.className = "axiom-field-dialog";
-  dialog.setAttribute("aria-label", options.title);
-  heading.textContent = options.title;
+  bindAttribute(dialog, "aria-label", options.title);
+  bindText(heading, options.title);
   message.role = "status";
   message.className = "axiom-preview-message";
   actions.className = "axiom-field-actions";
@@ -38,7 +39,7 @@ export function sourceFields(options: {
           ? document.createElement("textarea")
           : document.createElement("input"),
       name = document.createElement("span");
-    name.textContent = field.label;
+    bindText(name, field.label);
     if (input instanceof HTMLSelectElement)
       for (const value of field.options ?? [])
         input.add(new Option(value[0].toUpperCase() + value.slice(1), value));
@@ -48,7 +49,7 @@ export function sourceFields(options: {
     }
     if (input instanceof HTMLTextAreaElement) input.rows = 3;
     input.value = field.value;
-    input.setAttribute("aria-label", field.label);
+    bindAttribute(input, "aria-label", field.label);
     input.addEventListener("input", () => input.setCustomValidity(""));
     label.append(name, input);
     form.append(label);
@@ -72,10 +73,10 @@ export function sourceFields(options: {
   const cancel = document.createElement("button"),
     apply = document.createElement("button");
   cancel.type = "button";
-  cancel.textContent = "Cancel";
+  bindText(cancel, "Cancel");
   cancel.className = "button secondary";
   apply.type = "submit";
-  apply.textContent = "Apply";
+  bindText(apply, "Apply");
   apply.className = "button primary";
   cancel.addEventListener("click", () => close());
   dialog.addEventListener("cancel", (event) => {

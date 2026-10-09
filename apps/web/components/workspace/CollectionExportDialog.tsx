@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { useEffect, useRef, useState } from "react";
 import { Download } from "lucide-react";
 import type { Resource } from "@axiom/shared/workspace";
@@ -18,6 +20,7 @@ export default function CollectionExportDialog({
   onClose: () => void;
   onQueued: () => void;
 }) {
+  useInterfaceLocale();
   const [profile, setProfile] = useState<"portable" | "standard">("portable"),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
@@ -62,11 +65,13 @@ export default function CollectionExportDialog({
     ) > IMPORT_LIMITS.zipBytes;
   return (
     <Dialog
-      title="Export collection"
-      subtitle="A background export. Your files and collaborators’ edits are unchanged."
+      title={uiText("Export collection")}
+      subtitle={uiText(
+        "A background export. Your files and collaborators’ edits are unchanged.",
+      )}
       onClose={onClose}
     >
-      <Field label="Archive profile" id="collection-export-profile">
+      <Field label={uiText("Archive profile")} id="collection-export-profile">
         <NativeSelect
           id="collection-export-profile"
           value={profile}
@@ -77,20 +82,23 @@ export default function CollectionExportDialog({
             setProfile(event.target.value as typeof profile);
           }}
         >
-          <option value="portable">Reimportable research collection</option>
+          <option value="portable">
+            <I18nText id="Reimportable research collection" />
+          </option>
           <option value="standard">
-            Standard archive · larger collections
+            <I18nText id="Standard archive · larger collections" />
           </option>
         </NativeSelect>
       </Field>
       <HelpText>
-        {items.length} selected {items.length === 1 ? "item" : "items"},
-        including folder descendants. Accessible linked assets are included;
-        links never grant access. The job records a consistent snapshot when it
-        runs.
+        {items.length} <I18nText id="selected" />{" "}
+        {items.length === 1 ? uiText("item") : uiText("items")}
+        <I18nText id=", including folder descendants. Accessible linked assets are included; links never grant access. The job records a consistent snapshot when it runs." />
       </HelpText>
       <details>
-        <summary>Selected items</summary>
+        <summary>
+          <I18nText id="Selected items" />
+        </summary>
         <ul>
           {items.map((item) => (
             <li key={item.id}>{item.name}</li>
@@ -100,40 +108,29 @@ export default function CollectionExportDialog({
       {profile === "portable" ? (
         <>
           <HelpText>
-            Native Markdown, Canvas, math, text and image projects, safe names,
-            tags and tool settings. SHA-256 checksums are verified before
-            import. Use Import ZIP or Import folder to review and restore this
-            collection.
+            <I18nText id="Native Markdown, Canvas, math, text and image projects, safe names, tags and tool settings. SHA-256 checksums are verified before import. Use Import ZIP or Import folder to review and restore this collection." />
           </HelpText>
           <HelpText>
-            Up to 50 MB compressed, 100 MB expanded, 25 MB of source and 1,000
-            ZIP entries. Larger selections fail safely—choose a smaller
-            collection or a standard archive.
+            <I18nText id="Up to 50 MB compressed, 100 MB expanded, 25 MB of source and 1,000 ZIP entries. Larger selections fail safely—choose a smaller collection or a standard archive." />
           </HelpText>
           <HelpText>
-            Not a workspace backup: permissions, account data, planning,
-            reference-library records, discussions, annotations and history are
-            excluded. Original assets can contain EXIF or other embedded
-            metadata.
+            <I18nText id="Not a workspace backup: permissions, account data, planning, reference-library records, discussions, annotations and history are excluded. Original assets can contain EXIF or other embedded metadata." />
           </HelpText>
         </>
       ) : (
         <HelpText>
-          Preserves the existing larger archive workflow. ZIP64 archives cannot
-          be reimported directly; extract them locally and use Import folder
-          within the inventory limits.
+          <I18nText id="Preserves the existing larger archive workflow. ZIP64 archives cannot be reimported directly; extract them locally and use Import folder within the inventory limits." />
         </HelpText>
       )}
       {oversized && (
         <Notice tone="warning">
-          The selected files alone exceed the reimportable ZIP budget. Choose a
-          standard archive or reduce the selection.
+          <I18nText id="The selected files alone exceed the reimportable ZIP budget. Choose a standard archive or reduce the selection." />
         </Notice>
       )}
       <ErrorNotice message={error} />
       <DialogFooter>
         <Button variant="secondary" onClick={onClose}>
-          Close
+          <I18nText id="Close" />
         </Button>
         <Button
           variant="primary"
@@ -141,7 +138,7 @@ export default function CollectionExportDialog({
           onClick={() => void queue()}
         >
           <Download size={15} />
-          {busy ? "Queueing…" : "Prepare archive"}
+          {busy ? uiText("Queueing…") : uiText("Prepare archive")}
         </Button>
       </DialogFooter>
     </Dialog>

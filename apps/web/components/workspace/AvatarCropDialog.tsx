@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { Button } from "../ui/controls";
 import { useEffect, useRef, useState } from "react";
 import Dialog, { DialogFooter } from "../Dialog";
@@ -18,6 +20,7 @@ export default function AvatarCropDialog({
   onClose: () => void;
   onSaved: (value: { image: string; version: number }) => void;
 }) {
+  useInterfaceLocale();
   const [source, setSource] = useState<ImageGeometrySource | null>(null);
   const [error, setError] = useState("");
   const bitmap = useRef<ImageBitmap | null>(null);
@@ -125,11 +128,16 @@ export default function AvatarCropDialog({
       onApply={save}
     />
   ) : (
-    <Dialog title="Crop profile picture" onClose={onClose}>
+    <Dialog title={uiText("Crop profile picture")} onClose={onClose}>
       <p role={error ? "alert" : "status"}>{error || "Opening your photo…"}</p>
       <DialogFooter>
-        <Button type="button" className="button secondary" onClick={onClose}>
-          Cancel
+        <Button
+          data-dialog-cancel
+          type="button"
+          className="button secondary"
+          onClick={onClose}
+        >
+          <I18nText id="Cancel" />
         </Button>
       </DialogFooter>
     </Dialog>

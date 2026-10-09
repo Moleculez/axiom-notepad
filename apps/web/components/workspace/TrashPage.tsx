@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { ActionRow, Button, HelpText, TextInput } from "../ui/controls";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -43,6 +45,7 @@ export function TrashOperationDialog({
   embedded?: boolean;
   initialQuickPurge?: string | null;
 }) {
+  useInterfaceLocale();
   const [tick, setTick] = useState(0),
     [offset, setOffset] = useState(0),
     [filter, setFilter] = useState<TrashResultFilter>("all"),
@@ -107,15 +110,16 @@ export function TrashOperationDialog({
   const footer = (
     <>
       <Button className="button secondary" onClick={onClose}>
-        {busy ? "Continue in background" : "Close"}
+        {busy ? uiText("Continue in background") : uiText("Close")}
       </Button>
       {busy ? (
         <Button
+          data-dialog-cancel
           className="button secondary"
           disabled={action.busy}
           onClick={() => run("cancel")}
         >
-          Cancel unfinished work
+          <I18nText id="Cancel unfinished work" />
         </Button>
       ) : op && preview && op.pending > 0 ? (
         <Button
@@ -132,8 +136,8 @@ export function TrashOperationDialog({
           ) : (
             <RotateCcw size={16} aria-hidden="true" />
           )}
-          {purge ? "Delete" : "Restore"} {op.pending}{" "}
-          {workspaces ? "workspace" : "item"}
+          {purge ? uiText("Delete") : uiText("Restore")} {op.pending}{" "}
+          {workspaces ? uiText("workspace") : uiText("item")}
           {op.pending === 1 ? "" : "s"}
         </Button>
       ) : null}
@@ -150,16 +154,22 @@ export function TrashOperationDialog({
             <div>
               <CheckCircle2 size={18} aria-hidden="true" />
               <strong>{preview || busy ? op.pending : op.done}</strong>
-              <span>{preview || busy ? "Ready" : "Completed"}</span>
+              <span>
+                {preview || busy ? uiText("Ready") : uiText("Completed")}
+              </span>
             </div>
             <div>
               <ShieldCheck size={18} aria-hidden="true" />
               <strong>{attention}</strong>
-              <span>Need attention</span>
+              <span>
+                <I18nText id="Need attention" />
+              </span>
             </div>
             <div>
               <span className="trash-review-size">{bytes(op.bytes)}</span>
-              <span>Stored in selection</span>
+              <span>
+                <I18nText id="Stored in selection" />
+              </span>
             </div>
           </div>
           {preview && (
@@ -171,41 +181,44 @@ export function TrashOperationDialog({
           )}
           {preview && !purge && !op.pending && (
             <p>
-              Restore the original folder or choose a different restore
-              destination in Trash options.
+              <I18nText id="Restore the original folder or choose a different restore destination in Trash options." />
             </p>
           )}
           {workspaces && (
             <HelpText>
               {purge
-                ? "Workspace deletion has a 30-second cancellation window. Open Lifecycle for final progress and any remaining protections."
-                : "Restores each workspace’s previous active or archived state. Individual file Trash states are preserved."}
+                ? uiText(
+                    "Workspace deletion has a 30-second cancellation window. Open Lifecycle for final progress and any remaining protections.",
+                  )
+                : uiText(
+                    "Restores each workspace’s previous active or archived state. Individual file Trash states are preserved.",
+                  )}
             </HelpText>
           )}
           {op.action === "restore" && !workspaces && (
             <HelpText>
               {op.destination_id
-                ? "Restore to the chosen folder."
+                ? uiText("Restore to the chosen folder.")
                 : op.restore_policy === "root"
                   ? "Use the original location, or the workspace root if it is unavailable."
                   : "Keep items in Trash if their original folder is unavailable."}{" "}
               {op.conflict_policy === "keep-both"
-                ? "Name conflicts keep both files."
-                : "Existing names are skipped."}{" "}
-              Nothing is overwritten.
+                ? uiText("Name conflicts keep both files.")
+                : uiText("Existing names are skipped.")}{" "}
+              <I18nText id="Nothing is overwritten." />
             </HelpText>
           )}
           {busy && (
             <div className="trash-review-progress">
               <progress
-                aria-label="Trash operation progress"
+                aria-label={uiText("Trash operation progress")}
                 max={op.total || 1}
                 value={op.total - op.pending}
               />
               <p role="status">
                 {op.status === "queued"
-                  ? "Queued for background processing…"
-                  : "Processing in the background…"}
+                  ? uiText("Queued for background processing…")
+                  : uiText("Processing in the background…")}
               </p>
             </div>
           )}
@@ -213,7 +226,7 @@ export function TrashOperationDialog({
             <div
               className="trash-review-filters"
               role="group"
-              aria-label="Filter Trash results"
+              aria-label={uiText("Filter Trash results")}
             >
               {(
                 [
@@ -244,17 +257,19 @@ export function TrashOperationDialog({
                 onClick={() => void action.run(recheck)}
               >
                 <RefreshCw size={14} aria-hidden="true" />
-                {action.busy ? "Checking…" : "Recheck"}
+                {action.busy ? uiText("Checking…") : uiText("Recheck")}
               </button>
             )}
           </div>
           <div
             className="trash-review-items"
-            aria-label="Trash item results"
+            aria-label={uiText("Trash item results")}
             aria-busy={data.loading}
           >
             {!data.data!.items.length && (
-              <p className="trash-review-empty">No items in this view.</p>
+              <p className="trash-review-empty">
+                <I18nText id="No items in this view." />
+              </p>
             )}
             {data.data!.items.map((item) => (
               <article className="trash-review-item" key={item.resource_id}>
@@ -282,7 +297,7 @@ export function TrashOperationDialog({
                       onClick={() => setQuickTarget(item.resource_id)}
                     >
                       <Trash2 size={14} aria-hidden="true" />
-                      Remove protection & purge…
+                      <I18nText id="Remove protection & purge…" />
                     </button>
                   )}
                 {!busy &&
@@ -296,7 +311,7 @@ export function TrashOperationDialog({
                         navigate(`/workspaces/${item.space_id}/lifecycle`);
                       }}
                     >
-                      Review workspace lifecycle
+                      <I18nText id="Review workspace lifecycle" />
                     </button>
                   ) : (
                     <button
@@ -314,13 +329,12 @@ export function TrashOperationDialog({
                       ) : (
                         <ChevronRight size={14} />
                       )}
-                      Review protection
+                      <I18nText id="Review protection" />
                     </button>
                   ))}
                 {item.status === "skipped" && (
                   <p className="trash-guidance">
-                    Close this preview and select the current item again if you
-                    still want to remove it.
+                    <I18nText id="Close this preview and select the current item again if you still want to remove it." />
                   </p>
                 )}
                 {expanded === item.resource_id && !busy && (
@@ -340,60 +354,60 @@ export function TrashOperationDialog({
             <div className="productivity-pagination">
               <span>
                 {Math.min(offset + 1, data.data!.filteredTotal)}–
-                {Math.min(offset + 50, data.data!.filteredTotal)} of{" "}
-                {data.data!.filteredTotal}
+                {Math.min(offset + 50, data.data!.filteredTotal)}{" "}
+                <I18nText id="of" /> {data.data!.filteredTotal}
               </span>
               <Button
                 className="button secondary small"
                 disabled={!offset || data.loading}
                 onClick={() => setOffset(Math.max(0, offset - 50))}
               >
-                Previous results
+                <I18nText id="Previous results" />
               </Button>
               <Button
                 className="button secondary small"
                 disabled={data.data!.nextOffset == null || data.loading}
                 onClick={() => setOffset(data.data!.nextOffset!)}
               >
-                Next results
+                <I18nText id="Next results" />
               </Button>
             </div>
           )}
           <details className="trash-review-policy">
-            <summary>How safe cleanup works</summary>
+            <summary>
+              <I18nText id="How safe cleanup works" />
+            </summary>
             <p>
-              Only this selection and its included descendants are considered.
-              New Trash items are never added automatically. Files that change
-              after preview are skipped. Shared stored data may remain, so
-              stored size is not a promise of space freed.
+              <I18nText id="Only this selection and its included descendants are considered. New Trash items are never added automatically. Files that change after preview are skipped. Shared stored data may remain, so stored size is not a promise of space freed." />
             </p>
             <p>
-              Recheck examines saved server edits; it does not synchronize open
-              notes on your devices. Save them first. Ordinary cleanup preserves
-              references. The separate Remove protection & purge action requires
-              explicit confirmation and permission to remove each supported
-              protection.
+              <I18nText id="Recheck examines saved server edits; it does not synchronize open notes on your devices. Save them first. Ordinary cleanup preserves references. The separate Remove protection & purge action requires explicit confirmation and permission to remove each supported protection." />
             </p>
           </details>
           {!busy && preview && purge && op.pending > 0 && (
             <label className="trash-delete-confirm">
-              Type <strong>DELETE FOREVER</strong> to delete the {op.pending}{" "}
-              ready {workspaces ? "workspace" : "item"}
-              {op.pending === 1 ? "" : "s"}. This cannot be undone.
+              <I18nText id="Type" />{" "}
+              <strong>
+                <I18nText id="DELETE FOREVER" />
+              </strong>{" "}
+              <I18nText id="to delete the" /> {op.pending}{" "}
+              <I18nText id="ready" />{" "}
+              {workspaces ? uiText("workspace") : uiText("item")}
+              {op.pending === 1 ? "" : "s"}
+              <I18nText id=". This cannot be undone." />
               <TextInput
-                aria-label="Confirm permanent Trash deletion"
+                aria-label={uiText("Confirm permanent Trash deletion")}
                 value={confirmation}
                 onChange={(e) => setConfirmation(e.target.value)}
                 autoComplete="off"
                 spellCheck={false}
-                placeholder="DELETE FOREVER"
+                placeholder={uiText("DELETE FOREVER")}
               />
             </label>
           )}
           {!preview && !busy && attention > 0 && (
             <p className="trash-guidance">
-              Resolve any protection above, then choose Recheck to prepare a new
-              confirmation for the remaining items.
+              <I18nText id="Resolve any protection above, then choose Recheck to prepare a new confirmation for the remaining items." />
             </p>
           )}
         </div>
@@ -425,7 +439,9 @@ export function TrashOperationDialog({
   ) : (
     <Dialog
       title={title}
-      subtitle="Recover what matters. Remove only what is no longer in use."
+      subtitle={uiText(
+        "Recover what matters. Remove only what is no longer in use.",
+      )}
       onClose={onClose}
       wide
       className="trash-review-dialog"

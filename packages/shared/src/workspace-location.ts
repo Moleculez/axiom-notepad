@@ -4,7 +4,7 @@ import type { ResourceLocation, Space } from "./workspace";
 import { docArticle, docSections } from "./documentation";
 import { researchViews } from "./research-navigation";
 
-export type LocationCrumb = { label: string; to?: string };
+export type LocationCrumb = { label: string; to?: string; authored?: true };
 export function folderRoute(spaceId: string, folderId?: string | null) {
   const params = new URLSearchParams({ space: spaceId });
   if (folderId) params.set("folder", folderId);
@@ -70,7 +70,11 @@ export function workspaceLocation({
     return {
       crumbs: [
         first,
-        { label: group?.name ?? "Group", to: "/groups" },
+        {
+          label: group?.name ?? "Group",
+          to: "/groups",
+          ...(group ? { authored: true as const } : {}),
+        },
         { label: "Planning" },
       ],
       up: "/groups",
@@ -96,7 +100,11 @@ export function workspaceLocation({
       };
     const crumbs: LocationCrumb[] = [
       first,
-      { label: space?.name ?? location?.space.name ?? "Workspace", to: base },
+      {
+        label: space?.name ?? location?.space.name ?? "Workspace",
+        to: base,
+        ...(space || location ? { authored: true as const } : {}),
+      },
     ];
     if (parts[2])
       crumbs.push({
@@ -110,9 +118,10 @@ export function workspaceLocation({
       for (const folder of location.ancestors)
         crumbs.push({
           label: folder.name,
+          authored: true,
           to: `${base}/files?folder=${folder.id}`,
         });
-      crumbs.push({ label: location.resource.name });
+      crumbs.push({ label: location.resource.name, authored: true });
       return {
         crumbs,
         up: `${base}/files${location.resource.parent_id ? "?folder=" + location.resource.parent_id : ""}`,
@@ -140,22 +149,41 @@ export function workspaceLocation({
     return {
       crumbs: [
         first,
-        { label: location.space.name, to: folderRoute(location.space.id) },
+        {
+          label: location.space.name,
+          to: folderRoute(location.space.id),
+          authored: true,
+        },
         ...location.ancestors.map((item) => ({
           label: item.name,
+          authored: true as const,
           to: folderRoute(location.space.id, item.id),
         })),
-        { label: location.resource.name },
+        { label: location.resource.name, authored: true },
       ],
       up: folderRoute(location.space.id, location.resource.parent_id),
     };
   }
   if (locationResourceId(route))
-    return { crumbs: [first, { label: title || tabTitle(route) }], up: root };
+    return {
+      crumbs: [
+        first,
+        {
+          label: title || tabTitle(route),
+          ...(title ? { authored: true as const } : {}),
+        },
+      ],
+      up: root,
+    };
   if (section === "explorer") {
     const view = url.searchParams.get("view") || "folder";
     const crumbs = [first];
-    if (space) crumbs.push({ label: space.name, to: folderRoute(space.id) });
+    if (space)
+      crumbs.push({
+        label: space.name,
+        to: folderRoute(space.id),
+        authored: true,
+      });
     if (view !== "folder" && tabTitle(route) !== "Explorer")
       crumbs.push({ label: tabTitle(route) });
     delete crumbs.at(-1)!.to;

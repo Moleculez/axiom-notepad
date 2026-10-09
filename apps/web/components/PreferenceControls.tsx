@@ -1,4 +1,8 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+import { t, currentLocale } from "@axiom/i18n/client";
+import { formatNumber } from "@axiom/i18n";
+
 import { HelpText, IconButton, Slider, TextInput } from "./ui/controls";
 import { useEffect, useId, useRef, useState } from "react";
 import { Copy, RotateCcw } from "lucide-react";
@@ -27,6 +31,7 @@ export function NumberPreference({
   onInvalid: (invalid: boolean) => void;
   disabled?: boolean;
 }) {
+  useInterfaceLocale();
   const [text, setText] = useState(String(value));
   const [sliderValue, setSliderValue] = useState(value);
   const [error, setError] = useState("");
@@ -73,7 +78,13 @@ export function NumberPreference({
     Number(text) <= max;
   const commit = () => {
     if (!valid(text)) {
-      setError(`Use a number from ${min} to ${max}${unit ? ` ${unit}` : ""}.`);
+      setError(
+        t("Use a number from {min, number} to {max, number}{unit}.", {
+          min,
+          max,
+          unit: unit ? ` ${unit}` : "",
+        }),
+      );
       return;
     }
     flush();
@@ -88,13 +99,13 @@ export function NumberPreference({
   return (
     <div className="setting-control preference-number">
       <div className="preference-number-heading">
-        <label htmlFor={id}>{label}</label>
+        <label htmlFor={id}>{uiText(label)}</label>
         <span className="setting-number-value">
           <TextInput
             id={id}
             type="number"
             disabled={disabled}
-            aria-label={`${label} value`}
+            aria-label={t("{label} value", { label: uiText(label) })}
             min={min}
             max={max}
             step={step}
@@ -125,7 +136,7 @@ export function NumberPreference({
             type="button"
             disabled={disabled}
             className="icon-button"
-            aria-label={`Reset ${label}`}
+            aria-label={t("Reset {label}", { label: uiText(label) })}
             onClick={() => {
               if (frame.current !== null) cancelAnimationFrame(frame.current);
               frame.current = null;
@@ -141,12 +152,12 @@ export function NumberPreference({
         </span>
       </div>
       <Slider
-        aria-label={label}
+        aria-label={uiText(label)}
         disabled={disabled}
         min={min}
         max={max}
         step={step}
-        aria-valuetext={`${sliderValue}${unit ? ` ${unit}` : ""}`}
+        aria-valuetext={`${formatNumber(currentLocale(), sliderValue)}${unit ? ` ${unit}` : ""}`}
         value={sliderValue}
         onChange={(event) => slide(Number(event.target.value))}
         onPointerUp={flush}
@@ -180,6 +191,7 @@ export function ColorPreference({
   reset: () => void;
   onInvalid: (invalid: boolean) => void;
 }) {
+  useInterfaceLocale();
   const id = useId();
   const [text, setText] = useState(value);
   const [error, setError] = useState("");
@@ -205,11 +217,11 @@ export function ColorPreference({
   };
   return (
     <div className="preference-color">
-      <label htmlFor={id}>{label}</label>
+      <label htmlFor={id}>{uiText(label)}</label>
       <div className="preference-color-fields">
         <input
           type="color"
-          aria-label={`${label} color picker`}
+          aria-label={t("{label} color picker", { label: uiText(label) })}
           value={value}
           onChange={(event) => {
             onChange(event.target.value);
@@ -221,7 +233,8 @@ export function ColorPreference({
         <TextInput
           id={id}
           type="text"
-          aria-label={`${label} color value`}
+          aria-label={t("{label} color value", { label: uiText(label) })}
+          dir="ltr"
           value={text}
           spellCheck={false}
           autoComplete="off"
@@ -250,8 +263,8 @@ export function ColorPreference({
         <IconButton
           type="button"
           className="icon-button"
-          aria-label={`Copy ${label} color`}
-          title={copied ? "Copied" : "Copy color"}
+          aria-label={t("Copy {label} color", { label: uiText(label) })}
+          title={copied ? uiText("Copied") : uiText("Copy color")}
           onClick={() => {
             void navigator.clipboard
               .writeText(value)
@@ -268,7 +281,7 @@ export function ColorPreference({
         <IconButton
           type="button"
           className="icon-button"
-          aria-label={`Reset ${label} color`}
+          aria-label={t("Reset {label} color", { label: uiText(label) })}
           onClick={() => {
             reset();
             setText(value);
@@ -279,7 +292,11 @@ export function ColorPreference({
           <RotateCcw size={14} />
         </IconButton>
       </div>
-      {copied && <small role="status">Copied {value}</small>}
+      {copied && (
+        <small role="status">
+          <I18nText id="Copied" /> {value}
+        </small>
+      )}
       {error && (
         <HelpText
           as="small"

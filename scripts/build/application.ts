@@ -4,6 +4,7 @@ import { buildEnvironment } from "./environment";
 
 const env = buildEnvironment(process.env);
 for (const args of [
+  ["--import", "tsx", "scripts/i18n/build.ts"],
   ["--import", "tsx", "scripts/build/brand.ts"],
   ["--import", "tsx", "scripts/build/vendor-tools.ts"],
   ["--import", "tsx", "scripts/build/publish.ts"],

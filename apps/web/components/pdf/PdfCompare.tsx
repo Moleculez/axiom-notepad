@@ -1,4 +1,7 @@
 "use client";
+import { currentLocale } from "@axiom/i18n/client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { Checkbox, TextInput, NativeSelect } from "../ui/controls";
 import { useEffect, useRef, useState } from "react";
 import type { PDFDocumentProxy } from "pdfjs-dist";
@@ -23,6 +26,7 @@ export default function PdfCompare({
   onClose: () => void;
   returnFocus?: () => HTMLElement | null;
 }) {
+  useInterfaceLocale();
   const [query, setQuery] = useState(""),
     [files, setFiles] = useState<FileChoice[]>([]),
     [file, setFile] = useState(meta.resource_id ?? "");
@@ -237,8 +241,8 @@ export default function PdfCompare({
   };
   return (
     <Dialog
-      title="Compare PDFs"
-      subtitle="Independent readers and extracted-text differences"
+      title={uiText("Compare PDFs")}
+      subtitle={uiText("Independent readers and extracted-text differences")}
       wide
       className="pdf-compare-dialog"
       onClose={onClose}
@@ -246,13 +250,13 @@ export default function PdfCompare({
     >
       <div className="pdf-compare-controls">
         <TextInput
-          aria-label="Find comparison PDF"
-          placeholder="Find a PDF…"
+          aria-label={uiText("Find comparison PDF")}
+          placeholder={uiText("Find a PDF…")}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
         <NativeSelect
-          aria-label="Comparison PDF"
+          aria-label={uiText("Comparison PDF")}
           value={file}
           onChange={(e) => setFile(e.target.value)}
         >
@@ -266,14 +270,14 @@ export default function PdfCompare({
           ))}
         </NativeSelect>
         <NativeSelect
-          aria-label="Comparison version"
+          aria-label={uiText("Comparison version")}
           value={version}
           onChange={(e) => setVersion(e.target.value)}
         >
           {versions.map((v) => (
             <option key={v.id} value={v.id}>
-              Version {v.ordinal}
-              {v.id === meta.id ? " · currently open" : ""}
+              <I18nText id="Version" /> {v.ordinal}
+              {v.id === meta.id ? uiText(" · currently open") : ""}
             </option>
           ))}
         </NativeSelect>
@@ -282,11 +286,13 @@ export default function PdfCompare({
             checked={linked}
             onChange={(e) => setLinked(e.target.checked)}
           />
-          Link pages & scrolling
+          <I18nText id="Link pages & scrolling" />
         </label>
-        <button onClick={() => setSwapped(!swapped)}>Swap panes</button>
+        <button onClick={() => setSwapped(!swapped)}>
+          <I18nText id="Swap panes" />
+        </button>
         <button disabled={!other} onClick={() => void compare()}>
-          Compare text
+          <I18nText id="Compare text" />
         </button>
         <button
           disabled={
@@ -299,7 +305,7 @@ export default function PdfCompare({
             setStatus("Comparison cancelled.");
           }}
         >
-          Stop
+          <I18nText id="Stop" />
         </button>
       </div>
       {error && (
@@ -324,7 +330,7 @@ export default function PdfCompare({
                     : (files.find((f) => f.id === file)?.name ?? meta.name)}
                 </strong>
                 <label>
-                  Page
+                  <I18nText id="Page" />
                   <TextInput
                     aria-label={`${side === 0 ? "Original" : "Comparison"} page`}
                     type="number"
@@ -359,7 +365,9 @@ export default function PdfCompare({
                     })
                   }
                 >
-                  <option value="fit">Fit width</option>
+                  <option value="fit">
+                    <I18nText id="Fit width" />
+                  </option>
                   {[0.5, 1, 1.5, 2].map((v) => (
                     <option key={v} value={v}>
                       {v * 100}%
@@ -368,7 +376,7 @@ export default function PdfCompare({
                 </NativeSelect>
               </header>
               <label className="pdf-compare-ocr">
-                Scanned-page text
+                <I18nText id="Scanned-page text" />
                 <NativeSelect
                   aria-label={`${side === 0 ? "Original" : "Comparison"} OCR text`}
                   value={ocr[side]}
@@ -382,12 +390,15 @@ export default function PdfCompare({
                     setStatus("");
                   }}
                 >
-                  <option value="">Native text only</option>
+                  <option value="">
+                    <I18nText id="Native text only" />
+                  </option>
                   {ocrJobs[side]
                     .filter((j) => j.completed_pages > 0)
                     .map((j) => (
                       <option key={j.id} value={j.id}>
-                        Reviewed OCR · {new Date(j.created_at).toLocaleString()}
+                        <I18nText id="Reviewed OCR ·" />{" "}
+                        {new Date(j.created_at).toLocaleString(currentLocale())}
                       </option>
                     ))}
                 </NativeSelect>
@@ -433,7 +444,7 @@ export default function PdfCompare({
               disabled={index <= 0}
               onClick={() => selectChange(index - 1)}
             >
-              Previous change
+              <I18nText id="Previous change" />
             </button>
             <span>
               {index + 1} / {changed.length} · {active?.status} ·{" "}
@@ -443,14 +454,12 @@ export default function PdfCompare({
               disabled={index >= changed.length - 1}
               onClick={() => selectChange(index + 1)}
             >
-              Next change
+              <I18nText id="Next change" />
             </button>
           </header>
           {active?.status === "unavailable" ? (
             <p>
-              Readable text is missing on one or both pages. This is not
-              evidence that the pages are identical; review them visually or run
-              OCR separately.
+              <I18nText id="Readable text is missing on one or both pages. This is not evidence that the pages are identical; review them visually or run OCR separately." />
             </p>
           ) : active?.diff ? (
             <p>
@@ -467,8 +476,8 @@ export default function PdfCompare({
           ) : (
             <p>
               {active?.status === "added"
-                ? "Page added in comparison PDF."
-                : "Page removed from comparison PDF."}
+                ? uiText("Page added in comparison PDF.")
+                : uiText("Page removed from comparison PDF.")}
             </p>
           )}
         </section>

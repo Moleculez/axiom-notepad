@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import {
   Button,
   IconButton,
@@ -137,6 +139,7 @@ function asDraft(
   };
 }
 export default function ReadingMarks(props: Props) {
+  useInterfaceLocale();
   const {
     session,
     appearance,
@@ -820,7 +823,7 @@ export default function ReadingMarks(props: Props) {
       className={`reading-annotation-card ${position ? "floating" : "docked"}`}
       role="dialog"
       aria-modal="false"
-      aria-label="Annotation card"
+      aria-label={uiText("Annotation card")}
       data-annotation-card
       style={position ?? undefined}
     >
@@ -842,8 +845,8 @@ export default function ReadingMarks(props: Props) {
         </span>
         <IconButton
           className="icon-button"
-          aria-label="Close annotation card"
-          title="Close · draft retained"
+          aria-label={uiText("Close annotation card")}
+          title={uiText("Close · draft retained")}
           onClick={() => void close()}
         >
           <X size={15} />
@@ -857,8 +860,7 @@ export default function ReadingMarks(props: Props) {
       {conflict && draft && (
         <div className="annotation-conflict" role="status">
           <p>
-            A newer version was saved elsewhere. Your draft has not been
-            overwritten.
+            <I18nText id="A newer version was saved elsewhere. Your draft has not been overwritten." />
           </p>
           <button
             className="text-button"
@@ -869,9 +871,10 @@ export default function ReadingMarks(props: Props) {
               setMessage("");
             }}
           >
-            Use server version
+            <I18nText id="Use server version" />
           </button>
           <button
+            data-dialog-cancel
             className="text-button"
             onClick={() => {
               setDraft({ ...draft, base: conflict });
@@ -881,7 +884,7 @@ export default function ReadingMarks(props: Props) {
               );
             }}
           >
-            Keep my draft
+            <I18nText id="Keep my draft" />
           </button>
         </div>
       )}
@@ -889,8 +892,8 @@ export default function ReadingMarks(props: Props) {
         <>
           <div className="annotation-fields">
             <TextInput
-              aria-label="Annotation title"
-              placeholder="A short title (optional)"
+              aria-label={uiText("Annotation title")}
+              placeholder={uiText("A short title (optional)")}
               maxLength={200}
               value={draft.input.title}
               onChange={(e) =>
@@ -901,7 +904,7 @@ export default function ReadingMarks(props: Props) {
               }
             />
             <NativeSelect
-              aria-label="Annotation category"
+              aria-label={uiText("Annotation category")}
               value={draft.input.category}
               onChange={(e) =>
                 setDraft({
@@ -942,12 +945,12 @@ export default function ReadingMarks(props: Props) {
             onError={setMessage}
           />
           <label className="annotation-tags">
-            Tags
+            <I18nText id="Tags" />
             <TextInput
               key={`${draft.id}:${editorRevision}`}
-              aria-label="Annotation tags"
+              aria-label={uiText("Annotation tags")}
               defaultValue={draft.input.tags.join(", ")}
-              placeholder="assumptions, reproduce"
+              placeholder={uiText("assumptions, reproduce")}
               onChange={(e) =>
                 setDraft({
                   ...draft,
@@ -966,8 +969,8 @@ export default function ReadingMarks(props: Props) {
             <small role="status">{draftStatus}</small>
             <IconButton
               className="icon-button"
-              aria-label="Export annotation draft"
-              title="Export draft"
+              aria-label={uiText("Export annotation draft")}
+              title={uiText("Export draft")}
               onClick={() =>
                 download(
                   "annotation-draft.md",
@@ -995,7 +998,7 @@ export default function ReadingMarks(props: Props) {
                 })
               }
             >
-              Discard
+              <I18nText id="Discard" />
             </button>
             <Button
               className="button secondary small"
@@ -1008,7 +1011,7 @@ export default function ReadingMarks(props: Props) {
                 })
               }
             >
-              Save
+              <I18nText id="Save" />
             </Button>
           </footer>
         </>
@@ -1018,9 +1021,9 @@ export default function ReadingMarks(props: Props) {
             <div className="annotation-byline">
               {active.author_name} ·{" "}
               {active.visibility === "private"
-                ? "Only you"
-                : "Shared with readers"}
-              {active.resolved ? " · Resolved" : ""}
+                ? uiText("Only you")
+                : uiText("Shared with readers")}
+              {active.resolved ? uiText(" · Resolved") : ""}
             </div>
             {active.anchor && (
               <button
@@ -1044,7 +1047,7 @@ export default function ReadingMarks(props: Props) {
             )}
             {active.deleted ? (
               <p className="muted">
-                This entry was removed. Replies are retained.
+                <I18nText id="This entry was removed. Replies are retained." />
               </p>
             ) : (
               <Preview
@@ -1057,7 +1060,9 @@ export default function ReadingMarks(props: Props) {
               <article className="annotation-reply" key={r.id}>
                 <small>{r.author_name}</small>
                 {r.deleted ? (
-                  <p className="muted">Reply removed.</p>
+                  <p className="muted">
+                    <I18nText id="Reply removed." />
+                  </p>
                 ) : (
                   <Preview
                     body={r.body}
@@ -1067,14 +1072,14 @@ export default function ReadingMarks(props: Props) {
                 )}{" "}
                 {r.author_id === session.user.id && !r.deleted && (
                   <button className="text-button" onClick={() => edit(r)}>
-                    Edit reply
+                    <I18nText id="Edit reply" />
                   </button>
                 )}
               </article>
             ))}
             {resume && (
               <button className="text-button" onClick={() => setDraft(resume)}>
-                Resume saved draft
+                <I18nText id="Resume saved draft" />
               </button>
             )}
           </div>
@@ -1171,7 +1176,7 @@ export default function ReadingMarks(props: Props) {
         </>
       ) : (
         <p className="reading-mark-empty">
-          This card is unavailable. Your drafts remain in Reading marks.
+          <I18nText id="This card is unavailable. Your drafts remain in Reading marks." />
         </p>
       )}
     </section>
@@ -1179,23 +1184,25 @@ export default function ReadingMarks(props: Props) {
   const panel = (
     <div className="reading-marks-panel">
       <header>
-        <h2>Reading marks</h2>
+        <h2>
+          <I18nText id="Reading marks" />
+        </h2>
         <div
           className="scratchpad-modes"
           role="group"
-          aria-label="Reading marks view"
+          aria-label={uiText("Reading marks view")}
         >
           <button
             aria-pressed={tab === "bookmarks"}
             onClick={() => setTab("bookmarks")}
           >
-            Bookmarks
+            <I18nText id="Bookmarks" />
           </button>
           <button
             aria-pressed={tab === "annotations"}
             onClick={() => setTab("annotations")}
           >
-            Annotations
+            <I18nText id="Annotations" />
           </button>
         </div>
       </header>
@@ -1211,11 +1218,11 @@ export default function ReadingMarks(props: Props) {
           onClick={() => void addBookmark(currentAnchor())}
         >
           <BookmarkPlus size={14} />
-          Bookmark position
+          <I18nText id="Bookmark position" />
         </button>
         <button className="text-button" onClick={() => begin(currentAnchor())}>
           <Plus size={14} />
-          Annotation
+          <I18nText id="Annotation" />
         </button>
       </div>
       {card && !position ? (
@@ -1247,34 +1254,44 @@ export default function ReadingMarks(props: Props) {
         <>
           <div className="reading-mark-search">
             <SearchField
-              aria-label="Search annotations"
+              aria-label={uiText("Search annotations")}
               value={query}
-              placeholder="Search notes or tags…"
+              placeholder={uiText("Search notes or tags…")}
               onChange={(e) => setQuery(e.target.value)}
               onClear={() => setQuery("")}
-              clearLabel="Clear annotation search"
+              clearLabel={uiText("Clear annotation search")}
             />
             <NativeSelect
-              aria-label="Filter annotations"
+              aria-label={uiText("Filter annotations")}
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
             >
-              <option value="all">All</option>
-              <option value="private">Private</option>
-              <option value="shared">Shared</option>
-              <option value="resolved">Resolved</option>
-              <option value="unattached">Needs reattachment</option>
+              <option value="all">
+                <I18nText id="All" />
+              </option>
+              <option value="private">
+                <I18nText id="Private" />
+              </option>
+              <option value="shared">
+                <I18nText id="Shared" />
+              </option>
+              <option value="resolved">
+                <I18nText id="Resolved" />
+              </option>
+              <option value="unattached">
+                <I18nText id="Needs reattachment" />
+              </option>
             </NativeSelect>
           </div>
           <div className="reading-mark-tools">
             <span>
-              {annotations.length} annotation
+              {annotations.length} <I18nText id="annotation" />
               {annotations.length === 1 ? "" : "s"}
             </span>
             <IconButton
               className="icon-button"
-              aria-label="Export annotations"
-              title="Export annotations"
+              aria-label={uiText("Export annotations")}
+              title={uiText("Export annotations")}
               onClick={(event) =>
                 openContextMenu({
                   owner: event.currentTarget,
@@ -1329,7 +1346,7 @@ export default function ReadingMarks(props: Props) {
             <p role="alert" className="reading-mark-error">
               {props.threads.error}
               <button className="text-button" onClick={props.threads.reload}>
-                Retry
+                <I18nText id="Retry" />
               </button>
             </p>
           )}
@@ -1346,7 +1363,9 @@ export default function ReadingMarks(props: Props) {
               <Pencil size={14} />
               <span>
                 {d.input.title || "Untitled draft"}
-                <small>Draft · saved on this device</small>
+                <small>
+                  <I18nText id="Draft · saved on this device" />
+                </small>
               </span>
             </button>
           ))}
@@ -1365,9 +1384,9 @@ export default function ReadingMarks(props: Props) {
                 {c.title || c.body.slice(0, 60)}
                 <small>
                   {blockLabel(c.category)}
-                  {c.resolved ? " · Resolved" : ""}
+                  {c.resolved ? uiText(" · Resolved") : ""}
                   {c.anchor && !props.editor.current?.resolveMark(c.anchor)
-                    ? " · Needs reattachment"
+                    ? uiText(" · Needs reattachment")
                     : ""}
                 </small>
               </span>
@@ -1375,8 +1394,7 @@ export default function ReadingMarks(props: Props) {
           ))}
           {!annotations.length && !props.threads.drafts.length && (
             <p className="reading-mark-empty">
-              Keep questions, insights and follow-ups beside the content. New
-              annotations are private.
+              <I18nText id="Keep questions, insights and follow-ups beside the content. New annotations are private." />
             </p>
           )}
           {props.threads.pending.map((e) => (
@@ -1390,7 +1408,7 @@ export default function ReadingMarks(props: Props) {
                       void work(() => props.threads.resolve(e, false))
                     }
                   >
-                    Use server version
+                    <I18nText id="Use server version" />
                   </button>
                   {e.conflict && (
                     <button
@@ -1400,8 +1418,8 @@ export default function ReadingMarks(props: Props) {
                       }
                     >
                       {e.conflict.visibility === "private"
-                        ? "Keep my changes"
-                        : "Recover private copy"}
+                        ? uiText("Keep my changes")
+                        : uiText("Recover private copy")}
                     </button>
                   )}
                   <button
@@ -1414,7 +1432,7 @@ export default function ReadingMarks(props: Props) {
                       )
                     }
                   >
-                    Export retained work
+                    <I18nText id="Export retained work" />
                   </button>
                 </>
               )}
@@ -1447,7 +1465,7 @@ export default function ReadingMarks(props: Props) {
       <div
         ref={layer}
         className="reading-mark-layer"
-        aria-label="Document reading marks"
+        aria-label={uiText("Document reading marks")}
         style={{
           height: layout.height,
           width: layout.width,
@@ -1497,8 +1515,8 @@ export default function ReadingMarks(props: Props) {
                   }
                   title={
                     items[0].kind === "bookmark"
-                      ? "Reading bookmark"
-                      : "Annotation"
+                      ? uiText("Reading bookmark")
+                      : uiText("Annotation")
                   }
                   onPointerDown={(e) => e.preventDefault()}
                   onClick={(e) => selectMarks(e.currentTarget, items)}
@@ -1528,7 +1546,7 @@ export default function ReadingMarks(props: Props) {
           !minimapEnabled && (
             <nav
               className="reading-mark-overview"
-              aria-label="Reading marks overview"
+              aria-label={uiText("Reading marks overview")}
               style={{ left: right + 6 }}
             >
               {[...overview].map(([y, items]) => (
@@ -1546,9 +1564,13 @@ export default function ReadingMarks(props: Props) {
           )}
         {reattach && (
           <div className="reading-reattach-banner" role="status">
-            Choose a block menu → Attach here
-            <button className="text-button" onClick={() => setReattach(null)}>
-              Cancel
+            <I18nText id="Choose a block menu → Attach here" />
+            <button
+              data-dialog-cancel
+              className="text-button"
+              onClick={() => setReattach(null)}
+            >
+              <I18nText id="Cancel" />
             </button>
           </div>
         )}
@@ -1641,9 +1663,9 @@ export default function ReadingMarks(props: Props) {
               )}
             </div>
             <small>
-              Click to open
+              <I18nText id="Click to open" />
               {preview.mark.comment?.visibility === "private"
-                ? " · Only you"
+                ? uiText(" · Only you")
                 : ""}
             </small>
           </div>,

@@ -1,4 +1,7 @@
 "use client";
+import { currentLocale } from "@axiom/i18n/client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { HelpText, IconButton, TextInput } from "../ui/controls";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { ArrowDownAZ, ArrowUpAZ, Copy, Link, Snowflake, X } from "lucide-react";
@@ -39,6 +42,7 @@ export default function WorkbookGrid({
   resourceId: string;
   versionId: string;
 }) {
+  useInterfaceLocale();
   const viewport = useRef<HTMLDivElement>(null),
     dragging = useRef(false),
     id = useId();
@@ -258,8 +262,8 @@ export default function WorkbookGrid({
     >
       <div className="workbook-controls">
         <TextInput
-          aria-label="Filter worksheet rows"
-          placeholder="Filter rows…"
+          aria-label={uiText("Filter worksheet rows")}
+          placeholder={uiText("Filter rows…")}
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);
@@ -268,11 +272,11 @@ export default function WorkbookGrid({
         />
         <IconButton
           className="icon-button"
-          aria-label="Sort selected column ascending"
+          aria-label={uiText("Sort selected column ascending")}
           title={
             sheet.merges.length
-              ? "Sorting is unavailable on sheets with merged cells"
-              : "Sort selected column ascending"
+              ? uiText("Sorting is unavailable on sheets with merged cells")
+              : uiText("Sort selected column ascending")
           }
           disabled={!rows.length || !!sheet.merges.length}
           onClick={() => setSort({ column: end.column, direction: "asc" })}
@@ -281,7 +285,7 @@ export default function WorkbookGrid({
         </IconButton>
         <IconButton
           className="icon-button"
-          aria-label="Sort selected column descending"
+          aria-label={uiText("Sort selected column descending")}
           disabled={!rows.length || !!sheet.merges.length}
           onClick={() => setSort({ column: end.column, direction: "desc" })}
         >
@@ -290,7 +294,7 @@ export default function WorkbookGrid({
         {sort && (
           <IconButton
             className="icon-button"
-            aria-label="Clear worksheet sorting"
+            aria-label={uiText("Clear worksheet sorting")}
             onClick={() => setSort(undefined)}
           >
             <X size={15} />
@@ -298,9 +302,9 @@ export default function WorkbookGrid({
         )}
         <IconButton
           className="icon-button"
-          aria-label="Use workbook frozen panes"
+          aria-label={uiText("Use workbook frozen panes")}
           aria-pressed={freeze}
-          title="Use workbook frozen panes"
+          title={uiText("Use workbook frozen panes")}
           onClick={() => setFreeze(!freeze)}
         >
           <Snowflake size={17} />
@@ -308,16 +312,16 @@ export default function WorkbookGrid({
         <span className="tool-spacer" />
         <IconButton
           className="icon-button"
-          aria-label="Copy selected cells"
-          title="Copy selected cells"
+          aria-label={uiText("Copy selected cells")}
+          title={uiText("Copy selected cells")}
           onClick={() => void copy()}
         >
           <Copy size={16} />
         </IconButton>
         <IconButton
           className="icon-button"
-          aria-label="Copy cell link"
-          title="Copy cell link"
+          aria-label={uiText("Copy cell link")}
+          title={uiText("Copy cell link")}
           onClick={() => void copy(true)}
         >
           <Link size={16} />
@@ -341,17 +345,17 @@ export default function WorkbookGrid({
           }}
         >
           <TextInput
-            aria-label="Go to cell"
+            aria-label={uiText("Go to cell")}
             value={address}
             onChange={(e) => setAddress(e.target.value)}
           />
         </form>
         <span aria-hidden="true">ƒx</span>
         <output
-          aria-label="Cell formula or value"
+          aria-label={uiText("Cell formula or value")}
           title={
             cell?.formula
-              ? "Formula shown for inspection only; never evaluated"
+              ? uiText("Formula shown for inspection only; never evaluated")
               : undefined
           }
         >
@@ -362,7 +366,7 @@ export default function WorkbookGrid({
         ref={viewport}
         className="workbook-viewport"
         role="grid"
-        aria-label="Spreadsheet data"
+        aria-label={uiText("Spreadsheet data")}
         aria-readonly="true"
         aria-rowcount={rows.length + 1}
         aria-colcount={widths.length + 1}
@@ -571,20 +575,20 @@ export default function WorkbookGrid({
       </div>
       <footer className="workbook-status">
         <span>
-          {rows.length.toLocaleString()} rows · {widths.length} columns ·
-          Read-only
+          {rows.length.toLocaleString(currentLocale())} <I18nText id="rows ·" />{" "}
+          {widths.length} <I18nText id="columns · Read-only" />
         </span>
         <span>
           {"error" in statistics
             ? statistics.error
-            : `Count ${statistics.count}${statistics.numbers ? ` · Sum ${statistics.sum.toLocaleString()} · Average ${statistics.average.toLocaleString()}` : ""}`}
+            : `Count ${statistics.count}${statistics.numbers ? ` · Sum ${statistics.sum.toLocaleString(currentLocale())} · Average ${statistics.average.toLocaleString(currentLocale())}` : ""}`}
         </span>
       </footer>
       {message && (
         <HelpText role="status">
           {message}
           <button className="text-button" onClick={() => setMessage("")}>
-            Dismiss
+            <I18nText id="Dismiss" />
           </button>
         </HelpText>
       )}

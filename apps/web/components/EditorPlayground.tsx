@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { IconButton } from "./ui/controls";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { parseMarkdown } from "@axiom/markdown";
@@ -48,6 +50,7 @@ export default function EditorPlayground({
   onAppearanceChange?: (appearance: Preferences) => void;
   sample?: string;
 }) {
+  useInterfaceLocale();
   const mount = useRef<HTMLDivElement>(null),
     view = useRef<EditorView | null>(null);
   const current = useRef({ preferences, appearance });
@@ -151,15 +154,20 @@ export default function EditorPlayground({
       className="settings-scratchpad"
       aria-label={`${category} settings preview`}
     >
-      <div className="scratchpad-toolbar" aria-label="Live preview controls">
+      <div
+        className="scratchpad-toolbar"
+        aria-label={uiText("Live preview controls")}
+      >
         <span className="scratchpad-title">
-          <strong>Try it here</strong>
+          <strong>
+            <I18nText id="Try it here" />
+          </strong>
         </span>
         {showInterface && (
           <div
             className="scratchpad-surface-switch"
             role="group"
-            aria-label="Preview surface"
+            aria-label={uiText("Preview surface")}
           >
             {(["writing", "interface"] as const).map((value) => (
               <button
@@ -169,7 +177,7 @@ export default function EditorPlayground({
                 aria-controls={value === "writing" ? writingId : interfaceId}
                 onClick={() => setSurface(value)}
               >
-                {value === "writing" ? "Writing" : "Interface"}
+                {value === "writing" ? uiText("Writing") : uiText("Interface")}
               </button>
             ))}
           </div>
@@ -183,7 +191,7 @@ export default function EditorPlayground({
             <div
               className="scratchpad-modes"
               role="group"
-              aria-label="Preview mode"
+              aria-label={uiText("Preview mode")}
             >
               {(["write", "read", "source"] as const).map((value) => (
                 <button
@@ -193,7 +201,7 @@ export default function EditorPlayground({
                   onClick={() => setMode(value)}
                 >
                   {value === "write"
-                    ? "Write"
+                    ? uiText("Write")
                     : value === "read"
                       ? "Read"
                       : "Source"}
@@ -203,8 +211,8 @@ export default function EditorPlayground({
             <IconButton
               type="button"
               className="icon-button"
-              aria-label="Copy sample Markdown"
-              title="Copy sample Markdown"
+              aria-label={uiText("Copy sample Markdown")}
+              title={uiText("Copy sample Markdown")}
               onClick={() =>
                 void navigator.clipboard.writeText(source).then(
                   () => setMessage("Markdown copied."),
@@ -220,8 +228,8 @@ export default function EditorPlayground({
             <IconButton
               type="button"
               className="icon-button scratchpad-reset"
-              aria-label="Reset sample"
-              title="Reset sample"
+              aria-label={uiText("Reset sample")}
+              title={uiText("Reset sample")}
               onClick={() => {
                 setReset((n) => n + 1);
                 setMessage("");
@@ -236,7 +244,8 @@ export default function EditorPlayground({
               aria-hidden={writing}
               inert={writing}
             >
-              {dark ? "Dark" : "Light"} · live draft
+              {dark ? uiText("Dark") : uiText("Light")}{" "}
+              <I18nText id="· live draft" />
             </small>
           )}
         </div>
@@ -283,8 +292,8 @@ export default function EditorPlayground({
       <div className="scratchpad-footer">
         <span>
           {writing
-            ? "Private scratchpad · never saved or synced"
-            : "Interface specimen · no files or accounts are changed"}
+            ? uiText("Private scratchpad · never saved or synced")
+            : uiText("Interface specimen · no files or accounts are changed")}
         </span>
         {writing && message && <p role="status">{message}</p>}
       </div>

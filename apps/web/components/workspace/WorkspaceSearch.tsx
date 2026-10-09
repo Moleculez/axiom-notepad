@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { SearchField } from "../ui/controls";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import {
@@ -45,6 +47,7 @@ function Match({ text, query }: { text: string; query: string }) {
 }
 
 export default function WorkspaceSearch({ onClose }: { onClose: () => void }) {
+  useInterfaceLocale();
   const { revision, open, navigate, spaces, session } = useWorkspace(),
     sessions = useWorkSessions(),
     commandRegistry = useWorkspaceCommands();
@@ -131,7 +134,9 @@ export default function WorkspaceSearch({ onClose }: { onClose: () => void }) {
     const matches = commandRegistry.commands.filter(
       ({ title: name, description }) =>
         !term ||
-        `${name} ${description}`.toLowerCase().includes(term.toLowerCase()),
+        `${uiText(name)} ${uiText(description)} ${name} ${description}`
+          .toLowerCase()
+          .includes(term.toLowerCase()),
     );
     groups.push({
       name: "Commands",
@@ -146,10 +151,10 @@ export default function WorkspaceSearch({ onClose }: { onClose: () => void }) {
           disabledReason,
         }) => ({
           id: `command:${commandId}`,
-          title,
+          title: uiText(title),
           icon: <Icon size={18} />,
-          kind: group,
-          detail: disabledReason ?? detail,
+          kind: uiText(group),
+          detail: uiText(disabledReason ?? detail),
           disabledReason,
           action: run,
         }),
@@ -218,7 +223,7 @@ export default function WorkspaceSearch({ onClose }: { onClose: () => void }) {
   let offset = 0;
   return (
     <Dialog
-      title="Search & commands"
+      title={uiText("Search & commands")}
       size="wide"
       className="workspace-search-dialog"
       onClose={onClose}
@@ -229,15 +234,15 @@ export default function WorkspaceSearch({ onClose }: { onClose: () => void }) {
         ref={input}
         autoFocus
         role="combobox"
-        aria-label="Global search"
+        aria-label={uiText("Global search")}
         aria-autocomplete="list"
         aria-expanded="true"
         aria-controls={`${id}-results`}
         aria-activedescendant={selected ? `${id}-${selected.id}` : undefined}
         placeholder={
           commandsOnly
-            ? "Where would you like to go?"
-            : "Find files, folders, or a command…"
+            ? uiText("Where would you like to go?")
+            : uiText("Find files, folders, or a command…")
         }
         value={query}
         onChange={(event) => setQuery(event.target.value)}
@@ -264,7 +269,7 @@ export default function WorkspaceSearch({ onClose }: { onClose: () => void }) {
       <div
         className="discovery-scope-row"
         role="group"
-        aria-label="Search scope"
+        aria-label={uiText("Search scope")}
       >
         {(
           [
@@ -283,7 +288,10 @@ export default function WorkspaceSearch({ onClose }: { onClose: () => void }) {
           </button>
         ))}
         <span>
-          Type <kbd>&gt;</kbd> for commands
+          <I18nText
+            id="Type {prefix} for commands"
+            slots={{ prefix: <kbd>&gt;</kbd> }}
+          />
         </span>
       </div>
       {endpoint && <ErrorNotice message={data.error} retry={data.reload} />}
@@ -291,7 +299,7 @@ export default function WorkspaceSearch({ onClose }: { onClose: () => void }) {
         ref={list}
         id={`${id}-results`}
         role="listbox"
-        aria-label="Search results"
+        aria-label={uiText("Search results")}
         aria-busy={pending}
         className="discovery-result-list"
       >
@@ -308,7 +316,7 @@ export default function WorkspaceSearch({ onClose }: { onClose: () => void }) {
                 className="discovery-result-group"
               >
                 <div className="discovery-group-heading" aria-hidden="true">
-                  <span>{group.name}</span>
+                  <span>{uiText(group.name)}</span>
                   <small>{group.entries.length}</small>
                 </div>
                 {group.entries.map((entry, index) => (
@@ -349,7 +357,7 @@ export default function WorkspaceSearch({ onClose }: { onClose: () => void }) {
       {pending && (
         <div className="discovery-feedback" role="status">
           <span className="discovery-loading-dot" />
-          Searching your accessible files…
+          <I18nText id="Searching your accessible files…" />
         </div>
       )}
       {!pending && !entries.length && !data.error && (
@@ -358,12 +366,14 @@ export default function WorkspaceSearch({ onClose }: { onClose: () => void }) {
           <strong>
             {term
               ? `No matches for “${term}”`
-              : "Find something worth revisiting"}
+              : uiText("Find something worth revisiting")}
           </strong>
           <p>
             {scope === "files" && !term
-              ? "Search by file name, content, or tag."
-              : "Try a shorter name, another keyword, or a different scope."}
+              ? uiText("Search by file name, content, or tag.")
+              : uiText(
+                  "Try a shorter name, another keyword, or a different scope.",
+                )}
           </p>
         </div>
       )}
@@ -371,11 +381,16 @@ export default function WorkspaceSearch({ onClose }: { onClose: () => void }) {
         <div className="discovery-footer">
           <span>
             <kbd>↑</kbd>
-            <kbd>↓</kbd> Navigate <kbd>↵</kbd> Open <kbd>esc</kbd> Close
+            <kbd>↓</kbd> <I18nText id="Navigate" /> <kbd>↵</kbd>{" "}
+            <I18nText id="Open" />{" "}
+            <kbd>
+              <I18nText id="esc" />
+            </kbd>{" "}
+            <I18nText id="Close" />
           </span>
           <span>
             <History size={13} />
-            Your accessible work only
+            <I18nText id="Your accessible work only" />
           </span>
         </div>
       </DialogFooter>

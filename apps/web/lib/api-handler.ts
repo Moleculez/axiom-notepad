@@ -48,6 +48,7 @@ import {
 import { htmlExport } from "@axiom/shared/html-export";
 import { documentExportPreview } from "@axiom/shared/document-export-api";
 import { preferencesApi } from "@axiom/shared/preferences-api";
+import { localeApi } from "@axiom/shared/locale-api";
 import { editorPreferencesApi } from "@axiom/shared/editor-preferences-api";
 import { preferencesBundleApi } from "@axiom/shared/preferences-bundle-api";
 import { workspaceApi } from "@axiom/shared/workspace-api";
@@ -317,6 +318,8 @@ async function handleRequest(
     if (workspaceResponse) return workspaceResponse;
     if (resource === "me" && id === "preferences")
       return await preferencesApi(request, user.id);
+    if (resource === "me" && id === "locale")
+      return await localeApi(request, user.id);
     if (resource === "me" && id === "editor-preferences")
       return await editorPreferencesApi(request, user.id);
     if (resource === "me" && id === "preferences-bundle")

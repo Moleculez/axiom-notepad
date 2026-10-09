@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { Button, Checkbox, NativeSelect, TextInput } from "../ui/controls";
 import { useEffect, useRef, useState } from "react";
 import type { Resource } from "@axiom/shared/workspace";
@@ -15,6 +17,7 @@ export default function ResearchInsert({
   onInsert: (value: string) => void;
   shared: boolean;
 }) {
+  useInterfaceLocale();
   const [open, setOpen] = useState(false),
     [chosen, setChosen] = useState(""),
     [acknowledge, setAcknowledge] = useState(false),
@@ -78,13 +81,15 @@ export default function ResearchInsert({
       onToggle={(e) => setOpen(e.currentTarget.open)}
     >
       <summary>
-        {pdf ? "Insert a research quotation" : "Insert a dataset excerpt"}
+        {pdf
+          ? uiText("Insert a research quotation")
+          : uiText("Insert a dataset excerpt")}
       </summary>
       <ErrorNotice message={error || annotations.error} />
       {pdf ? (
         <>
           <label>
-            Saved annotation
+            <I18nText id="Saved annotation" />
             <NativeSelect
               value={chosen}
               onChange={(e) => {
@@ -92,7 +97,9 @@ export default function ResearchInsert({
                 setAcknowledge(false);
               }}
             >
-              <option value="">Choose a quotation…</option>
+              <option value="">
+                <I18nText id="Choose a quotation…" />
+              </option>
               {annotations.data
                 ?.filter((entry) => !entry.deleted)
                 .map((entry) => (
@@ -106,16 +113,15 @@ export default function ResearchInsert({
           </label>
           {!annotations.loading && !annotations.data?.length && (
             <p className="ws-small muted">
-              No saved annotations. Open the PDF reader to select and annotate a
-              passage.
+              <I18nText id="No saved annotations. Open the PDF reader to select and annotate a passage." />
             </p>
           )}
           {selected && <blockquote>{selected.data.quote}</blockquote>}
           <label>
-            Citation key (optional)
+            <I18nText id="Citation key (optional)" />
             <TextInput
               value={citeKey}
-              placeholder="author2026"
+              placeholder={uiText("author2026")}
               onChange={(e) =>
                 setCiteKey(e.target.value.replace(/[^\w:./-]/g, ""))
               }
@@ -127,7 +133,7 @@ export default function ResearchInsert({
                 checked={acknowledge}
                 onChange={(e) => setAcknowledge(e.target.checked)}
               />
-              Include this private annotation in the shared note
+              <I18nText id="Include this private annotation in the shared note" />
             </label>
           )}
           <Button
@@ -144,24 +150,23 @@ export default function ResearchInsert({
               )
             }
           >
-            Insert quotation with source
+            <I18nText id="Insert quotation with source" />
           </Button>
         </>
       ) : (
         <>
           <p className="ws-small muted">
-            A frozen Markdown table, linked to this file version. Up to 200 rows
-            and 20 columns; formulas are never executed.
+            <I18nText id="A frozen Markdown table, linked to this file version. Up to 200 rows and 20 columns; formulas are never executed." />
           </p>
           {!rows.length ? (
             <Button className="button secondary" onClick={() => void load()}>
-              Load excerpt
+              <I18nText id="Load excerpt" />
             </Button>
           ) : (
             <>
               <div className="media-options-pair">
                 <label>
-                  First data row
+                  <I18nText id="First data row" />
                   <TextInput
                     type="number"
                     min={1}
@@ -175,7 +180,7 @@ export default function ResearchInsert({
                   />
                 </label>
                 <label>
-                  Last data row
+                  <I18nText id="Last data row" />
                   <TextInput
                     type="number"
                     min={start}
@@ -217,7 +222,7 @@ export default function ResearchInsert({
                   );
                 }}
               >
-                Insert table with source
+                <I18nText id="Insert table with source" />
               </Button>
             </>
           )}

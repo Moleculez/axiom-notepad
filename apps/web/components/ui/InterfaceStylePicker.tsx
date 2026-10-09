@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { useId, useState, type CSSProperties } from "react";
 import {
   Atom,
@@ -47,16 +49,18 @@ export default function InterfaceStylePicker({
   comparing?: boolean;
   onComparingChange?: (comparing: boolean) => void;
 }) {
+  useInterfaceLocale();
   const name = useId();
   const [localComparing, setLocalComparing] = useState(false);
   const comparing = controlledComparing ?? localComparing;
   const galleryId = `${name}-comparison`;
   return (
     <fieldset className="interface-style-picker" disabled={disabled}>
-      <legend>Interface style</legend>
+      <legend>
+        <I18nText id="Interface style" />
+      </legend>
       <HelpText>
-        Eight visual systems for controls, navigation and overlays. Colors,
-        fonts and document typography remain independent.
+        <I18nText id="Eight visual systems for controls, navigation and overlays. Colors, fonts and document typography remain independent." />
       </HelpText>
       <div className="interface-style-options">
         {interfaceStyles.map((style) => {
@@ -81,15 +85,19 @@ export default function InterfaceStylePicker({
                 aria-hidden="true"
               >
                 <span className="interface-miniature-chrome interface-panel-band">
-                  <span>Research</span>
+                  <span>
+                    <I18nText id="Research" />
+                  </span>
                   <span className="interface-miniature-tabs">
                     <span
                       className="interface-page-tab is-selected"
                       aria-selected="true"
                     >
-                      Files
+                      <I18nText id="Files" />
                     </span>
-                    <span className="interface-page-tab">Plan</span>
+                    <span className="interface-page-tab">
+                      <I18nText id="Plan" />
+                    </span>
                   </span>
                 </span>
                 <span className="interface-miniature-body">
@@ -98,27 +106,35 @@ export default function InterfaceStylePicker({
                       className="interface-navigation-row is-selected"
                       data-selected="true"
                     >
-                      Notes
+                      <I18nText id="Notes" />
                     </span>
-                    <span className="interface-navigation-row">Sources</span>
+                    <span className="interface-navigation-row">
+                      <I18nText id="Sources" />
+                    </span>
                   </span>
                   <span className="interface-miniature-content">
                     <span className="interface-miniature-field">
                       <Search />
-                      <span>Find evidence</span>
+                      <span>
+                        <I18nText id="Find evidence" />
+                      </span>
                     </span>
                     <span
                       className="interface-miniature-row interface-navigation-row is-selected"
                       data-selected="true"
                     >
                       <span className="interface-miniature-check">✓</span>
-                      <span>Field notes</span>
+                      <span>
+                        <I18nText id="Field notes" />
+                      </span>
                     </span>
                     <span className="interface-miniature-actions">
                       <span className="interface-miniature-primary">
-                        Add note
+                        <I18nText id="Add note" />
                       </span>
-                      <span className="interface-miniature-action">Share</span>
+                      <span className="interface-miniature-action">
+                        <I18nText id="Share" />
+                      </span>
                     </span>
                   </span>
                 </span>
@@ -140,7 +156,7 @@ export default function InterfaceStylePicker({
         }}
       >
         <Layers2 aria-hidden="true" />
-        {comparing ? "Hide comparison" : "Compare all styles"}
+        {comparing ? uiText("Hide comparison") : uiText("Compare all styles")}
       </Button>
       {comparing && (
         <InterfaceStyleGallery

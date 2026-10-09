@@ -1,3 +1,4 @@
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
 import { Button } from "../../web/components/ui/controls";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { Download, FileQuestion } from "lucide-react";
@@ -60,14 +61,18 @@ export function FilePreview({
         }
       >
         <img src={file.source} alt={file.name} />
-        <span>Open image viewer</span>
+        <span>
+          <I18nText id="Open image viewer" />
+        </span>
       </button>
     );
   return (
     <div className="canvas-preview-notice">
       <FileQuestion size={25} />
       <span>{file.name}</span>
-      <p>Download to open this format in its native app.</p>
+      <p>
+        <I18nText id="Download to open this format in its native app." />
+      </p>
     </div>
   );
 }
@@ -78,6 +83,7 @@ export default function FileViewer({
   id: string;
   onClose: () => void;
 }) {
+  useInterfaceLocale();
   const [file, setFile] = useState<FilePreviewManifest | null>(null),
     [error, setError] = useState("");
   const asset = store.getSnapshot().assets.find((a) => a.id === id);
@@ -98,7 +104,9 @@ export default function FileViewer({
   return (
     <Dialog
       title={asset?.name ?? "Local file"}
-      subtitle="A private preview from this device. Nothing is uploaded."
+      subtitle={uiText(
+        "A private preview from this device. Nothing is uploaded.",
+      )}
       size="visual"
       className="demo-file-viewer"
       onClose={onClose}
@@ -108,21 +116,24 @@ export default function FileViewer({
       ) : file ? (
         <FilePreview file={file} />
       ) : (
-        <p>Opening local file…</p>
+        <p>
+          <I18nText id="Opening local file…" />
+        </p>
       )}
       <DialogFooter>
         <span>
-          {asset?.mime} · {((asset?.blob.size ?? 0) / 1024).toFixed(1)} KB
+          {asset?.mime} · {((asset?.blob.size ?? 0) / 1024).toFixed(1)}{" "}
+          <I18nText id="KB" />
         </span>
         <Button
           className="button secondary"
           onClick={() => asset && downloadBlob(asset.blob, asset.name)}
         >
           <Download size={15} />
-          Download original
+          <I18nText id="Download original" />
         </Button>
         <Button variant="primary" onClick={onClose}>
-          Done
+          <I18nText id="Done" />
         </Button>
       </DialogFooter>
     </Dialog>

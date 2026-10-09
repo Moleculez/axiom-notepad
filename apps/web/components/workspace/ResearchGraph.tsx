@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { Button, Checkbox, IconButton, NativeSelect } from "../ui/controls";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -36,6 +38,7 @@ export default function ResearchGraph({
   onRoute,
   active,
 }: ResearchPanelProps) {
+  useInterfaceLocale();
   const { session, revision, navigate, notify } = useWorkspace();
   const scope = new URLSearchParams({ spaceId: space.id });
   for (const k of ["tag", "collection", "types"])
@@ -312,8 +315,8 @@ export default function ResearchGraph({
         <ResearchSearch
           value={search}
           onChange={(q) => onRoute({ q })}
-          label="Search graph"
-          placeholder="Find a note, paper, citation or tag…"
+          label={uiText("Search graph")}
+          placeholder={uiText("Find a note, paper, citation or tag…")}
         />
         <Button
           className="button ghost research-filter-toggle"
@@ -321,7 +324,7 @@ export default function ResearchGraph({
           aria-controls="graph-filter-fields"
           onClick={() => setFiltersOpen(!filtersOpen)}
         >
-          <SlidersHorizontal size={15} /> Filters
+          <SlidersHorizontal size={15} /> <I18nText id="Filters" />
           {(params.get("tag") ||
             params.get("collection") ||
             params.get("types") ||
@@ -329,19 +332,22 @@ export default function ResearchGraph({
             !labels) && (
             <span
               className="research-filter-dot"
-              aria-label="Active graph filters"
+              aria-label={uiText("Active graph filters")}
             />
           )}
         </Button>
         <span className="tool-spacer" />
         <small className="research-source-count">
-          {visible.length} sources · {visibleEdges.length} connections
-          {layoutBusy ? " · Arranging…" : ""}
+          {visible.length} <I18nText id="sources ·" /> {visibleEdges.length}{" "}
+          <I18nText id="connections" />
+          {layoutBusy ? uiText(" · Arranging…") : ""}
         </small>
         <IconButton
           className="icon-button"
-          title={list ? "Graph view" : "Accessible list view"}
-          aria-label={list ? "Graph view" : "Accessible list view"}
+          title={list ? uiText("Graph view") : uiText("Accessible list view")}
+          aria-label={
+            list ? uiText("Graph view") : uiText("Accessible list view")
+          }
           onClick={() => setList(!list)}
         >
           {list ? <Network size={17} /> : <List size={17} />}
@@ -353,21 +359,29 @@ export default function ResearchGraph({
         hidden={!filtersOpen}
       >
         <NativeSelect
-          aria-label="Graph node types"
+          aria-label={uiText("Graph node types")}
           value={params.get("types") ?? "note,reference,pdf"}
           onChange={(e) => onRoute({ types: e.target.value })}
         >
-          <option value="note,reference,pdf">All source types</option>
-          <option value="note">Notes</option>
-          <option value="reference">References</option>
-          <option value="pdf">PDFs</option>
+          <option value="note,reference,pdf">
+            <I18nText id="All source types" />
+          </option>
+          <option value="note">
+            <I18nText id="Notes" />
+          </option>
+          <option value="reference">
+            <I18nText id="References" />
+          </option>
+          <option value="pdf">
+            <I18nText id="PDFs" />
+          </option>
         </NativeSelect>
         <label className="research-inline-check">
           <Checkbox
             checked={labels}
             onChange={(e) => onRoute({ labels: e.target.checked ? "" : "off" })}
           />
-          Labels
+          <I18nText id="Labels" />
         </label>
         <label className="research-inline-check">
           <Checkbox
@@ -376,24 +390,26 @@ export default function ResearchGraph({
               onRoute({ orphans: e.target.checked ? "only" : "" })
             }
           />
-          Unconnected
+          <I18nText id="Unconnected" />
         </label>
         <label>
-          Tag{" "}
+          <I18nText id="Tag" />{" "}
           <ResearchFilterInput
-            label="Filter graph by tag"
+            label={uiText("Filter graph by tag")}
             maxLength={80}
             value={params.get("tag") ?? ""}
             onChange={(tag) => onRoute({ tag })}
-            placeholder="All tags"
+            placeholder={uiText("All tags")}
           />
         </label>
         <NativeSelect
-          aria-label="Graph collection"
+          aria-label={uiText("Graph collection")}
           value={params.get("collection") ?? ""}
           onChange={(e) => onRoute({ collection: e.target.value })}
         >
-          <option value="">All collections</option>
+          <option value="">
+            <I18nText id="All collections" />
+          </option>
           {collections.data?.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
@@ -412,25 +428,34 @@ export default function ResearchGraph({
             })
           }
         >
-          Reset filters
+          <I18nText id="Reset filters" />
         </Button>
       </div>
       <ErrorNotice message={data.error} retry={data.reload} />
-      {data.loading && !data.data && <Loading label="Loading connections…" />}
+      {data.loading && !data.data && (
+        <Loading label={uiText("Loading connections…")} />
+      )}
       {(data.data?.truncated || data.data?.indexing) && (
         <p className="research-notice" role="status">
           {data.data.truncated
-            ? "Showing a bounded graph (up to 1,000 sources / 5,000 connections). Narrow workspace, type, tag or collection to explore more."
+            ? uiText(
+                "Showing a bounded graph (up to 1,000 sources / 5,000 connections). Narrow workspace, type, tag or collection to explore more.",
+              )
             : ""}
           {data.data.indexing
-            ? " Existing citations are being indexed; connections will update automatically."
+            ? uiText(
+                " Existing citations are being indexed; connections will update automatically.",
+              )
             : ""}
         </p>
       )}
       <div className="research-graph-body">
         <div ref={board} className="research-graph-board">
           {list ? (
-            <div className="research-graph-list" aria-label="Graph sources">
+            <div
+              className="research-graph-list"
+              aria-label={uiText("Graph sources")}
+            >
               {visible.filter(matches).map((n) => (
                 <button
                   key={n.id}
@@ -441,7 +466,8 @@ export default function ResearchGraph({
                   <span>
                     {n.title}
                     <small>
-                      {n.detail || n.kind} · {linked.get(n.id) ?? 0} connections
+                      {n.detail || n.kind} · {linked.get(n.id) ?? 0}{" "}
+                      <I18nText id="connections" />
                     </small>
                   </span>
                 </button>
@@ -455,7 +481,7 @@ export default function ResearchGraph({
               width="100%"
               height="100%"
               role="img"
-              aria-label="Research knowledge graph"
+              aria-label={uiText("Research knowledge graph")}
               onPointerDown={(e) => {
                 if (e.button !== 0 || !e.isPrimary || drag.current) return;
                 e.preventDefault();
@@ -589,9 +615,11 @@ export default function ResearchGraph({
           {!data.loading && !visible.length && (
             <div className="research-graph-empty">
               <Network size={30} />
-              <h3>No connections to show yet</h3>
+              <h3>
+                <I18nText id="No connections to show yet" />
+              </h3>
               <p>
-                Add references, link PDFs, or cite a source in a Markdown note.
+                <I18nText id="Add references, link PDFs, or cite a source in a Markdown note." />
               </p>
               <Button
                 className="button secondary"
@@ -599,15 +627,15 @@ export default function ResearchGraph({
                   navigate(`/workspaces/${space.id}/research?view=library`)
                 }
               >
-                Open library
+                <I18nText id="Open library" />
               </Button>
             </div>
           )}
           <div className="research-graph-controls">
             <IconButton
               className="icon-button"
-              aria-label="Zoom out"
-              title="Zoom out"
+              aria-label={uiText("Zoom out")}
+              title={uiText("Zoom out")}
               onClick={() => zoom(1 / 1.2)}
             >
               <Minus size={16} />
@@ -615,24 +643,24 @@ export default function ResearchGraph({
             <span>{Math.round(view.zoom * 100)}%</span>
             <IconButton
               className="icon-button"
-              aria-label="Zoom in"
-              title="Zoom in"
+              aria-label={uiText("Zoom in")}
+              title={uiText("Zoom in")}
               onClick={() => zoom(1.2)}
             >
               <Plus size={16} />
             </IconButton>
             <IconButton
               className="icon-button"
-              aria-label="Fit graph"
-              title="Fit graph"
+              aria-label={uiText("Fit graph")}
+              title={uiText("Fit graph")}
               onClick={fit}
             >
               <Focus size={16} />
             </IconButton>
             <IconButton
               className="icon-button"
-              aria-label="Reset graph layout"
-              title="Reset layout"
+              aria-label={uiText("Reset graph layout")}
+              title={uiText("Reset layout")}
               onClick={() => {
                 positions.current = {};
                 fitPending.current = true;
@@ -643,8 +671,8 @@ export default function ResearchGraph({
             </IconButton>
             <IconButton
               className="icon-button"
-              aria-label="Fullscreen graph"
-              title="Fullscreen"
+              aria-label={uiText("Fullscreen graph")}
+              title={uiText("Fullscreen")}
               onClick={() => {
                 const operation = document.fullscreenElement
                   ? document.exitFullscreen?.()
@@ -666,13 +694,13 @@ export default function ResearchGraph({
             name="research-details"
             edge="left"
             className="research-inspector"
-            label="Graph details"
+            label={uiText("Graph details")}
           >
             <header>
               <span className="docs-eyebrow">{selected.kind}</span>
               <IconButton
                 className="icon-button"
-                aria-label="Close graph details"
+                aria-label={uiText("Close graph details")}
                 onClick={() => onRoute({ focus: "", hops: "" })}
               >
                 <X size={16} />
@@ -692,21 +720,29 @@ export default function ResearchGraph({
               onClick={() => navigate(selected.route)}
             >
               <ExternalLink size={15} />
-              Open source
+              <I18nText id="Open source" />
             </Button>
             <label>
-              Neighborhood
+              <I18nText id="Neighborhood" />
               <NativeSelect
-                aria-label="Graph neighborhood"
+                aria-label={uiText("Graph neighborhood")}
                 value={hops}
                 onChange={(e) => onRoute({ hops: e.target.value })}
               >
-                <option value="0">Entire graph</option>
-                <option value="1">One connection away</option>
-                <option value="2">Two connections away</option>
+                <option value="0">
+                  <I18nText id="Entire graph" />
+                </option>
+                <option value="1">
+                  <I18nText id="One connection away" />
+                </option>
+                <option value="2">
+                  <I18nText id="Two connections away" />
+                </option>
               </NativeSelect>
             </label>
-            <h3>Connections</h3>
+            <h3>
+              <I18nText id="Connections" />
+            </h3>
             <div className="research-connections">
               {edges
                 .filter((e) => e.source === focus || e.target === focus)
@@ -720,15 +756,19 @@ export default function ResearchGraph({
                       <span>
                         {n.title}
                         <small>
-                          {e.source === focus ? "Outgoing" : "Incoming"} ·{" "}
-                          {e.kind}
+                          {e.source === focus
+                            ? uiText("Outgoing")
+                            : uiText("Incoming")}{" "}
+                          · {e.kind}
                         </small>
                       </span>
                     </button>
                   ) : null;
                 })}
               {!linked.get(focus) && (
-                <p className="muted">No connections in this view.</p>
+                <p className="muted">
+                  <I18nText id="No connections in this view." />
+                </p>
               )}
             </div>
           </ResizablePanel>
@@ -737,22 +777,24 @@ export default function ResearchGraph({
       <footer className="research-graph-footer">
         <span>
           <i className="graph-key note" />
-          Notes
+          <I18nText id="Notes" />
         </span>
         <span>
           <i className="graph-key reference" />
-          References
+          <I18nText id="References" />
         </span>
         <span>
           <i className="graph-key pdf" />
-          PDFs
+          <I18nText id="PDFs" />
         </span>
         <span className="tool-spacer" />
-        <span className="muted">Drag to pan · ⌘/Ctrl + scroll to zoom</span>
+        <span className="muted">
+          <I18nText id="Drag to pan · ⌘/Ctrl + scroll to zoom" />
+        </span>
         <details className="research-export-menu">
           <summary className="button ghost">
             <Download size={14} />
-            Export
+            <I18nText id="Export" />
           </summary>
           <div>
             {(["svg", "png", "json"] as const).map((f) => (

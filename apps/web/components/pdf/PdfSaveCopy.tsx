@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { Button, Checkbox, NativeSelect, TextInput } from "../ui/controls";
 import { useEffect, useRef, useState } from "react";
 import type { Annotation } from "@axiom/shared/research";
@@ -32,6 +34,7 @@ export default function PdfSaveCopy({
   operation?: "organize" | "annotated-copy" | "ocr";
   onClose: () => void;
 }) {
+  useInterfaceLocale();
   const [mode, setMode] = useState("copy"),
     [name, setName] = useState(meta.name.replace(/\.pdf$/i, "") + "-copy.pdf");
   const [target, setTarget] = useState<Target | null>(null),
@@ -244,19 +247,21 @@ export default function PdfSaveCopy({
   };
   return (
     <Dialog
-      title="Save PDF"
-      subtitle="An immutable copy with explicit annotation transfer"
+      title={uiText("Save PDF")}
+      subtitle={uiText("An immutable copy with explicit annotation transfer")}
       className="pdf-save-dialog"
       onClose={onClose}
     >
       <label>
-        Save as
+        <I18nText id="Save as" />
         <NativeSelect
           disabled={busy || locked || !!saved}
           value={mode}
           onChange={(e) => setMode(e.target.value)}
         >
-          <option value="copy">New file</option>
+          <option value="copy">
+            <I18nText id="New file" />
+          </option>
           <option
             value="version"
             disabled={
@@ -264,12 +269,12 @@ export default function PdfSaveCopy({
               meta.content_role !== "editor"
             }
           >
-            New version of this file
+            <I18nText id="New version of this file" />
           </option>
         </NativeSelect>
       </label>
       <label>
-        File name
+        <I18nText id="File name" />
         <TextInput
           value={name}
           disabled={busy || locked || !!saved}
@@ -278,9 +283,11 @@ export default function PdfSaveCopy({
       </label>
       {mode === "copy" && (
         <fieldset disabled={busy || locked || !!saved}>
-          <legend>Destination</legend>
+          <legend>
+            <I18nText id="Destination" />
+          </legend>
           <label>
-            Space
+            <I18nText id="Space" />
             <NativeSelect
               value={space}
               onChange={(e) => {
@@ -296,7 +303,9 @@ export default function PdfSaveCopy({
             </NativeSelect>
           </label>
           <div className="pdf-save-folders">
-            <button onClick={() => setTrail([])}>Root</button>
+            <button onClick={() => setTrail([])}>
+              <I18nText id="Root" />
+            </button>
             {trail.map((p, i) => (
               <button
                 key={p.id}
@@ -307,8 +316,8 @@ export default function PdfSaveCopy({
             ))}
           </div>
           <TextInput
-            aria-label="Filter destination folders"
-            placeholder="Find a folder…"
+            aria-label={uiText("Filter destination folders")}
+            placeholder={uiText("Find a folder…")}
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
           />
@@ -325,7 +334,9 @@ export default function PdfSaveCopy({
               </button>
             ))}
           </div>
-          <small>First 100 matching folders. Filter to narrow results.</small>
+          <small>
+            <I18nText id="First 100 matching folders. Filter to narrow results." />
+          </small>
         </fieldset>
       )}
       {!!annotations.length && (
@@ -335,13 +346,13 @@ export default function PdfSaveCopy({
             disabled={busy || locked || annotations.length > 500 || !!saved}
             onChange={(e) => setInclude(e.target.checked)}
           />
-          Copy {annotations.length} visible annotations as private notes
+          <I18nText id="Copy" /> {annotations.length}{" "}
+          <I18nText id="visible annotations as private notes" />
         </label>
       )}
       {include && (
         <p className="muted">
-          Authorship labels are retained. Existing discussions stay with the
-          source; sharing these copies is a separate action.
+          <I18nText id="Authorship labels are retained. Existing discussions stay with the source; sharing these copies is a separate action." />
         </p>
       )}
       {include && omitted > 0 && (
@@ -351,7 +362,8 @@ export default function PdfSaveCopy({
             disabled={busy || locked}
             onChange={(e) => setAck(e.target.checked)}
           />
-          I understand {omitted} annotation page segments will be omitted.
+          <I18nText id="I understand" /> {omitted}{" "}
+          <I18nText id="annotation page segments will be omitted." />
         </label>
       )}
       {error && (
@@ -364,18 +376,18 @@ export default function PdfSaveCopy({
               download(name, new Uint8Array(bytes), "application/pdf")
             }
           >
-            Download prepared PDF
+            <I18nText id="Download prepared PDF" />
           </button>
         </div>
       )}
       <p role="status">{status}</p>
       <div className="dialog-footer">
         <Button className="button secondary" onClick={onClose}>
-          {busy ? "Close (upload may continue)" : "Close"}
+          {busy ? uiText("Close (upload may continue)") : uiText("Close")}
         </Button>
         {saved ? (
           <a className="button primary" href={`/workbench/notes/${saved}`}>
-            Open saved PDF
+            <I18nText id="Open saved PDF" />
           </a>
         ) : (
           <>
@@ -390,7 +402,11 @@ export default function PdfSaveCopy({
               }
               onClick={() => void save()}
             >
-              {busy ? "Saving…" : locked ? "Retry / check save" : "Save PDF"}
+              {busy
+                ? uiText("Saving…")
+                : locked
+                  ? "Retry / check save"
+                  : "Save PDF"}
             </Button>
             {recoverable && upload.current && mode === "version" && (
               <Button
@@ -398,7 +414,7 @@ export default function PdfSaveCopy({
                 onClick={() => void save(true)}
                 disabled={busy}
               >
-                Recover as separate copy
+                <I18nText id="Recover as separate copy" />
               </Button>
             )}
           </>

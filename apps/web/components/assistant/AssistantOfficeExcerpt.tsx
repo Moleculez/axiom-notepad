@@ -1,4 +1,7 @@
 "use client";
+import { currentLocale } from "@axiom/i18n/client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import {
   Button,
   HelpText,
@@ -25,6 +28,7 @@ export default function AssistantOfficeExcerpt({
   onPick: (value: AssistantSelection) => void;
   onClose: () => void;
 }) {
+  useInterfaceLocale();
   const [jobId] = useState(() => crypto.randomUUID()),
     [data, setData] = useState<OfficeExcerptSource | null>(null),
     [status, setStatus] = useState("Preparing local extraction…"),
@@ -78,8 +82,8 @@ export default function AssistantOfficeExcerpt({
   };
   return (
     <Dialog
-      title="Select Office evidence"
-      subtitle="Private server extraction · No AI request is sent"
+      title={uiText("Select Office evidence")}
+      subtitle={uiText("Private server extraction · No AI request is sent")}
       onClose={close}
     >
       <ErrorNotice message={error} />
@@ -88,15 +92,13 @@ export default function AssistantOfficeExcerpt({
       ) : (
         <>
           <HelpText>
-            Select a passage, slide, or worksheet rows. Saved formulas are not
-            recalculated. Hidden cells/notes may be present; review before
-            sending.
+            <I18nText id="Select a passage, slide, or worksheet rows. Saved formulas are not recalculated. Hidden cells/notes may be present; review before sending." />
           </HelpText>
           {data.warnings.map((w) => (
             <HelpText key={w}>{w}</HelpText>
           ))}
           <label>
-            Jump to a source block
+            <I18nText id="Jump to a source block" />
             <NativeSelect
               defaultValue=""
               onChange={(e) => {
@@ -109,7 +111,7 @@ export default function AssistantOfficeExcerpt({
               }}
             >
               <option value="" disabled>
-                Select a block…
+                <I18nText id="Select a block…" />
               </option>
               {data.locators.map((l, i) => (
                 <option key={i} value={i}>
@@ -123,7 +125,7 @@ export default function AssistantOfficeExcerpt({
             ref={source}
             readOnly
             rows={14}
-            aria-label="Extracted Office source"
+            aria-label={uiText("Extracted Office source")}
             value={data.source}
             onSelect={(e) => {
               const t = e.currentTarget;
@@ -133,7 +135,7 @@ export default function AssistantOfficeExcerpt({
           />
           <div className="productivity-subtoolbar">
             <label>
-              From character
+              <I18nText id="From character" />
               <TextInput
                 type="number"
                 min={0}
@@ -145,7 +147,7 @@ export default function AssistantOfficeExcerpt({
               />
             </label>
             <label>
-              To character
+              <I18nText id="To character" />
               <TextInput
                 type="number"
                 min={1}
@@ -156,13 +158,15 @@ export default function AssistantOfficeExcerpt({
                 }
               />
             </label>
-            <span>{count.toLocaleString()} / 30,000 characters</span>
+            <span>
+              {count.toLocaleString(currentLocale())} / 30,000 characters
+            </span>
           </div>
         </>
       )}
       <DialogFooter>
-        <Button className="button secondary" onClick={close}>
-          Cancel
+        <Button data-dialog-cancel className="button secondary" onClick={close}>
+          <I18nText id="Cancel" />
         </Button>
         <Button
           className="button primary"
@@ -184,7 +188,7 @@ export default function AssistantOfficeExcerpt({
             onClose();
           }}
         >
-          Add selected evidence
+          <I18nText id="Add selected evidence" />
         </Button>
       </DialogFooter>
     </Dialog>

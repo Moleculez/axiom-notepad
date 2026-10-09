@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import {
   Button,
   Checkbox,
@@ -96,6 +98,7 @@ export default function PdfReader({
   onClose,
   citeKey,
 }: PdfReaderProps) {
+  useInterfaceLocale();
   const root = useRef<HTMLElement>(null),
     current = useRef(research),
     pageField = useRef<HTMLInputElement>(null),
@@ -657,7 +660,7 @@ export default function PdfReader({
       className={`pdf-viewer pdf-workbench ${panel ? "has-navigator" : ""} ${selected || assistant ? "has-composer" : ""}`}
       data-pdf-theme={theme}
       style={{ "--pdf-nav-width": `${navWidth}px` } as React.CSSProperties}
-      aria-label="Paper reader"
+      aria-label={uiText("Paper reader")}
       onKeyDown={(e) => {
         if (e.defaultPrevented) return;
         if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "f") {
@@ -665,9 +668,7 @@ export default function PdfReader({
           setPanel("search");
           requestAnimationFrame(() =>
             root.current
-              ?.querySelector<HTMLInputElement>(
-                '[aria-label="Search PDF text"]',
-              )
+              ?.querySelector<HTMLInputElement>("[data-pdf-search]")
               ?.focus(),
           );
           return;
@@ -764,7 +765,7 @@ export default function PdfReader({
         <BookOpen size={17} />
         <strong title={attachment.name}>{attachment.name}</strong>
         <Tool
-          label="Close paper reader"
+          label={uiText("Close paper reader")}
           onClick={() =>
             void abandon().then((ok) => {
               if (ok) onClose();
@@ -774,16 +775,20 @@ export default function PdfReader({
           <X size={16} />
         </Tool>
       </header>
-      <div className="pdf-toolbar" role="toolbar" aria-label="PDF tools">
+      <div
+        className="pdf-toolbar"
+        role="toolbar"
+        aria-label={uiText("PDF tools")}
+      >
         <Tool
-          label="Toggle reading navigator"
+          label={uiText("Toggle reading navigator")}
           pressed={!!panel}
           onClick={() => setPanel(panel ? null : "annotations")}
         >
           <PanelLeft size={17} />
         </Tool>
         <Tool
-          label="Back in reading history"
+          label={uiText("Back in reading history")}
           disabled={!history.length}
           onClick={() => {
             const n = history.at(-1)!;
@@ -795,7 +800,7 @@ export default function PdfReader({
           <ArrowLeft size={16} />
         </Tool>
         <Tool
-          label="Forward in reading history"
+          label={uiText("Forward in reading history")}
           disabled={!future.length}
           onClick={() => {
             const n = future.at(-1)!;
@@ -808,7 +813,7 @@ export default function PdfReader({
         </Tool>
         <span className="pdf-tool-divider" />
         <Tool
-          label="Previous PDF page"
+          label={uiText("Previous PDF page")}
           disabled={!pdf || page <= 1}
           onClick={() => go(page - 1)}
         >
@@ -824,7 +829,7 @@ export default function PdfReader({
         >
           <TextInput
             ref={pageField}
-            aria-label="Go to PDF page"
+            aria-label={uiText("Go to PDF page")}
             className="pdf-page-input"
             value={pageInput}
             onChange={(e) => setPageInput(e.target.value)}
@@ -842,7 +847,7 @@ export default function PdfReader({
           {page} / {pdf?.numPages ?? "…"}
         </span>
         <Tool
-          label="Next PDF page"
+          label={uiText("Next PDF page")}
           disabled={!pdf || page >= pdf.numPages}
           onClick={() => go(page + 1)}
         >
@@ -850,7 +855,7 @@ export default function PdfReader({
         </Tool>
         <span className="pdf-tool-divider" />
         <Tool
-          label="Zoom out"
+          label={uiText("Zoom out")}
           onClick={() =>
             setScale(
               Math.max(0.25, (typeof scale === "number" ? scale : 1) - 0.2),
@@ -860,7 +865,7 @@ export default function PdfReader({
           <Minus size={16} />
         </Tool>
         <NativeSelect
-          aria-label="PDF zoom"
+          aria-label={uiText("PDF zoom")}
           value={typeof scale === "number" ? String(scale) : scale}
           onChange={(e) =>
             setScale(
@@ -870,8 +875,12 @@ export default function PdfReader({
             )
           }
         >
-          <option value="fit">Fit width</option>
-          <option value="page">Fit page</option>
+          <option value="fit">
+            <I18nText id="Fit width" />
+          </option>
+          <option value="page">
+            <I18nText id="Fit page" />
+          </option>
           {[
             ...new Set([
               0.5,
@@ -893,7 +902,7 @@ export default function PdfReader({
             ))}
         </NativeSelect>
         <Tool
-          label="Zoom in"
+          label={uiText("Zoom in")}
           onClick={() =>
             setScale(Math.min(4, (typeof scale === "number" ? scale : 1) + 0.2))
           }
@@ -902,14 +911,14 @@ export default function PdfReader({
         </Tool>
         <span className="pdf-tool-divider" />
         <Tool
-          label="Find in paper"
+          label={uiText("Find in paper")}
           pressed={panel === "search"}
           onClick={() => setPanel("search")}
         >
           <Search size={16} />
         </Tool>
         <Tool
-          label="Area annotation"
+          label={uiText("Area annotation")}
           disabled={!pdf}
           pressed={area}
           onClick={() => {
@@ -920,7 +929,7 @@ export default function PdfReader({
           <SquareDashed size={17} />
         </Tool>
         <NativeSelect
-          aria-label="Drawing tool"
+          aria-label={uiText("Drawing tool")}
           value={drawingTool ?? ""}
           disabled={!pdf}
           onChange={(e) => {
@@ -930,13 +939,21 @@ export default function PdfReader({
             setArea(false);
           }}
         >
-          <option value="">Select text</option>
-          <option value="ink">Pen</option>
-          <option value="arrow">Arrow</option>
-          <option value="textbox">Text box</option>
+          <option value="">
+            <I18nText id="Select text" />
+          </option>
+          <option value="ink">
+            <I18nText id="Pen" />
+          </option>
+          <option value="arrow">
+            <I18nText id="Arrow" />
+          </option>
+          <option value="textbox">
+            <I18nText id="Text box" />
+          </option>
         </NativeSelect>
         <Tool
-          label="Page note"
+          label={uiText("Page note")}
           disabled={!meta}
           onClick={() =>
             meta &&
@@ -954,7 +971,7 @@ export default function PdfReader({
           <StickyNote size={17} />
         </Tool>
         <Tool
-          label="Bookmark"
+          label={uiText("Bookmark")}
           disabled={!pdf}
           onClick={() =>
             void work(async () => {
@@ -975,7 +992,7 @@ export default function PdfReader({
         </Tool>
         <span className="toolbar-spacer" />
         <Tool
-          label="Ask workspace assistant"
+          label={uiText("Ask workspace assistant")}
           disabled={!pdf || !meta?.resource_id}
           onClick={() =>
             void (async () => {
@@ -1009,7 +1026,7 @@ export default function PdfReader({
           <MessageSquare size={17} />
         </Tool>
         <Tool
-          label="Paper assistant"
+          label={uiText("Paper assistant")}
           pressed={assistant}
           disabled={!pdf || !meta?.resource_id}
           onClick={() => setAssistant(!assistant)}
@@ -1017,7 +1034,7 @@ export default function PdfReader({
           <Sparkles size={17} />
         </Tool>
         <Tool
-          label="Split reading view"
+          label={uiText("Split reading view")}
           pressed={split}
           onClick={() => {
             setSplit(!split);
@@ -1027,7 +1044,8 @@ export default function PdfReader({
           <Columns2 size={17} />
         </Tool>
         <Tool
-          label="Reader view and file actions"
+          label={uiText("Reader view and file actions")}
+          action="reader-options"
           pressed={options}
           onClick={() => setOptions(!options)}
         >
@@ -1037,41 +1055,55 @@ export default function PdfReader({
       {options && (
         <div
           className="pdf-view-options"
-          aria-label="Reader view and file actions"
+          aria-label={uiText("Reader view and file actions")}
         >
           <label>
-            Layout
+            <I18nText id="Layout" />
             <NativeSelect
-              aria-label="PDF page layout"
+              aria-label={uiText("PDF page layout")}
               value={view}
               onChange={(e) => setView(e.target.value as PdfView)}
             >
-              <option value="continuous">Continuous</option>
-              <option value="single">Single page</option>
-              <option value="facing">Facing pages</option>
+              <option value="continuous">
+                <I18nText id="Continuous" />
+              </option>
+              <option value="single">
+                <I18nText id="Single page" />
+              </option>
+              <option value="facing">
+                <I18nText id="Facing pages" />
+              </option>
             </NativeSelect>
           </label>
           <label>
-            Paper
+            <I18nText id="Paper" />
             <NativeSelect
-              aria-label="PDF paper appearance"
+              aria-label={uiText("PDF paper appearance")}
               value={theme}
               onChange={(e) => setTheme(e.target.value as PdfTheme)}
             >
-              <option value="original">Original</option>
-              <option value="warm">Warm paper</option>
-              <option value="graphite">Graphite surround</option>
-              <option value="contrast">High contrast surround</option>
+              <option value="original">
+                <I18nText id="Original" />
+              </option>
+              <option value="warm">
+                <I18nText id="Warm paper" />
+              </option>
+              <option value="graphite">
+                <I18nText id="Graphite surround" />
+              </option>
+              <option value="contrast">
+                <I18nText id="High contrast surround" />
+              </option>
             </NativeSelect>
           </label>
           <Tool
-            label="Rotate PDF clockwise"
+            label={uiText("Rotate PDF clockwise")}
             onClick={() => setRotation((r) => (r + 90) % 360)}
           >
             <RotateCw size={16} />
           </Tool>
           <Tool
-            label="Fullscreen reader"
+            label={uiText("Fullscreen reader")}
             onClick={() =>
               void work(async () => {
                 if (document.fullscreenElement) await document.exitFullscreen();
@@ -1089,11 +1121,11 @@ export default function PdfReader({
           <span className="pdf-tool-divider" />
           <button disabled={!pdf || busy} onClick={() => void toggleOffline()}>
             <Download size={15} />
-            {pinned ? "Remove offline copy" : "Keep offline"}
+            {pinned ? uiText("Remove offline copy") : uiText("Keep offline")}
           </button>
           <button disabled={!pdf || busy} onClick={() => void original()}>
             <Download size={15} />
-            Download PDF
+            <I18nText id="Download PDF" />
           </button>
           <button
             disabled={!pdf}
@@ -1103,7 +1135,7 @@ export default function PdfReader({
             }}
           >
             <Grid2X2 size={15} />
-            Organize pages
+            <I18nText id="Organize pages" />
           </button>
           <button
             disabled={!pdf || !meta?.resource_id}
@@ -1113,7 +1145,7 @@ export default function PdfReader({
             }}
           >
             <Columns2 size={15} />
-            Compare PDFs…
+            <I18nText id="Compare PDFs…" />
           </button>
           <button
             disabled={!pdf || !meta?.resource_id}
@@ -1123,7 +1155,7 @@ export default function PdfReader({
             }}
           >
             <FileText size={15} />
-            Batch OCR…
+            <I18nText id="Batch OCR…" />
           </button>
           <button
             disabled={!pdf}
@@ -1135,16 +1167,18 @@ export default function PdfReader({
             }
           >
             <LinkIcon size={15} />
-            Link this page
+            <I18nText id="Link this page" />
           </button>
-          <button onClick={() => setHelp(true)}>Shortcuts</button>
+          <button onClick={() => setHelp(true)}>
+            <I18nText id="Shortcuts" />
+          </button>
         </div>
       )}
       {(error || message) && (
         <div className="paper-message" role={error ? "alert" : "status"}>
           {error || message}
           <Tool
-            label="Dismiss reader message"
+            label={uiText("Dismiss reader message")}
             onClick={() => {
               setError("");
               setMessage("");
@@ -1163,7 +1197,7 @@ export default function PdfReader({
             >
               <nav
                 className="pdf-navigator-tabs"
-                aria-label="Reading navigator"
+                aria-label={uiText("Reading navigator")}
               >
                 {(
                   [
@@ -1183,14 +1217,19 @@ export default function PdfReader({
                     <Icon size={17} />
                   </Tool>
                 ))}
-                <Tool label="Close paper panel" onClick={() => setPanel(null)}>
+                <Tool
+                  label={uiText("Close paper panel")}
+                  onClick={() => setPanel(null)}
+                >
                   <X size={14} />
                 </Tool>
               </nav>
               <div className="pdf-navigator-content">
                 {panel === "search" && (
                   <>
-                    <h3>Find in paper</h3>
+                    <h3>
+                      <I18nText id="Find in paper" />
+                    </h3>
                     <form
                       className="paper-search"
                       onSubmit={(e) => {
@@ -1199,17 +1238,18 @@ export default function PdfReader({
                       }}
                     >
                       <TextInput
-                        aria-label="Search PDF text"
+                        aria-label={uiText("Search PDF text")}
+                        data-pdf-search
                         value={query}
                         onChange={(e) => {
                           searchToken.current++;
                           setQuery(e.target.value);
                         }}
-                        placeholder="Find a phrase…"
+                        placeholder={uiText("Find a phrase…")}
                       />
                       <IconButton
                         className="icon-button"
-                        aria-label="Find"
+                        aria-label={uiText("Find")}
                         disabled={!pdf || !query.trim()}
                       >
                         <Search size={17} />
@@ -1224,7 +1264,7 @@ export default function PdfReader({
                             setMatchCase(e.target.checked);
                           }}
                         />
-                        Case
+                        <I18nText id="Case" />
                       </label>
                       <label>
                         <Checkbox
@@ -1234,7 +1274,7 @@ export default function PdfReader({
                             setWholeWord(e.target.checked);
                           }}
                         />
-                        Whole word
+                        <I18nText id="Whole word" />
                       </label>
                     </div>
                     <div className="pdf-filter-row">
@@ -1242,7 +1282,7 @@ export default function PdfReader({
                         {searchStatus || "Search selectable PDF text."}
                       </span>
                       <Tool
-                        label="Previous search result"
+                        label={uiText("Previous search result")}
                         disabled={!hits.length}
                         onClick={() => {
                           const n = (hitIndex - 1 + hits.length) % hits.length;
@@ -1253,7 +1293,7 @@ export default function PdfReader({
                         <ChevronLeft size={15} />
                       </Tool>
                       <Tool
-                        label="Next search result"
+                        label={uiText("Next search result")}
                         disabled={!hits.length}
                         onClick={() => {
                           const n = (hitIndex + 1) % hits.length;
@@ -1273,7 +1313,10 @@ export default function PdfReader({
                           go(hit.page);
                         }}
                       >
-                        <strong>Page {labels[hit.page - 1] ?? hit.page}</strong>
+                        <strong>
+                          <I18nText id="Page" />{" "}
+                          {labels[hit.page - 1] ?? hit.page}
+                        </strong>
                         <span>{hit.text}</span>
                       </button>
                     ))}
@@ -1291,7 +1334,9 @@ export default function PdfReader({
                 )}
                 {panel === "thumbnails" && pdf && (
                   <>
-                    <h3>Pages</h3>
+                    <h3>
+                      <I18nText id="Pages" />
+                    </h3>
                     <div className="paper-thumbnails">
                       {Array.from({ length: pdf.numPages }, (_, index) => (
                         <Thumbnail
@@ -1308,11 +1353,15 @@ export default function PdfReader({
                 )}
                 {panel === "bookmarks" && (
                   <>
-                    <h3>Reading bookmarks</h3>
-                    <p className="muted">Private to your account.</p>
+                    <h3>
+                      <I18nText id="Reading bookmarks" />
+                    </h3>
+                    <p className="muted">
+                      <I18nText id="Private to your account." />
+                    </p>
                     {!bookmarks.length && (
                       <p className="muted">
-                        Bookmark a page to return to it later.
+                        <I18nText id="Bookmark a page to return to it later." />
                       </p>
                     )}
                     {bookmarks.map((entry) => {
@@ -1323,7 +1372,7 @@ export default function PdfReader({
                             className="text-button"
                             onClick={() => go(value.data.page ?? 1)}
                           >
-                            Page {value.data.page}
+                            <I18nText id="Page" /> {value.data.page}
                           </button>
                           <TextInput
                             aria-label={`Bookmark label for page ${value.data.page}`}
@@ -1358,31 +1407,41 @@ export default function PdfReader({
                 {panel === "annotations" && (
                   <>
                     <div className="pdf-panel-heading">
-                      <h3>Annotations</h3>
+                      <h3>
+                        <I18nText id="Annotations" />
+                      </h3>
                       <span>{annotations.length}</span>
                     </div>
                     <TextInput
-                      aria-label="Filter annotations"
-                      placeholder="Search notes and quotations…"
+                      aria-label={uiText("Filter annotations")}
+                      placeholder={uiText("Search notes and quotations…")}
                       value={filter}
                       onChange={(e) => setFilter(e.target.value)}
                     />
                     <div className="pdf-filter-row">
                       <NativeSelect
-                        aria-label="Annotation visibility filter"
+                        aria-label={uiText("Annotation visibility filter")}
                         value={scope}
                         onChange={(e) => setScope(e.target.value)}
                       >
-                        <option value="all">All accessible</option>
-                        <option value="mine">My annotations</option>
-                        <option value="shared">Shared</option>
+                        <option value="all">
+                          <I18nText id="All accessible" />
+                        </option>
+                        <option value="mine">
+                          <I18nText id="My annotations" />
+                        </option>
+                        <option value="shared">
+                          <I18nText id="Shared" />
+                        </option>
                       </NativeSelect>
                       <NativeSelect
-                        aria-label="Annotation color filter"
+                        aria-label={uiText("Annotation color filter")}
                         value={colorFilter}
                         onChange={(e) => setColorFilter(e.target.value)}
                       >
-                        <option value="">All colors</option>
+                        <option value="">
+                          <I18nText id="All colors" />
+                        </option>
                         {["yellow", "green", "blue", "pink"].map((c) => (
                           <option key={c}>{c}</option>
                         ))}
@@ -1393,19 +1452,18 @@ export default function PdfReader({
                         <Highlighter size={25} />
                         <strong>
                           {annotations.length
-                            ? "No matching annotations"
-                            : "Read. Mark. Connect."}
+                            ? uiText("No matching annotations")
+                            : uiText("Read. Mark. Connect.")}
                         </strong>
                         <p>
-                          Select text, mark a figure, or add a page note. New
-                          annotations are private.
+                          <I18nText id="Select text, mark a figure, or add a page note. New annotations are private." />
                         </p>
                       </div>
                     )}
                     {!!visibleAnnotations.length && (
                       <label className="pdf-bulk-select">
                         <Checkbox
-                          aria-label="Select visible annotations"
+                          aria-label={uiText("Select visible annotations")}
                           checked={
                             visibleAnnotations.length > 0 &&
                             visibleAnnotations.every((a) => checked.has(a.id))
@@ -1429,7 +1487,7 @@ export default function PdfReader({
                             )
                           }
                         />
-                        Select up to 100
+                        <I18nText id="Select up to 100" />
                       </label>
                     )}
                     <PdfBulkActions
@@ -1460,7 +1518,7 @@ export default function PdfReader({
                                 })
                               }
                             />
-                            Select
+                            <I18nText id="Select" />
                           </label>
                           <button
                             className="pdf-annotation-location"
@@ -1470,13 +1528,16 @@ export default function PdfReader({
                             }}
                           >
                             <span>
-                              Page {labels[a.data.page - 1] ?? a.data.page}
+                              <I18nText id="Page" />{" "}
+                              {labels[a.data.page - 1] ?? a.data.page}
                             </span>
-                            <span>{a.shared ? "Shared" : "Private"}</span>
+                            <span>
+                              {a.shared ? uiText("Shared") : uiText("Private")}
+                            </span>
                           </button>
                           <small>
                             {a.author_id === userId
-                              ? "You"
+                              ? uiText("You")
                               : (a.author_name ?? "Researcher")}
                           </small>
                           {a.data.quote && (
@@ -1507,20 +1568,20 @@ export default function PdfReader({
                                   disabled={entry.pending}
                                   onClick={() => setTaskLink(a)}
                                 >
-                                  Link task
+                                  <I18nText id="Link task" />
                                 </button>
                               )}
                             <button
                               disabled={entry.pending}
                               onClick={() => setThread(a)}
                             >
-                              Discuss
+                              <I18nText id="Discuss" />
                               {a.reply_count ? ` (${a.reply_count})` : ""}
-                              {a.unread_replies ? " · New" : ""}
-                              {a.resolved ? " · Resolved" : ""}
+                              {a.unread_replies ? uiText(" · New") : ""}
+                              {a.resolved ? uiText(" · Resolved") : ""}
                             </button>
                             <Tool
-                              label="Insert into note"
+                              label={uiText("Insert into note")}
                               onClick={() =>
                                 onInsert(
                                   annotationMarkdown(
@@ -1542,7 +1603,7 @@ export default function PdfReader({
                                     void choose(a.data, a);
                                   }}
                                 >
-                                  Edit
+                                  <I18nText id="Edit" />
                                 </button>
                                 <button
                                   disabled={
@@ -1574,15 +1635,15 @@ export default function PdfReader({
                                   }
                                 >
                                   {a.shared
-                                    ? "Make private"
-                                    : "Share with readers"}
+                                    ? uiText("Make private")
+                                    : uiText("Share with readers")}
                                 </button>
                               </>
                             )}
                             {(a.author_id === userId ||
                               (a.shared && meta?.role === "admin")) && (
                               <Tool
-                                label="Remove annotation"
+                                label={uiText("Remove annotation")}
                                 disabled={busy}
                                 onClick={() => void remove(entry)}
                               >
@@ -1598,13 +1659,13 @@ export default function PdfReader({
                         disabled={!pdf || busy}
                         onClick={() => setTransfer("import")}
                       >
-                        Import embedded annotations…
+                        <I18nText id="Import embedded annotations…" />
                       </button>
                       <button
                         disabled={!pdf || !visibleAnnotations.length || busy}
                         onClick={() => setTransfer("export")}
                       >
-                        Export annotated PDF…
+                        <I18nText id="Export annotated PDF…" />
                       </button>
                       <button
                         disabled={!annotations.length}
@@ -1620,7 +1681,7 @@ export default function PdfReader({
                         }
                       >
                         <Download size={14} />
-                        Export Markdown
+                        <I18nText id="Export Markdown" />
                       </button>
                       <button
                         disabled={!annotations.length}
@@ -1645,7 +1706,7 @@ export default function PdfReader({
                           )
                         }
                       >
-                        Export JSON
+                        <I18nText id="Export JSON" />
                       </button>
                     </div>
                   </>
@@ -1655,7 +1716,7 @@ export default function PdfReader({
             <div
               className="pdf-pane-divider"
               role="separator"
-              aria-label="Resize reading navigator"
+              aria-label={uiText("Resize reading navigator")}
               aria-orientation="vertical"
               aria-valuenow={navWidth}
               aria-valuemin={200}
@@ -1745,16 +1806,18 @@ export default function PdfReader({
             !error && (
               <div className="paper-loading">
                 <LoaderCircle className="spin" size={20} />
-                Opening paper…
+                <I18nText id="Opening paper…" />
               </div>
             )
           )}
           {split && pdf && (
             <div className="pdf-secondary-surface">
               <div className="pdf-secondary-toolbar">
-                <span>Reference view</span>
+                <span>
+                  <I18nText id="Reference view" />
+                </span>
                 <Tool
-                  label="Previous reference page"
+                  label={uiText("Previous reference page")}
                   disabled={secondPage <= 1}
                   onClick={() => setSecondPage((p) => p - 1)}
                 >
@@ -1764,13 +1827,16 @@ export default function PdfReader({
                   {secondPage} / {pdf.numPages}
                 </span>
                 <Tool
-                  label="Next reference page"
+                  label={uiText("Next reference page")}
                   disabled={secondPage >= pdf.numPages}
                   onClick={() => setSecondPage((p) => p + 1)}
                 >
                   <ChevronRight size={15} />
                 </Tool>
-                <Tool label="Close split view" onClick={() => setSplit(false)}>
+                <Tool
+                  label={uiText("Close split view")}
+                  onClick={() => setSplit(false)}
+                >
                   <X size={15} />
                 </Tool>
               </div>
@@ -1811,12 +1877,12 @@ export default function PdfReader({
         {selected && !assistant && (
           <section
             className="annotation-composer pdf-composer"
-            aria-label="Annotation editor"
+            aria-label={uiText("Annotation editor")}
           >
             <header>
               <strong>
                 {editing
-                  ? "Edit annotation"
+                  ? uiText("Edit annotation")
                   : selected.kind === "area"
                     ? "Area highlight"
                     : selected.kind === "note"
@@ -1824,7 +1890,7 @@ export default function PdfReader({
                       : "Selected quotation"}
               </strong>
               <Tool
-                label="Cancel annotation"
+                label={uiText("Cancel annotation")}
                 onClick={() =>
                   void abandon().then((ok) => {
                     if (ok) {
@@ -1839,19 +1905,20 @@ export default function PdfReader({
               </Tool>
             </header>
             <small>
-              Page {labels[selected.page - 1] ?? selected.page} ·{" "}
-              {editing?.shared ? "Shared" : "Only you"}
+              <I18nText id="Page" />{" "}
+              {labels[selected.page - 1] ?? selected.page} ·{" "}
+              {editing?.shared ? uiText("Shared") : uiText("Only you")}
             </small>
             {selected.quote && <blockquote>{selected.quote}</blockquote>}
             <label>
-              Annotation note
+              <I18nText id="Annotation note" />
               <TextArea
-                aria-label="Annotation note"
+                aria-label={uiText("Annotation note")}
                 value={body}
                 rows={8}
                 onChange={(e) => setBody(e.target.value)}
                 maxLength={12000}
-                placeholder="A question, connection, or caveat…"
+                placeholder={uiText("A question, connection, or caveat…")}
               />
             </label>
             <div className="annotation-colors">
@@ -1868,19 +1935,20 @@ export default function PdfReader({
               ))}
             </div>
             <label>
-              Tags
+              <I18nText id="Tags" />
               <TextInput
-                aria-label="Annotation tags"
+                aria-label={uiText("Annotation tags")}
                 value={tags}
                 maxLength={500}
                 onChange={(e) => setTags(e.target.value)}
-                placeholder="method, limitation, follow-up"
+                placeholder={uiText("method, limitation, follow-up")}
               />
             </label>
             {selected.imported && (
               <small>
-                Imported author: {selected.imported.author || "Unspecified"}.
-                This private copy belongs to you.
+                <I18nText id="Imported author:" />{" "}
+                {selected.imported.author || "Unspecified"}
+                <I18nText id=". This private copy belongs to you." />
               </small>
             )}
             <div className="button-row">
@@ -1889,14 +1957,14 @@ export default function PdfReader({
                 disabled={busy || (selected.kind === "note" && !body.trim())}
                 onClick={() => void save()}
               >
-                {editing ? "Save changes" : "Save privately"}
+                {editing ? uiText("Save changes") : uiText("Save privately")}
               </Button>
               <Button
                 className="button secondary small"
                 disabled={busy || (selected.kind === "note" && !body.trim())}
                 onClick={() => void save(true)}
               >
-                Insert quotation
+                <I18nText id="Insert quotation" />
               </Button>
             </div>
           </section>
@@ -1906,15 +1974,16 @@ export default function PdfReader({
         <span>
           {pdf
             ? `Page ${labels[page - 1] ?? page} of ${pdf.numPages}`
-            : "Opening document"}
+            : uiText("Opening document")}
         </span>
         <span>
-          {annotations.length} annotations{pinned ? " · Available offline" : ""}
+          {annotations.length} <I18nText id="annotations" />
+          {pinned ? uiText(" · Available offline") : ""}
         </span>
         {(undo || drawingUndo) && (
           <button disabled={busy} onClick={() => void restore()}>
             <Undo2 size={13} />
-            {drawingUndo ? "Undo drawing" : "Undo removal"}
+            {drawingUndo ? uiText("Undo drawing") : uiText("Undo removal")}
           </button>
         )}
         <span className="toolbar-spacer" />
@@ -1923,7 +1992,9 @@ export default function PdfReader({
       {passwordRequest && (
         <Dialog
           title={
-            passwordRequest.retry ? "Incorrect PDF password" : "Unlock PDF"
+            passwordRequest.retry
+              ? uiText("Incorrect PDF password")
+              : uiText("Unlock PDF")
           }
           onClose={() => {
             setPasswordRequest(null);
@@ -1939,10 +2010,10 @@ export default function PdfReader({
             }}
           >
             <p>
-              The password is used only in this reader session and is not saved.
+              <I18nText id="The password is used only in this reader session and is not saved." />
             </p>
             <label>
-              Password
+              <I18nText id="Password" />
               <TextInput
                 autoFocus
                 type="password"
@@ -1952,27 +2023,54 @@ export default function PdfReader({
             </label>
             <div className="dialog-footer">
               <Button className="button primary" disabled={!password}>
-                Unlock
+                <I18nText id="Unlock" />
               </Button>
             </div>
           </form>
         </Dialog>
       )}
       {help && (
-        <Dialog title="PDF reader shortcuts" onClose={() => setHelp(false)}>
+        <Dialog
+          title={uiText("PDF reader shortcuts")}
+          onClose={() => setHelp(false)}
+        >
           <dl className="pdf-shortcuts">
-            <dt>⌘ / Ctrl F</dt>
-            <dd>Find in paper</dd>
-            <dt>Page Up / Left</dt>
-            <dd>Previous page</dd>
-            <dt>Page Down / Right</dt>
-            <dd>Next page</dd>
-            <dt>⌘ / Ctrl Z</dt>
-            <dd>Undo last removal outside text fields</dd>
-            <dt>Escape</dt>
-            <dd>Exit area selection and view options</dd>
-            <dt>Navigator divider + arrow keys</dt>
-            <dd>Resize the reading navigator</dd>
+            <dt>
+              <I18nText id="⌘ / Ctrl F" />
+            </dt>
+            <dd>
+              <I18nText id="Find in paper" />
+            </dd>
+            <dt>
+              <I18nText id="Page Up / Left" />
+            </dt>
+            <dd>
+              <I18nText id="Previous page" />
+            </dd>
+            <dt>
+              <I18nText id="Page Down / Right" />
+            </dt>
+            <dd>
+              <I18nText id="Next page" />
+            </dd>
+            <dt>
+              <I18nText id="⌘ / Ctrl Z" />
+            </dt>
+            <dd>
+              <I18nText id="Undo last removal outside text fields" />
+            </dd>
+            <dt>
+              <I18nText id="Escape" />
+            </dt>
+            <dd>
+              <I18nText id="Exit area selection and view options" />
+            </dd>
+            <dt>
+              <I18nText id="Navigator divider + arrow keys" />
+            </dt>
+            <dd>
+              <I18nText id="Resize the reading navigator" />
+            </dd>
           </dl>
         </Dialog>
       )}
@@ -1985,7 +2083,7 @@ export default function PdfReader({
           annotations={visibleAnnotations}
           returnFocus={() =>
             root.current?.querySelector<HTMLButtonElement>(
-              'button[aria-label="Reader view and file actions"]',
+              '[data-pdf-action="reader-options"]',
             ) ?? null
           }
           onClose={() => setOrganizer(false)}
@@ -2016,7 +2114,7 @@ export default function PdfReader({
           onClose={() => setCompare(false)}
           returnFocus={() =>
             root.current?.querySelector<HTMLButtonElement>(
-              'button[aria-label="Reader view and file actions"]',
+              '[data-pdf-action="reader-options"]',
             ) ?? null
           }
         />
@@ -2028,7 +2126,7 @@ export default function PdfReader({
           onClose={() => setOcr(false)}
           returnFocus={() =>
             root.current?.querySelector<HTMLButtonElement>(
-              'button[aria-label="Reader view and file actions"]',
+              '[data-pdf-action="reader-options"]',
             ) ?? null
           }
           onInsert={onInsert}
@@ -2075,12 +2173,15 @@ export default function PdfReader({
 }
 export function Tool({
   label,
+  action,
   children,
   onClick,
   pressed,
   disabled,
 }: {
   label: string;
+  /** Stable behavior identity, independent of the translated accessible name. */
+  action?: string;
   children: React.ReactNode;
   onClick: () => void;
   pressed?: boolean;
@@ -2091,6 +2192,7 @@ export function Tool({
       type="button"
       className="icon-button"
       aria-label={label}
+      data-pdf-action={action}
       title={label}
       aria-pressed={pressed}
       disabled={disabled}

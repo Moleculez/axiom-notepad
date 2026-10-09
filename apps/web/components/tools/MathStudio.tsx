@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import {
   Button,
   Checkbox,
@@ -74,6 +76,7 @@ const ResourceHistory = dynamic(() => import("../revisions/ResourceHistory"), {
   ssr: false,
 });
 export default function MathStudio({ project }: { project: ToolProject }) {
+  useInterfaceLocale();
   const reviewLocation = useLocation(),
     requestedReview = reviewLocation.params.get("review");
   const { session, notify, navigate, refresh } = useWorkspace(),
@@ -297,12 +300,14 @@ export default function MathStudio({ project }: { project: ToolProject }) {
         <WorkspaceLink
           to={`/explorer?space=${project.space_id}${project.parent_id ? `&folder=${project.parent_id}` : ""}`}
           className="icon-button"
-          aria-label="Back to folder"
+          aria-label={uiText("Back to folder")}
         >
           <ArrowLeft size={18} />
         </WorkspaceLink>
         <div className="studio-title">
-          <span>Math Studio</span>
+          <span>
+            <I18nText id="Math Studio" />
+          </span>
           <h1>{project.name}</h1>
         </div>
         <span className="tool-spacer" />
@@ -325,7 +330,7 @@ export default function MathStudio({ project }: { project: ToolProject }) {
               }
             }}
           >
-            Review in note
+            <I18nText id="Review in note" />
           </Button>
         )}
         <div className="studio-presence">
@@ -341,8 +346,8 @@ export default function MathStudio({ project }: { project: ToolProject }) {
         </div>
         <IconButton
           className="icon-button"
-          aria-label="Ask about this equation"
-          title="Ask workspace assistant"
+          aria-label={uiText("Ask about this equation")}
+          title={uiText("Ask workspace assistant")}
           onClick={() =>
             openAssistant({
               selection: {
@@ -358,8 +363,8 @@ export default function MathStudio({ project }: { project: ToolProject }) {
         </IconButton>
         <IconButton
           className="icon-button"
-          title="Checkpoint history"
-          aria-label="Checkpoint history"
+          title={uiText("Checkpoint history")}
+          aria-label={uiText("Checkpoint history")}
           onClick={() => setPanel("history")}
         >
           <History size={17} />
@@ -367,8 +372,8 @@ export default function MathStudio({ project }: { project: ToolProject }) {
         {project.role !== "viewer" && (
           <IconButton
             className="icon-button"
-            aria-label="Review suggestions"
-            title="Review and suggest changes to the equation"
+            aria-label={uiText("Review suggestions")}
+            title={uiText("Review and suggest changes to the equation")}
             onClick={() => setReview(true)}
           >
             <FilePenLine size={17} />
@@ -376,8 +381,8 @@ export default function MathStudio({ project }: { project: ToolProject }) {
         )}
         <IconButton
           className="icon-button"
-          title="Rendering settings"
-          aria-label="Rendering settings"
+          title={uiText("Rendering settings")}
+          aria-label={uiText("Rendering settings")}
           onClick={() => setPanel("settings")}
         >
           <Settings2 size={17} />
@@ -389,52 +394,53 @@ export default function MathStudio({ project }: { project: ToolProject }) {
           pending={!!busy}
         >
           <Save size={15} />
-          {"Checkpoint"}
+          {uiText("Checkpoint")}
         </Button>
         <IconButton
           className="icon-button"
-          aria-label="OCR and math assistant"
-          title="OCR and math assistant"
+          aria-label={uiText("OCR and math assistant")}
+          title={uiText("OCR and math assistant")}
           onClick={() => setPanel("assistant")}
         >
           <Sparkles size={17} />
         </IconButton>
         <IconButton
           className="icon-button"
-          aria-label="Project discussion"
-          title="Project discussion"
+          aria-label={uiText("Project discussion")}
+          title={uiText("Project discussion")}
           onClick={() => setPanel("discussion")}
         >
           <MessageSquare size={17} />
         </IconButton>
         <Button className="button primary" onClick={() => setPanel("export")}>
           <Download size={15} />
-          Export
+          <I18nText id="Export" />
         </Button>
       </header>
       <ErrorNotice message={error || document.error} />
       {visualRecovery !== null && (
         <div className="tool-recovery">
-          <span>A conflicting visual draft is retained. </span>
+          <span>
+            <I18nText id="A conflicting visual draft is retained." />{" "}
+          </span>
           <Button
             className="button secondary"
             onClick={() => downloadText(visualRecovery, "visual-draft.tex")}
           >
-            Download visual draft
+            <I18nText id="Download visual draft" />
           </Button>
           <Button
             className="button ghost"
             onClick={() => setVisualRecovery(null)}
           >
-            Dismiss
+            <I18nText id="Dismiss" />
           </Button>
         </div>
       )}
       {document.recovery !== null && (
         <div className="tool-recovery">
           <p>
-            Previous access changed. The retained source is available for
-            export; it will not be replayed into the shared project.
+            <I18nText id="Previous access changed. The retained source is available for export; it will not be replayed into the shared project." />
           </p>
           <Button
             className="button secondary"
@@ -442,10 +448,10 @@ export default function MathStudio({ project }: { project: ToolProject }) {
               downloadText(document.recovery!, "recovered-equation.tex")
             }
           >
-            Download retained draft
+            <I18nText id="Download retained draft" />
           </Button>
           <Button className="button secondary" onClick={document.reopen}>
-            Reopen current version
+            <I18nText id="Reopen current version" />
           </Button>
         </div>
       )}
@@ -462,8 +468,8 @@ export default function MathStudio({ project }: { project: ToolProject }) {
           <div className="tool-controls">
             <IconButton
               className="icon-button"
-              aria-label="Toggle symbol palette"
-              title="Toggle symbol palette"
+              aria-label={uiText("Toggle symbol palette")}
+              title={uiText("Toggle symbol palette")}
               onClick={() => setPalette(!palette)}
             >
               <PanelLeftClose size={16} />
@@ -474,21 +480,21 @@ export default function MathStudio({ project }: { project: ToolProject }) {
                 onClick={() => setMode("source")}
               >
                 <Braces size={14} />
-                Source
+                <I18nText id="Source" />
               </button>
               <button
                 aria-pressed={mode === "visual"}
                 onClick={() => setMode("visual")}
               >
                 <Eye size={14} />
-                Visual
+                <I18nText id="Visual" />
               </button>
             </div>
             <span className="tool-separator" />
             <IconButton
               className="icon-button"
-              title="Undo"
-              aria-label="Undo"
+              title={uiText("Undo")}
+              aria-label={uiText("Undo")}
               disabled={document.readOnly}
               onClick={() => document.binding?.history(false)}
             >
@@ -496,8 +502,8 @@ export default function MathStudio({ project }: { project: ToolProject }) {
             </IconButton>
             <IconButton
               className="icon-button"
-              title="Redo"
-              aria-label="Redo"
+              title={uiText("Redo")}
+              aria-label={uiText("Redo")}
               disabled={document.readOnly}
               onClick={() => document.binding?.history(true)}
             >
@@ -506,8 +512,8 @@ export default function MathStudio({ project }: { project: ToolProject }) {
             <span className="tool-spacer" />
             <IconButton
               className="icon-button"
-              aria-label="Toggle preview layout"
-              title="Toggle preview layout"
+              aria-label={uiText("Toggle preview layout")}
+              title={uiText("Toggle preview layout")}
               onClick={() => setStacked(!stacked)}
             >
               {stacked ? <Columns2 size={16} /> : <Rows2 size={16} />}
@@ -580,7 +586,7 @@ export default function MathStudio({ project }: { project: ToolProject }) {
                 {numbered && <span className="math-studio-number">(1)</span>}
               </div>
               <p className="math-preview-note">
-                AMS · chemistry · physics · local rendering
+                <I18nText id="AMS · chemistry · physics · local rendering" />
               </p>
             </section>
           </div>
@@ -592,9 +598,12 @@ export default function MathStudio({ project }: { project: ToolProject }) {
           {document.status}
         </span>
         <span>
-          {document.source.length.toLocaleString()} characters ·{" "}
-          {document.readOnly ? "Read-only" : "Live collaboration"} · ⌘ / Source
-          / Visual
+          {document.source.length.toLocaleString()}{" "}
+          <I18nText id="characters ·" />{" "}
+          {document.readOnly
+            ? uiText("Read-only")
+            : uiText("Live collaboration")}{" "}
+          <I18nText id="· ⌘ / Source / Visual" />
         </span>
       </footer>
       {panel === "history" && (
@@ -625,7 +634,7 @@ export default function MathStudio({ project }: { project: ToolProject }) {
         <Dialog
           title={
             panel === "export"
-              ? "Export equation"
+              ? uiText("Export equation")
               : panel === "settings"
                 ? "Rendering settings"
                 : panel === "assistant"
@@ -652,11 +661,10 @@ export default function MathStudio({ project }: { project: ToolProject }) {
           ) : panel === "export" ? (
             <>
               <p>
-                Exports are generated locally. Your original LaTeX remains
-                editable.
+                <I18nText id="Exports are generated locally. Your original LaTeX remains editable." />
               </p>
               <label>
-                Raster resolution
+                <I18nText id="Raster resolution" />
                 <NativeSelect
                   value={scale}
                   onChange={(e) => setScale(Number(e.target.value))}
@@ -693,19 +701,21 @@ export default function MathStudio({ project }: { project: ToolProject }) {
           ) : panel === "settings" ? (
             <div className="tool-settings-fields">
               <label>
-                Equation size{" "}
+                <I18nText id="Equation size" />{" "}
                 <Slider
-                  aria-label="Equation size"
+                  aria-label={uiText("Equation size")}
                   aria-valuetext={`${fontSize} pixels`}
                   min={16}
                   max={64}
                   value={fontSize}
                   onChange={(e) => setFontSize(Number(e.target.value))}
                 />
-                <span>{fontSize} px</span>
+                <span>
+                  {fontSize} <I18nText id="px" />
+                </span>
               </label>
               <label>
-                Ink color
+                <I18nText id="Ink color" />
                 <input
                   type="color"
                   value={foreground}
@@ -714,7 +724,7 @@ export default function MathStudio({ project }: { project: ToolProject }) {
                 <code>{foreground}</code>
               </label>
               <label>
-                Paper color
+                <I18nText id="Paper color" />
                 <input
                   type="color"
                   value={background}
@@ -727,24 +737,24 @@ export default function MathStudio({ project }: { project: ToolProject }) {
                   checked={transparent}
                   onChange={(e) => setTransparent(e.target.checked)}
                 />
-                Transparent SVG / PNG background
+                <I18nText id="Transparent SVG / PNG background" />
               </label>
               <label>
                 <Checkbox
                   checked={numbered}
                   onChange={(e) => setNumbered(e.target.checked)}
                 />
-                Show equation number
+                <I18nText id="Show equation number" />
               </label>
               <label className="tool-setting-stack">
-                TeX macro definitions
+                <I18nText id="TeX macro definitions" />
                 <TextArea
                   rows={5}
                   spellCheck={false}
                   maxLength={15000}
                   value={macros}
                   onChange={(e) => setMacros(e.target.value)}
-                  placeholder={"\\newcommand{\\vect}[1]{\\mathbf{#1}}"}
+                  placeholder="\\newcommand{\\vect}[1]{\\mathbf{#1}}"
                 />
               </label>
               <Button
@@ -752,7 +762,7 @@ export default function MathStudio({ project }: { project: ToolProject }) {
                 disabled={document.readOnly}
                 onClick={() => void saveSettings()}
               >
-                Save project settings
+                <I18nText id="Save project settings" />
               </Button>
             </div>
           ) : null}

@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { SearchField } from "./ui/controls";
 import { useId, useState } from "react";
 import { ArrowUpRight } from "lucide-react";
@@ -27,6 +29,7 @@ export default function CommandPalette({
   onExecute: (id: EditorCommandId) => void;
   tableActive?: boolean;
 }) {
+  useInterfaceLocale();
   const [query, setQuery] = useState(""),
     [index, setIndex] = useState(0),
     id = useId(),
@@ -49,7 +52,9 @@ export default function CommandPalette({
       <SearchField
         wrapperClassName="command-search"
         autoFocus
-        aria-label={insertOnly ? "Find a block" : "Find a command"}
+        aria-label={
+          insertOnly ? uiText("Find a block") : uiText("Find a command")
+        }
         role="combobox"
         aria-controls={id}
         aria-expanded="true"
@@ -58,8 +63,8 @@ export default function CommandPalette({
         }
         placeholder={
           insertOnly
-            ? "Headings, math, tables, citations…"
-            : "What would you like to do?"
+            ? uiText("Headings, math, tables, citations…")
+            : uiText("What would you like to do?")
         }
         value={query}
         onChange={(e) => {
@@ -90,7 +95,9 @@ export default function CommandPalette({
       <div
         role="listbox"
         id={id}
-        aria-label={insertOnly ? "Insert blocks" : "Editor commands"}
+        aria-label={
+          insertOnly ? uiText("Insert blocks") : uiText("Editor commands")
+        }
         className="command-results"
       >
         {commands.map((c, i) => {
@@ -134,13 +141,19 @@ export default function CommandPalette({
         })}
         {!commands.length && (
           <p className="muted command-empty">
-            No commands match “{query}”. Try “math”, “code”, or “heading”.
+            <I18nText id="No commands match “" />
+            {query}
+            <I18nText id="”. Try “math”, “code”, or “heading”." />
           </p>
         )}
       </div>
       <div className="command-footer">
-        <span>↑ ↓ Navigate · Enter Select · Esc Close</span>
-        <span>{commands.length} commands</span>
+        <span>
+          <I18nText id="↑ ↓ Navigate · Enter Select · Esc Close" />
+        </span>
+        <span>
+          {commands.length} <I18nText id="commands" />
+        </span>
       </div>
     </div>
   );

@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { IconButton } from "../ui/controls";
 import { Unlink } from "lucide-react";
 import {
@@ -25,13 +27,19 @@ export default function TaskPaperLinks({
   taskId: string;
   readOnly: boolean;
 }) {
+  useInterfaceLocale();
   const { revision, refresh } = useWorkspace(),
     action = useAction(),
     data = useData<Link[]>(`tasks/${taskId}/paper-links`, revision);
   if (!data.data?.length && !data.error) return null;
   return (
-    <section className="task-paper-links" aria-label="Linked paper annotations">
-      <h3>Paper annotations</h3>
+    <section
+      className="task-paper-links"
+      aria-label={uiText("Linked paper annotations")}
+    >
+      <h3>
+        <I18nText id="Paper annotations" />
+      </h3>
       <ErrorNotice message={action.error || data.error} retry={data.reload} />
       {data.data?.map((l) => (
         <div key={l.id}>
@@ -39,13 +47,18 @@ export default function TaskPaperLinks({
             to={`/pdf/${l.resource_id}?version=${l.version_id}&page=${l.page}&annotation=${l.annotation_id}`}
           >
             {l.name} · p. {l.page}
-            {!l.shared && <small> · Private</small>}
+            {!l.shared && (
+              <small>
+                {" "}
+                <I18nText id="· Private" />
+              </small>
+            )}
           </WorkspaceLink>
           {!readOnly && (
             <IconButton
               type="button"
               className="icon-button"
-              title="Remove paper link"
+              title={uiText("Remove paper link")}
               aria-label={`Remove link to ${l.name} page ${l.page}`}
               disabled={action.busy}
               onClick={() =>

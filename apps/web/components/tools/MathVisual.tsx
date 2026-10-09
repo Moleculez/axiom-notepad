@@ -1,10 +1,14 @@
 "use client";
+import { uiText, useInterfaceLocale, I18nText } from "@axiom/i18n/react";
+
 import { Button, HelpText } from "../ui/controls";
 import { useEffect, useRef, useState } from "react";
 import type { MathfieldElement } from "mathlive";
 import { runtimeAsset } from "../../lib/runtime-assets";
 import type { NativeBinding } from "@axiom/editor/binding";
 import { minimalChange } from "@axiom/markdown";
+import { bindAttribute } from "@axiom/i18n/dom";
+import { localeRuntime } from "@axiom/i18n/client";
 import { ErrorNotice, Loading } from "../workspace/ui";
 import { downloadText } from "../../lib/tools/download";
 
@@ -19,6 +23,7 @@ export default function MathVisual({
   readOnly: boolean;
   onRetain: (source: string) => void;
 }) {
+  useInterfaceLocale();
   const host = useRef<HTMLDivElement>(null),
     field = useRef<MathfieldElement | null>(null),
     readonly = useRef(readOnly),
@@ -38,13 +43,18 @@ export default function MathVisual({
           "tool-assets/mathlive/fonts",
         );
         MathfieldElement.soundsDirectory = null;
+        const updateLocale = () => {
+          MathfieldElement.locale = localeRuntime.snapshot().locale;
+        };
+        updateLocale();
+        const stopLocale = localeRuntime.subscribe(updateLocale);
         const mf = new MathfieldElement();
         field.current = mf;
         host.current.append(mf);
         mf.mathVirtualKeyboardPolicy = "manual";
         mf.menuItems = [];
         mf.readOnly = readonly.current;
-        mf.setAttribute("aria-label", "Visual equation editor");
+        bindAttribute(mf, "aria-label", "Visual equation editor");
         mf.setValue(binding.source, { silenceNotifications: true });
         setReady(true);
         let base = binding.source,
@@ -152,6 +162,7 @@ export default function MathVisual({
           } else sync();
         });
         cleanup = () => {
+          stopLocale();
           un();
           mf.removeEventListener("focus", focus);
           mf.removeEventListener("blur", blur);
@@ -179,21 +190,22 @@ export default function MathVisual({
   return (
     <div className="math-visual">
       <HelpText>
-        Structured input for supported equations. Source remains authoritative;
-        advanced LaTeX and custom macros can always be edited in Source.
+        <I18nText id="Structured input for supported equations. Source remains authoritative; advanced LaTeX and custom macros can always be edited in Source." />
       </HelpText>
-      {!ready && !error && <Loading label="Loading visual input…" />}
+      {!ready && !error && <Loading label={uiText("Loading visual input…")} />}
       <div ref={host} />
       <ErrorNotice message={error} />
       {conflict !== null && (
         <div className="tool-recovery">
-          <h3>Retained visual draft</h3>
+          <h3>
+            <I18nText id="Retained visual draft" />
+          </h3>
           <pre>{conflict}</pre>
           <Button
             className="button secondary"
             onClick={() => downloadText(conflict, "visual-draft.tex")}
           >
-            Download draft
+            <I18nText id="Download draft" />
           </Button>
           <Button
             className="button secondary"
@@ -207,7 +219,7 @@ export default function MathVisual({
               );
             }}
           >
-            Show current source
+            <I18nText id="Show current source" />
           </Button>
         </div>
       )}

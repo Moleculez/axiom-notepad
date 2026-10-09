@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { Button, TextInput } from "./ui/controls";
 import { useState } from "react";
 export default function TablePicker({
@@ -6,6 +8,7 @@ export default function TablePicker({
 }: {
   onInsert: (rows: number, columns: number) => void;
 }) {
+  useInterfaceLocale();
   const [rows, setRows] = useState(2),
     [columns, setColumns] = useState(2);
   return (
@@ -16,15 +19,14 @@ export default function TablePicker({
       }}
     >
       <p className="muted">
-        A Markdown table with a header and editable data cells. Add more rows or
-        columns while you write.
+        <I18nText id="A Markdown table with a header and editable data cells. Add more rows or columns while you write." />
       </p>
       <div className="table-picker-controls">
         <label>
-          Data rows
+          <I18nText id="Data rows" />
           <TextInput
             name="rows"
-            aria-label="Table rows"
+            aria-label={uiText("Table rows")}
             type="number"
             min={1}
             max={100}
@@ -33,10 +35,10 @@ export default function TablePicker({
           />
         </label>
         <label>
-          Columns
+          <I18nText id="Columns" />
           <TextInput
             name="columns"
-            aria-label="Table columns"
+            aria-label={uiText("Table columns")}
             type="number"
             min={1}
             max={30}
@@ -68,7 +70,7 @@ export default function TablePicker({
       </div>
       <div className="dialog-footer">
         <Button className="button primary" type="submit">
-          Insert table
+          <I18nText id="Insert table" />
         </Button>
       </div>
     </form>

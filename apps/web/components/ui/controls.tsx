@@ -1,4 +1,5 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
 
 import {
   cloneElement,
@@ -158,7 +159,7 @@ export const SearchField = forwardRef<HTMLInputElement, SearchFieldProps>(
               {hasValue && (
                 <IconButton
                   type="button"
-                  label={clearLabel}
+                  label={uiText(clearLabel)}
                   disabled={disabled || readOnly}
                   onMouseDown={(event) => event.preventDefault()}
                   onClick={() => {
@@ -237,6 +238,7 @@ export function Picker({
   "aria-describedby": described,
   "aria-invalid": invalid,
 }: PickerProps) {
+  useInterfaceLocale();
   const generated = useId(),
     id = suppliedId ?? generated;
   const root = useRef<HTMLSpanElement>(null),
@@ -444,7 +446,7 @@ export function Picker({
                 : (all.get(ids[0])?.label ??
                   (ids.length ? "Selected item" : ""))
           }
-          placeholder={placeholder}
+          placeholder={uiText(placeholder)}
           onClick={() => {
             if (!open) show();
           }}
@@ -560,7 +562,7 @@ export function Picker({
           </span>
           <span className="ui-picker-status" role="status">
             {loading
-              ? "Loading choices…"
+              ? uiText("Loading choices…")
               : error ||
                 (!choices.length
                   ? "No matches. Try another search."
@@ -576,7 +578,7 @@ export function Picker({
               onClick={() => setRetry((n) => n + 1)}
             >
               <RefreshCw size={14} />
-              Retry
+              <I18nText id="Retry" />
             </Button>
           )}
         </span>

@@ -1,3 +1,4 @@
+import { bindText, bindAttribute } from "@axiom/i18n/dom";
 import { safeUrl, plainText, type MarkdownNode } from "@axiom/markdown";
 import type { Node as ProseNode } from "@milkdown/kit/prose/model";
 import type { NodeView } from "@milkdown/kit/prose/view";
@@ -44,8 +45,8 @@ export class ImageView implements NodeView {
     this.status.setAttribute("aria-live", "polite");
     this.retry.type = "button";
     this.retry.className = "axiom-image-retry";
-    this.retry.textContent = "Retry";
-    this.retry.setAttribute("aria-label", "Retry image loading");
+    bindText(this.retry, "Retry");
+    bindAttribute(this.retry, "aria-label", "Retry image loading");
     this.retry.dataset.editorChrome = "true";
     this.retry.addEventListener("click", () => {
       this.url = null;

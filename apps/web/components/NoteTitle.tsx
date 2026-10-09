@@ -1,4 +1,6 @@
 "use client";
+import { uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { TextArea } from "./ui/controls";
 import { useLayoutEffect, useRef } from "react";
 
@@ -14,6 +16,7 @@ export default function NoteTitle({
   onSave: (value: string) => void;
   onContinue: () => void;
 }) {
+  useInterfaceLocale();
   const ref = useRef<HTMLTextAreaElement>(null);
   const resize = () => {
     const node = ref.current;
@@ -57,7 +60,7 @@ export default function NoteTitle({
     <TextArea
       ref={ref}
       className="document-title"
-      aria-label="Note title"
+      aria-label={uiText("Note title")}
       defaultValue={value}
       rows={1}
       onInput={resize}

@@ -19,3 +19,5 @@ apps/web/public/offline-assets.js
 apps/web/public/tool-assets/pdfjs/
 apps/publish/dist/
 apps/showcase/dist/
+# Generated ICU AST catalogs are rebuilt from reviewed source messages.
+apps/web/public/locales/

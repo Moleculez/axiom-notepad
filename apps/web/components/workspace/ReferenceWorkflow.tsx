@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import {
   Button,
   Checkbox,
@@ -34,6 +36,7 @@ export default function ReferenceWorkflow({
   onSaved: () => void;
   collectionId?: string;
 }) {
+  useInterfaceLocale();
   const { spaces, notify } = useWorkspace(),
     action = useAction(),
     destinations = spaces.filter(
@@ -92,7 +95,7 @@ export default function ReferenceWorkflow({
     <Dialog
       title={
         mode === "import"
-          ? "Import references"
+          ? uiText("Import references")
           : mode === "copy"
             ? "Copy references to a library"
             : "Review duplicate merge"
@@ -102,7 +105,9 @@ export default function ReferenceWorkflow({
     >
       <p className="muted">
         {mode === "merge"
-          ? "Choose the retained reference and review each field. Existing citation keys and links remain valid; Markdown is not rewritten."
+          ? uiText(
+              "Choose the retained reference and review each field. Existing citation keys and links remain valid; Markdown is not rewritten.",
+            )
           : mode === "copy"
             ? "Copy bibliographic metadata and tags only. Files, annotations, reading history and access permissions are not copied."
             : "Review the parsed records before importing. Existing references are never overwritten."}
@@ -111,23 +116,27 @@ export default function ReferenceWorkflow({
         <>
           <div className="library-import-controls">
             <label>
-              Format
+              <I18nText id="Format" />
               <NativeSelect
-                aria-label="Bibliography format"
+                aria-label={uiText("Bibliography format")}
                 value={format}
                 onChange={(e) => {
                   setFormat(e.target.value as "bib" | "ris");
                   reset();
                 }}
               >
-                <option value="bib">BibTeX</option>
-                <option value="ris">RIS</option>
+                <option value="bib">
+                  <I18nText id="BibTeX" />
+                </option>
+                <option value="ris">
+                  <I18nText id="RIS" />
+                </option>
               </NativeSelect>
             </label>
             <label>
-              Choose a file
+              <I18nText id="Choose a file" />
               <input
-                aria-label="Import bibliography file"
+                aria-label={uiText("Import bibliography file")}
                 type="file"
                 accept=".bib,.ris"
                 onChange={(e) => {
@@ -150,9 +159,9 @@ export default function ReferenceWorkflow({
             </label>
           </div>
           <label>
-            Or paste a bibliography
+            <I18nText id="Or paste a bibliography" />
             <TextArea
-              aria-label="Bibliography source"
+              aria-label={uiText("Bibliography source")}
               className="library-import-source"
               value={source}
               onChange={(e) => {
@@ -166,9 +175,9 @@ export default function ReferenceWorkflow({
       )}
       {mode === "copy" && (
         <label>
-          Destination library
+          <I18nText id="Destination library" />
           <NativeSelect
-            aria-label="Destination library"
+            aria-label={uiText("Destination library")}
             value={destination}
             onChange={(e) => {
               setDestination(e.target.value);
@@ -176,12 +185,14 @@ export default function ReferenceWorkflow({
             }}
           >
             {!destinations.length && (
-              <option value="">No writable destination workspace</option>
+              <option value="">
+                <I18nText id="No writable destination workspace" />
+              </option>
             )}
             {destinations.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name}
-                {s.group_name ? ` · ${s.group_name}` : " · Personal"}
+                {s.group_name ? ` · ${s.group_name}` : uiText(" · Personal")}
               </option>
             ))}
           </NativeSelect>
@@ -196,15 +207,15 @@ export default function ReferenceWorkflow({
               reset();
             }}
           />
-          Skip matching DOI, arXiv, or title/author/year duplicates
+          <I18nText id="Skip matching DOI, arXiv, or title/author/year duplicates" />
         </label>
       )}
       {mode === "merge" && (
         <>
           <label>
-            Retain this reference
+            <I18nText id="Retain this reference" />
             <NativeSelect
-              aria-label="Retained reference"
+              aria-label={uiText("Retained reference")}
               value={target}
               onChange={(e) => {
                 setTarget(e.target.value);
@@ -261,13 +272,17 @@ export default function ReferenceWorkflow({
       {preview && (
         <section
           className="library-import-preview"
-          aria-label="Reference operation preview"
+          aria-label={uiText("Reference operation preview")}
         >
           {mode === "merge" ? (
             <>
-              <h3>Keys retained after merging</h3>
+              <h3>
+                <I18nText id="Keys retained after merging" />
+              </h3>
               <p>{preview.keys?.join(" · ")}</p>
-              <h3>Why these records match</h3>
+              <h3>
+                <I18nText id="Why these records match" />
+              </h3>
               <ul>
                 {preview.matches?.map((match) => (
                   <li key={`${match.left}:${match.right}`}>
@@ -277,27 +292,37 @@ export default function ReferenceWorkflow({
                     <span>
                       {match.reasons.length
                         ? match.reasons.join("; ")
-                        : "No conservative identity match. This is a manual merge; verify both sources."}
+                        : uiText(
+                            "No conservative identity match. This is a manual merge; verify both sources.",
+                          )}
                     </span>
                   </li>
                 ))}
               </ul>
               {preview.impact && (
                 <HelpText>
-                  {preview.impact.notes} accessible notes ·{" "}
-                  {preview.impact.files} accessible PDFs ·{" "}
-                  {preview.impact.collections} collections. Existing citation
-                  keys remain valid.
+                  {preview.impact.notes} <I18nText id="accessible notes ·" />{" "}
+                  {preview.impact.files} <I18nText id="accessible PDFs ·" />{" "}
+                  {preview.impact.collections}{" "}
+                  <I18nText id="collections. Existing citation keys remain valid." />
                 </HelpText>
               )}
-              <h3>Field decisions</h3>
+              <h3>
+                <I18nText id="Field decisions" />
+              </h3>
               <div className="library-merge-matrix">
                 <table>
                   <thead>
                     <tr>
-                      <th>Field</th>
-                      <th>Retained value</th>
-                      <th>Original values</th>
+                      <th>
+                        <I18nText id="Field" />
+                      </th>
+                      <th>
+                        <I18nText id="Retained value" />
+                      </th>
+                      <th>
+                        <I18nText id="Original values" />
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -321,11 +346,11 @@ export default function ReferenceWorkflow({
               </div>
               {!!preview.extraFields?.length && (
                 <>
-                  <h3>Additional BibTeX fields</h3>
+                  <h3>
+                    <I18nText id="Additional BibTeX fields" />
+                  </h3>
                   <HelpText>
-                    Keep the retained record's value by default. Choose an
-                    alternative before refreshing the merge review; every
-                    original record remains in history.
+                    <I18nText id="Keep the retained record's value by default. Choose an alternative before refreshing the merge review; every original record remains in history." />
                   </HelpText>
                   <div className="library-property-grid">
                     {preview.extraFields.map((field) => (
@@ -347,7 +372,7 @@ export default function ReferenceWorkflow({
                           }}
                         >
                           <option value="__retain__">
-                            Keep retained record
+                            <I18nText id="Keep retained record" />
                           </option>
                           {[...new Set(field.values.map((v) => v.value))].map(
                             (value) => (
@@ -363,23 +388,24 @@ export default function ReferenceWorkflow({
                 </>
               )}
               <p>
-                Links, collection membership and tags are combined. Each reader
-                keeps their own most recently updated reading status.
+                <I18nText id="Links, collection membership and tags are combined. Each reader keeps their own most recently updated reading status." />
               </p>
             </>
           ) : (
             <>
               <h3>
-                {preview.count} reference{preview.count === 1 ? "" : "s"} ready
-                to {mode === "copy" ? "copy" : "import"}
+                {preview.count} <I18nText id="reference" />
+                {preview.count === 1 ? "" : "s"} <I18nText id="ready to" />{" "}
+                {mode === "copy" ? uiText("copy") : uiText("import")}
               </h3>
               {preview.duplicates.length > 0 && (
                 <p>
-                  {preview.duplicates.length} possible duplicate
+                  {preview.duplicates.length}{" "}
+                  <I18nText id="possible duplicate" />
                   {preview.duplicates.length === 1 ? "" : "s"}
                   {skip
-                    ? " will be skipped"
-                    : " will be copied as separate entries"}
+                    ? uiText(" will be skipped")
+                    : uiText(" will be copied as separate entries")}
                   .
                 </p>
               )}
@@ -406,16 +432,19 @@ export default function ReferenceWorkflow({
                 checked={consent}
                 onChange={(e) => setConsent(e.target.checked)}
               />
-              I understand that this private bibliographic metadata and its tags
-              will be visible to readers of the destination workspace.
+              <I18nText id="I understand that this private bibliographic metadata and its tags will be visible to readers of the destination workspace." />
             </label>
           )}
         </section>
       )}
       <ErrorNotice message={action.error} />
       <DialogFooter>
-        <Button className="button secondary" onClick={onClose}>
-          Cancel
+        <Button
+          data-dialog-cancel
+          className="button secondary"
+          onClick={onClose}
+        >
+          <I18nText id="Cancel" />
         </Button>
         <Button
           className="button secondary"
@@ -437,7 +466,7 @@ export default function ReferenceWorkflow({
             })
           }
         >
-          {preview ? "Refresh preview" : "Preview changes"}
+          {preview ? uiText("Refresh preview") : uiText("Preview changes")}
         </Button>
         <Button
           className="button primary"
@@ -468,7 +497,7 @@ export default function ReferenceWorkflow({
           }
         >
           {mode === "merge"
-            ? "Merge references"
+            ? uiText("Merge references")
             : mode === "copy"
               ? "Copy references"
               : "Import references"}

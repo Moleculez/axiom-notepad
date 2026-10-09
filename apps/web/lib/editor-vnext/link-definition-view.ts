@@ -14,6 +14,7 @@ import {
   type DefinitionField,
 } from "@axiom/editor/link-definitions";
 import { applyChanges, mapPosition } from "@axiom/editor/transactions";
+import { bindAttribute, bindText } from "@axiom/i18n/dom";
 import type { Node as ProseNode } from "@milkdown/kit/prose/model";
 import type { NodeView } from "@milkdown/kit/prose/view";
 import type { AxiomEditorView } from "./view";
@@ -83,21 +84,24 @@ export class LinkDefinitionView implements NodeView {
           ? document.createElement("textarea")
           : document.createElement("input");
       if (input instanceof HTMLTextAreaElement) input.rows = 1;
-      input.setAttribute("aria-label", labels[field]);
+      bindAttribute(input, "aria-label", labels[field]);
       input.setAttribute("autocomplete", "off");
       input.spellcheck = field === "title";
-      input.placeholder =
+      bindAttribute(
+        input,
+        "placeholder",
         field === "key"
           ? "paper"
           : field === "href"
             ? "https://… or a file path"
-            : "Optional hover text";
+            : "Optional hover text",
+      );
       input.maxLength = field === "key" ? 999 : 8000;
       input.dataset.field = field;
       this.inputs[field] = input;
-      body.append(
-        this.presentation.row(labels[field], this.presentation.field(input)),
-      );
+      const label = document.createElement("span");
+      bindText(label, labels[field]);
+      body.append(this.presentation.row(label, this.presentation.field(input)));
       input.addEventListener("focus", () => this.begin(field));
       input.addEventListener("input", () => {
         input.removeAttribute("aria-invalid");

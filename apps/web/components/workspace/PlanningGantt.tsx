@@ -1,4 +1,7 @@
 "use client";
+import { currentLocale } from "@axiom/i18n/client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   CalendarDays,
@@ -10,7 +13,7 @@ import {
   Settings2,
 } from "lucide-react";
 import type { PlanningAnalysis } from "@axiom/shared/planning-analysis";
-import {fieldSummaryText,type TaskField} from "@axiom/shared/planning-lab";
+import { fieldSummaryText, type TaskField } from "@axiom/shared/planning-lab";
 import {
   addDays,
   dayNumber,
@@ -130,7 +133,8 @@ export default function PlanningGantt({
   onSelect = () => {},
   grouping = "parent",
   columns = [],
-  customFields=[],people=[],
+  customFields = [],
+  people = [],
   showDependencies = true,
   showBaseline = true,
   showCritical = true,
@@ -139,7 +143,8 @@ export default function PlanningGantt({
 }: {
   spaceId?: string;
   tasks: PlanningTask[];
-  customFields?:TaskField[];people?:Array<{id:string;name:string}>;
+  customFields?: TaskField[];
+  people?: Array<{ id: string; name: string }>;
   milestones: Milestone[];
   calendar: PlanningCalendar;
   readOnly: boolean;
@@ -161,6 +166,7 @@ export default function PlanningGantt({
   onOptions?: (options: Record<string, string | null>) => void;
   onDependency?: (task: PlanningTask, links: DependencyLink[]) => Promise<void>;
 }) {
+  useInterfaceLocale();
   const rowHeight = usePlanningRowSize(52),
     headerHeight = usePlanningRowSize(72),
     root = useRef<HTMLDivElement>(null);
@@ -263,7 +269,7 @@ export default function PlanningGantt({
       (Number.isFinite(high) ? high : first + 30) + 21,
     ),
     dayWidth = fit ?? scales[zoom] ?? 14,
-    labelWidth = tableWidth + (columns.length+customFields.length) * 110,
+    labelWidth = tableWidth + (columns.length + customFields.length) * 110,
     timelineWidth = (last - first + 1) * dayWidth;
   const start = Math.max(
       0,
@@ -480,14 +486,18 @@ export default function PlanningGantt({
     else headerGroups.push({ label, left, width: dayWidth });
   }
   return (
-    <section className="planning-gantt" aria-label="Gantt schedule">
+    <section className="planning-gantt" aria-label={uiText("Gantt schedule")}>
       <ActionRow className="planning-gantt-controls" size="standard">
         <NativeSelect
-          aria-label="Timeline scale"
+          aria-label={uiText("Timeline scale")}
           value={fit ? "fit" : zoom}
           onChange={(e) => scale(e.target.value)}
         >
-          {fit && <option value="fit">Fit</option>}
+          {fit && (
+            <option value="fit">
+              <I18nText id="Fit" />
+            </option>
+          )}
           {Object.keys(scales).map((s) => (
             <option key={s} value={s}>
               {s[0].toUpperCase() + s.slice(1)}
@@ -504,7 +514,7 @@ export default function PlanningGantt({
           }
         >
           <CalendarDays size={15} />
-          Today
+          <I18nText id="Today" />
         </Button>
         <Button
           variant="ghost"
@@ -522,7 +532,7 @@ export default function PlanningGantt({
           }}
         >
           <Focus size={15} />
-          Fit
+          <I18nText id="Fit" />
         </Button>
         <span className="planning-spacer" />
         <Button
@@ -531,21 +541,19 @@ export default function PlanningGantt({
           onClick={() => setLink({ predecessor: "", successor: "", lag: 0 })}
         >
           <Link2 size={15} />
-          Link tasks
+          <I18nText id="Link tasks" />
         </Button>
         <IconButton
-          label="Timeline columns and layers"
+          label={uiText("Timeline columns and layers")}
           onClick={() => setSettings(true)}
         >
           <Settings2 size={16} />
         </IconButton>
       </ActionRow>
       <HelpText className="planning-gantt-help">
-        Drag bars to review schedule changes; Alt + ←/→ moves a day. Drag a
-        finish connector to another task’s start, or use Link tasks.
-        Shift-select rows for a range.
+        <I18nText id="Drag bars to review schedule changes; Alt + ←/→ moves a day. Drag a finish connector to another task’s start, or use Link tasks. Shift-select rows for a range." />
         {linkSource
-          ? " Choose a successor start connector · Escape cancels."
+          ? uiText(" Choose a successor start connector · Escape cancels.")
           : ""}
       </HelpText>
       <div
@@ -582,16 +590,21 @@ export default function PlanningGantt({
               style={{ width: labelWidth, height: headerHeight }}
             >
               <strong style={{ width: tableWidth }}>
-                Tasks · {tasks.length.toLocaleString()}
+                <I18nText id="Tasks ·" />{" "}
+                {tasks.length.toLocaleString(currentLocale())}
               </strong>
               {columns.map((c) => (
                 <span key={c}>{columnLabels[c]}</span>
               ))}
-              {customFields.map(f=><span key={f.id} title={f.name}>{f.name}</span>)}
+              {customFields.map((f) => (
+                <span key={f.id} title={f.name}>
+                  {f.name}
+                </span>
+              ))}
               <div
                 className="gantt-column-resizer"
                 role="separator"
-                aria-label="Task column width"
+                aria-label={uiText("Task column width")}
                 aria-orientation="vertical"
                 aria-valuemin={220}
                 aria-valuemax={560}
@@ -723,7 +736,7 @@ export default function PlanningGantt({
             width={timelineWidth}
             height={rows.length * rowHeight}
             style={{ left: labelWidth, top: headerHeight }}
-            aria-label="Finish-to-start dependencies"
+            aria-label={uiText("Finish-to-start dependencies")}
           >
             <defs>
               <marker
@@ -758,8 +771,9 @@ export default function PlanningGantt({
                 >
                   <title>
                     {maps.byId.get(edge.source)?.title} →{" "}
-                    {maps.byId.get(edge.target)?.title} · {edge.lag} working
-                    days{edge.invalid ? " · conflict" : ""}
+                    {maps.byId.get(edge.target)?.title} · {edge.lag}{" "}
+                    <I18nText id="working days" />
+                    {edge.invalid ? uiText(" · conflict") : ""}
                   </title>
                 </path>
                 {edge.lag !== 0 && (
@@ -892,7 +906,7 @@ export default function PlanningGantt({
                         </button>
                         {task.blocked && (
                           <span
-                            title="Blocked by unfinished work"
+                            title={uiText("Blocked by unfinished work")}
                             className="gantt-blocked-dot"
                           />
                         )}
@@ -940,7 +954,21 @@ export default function PlanningGantt({
                         : "—"}
                     </span>
                   ))}
-                  {customFields.map(f=><span className="gantt-data-cell" key={f.id} title={task?fieldSummaryText(f,task.field_summaries,people):""}>{task?fieldSummaryText(f,task.field_summaries,people):""}</span>)}
+                  {customFields.map((f) => (
+                    <span
+                      className="gantt-data-cell"
+                      key={f.id}
+                      title={
+                        task
+                          ? fieldSummaryText(f, task.field_summaries, people)
+                          : ""
+                      }
+                    >
+                      {task
+                        ? fieldSummaryText(f, task.field_summaries, people)
+                        : ""}
+                    </span>
+                  ))}
                 </div>
                 {base?.start_on && base.due_on && (
                   <span
@@ -1059,7 +1087,7 @@ export default function PlanningGantt({
                     style={{ left: labelWidth + 16 }}
                     onClick={() => onOpen(task.id)}
                   >
-                    Set dates
+                    <I18nText id="Set dates" />
                   </Button>
                 ) : milestone?.due_on ? (
                   <span
@@ -1076,19 +1104,30 @@ export default function PlanningGantt({
         </div>
       </div>
       {settings && (
-        <Dialog title="Timeline display" onClose={() => setSettings(false)}>
-          <Field label="Group tasks">
+        <Dialog
+          title={uiText("Timeline display")}
+          onClose={() => setSettings(false)}
+        >
+          <Field label={uiText("Group tasks")}>
             <NativeSelect
               value={grouping}
               onChange={(e) => onOptions({ grouping: e.target.value })}
             >
-              <option value="parent">Task hierarchy</option>
-              <option value="assignee">Assignee</option>
-              <option value="milestone">Milestone</option>
+              <option value="parent">
+                <I18nText id="Task hierarchy" />
+              </option>
+              <option value="assignee">
+                <I18nText id="Assignee" />
+              </option>
+              <option value="milestone">
+                <I18nText id="Milestone" />
+              </option>
             </NativeSelect>
           </Field>
           <fieldset className="planning-column-options">
-            <legend>Table columns</legend>
+            <legend>
+              <I18nText id="Table columns" />
+            </legend>
             {Object.entries(columnLabels).map(([id, label]) => (
               <label key={id}>
                 <Checkbox
@@ -1126,37 +1165,42 @@ export default function PlanningGantt({
             ))}
           </div>
           <HelpText>
-            Grouping spans and progress are derived; no authored parent dates
-            are changed.
+            <I18nText id="Grouping spans and progress are derived; no authored parent dates are changed." />
           </HelpText>
           <ActionRow>
-            <Button onClick={() => setSettings(false)}>Done</Button>
+            <Button onClick={() => setSettings(false)}>
+              <I18nText id="Done" />
+            </Button>
           </ActionRow>
         </Dialog>
       )}
       {link && (
         <Dialog
-          title={link.existing ? "Edit dependency" : "Link tasks"}
-          subtitle="Finish-to-start links use the workspace working calendar. Saving does not move dates."
+          title={
+            link.existing ? uiText("Edit dependency") : uiText("Link tasks")
+          }
+          subtitle={uiText(
+            "Finish-to-start links use the workspace working calendar. Saving does not move dates.",
+          )}
           onClose={() => !action.busy && setLink(null)}
         >
           <ErrorNotice message={action.error} />
-          <Field label="Predecessor">
+          <Field label={uiText("Predecessor")}>
             <PlanningEntityPicker
               spaceId={spaceId}
               kind="task"
-              label="Dependency predecessor"
+              label={uiText("Dependency predecessor")}
               value={link.predecessor}
               onChange={(v) =>
                 setLink((l) => l && { ...l, predecessor: String(v) })
               }
             />
           </Field>
-          <Field label="Successor">
+          <Field label={uiText("Successor")}>
             <PlanningEntityPicker
               spaceId={spaceId}
               kind="task"
-              label="Dependency successor"
+              label={uiText("Dependency successor")}
               value={link.successor}
               onChange={(v) =>
                 setLink((l) => l && { ...l, successor: String(v) })
@@ -1164,11 +1208,13 @@ export default function PlanningGantt({
             />
           </Field>
           <Field
-            label="Offset in working days"
-            hint="0 = next working day; positive = delay; negative = overlap."
+            label={uiText("Offset in working days")}
+            hint={uiText(
+              "0 = next working day; positive = delay; negative = overlap.",
+            )}
           >
             <PlanningIntegerInput
-              label="Dependency offset in working days"
+              label={uiText("Dependency offset in working days")}
               min={-365}
               max={365}
               value={link.lag}
@@ -1177,8 +1223,7 @@ export default function PlanningGantt({
             />
           </Field>
           <HelpText>
-            Tasks outside the current view remain available. Current versions
-            and the full dependency graph are checked before saving.
+            <I18nText id="Tasks outside the current view remain available. Current versions and the full dependency graph are checked before saving." />
           </HelpText>
           <ActionRow>
             {link.existing && (
@@ -1202,10 +1247,12 @@ export default function PlanningGantt({
                   })
                 }
               >
-                Remove link
+                <I18nText id="Remove link" />
               </Button>
             )}
-            <Button onClick={() => setLink(null)}>Cancel</Button>
+            <Button data-dialog-cancel onClick={() => setLink(null)}>
+              <I18nText id="Cancel" />
+            </Button>
             <Button
               variant="primary"
               disabled={
@@ -1233,7 +1280,7 @@ export default function PlanningGantt({
                 })
               }
             >
-              Save link
+              <I18nText id="Save link" />
             </Button>
           </ActionRow>
         </Dialog>

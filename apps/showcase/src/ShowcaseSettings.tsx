@@ -1,8 +1,15 @@
 import {
+  I18nText,
+  uiText,
+  useInterfaceLocale,
+  useI18n,
+} from "@axiom/i18n/react";
+import {
   Button,
   Field,
   IconButton,
   NativeSelect,
+  Notice,
 } from "../../web/components/ui/controls";
 import { useId, useMemo, useState } from "react";
 import {
@@ -37,14 +44,23 @@ import { downloadBlob } from "../../web/lib/tools/download";
 import ReadingSettings, { type ReadingSection } from "./ReadingSettings";
 import { useDemo, useSnapshot, store } from "./context";
 import { paperAppearance } from "./samples";
+import LanguageField from "../../web/components/LanguageField";
 
-type Section = "Theme & interface" | ReadingSection | "Local data";
+import { saveShowcaseLocale } from "./LocaleBoundary";
+
+type Section = "Language" | "Theme & interface" | ReadingSection | "Local data";
 const categories: Array<{
   name: Section;
   icon: LucideIcon;
   description: string;
   group?: string;
 }> = [
+  {
+    name: "Language",
+    icon: BookOpen,
+    group: "General",
+    description: "Language changes are saved only in this browser.",
+  },
   {
     name: "Theme & interface",
     icon: Palette,
@@ -85,7 +101,7 @@ const categories: Array<{
   },
 ];
 const resetKeys: Record<
-  Exclude<Section, "Local data">,
+  Exclude<Section, "Local data" | "Language">,
   {
     appearance: Array<keyof Preferences>;
     editor: Array<keyof EditorPreferences>;
@@ -170,6 +186,8 @@ export default function ShowcaseSettings({
   onClose: () => void;
   onImport: () => void;
 }) {
+  useInterfaceLocale();
+  const locale = useI18n();
   const snapshot = useSnapshot(),
     { changeAppearance, notify, navigate, renderContext, dark } = useDemo();
   const [section, setSection] = useState<Section>("Theme & interface"),
@@ -185,7 +203,7 @@ export default function ShowcaseSettings({
     document.getElementById(`${id}-tab-${index}`)?.focus();
   };
   const reset = () => {
-    if (section === "Local data") return;
+    if (section === "Local data" || section === "Language") return;
     const keys = resetKeys[section],
       current = store.getSnapshot();
     if (keys.appearance.length)
@@ -202,13 +220,18 @@ export default function ShowcaseSettings({
         ),
       });
     notify(
-      `${section} preferences reset. Your notes and uploads are unchanged.`,
+      locale.t(
+        "{category} preferences reset. Your notes and uploads are unchanged.",
+        { category: uiText(section) },
+      ),
     );
   };
   return (
     <Dialog
-      title="Appearance & editor"
-      subtitle="Make this thinking space yours. Preferences apply live and stay on this device."
+      title={uiText("Appearance & editor")}
+      subtitle={uiText(
+        "Make this thinking space yours. Preferences apply live and stay on this device.",
+      )}
       size="settings"
       className="demo-settings-dialog"
       onClose={() => {
@@ -219,12 +242,12 @@ export default function ShowcaseSettings({
         <nav
           className="demo-settings-navigation"
           role="tablist"
-          aria-label="Showcase preferences"
+          aria-label={uiText("Showcase preferences")}
           aria-orientation="vertical"
         >
           {categories.map(({ name, icon: Icon, group }, index) => (
             <div key={name}>
-              {group && <p className="demo-settings-group">{group}</p>}
+              {group && <p className="demo-settings-group">{uiText(group)}</p>}
               <button
                 id={`${id}-tab-${index}`}
                 role="tab"
@@ -250,7 +273,7 @@ export default function ShowcaseSettings({
                 }}
               >
                 <Icon size={15} aria-hidden="true" />
-                <span>{name}</span>
+                <span>{uiText(name)}</span>
               </button>
             </div>
           ))}
@@ -263,22 +286,38 @@ export default function ShowcaseSettings({
         >
           <header className="demo-settings-panel-heading">
             <div>
-              <h3>{section}</h3>
-              <p>{categories[selected].description}</p>
+              <h3>{uiText(section)}</h3>
+              <p>{uiText(categories[selected].description)}</p>
             </div>
-            {section !== "Local data" && (
+            {section !== "Local data" && section !== "Language" && (
               <IconButton
                 className="icon-button"
                 onClick={reset}
-                aria-label={`Reset ${section} settings`}
-                title="Restore defaults for this category only"
+                aria-label={locale.t("Reset {category} settings", {
+                  category: uiText(section),
+                })}
+                title={uiText("Restore defaults for this category only")}
               >
                 <RotateCcw size={15} />
               </IconButton>
             )}
           </header>
           <div className="demo-settings-fields" key={section}>
-            {section === "Theme & interface" ? (
+            {section === "Language" ? (
+              <>
+                <LanguageField
+                  value={locale.choice}
+                  onChange={(choice) => {
+                    void saveShowcaseLocale(choice);
+                  }}
+                />
+                {locale.error && (
+                  <Notice tone="danger" role="alert">
+                    {uiText(locale.error)}
+                  </Notice>
+                )}
+              </>
+            ) : section === "Theme & interface" ? (
               <ThemeSettings
                 comparing={comparingStyles}
                 onComparingChange={setComparingStyles}
@@ -288,18 +327,22 @@ export default function ShowcaseSettings({
                 <div className="demo-local-summary">
                   <div>
                     <strong>{snapshot.documents.length}</strong>
-                    <span>Notes & boards</span>
+                    <span>
+                      <I18nText id="Notes & boards" />
+                    </span>
                   </div>
                   <div>
                     <strong>{snapshot.assets.length}</strong>
-                    <span>Local uploads</span>
+                    <span>
+                      <I18nText id="Local uploads" />
+                    </span>
                   </div>
                 </div>
-                <h4>Keep a portable copy</h4>
+                <h4>
+                  <I18nText id="Keep a portable copy" />
+                </h4>
                 <p className="demo-settings-description">
-                  Browser storage can be cleared or evicted. A ZIP backup
-                  includes your notes, Canvas boards and uploads, not account
-                  data.
+                  <I18nText id="Browser storage can be cleared or evicted. A ZIP backup includes your notes, Canvas boards and uploads, not account data." />
                 </p>
                 <div className="demo-data-actions">
                   <Button
@@ -323,7 +366,7 @@ export default function ShowcaseSettings({
                     pending={!!(busy === "backup")}
                   >
                     <Download size={15} />
-                    {"Download backup"}
+                    {uiText("Download backup")}
                   </Button>
                   <Button
                     className="button secondary"
@@ -331,20 +374,18 @@ export default function ShowcaseSettings({
                     onClick={onImport}
                   >
                     <Upload size={15} />
-                    Import backup or files
+                    <I18nText id="Import backup or files" />
                   </Button>
                 </div>
                 <p className="demo-settings-description">
-                  Restore is additive: existing drafts are kept. Up to 100 MB
-                  per upload and 5 MB per note or Canvas file. Your files are
-                  never uploaded by the demo.
+                  <I18nText id="Restore is additive: existing drafts are kept. Up to 100 MB per upload and 5 MB per note or Canvas file. Your files are never uploaded by the demo." />
                 </p>
                 <div className="demo-local-reset">
-                  <h4>Start again</h4>
+                  <h4>
+                    <I18nText id="Start again" />
+                  </h4>
                   <p className="demo-settings-description">
-                    Clear only this showcase’s local drafts, uploads and
-                    preferences, then restore the examples. Download a backup
-                    first. Workbench accounts are never touched.
+                    <I18nText id="Clear only this showcase’s local drafts, uploads and preferences, then restore the examples. Download a backup first. Workbench accounts are never touched." />
                   </p>
                   <Button
                     className="button ghost danger"
@@ -379,7 +420,7 @@ export default function ShowcaseSettings({
                     pending={!!(busy === "clear")}
                   >
                     <Trash2 size={15} />
-                    {"Clear local demo"}
+                    {uiText("Clear local demo")}
                   </Button>
                 </div>
               </>
@@ -390,28 +431,30 @@ export default function ShowcaseSettings({
         </section>
         <aside
           className="demo-settings-preview"
-          aria-label="Live appearance preview"
+          aria-label={uiText("Live appearance preview")}
           hidden={comparing}
         >
           <header>
             <BookOpen size={14} />
-            <span>Live preview</span>
+            <span>
+              <I18nText id="Live preview" />
+            </span>
             <div
               className="scratchpad-surface-switch"
               role="group"
-              aria-label="Preview surface"
+              aria-label={uiText("Preview surface")}
             >
               <button
                 aria-pressed={preview === "writing"}
                 onClick={() => setPreview("writing")}
               >
-                Writing
+                <I18nText id="Writing" />
               </button>
               <button
                 aria-pressed={preview === "interface"}
                 onClick={() => setPreview("interface")}
               >
-                Interface
+                <I18nText id="Interface" />
               </button>
             </div>
           </header>
@@ -437,8 +480,7 @@ export default function ShowcaseSettings({
             />
           </div>
           <p>
-            Colors and typography update here. Writing behavior applies in the
-            Editor and Canvas.
+            <I18nText id="Colors and typography update here. Writing behavior applies in the Editor and Canvas." />
           </p>
         </aside>
       </div>
@@ -449,11 +491,11 @@ export default function ShowcaseSettings({
           data-error={!!snapshot.error}
         >
           <Check size={14} />
-          {snapshot.status}
+          {uiText(snapshot.status)}
         </span>
         <span className="tool-spacer" />
         <Button variant="primary" disabled={busy === "clear"} onClick={onClose}>
-          Done
+          <I18nText id="Done" />
         </Button>
       </DialogFooter>
     </Dialog>
@@ -467,12 +509,19 @@ function ThemeSettings({
   comparing: boolean;
   onComparingChange: (comparing: boolean) => void;
 }) {
+  useInterfaceLocale();
   const { appearance } = useSnapshot(),
     { changeAppearance } = useDemo();
   return (
     <>
-      <h4>Color mode</h4>
-      <div className="demo-mode-switch" role="group" aria-label="Color mode">
+      <h4>
+        <I18nText id="Color mode" />
+      </h4>
+      <div
+        className="demo-mode-switch"
+        role="group"
+        aria-label={uiText("Color mode")}
+      >
         {(
           [
             { value: "light", icon: Sun },
@@ -486,11 +535,13 @@ function ThemeSettings({
             onClick={() => changeAppearance({ mode: value })}
           >
             <Icon size={15} />
-            {value}
+            {uiText(value)}
           </button>
         ))}
       </div>
-      <h4>Palette</h4>
+      <h4>
+        <I18nText id="Palette" />
+      </h4>
       <div className="demo-theme-grid">
         {[
           {
@@ -521,7 +572,7 @@ function ThemeSettings({
               aria-hidden="true"
             />
             <strong>{pack.name}</strong>
-            <small>{pack.description}</small>
+            <small>{uiText(pack.description)}</small>
           </button>
         ))}
       </div>
@@ -531,8 +582,10 @@ function ThemeSettings({
         comparing={comparing}
         onComparingChange={onComparingChange}
       />
-      <h4>Interface comfort</h4>
-      <Field label="Interface font" className="demo-preference-field">
+      <h4>
+        <I18nText id="Interface comfort" />
+      </h4>
+      <Field label={uiText("Interface font")} className="demo-preference-field">
         <NativeSelect
           value={appearance.uiFont}
           onChange={(event) =>
@@ -543,13 +596,13 @@ function ThemeSettings({
         >
           {Object.entries(fonts).map(([id, font]) => (
             <option key={id} value={id}>
-              {font.label}
+              {uiText(font.label)}
             </option>
           ))}
         </NativeSelect>
       </Field>
       <NumberPreference
-        label="Interface font size"
+        label={uiText("Interface font size")}
         value={appearance.uiSize}
         min={12}
         max={22}
@@ -560,7 +613,7 @@ function ThemeSettings({
         onInvalid={() => {}}
       />
       <div className="demo-preference-pair">
-        <Field label="Density" className="demo-preference-field">
+        <Field label={uiText("Density")} className="demo-preference-field">
           <NativeSelect
             value={appearance.density}
             onChange={(event) =>
@@ -569,11 +622,15 @@ function ThemeSettings({
               })
             }
           >
-            <option value="comfortable">Comfortable</option>
-            <option value="compact">Compact</option>
+            <option value="comfortable">
+              <I18nText id="Comfortable" />
+            </option>
+            <option value="compact">
+              <I18nText id="Compact" />
+            </option>
           </NativeSelect>
         </Field>
-        <Field label="Shadows" className="demo-preference-field">
+        <Field label={uiText("Shadows")} className="demo-preference-field">
           <NativeSelect
             value={appearance.shadows}
             onChange={(event) =>
@@ -582,14 +639,20 @@ function ThemeSettings({
               })
             }
           >
-            <option value="none">None</option>
-            <option value="soft">Soft</option>
-            <option value="elevated">Elevated</option>
+            <option value="none">
+              <I18nText id="None" />
+            </option>
+            <option value="soft">
+              <I18nText id="Soft" />
+            </option>
+            <option value="elevated">
+              <I18nText id="Elevated" />
+            </option>
           </NativeSelect>
         </Field>
       </div>
       <NumberPreference
-        label="Corner radius"
+        label={uiText("Corner radius")}
         value={appearance.radius}
         min={0}
         max={18}

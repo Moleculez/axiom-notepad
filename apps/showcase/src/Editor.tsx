@@ -1,3 +1,4 @@
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
 import {
   Button,
   IconButton,
@@ -56,6 +57,7 @@ export default function Editor({
   document: LocalDocument;
   defaultMap?: boolean;
 }) {
+  useInterfaceLocale();
   const snapshot = useSnapshot(),
     { dark, notify, open, navigate, renderContext, changeAppearance } =
       useDemo(),
@@ -416,7 +418,7 @@ export default function Editor({
       <header className="demo-document-toolbar">
         <NativeSelect
           className="demo-document-select"
-          aria-label="Choose a notebook"
+          aria-label={uiText("Choose a notebook")}
           value={doc.id}
           onChange={(e) => open(e.target.value)}
         >
@@ -430,8 +432,8 @@ export default function Editor({
         </NativeSelect>
         <IconButton
           className="icon-button"
-          aria-label="New note"
-          title="New note"
+          aria-label={uiText("New note")}
+          title={uiText("New note")}
           onClick={() => open(store.create().id)}
         >
           <Plus size={16} />
@@ -442,12 +444,12 @@ export default function Editor({
           aria-pressed={map}
           onClick={() => navigate(map ? "editor" : "mindmap", doc.id)}
         >
-          {map ? "Document" : "Mind map"}
+          {map ? uiText("Document") : uiText("Mind map")}
         </Button>
         <div
           className="scratchpad-modes"
           role="group"
-          aria-label="Editor mode"
+          aria-label={uiText("Editor mode")}
           hidden={map}
         >
           {(["write", "source", "read"] as const).map((value) => (
@@ -457,19 +459,19 @@ export default function Editor({
               onClick={() => setMode(value)}
             >
               {value === "write"
-                ? "Write"
+                ? uiText("Write")
                 : value === "source"
-                  ? "Source"
-                  : "Read"}
+                  ? uiText("Source")
+                  : uiText("Read")}
             </button>
           ))}
         </div>
         <span className="demo-toolbar-divider" hidden={map} />
         <IconButton
           className="icon-button"
-          aria-label="Undo"
+          aria-label={uiText("Undo")}
           hidden={map}
-          title="Undo · ⌘Z / Ctrl Z"
+          title={uiText("Undo · ⌘Z / Ctrl Z")}
           disabled={mode === "read"}
           onClick={() => view.current?.execute("undo")}
         >
@@ -477,9 +479,9 @@ export default function Editor({
         </IconButton>
         <IconButton
           className="icon-button"
-          aria-label="Redo"
+          aria-label={uiText("Redo")}
           hidden={map}
-          title="Redo · ⇧⌘Z / Ctrl Shift Z"
+          title={uiText("Redo · ⇧⌘Z / Ctrl Shift Z")}
           disabled={mode === "read"}
           onClick={() => view.current?.execute("redo")}
         >
@@ -487,9 +489,9 @@ export default function Editor({
         </IconButton>
         <IconButton
           className="icon-button"
-          aria-label="Insert local image or attachment"
+          aria-label={uiText("Insert local image or attachment")}
           hidden={map}
-          title="Insert local image or attachment"
+          title={uiText("Insert local image or attachment")}
           disabled={mode === "read"}
           onClick={() => {
             prepare();
@@ -500,10 +502,10 @@ export default function Editor({
         </IconButton>
         <IconButton
           className="icon-button"
-          aria-label="Toggle outline"
+          aria-label={uiText("Toggle outline")}
           hidden={map}
           disabled={map}
-          title="Outline"
+          title={uiText("Outline")}
           aria-pressed={outline}
           onClick={() => setOutline((value) => !value)}
         >
@@ -511,10 +513,10 @@ export default function Editor({
         </IconButton>
         <IconButton
           className="icon-button"
-          aria-label="Toggle minimap"
+          aria-label={uiText("Toggle minimap")}
           hidden={map}
           disabled={map}
-          title="Minimap"
+          title={uiText("Minimap")}
           aria-pressed={appearance.minimap.enabled}
           onClick={() =>
             changeAppearance({
@@ -529,17 +531,17 @@ export default function Editor({
         </IconButton>
         <IconButton
           className="icon-button"
-          aria-label="Reset this example"
-          title="Reset this example"
+          aria-label={uiText("Reset this example")}
+          title={uiText("Reset this example")}
           onClick={() => void reset()}
         >
           <RotateCcw size={16} />
         </IconButton>
         <IconButton
           className="icon-button"
-          aria-label="Export document"
+          aria-label={uiText("Export document")}
           hidden={map}
-          title="Export document"
+          title={uiText("Export document")}
           onClick={() => setExporting(true)}
         >
           <Download size={16} />
@@ -602,25 +604,28 @@ export default function Editor({
         {outline && !map && (
           <ResizablePanel
             className="ws-document-context"
-            label="Document context"
+            label={uiText("Document context")}
             account="showcase-local"
             name="document-context"
             edge="left"
           >
             <div className="ws-context-content">
-              <nav className="ws-context-tabs" aria-label="Document panel">
+              <nav
+                className="ws-context-tabs"
+                aria-label={uiText("Document panel")}
+              >
                 <IconButton
                   className="icon-button"
-                  aria-label="outline panel"
-                  title="Outline"
+                  aria-label={uiText("outline panel")}
+                  title={uiText("Outline")}
                   aria-pressed
                 >
                   <List size={16} />
                 </IconButton>
                 <IconButton
                   className="icon-button"
-                  aria-label="Close document panel"
-                  title="Close document panel"
+                  aria-label={uiText("Close document panel")}
+                  title={uiText("Close document panel")}
                   onClick={() => setOutline(false)}
                 >
                   <X size={15} />
@@ -641,19 +646,27 @@ export default function Editor({
       <footer className="demo-document-status ws-note-footer">
         <span>
           <span className="demo-save-dot" />
-          {snapshot.status}
+          {uiText(snapshot.status)}
         </span>
         <span>
-          {statistics.words} words · {statistics.equations} equations ·{" "}
-          {statistics.readingMinutes} min read
+          <I18nText
+            id="{words, number} words · {equations, number} equations · {minutes, number} min read"
+            values={{
+              words: statistics.words,
+              equations: statistics.equations,
+              minutes: statistics.readingMinutes,
+            }}
+          />
         </span>
         <span>
           {map ? (
             <MindmapFooterInfo status={mapStatus} />
           ) : (
             <>
-              {mode === "read" ? "Read only" : "Canonical Markdown"} · device
-              only
+              {mode === "read"
+                ? uiText("Read only")
+                : uiText("Canonical Markdown")}{" "}
+              <I18nText id="· device only" />
             </>
           )}
         </span>
@@ -671,8 +684,10 @@ export default function Editor({
       />
       {assetDialog && (
         <Dialog
-          title="Insert a local file"
-          subtitle="Choose an existing upload, or add one from your device. No files are sent to a server."
+          title={uiText("Insert a local file")}
+          subtitle={uiText(
+            "Choose an existing upload, or add one from your device. No files are sent to a server.",
+          )}
           size="wide"
           onClose={() => {
             setAssetDialog(false);
@@ -682,8 +697,8 @@ export default function Editor({
           <div className="demo-asset-toolbar">
             <label>
               <SearchField
-                aria-label="Find local files"
-                placeholder="Find a local file…"
+                aria-label={uiText("Find local files")}
+                placeholder={uiText("Find a local file…")}
                 value={assetQuery}
                 onChange={(e) => setAssetQuery(e.target.value)}
               />
@@ -693,7 +708,7 @@ export default function Editor({
               onClick={() => uploadInput.current?.click()}
             >
               <Upload size={15} />
-              Upload from device
+              <I18nText id="Upload from device" />
             </Button>
           </div>
           <div className="demo-asset-grid">
@@ -712,36 +727,38 @@ export default function Editor({
                   <Paperclip size={28} />
                 )}
                 <strong>{asset.name}</strong>
-                <small>{(asset.blob.size / 1024).toFixed(1)} KB</small>
+                <small>
+                  {(asset.blob.size / 1024).toFixed(1)} <I18nText id="KB" />
+                </small>
               </button>
             ))}
             {!fileAssets.length && (
               <p>
-                No local files yet. Upload an image, PDF, audio or video to
-                begin.
+                <I18nText id="No local files yet. Upload an image, PDF, audio or video to begin." />
               </p>
             )}
           </div>
           <DialogFooter>
             <span className="demo-fineprint">
               <Image size={14} />
-              Images keep stable Markdown paths and live previews.
+              <I18nText id="Images keep stable Markdown paths and live previews." />
             </span>
             <Button
+              data-dialog-cancel
               className="button secondary"
               onClick={() => {
                 setAssetDialog(false);
                 prepared.current = null;
               }}
             >
-              Cancel
+              <I18nText id="Cancel" />
             </Button>
           </DialogFooter>
         </Dialog>
       )}
       {tableDialog && (
         <Dialog
-          title="Insert a table"
+          title={uiText("Insert a table")}
           size="compact"
           onClose={() => {
             setTableDialog(false);
@@ -769,7 +786,7 @@ export default function Editor({
           >
             <div className="demo-table-fields">
               <label>
-                Rows
+                <I18nText id="Rows" />
                 <TextInput
                   type="number"
                   min={2}
@@ -781,7 +798,7 @@ export default function Editor({
                 />
               </label>
               <label>
-                Columns
+                <I18nText id="Columns" />
                 <TextInput
                   type="number"
                   min={1}
@@ -797,7 +814,7 @@ export default function Editor({
             </div>
             <DialogFooter>
               <Button variant="primary" type="submit">
-                Insert table
+                <I18nText id="Insert table" />
               </Button>
             </DialogFooter>
           </form>
@@ -805,8 +822,10 @@ export default function Editor({
       )}
       {exporting && (
         <Dialog
-          title="Take your work with you"
-          subtitle="Portable Markdown, a self-contained styled web page, or a print-ready document."
+          title={uiText("Take your work with you")}
+          subtitle={uiText(
+            "Portable Markdown, a self-contained styled web page, or a print-ready document.",
+          )}
           onClose={() => {
             if (!exportBusy) setExporting(false);
           }}
@@ -823,8 +842,12 @@ export default function Editor({
             >
               <FileText size={21} />
               <span>
-                <strong>Markdown</strong>
-                <small>Original source, ready for any Markdown app</small>
+                <strong>
+                  <I18nText id="Markdown" />
+                </strong>
+                <small>
+                  <I18nText id="Original source, ready for any Markdown app" />
+                </small>
               </span>
               <Download size={16} />
             </button>
@@ -839,8 +862,12 @@ export default function Editor({
             >
               <Copy size={21} />
               <span>
-                <strong>Copy Markdown</strong>
-                <small>Keep the source exactly as written</small>
+                <strong>
+                  <I18nText id="Copy Markdown" />
+                </strong>
+                <small>
+                  <I18nText id="Keep the source exactly as written" />
+                </small>
               </span>
             </button>
             <button
@@ -849,9 +876,11 @@ export default function Editor({
             >
               <FileCode2 size={21} />
               <span>
-                <strong>Styled HTML</strong>
+                <strong>
+                  <I18nText id="Styled HTML" />
+                </strong>
                 <small>
-                  Rendered math, diagrams, images and embedded fonts
+                  <I18nText id="Rendered math, diagrams, images and embedded fonts" />
                 </small>
               </span>
               <Download size={16} />
@@ -859,8 +888,12 @@ export default function Editor({
             <button disabled={exportBusy} onClick={() => void htmlExport(true)}>
               <Printer size={21} />
               <span>
-                <strong>Print / PDF</strong>
-                <small>Open the print dialog, then choose Save as PDF</small>
+                <strong>
+                  <I18nText id="Print / PDF" />
+                </strong>
+                <small>
+                  <I18nText id="Open the print dialog, then choose Save as PDF" />
+                </small>
               </span>
             </button>
           </div>
@@ -879,15 +912,15 @@ export default function Editor({
           <DialogFooter>
             <span role="status">
               {exportBusy
-                ? "Preparing a styled document…"
-                : "Export a backup before clearing browser data."}
+                ? uiText("Preparing a styled document…")
+                : uiText("Export a backup before clearing browser data.")}
             </span>
             <Button
               className="button secondary"
               disabled={exportBusy}
               onClick={() => setExporting(false)}
             >
-              Done
+              <I18nText id="Done" />
             </Button>
           </DialogFooter>
         </Dialog>

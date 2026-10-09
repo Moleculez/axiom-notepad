@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { ActionRow, Button, IconButton, TextInput } from "../ui/controls";
 import { useState } from "react";
 import {
@@ -101,6 +103,7 @@ export function ReferenceForm({
   onClose: () => void;
   onSaved: (id: string) => void;
 }) {
+  useInterfaceLocale();
   const [draft, setDraft] = useState(() => referenceDraft(reference)),
     [citeKey, setKey] = useState(reference?.cite_key ?? ""),
     [tags, setTags] = useState(reference?.tags.join(", ") ?? ""),
@@ -114,16 +117,16 @@ export function ReferenceForm({
   const action = useAction();
   return (
     <Dialog
-      title={reference ? "Edit reference" : "Add reference"}
+      title={reference ? uiText("Edit reference") : uiText("Add reference")}
       onClose={onClose}
       wide
     >
       <div className="library-lookup">
         <label>
-          DOI or arXiv identifier
+          <I18nText id="DOI or arXiv identifier" />
           <TextInput
-            aria-label="Lookup identifier"
-            placeholder="10.… or arXiv ID"
+            aria-label={uiText("Lookup identifier")}
+            placeholder={uiText("10.… or arXiv ID")}
             value={identifier}
             onChange={(e) => setIdentifier(e.target.value)}
           />
@@ -143,12 +146,11 @@ export function ReferenceForm({
           }
         >
           <Search size={15} />
-          Look up
+          <I18nText id="Look up" />
         </Button>
       </div>
       <p className="muted">
-        Only the identifier is sent to Crossref or arXiv, when you choose Look
-        up.
+        <I18nText id="Only the identifier is sent to Crossref or arXiv, when you choose Look up." />
       </p>
       {preview && (
         <div className="research-notice">
@@ -175,37 +177,45 @@ export function ReferenceForm({
               setPreview(null);
             }}
           >
-            Use reviewed metadata
+            <I18nText id="Use reviewed metadata" />
           </Button>
         </div>
       )}
       <label>
-        Citation key
+        <I18nText id="Citation key" />
         <TextInput
-          aria-label="Citation key"
+          aria-label={uiText("Citation key")}
           required
           readOnly={!!reference}
           value={citeKey}
           onChange={(e) => setKey(e.target.value)}
           maxLength={100}
         />
-        <small>Stable keys keep existing Markdown citations working.</small>
+        <small>
+          <I18nText id="Stable keys keep existing Markdown citations working." />
+        </small>
       </label>
       <ReferenceFields value={draft} onChange={setDraft} />
       <label>
-        Tags
+        <I18nText id="Tags" />
         <TextInput
-          aria-label="Reference tags"
+          aria-label={uiText("Reference tags")}
           value={tags}
           onChange={(e) => setTags(e.target.value)}
-          placeholder="spectral methods, review"
+          placeholder={uiText("spectral methods, review")}
         />
-        <small>Separate tags with commas.</small>
+        <small>
+          <I18nText id="Separate tags with commas." />
+        </small>
       </label>
       <ErrorNotice message={action.error} />
       <DialogFooter>
-        <Button className="button secondary" onClick={onClose}>
-          Cancel
+        <Button
+          data-dialog-cancel
+          className="button secondary"
+          onClick={onClose}
+        >
+          <I18nText id="Cancel" />
         </Button>
         <Button
           className="button primary"
@@ -237,7 +247,7 @@ export function ReferenceForm({
             })
           }
         >
-          {reference ? "Save reference" : "Add reference"}
+          {reference ? uiText("Save reference") : uiText("Add reference")}
         </Button>
       </DialogFooter>
     </Dialog>
@@ -273,6 +283,7 @@ export default function ReferenceInspector({
   onEdit: (r: LibraryReference) => void;
   onRefresh: () => void;
 }) {
+  useInterfaceLocale();
   const { session, revision, navigate, spaces, notify } = useWorkspace(),
     data = useData<Detail>(
       "research/library/items/" + id + "?spaceId=" + scope.spaceId,
@@ -304,13 +315,15 @@ export default function ReferenceInspector({
       name="research-details"
       edge="left"
       className="research-inspector"
-      label="Reference details"
+      label={uiText("Reference details")}
     >
       <header>
-        <span className="docs-eyebrow">Reference details</span>
+        <span className="docs-eyebrow">
+          <I18nText id="Reference details" />
+        </span>
         <IconButton
           className="icon-button"
-          aria-label="Close reference details"
+          aria-label={uiText("Close reference details")}
           onClick={onClose}
         >
           <X size={16} />
@@ -321,7 +334,7 @@ export default function ReferenceInspector({
         <>
           <h2>{r.title}</h2>
           <p>{r.authors}</p>
-          <ActionRow aria-label="Reference views">
+          <ActionRow aria-label={uiText("Reference views")}>
             {(["details", "sources", "history"] as const).map((view) => (
               <Button
                 key={view}
@@ -343,12 +356,14 @@ export default function ReferenceInspector({
           )}
           {tab === "sources" && (
             <section className="reference-original">
-              <h3>Bibliographic source</h3>
+              <h3>
+                <I18nText id="Bibliographic source" />
+              </h3>
               <pre>{r.bibtex || "No original BibTeX record"}</pre>
               {!!r.import_source?.format && (
                 <p className="muted">
-                  Imported as {String(r.import_source.format)}. Only this record
-                  and required bibliography strings are retained.
+                  <I18nText id="Imported as" /> {String(r.import_source.format)}
+                  <I18nText id=". Only this record and required bibliography strings are retained." />
                 </p>
               )}
             </section>
@@ -362,7 +377,7 @@ export default function ReferenceInspector({
             <ActionRow>
               <Button
                 className="button ghost"
-                title="Copy Markdown citation"
+                title={uiText("Copy Markdown citation")}
                 onClick={() =>
                   void navigator.clipboard.writeText(`[@${r.cite_key}]`).then(
                     () => notify("Citation copied."),
@@ -376,8 +391,8 @@ export default function ReferenceInspector({
               {canEdit && !r.deleted_at && (
                 <IconButton
                   className="icon-button"
-                  aria-label="Edit reference"
-                  title="Edit reference"
+                  aria-label={uiText("Edit reference")}
+                  title={uiText("Edit reference")}
                   onClick={() => onEdit({ ...r, id: r.canonical_id ?? r.id })}
                 >
                   <Pencil size={15} />
@@ -386,8 +401,7 @@ export default function ReferenceInspector({
             </ActionRow>
             {r.merged_into && (
               <p className="research-notice">
-                This citation key redirects to the merged reference. Existing
-                citations still work.
+                <I18nText id="This citation key redirects to the merged reference. Existing citations still work." />
               </p>
             )}
             <dl className="reference-facts">
@@ -408,7 +422,7 @@ export default function ReferenceInspector({
                 rel="noopener noreferrer"
               >
                 <ExternalLink size={14} />
-                Visit source
+                <I18nText id="Visit source" />
               </a>
             )}
             <Button
@@ -420,9 +434,11 @@ export default function ReferenceInspector({
               }
             >
               <Network size={14} />
-              Explore connections
+              <I18nText id="Explore connections" />
             </Button>
-            <h3>Linked PDFs</h3>
+            <h3>
+              <I18nText id="Linked PDFs" />
+            </h3>
             <div className="research-connections">
               {r.attachments.map((p) => (
                 <div key={p.id}>
@@ -434,14 +450,16 @@ export default function ReferenceInspector({
                     <FileText size={15} />
                     <span>
                       {p.name}
-                      <small>Version {p.ordinal}</small>
+                      <small>
+                        <I18nText id="Version" /> {p.ordinal}
+                      </small>
                     </span>
                   </button>
                   {canEdit && !r.deleted_at && (
                     <IconButton
                       className="icon-button"
                       aria-label={`Unlink ${p.name}`}
-                      title="Unlink PDF"
+                      title={uiText("Unlink PDF")}
                       onClick={() =>
                         void action.run(() => link("attachment", p.id, true))
                       }
@@ -454,7 +472,7 @@ export default function ReferenceInspector({
             </div>
             {!r.attachments.length && (
               <p className="muted">
-                Link an existing PDF, including standalone files.
+                <I18nText id="Link an existing PDF, including standalone files." />
               </p>
             )}
             {canEdit && !r.deleted_at && (
@@ -463,10 +481,12 @@ export default function ReferenceInspector({
                 onClick={() => setPicker("file")}
               >
                 <Plus size={14} />
-                Link PDF
+                <I18nText id="Link PDF" />
               </Button>
             )}
-            <h3>Notes & citation usage</h3>
+            <h3>
+              <I18nText id="Notes & citation usage" />
+            </h3>
             <div className="research-connections">
               {r.notes.map((n) => (
                 <div key={n.id}>
@@ -475,7 +495,9 @@ export default function ReferenceInspector({
                     <span>
                       {n.title}
                       <small>
-                        {n.cited ? "Cited in Markdown" : "Linked note"}
+                        {n.cited
+                          ? uiText("Cited in Markdown")
+                          : uiText("Linked note")}
                       </small>
                     </span>
                   </button>
@@ -483,7 +505,7 @@ export default function ReferenceInspector({
                     <IconButton
                       className="icon-button"
                       aria-label={`Unlink ${n.title}`}
-                      title="Remove association (citations remain)"
+                      title={uiText("Remove association (citations remain)")}
                       onClick={() =>
                         void action.run(() => link("note", n.id, true))
                       }
@@ -495,7 +517,9 @@ export default function ReferenceInspector({
               ))}
             </div>
             {!r.notes.length && (
-              <p className="muted">No linked or citing notes yet.</p>
+              <p className="muted">
+                <I18nText id="No linked or citing notes yet." />
+              </p>
             )}
             {canEdit && !r.deleted_at && (
               <Button
@@ -503,12 +527,14 @@ export default function ReferenceInspector({
                 onClick={() => setPicker("note")}
               >
                 <Plus size={14} />
-                Link note
+                <I18nText id="Link note" />
               </Button>
             )}
             {r.import_source && Object.keys(r.import_source).length > 0 && (
               <details className="reference-original">
-                <summary>Original imported record</summary>
+                <summary>
+                  <I18nText id="Original imported record" />
+                </summary>
                 <pre>{String(r.import_source.raw ?? r.bibtex)}</pre>
               </details>
             )}

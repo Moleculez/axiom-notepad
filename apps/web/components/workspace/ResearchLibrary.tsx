@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import {
   ActionRow,
   Button,
@@ -62,6 +64,7 @@ export default function ResearchLibrary({
   onRoute,
   active,
 }: ResearchPanelProps) {
+  useInterfaceLocale();
   const { session, revision, refresh, notify } = useWorkspace(),
     scope = { spaceId: space.id };
   const research = useResearch(session.user.id, space.id, active),
@@ -400,9 +403,11 @@ export default function ResearchLibrary({
         <IconButton
           className="icon-button"
           aria-label={
-            rail ? "Hide library collections" : "Show library collections"
+            rail
+              ? uiText("Hide library collections")
+              : uiText("Show library collections")
           }
-          title={rail ? "Hide collections" : "Show collections"}
+          title={rail ? uiText("Hide collections") : uiText("Show collections")}
           onClick={() => setRail(!rail)}
         >
           {rail ? <PanelLeftClose size={17} /> : <PanelLeftOpen size={17} />}
@@ -414,8 +419,8 @@ export default function ResearchLibrary({
             if (!v) onRoute({ q: "" });
           }}
           onSubmit={() => onRoute({ q: search.trim() })}
-          label="Search reference library"
-          placeholder="Title, author, DOI, citation key…"
+          label={uiText("Search reference library")}
+          placeholder={uiText("Title, author, DOI, citation key…")}
         />
         <Button
           className="button ghost research-filter-toggle"
@@ -423,7 +428,7 @@ export default function ResearchLibrary({
           aria-controls="library-filter-fields"
           onClick={() => setFiltersOpen(!filtersOpen)}
         >
-          <SlidersHorizontal size={15} /> Filters
+          <SlidersHorizontal size={15} /> <I18nText id="Filters" />
           {!!filterCount && (
             <span className="research-filter-count">{filterCount}</span>
           )}
@@ -435,19 +440,22 @@ export default function ResearchLibrary({
           onClick={() => setEditing(null)}
         >
           <Plus size={15} />
-          Add reference
+          <I18nText id="Add reference" />
         </Button>
         <IconButton
           className="icon-button"
           disabled={!canEdit}
-          aria-label="Import references"
-          title="Import BibTeX / RIS"
+          aria-label={uiText("Import references")}
+          title={uiText("Import BibTeX / RIS")}
           onClick={() => setWorkflow("import")}
         >
           <Upload size={16} />
         </IconButton>
         <details className="research-export-menu">
-          <summary className="button ghost" aria-label="Export library">
+          <summary
+            className="button ghost"
+            aria-label={uiText("Export library")}
+          >
             <Download size={16} />
           </summary>
           <div>
@@ -455,13 +463,13 @@ export default function ResearchLibrary({
               className="button ghost"
               onClick={() => void action.run(() => exportFile("bib"))}
             >
-              BibTeX
+              <I18nText id="BibTeX" />
             </Button>
             <Button
               className="button ghost"
               onClick={() => void action.run(() => exportFile("ris"))}
             >
-              RIS
+              <I18nText id="RIS" />
             </Button>
           </div>
         </details>
@@ -469,7 +477,10 @@ export default function ResearchLibrary({
       <ErrorNotice message={data.error || action.error} retry={data.reload} />
       <div className="library-layout">
         {rail && (
-          <aside className="library-rail" aria-label="Library collections">
+          <aside
+            className="library-rail"
+            aria-label={uiText("Library collections")}
+          >
             <button
               className="library-nav-item"
               aria-current={
@@ -482,7 +493,7 @@ export default function ResearchLibrary({
               }
             >
               <BookOpen size={15} />
-              All references
+              <I18nText id="All references" />
             </button>
             <button
               className="library-nav-item"
@@ -494,7 +505,7 @@ export default function ResearchLibrary({
               }
             >
               <Folder size={15} />
-              Unfiled
+              <I18nText id="Unfiled" />
             </button>
             <button
               className="library-nav-item"
@@ -506,7 +517,7 @@ export default function ResearchLibrary({
               }
             >
               <Copy size={15} />
-              Duplicates
+              <I18nText id="Duplicates" />
             </button>
             <button
               className="library-nav-item"
@@ -518,14 +529,16 @@ export default function ResearchLibrary({
               }
             >
               <Trash2 size={15} />
-              Trash
+              <I18nText id="Trash" />
             </button>
             <div className="library-rail-heading">
-              <h2>Collections</h2>
+              <h2>
+                <I18nText id="Collections" />
+              </h2>
               <IconButton
                 className="icon-button"
-                aria-label="New collection"
-                title="New collection"
+                aria-label={uiText("New collection")}
+                title={uiText("New collection")}
                 disabled={!canEdit}
                 onClick={() => void action.run(() => addCollection())}
               >
@@ -534,14 +547,18 @@ export default function ResearchLibrary({
             </div>
             {renderCollections(null)}
             {!collections.length && (
-              <p className="muted">Group papers without making copies.</p>
+              <p className="muted">
+                <I18nText id="Group papers without making copies." />
+              </p>
             )}
             <div className="library-rail-heading">
-              <h2>Saved searches</h2>
+              <h2>
+                <I18nText id="Saved searches" />
+              </h2>
               <IconButton
                 className="icon-button"
-                aria-label="Save library search"
-                title="Save current search"
+                aria-label={uiText("Save library search")}
+                title={uiText("Save current search")}
                 onClick={() => void action.run(() => saveFilter())}
               >
                 <Save size={14} />
@@ -605,11 +622,13 @@ export default function ResearchLibrary({
               );
             })}
             <div className="library-rail-heading">
-              <h2>Tags</h2>
+              <h2>
+                <I18nText id="Tags" />
+              </h2>
               {params.get("tag") && (
                 <IconButton
                   className="icon-button"
-                  aria-label="Clear tag filter"
+                  aria-label={uiText("Clear tag filter")}
                   onClick={() => onRoute({ tag: "" })}
                 >
                   <X size={13} />
@@ -631,14 +650,14 @@ export default function ResearchLibrary({
             </div>
           </aside>
         )}
-        <section className="library-results" aria-label="References">
+        <section className="library-results" aria-label={uiText("References")}>
           <header className="library-results-heading">
             <h2>{libraryTitle}</h2>
             <span>
               {data.data?.total ?? items.length}{" "}
               {(data.data?.total ?? items.length) === 1
-                ? "reference"
-                : "references"}
+                ? uiText("reference")
+                : uiText("references")}
             </span>
           </header>
           <ActionRow
@@ -649,25 +668,27 @@ export default function ResearchLibrary({
           >
             <ResearchFilterInput
               className="library-author-filter"
-              label="Filter reference author"
-              placeholder="Author"
+              label={uiText("Filter reference author")}
+              placeholder={uiText("Author")}
               value={params.get("author") ?? ""}
               onChange={(author) => onRoute({ author })}
             />
             <ResearchFilterInput
               className="library-year-filter"
-              label="Filter reference year"
+              label={uiText("Filter reference year")}
               maxLength={20}
-              placeholder="Year"
+              placeholder={uiText("Year")}
               value={params.get("year") ?? ""}
               onChange={(year) => onRoute({ year })}
             />
             <NativeSelect
-              aria-label="Filter reading status"
+              aria-label={uiText("Filter reading status")}
               value={params.get("status") ?? "all"}
               onChange={(e) => onRoute({ status: e.target.value })}
             >
-              <option value="all">All reading statuses</option>
+              <option value="all">
+                <I18nText id="All reading statuses" />
+              </option>
               {Object.entries(readingStatuses).map(([v, l]) => (
                 <option key={v} value={v}>
                   {l}
@@ -688,18 +709,20 @@ export default function ResearchLibrary({
                 })
               }
             >
-              Reset filters
+              <I18nText id="Reset filters" />
             </Button>
           </ActionRow>
           {!!chosen.length && (
             <ActionRow
               className="library-selection"
               size="standard"
-              aria-label="Selected reference actions"
+              aria-label={uiText("Selected reference actions")}
             >
-              <strong>{chosen.length} selected</strong>
+              <strong>
+                {chosen.length} <I18nText id="selected" />
+              </strong>
               <NativeSelect
-                aria-label="Set selected reading status"
+                aria-label={uiText("Set selected reading status")}
                 value=""
                 disabled={action.busy}
                 onChange={(e) =>
@@ -709,7 +732,7 @@ export default function ResearchLibrary({
                 }
               >
                 <option value="" disabled>
-                  Reading status…
+                  <I18nText id="Reading status…" />
                 </option>
                 {Object.entries(readingStatuses).map(([v, l]) => (
                   <option key={v} value={v}>
@@ -720,16 +743,16 @@ export default function ResearchLibrary({
               <IconButton
                 className="icon-button"
                 disabled={!canEdit}
-                aria-label="Organize selected references"
-                title="Tags & collections"
+                aria-label={uiText("Organize selected references")}
+                title={uiText("Tags & collections")}
                 onClick={() => setOrganize(!organize)}
               >
                 <Tag size={15} />
               </IconButton>
               <IconButton
                 className="icon-button"
-                aria-label="Copy selected citations"
-                title="Copy citations"
+                aria-label={uiText("Copy selected citations")}
+                title={uiText("Copy citations")}
                 onClick={() =>
                   void navigator.clipboard
                     .writeText(chosen.map((r) => `[@${r.cite_key}]`).join(" "))
@@ -743,8 +766,8 @@ export default function ResearchLibrary({
               </IconButton>
               <IconButton
                 className="icon-button"
-                aria-label="Copy references to library"
-                title="Copy to another library"
+                aria-label={uiText("Copy references to library")}
+                title={uiText("Copy to another library")}
                 onClick={() => setWorkflow("copy")}
               >
                 <FolderPlus size={15} />
@@ -757,8 +780,8 @@ export default function ResearchLibrary({
                   chosen.length > 20 ||
                   params.get("filter") === "trash"
                 }
-                aria-label="Merge selected references"
-                title="Review duplicate merge"
+                aria-label={uiText("Merge selected references")}
+                title={uiText("Review duplicate merge")}
                 onClick={() => setWorkflow("merge")}
               >
                 <GitMerge size={15} />
@@ -766,7 +789,7 @@ export default function ResearchLibrary({
               <details className="research-export-menu">
                 <summary
                   className="button ghost"
-                  aria-label="Export selected references"
+                  aria-label={uiText("Export selected references")}
                 >
                   <Download size={15} />
                 </summary>
@@ -787,13 +810,13 @@ export default function ResearchLibrary({
                 disabled={!canEdit}
                 aria-label={
                   params.get("filter") === "trash"
-                    ? "Restore references"
-                    : "Trash references"
+                    ? uiText("Restore references")
+                    : uiText("Trash references")
                 }
                 title={
                   params.get("filter") === "trash"
-                    ? "Restore"
-                    : "Move to library trash"
+                    ? uiText("Restore")
+                    : uiText("Move to library trash")
                 }
                 onClick={() =>
                   void action.run(async () => {
@@ -817,7 +840,7 @@ export default function ResearchLibrary({
               </IconButton>
               <IconButton
                 className="icon-button"
-                aria-label="Clear reference selection"
+                aria-label={uiText("Clear reference selection")}
                 onClick={() => setSelected(new Map())}
               >
                 <X size={15} />
@@ -827,11 +850,11 @@ export default function ResearchLibrary({
           {organize && chosen.length > 0 && (
             <div className="library-organize">
               <label>
-                Tags
+                <I18nText id="Tags" />
                 <TextInput
-                  aria-label="Bulk reference tags"
+                  aria-label={uiText("Bulk reference tags")}
                   value={tagDraft}
-                  placeholder="Comma-separated tags"
+                  placeholder={uiText("Comma-separated tags")}
                   onChange={(e) => setTagDraft(e.target.value)}
                 />
               </label>
@@ -849,7 +872,7 @@ export default function ResearchLibrary({
                   )
                 }
               >
-                Add tags
+                <I18nText id="Add tags" />
               </Button>
               <Button
                 className="button ghost"
@@ -865,10 +888,10 @@ export default function ResearchLibrary({
                   )
                 }
               >
-                Remove tags
+                <I18nText id="Remove tags" />
               </Button>
               <NativeSelect
-                aria-label="Add selected references to collection"
+                aria-label={uiText("Add selected references to collection")}
                 value=""
                 onChange={(e) =>
                   void action.run(() =>
@@ -877,7 +900,7 @@ export default function ResearchLibrary({
                 }
               >
                 <option value="" disabled>
-                  Add to collection…
+                  <I18nText id="Add to collection…" />
                 </option>
                 {collections.map((c) => (
                   <option key={c.id} value={c.id}>
@@ -897,13 +920,13 @@ export default function ResearchLibrary({
                       )
                     }
                   >
-                    Remove from collection
+                    <I18nText id="Remove from collection" />
                   </Button>
                 )}
             </div>
           )}
           {data.loading && !data.data ? (
-            <Loading label="Loading references…" />
+            <Loading label={uiText("Loading references…")} />
           ) : items.length ? (
             <div className="library-table-scroll">
               <table className="library-table">
@@ -913,7 +936,7 @@ export default function ResearchLibrary({
                       <Checkbox
                         ref={selectAll}
 
-                        aria-label="Select this page of references"
+                        aria-label={uiText("Select this page of references")}
                         checked={
                           items.length > 0 &&
                           items.every((r) => selected.has(r.id))
@@ -957,8 +980,12 @@ export default function ResearchLibrary({
                         </button>
                       </th>
                     ))}
-                    <th>My status</th>
-                    <th>PDFs</th>
+                    <th>
+                      <I18nText id="My status" />
+                    </th>
+                    <th>
+                      <I18nText id="PDFs" />
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1023,24 +1050,24 @@ export default function ResearchLibrary({
             <Empty
               title={
                 params.get("filter") === "trash"
-                  ? "Library trash is empty"
-                  : "No matching references"
+                  ? uiText("Library trash is empty")
+                  : uiText("No matching references")
               }
             >
-              Add a reference, import a bibliography, or clear your filters.
+              <I18nText id="Add a reference, import a bibliography, or clear your filters." />
             </Empty>
           )}
           <footer className="library-pagination">
             <span>
-              {data.data?.total ?? 0} references ·{" "}
+              {data.data?.total ?? 0} <I18nText id="references ·" />{" "}
               {space.kind !== "personal"
-                ? "Shared metadata, private reading status"
-                : "Private library"}
+                ? uiText("Shared metadata, private reading status")
+                : uiText("Private library")}
             </span>
             <span className="tool-spacer" />
             <IconButton
               className="icon-button"
-              aria-label="Previous references"
+              aria-label={uiText("Previous references")}
               disabled={currentCursor === "0" || data.loading}
               onClick={() =>
                 setCursor(String(Math.max(0, Number(currentCursor) - 50)))
@@ -1050,7 +1077,7 @@ export default function ResearchLibrary({
             </IconButton>
             <IconButton
               className="icon-button"
-              aria-label="Next references"
+              aria-label={uiText("Next references")}
               disabled={!data.data?.nextCursor || data.loading}
               onClick={() => setCursor(data.data!.nextCursor!)}
             >
@@ -1071,17 +1098,16 @@ export default function ResearchLibrary({
       </div>
       {movingCollection && (
         <Dialog
-          title="Move collection"
+          title={uiText("Move collection")}
           onClose={() => setMovingCollection(null)}
         >
           <p className="muted">
-            References keep their membership. The collection and its
-            subcollections move together.
+            <I18nText id="References keep their membership. The collection and its subcollections move together." />
           </p>
           <label>
-            Parent collection
+            <I18nText id="Parent collection" />
             <NativeSelect
-              aria-label="Parent collection"
+              aria-label={uiText("Parent collection")}
               value={movingCollection.parentId}
               onChange={(e) =>
                 setMovingCollection({
@@ -1090,7 +1116,9 @@ export default function ResearchLibrary({
                 })
               }
             >
-              <option value="">Library root</option>
+              <option value="">
+                <I18nText id="Library root" />
+              </option>
               {collections
                 .filter((c) => {
                   let current: ReferenceCollection | undefined = c;
@@ -1115,10 +1143,11 @@ export default function ResearchLibrary({
           <ErrorNotice message={action.error} />
           <DialogFooter>
             <Button
+              data-dialog-cancel
               className="button secondary"
               onClick={() => setMovingCollection(null)}
             >
-              Cancel
+              <I18nText id="Cancel" />
             </Button>
             <Button
               className="button primary"
@@ -1140,7 +1169,7 @@ export default function ResearchLibrary({
                 })
               }
             >
-              Move collection
+              <I18nText id="Move collection" />
             </Button>
           </DialogFooter>
         </Dialog>

@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { useEffect, useState } from "react";
 import {
   ArrowUpRight,
@@ -29,6 +31,7 @@ const icons = {
   extension: Puzzle,
 };
 export default function RecoveryActivity({ onClose }: { onClose: () => void }) {
+  useInterfaceLocale();
   const { revision, navigate, open } = useWorkspace();
   const result = useData<{ items: RecoveryActivityItem[] }>(
     "recovery-activity",
@@ -70,7 +73,7 @@ export default function RecoveryActivity({ onClose }: { onClose: () => void }) {
           aria-pressed={!attention}
           onClick={() => setAttention(false)}
         >
-          Recent
+          <I18nText id="Recent" />
         </Button>
         <Button
           variant="ghost"
@@ -78,9 +81,12 @@ export default function RecoveryActivity({ onClose }: { onClose: () => void }) {
           aria-pressed={attention}
           onClick={() => setAttention(true)}
         >
-          Needs attention
+          <I18nText id="Needs attention" />
         </Button>
-        <IconButton label="Refresh activity" onClick={result.revalidate}>
+        <IconButton
+          label={uiText("Refresh activity")}
+          onClick={result.revalidate}
+        >
           <RefreshCw size={15} />
         </IconButton>
       </div>
@@ -89,12 +95,11 @@ export default function RecoveryActivity({ onClose }: { onClose: () => void }) {
         retry={result.error ? result.reload : undefined}
       />
       <HelpText>
-        Existing job controllers own retries, cancellation and recovery. No work
-        is restarted automatically here.
+        <I18nText id="Existing job controllers own retries, cancellation and recovery. No work is restarted automatically here." />
       </HelpText>
       <ul
         className="recovery-activity-list"
-        aria-label="Recent background work"
+        aria-label={uiText("Recent background work")}
       >
         {items.map((i) => {
           const Icon = icons[i.kind];
@@ -116,6 +121,7 @@ export default function RecoveryActivity({ onClose }: { onClose: () => void }) {
               {(i.kind === "extension" && activityIsRunning(i.status)) ||
               (i.kind === "extension" && i.status === "draft") ? (
                 <Button
+                  data-dialog-cancel
                   size="compact"
                   variant="ghost"
                   pending={busy === i.id}
@@ -134,7 +140,7 @@ export default function RecoveryActivity({ onClose }: { onClose: () => void }) {
                     }
                   }}
                 >
-                  Cancel
+                  <I18nText id="Cancel" />
                 </Button>
               ) : null}
             </li>
@@ -143,7 +149,7 @@ export default function RecoveryActivity({ onClose }: { onClose: () => void }) {
         {!items.length && (
           <li className="muted">
             {result.loading
-              ? "Loading activity…"
+              ? uiText("Loading activity…")
               : attention
                 ? "Nothing needs attention."
                 : "No background work yet."}

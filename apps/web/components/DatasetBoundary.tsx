@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { Button } from "./ui/controls";
 import BrandMark from "./BrandMark";
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -13,6 +15,7 @@ import {
 import DevelopmentSetup from "./DevelopmentSetup";
 
 export default function DatasetBoundary({ children }: { children: ReactNode }) {
+  useInterfaceLocale();
   const [state, setState] = useState<
       "checking" | "ready" | "setup" | "reset" | "error"
     >("checking"),
@@ -104,7 +107,7 @@ export default function DatasetBoundary({ children }: { children: ReactNode }) {
       <BrandMark />
       <p role={state === "error" ? "alert" : "status"}>
         {state === "reset"
-          ? "Clearing replaced development data and signing out…"
+          ? uiText("Clearing replaced development data and signing out…")
           : state === "error"
             ? error
             : "Checking your workspace…"}
@@ -117,7 +120,7 @@ export default function DatasetBoundary({ children }: { children: ReactNode }) {
             setAttempt((n) => n + 1);
           }}
         >
-          Retry
+          <I18nText id="Retry" />
         </Button>
       )}
     </main>

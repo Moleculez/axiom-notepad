@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { Button, Checkbox, TextInput, SearchField } from "../ui/controls";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Download, ImagePlus } from "lucide-react";
@@ -25,6 +27,7 @@ export function Information({
   asset: VisualAsset;
   media: VisualMedia | null;
 }) {
+  useInterfaceLocale();
   const [fields, setFields] = useState<MetadataField[]>([]),
     [error, setError] = useState(""),
     [pending, setPending] = useState(false),
@@ -58,51 +61,74 @@ export function Information({
   return (
     <section>
       <h3>
-        {asset.kind === "mermaid" ? "Diagram information" : "Image information"}
+        {asset.kind === "mermaid"
+          ? uiText("Diagram information")
+          : uiText("Image information")}
       </h3>
       <dl className="visual-properties">
-        <dt>Name</dt>
+        <dt>
+          <I18nText id="Name" />
+        </dt>
         <dd>{asset.name}</dd>
-        <dt>Dimensions</dt>
-        <dd>{media ? `${media.width} × ${media.height}` : "Loading…"}</dd>
-        <dt>Format</dt>
+        <dt>
+          <I18nText id="Dimensions" />
+        </dt>
+        <dd>
+          {media ? `${media.width} × ${media.height}` : uiText("Loading…")}
+        </dd>
+        <dt>
+          <I18nText id="Format" />
+        </dt>
         <dd>{media?.blob?.type || asset.mime || "Remote image"}</dd>
-        <dt>Size</dt>
-        <dd>{media?.blob ? bytes(media.blob.size) : "Unavailable"}</dd>
-        <dt>Source identity</dt>
+        <dt>
+          <I18nText id="Size" />
+        </dt>
+        <dd>{media?.blob ? bytes(media.blob.size) : uiText("Unavailable")}</dd>
+        <dt>
+          <I18nText id="Source identity" />
+        </dt>
         <dd>
           {media?.identity.verified
-            ? "Verified snapshot"
-            : "Unverified remote content"}
+            ? uiText("Verified snapshot")
+            : uiText("Unverified remote content")}
         </dd>
         {asset.placement?.versionId && (
           <>
-            <dt>File version</dt>
+            <dt>
+              <I18nText id="File version" />
+            </dt>
             <dd>{asset.placement.versionId}</dd>
           </>
         )}
         {asset.kind === "mermaid" && (
           <>
-            <dt>Diagram type</dt>
+            <dt>
+              <I18nText id="Diagram type" />
+            </dt>
             <dd>
               {asset.source
                 ?.trim()
                 .replace(/^---[\s\S]*?---\s*/, "")
                 .split(/[\s;]/)[0] || "Mermaid"}
             </dd>
-            <dt>Source length</dt>
-            <dd>{asset.source?.length ?? 0} characters</dd>
+            <dt>
+              <I18nText id="Source length" />
+            </dt>
+            <dd>
+              {asset.source?.length ?? 0} <I18nText id="characters" />
+            </dd>
           </>
         )}
       </dl>
       {asset.kind === "mermaid" ? (
         <>
           <p className="visual-caption">
-            Vector rendering with strict diagram security. EXIF does not apply
-            to diagrams.
+            <I18nText id="Vector rendering with strict diagram security. EXIF does not apply to diagrams." />
           </p>
           <details>
-            <summary>Mermaid source</summary>
+            <summary>
+              <I18nText id="Mermaid source" />
+            </summary>
             <pre className="visual-source">{asset.source}</pre>
           </details>
         </>
@@ -110,8 +136,8 @@ export function Information({
         <>
           <SearchField
             wrapperClassName="visual-search"
-            aria-label="Search image metadata"
-            placeholder="Search metadata…"
+            aria-label={uiText("Search image metadata")}
+            placeholder={uiText("Search metadata…")}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
@@ -120,14 +146,17 @@ export function Information({
               checked={sensitive}
               onChange={(e) => setSensitive(e.target.checked)}
             />
-            Reveal location / identifying fields
+            <I18nText id="Reveal location / identifying fields" />
           </label>
-          {pending && <p role="status">Reading metadata privately…</p>}
+          {pending && (
+            <p role="status">
+              <I18nText id="Reading metadata privately…" />
+            </p>
+          )}
           {error && <p className="visual-caption">{error}</p>}
           {!pending && !fields.length && (
             <p className="visual-caption">
-              No readable metadata in this preview. Screenshots, optimized
-              images, and remote images often have none.
+              <I18nText id="No readable metadata in this preview. Screenshots, optimized images, and remote images often have none." />
             </p>
           )}
           <dl className="visual-properties">
@@ -161,7 +190,9 @@ export function Information({
               }
             >
               <Download size={15} />
-              Export {sensitive ? "all" : "non-identifying"} metadata
+              <I18nText id="Export" />{" "}
+              {sensitive ? uiText("all") : uiText("non-identifying")}{" "}
+              <I18nText id="metadata" />
             </Button>
           )}
         </>
@@ -170,6 +201,7 @@ export function Information({
   );
 }
 export function Histogram({ media }: { media: VisualMedia }) {
+  useInterfaceLocale();
   const ref = useRef<HTMLCanvasElement>(null),
     [error, setError] = useState("");
   useEffect(() => {
@@ -204,7 +236,9 @@ export function Histogram({ media }: { media: VisualMedia }) {
   }, [media]);
   return (
     <div className="visual-histogram">
-      <h4>Sampled RGB histogram</h4>
+      <h4>
+        <I18nText id="Sampled RGB histogram" />
+      </h4>
       {error && <p className="visual-caption">{error}</p>}
       <canvas
         hidden={!!error}
@@ -212,7 +246,9 @@ export function Histogram({ media }: { media: VisualMedia }) {
         width={256}
         height={96}
         role="img"
-        aria-label="Sampled red, green and blue intensity distributions"
+        aria-label={uiText(
+          "Sampled red, green and blue intensity distributions",
+        )}
       />
     </div>
   );
@@ -238,7 +274,9 @@ export function Replies({
     [error, setError] = useState("");
   return (
     <div className="visual-replies">
-      <h4>Discussion</h4>
+      <h4>
+        <I18nText id="Discussion" />
+      </h4>
       {rows.map((r) => (
         <article key={r.id}>
           <strong>{r.authorName}</strong>
@@ -248,7 +286,7 @@ export function Replies({
               className="text-button danger"
               onClick={() => void onRemove(r)}
             >
-              Remove reply
+              <I18nText id="Remove reply" />
             </button>
           )}
         </article>
@@ -277,7 +315,7 @@ export function Replies({
             .finally(() => setSending(false));
         }}
       >
-        Post reply
+        <I18nText id="Post reply" />
       </Button>
     </div>
   );
@@ -311,6 +349,7 @@ export function ComparePicker({
   onSelect: (v: VisualAsset) => void;
   onClose: () => void;
 }) {
+  useInterfaceLocale();
   const [query, setQuery] = useState(""),
     [files, setFiles] = useState<Resource[]>([]),
     [error, setError] = useState("");
@@ -338,12 +377,14 @@ export function ComparePicker({
   return (
     <section
       className="visual-compare-picker"
-      aria-label="Choose comparison visual"
+      aria-label={uiText("Choose comparison visual")}
     >
       <header>
-        <strong>Compare with</strong>
-        <button className="text-button" onClick={onClose}>
-          Cancel
+        <strong>
+          <I18nText id="Compare with" />
+        </strong>
+        <button data-dialog-cancel className="text-button" onClick={onClose}>
+          <I18nText id="Cancel" />
         </button>
       </header>
       <div className="visual-compare-items">
@@ -360,9 +401,9 @@ export function ComparePicker({
           ))}
       </div>
       <label>
-        Find a workspace image
+        <I18nText id="Find a workspace image" />
         <TextInput
-          aria-label="Find comparison image"
+          aria-label={uiText("Find comparison image")}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />

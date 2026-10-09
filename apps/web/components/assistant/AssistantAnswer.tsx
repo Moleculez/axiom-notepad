@@ -1,4 +1,7 @@
 "use client";
+import { currentLocale } from "@axiom/i18n/client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { Button, HelpText, Notice } from "../ui/controls";
 import { useMemo, useState } from "react";
 import {
@@ -66,6 +69,7 @@ export default function AssistantAnswer({
   conversationId?: string;
   turnId?: string;
 }) {
+  useInterfaceLocale();
   const { navigate } = useWorkspace(),
     [selected, setSelected] = useState<AssistantEvidence | null>(null);
   const [freshness, setFreshness] = useState("snapshot-only"),
@@ -105,7 +109,10 @@ export default function AssistantAnswer({
         dangerouslySetInnerHTML={{ __html: html }}
       />
       {keys.length > 0 && (
-        <div className="assistant-citations" aria-label="Answer sources">
+        <div
+          className="assistant-citations"
+          aria-label={uiText("Answer sources")}
+        >
           {keys.map((key, index) => {
             const e = evidence.find((e) => e.key === key);
             return e ? (
@@ -114,14 +121,14 @@ export default function AssistantAnswer({
                 type="button"
                 disabled={loading}
                 onClick={() => void inspect(e)}
-                title={`Captured ${new Date(e.capturedAt).toLocaleString()}`}
+                title={`Captured ${new Date(e.capturedAt).toLocaleString(currentLocale())}`}
               >
                 {index + 1} · {e.title}
                 {e.page ? ` · p. ${e.page}` : ""}
               </Button>
             ) : (
               <span key={key} className="muted">
-                {index + 1} · Unverified citation
+                {index + 1} <I18nText id="· Unverified citation" />
               </span>
             );
           })}
@@ -130,16 +137,15 @@ export default function AssistantAnswer({
       {selected && (
         <Dialog
           title={selected.title}
-          subtitle={`Captured ${new Date(selected.capturedAt).toLocaleString()} · ${selected.kind === "pdf" ? "Browser-extracted text, not a verified quotation" : "Submitted evidence"}`}
+          subtitle={`Captured ${new Date(selected.capturedAt).toLocaleString(currentLocale())} · ${selected.kind === "pdf" ? "Browser-extracted text, not a verified quotation" : "Submitted evidence"}`}
           onClose={() => setSelected(null)}
         >
           <HelpText>
-            This is the exact excerpt sent. The current file or task may have
-            changed. Citation membership does not verify the answer.
+            <I18nText id="This is the exact excerpt sent. The current file or task may have changed. Citation membership does not verify the answer." />
           </HelpText>
           <HelpText>
             {freshness === "changed"
-              ? "Current source differs from this captured version."
+              ? uiText("Current source differs from this captured version.")
               : freshness === "current"
                 ? "Source matches this snapshot at inspection time."
                 : "Captured snapshot; freshness has not been established."}{" "}
@@ -151,7 +157,7 @@ export default function AssistantAnswer({
               ? `Generation ${selected.generation}. `
               : ""}
             {selected.versionId ? `File version ${selected.versionId}. ` : ""}
-            Source hash {selected.hash.slice(0, 12)}.
+            <I18nText id="Source hash" /> {selected.hash.slice(0, 12)}.
           </HelpText>
           <pre className="assistant-excerpt">{selected.source}</pre>
           <div className="dialog-footer">
@@ -193,7 +199,7 @@ export default function AssistantAnswer({
                   );
               }}
             >
-              Open current source
+              <I18nText id="Open current source" />
             </Button>
           </div>
         </Dialog>

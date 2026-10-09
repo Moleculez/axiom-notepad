@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { useEffect, useRef, useState } from "react";
 import * as Y from "yjs";
 import { NativeBinding } from "@axiom/editor/binding";
@@ -15,6 +17,7 @@ export default function AnnotationEditor({
   onChange: (value: string) => void;
   onError: (message: string) => void;
 }) {
+  useInterfaceLocale();
   const { appearance, editorSettings } = useWorkspace();
   const mount = useRef<HTMLDivElement>(null),
     view = useRef<EditorView | null>(null);
@@ -93,11 +96,13 @@ export default function AnnotationEditor({
   return (
     <div className="annotation-editor">
       <div className="annotation-editor-toolbar">
-        <span>Markdown · math · code</span>
+        <span>
+          <I18nText id="Markdown · math · code" />
+        </span>
         <div
           className="scratchpad-modes"
           role="group"
-          aria-label="Annotation editor mode"
+          aria-label={uiText("Annotation editor mode")}
         >
           {(["write", "source"] as const).map((v) => (
             <button
@@ -106,7 +111,7 @@ export default function AnnotationEditor({
               aria-pressed={mode === v}
               onClick={() => setMode(v)}
             >
-              {v === "write" ? "Write" : "Source"}
+              {v === "write" ? uiText("Write") : uiText("Source")}
             </button>
           ))}
         </div>

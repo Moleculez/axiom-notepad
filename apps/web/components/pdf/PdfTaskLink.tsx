@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { Button, HelpText, TextInput, NativeSelect } from "../ui/controls";
 import { useState } from "react";
 import type { Annotation } from "@axiom/shared/research";
@@ -14,6 +16,7 @@ export default function PdfTaskLink({
   spaceId: string;
   onClose: () => void;
 }) {
+  useInterfaceLocale();
   const [query, setQuery] = useState(""),
     [selected, setSelected] = useState(""),
     [title, setTitle] = useState(""),
@@ -28,41 +31,41 @@ export default function PdfTaskLink({
   const [mutationId] = useState(() => crypto.randomUUID());
   return (
     <Dialog
-      title="Link annotation to a task"
+      title={uiText("Link annotation to a task")}
       subtitle={`Page ${annotation.data.page} · ${annotation.shared ? "Shared annotation" : "Private annotation"}`}
       onClose={onClose}
     >
       <HelpText>
-        The link opens this exact PDF version and annotation. Private
-        annotations remain private. No quotation or annotation text is copied to
-        the task.
+        <I18nText id="The link opens this exact PDF version and annotation. Private annotations remain private. No quotation or annotation text is copied to the task." />
       </HelpText>
       <ErrorNotice message={error || data.error} retry={data.reload} />
       {result ? (
         <p role="status">
-          Linked successfully.{" "}
+          <I18nText id="Linked successfully." />{" "}
           <a
             href={`/workbench/workspaces/${result.spaceId}/planning?task=${result.taskId}`}
           >
-            Open task
+            <I18nText id="Open task" />
           </a>
         </p>
       ) : (
         <>
           <label>
-            Find a task in this workspace
+            <I18nText id="Find a task in this workspace" />
             <TextInput
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
           </label>
           <label>
-            Task
+            <I18nText id="Task" />
             <NativeSelect
               value={selected}
               onChange={(e) => setSelected(e.target.value)}
             >
-              <option value="">Create a new task</option>
+              <option value="">
+                <I18nText id="Create a new task" />
+              </option>
               {data.data?.items.map((t) => (
                 <option key={t.id} value={t.id}>
                   {t.title}
@@ -72,19 +75,25 @@ export default function PdfTaskLink({
           </label>
           {!selected && (
             <label>
-              New task title
+              <I18nText id="New task title" />
               <TextInput
                 maxLength={300}
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Describe the follow-up"
+                placeholder={uiText("Describe the follow-up")}
               />
-              <small>The title will be visible to workspace members.</small>
+              <small>
+                <I18nText id="The title will be visible to workspace members." />
+              </small>
             </label>
           )}
           <DialogFooter>
-            <Button className="button secondary" onClick={onClose}>
-              Cancel
+            <Button
+              data-dialog-cancel
+              className="button secondary"
+              onClick={onClose}
+            >
+              <I18nText id="Cancel" />
             </Button>
             <Button
               className="button primary"
@@ -122,7 +131,7 @@ export default function PdfTaskLink({
               }
             >
               {busy
-                ? "Linking…"
+                ? uiText("Linking…")
                 : selected
                   ? "Link to task"
                   : "Create and link"}

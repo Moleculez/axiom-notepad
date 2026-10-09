@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { useState } from "react";
 import { Button, HelpText, ActionRow } from "../ui/controls";
 import type { ReferenceProvenance } from "@axiom/shared/research-library";
@@ -14,6 +16,7 @@ export default function ReferenceHistory({
   spaceId: string;
   canEdit: boolean;
 }) {
+  useInterfaceLocale();
   const [cursors, setCursors] = useState<string[]>([""]),
     [source, setSource] = useState<ReferenceProvenance | null>(null),
     [handoff, setHandoff] = useState<ReferenceProvenance | null>(null);
@@ -25,11 +28,12 @@ export default function ReferenceHistory({
     }>(base + (cursor ? `?cursor=${cursor}` : "")),
     action = useAction();
   return (
-    <section className="reference-history" aria-label="Reference provenance">
+    <section
+      className="reference-history"
+      aria-label={uiText("Reference provenance")}
+    >
       <HelpText>
-        History starts at the upgrade baseline for existing records. Imports and
-        explicit changes retain their source and field decisions; no earlier
-        history is invented.
+        <I18nText id="History starts at the upgrade baseline for existing records. Imports and explicit changes retain their source and field decisions; no earlier history is invented." />
       </HelpText>
       <ErrorNotice message={data.error || action.error} retry={data.reload} />
       {data.data?.items.map((event) => (
@@ -37,7 +41,7 @@ export default function ReferenceHistory({
           <header>
             <strong>
               {event.kind === "baseline"
-                ? "Existing at upgrade"
+                ? uiText("Existing at upgrade")
                 : event.kind[0].toUpperCase() + event.kind.slice(1)}
             </strong>
             <span>
@@ -78,7 +82,7 @@ export default function ReferenceHistory({
           )}
           {event.kind === "merge" && !!event.details.extraFields && (
             <HelpText>
-              Additional field decisions:{" "}
+              <I18nText id="Additional field decisions:" />{" "}
               {Object.entries(
                 event.details.extraFields as Record<string, string>,
               )
@@ -97,11 +101,11 @@ export default function ReferenceHistory({
                 )
               }
             >
-              View source
+              <I18nText id="View source" />
             </Button>
             {canEdit && (
               <Button variant="ghost" onClick={() => setHandoff(event)}>
-                Follow-up task
+                <I18nText id="Follow-up task" />
               </Button>
             )}
           </ActionRow>
@@ -109,12 +113,15 @@ export default function ReferenceHistory({
       ))}
       {source && (
         <details className="reference-original" open>
-          <summary>Selected source · v{source.version}</summary>
+          <summary>
+            <I18nText id="Selected source · v" />
+            {source.version}
+          </summary>
           <pre>
             {String(source.after_data.bibtex ?? "No original BibTeX record")}
           </pre>
           <Button variant="ghost" onClick={() => setSource(null)}>
-            Close source
+            <I18nText id="Close source" />
           </Button>
         </details>
       )}
@@ -124,14 +131,14 @@ export default function ReferenceHistory({
           disabled={cursors.length === 1}
           onClick={() => setCursors((old) => old.slice(0, -1))}
         >
-          Newer
+          <I18nText id="Newer" />
         </Button>
         <Button
           variant="secondary"
           disabled={!data.data?.nextCursor}
           onClick={() => setCursors((old) => [...old, data.data!.nextCursor!])}
         >
-          Older
+          <I18nText id="Older" />
         </Button>
       </ActionRow>
       {handoff && (

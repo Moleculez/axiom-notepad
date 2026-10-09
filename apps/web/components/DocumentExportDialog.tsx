@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import {
   Button,
   Checkbox,
@@ -43,6 +45,7 @@ export default function DocumentExportDialog({
   dark: boolean;
   onClose: () => void;
 }) {
+  useInterfaceLocale();
   const [snapshot, setSnapshot] = useState(current);
   const [format, setFormat] = useState<Format>("html");
   const [filename, setFilename] = useState(current.title);
@@ -244,8 +247,10 @@ export default function DocumentExportDialog({
     );
   return (
     <Dialog
-      title="Export document"
-      subtitle="A private snapshot of the document currently on screen. Your note is not changed."
+      title={uiText("Export document")}
+      subtitle={uiText(
+        "A private snapshot of the document currently on screen. Your note is not changed.",
+      )}
       size="visual"
       className="document-export-dialog"
       onClose={onClose}
@@ -253,9 +258,9 @@ export default function DocumentExportDialog({
       <div className="document-export-layout">
         <div className="document-export-settings">
           <label>
-            Format
+            <I18nText id="Format" />
             <NativeSelect
-              aria-label="Format"
+              aria-label={uiText("Format")}
               value={format}
               onChange={(e) => {
                 const next = e.target.value as Format;
@@ -263,28 +268,40 @@ export default function DocumentExportDialog({
                 change("colors", next === "pdf" ? "paper" : "document");
               }}
             >
-              <option value="html">Standalone HTML</option>
-              <option value="pdf">Print / Save as PDF</option>
-              <option value="md">Markdown source</option>
-              <option value="zip">Markdown + assets (ZIP)</option>
-              <option value="latex">LaTeX research project (ZIP)</option>
+              <option value="html">
+                <I18nText id="Standalone HTML" />
+              </option>
+              <option value="pdf">
+                <I18nText id="Print / Save as PDF" />
+              </option>
+              <option value="md">
+                <I18nText id="Markdown source" />
+              </option>
+              <option value="zip">
+                <I18nText id="Markdown + assets (ZIP)" />
+              </option>
+              <option value="latex">
+                <I18nText id="LaTeX research project (ZIP)" />
+              </option>
             </NativeSelect>
           </label>
           <label>
-            File name
+            <I18nText id="File name" />
             <TextInput
-              aria-label="File name"
+              aria-label={uiText("File name")}
               maxLength={150}
               value={filename}
               onChange={(e) => setFilename(e.target.value)}
             />
           </label>
           <fieldset disabled={format === "md" || format === "zip"}>
-            <legend>Presentation</legend>
+            <legend>
+              <I18nText id="Presentation" />
+            </legend>
             <label>
-              Style
+              <I18nText id="Style" />
               <NativeSelect
-                aria-label="Style"
+                aria-label={uiText("Style")}
                 value={options.style}
                 onChange={(e) =>
                   change(
@@ -293,23 +310,33 @@ export default function DocumentExportDialog({
                   )
                 }
               >
-                <option value="document">Match document</option>
-                <option value="academic">Academic</option>
-                <option value="minimal">Minimal</option>
+                <option value="document">
+                  <I18nText id="Match document" />
+                </option>
+                <option value="academic">
+                  <I18nText id="Academic" />
+                </option>
+                <option value="minimal">
+                  <I18nText id="Minimal" />
+                </option>
               </NativeSelect>
             </label>
             <label>
-              Colors
+              <I18nText id="Colors" />
               <NativeSelect
-                aria-label="Colors"
+                aria-label={uiText("Colors")}
                 value={options.colors}
                 disabled={format === "pdf"}
                 onChange={(e) =>
                   change("colors", e.target.value as "paper" | "document")
                 }
               >
-                <option value="document">Document colors</option>
-                <option value="paper">Light paper</option>
+                <option value="document">
+                  <I18nText id="Document colors" />
+                </option>
+                <option value="paper">
+                  <I18nText id="Light paper" />
+                </option>
               </NativeSelect>
             </label>
             <label className="document-export-check">
@@ -317,19 +344,20 @@ export default function DocumentExportDialog({
                 checked={options.title}
                 onChange={(e) => change("title", e.target.checked)}
               />
-              Include document title
+              <I18nText id="Include document title" />
             </label>
             <label className="document-export-check">
               <Checkbox
                 checked={options.toc}
                 onChange={(e) => change("toc", e.target.checked)}
               />
-              Add table of contents
+              <I18nText id="Add table of contents" />
             </label>
             <label>
-              Text scale <output>{Math.round(options.scale * 100)}%</output>
+              <I18nText id="Text scale" />{" "}
+              <output>{Math.round(options.scale * 100)}%</output>
               <Slider
-                aria-label="Text scale"
+                aria-label={uiText("Text scale")}
                 aria-valuetext={`${Math.round(options.scale * 100)}%`}
 
                 min="0.7"
@@ -342,25 +370,29 @@ export default function DocumentExportDialog({
           </fieldset>
           {format === "pdf" && (
             <fieldset>
-              <legend>Page setup</legend>
+              <legend>
+                <I18nText id="Page setup" />
+              </legend>
               <div className="document-export-fields">
                 <label>
-                  Paper
+                  <I18nText id="Paper" />
                   <NativeSelect
-                    aria-label="Paper"
+                    aria-label={uiText("Paper")}
                     value={options.paper}
                     onChange={(e) =>
                       change("paper", e.target.value as "A4" | "Letter")
                     }
                   >
                     <option>A4</option>
-                    <option>Letter</option>
+                    <option>
+                      <I18nText id="Letter" />
+                    </option>
                   </NativeSelect>
                 </label>
                 <label>
-                  Orientation
+                  <I18nText id="Orientation" />
                   <NativeSelect
-                    aria-label="Orientation"
+                    aria-label={uiText("Orientation")}
                     value={options.orientation}
                     onChange={(e) =>
                       change(
@@ -369,15 +401,19 @@ export default function DocumentExportDialog({
                       )
                     }
                   >
-                    <option value="portrait">Portrait</option>
-                    <option value="landscape">Landscape</option>
+                    <option value="portrait">
+                      <I18nText id="Portrait" />
+                    </option>
+                    <option value="landscape">
+                      <I18nText id="Landscape" />
+                    </option>
                   </NativeSelect>
                 </label>
               </div>
               <label>
-                Margins (mm)
+                <I18nText id="Margins (mm)" />
                 <TextInput
-                  aria-label="Margins (mm)"
+                  aria-label={uiText("Margins (mm)")}
                   type="number"
                   min={8}
                   max={40}
@@ -391,49 +427,45 @@ export default function DocumentExportDialog({
                 />
               </label>
               <p className="muted">
-                Choose “Save as PDF” in your browser. Disable browser headers
-                and footers. The preview shows document styling; final page
-                breaks appear in the print dialog.
+                <I18nText id="Choose “Save as PDF” in your browser. Disable browser headers and footers. The preview shows document styling; final page breaks appear in the print dialog." />
               </p>
             </fieldset>
           )}
           {format === "zip" && (
             <p className="muted">
-              Includes this Markdown snapshot, its accessible attached file
-              versions and bibliography. Linked notes are not recursively
-              exported. A workspace worker prepares the archive.
+              <I18nText id="Includes this Markdown snapshot, its accessible attached file versions and bibliography. Linked notes are not recursively exported. A workspace worker prepares the archive." />
             </p>
           )}
           <p className="muted">
-            Comments, private annotations, bookmarks and account details are
-            excluded. System fonts use bundled equivalents; unsupported scripts
-            may use your device fonts.
+            <I18nText id="Comments, private annotations, bookmarks and account details are excluded. System fonts use bundled equivalents; unsupported scripts may use your device fonts." />
           </p>
         </div>
         <section
           className="document-export-preview"
-          aria-label="Export preview"
+          aria-label={uiText("Export preview")}
         >
           <div className="document-export-preview-toolbar">
             <span>
-              {ready ? "Preview ready" : progress || "Preview unavailable"}
+              {ready
+                ? uiText("Preview ready")
+                : progress || "Preview unavailable"}
             </span>
             <Button className="button secondary" onClick={refresh}>
               <RefreshCw size={14} />
-              Refresh snapshot
+              <I18nText id="Refresh snapshot" />
             </Button>
           </div>
           {changed && (
             <p className="document-export-notice" role="status">
-              The document has changed. Refresh to include newer edits.
+              <I18nText id="The document has changed. Refresh to include newer edits." />
             </p>
           )}
-          {progress && <progress aria-label="Preparing export" />}
+          {progress && <progress aria-label={uiText("Preparing export")} />}
           {prepared && (
             <iframe
               key={prepared.key}
               ref={frame}
-              title="Document export preview"
+              title={uiText("Document export preview")}
               sandbox="allow-same-origin allow-modals"
               srcDoc={preview}
               onLoad={() => {
@@ -477,7 +509,7 @@ export default function DocumentExportDialog({
               className="button secondary"
               onClick={() => setAttempt((value) => value + 1)}
             >
-              Retry preview
+              <I18nText id="Retry preview" />
             </Button>
           )}
         </div>
@@ -485,11 +517,11 @@ export default function DocumentExportDialog({
       <DialogFooter>
         <span className="muted">
           {zip && !zip.ready
-            ? "Preparing archive in the background…"
-            : "Only accessible content is exported."}
+            ? uiText("Preparing archive in the background…")
+            : uiText("Only accessible content is exported.")}
         </span>
         <Button className="button secondary" onClick={onClose}>
-          Close
+          <I18nText id="Close" />
         </Button>
         {zip?.ready && format === "zip" ? (
           <a
@@ -498,7 +530,7 @@ export default function DocumentExportDialog({
             download={exportFilename(filename, "zip")}
           >
             <Download size={16} />
-            Download ZIP
+            <I18nText id="Download ZIP" />
           </a>
         ) : (
           <Button
@@ -512,7 +544,7 @@ export default function DocumentExportDialog({
           >
             {format === "pdf" ? <Printer size={16} /> : <Download size={16} />}
             {format === "pdf"
-              ? "Print / Save PDF"
+              ? uiText("Print / Save PDF")
               : format === "zip"
                 ? "Prepare ZIP"
                 : "Download"}

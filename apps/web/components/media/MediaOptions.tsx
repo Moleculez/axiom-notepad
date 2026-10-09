@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { Slider, NativeSelect, TextInput, TextArea } from "../ui/controls";
 import type { MediaInsertionOptions } from "../../lib/media-insertion";
 export default function MediaOptions({
@@ -10,15 +12,16 @@ export default function MediaOptions({
   onChange: (value: MediaInsertionOptions) => void;
   mime: string;
 }) {
+  useInterfaceLocale();
   const image = mime.startsWith("image/"),
     update = (patch: Partial<MediaInsertionOptions>) =>
       onChange({ ...value, ...patch });
   return (
     <div className="media-options">
       <label>
-        Insert as
+        <I18nText id="Insert as" />
         <NativeSelect
-          aria-label="Insert as"
+          aria-label={uiText("Insert as")}
           value={value.display}
           onChange={(e) =>
             update({
@@ -26,45 +29,57 @@ export default function MediaOptions({
             })
           }
         >
-          <option value="link">Text link</option>
-          <option value="card">File card</option>
-          <option value="preview">Inline preview</option>
+          <option value="link">
+            <I18nText id="Text link" />
+          </option>
+          <option value="card">
+            <I18nText id="File card" />
+          </option>
+          <option value="preview">
+            <I18nText id="Inline preview" />
+          </option>
           {image && (
             <>
-              <option value="image">Image</option>
-              <option value="figure">Numbered figure</option>
+              <option value="image">
+                <I18nText id="Image" />
+              </option>
+              <option value="figure">
+                <I18nText id="Numbered figure" />
+              </option>
             </>
           )}
         </NativeSelect>
       </label>
       <label>
-        {image ? "Alternative text" : "Link label"}
+        {image ? uiText("Alternative text") : uiText("Link label")}
         <TextInput
           value={value.alt}
           placeholder={
-            image ? "Describe the image for readers…" : "Use the filename"
+            image
+              ? uiText("Describe the image for readers…")
+              : uiText("Use the filename")
           }
           onChange={(e) => update({ alt: e.target.value })}
         />
       </label>
       {value.display !== "link" && (
         <label>
-          Caption
+          <I18nText id="Caption" />
           <TextArea
-            aria-label="Caption"
+            aria-label={uiText("Caption")}
             rows={2}
             value={value.caption}
-            placeholder="Optional · Markdown and math supported"
+            placeholder={uiText("Optional · Markdown and math supported")}
             onChange={(e) => update({ caption: e.target.value })}
           />
         </label>
       )}
       {value.display === "figure" && (
         <label>
-          Figure label
+          <I18nText id="Figure label" />
           <TextInput
             value={value.label}
-            placeholder="fig-experiment"
+            placeholder={uiText("fig-experiment")}
             pattern="(?:fig-)?[A-Za-z0-9_-]{1,80}"
             onChange={(e) => update({ label: e.target.value })}
           />
@@ -73,9 +88,9 @@ export default function MediaOptions({
       {image && value.display !== "link" && (
         <div className="media-options-pair">
           <label>
-            Width <span>{value.width}%</span>
+            <I18nText id="Width" /> <span>{value.width}%</span>
             <Slider
-              aria-label="Image width"
+              aria-label={uiText("Image width")}
               aria-valuetext={`${value.width}% of the page`}
 
               min={10}
@@ -86,7 +101,7 @@ export default function MediaOptions({
             />
           </label>
           <label>
-            Alignment
+            <I18nText id="Alignment" />
             <NativeSelect
               value={value.align}
               onChange={(e) =>
@@ -95,16 +110,22 @@ export default function MediaOptions({
                 })
               }
             >
-              <option value="left">Left</option>
-              <option value="center">Center</option>
-              <option value="right">Right</option>
+              <option value="left">
+                <I18nText id="Left" />
+              </option>
+              <option value="center">
+                <I18nText id="Center" />
+              </option>
+              <option value="right">
+                <I18nText id="Right" />
+              </option>
             </NativeSelect>
           </label>
         </div>
       )}
       {mime === "application/pdf" && (
         <label>
-          Start at page
+          <I18nText id="Start at page" />
           <TextInput
             type="number"
             min={1}
@@ -123,7 +144,7 @@ export default function MediaOptions({
       )}
       {/^(audio|video)\//.test(mime) && (
         <label>
-          Start at time (seconds)
+          <I18nText id="Start at time (seconds)" />
           <TextInput
             type="number"
             min={0}

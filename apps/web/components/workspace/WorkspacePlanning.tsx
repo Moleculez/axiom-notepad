@@ -1,4 +1,7 @@
 "use client";
+import { currentLocale } from "@axiom/i18n/client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import {
   ActionRow,
   Button,
@@ -44,7 +47,7 @@ import {
   X,
 } from "lucide-react";
 import type { Space } from "@axiom/shared/workspace";
-import {fieldSummaryText,type TaskField} from "@axiom/shared/planning-lab";
+import { fieldSummaryText, type TaskField } from "@axiom/shared/planning-lab";
 import {
   dayNumber,
   dateFromDay,
@@ -86,7 +89,7 @@ import {
   WorkspaceLink,
 } from "./ui";
 const PlanningMarkdown = dynamic(() => import("./PlanningMarkdown"), {
-  loading: () => <Loading label="Opening Markdown editor…" />,
+  loading: () => <Loading label={uiText("Opening Markdown editor…")} />,
 });
 const statusNames: Record<string, string> = {
   todo: "To do",
@@ -109,7 +112,7 @@ type Person = {
   weekly_capacity?: number;
 };
 type PlanData = {
-  fields?:TaskField[];
+  fields?: TaskField[];
   items: PlanningTask[];
   total: number;
   completed: number;
@@ -143,10 +146,13 @@ export function useOnline() {
 }
 
 export default function WorkspacePlanning({ space }: { space: Space }) {
+  useInterfaceLocale();
   const { revision, refresh, notify } = useWorkspace(),
     { params, path } = useLocation(),
     tabs = useWorkSessions();
-  const section = ["goals", "intake", "time"].includes(params.get("section") ?? "")
+  const section = ["goals", "intake", "time"].includes(
+    params.get("section") ?? "",
+  )
     ? params.get("section")!
     : "tasks";
   const online = useOnline(),
@@ -167,7 +173,10 @@ export default function WorkspacePlanning({ space }: { space: Space }) {
     "risk",
     "sort",
     "deleted",
-    "fieldFilters", "sortField", "sortDirection", "includeFields",
+    "fieldFilters",
+    "sortField",
+    "sortDirection",
+    "includeFields",
   ])
     if (params.get(name)) filter.set(name, params.get(name)!);
   const data = useData<PlanData>(
@@ -294,7 +303,10 @@ export default function WorkspacePlanning({ space }: { space: Space }) {
     });
   return (
     <div className="workspace-planning">
-      <nav className="planning-section-tabs" aria-label="Planning sections">
+      <nav
+        className="planning-section-tabs"
+        aria-label={uiText("Planning sections")}
+      >
         {["tasks", "goals", "intake", "time"].map((key) => (
           <button
             key={key}
@@ -314,7 +326,11 @@ export default function WorkspacePlanning({ space }: { space: Space }) {
           readOnly={readOnly}
         />
       ) : section === "time" ? (
-        <PlanningTime space={space} people={people.data ?? []} readOnly={readOnly}/>
+        <PlanningTime
+          space={space}
+          people={people.data ?? []}
+          readOnly={readOnly}
+        />
       ) : section === "intake" ? (
         <PlanningIntake
           space={space}
@@ -329,8 +345,10 @@ export default function WorkspacePlanning({ space }: { space: Space }) {
               disabled={!tasks.length || tasks.length > 100}
               title={
                 tasks.length > 100
-                  ? "Filter to at most 100 tasks to select exact planning evidence"
-                  : "Review selected planning evidence before sending"
+                  ? uiText(
+                      "Filter to at most 100 tasks to select exact planning evidence",
+                    )
+                  : uiText("Review selected planning evidence before sending")
               }
               onClick={() =>
                 openAssistant({
@@ -346,17 +364,17 @@ export default function WorkspacePlanning({ space }: { space: Space }) {
                 })
               }
             >
-              Ask about this plan
+              <I18nText id="Ask about this plan" />
             </Button>
             <Button
               className="button ghost"
               aria-pressed={insights}
               onClick={() => setInsights(!insights)}
             >
-              Insights & baselines
+              <I18nText id="Insights & baselines" />
             </Button>
             <NativeSelect
-              aria-label="Task view"
+              aria-label={uiText("Task view")}
               value={view}
               onChange={(e) => change({ view: e.target.value })}
             >
@@ -378,20 +396,20 @@ export default function WorkspacePlanning({ space }: { space: Space }) {
               onClick={() => setManage("milestones")}
             >
               <Flag size={15} />
-              Milestones
+              <I18nText id="Milestones" />
             </Button>
             <IconButton
               className="icon-button"
-              title="Recurring tasks"
-              aria-label="Recurring tasks"
+              title={uiText("Recurring tasks")}
+              aria-label={uiText("Recurring tasks")}
               onClick={() => setManage("recurrences")}
             >
               <Repeat2 size={17} />
             </IconButton>
             <IconButton
               className="icon-button"
-              title="Export filtered tasks"
-              aria-label="Export filtered tasks"
+              title={uiText("Export filtered tasks")}
+              aria-label={uiText("Export filtered tasks")}
               disabled={!tasks.length}
               onClick={() => setExporting(true)}
             >
@@ -403,24 +421,31 @@ export default function WorkspacePlanning({ space }: { space: Space }) {
               onClick={() => change({ task: "new" })}
             >
               <Plus size={16} />
-              New task
+              <I18nText id="New task" />
             </Button>
           </ActionRow>
           <ActionRow className="planning-filters" size="standard">
-            <PlanningPropertyView spaceId={space.id} params={params} change={change} people={people.data??[]}/>
+            <PlanningPropertyView
+              spaceId={space.id}
+              params={params}
+              change={change}
+              people={people.data ?? []}
+            />
             <SearchField
               wrapperClassName="planning-search"
-              aria-label="Find tasks"
-              placeholder="Find tasks or labels…"
+              aria-label={uiText("Find tasks")}
+              placeholder={uiText("Find tasks or labels…")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
             <NativeSelect
-              aria-label="Filter task status"
+              aria-label={uiText("Filter task status")}
               value={params.get("status") ?? ""}
               onChange={(e) => change({ status: e.target.value || null })}
             >
-              <option value="">All statuses</option>
+              <option value="">
+                <I18nText id="All statuses" />
+              </option>
               {Object.entries(statusNames).map(([key, label]) => (
                 <option key={key} value={key}>
                   {label}
@@ -428,17 +453,19 @@ export default function WorkspacePlanning({ space }: { space: Space }) {
               ))}
             </NativeSelect>
             <PersonPicker
-              label="Filter assignee"
+              label={uiText("Filter assignee")}
               people={people.data ?? []}
               value={params.get("assignee") ?? ""}
               onChange={(v) => change({ assignee: v || null })}
             />
             <NativeSelect
-              aria-label="Filter priority"
+              aria-label={uiText("Filter priority")}
               value={params.get("priority") ?? ""}
               onChange={(e) => change({ priority: e.target.value || null })}
             >
-              <option value="">All priorities</option>
+              <option value="">
+                <I18nText id="All priorities" />
+              </option>
               {["low", "normal", "high", "urgent"].map((p) => (
                 <option key={p}>{p}</option>
               ))}
@@ -446,33 +473,41 @@ export default function WorkspacePlanning({ space }: { space: Space }) {
             <PlanningEntityPicker
               spaceId={space.id}
               kind="milestone"
-              label="Filter milestone"
+              label={uiText("Filter milestone")}
               value={params.get("milestone") ?? ""}
               onChange={(v) => change({ milestone: String(v) || null })}
             />
             <NativeSelect
-              aria-label="Filter planning risk"
+              aria-label={uiText("Filter planning risk")}
               value={params.get("risk") ?? ""}
               onChange={(e) => change({ risk: e.target.value || null })}
             >
-              <option value="">All risks</option>
-              <option value="overdue">Overdue</option>
-              <option value="blocked">Blocked</option>
-              <option value="upcoming">Upcoming · 7 days</option>
+              <option value="">
+                <I18nText id="All risks" />
+              </option>
+              <option value="overdue">
+                <I18nText id="Overdue" />
+              </option>
+              <option value="blocked">
+                <I18nText id="Blocked" />
+              </option>
+              <option value="upcoming">
+                <I18nText id="Upcoming · 7 days" />
+              </option>
             </NativeSelect>
             <IconButton
               className={`icon-button ${deleted ? "active" : ""}`}
               aria-pressed={deleted}
-              title="Deleted tasks"
-              aria-label="Deleted tasks"
+              title={uiText("Deleted tasks")}
+              aria-label={uiText("Deleted tasks")}
               onClick={() => change({ deleted: deleted ? null : "1" })}
             >
               <Trash2 size={16} />
             </IconButton>
             <span className="planning-count" role="status">
               {data.data
-                ? `${data.data.total.toLocaleString()} tasks · ${data.data.completed} done`
-                : "Loading…"}
+                ? `${data.data.total.toLocaleString(currentLocale())} tasks · ${data.data.completed} done`
+                : uiText("Loading…")}
             </span>
           </ActionRow>
           <PlanningBulkActions
@@ -485,13 +520,12 @@ export default function WorkspacePlanning({ space }: { space: Space }) {
           />
           {!online && (
             <p className="planning-notice">
-              Offline · You can keep a local task draft. Planning changes
-              require a connection.
+              <I18nText id="Offline · You can keep a local task draft. Planning changes require a connection." />
             </p>
           )}
           {undo && (
             <div className="planning-notice">
-              Schedule updated.
+              <I18nText id="Schedule updated." />
               <button
                 className="text-button"
                 disabled={action.busy || readOnly}
@@ -507,11 +541,11 @@ export default function WorkspacePlanning({ space }: { space: Space }) {
                 }
               >
                 <RotateCcw size={14} />
-                Undo
+                <I18nText id="Undo" />
               </button>
               <IconButton
                 className="icon-button"
-                aria-label="Dismiss schedule receipt"
+                aria-label={uiText("Dismiss schedule receipt")}
                 onClick={() => setUndo(null)}
               >
                 <X size={14} />
@@ -524,9 +558,9 @@ export default function WorkspacePlanning({ space }: { space: Space }) {
           />
           {data.data?.nextOffset != null && (
             <p className="planning-notice">
-              Showing the first {tasks.length.toLocaleString()} matching tasks.
-              Refine filters to see the rest. Scheduling still validates the
-              entire workspace dependency graph.
+              <I18nText id="Showing the first" />{" "}
+              {tasks.length.toLocaleString(currentLocale())}{" "}
+              <I18nText id="matching tasks. Refine filters to see the rest. Scheduling still validates the entire workspace dependency graph." />
             </p>
           )}
           {insights && data.data && (
@@ -545,12 +579,18 @@ export default function WorkspacePlanning({ space }: { space: Space }) {
                 {!tasks.length && view !== "gantt" && view !== "workload" ? (
                   <Empty
                     title={
-                      deleted ? "No deleted tasks" : "A clear plan starts here"
+                      deleted
+                        ? uiText("No deleted tasks")
+                        : uiText("A clear plan starts here")
                     }
                   >
                     {deleted
-                      ? "Deleted tasks can be restored from their details."
-                      : "Add a task, link research evidence, and plan your next milestone."}
+                      ? uiText(
+                          "Deleted tasks can be restored from their details.",
+                        )
+                      : uiText(
+                          "Add a task, link research evidence, and plan your next milestone.",
+                        )}
                   </Empty>
                 ) : view === "gantt" ? (
                   <PlanningGantt
@@ -569,8 +609,8 @@ export default function WorkspacePlanning({ space }: { space: Space }) {
                     columns={
                       params.get("columns")?.split(",").filter(Boolean) ?? []
                     }
-                    customFields={data.data.fields??[]}
-                    people={people.data??[]}
+                    customFields={data.data.fields ?? []}
+                    people={people.data ?? []}
                     showDependencies={params.get("dependencies") !== "0"}
                     showBaseline={params.get("baseline") !== "0"}
                     showCritical={params.get("critical") !== "0"}
@@ -617,8 +657,8 @@ export default function WorkspacePlanning({ space }: { space: Space }) {
                 ) : (
                   <TaskList
                     tasks={tasks}
-                    fields={data.data.fields??[]}
-                    people={people.data??[]}
+                    fields={data.data.fields ?? []}
+                    people={people.data ?? []}
                     onOpen={(id) => change({ task: id })}
                     onStatus={updateStatus}
                     readOnly={readOnly || deleted}
@@ -659,25 +699,37 @@ export default function WorkspacePlanning({ space }: { space: Space }) {
       )}
       {preview && (
         <Dialog
-          title="Preview schedule changes"
-          subtitle="Nothing changes until you apply. Working calendars affect proposals, never existing dates automatically."
+          title={uiText("Preview schedule changes")}
+          subtitle={uiText(
+            "Nothing changes until you apply. Working calendars affect proposals, never existing dates automatically.",
+          )}
           onClose={() => !action.busy && setPreview(null)}
         >
           <div className="schedule-preview-summary">
-            <strong>{preview.direct.length} directly edited</strong>
+            <strong>
+              {preview.direct.length} <I18nText id="directly edited" />
+            </strong>
             <span>
-              {preview.proposed.length - preview.direct.length} dependent tasks
-              proposed
+              {preview.proposed.length - preview.direct.length}{" "}
+              <I18nText id="dependent tasks proposed" />
             </span>
-            <span>{preview.conflicts.length} dependency conflicts</span>
+            <span>
+              {preview.conflicts.length} <I18nText id="dependency conflicts" />
+            </span>
           </div>
           <div className="schedule-preview-table">
             <table>
               <thead>
                 <tr>
-                  <th>Task</th>
-                  <th>Current dates</th>
-                  <th>Proposed dates</th>
+                  <th>
+                    <I18nText id="Task" />
+                  </th>
+                  <th>
+                    <I18nText id="Current dates" />
+                  </th>
+                  <th>
+                    <I18nText id="Proposed dates" />
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -716,19 +768,18 @@ export default function WorkspacePlanning({ space }: { space: Space }) {
           )}
           {!!preview.conflicts.length && (
             <HelpText>
-              Direct-only preserves dependent dates, including any conflicts.
-              Proposed changes only push unfinished successors; completed work
-              is never moved.
+              <I18nText id="Direct-only preserves dependent dates, including any conflicts. Proposed changes only push unfinished successors; completed work is never moved." />
             </HelpText>
           )}
           <ErrorNotice message={action.error} />
           <div className="dialog-footer">
             <Button
+              data-dialog-cancel
               className="button secondary"
               disabled={action.busy}
               onClick={() => setPreview(null)}
             >
-              Cancel
+              <I18nText id="Cancel" />
             </Button>
             {!!preview.conflicts.length && (
               <Button
@@ -736,7 +787,7 @@ export default function WorkspacePlanning({ space }: { space: Space }) {
                 disabled={action.busy || readOnly}
                 onClick={() => apply("direct")}
               >
-                Apply direct edits only
+                <I18nText id="Apply direct edits only" />
               </Button>
             )}
             <Button
@@ -745,15 +796,16 @@ export default function WorkspacePlanning({ space }: { space: Space }) {
               onClick={() => apply("proposed")}
             >
               <Check size={16} />
-              Apply {preview.proposed.length} changes
+              <I18nText id="Apply" /> {preview.proposed.length}{" "}
+              <I18nText id="changes" />
             </Button>
           </div>
         </Dialog>
       )}
       {exporting && (
         <Dialog
-          title="Export planning view"
-          subtitle={`Export ${tasks.length.toLocaleString()} loaded, filtered tasks. Task descriptions and private drafts are not included.`}
+          title={uiText("Export planning view")}
+          subtitle={`Export ${tasks.length.toLocaleString(currentLocale())} loaded, filtered tasks. Task descriptions and private drafts are not included.`}
           onClose={() => setExporting(false)}
         >
           <div className="planning-export-actions">
@@ -763,7 +815,8 @@ export default function WorkspacePlanning({ space }: { space: Space }) {
                 download(
                   `${space.name}-tasks.csv`,
                   planningCsv(tasks, {
-                    fields: data.data?.fields, people:people.data??[],
+                    fields: data.data?.fields,
+                    people: people.data ?? [],
                     milestones,
                     baseline,
                     criticalIds: analysis?.tasks
@@ -775,7 +828,7 @@ export default function WorkspacePlanning({ space }: { space: Space }) {
               }
             >
               <Download size={16} />
-              Download CSV
+              <I18nText id="Download CSV" />
             </Button>
             <Button
               className="button secondary"
@@ -794,7 +847,7 @@ export default function WorkspacePlanning({ space }: { space: Space }) {
               }
             >
               <ChartGantt size={16} />
-              Download SVG timeline
+              <I18nText id="Download SVG timeline" />
             </Button>
             <Button
               className="button secondary"
@@ -861,7 +914,7 @@ export default function WorkspacePlanning({ space }: { space: Space }) {
                 target.print();
               }}
             >
-              Print / Save PDF
+              <I18nText id="Print / Save PDF" />
             </Button>
           </div>
           <div className="dialog-footer">
@@ -869,7 +922,7 @@ export default function WorkspacePlanning({ space }: { space: Space }) {
               className="button secondary"
               onClick={() => setExporting(false)}
             >
-              Done
+              <I18nText id="Done" />
             </Button>
           </div>
         </Dialog>
@@ -896,7 +949,8 @@ export default function WorkspacePlanning({ space }: { space: Space }) {
 
 function TaskList({
   tasks,
-  fields=[],people=[],
+  fields = [],
+  people = [],
   onOpen,
   onStatus,
   readOnly,
@@ -905,7 +959,8 @@ function TaskList({
   onSelectAll,
 }: {
   tasks: PlanningTask[];
-  fields?:TaskField[];people?:Person[];
+  fields?: TaskField[];
+  people?: Person[];
   onOpen: (id: string) => void;
   onStatus: (task: PlanningTask, status: string) => void;
   readOnly: boolean;
@@ -913,6 +968,7 @@ function TaskList({
   onSelect: (task: PlanningTask, range?: boolean) => void;
   onSelectAll: () => void;
 }) {
+  useInterfaceLocale();
   const [top, setTop] = useState(0),
     [height, setHeight] = useState(600),
     scroll = useRef<HTMLDivElement>(null),
@@ -926,18 +982,25 @@ function TaskList({
     observer.observe(node);
     return () => observer.disconnect();
   }, []);
-  const width=fields.length?`${54+fields.length*12}em`:undefined,template=fields.length?`42px minmax(15em,1fr) 9em 10em 12em repeat(${fields.length},12em)`:undefined;
+  const width = fields.length ? `${54 + fields.length * 12}em` : undefined,
+    template = fields.length
+      ? `42px minmax(15em,1fr) 9em 10em 12em repeat(${fields.length},12em)`
+      : undefined;
   return (
     <div
       className="planning-list"
       role="table"
-      aria-label="Tasks"
+      aria-label={uiText("Tasks")}
       aria-rowcount={tasks.length + 1}
     >
-      <div className="planning-list-head" role="row" style={{minWidth:width,gridTemplateColumns:template}}>
+      <div
+        className="planning-list-head"
+        role="row"
+        style={{ minWidth: width, gridTemplateColumns: template }}
+      >
         <span role="columnheader">
           <Checkbox
-            aria-label="Select all visible tasks"
+            aria-label={uiText("Select all visible tasks")}
             checked={!!tasks.length && tasks.every((t) => selection.has(t.id))}
             indeterminate={
               selection.size > 0 && !tasks.every((t) => selection.has(t.id))
@@ -945,18 +1008,44 @@ function TaskList({
             onChange={onSelectAll}
           />
         </span>
-        <span role="columnheader">Task</span>
-        <span role="columnheader">Status</span>
-        <span role="columnheader">Assignee</span>
-        <span role="columnheader">Dates</span>
-        {fields.map(f=><span role="columnheader" key={f.id}>{f.name}</span>)}
+        <span role="columnheader">
+          <I18nText id="Task" />
+        </span>
+        <span role="columnheader">
+          <I18nText id="Status" />
+        </span>
+        <span role="columnheader">
+          <I18nText id="Assignee" />
+        </span>
+        <span role="columnheader">
+          <I18nText id="Dates" />
+        </span>
+        {fields.map((f) => (
+          <span role="columnheader" key={f.id}>
+            {f.name}
+          </span>
+        ))}
       </div>
       <div
         className="planning-list-scroll"
         ref={scroll}
-        onScroll={(e) => {setTop(e.currentTarget.scrollTop);const head=e.currentTarget.parentElement?.querySelector<HTMLElement>(".planning-list-head");if(head)head.style.transform=`translateX(${-e.currentTarget.scrollLeft}px)`;}}
+        onScroll={(e) => {
+          setTop(e.currentTarget.scrollTop);
+          const head =
+            e.currentTarget.parentElement?.querySelector<HTMLElement>(
+              ".planning-list-head",
+            );
+          if (head)
+            head.style.transform = `translateX(${-e.currentTarget.scrollLeft}px)`;
+        }}
       >
-        <div style={{ height: tasks.length * row, position: "relative",minWidth:width }}>
+        <div
+          style={{
+            height: tasks.length * row,
+            position: "relative",
+            minWidth: width,
+          }}
+        >
           {visible.map((task, i) => (
             <div
               className="planning-task-row"
@@ -964,7 +1053,11 @@ function TaskList({
               role="row"
               aria-rowindex={start + i + 2}
               aria-selected={selection.has(task.id)}
-              style={{ top: (start + i) * row, height: row,gridTemplateColumns:template }}
+              style={{
+                top: (start + i) * row,
+                height: row,
+                gridTemplateColumns: template,
+              }}
             >
               <span role="cell">
                 <Checkbox
@@ -983,7 +1076,12 @@ function TaskList({
                   <span>
                     {task.parent_id && <small>↳ </small>}
                     {task.title}
-                    {task.blocked && <small> · Blocked</small>}
+                    {task.blocked && (
+                      <small>
+                        {" "}
+                        <I18nText id="· Blocked" />
+                      </small>
+                    )}
                   </span>
                 </button>
                 <small>{task.labels.join(" · ")}</small>
@@ -1006,7 +1104,16 @@ function TaskList({
               <button role="cell" onClick={() => onOpen(task.id)}>
                 {task.start_on ?? "—"} → {task.due_on ?? "—"}
               </button>
-              {fields.map(f=><span role="cell" className="planning-property-cell" key={f.id} title={fieldSummaryText(f,task.field_summaries,people)}>{fieldSummaryText(f,task.field_summaries,people)}</span>)}
+              {fields.map((f) => (
+                <span
+                  role="cell"
+                  className="planning-property-cell"
+                  key={f.id}
+                  title={fieldSummaryText(f, task.field_summaries, people)}
+                >
+                  {fieldSummaryText(f, task.field_summaries, people)}
+                </span>
+              ))}
             </div>
           ))}
         </div>
@@ -1073,7 +1180,11 @@ function TaskBoard({
                   <small>{task.assignee_name ?? "Unassigned"}</small>
                   <small>{task.due_on ?? "No date"}</small>
                 </footer>
-                {task.blocked && <small>Waiting for dependencies</small>}
+                {task.blocked && (
+                  <small>
+                    <I18nText id="Waiting for dependencies" />
+                  </small>
+                )}
               </button>
             ))}
             {group.length > limit && (
@@ -1081,7 +1192,8 @@ function TaskBoard({
                 className="text-button"
                 onClick={() => setMore({ ...more, [status]: limit + 60 })}
               >
-                Show more ({group.length - limit})
+                <I18nText id="Show more (" />
+                {group.length - limit})
               </button>
             )}
           </section>
@@ -1099,6 +1211,7 @@ function TaskCalendar({
   calendar: PlanningCalendar;
   onOpen: (id: string) => void;
 }) {
+  useInterfaceLocale();
   const [month, setMonth] = useState(
     new Intl.DateTimeFormat("sv-SE", {
       timeZone: calendar.timezone,
@@ -1112,9 +1225,9 @@ function TaskCalendar({
     <section className="planning-calendar">
       <header>
         <label>
-          Due dates{" "}
+          <I18nText id="Due dates" />{" "}
           <TextInput
-            aria-label="Calendar month"
+            aria-label={uiText("Calendar month")}
             type="month"
             value={month}
             onChange={(e) => {
@@ -1124,7 +1237,8 @@ function TaskCalendar({
           />
         </label>
         <small>
-          Dates are shown in the workspace calendar · {calendar.timezone}
+          <I18nText id="Dates are shown in the workspace calendar ·" />{" "}
+          {calendar.timezone}
         </small>
       </header>
       <div className="planning-calendar-grid">
@@ -1149,7 +1263,9 @@ function TaskCalendar({
               ))}
               {items.length > 8 && (
                 <details>
-                  <summary>{items.length - 8} more</summary>
+                  <summary>
+                    {items.length - 8} <I18nText id="more" />
+                  </summary>
                   {items.slice(8).map((t) => (
                     <button key={t.id} onClick={() => onOpen(t.id)}>
                       {t.title}
@@ -1173,10 +1289,11 @@ function TaskWorkload({
 }) {
   return (
     <section className="planning-workload">
-      <h3>Open work in this view</h3>
+      <h3>
+        <I18nText id="Open work in this view" />
+      </h3>
       <HelpText>
-        Estimates show total remaining task effort, not weekly utilization.
-        Unestimated work is reported separately.
+        <I18nText id="Estimates show total remaining task effort, not weekly utilization. Unestimated work is reported separately." />
       </HelpText>
       {[{ id: "", name: "Unassigned" }, ...people].map((person) => {
         const assigned = tasks.filter(
@@ -1191,11 +1308,15 @@ function TaskWorkload({
         return (
           <div className="planning-workload-row" key={person.id}>
             <strong>{person.name}</strong>
-            <span>{assigned.length} tasks</span>
-            <span>{hours} h estimated</span>
+            <span>
+              {assigned.length} <I18nText id="tasks" />
+            </span>
+            <span>
+              {hours} <I18nText id="h estimated" />
+            </span>
             <span>
               {assigned.filter((t) => t.estimate_hours == null).length}{" "}
-              unestimated
+              <I18nText id="unestimated" />
             </span>
           </div>
         );
@@ -1237,6 +1358,7 @@ function TaskInspector(props: {
   onClose: () => void;
   onSchedule: (changes: ScheduleChange[]) => void;
 }) {
+  useInterfaceLocale();
   const { revision } = useWorkspace(),
     detail = useData<PlanningTask>(
       props.id !== "new" ? `spaces/${props.space.id}/tasks/${props.id}` : null,
@@ -1245,12 +1367,14 @@ function TaskInspector(props: {
   return (
     <aside
       className="planning-inspector"
-      aria-label={props.id === "new" ? "New task" : "Task details"}
+      aria-label={
+        props.id === "new" ? uiText("New task") : uiText("Task details")
+      }
     >
       <div
         className="planning-inspector-resize"
         role="separator"
-        aria-label="Resize task inspector"
+        aria-label={uiText("Resize task inspector")}
         aria-orientation="vertical"
         tabIndex={0}
         onKeyDown={(e) => {
@@ -1289,10 +1413,12 @@ function TaskInspector(props: {
       ) : (
         <>
           <header>
-            <h2>Task details</h2>
+            <h2>
+              <I18nText id="Task details" />
+            </h2>
             <IconButton
               className="icon-button"
-              aria-label="Close task details"
+              aria-label={uiText("Close task details")}
               onClick={props.onClose}
             >
               <X size={18} />
@@ -1325,13 +1451,14 @@ function TaskForm({
   onClose: () => void;
   onSchedule: (changes: ScheduleChange[]) => void;
 }) {
+  useInterfaceLocale();
   const { session, refresh, notify } = useWorkspace(),
     action = useAction(),
     key = `axiom:task-draft:${session.user.id}:${space.id}:${id}`,
     baseline = useRef(taskDraft(task));
   const [recovered, setRecovered] = useState(false),
     [storageError, setStorageError] = useState(""),
-    [panel, setPanel] = useState<"properties"|"time">("properties"),
+    [panel, setPanel] = useState<"properties" | "time">("properties"),
     [fieldsValid, setFieldsValid] = useState(true);
   const [draft, setDraft] = useState<Draft>(() => {
     try {
@@ -1441,7 +1568,7 @@ function TaskForm({
       <header>
         <div>
           <small>{space.name}</small>
-          <h2>{task ? "Task details" : "New task"}</h2>
+          <h2>{task ? uiText("Task details") : uiText("New task")}</h2>
         </div>
         {task && (
           <Button
@@ -1453,19 +1580,40 @@ function TaskForm({
               })
             }
           >
-            Ask assistant
+            <I18nText id="Ask assistant" />
           </Button>
         )}
         <IconButton
           className="icon-button"
-          aria-label="Close task details"
+          aria-label={uiText("Close task details")}
           onClick={onClose}
         >
           <X size={18} />
         </IconButton>
       </header>
-      {task&&<nav className="planning-section-tabs" aria-label="Task panels"><button aria-pressed={panel==="properties"} onClick={()=>setPanel("properties")}>Properties</button><button aria-pressed={panel==="time"} onClick={()=>setPanel("time")}>Time</button></nav>}
-      <div className="planning-inspector-body" style={{display:panel==="time"?"none":undefined}}>
+      {task && (
+        <nav
+          className="planning-section-tabs"
+          aria-label={uiText("Task panels")}
+        >
+          <button
+            aria-pressed={panel === "properties"}
+            onClick={() => setPanel("properties")}
+          >
+            <I18nText id="Properties" />
+          </button>
+          <button
+            aria-pressed={panel === "time"}
+            onClick={() => setPanel("time")}
+          >
+            <I18nText id="Time" />
+          </button>
+        </nav>
+      )}
+      <div
+        className="planning-inspector-body"
+        style={{ display: panel === "time" ? "none" : undefined }}
+      >
         {(recovered || storageError) && (
           <p className="planning-notice">
             {storageError ||
@@ -1474,26 +1622,24 @@ function TaskForm({
         )}
         {task && draft.version !== task.version && (
           <p className="planning-notice">
-            This task changed since this draft began. Copy your work, close the
-            inspector, then reopen to compare. Saving will not overwrite a newer
-            version.
+            <I18nText id="This task changed since this draft began. Copy your work, close the inspector, then reopen to compare. Saving will not overwrite a newer version." />
           </p>
         )}
         <ErrorNotice message={action.error} />
         <fieldset disabled={readOnly || removed || action.busy}>
           <label>
-            Title
+            <I18nText id="Title" />
             <TextInput
               autoFocus
               maxLength={300}
               value={draft.title}
               onChange={(e) => set({ title: e.target.value })}
-              placeholder="What needs to happen?"
+              placeholder={uiText("What needs to happen?")}
             />
           </label>
           <div className="planning-field-grid">
             <label>
-              Status
+              <I18nText id="Status" />
               <NativeSelect
                 value={draft.status}
                 onChange={(e) =>
@@ -1508,7 +1654,7 @@ function TaskForm({
               </NativeSelect>
             </label>
             <label>
-              Priority
+              <I18nText id="Priority" />
               <NativeSelect
                 value={draft.priority}
                 onChange={(e) =>
@@ -1521,16 +1667,16 @@ function TaskForm({
               </NativeSelect>
             </label>
             <label>
-              Assignee
+              <I18nText id="Assignee" />
               <PersonPicker
-                label="Task assignee"
+                label={uiText("Task assignee")}
                 people={people}
                 value={draft.assigneeId ?? ""}
                 onChange={(value) => set({ assigneeId: value || null })}
               />
             </label>
             <label>
-              Progress (%)
+              <I18nText id="Progress (%)" />
               <TextInput
                 type="number"
                 min={0}
@@ -1557,13 +1703,12 @@ function TaskForm({
               />
               {hasChildren && (
                 <HelpText>
-                  Derived from non-cancelled descendant leaves. Parent dates
-                  remain independent.
+                  <I18nText id="Derived from non-cancelled descendant leaves. Parent dates remain independent." />
                 </HelpText>
               )}
             </label>
             <label>
-              Effort (hours)
+              <I18nText id="Effort (hours)" />
               <TextInput
                 type="number"
                 min="0"
@@ -1579,7 +1724,19 @@ function TaskForm({
               />
             </label>
           </div>
-          <TaskCustomFields spaceId={space.id} values={task?.custom_fields??{}} patch={draft.customFields??{}} people={people} onValidity={setFieldsValid} onChange={(customFields,version)=>set({customFields,fieldsVersion:draft.fieldsVersion??version})}/>
+          <TaskCustomFields
+            spaceId={space.id}
+            values={task?.custom_fields ?? {}}
+            patch={draft.customFields ?? {}}
+            people={people}
+            onValidity={setFieldsValid}
+            onChange={(customFields, version) =>
+              set({
+                customFields,
+                fieldsVersion: draft.fieldsVersion ?? version,
+              })
+            }
+          />
           <PlanningMarkdown
             key={`${id}:${baseline.current.version ?? "new"}`}
             initial={draft.body}
@@ -1587,7 +1744,7 @@ function TaskForm({
             readOnly={readOnly || removed || action.busy}
           />
           <label>
-            Labels (comma separated)
+            <I18nText id="Labels (comma separated)" />
             <TextInput
               value={labelsText}
               maxLength={818}
@@ -1603,34 +1760,36 @@ function TaskForm({
             />
           </label>
           <label>
-            Milestone
+            <I18nText id="Milestone" />
             <PlanningEntityPicker
               spaceId={space.id}
               kind="milestone"
-              label="Task milestone"
+              label={uiText("Task milestone")}
               value={draft.milestoneId ?? ""}
               onChange={(v) => set({ milestoneId: String(v) || null })}
             />
           </label>
           <details>
-            <summary>Subtasks & dependencies</summary>
+            <summary>
+              <I18nText id="Subtasks & dependencies" />
+            </summary>
             <label>
-              Parent task
+              <I18nText id="Parent task" />
               <PlanningEntityPicker
                 spaceId={space.id}
                 kind="task"
-                label="Parent task"
+                label={uiText("Parent task")}
                 exclude={[id]}
                 value={draft.parentId ?? ""}
                 onChange={(v) => set({ parentId: String(v) || null })}
               />
             </label>
             <label>
-              Finish-to-start dependencies
+              <I18nText id="Finish-to-start dependencies" />
               <PlanningEntityPicker
                 spaceId={space.id}
                 kind="task"
-                label="Predecessor tasks"
+                label={uiText("Predecessor tasks")}
                 multiple
                 exclude={[id]}
                 value={draft.dependencies}
@@ -1648,8 +1807,8 @@ function TaskForm({
             </label>
             {draft.dependencyLinks?.map((link, i) => (
               <label key={link.taskId} className="planning-lag-field">
-                {taskNames.get(link.taskId) ?? `Predecessor ${i + 1}`} · offset
-                (working days)
+                {taskNames.get(link.taskId) ?? `Predecessor ${i + 1}`}{" "}
+                <I18nText id="· offset (working days)" />
                 <PlanningIntegerInput
                   label={`Working-day offset for predecessor ${i + 1}`}
                   min={-365}
@@ -1675,19 +1834,18 @@ function TaskForm({
               </label>
             ))}
             <HelpText>
-              Zero starts on the next working day after finish; positive offsets
-              delay and negative offsets overlap. Saving a link never moves
-              dates. Cycles and cross-workspace links are rejected.
+              <I18nText id="Zero starts on the next working day after finish; positive offsets delay and negative offsets overlap. Saving a link never moves dates. Cycles and cross-workspace links are rejected." />
             </HelpText>
           </details>
           <details>
             <summary>
-              Linked research evidence ({draft.resourceIds.length})
+              <I18nText id="Linked research evidence (" />
+              {draft.resourceIds.length})
             </summary>
             <PlanningEntityPicker
               spaceId={space.id}
               kind="file"
-              label="Linked workspace files"
+              label={uiText("Linked workspace files")}
               multiple
               value={draft.resourceIds}
               onChange={(v) => set({ resourceIds: v as string[] })}
@@ -1695,7 +1853,7 @@ function TaskForm({
             <div className="planning-evidence">
               {draft.resourceIds.map((resourceId, i) => (
                 <WorkspaceLink key={resourceId} to={`/notes/${resourceId}`}>
-                  Open evidence {i + 1} ↗
+                  <I18nText id="Open evidence" /> {i + 1} ↗
                 </WorkspaceLink>
               ))}
             </div>
@@ -1705,7 +1863,7 @@ function TaskForm({
           {!task && (
             <div className="planning-field-grid">
               <label>
-                Start
+                <I18nText id="Start" />
                 <TextInput
                   type="date"
                   value={draft.startOn ?? ""}
@@ -1713,7 +1871,7 @@ function TaskForm({
                 />
               </label>
               <label>
-                Finish
+                <I18nText id="Finish" />
                 <TextInput
                   type="date"
                   min={draft.startOn ?? undefined}
@@ -1726,7 +1884,9 @@ function TaskForm({
         </fieldset>
         {task && (
           <section className="planning-task-schedule">
-            <h3>Schedule</h3>
+            <h3>
+              <I18nText id="Schedule" />
+            </h3>
             <p>
               {task.start_on ?? "No start date"} →{" "}
               {task.due_on ?? "No finish date"}
@@ -1746,10 +1906,12 @@ function TaskForm({
               }}
             >
               <ChartGantt size={15} />
-              Reschedule…
+              <I18nText id="Reschedule…" />
             </Button>
             {dirty && (
-              <small>Save task details before previewing date changes.</small>
+              <small>
+                <I18nText id="Save task details before previewing date changes." />
+              </small>
             )}
           </section>
         )}
@@ -1758,20 +1920,33 @@ function TaskForm({
         )}
         {task && (
           <small>
-            Updated {timeAgo(task.updated_at)} · revision {task.version}
+            <I18nText id="Updated" /> {timeAgo(task.updated_at)}{" "}
+            <I18nText id="· revision" /> {task.version}
           </small>
         )}
       </div>
-      {task&&panel==="time"&&<div className="planning-inspector-time"><PlanningTime space={space} people={people} readOnly={readOnly} taskDeleted={removed} taskId={id}/></div>}
-      <footer style={{display:panel==="time"?"none":undefined}}>
+      {task && panel === "time" && (
+        <div className="planning-inspector-time">
+          <PlanningTime
+            space={space}
+            people={people}
+            readOnly={readOnly}
+            taskDeleted={removed}
+            taskId={id}
+          />
+        </div>
+      )}
+      <footer style={{ display: panel === "time" ? "none" : undefined }}>
         <span className="planning-draft-state">
-          {dirty ? "Local draft · not yet shared" : "Saved"}
+          {dirty ? uiText("Local draft · not yet shared") : uiText("Saved")}
         </span>
         {task && (
           <IconButton
             className="icon-button"
-            title={removed ? "Restore task" : "Delete task"}
-            aria-label={removed ? "Restore task" : "Delete task"}
+            title={removed ? uiText("Restore task") : uiText("Delete task")}
+            aria-label={
+              removed ? uiText("Restore task") : uiText("Delete task")
+            }
             disabled={readOnly || action.busy}
             onClick={() =>
               void action.run(async () => {
@@ -1816,7 +1991,7 @@ function TaskForm({
             onClose();
           }}
         >
-          Discard draft
+          <I18nText id="Discard draft" />
         </Button>
         <Button
           className="button primary"
@@ -1831,18 +2006,18 @@ function TaskForm({
           }
           onClick={save}
         >
-          Save task
+          <I18nText id="Save task" />
         </Button>
       </footer>
       {schedule && task && (
         <Dialog
-          title="Reschedule task"
+          title={uiText("Reschedule task")}
           subtitle={task.title}
           onClose={() => setSchedule(false)}
         >
           <div className="planning-field-grid">
             <label>
-              Start date
+              <I18nText id="Start date" />
               <TextInput
                 type="date"
                 value={start}
@@ -1850,7 +2025,7 @@ function TaskForm({
               />
             </label>
             <label>
-              Finish date
+              <I18nText id="Finish date" />
               <TextInput
                 type="date"
                 min={start || undefined}
@@ -1861,10 +2036,11 @@ function TaskForm({
           </div>
           <div className="dialog-footer">
             <Button
+              data-dialog-cancel
               className="button secondary"
               onClick={() => setSchedule(false)}
             >
-              Cancel
+              <I18nText id="Cancel" />
             </Button>
             <Button
               className="button primary"
@@ -1881,7 +2057,7 @@ function TaskForm({
                 ]);
               }}
             >
-              Preview changes
+              <I18nText id="Preview changes" />
             </Button>
           </div>
         </Dialog>
@@ -1899,6 +2075,7 @@ export function WorkspaceDiscussion({
   taskId?: string;
   compact?: boolean;
 }) {
+  useInterfaceLocale();
   const { revision, refresh } = useWorkspace(),
     online = useOnline(),
     data = useData<any[]>(
@@ -1912,11 +2089,13 @@ export function WorkspaceDiscussion({
     <section className={`workspace-discussion ${compact ? "compact" : ""}`}>
       <DraftGuard
         dirty={!compact && !!body.trim()}
-        title="Unsent discussion comment"
+        title={uiText("Unsent discussion comment")}
       />
-      <h3>{compact ? "Task discussion" : "Workspace discussions"}</h3>
+      <h3>
+        {compact ? uiText("Task discussion") : uiText("Workspace discussions")}
+      </h3>
       <HelpText>
-        Keep decisions and research context alongside the work.
+        <I18nText id="Keep decisions and research context alongside the work." />
       </HelpText>
       <ErrorNotice
         message={data.error || action.error}
@@ -1938,23 +2117,24 @@ export function WorkspaceDiscussion({
         }}
       >
         <label>
-          {reply ? "Reply to discussion" : "Add a comment"}
+          {reply ? uiText("Reply to discussion") : uiText("Add a comment")}
           <TextArea
             rows={compact ? 3 : 4}
             value={body}
             maxLength={100000}
             onChange={(e) => setBody(e.target.value)}
-            placeholder="Share a decision, observation, or question…"
+            placeholder={uiText("Share a decision, observation, or question…")}
           />
         </label>
         <ActionRow>
           {reply && (
             <Button
+              data-dialog-cancel
               type="button"
               className="text-button"
               onClick={() => setReply(null)}
             >
-              Cancel reply
+              <I18nText id="Cancel reply" />
             </Button>
           )}
           <Button
@@ -1967,7 +2147,7 @@ export function WorkspaceDiscussion({
               space.effective_status !== "active"
             }
           >
-            Post comment
+            <I18nText id="Post comment" />
           </Button>
         </ActionRow>
       </form>
@@ -1977,12 +2157,12 @@ export function WorkspaceDiscussion({
             <strong>{post.author_name}</strong>
             <small>
               {timeAgo(post.created_at)}
-              {post.parent_id ? " · reply" : ""}
+              {post.parent_id ? uiText(" · reply") : ""}
             </small>
           </header>
           <p>{post.body}</p>
           <button className="text-button" onClick={() => setReply(post.id)}>
-            Reply
+            <I18nText id="Reply" />
           </button>
         </article>
       ))}
@@ -2001,6 +2181,7 @@ function PlanningManager({
   readOnly: boolean;
   onClose: () => void;
 }) {
+  useInterfaceLocale();
   const { revision, refresh } = useWorkspace(),
     data = useData<any[]>(`spaces/${space.id}/${mode}`, revision),
     action = useAction();
@@ -2009,11 +2190,17 @@ function PlanningManager({
     [frequency, setFrequency] = useState("weekly");
   return (
     <Dialog
-      title={mode === "milestones" ? "Workspace milestones" : "Recurring tasks"}
+      title={
+        mode === "milestones"
+          ? uiText("Workspace milestones")
+          : uiText("Recurring tasks")
+      }
       subtitle={
         mode === "milestones"
-          ? "Review points shared by every planning view."
-          : "Create recurring research routines. Instances are generated in the workspace time zone."
+          ? uiText("Review points shared by every planning view.")
+          : uiText(
+              "Create recurring research routines. Instances are generated in the workspace time zone.",
+            )
       }
       onClose={onClose}
     >
@@ -2079,7 +2266,9 @@ function PlanningManager({
         }}
       >
         <label>
-          {mode === "milestones" ? "Milestone title" : "Recurring task title"}
+          {mode === "milestones"
+            ? uiText("Milestone title")
+            : uiText("Recurring task title")}
           <TextInput
             required
             value={title}
@@ -2089,7 +2278,9 @@ function PlanningManager({
         </label>
         <div className="planning-field-grid">
           <label>
-            {mode === "milestones" ? "Target date" : "First occurrence"}
+            {mode === "milestones"
+              ? uiText("Target date")
+              : uiText("First occurrence")}
             <TextInput
               type="date"
               required={mode === "recurrences"}
@@ -2099,7 +2290,7 @@ function PlanningManager({
           </label>
           {mode === "recurrences" && (
             <label>
-              Repeat
+              <I18nText id="Repeat" />
               <NativeSelect
                 value={frequency}
                 onChange={(e) => setFrequency(e.target.value)}
@@ -2115,12 +2306,13 @@ function PlanningManager({
           className="button primary"
           disabled={readOnly || action.busy || !title.trim()}
         >
-          Create {mode === "milestones" ? "milestone" : "routine"}
+          <I18nText id="Create" />{" "}
+          {mode === "milestones" ? uiText("milestone") : uiText("routine")}
         </Button>
       </form>
       <div className="dialog-footer">
         <Button className="button secondary" onClick={onClose}>
-          Done
+          <I18nText id="Done" />
         </Button>
       </div>
     </Dialog>

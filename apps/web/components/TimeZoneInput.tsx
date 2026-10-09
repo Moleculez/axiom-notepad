@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { IconButton, InputGroup, TextInput } from "./ui/controls";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { Check, ChevronDown, Globe2 } from "lucide-react";
@@ -29,6 +31,7 @@ export default function TimeZoneInput({
   "aria-invalid"?: boolean | "true" | "false";
   "aria-label"?: string;
 }) {
+  useInterfaceLocale();
   const generated = useId(),
     id = suppliedId ?? generated,
     input = useRef<HTMLInputElement>(null),
@@ -125,7 +128,7 @@ export default function TimeZoneInput({
           maxLength={100}
           spellCheck={false}
           value={value}
-          placeholder="Search a city or region…"
+          placeholder={uiText("Search a city or region…")}
           onFocus={show}
           onChange={(event) => {
             onChange(event.target.value);
@@ -161,7 +164,11 @@ export default function TimeZoneInput({
       </InputGroup>
       {shown && !disabled && (
         <span className="timezone-options" ref={popup}>
-          <span id={`${id}-options`} role="listbox" aria-label="Time zones">
+          <span
+            id={`${id}-options`}
+            role="listbox"
+            aria-label={uiText("Time zones")}
+          >
             {options.map((zone, index) => (
               <span
                 key={zone}
@@ -182,7 +189,9 @@ export default function TimeZoneInput({
           </span>
           <span className="timezone-hint" role="status">
             {!matches.length
-              ? "No matches. Enter a valid IANA time zone or try another city."
+              ? uiText(
+                  "No matches. Enter a valid IANA time zone or try another city.",
+                )
               : matches.length > options.length
                 ? `${matches.length} zones · Keep typing to narrow the list`
                 : `${matches.length} zones · Offsets reflect daylight saving today`}
@@ -191,7 +200,7 @@ export default function TimeZoneInput({
       )}
       {touched && !valid && (
         <span id={`${id}-error`} className="form-error">
-          Choose a valid time zone, such as Asia/Shanghai or UTC.
+          <I18nText id="Choose a valid time zone, such as Asia/Shanghai or UTC." />
         </span>
       )}
     </span>

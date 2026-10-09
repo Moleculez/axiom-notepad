@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { ActionRow, Button, HelpText, IconButton } from "../ui/controls";
 import { useEffect, useState } from "react";
 import {
@@ -25,6 +27,7 @@ import Dialog from "../Dialog";
 import { ErrorNotice, Loading, bytes, useWorkspace, WorkspaceLink } from "./ui";
 import type { OfflineCommand, OfflinePackage } from "@axiom/shared/offline";
 export default function OfflineSettings() {
+  useInterfaceLocale();
   const { session, open, notify } = useWorkspace(),
     [state, setState] = useState<{
       packages: OfflinePackage[];
@@ -73,29 +76,28 @@ export default function OfflineSettings() {
         <div>
           <h2>
             <HardDrive size={20} />
-            Selected offline work
+            <I18nText id="Selected offline work" />
           </h2>
           <p>
-            Download files or folders from Explorer’s context menu. Ready means
-            all selected document journals and file downloads were saved on this
-            device and checksummed. External websites remain online-only.
+            <I18nText id="Download files or folders from Explorer’s context menu. Ready means all selected document journals and file downloads were saved on this device and checksummed. External websites remain online-only." />
           </p>
         </div>
         <WorkspaceLink to="/explorer" className="button secondary">
           <FolderOpen size={16} />
-          Choose in Explorer
+          <I18nText id="Choose in Explorer" />
         </WorkspaceLink>
       </header>
       <div className="offline-storage-line">
         <span>
-          {bytes(storage.usage)} used
+          {bytes(storage.usage)} <I18nText id="used" />
           {storage.quota ? ` of ${bytes(storage.quota)}` : ""} ·{" "}
           {storage.persistent
-            ? "Persistent device storage"
-            : "Browser-managed storage"}
+            ? uiText("Persistent device storage")
+            : uiText("Browser-managed storage")}
         </span>
         {!storage.persistent && (
           <Button
+            data-dialog-cancel
             className="button ghost"
             onClick={() =>
               void navigator.storage.persist().then((persistent) => {
@@ -108,7 +110,7 @@ export default function OfflineSettings() {
               })
             }
           >
-            Keep on this device
+            <I18nText id="Keep on this device" />
           </Button>
         )}
       </div>
@@ -119,14 +121,17 @@ export default function OfflineSettings() {
         <>
           <div className="offline-packages">
             {!state.packages.length && (
-              <HelpText>No selections have been downloaded yet.</HelpText>
+              <HelpText>
+                <I18nText id="No selections have been downloaded yet." />
+              </HelpText>
             )}
             {state.packages.map((p) => (
               <article key={p.id}>
                 <div>
                   <strong>{p.name}</strong>
                   <small>
-                    {p.state} · {p.resourceIds.length} items · {bytes(p.bytes)}
+                    {p.state} · {p.resourceIds.length} <I18nText id="items ·" />{" "}
+                    {bytes(p.bytes)}
                     {p.state === "preparing" ? ` · ${p.done}/${p.total}` : ""}
                   </small>
                   {p.error && <p>{p.error}</p>}
@@ -134,7 +139,7 @@ export default function OfflineSettings() {
                 <ActionRow>
                   <IconButton
                     className="icon-button"
-                    title="Refresh offline copy"
+                    title={uiText("Refresh offline copy")}
                     aria-label={`Refresh ${p.name}`}
                     disabled={!!busy || !navigator.onLine}
                     onClick={() =>
@@ -145,7 +150,7 @@ export default function OfflineSettings() {
                   </IconButton>
                   <IconButton
                     className="icon-button"
-                    title="Remove downloaded copy only"
+                    title={uiText("Remove downloaded copy only")}
                     aria-label={`Remove offline copy of ${p.name}`}
                     disabled={!!busy}
                     onClick={() =>
@@ -160,13 +165,10 @@ export default function OfflineSettings() {
           </div>
           <h2>
             <UploadCloud size={20} />
-            Pending file operations
+            <I18nText id="Pending file operations" />
           </h2>
           <HelpText>
-            Common changes replay in order after reconnection. A conflict pauses
-            the queue; it never silently overwrites newer server changes.
-            Document text synchronizes through its independent collaboration
-            journal.
+            <I18nText id="Common changes replay in order after reconnection. A conflict pauses the queue; it never silently overwrites newer server changes. Document text synchronizes through its independent collaboration journal." />
           </HelpText>
           <ActionRow>
             <Button
@@ -182,7 +184,7 @@ export default function OfflineSettings() {
               }
             >
               <Download size={15} />
-              Export pending work
+              <I18nText id="Export pending work" />
             </Button>
             <Button
               className="button secondary"
@@ -192,7 +194,7 @@ export default function OfflineSettings() {
               }
             >
               <RefreshCw size={15} />
-              Sync now
+              <I18nText id="Sync now" />
             </Button>
             <Button
               className="button ghost"
@@ -205,7 +207,7 @@ export default function OfflineSettings() {
               }
             >
               <Download size={15} />
-              Export operation log
+              <I18nText id="Export operation log" />
             </Button>
             {state.queue.some(
               (c) => !["done", "cancelled"].includes(c.status),
@@ -215,14 +217,16 @@ export default function OfflineSettings() {
                 disabled={!!busy || !navigator.onLine}
                 onClick={() => setCancel(true)}
               >
-                Stop pending operations…
+                <I18nText id="Stop pending operations…" />
               </Button>
             )}
           </ActionRow>
           {!state.queue.some(
             (c) => !["done", "cancelled"].includes(c.status),
           ) && (
-            <HelpText>All queued file operations are synchronized.</HelpText>
+            <HelpText>
+              <I18nText id="All queued file operations are synchronized." />
+            </HelpText>
           )}
           {state.queue
             .filter((c) => !["done", "cancelled"].includes(c.status))
@@ -261,7 +265,7 @@ export default function OfflineSettings() {
                           })
                     }
                   >
-                    Open retained work
+                    <I18nText id="Open retained work" />
                   </Button>
                   {["conflict", "blocked"].includes(c.status) && (
                     <>
@@ -277,7 +281,7 @@ export default function OfflineSettings() {
                             )
                           }
                         >
-                          Review server changes…
+                          <I18nText id="Review server changes…" />
                         </Button>
                       ) : null}
                       <Button
@@ -289,7 +293,7 @@ export default function OfflineSettings() {
                           )
                         }
                       >
-                        Retry unchanged request
+                        <I18nText id="Retry unchanged request" />
                       </Button>
                     </>
                   )}
@@ -299,19 +303,21 @@ export default function OfflineSettings() {
         </>
       )}
       <HelpText>
-        Removing an offline copy does not delete server files. Editor recovery
-        journals are retained. Sign out to remove this account’s device caches.
-        Offline copies cannot be remotely erased while a device is disconnected.
+        <I18nText id="Removing an offline copy does not delete server files. Editor recovery journals are retained. Sign out to remove this account’s device caches. Offline copies cannot be remotely erased while a device is disconnected." />
       </HelpText>
       {review && (
-        <Dialog title="Review offline conflict" onClose={() => setReview(null)}>
+        <Dialog
+          title={uiText("Review offline conflict")}
+          onClose={() => setReview(null)}
+        >
           <p>
-            The server version changed. Reapply your requested fields only after
-            comparing them below. Unchanged server fields will be preserved.
+            <I18nText id="The server version changed. Reapply your requested fields only after comparing them below. Unchanged server fields will be preserved." />
           </p>
           <div className="offline-conflict-comparison">
             <section>
-              <h3>Current server values</h3>
+              <h3>
+                <I18nText id="Current server values" />
+              </h3>
               <pre>
                 {JSON.stringify(
                   {
@@ -327,17 +333,20 @@ export default function OfflineSettings() {
               </pre>
             </section>
             <section>
-              <h3>Your pending changes</h3>
+              <h3>
+                <I18nText id="Your pending changes" />
+              </h3>
               <pre>{JSON.stringify(review.command.body, null, 2)}</pre>
             </section>
           </div>
           <ErrorNotice message={error} />
           <ActionRow>
             <Button
+              data-dialog-cancel
               className="button secondary"
               onClick={() => setReview(null)}
             >
-              Keep paused
+              <I18nText id="Keep paused" />
             </Button>
             <Button
               className="button primary"
@@ -354,34 +363,30 @@ export default function OfflineSettings() {
                 })
               }
             >
-              Apply my changes to this version
+              <I18nText id="Apply my changes to this version" />
             </Button>
           </ActionRow>
         </Dialog>
       )}
       {cancel && (
         <Dialog
-          title="Stop all pending file operations?"
+          title={uiText("Stop all pending file operations?")}
           onClose={() => setCancel(false)}
         >
           <p>
-            A recovery ZIP will download first, including your selected files
-            and retained document journals. All unfinished create, rename, move
-            and trash requests will stop together so dependent requests cannot
-            become orphaned.
+            <I18nText id="A recovery ZIP will download first, including your selected files and retained document journals. All unfinished create, rename, move and trash requests will stop together so dependent requests cannot become orphaned." />
           </p>
           <p>
-            Already accepted server changes are not undone. Document
-            collaboration journals remain on this device. Refresh your offline
-            downloads afterwards.
+            <I18nText id="Already accepted server changes are not undone. Document collaboration journals remain on this device. Refresh your offline downloads afterwards." />
           </p>
           <ErrorNotice message={error} />
           <ActionRow>
             <Button
+              data-dialog-cancel
               className="button secondary"
               onClick={() => setCancel(false)}
             >
-              Keep queue
+              <I18nText id="Keep queue" />
             </Button>
             <Button
               className="button danger"
@@ -397,7 +402,7 @@ export default function OfflineSettings() {
                 })
               }
             >
-              Download recovery & stop queue
+              <I18nText id="Download recovery & stop queue" />
             </Button>
           </ActionRow>
         </Dialog>

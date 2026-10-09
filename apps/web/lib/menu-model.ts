@@ -4,6 +4,8 @@ import type { ActionIconName } from "./icons/actions";
 export type ContextAction = {
   id?: string;
   label: string;
+  /** Authored file/user names, not an application message. */
+  contentLabel?: boolean;
   icon: ActionIconName;
   action: () => void;
   children?: ContextAction[];

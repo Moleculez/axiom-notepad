@@ -1,4 +1,7 @@
 "use client";
+import { currentLocale } from "@axiom/i18n/client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import {
   Button,
   Checkbox,
@@ -84,6 +87,7 @@ type Response = {
 };
 
 export default function WorkspaceWebsite({ space }: { space: Space }) {
+  useInterfaceLocale();
   const { revision } = useWorkspace();
   const data = useData<Response>(`spaces/${space.id}/site`, revision);
   const pending = data.data?.site?.releases.some(
@@ -100,7 +104,7 @@ export default function WorkspaceWebsite({ space }: { space: Space }) {
     <div className="website-workbench">
       <ErrorNotice message={data.error} retry={data.reload} />
       {!data.data && data.loading ? (
-        <Loading label="Opening website studio…" />
+        <Loading label={uiText("Opening website studio…")} />
       ) : data.data?.site ? (
         <WebsiteEditor
           key={data.data.site.id}
@@ -129,6 +133,7 @@ function WebsiteSetup({
   canManage: boolean;
   reload: () => void;
 }) {
+  useInterfaceLocale();
   const [title, setTitle] = useState(space.name),
     [slug, setSlug] = useState(slugify(space.name)),
     action = useAction();
@@ -137,28 +142,31 @@ function WebsiteSetup({
       <span className="website-emblem">
         <Globe2 size={28} />
       </span>
-      <p className="eyebrow">YOUR WORK, IN THE OPEN</p>
-      <h2>A home for your research</h2>
+      <p className="eyebrow">
+        <I18nText id="YOUR WORK, IN THE OPEN" />
+      </p>
+      <h2>
+        <I18nText id="A home for your research" />
+      </h2>
       <p>
-        Publish a{" "}
+        <I18nText id="Publish a" />{" "}
         {space.kind === "personal"
-          ? "personal researcher homepage"
-          : "research team website"}
-        , papers and a blog from this workspace. Working files stay private
-        until a manager approves a frozen release.
+          ? uiText("personal researcher homepage")
+          : uiText("research team website")}
+        <I18nText id=", papers and a blog from this workspace. Working files stay private until a manager approves a frozen release." />
       </p>
       <div className="website-principles">
         <span>
           <ShieldCheck size={18} />
-          Explicit publication
+          <I18nText id="Explicit publication" />
         </span>
         <span>
           <LayoutTemplate size={18} />
-          Designed for research
+          <I18nText id="Designed for research" />
         </span>
         <span>
           <Download size={18} />
-          Portable static export
+          <I18nText id="Portable static export" />
         </span>
       </div>
       {canManage ? (
@@ -175,7 +183,7 @@ function WebsiteSetup({
           }}
         >
           <label>
-            Website title
+            <I18nText id="Website title" />
             <TextInput
               required
               maxLength={150}
@@ -184,11 +192,11 @@ function WebsiteSetup({
             />
           </label>
           <label>
-            Site address
+            <I18nText id="Site address" />
             <span className="website-slug">
               <span>/sites/</span>
               <TextInput
-                aria-label="Site address"
+                aria-label={uiText("Site address")}
                 required
                 minLength={2}
                 maxLength={80}
@@ -200,12 +208,14 @@ function WebsiteSetup({
           </label>
           <Button className="button primary" disabled={action.busy}>
             <Plus size={16} />
-            Create private website draft
+            <I18nText id="Create private website draft" />
           </Button>
           <ErrorNotice message={action.error} />
         </form>
       ) : (
-        <HelpText>A workspace manager can set up this website.</HelpText>
+        <HelpText>
+          <I18nText id="A workspace manager can set up this website." />
+        </HelpText>
       )}
     </section>
   );
@@ -219,6 +229,7 @@ function WebsiteEditor({
   space: Space;
   reload: () => void;
 }) {
+  useInterfaceLocale();
   const { notify } = useWorkspace(),
     action = useAction();
   const [baseline, setBaseline] = useState({
@@ -274,15 +285,21 @@ function WebsiteEditor({
     });
   return (
     <>
-      <DraftGuard dirty={dirty} title="Unsaved website draft" />
+      <DraftGuard dirty={dirty} title={uiText("Unsaved website draft")} />
       <header className="website-heading">
         <div>
-          <p className="eyebrow">WORKSPACE WEBSITE</p>
+          <p className="eyebrow">
+            <I18nText id="WORKSPACE WEBSITE" />
+          </p>
           <h2>
             {site.config.title}
-            <Badge>{site.enabled ? "Published" : "Private"}</Badge>
+            <Badge>
+              {site.enabled ? uiText("Published") : uiText("Private")}
+            </Badge>
           </h2>
-          <p>Draft freely. Review precisely. Publish deliberately.</p>
+          <p>
+            <I18nText id="Draft freely. Review precisely. Publish deliberately." />
+          </p>
         </div>
         {site.enabled && (
           <a
@@ -292,11 +309,11 @@ function WebsiteEditor({
             rel="noreferrer"
           >
             <ExternalLink size={15} />
-            Visit site
+            <I18nText id="Visit site" />
           </a>
         )}
       </header>
-      <nav className="website-tabs" aria-label="Website sections">
+      <nav className="website-tabs" aria-label={uiText("Website sections")}>
         {tabs
           .filter(
             ([key]) => key !== "analytics" || site.canEdit || site.canManage,
@@ -323,15 +340,19 @@ function WebsiteEditor({
         {tab === "overview" && (
           <div className="website-overview-grid">
             <section className="settings-card">
-              <h3>Site identity</h3>
+              <h3>
+                <I18nText id="Site identity" />
+              </h3>
               <p>
                 {config.identity === "personal"
-                  ? "A personal page for your research and writing."
-                  : "A shared identity for your lab, team or research group."}
+                  ? uiText("A personal page for your research and writing.")
+                  : uiText(
+                      "A shared identity for your lab, team or research group.",
+                    )}
               </p>
               <fieldset disabled={!editable || action.busy}>
                 <label>
-                  Website title
+                  <I18nText id="Website title" />
                   <TextInput
                     value={config.title}
                     maxLength={150}
@@ -339,7 +360,7 @@ function WebsiteEditor({
                   />
                 </label>
                 <label>
-                  Description
+                  <I18nText id="Description" />
                   <TextArea
                     rows={4}
                     value={config.description}
@@ -352,63 +373,74 @@ function WebsiteEditor({
                     className="button secondary"
                     onClick={() => setPicker("logo")}
                   >
-                    Choose site logo
+                    <I18nText id="Choose site logo" />
                   </Button>
                   {config.logoId && (
                     <button
                       className="text-button"
                       onClick={() => set({ logoId: null })}
                     >
-                      Remove logo
+                      <I18nText id="Remove logo" />
                     </button>
                   )}
                 </div>
               </fieldset>
               <dl className="website-facts">
                 <div>
-                  <dt>Public address</dt>
+                  <dt>
+                    <I18nText id="Public address" />
+                  </dt>
                   <dd>{publicUrl}</dd>
                 </div>
                 <div>
-                  <dt>Publication</dt>
+                  <dt>
+                    <I18nText id="Publication" />
+                  </dt>
                   <dd>
                     {site.enabled
-                      ? "A reviewed release is live"
-                      : "No public website"}
+                      ? uiText("A reviewed release is live")
+                      : uiText("No public website")}
                   </dd>
                 </div>
                 <div>
-                  <dt>Next release</dt>
+                  <dt>
+                    <I18nText id="Next release" />
+                  </dt>
                   <dd>
-                    {included.length} pages · {config.assetIds.length}{" "}
-                    supporting resources
+                    {included.length} <I18nText id="pages ·" />{" "}
+                    {config.assetIds.length}{" "}
+                    <I18nText id="supporting resources" />
                   </dd>
                 </div>
               </dl>
             </section>
             <section className="settings-card website-safety">
               <ShieldCheck size={24} />
-              <h3>You control what becomes public</h3>
+              <h3>
+                <I18nText id="You control what becomes public" />
+              </h3>
               <p>
-                Only selected content and supporting resources are copied.
-                Comments, annotations, discussions, tasks and private profiles
-                are not published.
+                <I18nText id="Only selected content and supporting resources are copied. Comments, annotations, discussions, tasks and private profiles are not published." />
               </p>
               <ol>
-                <li>Choose content and customize your website.</li>
-                <li>Save, then build a frozen preview.</li>
-                <li>A manager reviews it and publishes the exact release.</li>
+                <li>
+                  <I18nText id="Choose content and customize your website." />
+                </li>
+                <li>
+                  <I18nText id="Save, then build a frozen preview." />
+                </li>
+                <li>
+                  <I18nText id="A manager reviews it and publishes the exact release." />
+                </li>
               </ol>
               <Notice tone="warning">
-                Deleting a private source does not remove its published copy.
-                Unpublish or replace the website release separately. Trashing
-                the workspace suspends its site.
+                <I18nText id="Deleting a private source does not remove its published copy. Unpublish or replace the website release separately. Trashing the workspace suspends its site." />
               </Notice>
               <Button
                 className="button secondary"
                 onClick={() => setTab("content")}
               >
-                Choose content
+                <I18nText id="Choose content" />
               </Button>
             </section>
           </div>
@@ -417,10 +449,11 @@ function WebsiteEditor({
           <>
             <div className="website-section-heading">
               <div>
-                <h3>Pages, papers & posts</h3>
+                <h3>
+                  <I18nText id="Pages, papers & posts" />
+                </h3>
                 <p>
-                  Use existing files; edit the working source in its usual
-                  editor.
+                  <I18nText id="Use existing files; edit the working source in its usual editor." />
                 </p>
               </div>
               <Button
@@ -429,12 +462,12 @@ function WebsiteEditor({
                 onClick={() => setPicker("content")}
               >
                 <Plus size={16} />
-                Add from workspace
+                <I18nText id="Add from workspace" />
               </Button>
             </div>
             {!config.entries.length ? (
-              <Empty title="Start with a paper or a note">
-                Nothing in this workspace is public automatically.
+              <Empty title={uiText("Start with a paper or a note")}>
+                <I18nText id="Nothing in this workspace is public automatically." />
               </Empty>
             ) : (
               <div className="website-entry-list">
@@ -456,17 +489,19 @@ function WebsiteEditor({
                           {e.kind} · /{e.slug}/{" "}
                           {!available && (
                             <span className="website-warning">
-                              · Private source unavailable
+                              <I18nText id="· Private source unavailable" />
                             </span>
                           )}
                         </p>
                       </div>
                       <Badge>
-                        {e.included ? "In next release" : "Excluded"}
+                        {e.included
+                          ? uiText("In next release")
+                          : uiText("Excluded")}
                       </Badge>
                       <WorkspaceLink
                         className="icon-button"
-                        title="Edit private source"
+                        title={uiText("Edit private source")}
                         aria-label={`Edit source of ${e.title}`}
                         to={`/notes/${e.resourceId}`}
                       >
@@ -474,7 +509,7 @@ function WebsiteEditor({
                       </WorkspaceLink>
                       <IconButton
                         className="icon-button"
-                        title="Remove from draft"
+                        title={uiText("Remove from draft")}
                         aria-label={`Remove ${e.title} from draft`}
                         disabled={!editable}
                         onClick={() => removeEntry(e.id)}
@@ -489,10 +524,11 @@ function WebsiteEditor({
             <section className="settings-card website-assets">
               <div className="website-section-heading">
                 <div>
-                  <h3>Supporting resources</h3>
+                  <h3>
+                    <I18nText id="Supporting resources" />
+                  </h3>
                   <p>
-                    Select images and linked canvas/files explicitly. Their
-                    read-only resource pages and approved bytes will be public.
+                    <I18nText id="Select images and linked canvas/files explicitly. Their read-only resource pages and approved bytes will be public." />
                   </p>
                 </div>
                 <Button
@@ -501,12 +537,12 @@ function WebsiteEditor({
                   onClick={() => setPicker("assets")}
                 >
                   <Plus size={15} />
-                  Choose resources
+                  <I18nText id="Choose resources" />
                 </Button>
               </div>
               <p>
-                {config.assetIds.length} selected. Missing assets are replaced
-                with a notice; remote images are never fetched.
+                {config.assetIds.length}{" "}
+                <I18nText id="selected. Missing assets are replaced with a notice; remote images are never fetched." />
               </p>
               <ResourceNames
                 spaceId={space.id}
@@ -551,10 +587,11 @@ function WebsiteEditor({
           <>
             <div className="website-section-heading">
               <div>
-                <h3>Frozen releases</h3>
+                <h3>
+                  <I18nText id="Frozen releases" />
+                </h3>
                 <p>
-                  Preview, approve and roll back without exposing newer working
-                  edits.
+                  <I18nText id="Preview, approve and roll back without exposing newer working edits." />
                 </p>
               </div>
               <Button
@@ -580,15 +617,17 @@ function WebsiteEditor({
                 }
               >
                 <Eye size={16} />
-                Build review preview
+                <I18nText id="Build review preview" />
               </Button>
             </div>
             {dirty && (
-              <HelpText>Save your draft before building a preview.</HelpText>
+              <HelpText>
+                <I18nText id="Save your draft before building a preview." />
+              </HelpText>
             )}
             {!site.releases.length && (
-              <Empty title="No release yet">
-                Build a preview when your content and design are ready.
+              <Empty title={uiText("No release yet")}>
+                <I18nText id="Build a preview when your content and design are ready." />
               </Empty>
             )}
             <div className="website-release-list">
@@ -596,7 +635,9 @@ function WebsiteEditor({
                 <article key={r.id}>
                   <span className={`website-release-dot is-${r.status}`} />
                   <div>
-                    <strong>{new Date(r.created_at).toLocaleString()}</strong>
+                    <strong>
+                      {new Date(r.created_at).toLocaleString(currentLocale())}
+                    </strong>
                     <p>
                       {r.id.slice(0, 8)} · {r.status}
                       {r.id === site.live_release_id
@@ -615,15 +656,15 @@ function WebsiteEditor({
                       onClick={() => setReview(r)}
                     >
                       <Eye size={15} />
-                      Review
+                      <I18nText id="Review" />
                     </Button>
                   )}
                   {!r.published_at &&
                     !["queued", "building"].includes(r.status) && (
                       <IconButton
                         className="icon-button"
-                        aria-label="Remove unused release"
-                        title="Remove unused release"
+                        aria-label={uiText("Remove unused release")}
+                        title={uiText("Remove unused release")}
                         disabled={!manage || action.busy}
                         onClick={() =>
                           void action.run(async () => {
@@ -645,10 +686,11 @@ function WebsiteEditor({
             {site.enabled && (
               <section className="settings-card website-withdraw">
                 <div>
-                  <h3>Unpublish website</h3>
+                  <h3>
+                    <I18nText id="Unpublish website" />
+                  </h3>
                   <p>
-                    Remove public access immediately. Private files, saved
-                    releases and exported copies are unchanged.
+                    <I18nText id="Remove public access immediately. Private files, saved releases and exported copies are unchanged." />
                   </p>
                 </div>
                 <Button
@@ -656,7 +698,7 @@ function WebsiteEditor({
                   disabled={!manage}
                   onClick={() => setWithdraw(true)}
                 >
-                  Unpublish…
+                  <I18nText id="Unpublish…" />
                 </Button>
               </section>
             )}
@@ -667,7 +709,7 @@ function WebsiteEditor({
         <footer className="website-savebar">
           <span>
             <span className="unsaved-dot" />
-            Unsaved website draft
+            <I18nText id="Unsaved website draft" />
           </span>
           <Button
             className="button secondary"
@@ -677,7 +719,7 @@ function WebsiteEditor({
               setBaseline({ config: site.config, version: site.version });
             }}
           >
-            Discard changes
+            <I18nText id="Discard changes" />
           </Button>
           <Button
             className="button primary"
@@ -686,7 +728,7 @@ function WebsiteEditor({
             pending={!!action.busy}
           >
             <Save size={15} />
-            {"Save draft"}
+            {uiText("Save draft")}
           </Button>
         </footer>
       )}
@@ -776,23 +818,24 @@ function WebsiteEditor({
       )}
       {withdraw && (
         <Dialog
-          title="Unpublish this website?"
-          subtitle="Public pages and resources will stop being served."
+          title={uiText("Unpublish this website?")}
+          subtitle={uiText(
+            "Public pages and resources will stop being served.",
+          )}
           onClose={() => !action.busy && setWithdraw(false)}
         >
           <p>
-            This does not erase copies already downloaded, cached or exported by
-            visitors. Restoring a previous release requires a manager’s
-            approval.
+            <I18nText id="This does not erase copies already downloaded, cached or exported by visitors. Restoring a previous release requires a manager’s approval." />
           </p>
           <ErrorNotice message={action.error} />
           <DialogFooter>
             <Button
+              data-dialog-cancel
               className="button secondary"
               disabled={action.busy}
               onClick={() => setWithdraw(false)}
             >
-              Keep published
+              <I18nText id="Keep published" />
             </Button>
             <Button
               className="button danger"
@@ -806,7 +849,7 @@ function WebsiteEditor({
                 })
               }
             >
-              Unpublish website
+              <I18nText id="Unpublish website" />
             </Button>
           </DialogFooter>
         </Dialog>
@@ -828,6 +871,7 @@ export function ResourcePicker({
   onClose: () => void;
   images?: boolean;
 }) {
+  useInterfaceLocale();
   const [search, setSearch] = useState(""),
     [query, setQuery] = useState(""),
     [cursor, setCursor] = useState<string | null>(null),
@@ -844,16 +888,20 @@ export function ResourcePicker({
   );
   return (
     <Dialog
-      title={images ? "Choose image" : "Choose workspace resources"}
+      title={
+        images ? uiText("Choose image") : uiText("Choose workspace resources")
+      }
       size="wide"
-      subtitle="Only resources you explicitly select will enter the publication draft."
+      subtitle={uiText(
+        "Only resources you explicitly select will enter the publication draft.",
+      )}
       onClose={onClose}
     >
       <TextInput
         type="search"
         autoFocus
-        aria-label="Find resource"
-        placeholder="Find by name…"
+        aria-label={uiText("Find resource")}
+        placeholder={uiText("Find by name…")}
         value={search}
         onChange={(e) => setSearch(e.target.value)}
       />
@@ -892,14 +940,20 @@ export function ResourcePicker({
                   <strong>{r.name}</strong>
                   <small>
                     {r.document_type ?? r.mime ?? r.kind}
-                    {selected.includes(r.id) ? " · Already selected" : ""}
+                    {selected.includes(r.id)
+                      ? uiText(" · Already selected")
+                      : ""}
                   </small>
                 </span>
               </label>
             );
           })}
-        {data.loading && <Loading label="Loading resources…" />}
-        {data.data && !data.data.items.length && <p>No matching resources.</p>}
+        {data.loading && <Loading label={uiText("Loading resources…")} />}
+        {data.data && !data.data.items.length && (
+          <p>
+            <I18nText id="No matching resources." />
+          </p>
+        )}
       </div>
       <div className="website-picker-pagination">
         <button
@@ -907,27 +961,33 @@ export function ResourcePicker({
           disabled={!cursor}
           onClick={() => setCursor(null)}
         >
-          First page
+          <I18nText id="First page" />
         </button>
         <button
           className="text-button"
           disabled={!data.data?.nextCursor}
           onClick={() => setCursor(data.data!.nextCursor)}
         >
-          Next page
+          <I18nText id="Next page" />
         </button>
       </div>
       <DialogFooter>
-        <span>{chosen.length} selected</span>
-        <Button className="button secondary" onClick={onClose}>
-          Cancel
+        <span>
+          {chosen.length} <I18nText id="selected" />
+        </span>
+        <Button
+          data-dialog-cancel
+          className="button secondary"
+          onClick={onClose}
+        >
+          <I18nText id="Cancel" />
         </Button>
         <Button
           className="button primary"
           disabled={!chosen.length}
           onClick={() => onChoose(chosen)}
         >
-          Add selection
+          <I18nText id="Add selection" />
         </Button>
       </DialogFooter>
     </Dialog>
@@ -944,6 +1004,7 @@ function ResourceNames({
   onRemove: (id: string) => void;
   disabled: boolean;
 }) {
+  useInterfaceLocale();
   const data = useData<ResourcePage>(
     `resources?spaceId=${spaceId}&view=all&limit=100`,
   );
@@ -956,7 +1017,7 @@ function ResourceNames({
           <button
             disabled={disabled}
             aria-label={`Remove resource ${id.slice(0, 8)}`}
-            title="Remove supporting resource"
+            title={uiText("Remove supporting resource")}
             onClick={() => onRemove(id)}
           >
             <X size={14} />
@@ -981,6 +1042,7 @@ function EntryDetails({
   onSave: (value: SiteEntry) => void;
   onClose: () => void;
 }) {
+  useInterfaceLocale();
   const [value, setValue] = useState(entry),
     [tags, setTags] = useState(entry.tags.join(", ")),
     [cover, setCover] = useState(false),
@@ -989,9 +1051,11 @@ function EntryDetails({
     setValue((v) => ({ ...v, ...patch }));
   return (
     <Dialog
-      title="Publication details"
+      title={uiText("Publication details")}
       size="wide"
-      subtitle="Public metadata is independent of the private file’s name and contents."
+      subtitle={uiText(
+        "Public metadata is independent of the private file’s name and contents.",
+      )}
       onClose={onClose}
     >
       <form
@@ -1016,7 +1080,7 @@ function EntryDetails({
       >
         <fieldset disabled={disabled} className="website-fields">
           <label className="full">
-            Title
+            <I18nText id="Title" />
             <TextInput
               required
               maxLength={200}
@@ -1025,7 +1089,7 @@ function EntryDetails({
             />
           </label>
           <label>
-            Type
+            <I18nText id="Type" />
             <NativeSelect
               value={value.kind}
               onChange={(e) =>
@@ -1038,7 +1102,7 @@ function EntryDetails({
             </NativeSelect>
           </label>
           <label>
-            URL slug
+            <I18nText id="URL slug" />
             <TextInput
               required
               minLength={2}
@@ -1049,7 +1113,7 @@ function EntryDetails({
             />
           </label>
           <label className="full">
-            Summary
+            <I18nText id="Summary" />
             <TextArea
               rows={3}
               maxLength={2000}
@@ -1058,7 +1122,7 @@ function EntryDetails({
             />
           </label>
           <label>
-            Date
+            <I18nText id="Date" />
             <TextInput
               type="date"
               value={value.date ?? ""}
@@ -1066,11 +1130,11 @@ function EntryDetails({
             />
           </label>
           <label>
-            Tags, comma separated
+            <I18nText id="Tags, comma separated" />
             <TextInput value={tags} onChange={(e) => setTags(e.target.value)} />
           </label>
           <label>
-            DOI
+            <I18nText id="DOI" />
             <TextInput
               maxLength={200}
               value={value.doi}
@@ -1079,18 +1143,22 @@ function EntryDetails({
             />
           </label>
           <label>
-            License
+            <I18nText id="License" />
             <TextInput
               maxLength={100}
               value={value.license}
-              placeholder="e.g. CC BY 4.0"
+              placeholder={uiText("e.g. CC BY 4.0")}
               onChange={(e) => set({ license: e.target.value })}
             />
           </label>
           <div className="full">
-            <span className="website-field-label">Public authors</span>
+            <span className="website-field-label">
+              <I18nText id="Public authors" />
+            </span>
             {!config.authors.length && (
-              <HelpText>Add authors in People & navigation first.</HelpText>
+              <HelpText>
+                <I18nText id="Add authors in People & navigation first." />
+              </HelpText>
             )}
             <div className="website-resource-chips">
               {config.authors.map((a) => (
@@ -1116,7 +1184,7 @@ function EntryDetails({
               className="button secondary"
               onClick={() => setCover(true)}
             >
-              Choose cover image
+              <I18nText id="Choose cover image" />
             </Button>
             {value.coverId && (
               <button
@@ -1124,7 +1192,7 @@ function EntryDetails({
                 className="text-button"
                 onClick={() => set({ coverId: null })}
               >
-                Remove cover
+                <I18nText id="Remove cover" />
               </button>
             )}
           </div>
@@ -1133,28 +1201,31 @@ function EntryDetails({
               checked={value.included}
               onChange={(e) => set({ included: e.target.checked })}
             />
-            Include in the next release
+            <I18nText id="Include in the next release" />
           </label>
           <label className="website-check full">
             <Checkbox
               checked={value.originalDownload}
               onChange={(e) => set({ originalDownload: e.target.checked })}
             />
-            Offer the original file for download
+            <I18nText id="Offer the original file for download" />
           </label>
           <Notice tone="warning" className="full">
-            Original files can expose hidden cells, speaker notes, comments or
-            metadata. Images are otherwise flattened and stripped of metadata;
-            PDF and media previews necessarily expose complete source bytes.
+            <I18nText id="Original files can expose hidden cells, speaker notes, comments or metadata. Images are otherwise flattened and stripped of metadata; PDF and media previews necessarily expose complete source bytes." />
           </Notice>
         </fieldset>
         <ErrorNotice message={action.error} />
         <DialogFooter>
-          <Button type="button" className="button secondary" onClick={onClose}>
-            Cancel
+          <Button
+            data-dialog-cancel
+            type="button"
+            className="button secondary"
+            onClick={onClose}
+          >
+            <I18nText id="Cancel" />
           </Button>
           <Button className="button primary" disabled={disabled}>
-            Apply to draft
+            <I18nText id="Apply to draft" />
           </Button>
         </DialogFooter>
       </form>
@@ -1182,21 +1253,23 @@ function PeopleAndNavigation({
   set: (value: Partial<SiteConfig>) => void;
   disabled: boolean;
 }) {
+  useInterfaceLocale();
   return (
     <div className="website-overview-grid">
       <section className="settings-card">
         <div className="website-section-heading">
           <div>
-            <h3>Public profiles</h3>
+            <h3>
+              <I18nText id="Public profiles" />
+            </h3>
             <p>
-              Choose what to disclose; private member profiles are never
-              imported.
+              <I18nText id="Choose what to disclose; private member profiles are never imported." />
             </p>
           </div>
           <IconButton
             className="icon-button"
-            aria-label="Add public author"
-            title="Add author"
+            aria-label={uiText("Add public author")}
+            title={uiText("Add author")}
             disabled={disabled || config.authors.length >= 100}
             onClick={() =>
               set({
@@ -1287,7 +1360,7 @@ function PeopleAndNavigation({
                 }
               >
                 <Trash2 size={14} />
-                Remove profile
+                <I18nText id="Remove profile" />
               </button>
             </fieldset>
           </details>
@@ -1296,13 +1369,17 @@ function PeopleAndNavigation({
       <section className="settings-card">
         <div className="website-section-heading">
           <div>
-            <h3>Navigation</h3>
-            <p>Archive, search and RSS are always available.</p>
+            <h3>
+              <I18nText id="Navigation" />
+            </h3>
+            <p>
+              <I18nText id="Archive, search and RSS are always available." />
+            </p>
           </div>
           <IconButton
             className="icon-button"
-            aria-label="Add navigation link"
-            title="Add link"
+            aria-label={uiText("Add navigation link")}
+            title={uiText("Add link")}
             disabled={disabled || config.navigation.length >= 20}
             onClick={() =>
               set({
@@ -1328,7 +1405,7 @@ function PeopleAndNavigation({
             key={i}
           >
             <label>
-              Label
+              <I18nText id="Label" />
               <TextInput
                 maxLength={60}
                 value={n.label}
@@ -1342,7 +1419,7 @@ function PeopleAndNavigation({
               />
             </label>
             <label>
-              Destination
+              <I18nText id="Destination" />
               <NativeSelect
                 value={n.entryId ?? "external"}
                 onChange={(e) =>
@@ -1360,18 +1437,20 @@ function PeopleAndNavigation({
                   })
                 }
               >
-                <option value="external">External HTTPS link</option>
+                <option value="external">
+                  <I18nText id="External HTTPS link" />
+                </option>
                 {config.entries.map((e) => (
                   <option key={e.id} value={e.id}>
                     {e.title}
-                    {e.included ? "" : " (excluded)"}
+                    {e.included ? "" : uiText(" (excluded)")}
                   </option>
                 ))}
               </NativeSelect>
             </label>
             {n.url !== undefined && (
               <label>
-                HTTPS address
+                <I18nText id="HTTPS address" />
                 <TextInput
                   type="url"
                   value={n.url}
@@ -1388,8 +1467,8 @@ function PeopleAndNavigation({
             <div className="website-inline-actions">
               <IconButton
                 className="icon-button"
-                title="Move up"
-                aria-label="Move link up"
+                title={uiText("Move up")}
+                aria-label={uiText("Move link up")}
                 disabled={i === 0}
                 onClick={() => {
                   const next = [...config.navigation];
@@ -1401,8 +1480,8 @@ function PeopleAndNavigation({
               </IconButton>
               <IconButton
                 className="icon-button"
-                title="Move down"
-                aria-label="Move link down"
+                title={uiText("Move down")}
+                aria-label={uiText("Move link down")}
                 disabled={i === config.navigation.length - 1}
                 onClick={() => {
                   const next = [...config.navigation];
@@ -1414,8 +1493,8 @@ function PeopleAndNavigation({
               </IconButton>
               <IconButton
                 className="icon-button"
-                title="Remove link"
-                aria-label="Remove navigation link"
+                title={uiText("Remove link")}
+                aria-label={uiText("Remove navigation link")}
                 onClick={() =>
                   set({
                     navigation: config.navigation.filter((_, k) => i !== k),
@@ -1442,24 +1521,29 @@ function DomainSettings({
   manage: boolean;
   reload: () => void;
 }) {
+  useInterfaceLocale();
   const [hostname, setHostname] = useState(""),
     action = useAction(),
     domain = site.domains[0];
   return (
     <section className="settings-card website-domain">
-      <h3>Your own address</h3>
+      <h3>
+        <I18nText id="Your own address" />
+      </h3>
       <p>
-        Keep the built-in address or connect one verified domain. With the
-        bundled Caddy gateway, certificates are issued automatically for
-        verified, published sites.
+        <I18nText id="Keep the built-in address or connect one verified domain. With the bundled Caddy gateway, certificates are issued automatically for verified, published sites." />
       </p>
       <dl className="website-facts">
         <div>
-          <dt>Built-in address</dt>
+          <dt>
+            <I18nText id="Built-in address" />
+          </dt>
           <dd>{site.publicUrl}</dd>
         </div>
         <div>
-          <dt>Server target</dt>
+          <dt>
+            <I18nText id="Server target" />
+          </dt>
           <dd>
             {site.domainTarget ?? "Not configured by the server administrator"}
           </dd>
@@ -1467,8 +1551,7 @@ function DomainSettings({
       </dl>
       {!site.domainTarget && (
         <HelpText>
-          Set PUBLISH_DOMAIN_TARGET to this deployment’s public hostname and
-          configure the publication gateway before connecting a domain.
+          <I18nText id="Set PUBLISH_DOMAIN_TARGET to this deployment’s public hostname and configure the publication gateway before connecting a domain." />
         </HelpText>
       )}
       {!domain ? (
@@ -1484,10 +1567,10 @@ function DomainSettings({
           }}
         >
           <label>
-            Domain
+            <I18nText id="Domain" />
             <TextInput
               required
-              placeholder="research.example.org"
+              placeholder={uiText("research.example.org")}
               value={hostname}
               onChange={(e) => setHostname(e.target.value)}
             />
@@ -1497,7 +1580,7 @@ function DomainSettings({
             disabled={!manage || action.busy || !site.domainTarget}
           >
             <Plus size={15} />
-            Connect domain
+            <I18nText id="Connect domain" />
           </Button>
         </form>
       ) : (
@@ -1506,28 +1589,43 @@ function DomainSettings({
             {domain.hostname} <Badge>{domain.status}</Badge>
           </h4>
           <p>
-            Add these records with your DNS provider. For an apex domain, use
-            A/AAAA records matching the server target instead of CNAME.
+            <I18nText id="Add these records with your DNS provider. For an apex domain, use A/AAAA records matching the server target instead of CNAME." />
           </p>
           <div className="website-dns-table">
             <table>
               <thead>
                 <tr>
-                  <th>Type</th>
-                  <th>Name</th>
-                  <th>Value</th>
+                  <th>
+                    <I18nText id="Type" />
+                  </th>
+                  <th>
+                    <I18nText id="Name" />
+                  </th>
+                  <th>
+                    <I18nText id="Value" />
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td>TXT</td>
-                  <td>_axiom.{domain.hostname}</td>
                   <td>
-                    <code>axiom-site={domain.token}</code>
+                    <I18nText id="TXT" />
+                  </td>
+                  <td>
+                    <I18nText id="_axiom." />
+                    {domain.hostname}
+                  </td>
+                  <td>
+                    <code>
+                      <I18nText id="axiom-site=" />
+                      {domain.token}
+                    </code>
                   </td>
                 </tr>
                 <tr>
-                  <td>CNAME</td>
+                  <td>
+                    <I18nText id="CNAME" />
+                  </td>
                   <td>{domain.hostname}</td>
                   <td>{site.domainTarget}</td>
                 </tr>
@@ -1535,9 +1633,7 @@ function DomainSettings({
             </table>
           </div>
           <HelpText>
-            DNS changes can take time to propagate. The built-in URL becomes a
-            redirect after verification. This does not publish a private
-            website.
+            <I18nText id="DNS changes can take time to propagate. The built-in URL becomes a redirect after verification. This does not publish a private website." />
           </HelpText>
           <div className="website-inline-actions">
             <Button
@@ -1554,7 +1650,7 @@ function DomainSettings({
               }
             >
               <Check size={15} />
-              Verify DNS
+              <I18nText id="Verify DNS" />
             </Button>
             <Button
               className="button secondary"
@@ -1570,7 +1666,7 @@ function DomainSettings({
                 })
               }
             >
-              Disconnect domain
+              <I18nText id="Disconnect domain" />
             </Button>
           </div>
         </>
@@ -1594,6 +1690,7 @@ function ReleaseReview({
   onClose: () => void;
   reload: () => void;
 }) {
+  useInterfaceLocale();
   const [consent, setConsent] = useState(false),
     [includeGoogle, setIncludeGoogle] = useState(false),
     [exportUrl, setExportUrl] = useState(site.publicUrl),
@@ -1606,8 +1703,12 @@ function ReleaseReview({
   const restore = !!release.published_at;
   return (
     <Dialog
-      title={restore ? "Review published release" : "Review before publication"}
-      subtitle={`Frozen ${new Date(release.created_at).toLocaleString()} · ${release.fingerprint.slice(0, 16)}`}
+      title={
+        restore
+          ? uiText("Review published release")
+          : uiText("Review before publication")
+      }
+      subtitle={`Frozen ${new Date(release.created_at).toLocaleString(currentLocale())} · ${release.fingerprint.slice(0, 16)}`}
       size="visual"
       className="website-review-dialog"
       onClose={() => !action.busy && onClose()}
@@ -1615,34 +1716,40 @@ function ReleaseReview({
       <div className="website-review-layout">
         <div className="website-review-preview">
           <div>
-            <span>Read-only public preview</span>
+            <span>
+              <I18nText id="Read-only public preview" />
+            </span>
             <a href={preview} target="_blank" rel="noreferrer">
               <ExternalLink size={14} />
-              Open preview
+              <I18nText id="Open preview" />
             </a>
           </div>
           <iframe
             src={preview}
-            title="Frozen website preview"
+            title={uiText("Frozen website preview")}
             sandbox="allow-scripts allow-same-origin allow-downloads allow-popups"
             allow="fullscreen"
           />
         </div>
         <aside>
-          <h3>Publication checklist</h3>
+          <h3>
+            <I18nText id="Publication checklist" />
+          </h3>
           <p>
             {data.data?.snapshot?.config.entries.filter((e) => e.included)
               .length ?? "…"}{" "}
-            pages · {data.data?.snapshot?.sources.length ?? "…"} explicitly
-            selected sources
+            <I18nText id="pages ·" />{" "}
+            {data.data?.snapshot?.sources.length ?? "…"}{" "}
+            <I18nText id="explicitly selected sources" />
           </p>
           <p>
-            The live website will use this exact release. New private edits stay
-            private.
+            <I18nText id="The live website will use this exact release. New private edits stay private." />
           </p>
           {!!release.warnings.length && (
             <section className="website-review-warnings">
-              <h4>Check these details</h4>
+              <h4>
+                <I18nText id="Check these details" />
+              </h4>
               <ul>
                 {release.warnings.map((w) => (
                   <li key={w}>{w}</li>
@@ -1651,8 +1758,7 @@ function ReleaseReview({
             </section>
           )}
           <Notice tone="warning">
-            Confirm permission to publish all selected text, figures, files and
-            public profiles. Downloaded or exported copies cannot be recalled.
+            <I18nText id="Confirm permission to publish all selected text, figures, files and public profiles. Downloaded or exported copies cannot be recalled." />
           </Notice>
           {manage && (
             <label className="website-check">
@@ -1660,15 +1766,16 @@ function ReleaseReview({
                 checked={consent}
                 onChange={(e) => setConsent(e.target.checked)}
               />
-              I reviewed this preview and approve its contents for public
-              access.
+              <I18nText id="I reviewed this preview and approve its contents for public access." />
             </label>
           )}
           {manage && (
             <details className="website-static-export">
-              <summary>Export a static website</summary>
+              <summary>
+                <I18nText id="Export a static website" />
+              </summary>
               <label>
-                Deployment base URL
+                <I18nText id="Deployment base URL" />
                 <TextInput
                   type="url"
                   value={exportUrl}
@@ -1680,24 +1787,24 @@ function ReleaseReview({
                 href={`/api/v1/spaces/${spaceId}/site/releases/${release.id}/export?baseUrl=${encodeURIComponent(exportUrl)}${includeGoogle ? "&includeGoogle=1" : ""}`}
               >
                 <Download size={15} />
-                Download ZIP
+                <I18nText id="Download ZIP" />
               </a>
               <label className="website-check">
                 <Checkbox
                   checked={includeGoogle}
                   onChange={(e) => setIncludeGoogle(e.target.checked)}
                 />
-                Include external analytics (visitor consent required)
+                <I18nText id="Include external analytics (visitor consent required)" />
               </label>
               <HelpText>
-                First-party analytics and live counters are not included.
-                Exported sites are independent public copies. Serve over
-                HTTP(S), not file://.
+                <I18nText id="First-party analytics and live counters are not included. Exported sites are independent public copies. Serve over HTTP(S), not file://." />
               </HelpText>
             </details>
           )}
           {!manage && (
-            <HelpText>A workspace manager must approve publication.</HelpText>
+            <HelpText>
+              <I18nText id="A workspace manager must approve publication." />
+            </HelpText>
           )}
           <ErrorNotice message={data.error || action.error} />
         </aside>
@@ -1708,7 +1815,7 @@ function ReleaseReview({
           disabled={action.busy}
           onClick={onClose}
         >
-          Close preview
+          <I18nText id="Close preview" />
         </Button>
         <Button
           className="button primary"
@@ -1733,7 +1840,7 @@ function ReleaseReview({
         >
           <Rocket size={16} />
           {action.busy
-            ? "Publishing…"
+            ? uiText("Publishing…")
             : restore
               ? "Restore this release"
               : "Publish this release"}

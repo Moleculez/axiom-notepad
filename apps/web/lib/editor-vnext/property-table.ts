@@ -1,3 +1,4 @@
+import { bindAttribute, bindText } from "@axiom/i18n/dom";
 /** Presentation only. Each node view retains its own source model, draft and
  * transaction rules; a field is never swapped for a second display-only node. */
 export class PropertyTable {
@@ -17,14 +18,14 @@ export class PropertyTable {
     this.dom.dataset.kind = kind;
     this.dom.contentEditable = "false";
     this.dom.setAttribute("role", "group");
-    this.dom.setAttribute("aria-label", label);
+    bindAttribute(this.dom, "aria-label", label);
     this.table.className = "editor-properties-table";
-    this.table.setAttribute("aria-label", label);
+    bindAttribute(this.table, "aria-label", label);
     this.caption.className = "editor-properties-caption";
     const bar = document.createElement("span");
     bar.className = "editor-properties-bar";
     this.heading.className = "editor-properties-title";
-    this.heading.textContent = label;
+    bindText(this.heading, label);
     this.detail.className = "editor-properties-detail";
     this.actions.className = "editor-properties-actions";
     bar.append(this.heading, this.detail, this.actions);
@@ -57,7 +58,8 @@ export class PropertyTable {
     input.classList.add("editor-property-input");
     input.dataset.editorField = "cell";
     input.setAttribute("aria-describedby", this.status.id);
-    input.setAttribute(
+    bindAttribute(
+      input,
       "aria-description",
       "Enter to save. Escape to cancel this field.",
     );
@@ -75,7 +77,7 @@ export class PropertyTable {
     if (this.status.parentElement !== parent) parent.append(this.status);
     this.status.classList.toggle("sr-only", !visible);
     this.status.dataset.error = String(visible);
-    if (this.status.textContent !== text) this.status.textContent = text;
+    bindText(this.status, text);
   }
   readOnly(value: boolean) {
     this.dom.dataset.readonly = String(value);

@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import {
   memo,
   useEffect,
@@ -38,6 +40,7 @@ type Props = {
 /** Only the active card needs a full editor. Inactive cards render immediately;
  * editing binds directly to the same nested Y.Text, never a disposable copy. */
 export default function CanvasTextCard(props: Props) {
+  useInterfaceLocale();
   const [mode, setMode] = useState<Mode>("write");
   const changeMode = (next: Mode) => {
     setMode(next);
@@ -47,13 +50,16 @@ export default function CanvasTextCard(props: Props) {
     <div className="canvas-text-card">
       <header className="canvas-card-toolbar">
         {props.heading ?? (
-          <span className="canvas-card-grip" title="Drag to move card">
-            <GripHorizontal size={14} /> Text
+          <span
+            className="canvas-card-grip"
+            title={uiText("Drag to move card")}
+          >
+            <GripHorizontal size={14} /> <I18nText id="Text" />
           </span>
         )}
         <div
           role="group"
-          aria-label="Card editor mode"
+          aria-label={uiText("Card editor mode")}
           className="scratchpad-modes"
         >
           {(["write", "source"] as const).map((value) => (
@@ -63,14 +69,14 @@ export default function CanvasTextCard(props: Props) {
               aria-pressed={mode === value}
               title={
                 value === "write"
-                  ? "Rich text · ⌘/ toggles source"
-                  : "Markdown source · ⌘/ toggles writing"
+                  ? uiText("Rich text · ⌘/ toggles source")
+                  : uiText("Markdown source · ⌘/ toggles writing")
               }
               onPointerDown={(event) => event.stopPropagation()}
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => changeMode(value)}
             >
-              {value === "write" ? "Write" : "Source"}
+              {value === "write" ? uiText("Write") : uiText("Source")}
             </button>
           ))}
         </div>
@@ -90,7 +96,10 @@ export default function CanvasTextCard(props: Props) {
           done={props.done}
         />
       ) : (
-        <div className="canvas-card-body" title="Double-click to edit">
+        <div
+          className="canvas-card-body"
+          title={uiText("Double-click to edit")}
+        >
           {props.source ? (
             <CardPreview
               source={props.source}
@@ -99,7 +108,7 @@ export default function CanvasTextCard(props: Props) {
             />
           ) : (
             <p className="canvas-placeholder">
-              Double-click to write a thought…
+              <I18nText id="Double-click to write a thought…" />
             </p>
           )}
         </div>

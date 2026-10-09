@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import {
   ActionRow,
   Button,
@@ -41,7 +43,7 @@ import {
   useWorkspace,
 } from "./ui";
 const Preview = dynamic(() => import("../tools/FilePreviewSurface"), {
-  loading: () => <Loading label="Opening preview…" />,
+  loading: () => <Loading label={uiText("Opening preview…")} />,
 });
 const Reading = dynamic(() => import("../ReadingView"), { ssr: false });
 export type MediaFilter = "all" | "image" | "pdf" | "audio" | "video";
@@ -62,6 +64,7 @@ export default function InsertResource({
   onClose: () => void;
   onInsert: (value: string) => boolean | void;
 }) {
+  useInterfaceLocale();
   const {
     spaces,
     revision,
@@ -303,14 +306,16 @@ export default function InsertResource({
     <Dialog
       title={
         selection
-          ? "Link a source from your workspace"
+          ? uiText("Link a source from your workspace")
           : kind === "note"
             ? "Link a research note"
             : filter === "image"
               ? "Insert an image"
               : "Insert an attachment"
       }
-      subtitle="Preview first · references retain their selected version"
+      subtitle={uiText(
+        "Preview first · references retain their selected version",
+      )}
       onClose={onClose}
       size="wide"
       className="media-insert-dialog"
@@ -318,7 +323,7 @@ export default function InsertResource({
       <div
         className="media-insert-tabs"
         role="tablist"
-        aria-label="File source"
+        aria-label={uiText("File source")}
       >
         {tabs.map((id) => {
           const Icon = icons[id];
@@ -359,26 +364,30 @@ export default function InsertResource({
               }}
             >
               <Icon size={16} />
-              {id === "url" ? "URL" : id === "upload" ? "Upload" : "Library"}
+              {id === "url"
+                ? uiText("URL")
+                : id === "upload"
+                  ? "Upload"
+                  : "Library"}
             </button>
           );
         })}
       </div>
       <ErrorNotice message={error} />
       <div className="media-insert-split">
-        <section className="media-library" aria-label="Browse files">
+        <section className="media-library" aria-label={uiText("Browse files")}>
           <div className="media-library-controls">
             <SearchField
               wrapperClassName="ws-search-field"
               autoFocus
-              aria-label="Search files or reference codes"
-              placeholder="Search names, tags, or file codes…"
+              aria-label={uiText("Search files or reference codes")}
+              placeholder={uiText("Search names, tags, or file codes…")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
             <div className="media-filter-row">
               <NativeSelect
-                aria-label="Workspace"
+                aria-label={uiText("Workspace")}
                 value={scope}
                 disabled={!selection && note.visibility === "shared"}
                 onChange={(e) => {
@@ -402,7 +411,7 @@ export default function InsertResource({
               </NativeSelect>
               {kind === "file" && (
                 <NativeSelect
-                  aria-label="File type"
+                  aria-label={uiText("File type")}
                   value={filter}
                   disabled={!!selection}
                   onChange={(e) => {
@@ -413,7 +422,9 @@ export default function InsertResource({
                 >
                   {["all", "image", "pdf", "audio", "video"].map((type) => (
                     <option key={type} value={type}>
-                      {type === "all" ? "All files" : type.toUpperCase()}
+                      {type === "all"
+                        ? uiText("All files")
+                        : type.toUpperCase()}
                     </option>
                   ))}
                 </NativeSelect>
@@ -422,34 +433,51 @@ export default function InsertResource({
             {tab === "library" && (
               <div className="media-filter-row">
                 <NativeSelect
-                  aria-label="Library view"
+                  aria-label={uiText("Library view")}
                   value={view}
                   onChange={(e) => {
                     setView(e.target.value);
                     setFolder(null);
                   }}
                 >
-                  <option value="all">All files</option>
-                  <option value="folder">Folders</option>
-                  <option value="recent">Recent</option>
-                  <option value="favorites">Favorites</option>
+                  <option value="all">
+                    <I18nText id="All files" />
+                  </option>
+                  <option value="folder">
+                    <I18nText id="Folders" />
+                  </option>
+                  <option value="recent">
+                    <I18nText id="Recent" />
+                  </option>
+                  <option value="favorites">
+                    <I18nText id="Favorites" />
+                  </option>
                 </NativeSelect>
                 <NativeSelect
-                  aria-label="Sort files"
+                  aria-label={uiText("Sort files")}
                   value={sort}
                   onChange={(e) => setSort(e.target.value)}
                 >
-                  <option value="updated">Recently modified</option>
-                  <option value="name">Name</option>
-                  <option value="size">Size</option>
+                  <option value="updated">
+                    <I18nText id="Recently modified" />
+                  </option>
+                  <option value="name">
+                    <I18nText id="Name" />
+                  </option>
+                  <option value="size">
+                    <I18nText id="Size" />
+                  </option>
                 </NativeSelect>
               </div>
             )}
             {folder && (
-              <nav className="media-breadcrumbs" aria-label="Folder path">
+              <nav
+                className="media-breadcrumbs"
+                aria-label={uiText("Folder path")}
+              >
                 <button onClick={() => enterFolder(null)}>
                   <Folder size={14} />
-                  Root
+                  <I18nText id="Root" />
                 </button>
                 {data.data?.breadcrumbs.map((part) => (
                   <span key={part.id}>
@@ -466,14 +494,14 @@ export default function InsertResource({
             <div
               className="media-results"
               role="list"
-              aria-label="Available files"
+              aria-label={uiText("Available files")}
             >
               <ErrorNotice message={data.error} retry={data.reload} />
               {data.loading && !pages.length ? (
                 <Loading />
               ) : !pages.length ? (
                 <p className="media-empty">
-                  No matching files. Try another search or upload a file.
+                  <I18nText id="No matching files. Try another search or upload a file." />
                 </p>
               ) : (
                 pages
@@ -541,7 +569,7 @@ export default function InsertResource({
                           <strong>{item.name}</strong>
                           <small>
                             {item.kind === "folder"
-                              ? "Folder"
+                              ? uiText("Folder")
                               : (item.reference_code ?? "") +
                                 (item.bytes ? " · " + bytes(item.bytes) : "")}
                           </small>
@@ -557,7 +585,7 @@ export default function InsertResource({
                   disabled={data.loading}
                   onClick={() => setCursor(data.data!.nextCursor!)}
                 >
-                  Load more files
+                  <I18nText id="Load more files" />
                 </Button>
               )}
             </div>
@@ -572,17 +600,18 @@ export default function InsertResource({
               }}
             >
               <Upload size={30} />
-              <h3>Drop files here</h3>
+              <h3>
+                <I18nText id="Drop files here" />
+              </h3>
               <p>
-                Stored privately in the selected workspace. Maximum 1 GB per
-                file.
+                <I18nText id="Stored privately in the selected workspace. Maximum 1 GB per file." />
               </p>
               <Button
                 className="button secondary"
                 disabled={!canUpload || busy}
                 onClick={() => input.current?.click()}
               >
-                Choose files
+                <I18nText id="Choose files" />
               </Button>
               <input
                 ref={input}
@@ -596,7 +625,9 @@ export default function InsertResource({
                 }}
               />
               {!canUpload && (
-                <p>Choose an active workspace where you can edit.</p>
+                <p>
+                  <I18nText id="Choose an active workspace where you can edit." />
+                </p>
               )}
               {localFiles.map((file, index) => (
                 <div
@@ -646,15 +677,16 @@ export default function InsertResource({
               {busy && (
                 <ActionRow>
                   <Button className="button secondary" onClick={showUploads}>
-                    Manage / retry uploads
+                    <I18nText id="Manage / retry uploads" />
                   </Button>
                   <Button
+                    data-dialog-cancel
                     className="button secondary"
                     onClick={() =>
                       void batch?.cancel().catch((e) => setError(e.message))
                     }
                   >
-                    Cancel insertion
+                    <I18nText id="Cancel insertion" />
                   </Button>
                 </ActionRow>
               )}
@@ -664,7 +696,7 @@ export default function InsertResource({
             <div className="media-url">
               <Link2 size={28} />
               <label>
-                Image or file URL
+                <I18nText id="Image or file URL" />
                 <TextInput
                   type="url"
                   placeholder="https://…"
@@ -676,8 +708,7 @@ export default function InsertResource({
                 />
               </label>
               <p className="ws-small muted">
-                External links stay external. Loading a preview contacts that
-                host; access and availability may change.
+                <I18nText id="External links stay external. Loading a preview contacts that host; access and availability may change." />
               </p>
               {filter === "image" && (
                 <Button
@@ -699,7 +730,7 @@ export default function InsertResource({
                     }
                   }}
                 >
-                  Load image preview
+                  <I18nText id="Load image preview" />
                 </Button>
               )}
             </div>
@@ -707,7 +738,7 @@ export default function InsertResource({
         </section>
         <aside
           className="media-preview-panel"
-          aria-label="Selected file preview"
+          aria-label={uiText("Selected file preview")}
         >
           {tab === "url" ? (
             <>
@@ -789,8 +820,12 @@ export default function InsertResource({
           ) : (
             <div className="media-empty">
               <Library size={28} />
-              <h3>Choose a file to preview</h3>
-              <p>Inspect its contents before adding it to your research.</p>
+              <h3>
+                <I18nText id="Choose a file to preview" />
+              </h3>
+              <p>
+                <I18nText id="Inspect its contents before adding it to your research." />
+              </p>
             </div>
           )}
         </aside>
@@ -800,14 +835,18 @@ export default function InsertResource({
           {selected.length ? (
             <>
               <Check size={14} />
-              {selected.length} selected · pinned version
+              {selected.length} <I18nText id="selected · pinned version" />
             </>
           ) : (
             "No source changes until insertion"
           )}
         </span>
-        <Button className="button secondary" onClick={onClose}>
-          Cancel
+        <Button
+          data-dialog-cancel
+          className="button secondary"
+          onClick={onClose}
+        >
+          <I18nText id="Cancel" />
         </Button>
         {tab === "upload" ? (
           <Button
@@ -815,7 +854,7 @@ export default function InsertResource({
             disabled={busy || !localFiles.length || !canUpload}
             onClick={() => void startUpload()}
           >
-            Upload & review
+            <I18nText id="Upload & review" />
           </Button>
         ) : (
           <Button
@@ -823,7 +862,7 @@ export default function InsertResource({
             disabled={busy || (tab === "url" ? !url.trim() : !selected.length)}
             onClick={insert}
           >
-            {selection ? "Link selected source" : "Insert"}
+            {selection ? uiText("Link selected source") : uiText("Insert")}
             {selected.length > 1 && tab !== "url"
               ? " " + selected.length + " files"
               : ""}

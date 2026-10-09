@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import {
   ActionRow,
   Button,
@@ -42,6 +44,7 @@ export default function SuggestionReview({
   onCompose: (proposal?: Suggestion) => void;
   onClose: () => void;
 }) {
+  useInterfaceLocale();
   const { session, revision, notify } = useWorkspace(),
     action = useAction();
   const base = "resources/" + noteId + "/suggestions",
@@ -88,29 +91,34 @@ export default function SuggestionReview({
       );
     });
   return (
-    <section className="suggestion-review" aria-label="Review suggestions">
+    <section
+      className="suggestion-review"
+      aria-label={uiText("Review suggestions")}
+    >
       <header className="revision-header">
         <IconButton
           className="icon-button"
-          aria-label="Close suggestion review"
+          aria-label={uiText("Close suggestion review")}
           onClick={onClose}
         >
           <ArrowLeft size={17} />
         </IconButton>
         <div>
-          <h2>Review suggestions</h2>
+          <h2>
+            <I18nText id="Review suggestions" />
+          </h2>
           <p>
-            {items.filter((v) => v.status === "pending").length} pending ·
-            editors may accept or reject
+            {items.filter((v) => v.status === "pending").length}{" "}
+            <I18nText id="pending · editors may accept or reject" />
           </p>
         </div>
         <Button className="button secondary" onClick={() => onCompose()}>
           <FilePenLine size={15} />
-          Suggest edits
+          <I18nText id="Suggest edits" />
         </Button>
         <IconButton
           className="icon-button"
-          aria-label="Refresh suggestions"
+          aria-label={uiText("Refresh suggestions")}
           onClick={proposals.reload}
         >
           <RefreshCw size={15} />
@@ -122,7 +130,7 @@ export default function SuggestionReview({
             checked={showClosed}
             onChange={(e) => setShowClosed(e.target.checked)}
           />
-          Show decided proposals
+          <I18nText id="Show decided proposals" />
         </label>
         {canEdit && selected.length > 0 && (
           <>
@@ -137,7 +145,8 @@ export default function SuggestionReview({
               }
             >
               <Check size={15} />
-              Accept selected ({selected.length})
+              <I18nText id="Accept selected (" />
+              {selected.length})
             </Button>
             <Button
               className="button ghost"
@@ -150,7 +159,7 @@ export default function SuggestionReview({
               }
             >
               <X size={15} />
-              Reject selected
+              <I18nText id="Reject selected" />
             </Button>
           </>
         )}
@@ -175,7 +184,7 @@ export default function SuggestionReview({
             }
           >
             <Undo2 size={15} />
-            Undo last decision
+            <I18nText id="Undo last decision" />
           </Button>
         )}
       </div>
@@ -185,13 +194,12 @@ export default function SuggestionReview({
       />
       <div className="suggestion-review-scroll">
         {proposals.loading && !proposals.data && (
-          <Loading label="Loading review…" />
+          <Loading label={uiText("Loading review…")} />
         )}
         {!proposals.loading &&
           !items.some((v) => showClosed || v.status === "pending") && (
             <p className="revision-notice">
-              No pending proposals. Suggest edits to discuss a change without
-              changing the accepted document.
+              <I18nText id="No pending proposals. Suggest edits to discuss a change without changing the accepted document." />
             </p>
           )}
         {items
@@ -247,8 +255,7 @@ export default function SuggestionReview({
                   (h) => h.before.length > 10000 || h.insert.length > 10000,
                 )) && (
                 <p className="ws-muted">
-                  Large proposal: this preview is abbreviated. Export the full
-                  proposal to inspect every change before deciding.
+                  <I18nText id="Large proposal: this preview is abbreviated. Export the full proposal to inspect every change before deciding." />
                 </p>
               )}
               <ActionRow>
@@ -263,7 +270,7 @@ export default function SuggestionReview({
                   }
                 >
                   <Download size={15} />
-                  Export proposal
+                  <I18nText id="Export proposal" />
                 </Button>
                 {p.status === "pending" && canEdit && (
                   <>
@@ -273,7 +280,7 @@ export default function SuggestionReview({
                       onClick={() => void decide("accept", [p])}
                     >
                       <Check size={15} />
-                      Accept
+                      <I18nText id="Accept" />
                     </Button>
                     <Button
                       className="button ghost"
@@ -281,7 +288,7 @@ export default function SuggestionReview({
                       onClick={() => void decide("reject", [p])}
                     >
                       <X size={15} />
-                      Reject
+                      <I18nText id="Reject" />
                     </Button>
                   </>
                 )}
@@ -293,14 +300,14 @@ export default function SuggestionReview({
                       onClick={() => onCompose(p)}
                     >
                       <Pencil size={15} />
-                      Revise
+                      <I18nText id="Revise" />
                     </Button>
                     <Button
                       className="button ghost"
                       disabled={reviewBusy}
                       onClick={() => void decide("withdraw", [p])}
                     >
-                      Withdraw
+                      <I18nText id="Withdraw" />
                     </Button>
                   </>
                 )}
@@ -312,7 +319,8 @@ export default function SuggestionReview({
                   }}
                 >
                   <MessageSquare size={15} />
-                  Reply ({p.replies.length})
+                  <I18nText id="Reply (" />
+                  {p.replies.length})
                 </Button>
               </ActionRow>
               {p.replies.map((r) => (
@@ -342,14 +350,14 @@ export default function SuggestionReview({
                   }}
                 >
                   <TextArea
-                    aria-label="Reply to proposal"
+                    aria-label={uiText("Reply to proposal")}
                     required
                     maxLength={10000}
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                   />
                   <Button className="button secondary" disabled={reviewBusy}>
-                    Send reply
+                    <I18nText id="Send reply" />
                   </Button>
                 </form>
               )}

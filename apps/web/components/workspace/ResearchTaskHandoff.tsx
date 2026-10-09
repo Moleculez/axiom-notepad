@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { useEffect, useState } from "react";
 import { Button, NativeSelect, TextInput, HelpText } from "../ui/controls";
 import Dialog, { DialogFooter } from "../Dialog";
@@ -18,6 +20,7 @@ export default function ResearchTaskHandoff({
   title: string;
   onClose: () => void;
 }) {
+  useInterfaceLocale();
   const [mode, setMode] = useState("new"),
     [name, setName] = useState(`Review ${title}`.slice(0, 300)),
     [taskId, setTaskId] = useState("");
@@ -51,8 +54,10 @@ export default function ResearchTaskHandoff({
   }, [mode, taskId, attempt]);
   return (
     <Dialog
-      title="Research follow-up"
-      subtitle="Link an immutable source to a workspace task. No private quotation or source text is copied."
+      title={uiText("Research follow-up")}
+      subtitle={uiText(
+        "Link an immutable source to a workspace task. No private quotation or source text is copied.",
+      )}
       onClose={() => !action.busy && onClose()}
     >
       <form
@@ -74,18 +79,22 @@ export default function ResearchTaskHandoff({
         }}
       >
         <label>
-          Destination
+          <I18nText id="Destination" />
           <NativeSelect
             value={mode}
             onChange={(event) => setMode(event.target.value)}
           >
-            <option value="new">Create a follow-up task</option>
-            <option value="existing">Link to an existing task</option>
+            <option value="new">
+              <I18nText id="Create a follow-up task" />
+            </option>
+            <option value="existing">
+              <I18nText id="Link to an existing task" />
+            </option>
           </NativeSelect>
         </label>
         {mode === "new" ? (
           <label>
-            Task title
+            <I18nText id="Task title" />
             <TextInput
               required
               maxLength={300}
@@ -95,45 +104,44 @@ export default function ResearchTaskHandoff({
           </label>
         ) : (
           <label>
-            Task
+            <I18nText id="Task" />
             <PlanningEntityPicker
               spaceId={spaceId}
               kind="task"
               value={taskId}
               onChange={(id) => setTaskId(String(id))}
-              label="Follow-up task"
+              label={uiText("Follow-up task")}
             />
           </label>
         )}
         <HelpText>
-          The link retains the selected milestone or reference event. If the
-          source is removed or access changes, it becomes unavailable rather
-          than switching to the latest version.
+          <I18nText id="The link retains the selected milestone or reference event. If the source is removed or access changes, it becomes unavailable rather than switching to the latest version." />
         </HelpText>
         {mode === "existing" && taskId && (
           <HelpText>
             {selected?.id === taskId
               ? `Selected task version ${selected.version}. If it changes, refresh before retrying.`
-              : "Checking selected task…"}
+              : uiText("Checking selected task…")}
             <Button
               type="button"
               variant="ghost"
               disabled={action.busy}
               onClick={() => setAttempt((n) => n + 1)}
             >
-              Refresh task
+              <I18nText id="Refresh task" />
             </Button>
           </HelpText>
         )}
         <ErrorNotice message={selectionError || action.error} />
         <DialogFooter>
           <Button
+            data-dialog-cancel
             type="button"
             variant="secondary"
             disabled={action.busy}
             onClick={onClose}
           >
-            Cancel
+            <I18nText id="Cancel" />
           </Button>
           <Button
             type="submit"
@@ -143,7 +151,7 @@ export default function ResearchTaskHandoff({
               mode === "new" ? !name.trim() : selected?.id !== taskId || !taskId
             }
           >
-            Link source
+            <I18nText id="Link source" />
           </Button>
         </DialogFooter>
       </form>

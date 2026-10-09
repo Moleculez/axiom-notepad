@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import {
   Button,
   NativeSelect,
@@ -29,6 +31,7 @@ export default function RequestReview({
   onClose: () => void;
   markdown?: boolean;
 }) {
+  useInterfaceLocale();
   const { notify } = useWorkspace(),
     action = useAction(),
     data = useData<{ reviewers: { id: string; name: string }[] }>(
@@ -63,8 +66,10 @@ export default function RequestReview({
   }, [paper, reference, resourceId, attempt]);
   return (
     <Dialog
-      title="Request a revision review"
-      subtitle="Feedback is attached to this saved milestone. An approval is advisory and never accepts text suggestions automatically."
+      title={uiText("Request a revision review")}
+      subtitle={uiText(
+        "Feedback is attached to this saved milestone. An approval is advisory and never accepts text suggestions automatically.",
+      )}
       onClose={() => !action.busy && onClose()}
     >
       <form
@@ -86,15 +91,17 @@ export default function RequestReview({
           });
         }}
       >
-        {data.loading && <Loading label="Finding reviewers…" />}
+        {data.loading && <Loading label={uiText("Finding reviewers…")} />}
         <label>
-          Reviewer
+          <I18nText id="Reviewer" />
           <NativeSelect
             required
             value={reviewer}
             onChange={(e) => setReviewer(e.target.value)}
           >
-            <option value="">Choose a collaborator</option>
+            <option value="">
+              <I18nText id="Choose a collaborator" />
+            </option>
             {data.data?.reviewers.map((u) => (
               <option key={u.id} value={u.id}>
                 {u.name}
@@ -109,19 +116,20 @@ export default function RequestReview({
                 checked={paper}
                 onChange={(event) => setPaper(event.target.checked)}
               />
-              Freeze paper references and figure versions
+              <I18nText id="Freeze paper references and figure versions" />
             </label>
             {paper && (
               <>
                 <HelpText>
                   {paperPreview
                     ? `${paperPreview.referenceKeys.length} bibliography keys · ${paperPreview.assets.length} exact attached versions. The reviewer must already have access; no permissions are changed.`
-                    : "Preparing the milestone's dependency review…"}
+                    : uiText("Preparing the milestone's dependency review…")}
                 </HelpText>
                 {!!paperPreview?.diagnostics.length && (
                   <details>
                     <summary>
-                      Research checks ({paperPreview.diagnostics.length})
+                      <I18nText id="Research checks (" />
+                      {paperPreview.diagnostics.length})
                     </summary>
                     <ul>
                       {paperPreview.diagnostics.map((d, i) => (
@@ -139,24 +147,31 @@ export default function RequestReview({
           </>
         )}
         <label>
-          What should they check?
+          <I18nText id="What should they check?" />
           <TextArea
             maxLength={5000}
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            placeholder="Assumptions, derivation, reproducibility, or figure accuracy…"
+            placeholder={uiText(
+              "Assumptions, derivation, reproducibility, or figure accuracy…",
+            )}
           />
         </label>
         <ErrorNotice message={action.error || data.error} />
         <div className="dialog-footer">
-          <Button className="button secondary" type="button" onClick={onClose}>
-            Cancel
+          <Button
+            data-dialog-cancel
+            className="button secondary"
+            type="button"
+            onClick={onClose}
+          >
+            <I18nText id="Cancel" />
           </Button>
           <Button
             className="button primary"
             disabled={action.busy || !reviewer || (paper && !paperPreview)}
           >
-            Request review
+            <I18nText id="Request review" />
           </Button>
         </div>
       </form>

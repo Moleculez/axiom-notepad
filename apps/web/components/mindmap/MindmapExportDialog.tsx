@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { useEffect, useRef, useState } from "react";
 import { parseMarkdown, type RenderContext } from "@axiom/markdown";
 import {
@@ -58,6 +60,7 @@ export default function MindmapExportDialog({
   onClose: () => void;
   research?: boolean;
 }) {
+  useInterfaceLocale();
   const [format, setFormat] = useState("svg"),
     [scope, setScope] = useState("whole"),
     [rich, setRich] = useState(research),
@@ -280,45 +283,59 @@ export default function MindmapExportDialog({
   };
   return (
     <Dialog
-      title="Export mind map"
-      subtitle="Includes document content only, never presence, private comments, or reading records."
+      title={uiText("Export mind map")}
+      subtitle={uiText(
+        "Includes document content only, never presence, private comments, or reading records.",
+      )}
       onClose={() => {
         abort.current?.abort();
         onClose();
       }}
     >
       <div className="mindmap-options">
-        <Field label="Format">
+        <Field label={uiText("Format")}>
           <NativeSelect
             value={format}
             disabled={busy}
             onChange={(e) => setFormat(e.target.value)}
           >
-            <option value="markdown">Markdown source</option>
-            <option value="svg">SVG image</option>
-            <option value="png">PNG image</option>
-            <option value="pdf">PDF</option>
-            <option value="html">Interactive offline HTML</option>
+            <option value="markdown">
+              <I18nText id="Markdown source" />
+            </option>
+            <option value="svg">
+              <I18nText id="SVG image" />
+            </option>
+            <option value="png">
+              <I18nText id="PNG image" />
+            </option>
+            <option value="pdf">
+              <I18nText id="PDF" />
+            </option>
+            <option value="html">
+              <I18nText id="Interactive offline HTML" />
+            </option>
           </NativeSelect>
         </Field>
-        <Field label="Scope">
+        <Field label={uiText("Scope")}>
           <NativeSelect
             value={scope}
             disabled={busy}
             onChange={(e) => setScope(e.target.value)}
           >
-            <option value="whole">Entire map · all branches</option>
+            <option value="whole">
+              <I18nText id="Entire map · all branches" />
+            </option>
             <option
               value="selected"
               disabled={!selected || selected === projection.rootId}
             >
-              Selected branch
+              <I18nText id="Selected branch" />
             </option>
           </NativeSelect>
         </Field>
         {format !== "markdown" && (
           <>
-            <Field label="Resolution">
+            <Field label={uiText("Resolution")}>
               <NativeSelect
                 value={scale}
                 disabled={busy}
@@ -335,7 +352,9 @@ export default function MindmapExportDialog({
                 disabled={busy}
                 onChange={(e) => setRich(e.target.checked)}
               />
-              <span>Preserve rich labels and equations</span>
+              <span>
+                <I18nText id="Preserve rich labels and equations" />
+              </span>
             </label>
           </>
         )}
@@ -346,15 +365,14 @@ export default function MindmapExportDialog({
               disabled={busy}
               onChange={(e) => setTiled(e.target.checked)}
             />
-            <span>Tile across pages at readable size</span>
+            <span>
+              <I18nText id="Tile across pages at readable size" />
+            </span>
           </label>
         )}
       </div>
       <HelpText>
-        Rich exports embed rendered labels as images. Block summaries are
-        exported; images and attachments are not fetched. Use the existing
-        portable collection export to include source and permission-checked
-        files. Plain vector labels use the viewer's fonts.
+        <I18nText id="Rich exports embed rendered labels as images. Block summaries are exported; images and attachments are not fetched. Use the existing portable collection export to include source and permission-checked files. Plain vector labels use the viewer's fonts." />
       </HelpText>
       {progress && (
         <p role="status" className="muted">
@@ -370,14 +388,14 @@ export default function MindmapExportDialog({
             onClose();
           }}
         >
-          {busy ? "Cancel export" : "Close"}
+          {busy ? uiText("Cancel export") : uiText("Close")}
         </Button>
         <Button
           variant="primary"
           disabled={busy}
           onClick={() => void exportFile()}
         >
-          {busy ? "Exporting…" : "Download"}
+          {busy ? uiText("Exporting…") : uiText("Download")}
         </Button>
       </DialogFooter>
     </Dialog>

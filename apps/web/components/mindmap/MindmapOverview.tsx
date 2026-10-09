@@ -1,3 +1,4 @@
+import { uiText, useInterfaceLocale } from "@axiom/i18n/react";
 import type { MindmapLayout, MindmapCamera } from "@axiom/mindmap";
 import { IconButton, Button } from "../ui/controls";
 import { X } from "lucide-react";
@@ -16,6 +17,7 @@ export default function MindmapOverview({
   onCamera: (camera: MindmapCamera) => void;
   onClose: () => void;
 }) {
+  useInterfaceLocale();
   const bounds = {
     x: layout.bounds.x - 30,
     y: layout.bounds.y - 30,
@@ -23,9 +25,12 @@ export default function MindmapOverview({
     height: layout.bounds.height + 60,
   };
   return (
-    <aside className="mindmap-overview" aria-label="Mind-map overview">
+    <aside
+      className="mindmap-overview"
+      aria-label={uiText("Mind-map overview")}
+    >
       <IconButton
-        label="Hide map overview"
+        label={uiText("Hide map overview")}
         className="mindmap-overview-close"
         onClick={onClose}
       >
@@ -34,7 +39,9 @@ export default function MindmapOverview({
       <Button
         variant="ghost"
         className="mindmap-overview-canvas"
-        aria-label="Navigate map overview. Click or use arrow keys to pan."
+        aria-label={uiText(
+          "Navigate map overview. Click or use arrow keys to pan.",
+        )}
         onPointerDown={(e) => {
           if (e.button !== 0) return;
           e.stopPropagation();

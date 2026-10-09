@@ -1,4 +1,6 @@
 "use client";
+import { uiText, useInterfaceLocale, I18nText } from "@axiom/i18n/react";
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import { fonts, type Preferences } from "@axiom/shared/appearance";
 import {
@@ -28,6 +30,7 @@ export default function LatexReadingPreview({
   options: LatexOptions;
   fingerprint: string;
 }) {
+  useInterfaceLocale();
   const [prepared, setPrepared] = useState<{
       html: string;
       warnings: string[];
@@ -90,23 +93,26 @@ export default function LatexReadingPreview({
   return (
     <div className="latex-reading-preview">
       <HelpText>
-        Reading layout only, not a compiled PDF. TeX controls final typography,
-        citation layout and page breaks.
+        <I18nText id="Reading layout only, not a compiled PDF. TeX controls final typography, citation layout and page breaks." />
       </HelpText>
       {error ? (
         <Notice tone="danger" role="alert">
           {error}
           <Button variant="ghost" onClick={() => setAttempt((n) => n + 1)}>
-            Retry preview
+            <I18nText id="Retry preview" />
           </Button>
         </Notice>
       ) : (
-        !ready && <HelpText role="status">Preparing reading preview…</HelpText>
+        !ready && (
+          <HelpText role="status">
+            <I18nText id="Preparing reading preview…" />
+          </HelpText>
+        )
       )}
       {prepared && (
         <iframe
           ref={frame}
-          title="Manuscript reading preview"
+          title={uiText("Manuscript reading preview")}
           sandbox="allow-same-origin"
           srcDoc={html}
           onLoad={() => {
@@ -128,7 +134,10 @@ export default function LatexReadingPreview({
       )}
       {!!prepared?.warnings.length && (
         <details>
-          <summary>Reading preview notes ({prepared.warnings.length})</summary>
+          <summary>
+            <I18nText id="Reading preview notes (" />
+            {prepared.warnings.length})
+          </summary>
           <ul>
             {prepared.warnings.map((warning) => (
               <li key={warning}>{warning}</li>

@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { Button, HelpText, TextInput } from "./ui/controls";
 import BrandMark from "./BrandMark";
 import { useState } from "react";
@@ -10,6 +12,7 @@ export default function DevelopmentSetup({
 }: {
   completed: () => void;
 }) {
+  useInterfaceLocale();
   const [token, setToken] = useState(""),
     [name, setName] = useState(""),
     [email, setEmail] = useState(""),
@@ -21,11 +24,14 @@ export default function DevelopmentSetup({
     <main className="development-setup">
       <section className="development-setup-card">
         <BrandMark />
-        <span className="eyebrow">LOCAL DEVELOPMENT · FIRST RUN</span>
-        <h1>A fresh space for your research</h1>
+        <span className="eyebrow">
+          <I18nText id="LOCAL DEVELOPMENT · FIRST RUN" />
+        </span>
+        <h1>
+          <I18nText id="A fresh space for your research" />
+        </h1>
         <p>
-          Create your own owner account and an empty group. No demo files or
-          shared default passwords are added.
+          <I18nText id="Create your own owner account and an empty group. No demo files or shared default passwords are added." />
         </p>
         <form
           onSubmit={(e) => {
@@ -46,10 +52,10 @@ export default function DevelopmentSetup({
           }}
         >
           <label>
-            One-time setup token
+            <I18nText id="One-time setup token" />
             <TextInput
               autoFocus
-              aria-label="One-time setup token"
+              aria-label={uiText("One-time setup token")}
               type="password"
               required
               minLength={32}
@@ -59,15 +65,14 @@ export default function DevelopmentSetup({
               onChange={(e) => setToken(e.target.value)}
             />
             <small>
-              Read the protected local file printed by the development reset
-              command.
+              <I18nText id="Read the protected local file printed by the development reset command." />
             </small>
           </label>
           <div className="canvas-property-pair">
             <label>
-              Your name
+              <I18nText id="Your name" />
               <TextInput
-                aria-label="Your name"
+                aria-label={uiText("Your name")}
                 autoComplete="name"
                 required
                 maxLength={100}
@@ -76,9 +81,9 @@ export default function DevelopmentSetup({
               />
             </label>
             <label>
-              Email
+              <I18nText id="Email" />
               <TextInput
-                aria-label="Owner email"
+                aria-label={uiText("Owner email")}
                 type="email"
                 autoComplete="email"
                 required
@@ -88,9 +93,9 @@ export default function DevelopmentSetup({
             </label>
           </div>
           <label>
-            Password
+            <I18nText id="Password" />
             <TextInput
-              aria-label="Owner password"
+              aria-label={uiText("Owner password")}
               type="password"
               autoComplete="new-password"
               required
@@ -99,12 +104,14 @@ export default function DevelopmentSetup({
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
-            <small>At least 12 characters. Use a unique password.</small>
+            <small>
+              <I18nText id="At least 12 characters. Use a unique password." />
+            </small>
           </label>
           <label>
-            Group name
+            <I18nText id="Group name" />
             <TextInput
-              aria-label="Initial group name"
+              aria-label={uiText("Initial group name")}
               required
               maxLength={160}
               value={group}
@@ -117,12 +124,12 @@ export default function DevelopmentSetup({
             </p>
           )}
           <Button className="button primary" disabled={busy} pending={!!busy}>
-            {"Create owner and group"}
+            {uiText("Create owner and group")}
             <ArrowRight size={16} />
           </Button>
           <HelpText>
-            <LockKeyhole size={13} /> Local-only setup closes permanently after
-            completion. Sign in normally afterward.
+            <LockKeyhole size={13} />{" "}
+            <I18nText id="Local-only setup closes permanently after completion. Sign in normally afterward." />
           </HelpText>
         </form>
       </section>

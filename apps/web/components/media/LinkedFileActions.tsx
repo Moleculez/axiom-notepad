@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { ActionRow, Button, IconButton } from "../ui/controls";
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
@@ -16,6 +18,7 @@ export default function LinkedFileActions({
 }: {
   root: RefObject<HTMLElement | null>;
 }) {
+  useInterfaceLocale();
   const { open } = useWorkspace();
   const [target, setTarget] = useState<{
       version: string;
@@ -131,7 +134,7 @@ export default function LinkedFileActions({
     <div
       ref={popup}
       role="dialog"
-      aria-label="Linked file actions"
+      aria-label={uiText("Linked file actions")}
       className="linked-file-actions"
       style={{
         left: target.x,
@@ -144,7 +147,7 @@ export default function LinkedFileActions({
         <span className="tool-spacer" />
         <IconButton
           className="icon-button"
-          aria-label="Close file actions"
+          aria-label={uiText("Close file actions")}
           onClick={() => dismiss.current()}
         >
           <X size={14} />
@@ -162,7 +165,7 @@ export default function LinkedFileActions({
               }}
             >
               <ExternalLink size={14} />
-              Open
+              <I18nText id="Open" />
             </Button>
             <Button
               className="button secondary"
@@ -172,7 +175,7 @@ export default function LinkedFileActions({
               }}
             >
               <Columns2 size={14} />
-              Open beside
+              <I18nText id="Open beside" />
             </Button>
           </ActionRow>
           <FileIdentity
@@ -181,7 +184,7 @@ export default function LinkedFileActions({
           />
         </>
       ) : (
-        !error && <Loading label="Checking file access…" />
+        !error && <Loading label={uiText("Checking file access…")} />
       )}
     </div>,
     document.body,

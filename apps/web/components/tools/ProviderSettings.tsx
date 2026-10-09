@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import {
   Button,
   Checkbox,
@@ -32,6 +34,7 @@ type Provider = {
   used_today: number;
 };
 export default function ProviderSettings({ groupId }: { groupId: string }) {
+  useInterfaceLocale();
   const data = useData<{ configured: boolean; providers: Provider[] }>(
       `group-admin/${groupId}/providers`,
     ),
@@ -89,16 +92,15 @@ export default function ProviderSettings({ groupId }: { groupId: string }) {
   };
   return (
     <section className="provider-settings">
-      <DraftGuard dirty={dirty} title="Unsaved processing provider" />
+      <DraftGuard dirty={dirty} title={uiText("Unsaved processing provider")} />
       <div className="tools-section-heading">
         <div>
           <h2>
             <ShieldCheck size={19} />
-            Research processing providers
+            <I18nText id="Research processing providers" />
           </h2>
           <HelpText>
-            Explicit submission only. API keys stay encrypted on the server;
-            research prompts are never included in administrative activity logs.
+            <I18nText id="Explicit submission only. API keys stay encrypted on the server; research prompts are never included in administrative activity logs." />
           </HelpText>
         </div>
         <Button
@@ -107,7 +109,7 @@ export default function ProviderSettings({ groupId }: { groupId: string }) {
           onClick={() => open(null)}
         >
           <Plus size={16} />
-          Add provider
+          <I18nText id="Add provider" />
         </Button>
       </div>
       <ErrorNotice message={error || data.error} />
@@ -115,9 +117,7 @@ export default function ProviderSettings({ groupId }: { groupId: string }) {
         <Loading />
       ) : !data.data?.configured ? (
         <HelpText>
-          Server setup required: configure the dedicated TOOL_PROVIDER_KEY
-          encryption key. Private endpoint origins must also be allowlisted. No
-          external processing is enabled by default.
+          <I18nText id="Server setup required: configure the dedicated TOOL_PROVIDER_KEY encryption key. Private endpoint origins must also be allowlisted. No external processing is enabled by default." />
         </HelpText>
       ) : data.data?.providers.length ? (
         <div className="tool-project-list">
@@ -135,8 +135,8 @@ export default function ProviderSettings({ groupId }: { groupId: string }) {
                 </small>
               </strong>
               <span>
-                {p.enabled ? "Enabled" : "Disabled"} · {p.used_today}/
-                {p.daily_limit} today (UTC)
+                {p.enabled ? uiText("Enabled") : uiText("Disabled")} ·{" "}
+                {p.used_today}/{p.daily_limit} <I18nText id="today (UTC)" />
               </span>
               <Button
                 className="button secondary"
@@ -154,29 +154,30 @@ export default function ProviderSettings({ groupId }: { groupId: string }) {
                 }}
               >
                 <FlaskConical size={14} />
-                Test
+                <I18nText id="Test" />
               </Button>
               <Button className="button secondary" onClick={() => open(p)}>
-                Configure
+                <I18nText id="Configure" />
               </Button>
             </div>
           ))}
         </div>
       ) : (
         <HelpText>
-          No providers configured. Add a private compatible endpoint or an
-          OpenRouter account for opt-in OCR and mathematical assistance.
+          <I18nText id="No providers configured. Add a private compatible endpoint or an OpenRouter account for opt-in OCR and mathematical assistance." />
         </HelpText>
       )}
       {edit && (
         <Dialog
           className="provider-dialog"
           size="wide"
-          subtitle="Configure an explicit, opt-in processing connection for your group."
+          subtitle={uiText(
+            "Configure an explicit, opt-in processing connection for your group.",
+          )}
           title={
             edit === "new"
-              ? "Add processing provider"
-              : "Configure processing provider"
+              ? uiText("Add processing provider")
+              : uiText("Configure processing provider")
           }
           onClose={requestClose}
         >
@@ -218,9 +219,11 @@ export default function ProviderSettings({ groupId }: { groupId: string }) {
             }}
           >
             <fieldset className="provider-form-section" disabled={busy}>
-              <legend>Connection</legend>
+              <legend>
+                <I18nText id="Connection" />
+              </legend>
               <label>
-                Name
+                <I18nText id="Name" />
                 <TextInput
                   required
                   value={name}
@@ -229,20 +232,22 @@ export default function ProviderSettings({ groupId }: { groupId: string }) {
                 />
               </label>
               <label>
-                Connection
+                <I18nText id="Connection" />
                 <NativeSelect
                   value={kind}
                   onChange={(e) => setKind(e.target.value as Provider["kind"])}
                 >
-                  <option value="private">Private compatible endpoint</option>
+                  <option value="private">
+                    <I18nText id="Private compatible endpoint" />
+                  </option>
                   <option value="openrouter">
-                    OpenRouter · external service
+                    <I18nText id="OpenRouter · external service" />
                   </option>
                 </NativeSelect>
               </label>
               {kind === "private" && (
                 <label className="provider-full">
-                  API endpoint
+                  <I18nText id="API endpoint" />
                   <TextInput
                     required
                     type="url"
@@ -253,7 +258,7 @@ export default function ProviderSettings({ groupId }: { groupId: string }) {
                 </label>
               )}
               <label className="provider-full">
-                Model identifier
+                <I18nText id="Model identifier" />
                 <TextInput
                   required
                   value={model}
@@ -264,9 +269,11 @@ export default function ProviderSettings({ groupId }: { groupId: string }) {
               </label>
             </fieldset>
             <fieldset className="provider-form-section" disabled={busy}>
-              <legend>Credentials & limits</legend>
+              <legend>
+                <I18nText id="Credentials & limits" />
+              </legend>
               <label className="provider-full">
-                API credential
+                <I18nText id="API credential" />
                 <TextInput
                   type="password"
                   required={edit === "new"}
@@ -274,14 +281,14 @@ export default function ProviderSettings({ groupId }: { groupId: string }) {
                   value={credential}
                   placeholder={
                     edit !== "new"
-                      ? "Leave empty to retain stored credential"
+                      ? uiText("Leave empty to retain stored credential")
                       : ""
                   }
                   onChange={(e) => setCredential(e.target.value)}
                 />
               </label>
               <label>
-                Daily request limit
+                <I18nText id="Daily request limit" />
                 <TextInput
                   type="number"
                   min={1}
@@ -292,50 +299,51 @@ export default function ProviderSettings({ groupId }: { groupId: string }) {
               </label>
             </fieldset>
             <fieldset className="provider-form-section" disabled={busy}>
-              <legend>Capabilities & availability</legend>
+              <legend>
+                <I18nText id="Capabilities & availability" />
+              </legend>
               <label className="provider-capability">
                 <Checkbox
                   checked={ocr}
                   onChange={(e) => setOcr(e.target.checked)}
                 />
-                Model accepts images for OCR
+                <I18nText id="Model accepts images for OCR" />
               </label>
               <label className="provider-capability">
                 <Checkbox
                   checked={paper}
                   onChange={(e) => setPaper(e.target.checked)}
                 />
-                Enable paper reading assistance (explicit excerpts only)
+                <I18nText id="Enable paper reading assistance (explicit excerpts only)" />
               </label>
               <label className="provider-capability">
                 <Checkbox
                   checked={enabled}
                   onChange={(e) => setEnabled(e.target.checked)}
                 />
-                Enable for this group
+                <I18nText id="Enable for this group" />
               </label>
               <label className="provider-capability">
                 <Checkbox
                   checked={assistant}
                   onChange={(e) => setAssistant(e.target.checked)}
                 />
-                Enable workspace assistant (reviewed context and proposals)
+                <I18nText id="Enable workspace assistant (reviewed context and proposals)" />
               </label>
             </fieldset>
             <p className="muted">
-              Enabling does not send any material. Each researcher chooses this
-              provider and confirms the exact text/image before submitting.
-              Provider billing and retention policies still apply.
+              <I18nText id="Enabling does not send any material. Each researcher chooses this provider and confirms the exact text/image before submitting. Provider billing and retention policies still apply." />
             </p>
             <ErrorNotice message={error} />
             <DialogFooter>
               <Button
+                data-dialog-cancel
                 type="button"
                 className="button secondary"
                 disabled={busy}
                 onClick={requestClose}
               >
-                Cancel
+                <I18nText id="Cancel" />
               </Button>
               <Button
                 className="button primary"
@@ -343,7 +351,7 @@ export default function ProviderSettings({ groupId }: { groupId: string }) {
                 pending={!!busy}
               >
                 <Save size={15} />
-                {"Save provider"}
+                {uiText("Save provider")}
               </Button>
             </DialogFooter>
           </form>
@@ -351,22 +359,22 @@ export default function ProviderSettings({ groupId }: { groupId: string }) {
       )}
       {confirmClose && (
         <Dialog
-          title="Discard provider changes?"
+          title={uiText("Discard provider changes?")}
           onClose={() => setConfirmClose(false)}
         >
           <p>
-            Your unsaved connection settings will be discarded. Any credential
-            you entered will be cleared.
+            <I18nText id="Your unsaved connection settings will be discarded. Any credential you entered will be cleared." />
           </p>
           <DialogFooter>
             <Button
+              data-dialog-cancel
               className="button secondary"
               onClick={() => setConfirmClose(false)}
             >
-              Keep editing
+              <I18nText id="Keep editing" />
             </Button>
             <Button className="button primary" onClick={close}>
-              Discard changes
+              <I18nText id="Discard changes" />
             </Button>
           </DialogFooter>
         </Dialog>

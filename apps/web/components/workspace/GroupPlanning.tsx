@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import {
   Button,
   Checkbox,
@@ -77,6 +79,7 @@ type CapacityData = ReturnType<typeof capacityReport> & {
 const hours = (n: number) =>
   new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 }).format(n);
 export default function GroupPlanning({ id }: { id: string }) {
+  useInterfaceLocale();
   const { session, revision, navigate, spaces } = useWorkspace(),
     { params } = useLocation();
   const group = session.groups.find((g) => g.id === id),
@@ -105,10 +108,13 @@ export default function GroupPlanning({ id }: { id: string }) {
   return (
     <main className="ws-page group-planning">
       <PageHeading eyebrow="GROUP PLANNING" title={group.name}>
-        Coordinate research across accessible workspaces.
+        <I18nText id="Coordinate research across accessible workspaces." />
       </PageHeading>
       <div className="productivity-subtoolbar">
-        <nav className="planning-view-switch" aria-label="Group planning views">
+        <nav
+          className="planning-view-switch"
+          aria-label={uiText("Group planning views")}
+        >
           {[
             ["overview", "Overview", Layers3],
             ["timeline", "Timeline", ChartGantt],
@@ -126,12 +132,14 @@ export default function GroupPlanning({ id }: { id: string }) {
           ))}
         </nav>
         <label>
-          Portfolio
+          <I18nText id="Portfolio" />
           <NativeSelect
             value={portfolio}
             onChange={(e) => change({ portfolio: e.target.value })}
           >
-            <option value="">All accessible workspaces</option>
+            <option value="">
+              <I18nText id="All accessible workspaces" />
+            </option>
             {data.data?.portfolios.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
@@ -143,8 +151,8 @@ export default function GroupPlanning({ id }: { id: string }) {
           <>
             <IconButton
               className="icon-button"
-              aria-label="Create portfolio"
-              title="Create portfolio"
+              aria-label={uiText("Create portfolio")}
+              title={uiText("Create portfolio")}
               onClick={() => setEditing("new")}
             >
               <Plus size={17} />
@@ -152,8 +160,8 @@ export default function GroupPlanning({ id }: { id: string }) {
             {portfolio && (
               <IconButton
                 className="icon-button"
-                aria-label="Edit portfolio"
-                title="Edit portfolio"
+                aria-label={uiText("Edit portfolio")}
+                title={uiText("Edit portfolio")}
                 onClick={() =>
                   setEditing(
                     data.data!.portfolios.find((p) => p.id === portfolio)!,
@@ -168,8 +176,8 @@ export default function GroupPlanning({ id }: { id: string }) {
         <span className="planning-spacer" />
         <IconButton
           className="icon-button"
-          title="Ask across this portfolio (up to 20 workspaces)"
-          aria-label="Ask across portfolio"
+          title={uiText("Ask across this portfolio (up to 20 workspaces)")}
+          aria-label={uiText("Ask across portfolio")}
           disabled={!rows.length}
           onClick={() =>
             openAssistant({
@@ -183,12 +191,12 @@ export default function GroupPlanning({ id }: { id: string }) {
           <MessageSquare size={17} />
         </IconButton>
         <WorkspaceLink className="button ghost" to="/groups">
-          Groups
+          <I18nText id="Groups" />
         </WorkspaceLink>
         <IconButton
           className="icon-button"
-          title="Export visible portfolio"
-          aria-label="Export visible portfolio"
+          title={uiText("Export visible portfolio")}
+          aria-label={uiText("Export visible portfolio")}
           disabled={!data.data}
           onClick={() => {
             const u = URL.createObjectURL(
@@ -208,8 +216,7 @@ export default function GroupPlanning({ id }: { id: string }) {
       </div>
       <ErrorNotice message={data.error} retry={data.reload} />
       <HelpText>
-        Accessible active workspaces only. Totals never include work you cannot
-        read.
+        <I18nText id="Accessible active workspaces only. Totals never include work you cannot read." />
       </HelpText>
       {view === "capacity" ? (
         <GroupCapacity groupId={id} portfolioId={portfolio} />
@@ -220,11 +227,23 @@ export default function GroupPlanning({ id }: { id: string }) {
           <table className="productivity-data-table">
             <thead>
               <tr>
-                <th>Workspace</th>
-                <th>{view === "timeline" ? "Schedule" : "Progress"}</th>
-                <th>Risks</th>
-                <th>Estimated work</th>
-                <th>Next milestones</th>
+                <th>
+                  <I18nText id="Workspace" />
+                </th>
+                <th>
+                  {view === "timeline"
+                    ? uiText("Schedule")
+                    : uiText("Progress")}
+                </th>
+                <th>
+                  <I18nText id="Risks" />
+                </th>
+                <th>
+                  <I18nText id="Estimated work" />
+                </th>
+                <th>
+                  <I18nText id="Next milestones" />
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -263,7 +282,7 @@ export default function GroupPlanning({ id }: { id: string }) {
                           aria-label={`${s.completed} of ${s.total} completed`}
                         />
                         <small>
-                          {s.completed} / {s.total} done
+                          {s.completed} / {s.total} <I18nText id="done" />
                         </small>
                       </>
                     )}
@@ -272,18 +291,20 @@ export default function GroupPlanning({ id }: { id: string }) {
                     <WorkspaceLink
                       to={`/workspaces/${s.id}/planning?risk=overdue`}
                     >
-                      {s.overdue} overdue
+                      {s.overdue} <I18nText id="overdue" />
                     </WorkspaceLink>
                     {" · "}
                     <WorkspaceLink
                       to={`/workspaces/${s.id}/planning?risk=blocked`}
                     >
-                      {s.blocked} blocked
+                      {s.blocked} <I18nText id="blocked" />
                     </WorkspaceLink>
                   </td>
                   <td>
                     {hours(s.estimatedHours)} h
-                    <small>{s.unestimated} unestimated</small>
+                    <small>
+                      {s.unestimated} <I18nText id="unestimated" />
+                    </small>
                   </td>
                   <td>
                     {s.milestones.slice(0, 3).map((m) => (
@@ -302,7 +323,9 @@ export default function GroupPlanning({ id }: { id: string }) {
             </tbody>
           </table>
           {!rows.length && (
-            <p>No accessible active workspaces in this portfolio.</p>
+            <p>
+              <I18nText id="No accessible active workspaces in this portfolio." />
+            </p>
           )}
         </div>
       )}
@@ -330,6 +353,7 @@ export function GroupCapacity({
   groupId: string;
   portfolioId?: string;
 }) {
+  useInterfaceLocale();
   const { session, revision } = useWorkspace(),
     [start, setStart] = useState(() =>
       capacityWeekStart(new Date().toLocaleDateString("sv-SE")),
@@ -356,7 +380,7 @@ export function GroupCapacity({
       <div className="productivity-subtoolbar">
         <CalendarDays size={17} />
         <label>
-          Week of
+          <I18nText id="Week of" />
           <TextInput
             type="date"
             value={start}
@@ -366,23 +390,21 @@ export function GroupCapacity({
           />
         </label>
         <label>
-          Range
+          <I18nText id="Range" />
           <NativeSelect
             value={weeks}
             onChange={(e) => setWeeks(Number(e.target.value))}
           >
             {[4, 8, 12, 26, 52].map((n) => (
               <option key={n} value={n}>
-                {n} weeks
+                {n} <I18nText id="weeks" />
               </option>
             ))}
           </NativeSelect>
         </label>
       </div>
       <HelpText>
-        Estimated demand / group availability. Unknown is not zero. Each
-        estimate is the task’s own effort, not its children's rollup. Dates
-        retain their workspace calendar; weeks start Monday.
+        <I18nText id="Estimated demand / group availability. Unknown is not zero. Each estimate is the task’s own effort, not its children's rollup. Dates retain their workspace calendar; weeks start Monday." />
       </HelpText>
       <ErrorNotice message={data.error} retry={data.reload} />
       {data.loading && !data.data && <Loading />}
@@ -392,7 +414,7 @@ export function GroupCapacity({
             className="capacity-scroll"
             onScroll={(e) => setTop(e.currentTarget.scrollTop)}
             role="table"
-            aria-label="Weekly capacity"
+            aria-label={uiText("Weekly capacity")}
             aria-rowcount={rows.length + 1}
           >
             <div
@@ -409,7 +431,9 @@ export function GroupCapacity({
               }
             >
               <div className="capacity-head" role="row">
-                <span role="columnheader">Member</span>
+                <span role="columnheader">
+                  <I18nText id="Member" />
+                </span>
                 {data.data.weeks.map((w) => (
                   <span role="columnheader" key={w}>
                     {w}
@@ -431,7 +455,7 @@ export function GroupCapacity({
                         className="text-button"
                         onClick={() => setPerson(p)}
                       >
-                        Availability
+                        <I18nText id="Availability" />
                       </button>
                     )}
                   </div>
@@ -449,7 +473,7 @@ export function GroupCapacity({
                       </span>
                       <small>
                         {w.available === null
-                          ? "Availability unknown"
+                          ? uiText("Availability unknown")
                           : w.demand > w.available
                             ? `${hours(w.demand - w.available)} h over capacity`
                             : `${hours(w.available - w.demand)} h available`}
@@ -482,8 +506,8 @@ export function GroupCapacity({
       )}
       {selection && (
         <Dialog
-          title="Work contributing to this view"
-          subtitle="Accessible tasks only"
+          title={uiText("Work contributing to this view")}
+          subtitle={uiText("Accessible tasks only")}
           onClose={() => setSelection(null)}
         >
           <div className="planning-task-drilldown">
@@ -499,9 +523,15 @@ export function GroupCapacity({
                 </WorkspaceLink>
               ))}
             {!selection.length && (
-              <p>No scheduled estimated work in this cell.</p>
+              <p>
+                <I18nText id="No scheduled estimated work in this cell." />
+              </p>
             )}
-            {selection.length > 200 && <p>Showing the first 200 tasks.</p>}
+            {selection.length > 200 && (
+              <p>
+                <I18nText id="Showing the first 200 tasks." />
+              </p>
+            )}
           </div>
         </Dialog>
       )}
@@ -517,6 +547,7 @@ function AvailabilityEditor({
   person: CapacityPerson;
   onClose: () => void;
 }) {
+  useInterfaceLocale();
   const { refresh } = useWorkspace(),
     action = useAction(),
     [value, setValue] = useState<Availability>(person.availability);
@@ -526,7 +557,9 @@ function AvailabilityEditor({
   return (
     <Dialog
       title={`${person.name} · Availability`}
-      subtitle="For this group only. Zero hours means unavailable; blank means unknown."
+      subtitle={uiText(
+        "For this group only. Zero hours means unavailable; blank means unknown.",
+      )}
       onClose={onClose}
     >
       <form
@@ -548,7 +581,7 @@ function AvailabilityEditor({
         }}
       >
         <label>
-          Weekly hours
+          <I18nText id="Weekly hours" />
           <TextInput
             type="number"
             min={0}
@@ -565,7 +598,9 @@ function AvailabilityEditor({
           />
         </label>
         <fieldset className="productivity-weekdays">
-          <legend>Working days</legend>
+          <legend>
+            <I18nText id="Working days" />
+          </legend>
           {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day, i) => (
             <label className="productivity-check" key={day}>
               <Checkbox
@@ -583,13 +618,15 @@ function AvailabilityEditor({
             </label>
           ))}
         </fieldset>
-        <h3>Date exceptions</h3>
+        <h3>
+          <I18nText id="Date exceptions" />
+        </h3>
         <HelpText>
-          Set zero for time off. Exceptions replace that day's normal hours.
+          <I18nText id="Set zero for time off. Exceptions replace that day's normal hours." />
         </HelpText>
         <div className="productivity-subtoolbar">
           <label>
-            Date
+            <I18nText id="Date" />
             <TextInput
               type="date"
               value={date}
@@ -597,7 +634,7 @@ function AvailabilityEditor({
             />
           </label>
           <label>
-            Hours
+            <I18nText id="Hours" />
             <TextInput
               type="number"
               min={0}
@@ -622,7 +659,7 @@ function AvailabilityEditor({
               setDate("");
             }}
           >
-            Add exception
+            <I18nText id="Add exception" />
           </Button>
         </div>
         {value.exceptions.map((ex) => (
@@ -653,14 +690,19 @@ function AvailabilityEditor({
           }
         />
         <DialogFooter>
-          <Button type="button" className="button secondary" onClick={onClose}>
-            Cancel
+          <Button
+            data-dialog-cancel
+            type="button"
+            className="button secondary"
+            onClick={onClose}
+          >
+            <I18nText id="Cancel" />
           </Button>
           <Button
             className="button primary"
             disabled={action.busy || !validation.success}
           >
-            Save availability
+            <I18nText id="Save availability" />
           </Button>
         </DialogFooter>
       </form>
@@ -680,14 +722,19 @@ function PortfolioEditor({
   onClose: () => void;
   onDeleted: () => void;
 }) {
+  useInterfaceLocale();
   const { refresh } = useWorkspace(),
     action = useAction(),
     [name, setName] = useState(value === "new" ? "" : value.name),
     [selected, setSelected] = useState(value === "new" ? [] : value.space_ids);
   return (
     <Dialog
-      title={value === "new" ? "Create portfolio" : "Edit portfolio"}
-      subtitle="A saved group view. Workspace permissions remain unchanged."
+      title={
+        value === "new" ? uiText("Create portfolio") : uiText("Edit portfolio")
+      }
+      subtitle={uiText(
+        "A saved group view. Workspace permissions remain unchanged.",
+      )}
       onClose={onClose}
     >
       <form
@@ -709,7 +756,7 @@ function PortfolioEditor({
         }}
       >
         <label>
-          Name
+          <I18nText id="Name" />
           <TextInput
             required
             maxLength={120}
@@ -718,7 +765,9 @@ function PortfolioEditor({
           />
         </label>
         <fieldset className="portfolio-workspaces">
-          <legend>Included workspaces</legend>
+          <legend>
+            <I18nText id="Included workspaces" />
+          </legend>
           {spaces.map((s) => (
             <label className="productivity-check" key={s.id}>
               <Checkbox
@@ -765,17 +814,22 @@ function PortfolioEditor({
                 })
               }
             >
-              Remove portfolio
+              <I18nText id="Remove portfolio" />
             </Button>
           )}
-          <Button className="button secondary" type="button" onClick={onClose}>
-            Cancel
+          <Button
+            data-dialog-cancel
+            className="button secondary"
+            type="button"
+            onClick={onClose}
+          >
+            <I18nText id="Cancel" />
           </Button>
           <Button
             className="button primary"
             disabled={action.busy || !name.trim()}
           >
-            Save portfolio
+            <I18nText id="Save portfolio" />
           </Button>
         </DialogFooter>
       </form>

@@ -1,3 +1,4 @@
+import { bindAttribute } from "@axiom/i18n/dom";
 import {
   MarkdownEngine,
   adoptMarkdownCommandDocument,
@@ -226,7 +227,7 @@ export class NativeEditorView {
     this.content.className = "native-content prose";
     this.content.role = "textbox";
     this.content.setAttribute("aria-multiline", "true");
-    this.content.setAttribute("aria-label", "Research note editor");
+    bindAttribute(this.content, "aria-label", "Research note editor");
     this.content.dataset.testid = "note-editor";
     this.content.setAttribute("autocorrect", "off");
     this.content.tabIndex = 0;
@@ -2757,7 +2758,7 @@ export class NativeEditorView {
       const bar = document.createElement("div");
       bar.className = "editor-selection-bar";
       bar.role = "toolbar";
-      bar.setAttribute("aria-label", "Selection formatting");
+      bindAttribute(bar, "aria-label", "Selection formatting");
       for (const [id, label] of [
         ["bold", "B"],
         ["italic", "I"],
@@ -2977,13 +2978,13 @@ export class NativeEditorView {
     const panel = document.createElement("form");
     panel.className = "native-find";
     panel.role = "search";
-    panel.setAttribute("aria-label", "Find in note");
+    bindAttribute(panel, "aria-label", "Find in note");
     const search = document.createElement("input");
-    search.placeholder = "Find in note";
-    search.setAttribute("aria-label", "Find in note");
+    bindAttribute(search, "placeholder", "Find in note");
+    bindAttribute(search, "aria-label", "Find in note");
     const replacementInput = document.createElement("input");
-    replacementInput.placeholder = "Replace with";
-    replacementInput.setAttribute("aria-label", "Replace with");
+    bindAttribute(replacementInput, "placeholder", "Replace with");
+    bindAttribute(replacementInput, "aria-label", "Replace with");
     const status = document.createElement("span");
     status.role = "status";
     let matches: number[] = [],
@@ -3179,8 +3180,11 @@ export class NativeEditorView {
         .catch(() => {
           if (el.isConnected) {
             el.dataset.diagramError = "true";
-            el.title =
-              "Diagram syntax could not be rendered. Edit the source above.";
+            bindAttribute(
+              el,
+              "title",
+              "Diagram syntax could not be rendered. Edit the source above.",
+            );
           }
         });
     }

@@ -2,6 +2,8 @@ import "dotenv/config";
 import { brandVersion } from "../../packages/shared/src/brand";
 import { readdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { locales } from "../../packages/i18n/src/locales";
+import { catalogsRevision } from "../i18n/catalogs.mjs";
 const output = join("apps/web", process.env.AXIOM_DIST_DIR || ".next");
 const directory = join(output, "static");
 async function assets(
@@ -24,6 +26,9 @@ async function assets(
 }
 const buildId = (await readFile(join(output, "BUILD_ID"), "utf8")).trim();
 const files = [
+  ...locales.map(
+    (locale) => `/locales/${locale.id}.json?v=${catalogsRevision()}`,
+  ),
   ...(await assets(directory)),
   ...(await assets("apps/web/public/tool-assets", "", "/tool-assets/")),
   "/icons/192.png",

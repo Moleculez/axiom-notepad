@@ -1,3 +1,4 @@
+import { bindAttribute, bindText } from "@axiom/i18n/dom";
 import {
   renderDocument,
   documentIndex,
@@ -281,7 +282,7 @@ export function renderBlock(
           title.append(label);
           if (!readOnly) {
             const kind = element("select", "native-callout-kind");
-            kind.setAttribute("aria-label", "Callout type");
+            bindAttribute(kind, "aria-label", "Callout type");
             kind.dataset.calloutFrom = String(n.from);
             kind.dataset.nativeUi = "true";
             for (const value of [
@@ -306,7 +307,7 @@ export function renderBlock(
             const field = element("input", "native-callout-title");
             field.value = n.title ?? "";
             field.maxLength = 200;
-            field.setAttribute("aria-label", "Callout title");
+            bindAttribute(field, "aria-label", "Callout title");
             field.dataset.metadataFrom = String(n.from);
             field.dataset.metadataType = "callout";
             field.dataset.nativeUi = "true";
@@ -333,7 +334,7 @@ export function renderBlock(
         el.dataset.block = "table";
         const table = element("table");
         const model = tableModel(source, n);
-        table.setAttribute("aria-label", "Editable table");
+        bindAttribute(table, "aria-label", "Editable table");
         const widths = options.tableWidths?.get(n.from);
         if (widths) {
           const group = element("colgroup");
@@ -519,8 +520,8 @@ export function renderBlock(
         toolbar.dataset.nativeUi = "true";
         const language = element("input", "native-code-language");
         language.value = n.lang ?? "";
-        language.placeholder = "Plain text";
-        language.setAttribute("aria-label", "Code language");
+        bindAttribute(language, "placeholder", "Plain text");
+        bindAttribute(language, "aria-label", "Code language");
         language.dataset.languageFrom = String(n.from);
         language.disabled = readOnly;
         language.maxLength = 40;
@@ -555,7 +556,7 @@ export function renderBlock(
         if (contains(n) && !readOnly) {
           const tex = element("pre", "native-math-source");
           tex.spellcheck = false;
-          tex.setAttribute("aria-label", "Equation TeX source");
+          bindAttribute(tex, "aria-label", "Equation TeX source");
           text(
             tex,
             literal.text,
@@ -572,7 +573,7 @@ export function renderBlock(
         bounds(preview, literal.offsets[0], literal.offsets.at(-1)!);
         preview.tabIndex = readOnly ? -1 : 0;
         preview.setAttribute("role", "button");
-        preview.setAttribute("aria-label", "Edit display equation");
+        bindAttribute(preview, "aria-label", "Edit display equation");
         preview.innerHTML = fragment(n);
         if (!contains(n) || preferences.mathPreview) el.append(preview);
         const toolbar = element("div", "native-block-tools");
@@ -701,7 +702,7 @@ export function renderBlock(
       case "frontmatter": {
         el = element("details", "native-frontmatter");
         const summary = element("summary");
-        summary.textContent = "Document metadata";
+        bindText(summary, "Document metadata");
         summary.contentEditable = "false";
         el.append(summary);
         const pre = element("pre");

@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import {
   Button,
   Checkbox,
@@ -52,6 +54,7 @@ export default function CanvasExportDialog({
   name: string;
   onClose: () => void;
 }) {
+  useInterfaceLocale();
   const [snapshot] = useState(() => structuredClone(source)),
     [ids] = useState(selection),
     [area] = useState(viewport);
@@ -248,8 +251,8 @@ export default function CanvasExportDialog({
   };
   return (
     <Dialog
-      title="Export canvas"
-      subtitle="An immutable snapshot—collaborators can keep working."
+      title={uiText("Export canvas")}
+      subtitle={uiText("An immutable snapshot—collaborators can keep working.")}
       onClose={() => {
         controller.current?.abort();
         onClose();
@@ -257,45 +260,63 @@ export default function CanvasExportDialog({
     >
       <fieldset className="canvas-export-fields" disabled={busy}>
         <label>
-          Format
+          <I18nText id="Format" />
           <NativeSelect
-            aria-label="Export format"
+            aria-label={uiText("Export format")}
             value={format}
             onChange={(e) => setFormat(e.target.value)}
           >
-            <option value="png">PNG image</option>
-            <option value="jpeg">JPG image</option>
-            <option value="svg">SVG · vector connections, raster cards</option>
-            <option value="pdf">PDF</option>
-            <option value="canvas">JSON Canvas</option>
-            <option value="markdown">Markdown outline</option>
-            <option value="collection">
-              Reimportable research collection (ZIP)
+            <option value="png">
+              <I18nText id="PNG image" />
             </option>
-            <option value="zip">Standard Canvas bundle (ZIP)</option>
+            <option value="jpeg">
+              <I18nText id="JPG image" />
+            </option>
+            <option value="svg">
+              <I18nText id="SVG · vector connections, raster cards" />
+            </option>
+            <option value="pdf">
+              <I18nText id="PDF" />
+            </option>
+            <option value="canvas">
+              <I18nText id="JSON Canvas" />
+            </option>
+            <option value="markdown">
+              <I18nText id="Markdown outline" />
+            </option>
+            <option value="collection">
+              <I18nText id="Reimportable research collection (ZIP)" />
+            </option>
+            <option value="zip">
+              <I18nText id="Standard Canvas bundle (ZIP)" />
+            </option>
           </NativeSelect>
         </label>
         <label>
-          Area
+          <I18nText id="Area" />
           <NativeSelect
-            aria-label="Export area"
+            aria-label={uiText("Export area")}
             value={scope}
             onChange={(e) => setScope(e.target.value)}
           >
-            <option value="all">Whole canvas</option>
-            <option value="selection" disabled={!ids.length}>
-              Selected cards
+            <option value="all">
+              <I18nText id="Whole canvas" />
             </option>
-            <option value="viewport">Current viewport</option>
+            <option value="selection" disabled={!ids.length}>
+              <I18nText id="Selected cards" />
+            </option>
+            <option value="viewport">
+              <I18nText id="Current viewport" />
+            </option>
           </NativeSelect>
         </label>
         {visual && (
           <>
             <div className="canvas-property-pair">
               <label>
-                Resolution
+                <I18nText id="Resolution" />
                 <NativeSelect
-                  aria-label="Export resolution"
+                  aria-label={uiText("Export resolution")}
                   value={scale}
                   onChange={(e) => setScale(Number(e.target.value))}
                 >
@@ -307,9 +328,9 @@ export default function CanvasExportDialog({
                 </NativeSelect>
               </label>
               <label>
-                Padding
+                <I18nText id="Padding" />
                 <TextInput
-                  aria-label="Export padding"
+                  aria-label={uiText("Export padding")}
                   type="number"
                   min={0}
                   max={200}
@@ -323,19 +344,23 @@ export default function CanvasExportDialog({
               </label>
             </div>
             <label>
-              Background
+              <I18nText id="Background" />
               <NativeSelect
-                aria-label="Export background"
+                aria-label={uiText("Export background")}
                 value={background}
                 onChange={(e) => setBackground(e.target.value)}
               >
-                <option value="theme">Current theme</option>
-                <option value="white">White</option>
+                <option value="theme">
+                  <I18nText id="Current theme" />
+                </option>
+                <option value="white">
+                  <I18nText id="White" />
+                </option>
                 <option
                   value="transparent"
                   disabled={format === "jpeg" || format === "pdf"}
                 >
-                  Transparent
+                  <I18nText id="Transparent" />
                 </option>
               </NativeSelect>
             </label>
@@ -344,7 +369,7 @@ export default function CanvasExportDialog({
                 checked={grid}
                 onChange={(e) => setGrid(e.target.checked)}
               />
-              Include grid
+              <I18nText id="Include grid" />
             </label>
             {format === "pdf" && (
               <label className="canvas-property-toggle">
@@ -352,14 +377,14 @@ export default function CanvasExportDialog({
                   checked={tiled}
                   onChange={(e) => setTiled(e.target.checked)}
                 />
-                Tile across landscape A4 pages
+                <I18nText id="Tile across landscape A4 pages" />
               </label>
             )}
           </>
         )}
       </fieldset>
       <HelpText>
-        {data.nodes.length} cards ·{" "}
+        {data.nodes.length} <I18nText id="cards ·" />{" "}
         {visual
           ? `${Math.round(bounds.width * scale)} × ${Math.round(bounds.height * scale)} px. Webpages and media export as static cards. SVG keeps connection geometry, not editable rich text.`
           : format === "collection"
@@ -371,7 +396,10 @@ export default function CanvasExportDialog({
       <ErrorNotice message={error || jobs.error || currentJob?.error} />
       {warnings.length > 0 && (
         <details className="canvas-export-warnings" open>
-          <summary>Export notes ({warnings.length})</summary>
+          <summary>
+            <I18nText id="Export notes (" />
+            {warnings.length})
+          </summary>
           <ul>
             {warnings.map((warning, i) => (
               <li key={i}>{warning}</li>
@@ -387,7 +415,7 @@ export default function CanvasExportDialog({
               href={`/api/v1/exports/${job}/download`}
             >
               <Package size={15} />
-              Download portable bundle
+              <I18nText id="Download portable bundle" />
             </a>
           ) : currentJob?.status === "failed" ? (
             "Bundle failed. Correct the problem and try again."
@@ -401,10 +429,11 @@ export default function CanvasExportDialog({
           <>
             <span role="status">{progress}</span>
             <Button
+              data-dialog-cancel
               className="button secondary"
               onClick={() => controller.current?.abort()}
             >
-              Cancel
+              <I18nText id="Cancel" />
             </Button>
           </>
         ) : (
@@ -415,14 +444,14 @@ export default function CanvasExportDialog({
                 onClick={() => void run(true)}
               >
                 <Copy size={15} />
-                Copy PNG
+                <I18nText id="Copy PNG" />
               </Button>
             )}
             <Button className="button primary" onClick={() => void run()}>
               <Download size={15} />
               {format === "zip" || format === "collection"
-                ? "Prepare bundle"
-                : "Export"}
+                ? uiText("Prepare bundle")
+                : uiText("Export")}
             </Button>
           </>
         )}

@@ -1,4 +1,7 @@
 "use client";
+import { currentLocale } from "@axiom/i18n/client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import {
   Button,
   Checkbox,
@@ -29,7 +32,7 @@ import DraftGuard from "../workspace/DraftGuard";
 const today = () => new Date().toISOString().slice(0, 10);
 const start = (days: number) =>
   new Date(Date.now() - (days - 1) * 86400000).toISOString().slice(0, 10);
-const count = (value: number) => value.toLocaleString();
+const count = (value: number) => value.toLocaleString(currentLocale());
 const metrics: [keyof SiteMetrics, string][] = [
   ["views", "Page views"],
   ["engaged", "Engaged views"],
@@ -55,6 +58,7 @@ export default function SiteAnalytics({
   config: SiteConfig;
   manage: boolean;
 }) {
+  useInterfaceLocale();
   const [range, setRange] = useState({ from: start(30), to: today() }),
     [dates, setDates] = useState(range),
     [filters, setFilters] = useState({
@@ -77,31 +81,32 @@ export default function SiteAnalytics({
     <div className="website-analytics">
       <div className="website-section-heading">
         <div>
-          <h3>Research & readership</h3>
+          <h3>
+            <I18nText id="Research & readership" />
+          </h3>
           <p>
-            Aggregate reading signals and the shape of your published work.
-            Dates use UTC.
+            <I18nText id="Aggregate reading signals and the shape of your published work. Dates use UTC." />
           </p>
         </div>
         <div className="website-inline-actions">
           <IconButton
             className="icon-button"
-            title="Refresh analytics"
-            aria-label="Refresh analytics"
+            title={uiText("Refresh analytics")}
+            aria-label={uiText("Refresh analytics")}
             onClick={data.revalidate}
           >
             <RefreshCw size={16} />
           </IconButton>
           <a className="button secondary" href={`/api/v1/${path}&format=csv`}>
             <Download size={15} />
-            Export CSV
+            <I18nText id="Export CSV" />
           </a>
         </div>
       </div>
       <div className="site-insights-filters">
         <div
           className="website-preview-switch"
-          aria-label="Analytics date presets"
+          aria-label={uiText("Analytics date presets")}
         >
           {[7, 30, 90].map((days) => (
             <button
@@ -113,7 +118,7 @@ export default function SiteAnalytics({
                 setDates(next);
               }}
             >
-              {days} days
+              {days} <I18nText id="days" />
             </button>
           ))}
         </div>
@@ -124,7 +129,7 @@ export default function SiteAnalytics({
           }}
         >
           <label>
-            From
+            <I18nText id="From" />
             <TextInput
               type="date"
               required
@@ -134,7 +139,7 @@ export default function SiteAnalytics({
             />
           </label>
           <label>
-            To
+            <I18nText id="To" />
             <TextInput
               type="date"
               required
@@ -144,18 +149,22 @@ export default function SiteAnalytics({
               onChange={(e) => setDates({ ...dates, to: e.target.value })}
             />
           </label>
-          <Button className="button secondary">Apply dates</Button>
+          <Button className="button secondary">
+            <I18nText id="Apply dates" />
+          </Button>
         </form>
         <div className="website-fields">
           <label>
-            Author
+            <I18nText id="Author" />
             <NativeSelect
               value={filters.author}
               onChange={(e) =>
                 setFilters({ ...filters, author: e.target.value })
               }
             >
-              <option value="">All authors</option>
+              <option value="">
+                <I18nText id="All authors" />
+              </option>
               {config.authors.map((a) => (
                 <option value={a.id} key={a.id}>
                   {a.name}
@@ -164,38 +173,44 @@ export default function SiteAnalytics({
             </NativeSelect>
           </label>
           <label>
-            Topic
+            <I18nText id="Topic" />
             <NativeSelect
               value={filters.tag}
               onChange={(e) => setFilters({ ...filters, tag: e.target.value })}
             >
-              <option value="">All topics</option>
+              <option value="">
+                <I18nText id="All topics" />
+              </option>
               {tags.map((t) => (
                 <option key={t}>{t}</option>
               ))}
             </NativeSelect>
           </label>
           <label>
-            Content
+            <I18nText id="Content" />
             <NativeSelect
               value={filters.kind}
               onChange={(e) => setFilters({ ...filters, kind: e.target.value })}
             >
-              <option value="">All types</option>
+              <option value="">
+                <I18nText id="All types" />
+              </option>
               {["post", "paper", "page", "resource"].map((k) => (
                 <option key={k}>{k}</option>
               ))}
             </NativeSelect>
           </label>
           <label>
-            Article
+            <I18nText id="Article" />
             <NativeSelect
               value={filters.entry}
               onChange={(e) =>
                 setFilters({ ...filters, entry: e.target.value })
               }
             >
-              <option value="">All articles</option>
+              <option value="">
+                <I18nText id="All articles" />
+              </option>
               {config.entries
                 .filter((e) => e.included)
                 .map((e) => (
@@ -210,10 +225,10 @@ export default function SiteAnalytics({
       <ErrorNotice message={data.error} retry={data.reload} />
       {!report ? (
         data.loading ? (
-          <Loading label="Loading publication insights…" />
+          <Loading label={uiText("Loading publication insights…")} />
         ) : (
           <HelpText>
-            Choose a valid date range or retry to load publication insights.
+            <I18nText id="Choose a valid date range or retry to load publication insights." />
           </HelpText>
         )
       ) : (
@@ -222,7 +237,9 @@ export default function SiteAnalytics({
             <p className="site-insights-notice">
               <ShieldCheck size={17} />
               {!report.live
-                ? "This website is not live. Publish a reviewed release to make it accessible."
+                ? uiText(
+                    "This website is not live. Publish a reviewed release to make it accessible.",
+                  )
                 : !report.supported
                   ? "Rebuild and publish a reviewed release to activate the new reading features and analytics."
                   : "First-party collection is off. Existing aggregate history is retained; a manager can enable future collection below."}
@@ -242,13 +259,15 @@ export default function SiteAnalytics({
           <section className="settings-card site-insights-chart">
             <div className="website-section-heading">
               <div>
-                <h3>Reading activity</h3>
+                <h3>
+                  <I18nText id="Reading activity" />
+                </h3>
                 <p>
                   {report.from} — {report.to}
                 </p>
               </div>
               <label>
-                Chart metric
+                <I18nText id="Chart metric" />
                 <NativeSelect
                   value={chartMetric}
                   onChange={(e) =>
@@ -295,13 +314,19 @@ export default function SiteAnalytics({
               ))}
             </svg>
             <details>
-              <summary>View daily data</summary>
+              <summary>
+                <I18nText id="View daily data" />
+              </summary>
               <div className="site-insights-table">
                 <table>
-                  <caption>Daily activity, UTC</caption>
+                  <caption>
+                    <I18nText id="Daily activity, UTC" />
+                  </caption>
                   <thead>
                     <tr>
-                      <th scope="col">Date</th>
+                      <th scope="col">
+                        <I18nText id="Date" />
+                      </th>
                       {metrics.map(([key, label]) => (
                         <th scope="col" key={key}>
                           {label}
@@ -325,10 +350,11 @@ export default function SiteAnalytics({
           </section>
           <div className="site-insights-columns">
             <section className="settings-card">
-              <h3>Published research</h3>
+              <h3>
+                <I18nText id="Published research" />
+              </h3>
               <p>
-                Current live release, independent of the readership date range.
-                Binary files have no estimated text counts.
+                <I18nText id="Current live release, independent of the readership date range. Binary files have no estimated text counts." />
               </p>
               <dl className="site-editorial-totals">
                 {(
@@ -346,7 +372,9 @@ export default function SiteAnalytics({
                   </div>
                 ))}
               </dl>
-              <h4>Publication cadence</h4>
+              <h4>
+                <I18nText id="Publication cadence" />
+              </h4>
               <ul className="site-insights-list">
                 {report.publishing.cadence.map((d) => (
                   <li key={d.month}>
@@ -355,7 +383,9 @@ export default function SiteAnalytics({
                   </li>
                 ))}
               </ul>
-              <h4>Topics</h4>
+              <h4>
+                <I18nText id="Topics" />
+              </h4>
               <ul className="site-insights-list">
                 {report.publishing.topics.map((t) => (
                   <li key={t.tag}>
@@ -366,9 +396,11 @@ export default function SiteAnalytics({
               </ul>
             </section>
             <section className="settings-card">
-              <h3>Referring domains</h3>
+              <h3>
+                <I18nText id="Referring domains" />
+              </h3>
               <p>
-                Domains only; no referring paths or search queries are stored.
+                <I18nText id="Domains only; no referring paths or search queries are stored." />
               </p>
               {report.referrers.length ? (
                 <ul className="site-insights-list">
@@ -380,24 +412,44 @@ export default function SiteAnalytics({
                   ))}
                 </ul>
               ) : (
-                <p>No recorded referring traffic in this period.</p>
+                <p>
+                  <I18nText id="No recorded referring traffic in this period." />
+                </p>
               )}
             </section>
           </div>
           <section className="settings-card">
-            <h3>Articles</h3>
+            <h3>
+              <I18nText id="Articles" />
+            </h3>
             <div className="site-insights-table">
               <table>
-                <caption>Published article performance</caption>
+                <caption>
+                  <I18nText id="Published article performance" />
+                </caption>
                 <thead>
                   <tr>
-                    <th scope="col">Article</th>
-                    <th scope="col">Words</th>
-                    <th scope="col">Views</th>
-                    <th scope="col">Engaged</th>
-                    <th scope="col">Completion</th>
-                    <th scope="col">Downloads</th>
-                    <th scope="col">Citations</th>
+                    <th scope="col">
+                      <I18nText id="Article" />
+                    </th>
+                    <th scope="col">
+                      <I18nText id="Words" />
+                    </th>
+                    <th scope="col">
+                      <I18nText id="Views" />
+                    </th>
+                    <th scope="col">
+                      <I18nText id="Engaged" />
+                    </th>
+                    <th scope="col">
+                      <I18nText id="Completion" />
+                    </th>
+                    <th scope="col">
+                      <I18nText id="Downloads" />
+                    </th>
+                    <th scope="col">
+                      <I18nText id="Citations" />
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -423,26 +475,43 @@ export default function SiteAnalytics({
               </table>
             </div>
             {!report.entries.length && (
-              <p>No matching publications in the live release.</p>
+              <p>
+                <I18nText id="No matching publications in the live release." />
+              </p>
             )}
           </section>
           <section className="settings-card">
-            <h3>Authors</h3>
+            <h3>
+              <I18nText id="Authors" />
+            </h3>
             <p>
-              Each coauthor receives full credit for a shared article. Site
-              totals count the article only once.
+              <I18nText id="Each coauthor receives full credit for a shared article. Site totals count the article only once." />
             </p>
             <div className="site-insights-table">
               <table>
-                <caption>Author publication and reading totals</caption>
+                <caption>
+                  <I18nText id="Author publication and reading totals" />
+                </caption>
                 <thead>
                   <tr>
-                    <th scope="col">Author</th>
-                    <th scope="col">Publications</th>
-                    <th scope="col">Words</th>
-                    <th scope="col">Views</th>
-                    <th scope="col">Engaged</th>
-                    <th scope="col">Downloads</th>
+                    <th scope="col">
+                      <I18nText id="Author" />
+                    </th>
+                    <th scope="col">
+                      <I18nText id="Publications" />
+                    </th>
+                    <th scope="col">
+                      <I18nText id="Words" />
+                    </th>
+                    <th scope="col">
+                      <I18nText id="Views" />
+                    </th>
+                    <th scope="col">
+                      <I18nText id="Engaged" />
+                    </th>
+                    <th scope="col">
+                      <I18nText id="Downloads" />
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -461,22 +530,14 @@ export default function SiteAnalytics({
             </div>
           </section>
           <details className="settings-card site-insights-definitions">
-            <summary>How to interpret these numbers</summary>
+            <summary>
+              <I18nText id="How to interpret these numbers" />
+            </summary>
             <p>
-              A view is a page load, not a unique person. An engaged view has at
-              least 10 active seconds. A scroll completion combines 90% article
-              depth and 10 active seconds. Download counts are clicks, not
-              confirmed completed downloads. Counts exclude known bots,
-              previews, browser privacy signals and opted-out visitors, but
-              cannot prove human readership.
+              <I18nText id="A view is a page load, not a unique person. An engaged view has at least 10 active seconds. A scroll completion combines 90% article depth and 10 active seconds. Download counts are clicks, not confirmed completed downloads. Counts exclude known bots, previews, browser privacy signals and opted-out visitors, but cannot prove human readership." />
             </p>
             <p>
-              Daily aggregates are kept for thirteen months; ephemeral
-              page-event deduplication records for seven days. Public counters
-              are lifetime totals for currently published entries. Anonymous
-              first-party counts store no raw IPs, account identity or
-              persistent visitor IDs. Ordinary local development does not
-              collect data.
+              <I18nText id="Daily aggregates are kept for thirteen months; ephemeral page-event deduplication records for seven days. Public counters are lifetime totals for currently published entries. Anonymous first-party counts store no raw IPs, account identity or persistent visitor IDs. Ordinary local development does not collect data." />
             </p>
           </details>
           <AnalyticsPreferences
@@ -502,6 +563,7 @@ function AnalyticsPreferences({
   manage: boolean;
   reload: () => void;
 }) {
+  useInterfaceLocale();
   const [baseline, setBaseline] = useState({
       settings: report.settings,
       version: report.settingsVersion,
@@ -537,11 +599,15 @@ function AnalyticsPreferences({
   );
   return (
     <section className="settings-card site-insights-preferences">
-      <DraftGuard dirty={dirty} title="Leave unsaved analytics preferences?" />
-      <h3>Collection & disclosure</h3>
+      <DraftGuard
+        dirty={dirty}
+        title={uiText("Leave unsaved analytics preferences?")}
+      />
+      <h3>
+        <I18nText id="Collection & disclosure" />
+      </h3>
       <p>
-        Manager-only operational settings take effect without republishing. They
-        do not change your frozen article content.
+        <I18nText id="Manager-only operational settings take effect without republishing. They do not change your frozen article content." />
       </p>
       <form
         onSubmit={(e) => {
@@ -582,9 +648,9 @@ function AnalyticsPreferences({
             "Use the selected public metrics above; never expose the private dashboard.",
           )}
           <label>
-            External analytics measurement ID
+            <I18nText id="External analytics measurement ID" />
             <TextInput
-              placeholder="G-ABC1234567"
+              placeholder={uiText("G-ABC1234567")}
               maxLength={22}
               value={settings.googleMeasurementId}
               onChange={(e) =>
@@ -597,10 +663,7 @@ function AnalyticsPreferences({
             />
           </label>
           <HelpText>
-            Optional Google Analytics 4 integration with your own property. No
-            Google requests occur until the visitor explicitly accepts.
-            Advertising storage and signals remain disabled. Reports stay in
-            Google Analytics; this dashboard uses only first-party aggregates.
+            <I18nText id="Optional Google Analytics 4 integration with your own property. No Google requests occur until the visitor explicitly accepts. Advertising storage and signals remain disabled. Reports stay in Google Analytics; this dashboard uses only first-party aggregates." />
           </HelpText>
           {report.settingsVersion !== baseline.version && dirty && (
             <ErrorNotice message="Another manager changed these preferences. Discard your local changes to load the latest settings before saving." />
@@ -612,7 +675,7 @@ function AnalyticsPreferences({
               pending={!!action.busy}
             >
               <Save size={15} />
-              {"Save privacy preferences"}
+              {uiText("Save privacy preferences")}
             </Button>
             <Button
               type="button"
@@ -626,7 +689,7 @@ function AnalyticsPreferences({
                 });
               }}
             >
-              Discard changes
+              <I18nText id="Discard changes" />
             </Button>
           </div>
         </fieldset>
@@ -634,7 +697,7 @@ function AnalyticsPreferences({
       <ErrorNotice message={action.error} />
       {!manage && (
         <HelpText>
-          Only a workspace manager can change collection or public disclosures.
+          <I18nText id="Only a workspace manager can change collection or public disclosures." />
         </HelpText>
       )}
     </section>

@@ -1,5 +1,11 @@
 import { actionIcon, type ActionIconName } from "../icons/actions";
 import { editorCommandIcons } from "../icons/editor-commands";
+import {
+  bindAttribute,
+  bindText,
+  boundMessage,
+  unbindAttribute,
+} from "@axiom/i18n/dom";
 
 /** Block chrome and menu actions share one source-independent icon catalog. */
 export function blockIcon(name: string) {
@@ -18,8 +24,8 @@ export function iconButton(label: string, icon: string, action: () => void) {
   const button = document.createElement("button");
   button.type = "button";
   button.className = "editor-icon-button";
-  button.setAttribute("aria-label", label);
-  button.dataset.tooltip = label;
+  bindAttribute(button, "aria-label", label);
+  bindAttribute(button, "data-tooltip", label);
   button.append(blockIcon(icon));
   button.addEventListener("click", () => {
     if (button.getAttribute("aria-disabled") !== "true") action();
@@ -50,7 +56,10 @@ function showTooltip(button: HTMLElement) {
   tooltip.className = "editor-icon-tooltip";
   tooltip.role = "tooltip";
   tooltip.id = "editor-tip-" + crypto.randomUUID();
-  tooltip.textContent = button.dataset.tooltip;
+  bindText(
+    tooltip,
+    boundMessage(button, "data-tooltip") ?? button.dataset.tooltip,
+  );
   const abort = new AbortController();
   const observer = new MutationObserver(() => {
     if (!button.isConnected) hideTooltip?.();
@@ -95,7 +104,14 @@ function showTooltip(button: HTMLElement) {
 
 export function disableIcon(button: HTMLButtonElement, reason?: string) {
   button.setAttribute("aria-disabled", String(!!reason));
-  button.dataset.tooltip = reason || button.getAttribute("aria-label") || "";
-  if (reason) button.setAttribute("aria-description", reason);
-  else button.removeAttribute("aria-description");
+  bindAttribute(
+    button,
+    "data-tooltip",
+    reason || boundMessage(button, "aria-label") || "",
+  );
+  if (reason) bindAttribute(button, "aria-description", reason);
+  else {
+    unbindAttribute(button, "aria-description");
+    button.removeAttribute("aria-description");
+  }
 }

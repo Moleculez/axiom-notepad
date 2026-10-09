@@ -1,4 +1,7 @@
 "use client";
+import { currentLocale } from "@axiom/i18n/client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import {
   Button,
   Checkbox,
@@ -31,6 +34,7 @@ export default function MathAssistant({
   onInsert: (text: string) => void;
   readOnly: boolean;
 }) {
+  useInterfaceLocale();
   const providers = useData<Provider[]>(
       `tool-providers?resource=${resourceId}`,
     ),
@@ -138,33 +142,43 @@ export default function MathAssistant({
   return (
     <div className="math-assistant">
       <HelpText>
-        Results are suggestions, not proof verification. Review alongside your
-        original. Nothing is sent automatically or silently replaces your work.
+        <I18nText id="Results are suggestions, not proof verification. Review alongside your original. Nothing is sent automatically or silently replaces your work." />
       </HelpText>
       <div className="tool-settings-fields">
         <label>
-          Task
+          <I18nText id="Task" />
           <NativeSelect
             value={kind}
             onChange={(e) => setKind(e.target.value as typeof kind)}
           >
-            <option value="generate">Generate LaTeX</option>
-            <option value="check">Check mathematics</option>
-            <option value="explain">Explain</option>
-            <option value="ocr">Image / PDF → LaTeX</option>
+            <option value="generate">
+              <I18nText id="Generate LaTeX" />
+            </option>
+            <option value="check">
+              <I18nText id="Check mathematics" />
+            </option>
+            <option value="explain">
+              <I18nText id="Explain" />
+            </option>
+            <option value="ocr">
+              <I18nText id="Image / PDF → LaTeX" />
+            </option>
           </NativeSelect>
         </label>
         <label>
-          Provider
+          <I18nText id="Provider" />
           <NativeSelect
             value={provider}
             onChange={(e) => setProvider(e.target.value)}
           >
-            <option value="">Choose a provider…</option>
+            <option value="">
+              <I18nText id="Choose a provider…" />
+            </option>
             {supported?.map((p) => (
               <option value={p.id} key={p.id}>
-                {p.name} · {p.kind === "private" ? "private" : "external"} ·{" "}
-                {p.model}
+                {p.name} ·{" "}
+                {p.kind === "private" ? uiText("private") : uiText("external")}{" "}
+                · {p.model}
               </option>
             ))}
           </NativeSelect>
@@ -174,17 +188,18 @@ export default function MathAssistant({
         ) : (
           !supported?.length && (
             <HelpText>
-              No compatible provider is enabled. A group administrator can add
-              one under Group administration → Providers.
+              <I18nText id="No compatible provider is enabled. A group administrator can add one under Group administration → Providers." />
             </HelpText>
           )
         )}
         <label className="tool-setting-stack">
-          Instructions
+          <I18nText id="Instructions" />
           <TextArea
             rows={3}
             maxLength={10000}
-            placeholder="Describe the expression or the question you want checked…"
+            placeholder={uiText(
+              "Describe the expression or the question you want checked…",
+            )}
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
           />
@@ -205,7 +220,7 @@ export default function MathAssistant({
           >
             <label className="button secondary">
               <Upload size={15} />
-              Choose image or PDF
+              <I18nText id="Choose image or PDF" />
               <input
                 type="file"
                 hidden
@@ -218,15 +233,15 @@ export default function MathAssistant({
               />
             </label>
             <small>
-              Or paste an image here. Drag over the preview to crop.
+              <I18nText id="Or paste an image here. Drag over the preview to crop." />
             </small>
             {pdf && (
               <div className="tool-controls">
                 <span>{pdf.name}</span>
                 <label>
-                  Page
+                  <I18nText id="Page" />
                   <TextInput
-                    aria-label="PDF page for OCR"
+                    aria-label={uiText("PDF page for OCR")}
                     type="number"
                     min={1}
                     value={page}
@@ -238,7 +253,7 @@ export default function MathAssistant({
                   disabled={busy}
                   onClick={() => void renderPdf()}
                 >
-                  Preview selected page
+                  <I18nText id="Preview selected page" />
                 </Button>
               </div>
             )}
@@ -331,7 +346,7 @@ export default function MathAssistant({
                       setCrop(null);
                     }}
                   >
-                    Apply crop
+                    <I18nText id="Apply crop" />
                   </Button>
                   <Button
                     className="button ghost"
@@ -340,7 +355,7 @@ export default function MathAssistant({
                       setCrop(null);
                     }}
                   >
-                    Remove image
+                    <I18nText id="Remove image" />
                   </Button>
                 </div>
               </>
@@ -348,7 +363,9 @@ export default function MathAssistant({
           </div>
         )}
         <details>
-          <summary>LaTeX included in this request</summary>
+          <summary>
+            <I18nText id="LaTeX included in this request" />
+          </summary>
           <pre className="tool-submission-source">{source || "(empty)"}</pre>
         </details>
         <label className="tool-consent">
@@ -357,13 +374,13 @@ export default function MathAssistant({
             onChange={(e) => setConsent(e.target.checked)}
           />
           <span>
-            I approve sending this source, my instructions
-            {kind === "ocr" ? ", and the displayed image" : ""} to{" "}
-            {selected?.name ?? "the selected provider"}
+            <I18nText id="I approve sending this source, my instructions" />
+            {kind === "ocr" ? uiText(", and the displayed image") : ""}{" "}
+            <I18nText id="to" /> {selected?.name ?? "the selected provider"}
             {selected?.kind === "openrouter"
-              ? " through OpenRouter and its model provider"
+              ? uiText(" through OpenRouter and its model provider")
               : ""}
-            . I have permission to submit this research material.
+            <I18nText id=". I have permission to submit this research material." />
           </span>
         </label>
         <Button
@@ -398,22 +415,27 @@ export default function MathAssistant({
           }}
         >
           {kind === "ocr" ? <ScanText size={15} /> : <Sparkles size={15} />}
-          Submit explicitly
+          <I18nText id="Submit explicitly" />
         </Button>
       </div>
       <ErrorNotice message={error || providers.error || jobs.error} />
-      <h3>Requests and reviewed results</h3>
+      <h3>
+        <I18nText id="Requests and reviewed results" />
+      </h3>
       {jobs.data?.map((job) => (
         <article key={job.id} className="tool-checkpoint">
           <div className="tools-section-heading">
             <strong>
               {job.kind} · {job.status}
             </strong>
-            <small>{new Date(job.created_at).toLocaleString()}</small>
+            <small>
+              {new Date(job.created_at).toLocaleString(currentLocale())}
+            </small>
           </div>
           {job.error && <HelpText>{job.error}</HelpText>}
           {job.status === "queued" || job.status === "running" ? (
             <Button
+              data-dialog-cancel
               className="button secondary"
               onClick={() =>
                 void post(`tool-jobs/${job.id}/cancel`, {})
@@ -422,17 +444,21 @@ export default function MathAssistant({
               }
             >
               <X size={14} />
-              Cancel request
+              <I18nText id="Cancel request" />
             </Button>
           ) : job.result?.text ? (
             <>
               <div className="assistant-comparison">
                 <div>
-                  <small>Submitted source</small>
+                  <small>
+                    <I18nText id="Submitted source" />
+                  </small>
                   <pre>{job.result.source ?? original}</pre>
                 </div>
                 <div>
-                  <small>Provider response · review before use</small>
+                  <small>
+                    <I18nText id="Provider response · review before use" />
+                  </small>
                   <pre>{job.result.text}</pre>
                 </div>
               </div>
@@ -446,14 +472,14 @@ export default function MathAssistant({
                 }
               >
                 <Copy size={14} />
-                Copy result
+                <I18nText id="Copy result" />
               </Button>
               <Button
                 className="button secondary"
                 disabled={readOnly}
                 onClick={() => onInsert(job.result!.text!)}
               >
-                Insert reviewed result at selection
+                <I18nText id="Insert reviewed result at selection" />
               </Button>
             </>
           ) : null}

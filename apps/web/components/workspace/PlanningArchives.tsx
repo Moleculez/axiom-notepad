@@ -1,4 +1,7 @@
 "use client";
+import { currentLocale } from "@axiom/i18n/client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { useId, useState } from "react";
 import {
   occurrenceQuerySchema,
@@ -53,6 +56,7 @@ export function PlanningHistoryDialog({
   onNavigate?: () => void;
   withOccurrences?: boolean;
 }) {
+  useInterfaceLocale();
   const { revision } = useWorkspace();
   const [tab, setTab] = useState<"changes" | "tasks">("changes");
   const [filtering, setFiltering] = useState(false);
@@ -79,14 +83,16 @@ export function PlanningHistoryDialog({
         size="wide"
         className="planning-archive-dialog"
         onClose={onClose}
-        subtitle="Saved changes stay live. Refresh includes new entries."
+        subtitle={uiText(
+          "Saved changes stay live. Refresh includes new entries.",
+        )}
       >
         <DialogBody>
           <div className="planning-archive-content">
             {withOccurrences && (
               <ActionRow
                 className="planning-archive-tabs"
-                aria-label="Routine history sections"
+                aria-label={uiText("Routine history sections")}
               >
                 <Button
                   size="compact"
@@ -95,7 +101,7 @@ export function PlanningHistoryDialog({
                   aria-controls={tabId}
                   onClick={() => setTab("changes")}
                 >
-                  Changes
+                  <I18nText id="Changes" />
                 </Button>
                 <Button
                   size="compact"
@@ -104,13 +110,15 @@ export function PlanningHistoryDialog({
                   aria-controls={tabId}
                   onClick={() => setTab("tasks")}
                 >
-                  Generated tasks
+                  <I18nText id="Generated tasks" />
                 </Button>
               </ActionRow>
             )}
             <ArchiveSearch
               label={
-                tab === "changes" ? "Search changes" : "Search generated tasks"
+                tab === "changes"
+                  ? uiText("Search changes")
+                  : uiText("Search generated tasks")
               }
               search={active.search}
               onSearch={active.setSearch}
@@ -124,13 +132,13 @@ export function PlanningHistoryDialog({
               {tab === "tasks" && (
                 <Button size="compact" onClick={() => setFiltering(true)}>
                   <ListFilter size={14} />
-                  Filters
+                  <I18nText id="Filters" />
                   {tasks.filters.state !== "all" ||
                   tasks.filters.status ||
                   tasks.filters.from ||
                   tasks.filters.to ||
                   tasks.filters.sort !== "newest"
-                    ? " · On"
+                    ? uiText(" · On")
                     : ""}
                 </Button>
               )}
@@ -143,17 +151,17 @@ export function PlanningHistoryDialog({
                     history.set({ mine: e.target.checked ? "1" : "0" })
                   }
                 />
-                My changes
+                <I18nText id="My changes" />
               </label>
             )}
             <div className="planning-archive-summary">
               <HelpText aria-live="polite">
                 {data.data
                   ? `${data.data.total} matching ${tab === "changes" ? "changes" : "generated tasks"}`
-                  : "Loading archive…"}
+                  : uiText("Loading archive…")}
               </HelpText>
               <Button size="compact" variant="ghost" onClick={active.reset}>
-                Reset filters
+                <I18nText id="Reset filters" />
               </Button>
             </div>
             <ErrorNotice message={data.error} retry={active.refresh} />
@@ -169,7 +177,7 @@ export function PlanningHistoryDialog({
                 <Empty
                   title={`No matching ${tab === "changes" ? "changes" : "generated tasks"}`}
                 >
-                  Try another filter, or Refresh to start from the first page.
+                  <I18nText id="Try another filter, or Refresh to start from the first page." />
                 </Empty>
               ) : tab === "changes" ? (
                 <ol className="planning-history-list">
@@ -179,7 +187,9 @@ export function PlanningHistoryDialog({
                       <HelpText as="span">
                         {h.actor_name ?? "Former member"} ·{" "}
                         <time dateTime={h.created_at}>
-                          {new Date(h.created_at).toLocaleString()}
+                          {new Date(h.created_at).toLocaleString(
+                            currentLocale(),
+                          )}
                         </time>
                       </HelpText>
                     </li>
@@ -211,7 +221,7 @@ export function PlanningHistoryDialog({
                           {o.occurs_on.slice(0, 10)}
                         </time>{" "}
                         · {o.status.replaceAll("_", " ")}
-                        {o.deleted_at ? " · Deleted task" : ""}
+                        {o.deleted_at ? uiText(" · Deleted task") : ""}
                       </HelpText>
                     </li>
                   ))}
@@ -222,7 +232,9 @@ export function PlanningHistoryDialog({
         </DialogBody>
         <DialogFooter>
           <ArchivePagination
-            label={tab === "changes" ? "Changes" : "Generated tasks"}
+            label={
+              tab === "changes" ? uiText("Changes") : uiText("Generated tasks")
+            }
             {...active.pagination}
           />
         </DialogFooter>
@@ -249,6 +261,7 @@ function OccurrenceFilters({
   onClose: () => void;
   onApply: (patch: Partial<OccurrenceQuery>) => void;
 }) {
+  useInterfaceLocale();
   const [draft, setDraft] = useState({
     state: filters.state,
     status: filters.status,
@@ -260,7 +273,7 @@ function OccurrenceFilters({
     setDraft((old) => ({ ...old, ...patch }));
   const parsed = occurrenceQuerySchema.safeParse({ ...filters, ...draft });
   return (
-    <Dialog title="Filter generated tasks" onClose={onClose}>
+    <Dialog title={uiText("Filter generated tasks")} onClose={onClose}>
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -269,19 +282,25 @@ function OccurrenceFilters({
       >
         <DialogBody>
           <div className="planning-suite-form">
-            <Field label="Availability">
+            <Field label={uiText("Availability")}>
               <NativeSelect
                 value={draft.state}
                 onChange={(e) =>
                   set({ state: e.target.value as OccurrenceQuery["state"] })
                 }
               >
-                <option value="all">All generated tasks</option>
-                <option value="active">Available tasks</option>
-                <option value="deleted">Deleted tasks</option>
+                <option value="all">
+                  <I18nText id="All generated tasks" />
+                </option>
+                <option value="active">
+                  <I18nText id="Available tasks" />
+                </option>
+                <option value="deleted">
+                  <I18nText id="Deleted tasks" />
+                </option>
               </NativeSelect>
             </Field>
-            <Field label="Status">
+            <Field label={uiText("Status")}>
               <NativeSelect
                 value={draft.status ?? ""}
                 onChange={(e) =>
@@ -292,7 +311,9 @@ function OccurrenceFilters({
                   })
                 }
               >
-                <option value="">All statuses</option>
+                <option value="">
+                  <I18nText id="All statuses" />
+                </option>
                 {taskStatusSchema.options.map((s) => (
                   <option key={s} value={s}>
                     {s.replaceAll("_", " ")}
@@ -301,7 +322,7 @@ function OccurrenceFilters({
               </NativeSelect>
             </Field>
             <div className="planning-field-grid">
-              <Field label="Occurrence from">
+              <Field label={uiText("Occurrence from")}>
                 <TextInput
                   type="date"
                   value={draft.from ?? ""}
@@ -310,7 +331,7 @@ function OccurrenceFilters({
                 />
               </Field>
               <Field
-                label="Occurrence until"
+                label={uiText("Occurrence until")}
                 error={
                   !parsed.success
                     ? "Choose an end date on or after the start date."
@@ -325,30 +346,33 @@ function OccurrenceFilters({
                 />
               </Field>
             </div>
-            <Field label="Occurrence order">
+            <Field label={uiText("Occurrence order")}>
               <NativeSelect
                 value={draft.sort}
                 onChange={(e) =>
                   set({ sort: e.target.value as OccurrenceQuery["sort"] })
                 }
               >
-                <option value="newest">Newest first</option>
-                <option value="oldest">Oldest first</option>
+                <option value="newest">
+                  <I18nText id="Newest first" />
+                </option>
+                <option value="oldest">
+                  <I18nText id="Oldest first" />
+                </option>
               </NativeSelect>
             </Field>
             <HelpText>
-              Dates refer to generated occurrences. Deleted tasks open in the
-              workspace’s Deleted tasks view; template edits never rewrite them.
+              <I18nText id="Dates refer to generated occurrences. Deleted tasks open in the workspace’s Deleted tasks view; template edits never rewrite them." />
             </HelpText>
           </div>
         </DialogBody>
         <DialogFooter>
           <ActionRow>
-            <Button type="button" onClick={onClose}>
-              Cancel
+            <Button data-dialog-cancel type="button" onClick={onClose}>
+              <I18nText id="Cancel" />
             </Button>
             <Button type="submit" variant="primary" disabled={!parsed.success}>
-              Apply filters
+              <I18nText id="Apply filters" />
             </Button>
           </ActionRow>
         </DialogFooter>

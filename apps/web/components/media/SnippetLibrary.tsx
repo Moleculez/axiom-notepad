@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import {
   Button,
   Checkbox,
@@ -28,6 +30,7 @@ export default function SnippetLibrary({
   onClose: () => void;
   onInsert: (value: string) => boolean | void;
 }) {
+  useInterfaceLocale();
   const { spaces } = useWorkspace();
   const [search, setSearch] = useState(""),
     [query, setQuery] = useState(""),
@@ -100,8 +103,10 @@ export default function SnippetLibrary({
   };
   return (
     <Dialog
-      title="Research snippets"
-      subtitle="Reusable Markdown · personal by default · insertions are independent copies"
+      title={uiText("Research snippets")}
+      subtitle={uiText(
+        "Reusable Markdown · personal by default · insertions are independent copies",
+      )}
       onClose={onClose}
       className="media-insert-dialog"
       size="wide"
@@ -111,8 +116,8 @@ export default function SnippetLibrary({
         <section className="media-library">
           <div className="media-library-controls">
             <TextInput
-              aria-label="Search snippets"
-              placeholder="Search saved snippets…"
+              aria-label={uiText("Search snippets")}
+              placeholder={uiText("Search saved snippets…")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -128,7 +133,7 @@ export default function SnippetLibrary({
                 }}
               >
                 <Plus size={15} />
-                New
+                <I18nText id="New" />
               </Button>
               <label className="media-check-label">
                 <Checkbox
@@ -138,14 +143,16 @@ export default function SnippetLibrary({
                     setPage(0);
                   }}
                 />
-                Archived
+                <I18nText id="Archived" />
               </label>
             </div>
           </div>
           <div className="media-results">
             {!archived && (
               <>
-                <h4>Built-in templates</h4>
+                <h4>
+                  <I18nText id="Built-in templates" />
+                </h4>
                 {templates
                   .filter(
                     (item) =>
@@ -170,7 +177,9 @@ export default function SnippetLibrary({
                   ))}
               </>
             )}
-            <h4>Your library</h4>
+            <h4>
+              <I18nText id="Your library" />
+            </h4>
             {data.data?.items
               .filter((item) =>
                 (item.name + " " + item.tags.join(" "))
@@ -185,21 +194,21 @@ export default function SnippetLibrary({
                 >
                   <strong>{item.name}</strong>
                   <small>
-                    {item.space_id ? "Workspace" : "Personal"} · revision{" "}
-                    {item.version}
-                    {item.archived ? " · archived" : ""}
+                    {item.space_id ? uiText("Workspace") : uiText("Personal")}{" "}
+                    <I18nText id="· revision" /> {item.version}
+                    {item.archived ? uiText(" · archived") : ""}
                   </small>
                 </button>
               ))}
             {data.data?.nextOffset !== null &&
               data.data?.nextOffset !== undefined && (
                 <button onClick={() => setPage(data.data!.nextOffset!)}>
-                  Next page
+                  <I18nText id="Next page" />
                 </button>
               )}
             {page > 0 && (
               <button onClick={() => setPage(Math.max(0, page - 50))}>
-                Previous page
+                <I18nText id="Previous page" />
               </button>
             )}
           </div>
@@ -207,7 +216,7 @@ export default function SnippetLibrary({
         <section className="media-preview-panel">
           <div className="media-options">
             <label>
-              Name
+              <I18nText id="Name" />
               <TextInput
                 value={name}
                 maxLength={160}
@@ -216,13 +225,15 @@ export default function SnippetLibrary({
             </label>
             <div className="media-options-pair">
               <label>
-                Visibility
+                <I18nText id="Visibility" />
                 <NativeSelect
                   value={scope}
                   disabled={!!selected}
                   onChange={(e) => setScope(e.target.value)}
                 >
-                  <option value="">Only me</option>
+                  <option value="">
+                    <I18nText id="Only me" />
+                  </option>
                   {spaces
                     .filter((s) => s.id === spaceId && s.role === "editor")
                     .map((s) => (
@@ -233,24 +244,23 @@ export default function SnippetLibrary({
                 </NativeSelect>
               </label>
               <label>
-                Tags
+                <I18nText id="Tags" />
                 <TextInput
                   value={tags}
                   onChange={(e) => setTags(e.target.value)}
-                  placeholder="Comma-separated"
+                  placeholder={uiText("Comma-separated")}
                 />
               </label>
             </div>
             {scope && (
               <p className="ws-small muted">
-                Saving here shares this content with workspace readers.
-                Attachments must belong to this workspace.
+                <I18nText id="Saving here shares this content with workspace readers. Attachments must belong to this workspace." />
               </p>
             )}
             <label>
-              Markdown
+              <I18nText id="Markdown" />
               <TextArea
-                aria-label="Markdown"
+                aria-label={uiText("Markdown")}
                 className="snippet-source"
                 rows={10}
                 maxLength={100000}
@@ -260,7 +270,9 @@ export default function SnippetLibrary({
             </label>
           </div>
           <details className="media-research" open>
-            <summary>Preview</summary>
+            <summary>
+              <I18nText id="Preview" />
+            </summary>
             <ReadingView
               source={body}
               parsed={parsed}
@@ -282,7 +294,7 @@ export default function SnippetLibrary({
               }}
             >
               <Copy size={14} />
-              Duplicate
+              <I18nText id="Duplicate" />
             </Button>
             <Button
               className="button secondary"
@@ -294,7 +306,7 @@ export default function SnippetLibrary({
               ) : (
                 <Archive size={14} />
               )}
-              {selected.archived ? "Restore" : "Archive"}
+              {selected.archived ? uiText("Restore") : uiText("Archive")}
             </Button>
           </>
         )}
@@ -305,7 +317,7 @@ export default function SnippetLibrary({
               checked={shareCopy}
               onChange={(event) => setShareCopy(event.target.checked)}
             />
-            Share a copy in this workspace
+            <I18nText id="Share a copy in this workspace" />
           </label>
         )}
         <Button
@@ -313,7 +325,7 @@ export default function SnippetLibrary({
           disabled={busy || !name.trim() || !body.trim()}
           onClick={() => void save()}
         >
-          Save snippet
+          <I18nText id="Save snippet" />
         </Button>
         <Button
           className="button primary"
@@ -331,7 +343,7 @@ export default function SnippetLibrary({
               );
           }}
         >
-          Insert copy
+          <I18nText id="Insert copy" />
         </Button>
       </DialogFooter>
     </Dialog>

@@ -1,4 +1,7 @@
 "use client";
+import { currentLocale } from "@axiom/i18n/client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { useEffect, useRef, useState } from "react";
 import { Download, Play, Puzzle, ShieldCheck, Upload } from "lucide-react";
 import {
@@ -62,6 +65,7 @@ const initialConfiguration = (i: PluginInstallation): ConfigurationDraft => {
 };
 
 export default function ExtensionsSettings() {
+  useInterfaceLocale();
   const { params } = useLocation();
   const extensions = usePlugins(),
     commands = useWorkspaceCommands(),
@@ -170,7 +174,7 @@ export default function ExtensionsSettings() {
       .includes(search.toLowerCase()),
   );
   if (extensions.loading && !registry)
-    return <Loading label="Loading extensions…" />;
+    return <Loading label={uiText("Loading extensions…")} />;
   return (
     <div className="extensions-settings">
       <ErrorNotice
@@ -179,17 +183,17 @@ export default function ExtensionsSettings() {
       />
       {!registry?.enabled ? (
         <Notice>
-          Extensions are disabled on this server. An administrator can enable
-          the pilot platform with <code>AXIOM_PLUGINS_ENABLED=true</code> after
-          applying the database migration. Third-party imports have a separate
-          security gate.
+          <I18nText id="Extensions are disabled on this server. An administrator can enable the pilot platform with" />{" "}
+          <code>
+            <I18nText id="AXIOM_PLUGINS_ENABLED=true" />
+          </code>{" "}
+          <I18nText id="after applying the database migration. Third-party imports have a separate security gate." />
         </Notice>
       ) : (
         <>
           <header className="extensions-toolbar">
             <HelpText>
-              Explicit permissions · no external network · changes always
-              reviewed
+              <I18nText id="Explicit permissions · no external network · changes always reviewed" />
             </HelpText>
             <ActionRow>
               <label className="ws-checkbox">
@@ -199,7 +203,7 @@ export default function ExtensionsSettings() {
                     extensions.setSafeMode(event.target.checked)
                   }
                 />
-                Safe mode
+                <I18nText id="Safe mode" />
               </label>
               {registry.importsEnabled && (
                 <Button
@@ -209,7 +213,7 @@ export default function ExtensionsSettings() {
                   onClick={() => input.current?.click()}
                 >
                   <Upload size={16} />
-                  Import package
+                  <I18nText id="Import package" />
                 </Button>
               )}
             </ActionRow>
@@ -228,9 +232,12 @@ export default function ExtensionsSettings() {
           <div className="extensions-layout">
             <section
               className="extensions-directory"
-              aria-label="Extension directory"
+              aria-label={uiText("Extension directory")}
             >
-              <nav className="extensions-tabs" aria-label="Extension views">
+              <nav
+                className="extensions-tabs"
+                aria-label={uiText("Extension views")}
+              >
                 {(["installed", "catalog", "activity"] as const).map((t) => (
                   <Button
                     key={t}
@@ -240,7 +247,7 @@ export default function ExtensionsSettings() {
                     onClick={() => setTab(t)}
                   >
                     {t === "installed"
-                      ? "Installed"
+                      ? uiText("Installed")
                       : t === "catalog"
                         ? "Available"
                         : "Activity"}
@@ -249,8 +256,8 @@ export default function ExtensionsSettings() {
               </nav>
               {tab !== "activity" && (
                 <SearchField
-                  aria-label="Find extensions"
-                  placeholder="Find an extension…"
+                  aria-label={uiText("Find extensions")}
+                  placeholder={uiText("Find an extension…")}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   onClear={() => setSearch("")}
@@ -274,12 +281,13 @@ export default function ExtensionsSettings() {
                               size="compact"
                               onClick={() => setReview(a.change_set_id!)}
                             >
-                              Review
+                              <I18nText id="Review" />
                             </Button>
                             {["draft", "queued", "applying"].includes(
                               a.change_set_status ?? "",
                             ) && (
                               <Button
+                                data-dialog-cancel
                                 variant="ghost"
                                 size="compact"
                                 disabled={busy}
@@ -292,7 +300,7 @@ export default function ExtensionsSettings() {
                                   )
                                 }
                               >
-                                Cancel
+                                <I18nText id="Cancel" />
                               </Button>
                             )}
                           </>
@@ -300,7 +308,9 @@ export default function ExtensionsSettings() {
                       </li>
                     ))}
                     {!registry.activity.length && (
-                      <li>No extension activity yet.</li>
+                      <li>
+                        <I18nText id="No extension activity yet." />
+                      </li>
                     )}
                   </ul>
                 ) : (
@@ -327,7 +337,7 @@ export default function ExtensionsSettings() {
                               ? installed.enabled
                                 ? "Enabled"
                                 : "Disabled"
-                              : "Not installed"}
+                              : uiText("Not installed")}
                           </small>
                         </span>
                       </button>
@@ -337,23 +347,29 @@ export default function ExtensionsSettings() {
                 {tab !== "activity" && !filtered.length && (
                   <p className="muted">
                     {tab === "installed"
-                      ? "No installed extensions match."
-                      : "No matching packages."}
+                      ? uiText("No installed extensions match.")
+                      : uiText("No matching packages.")}
                   </p>
                 )}
               </div>
               <HelpText>
                 {registry.importsEnabled
-                  ? "Author names are unverified. Import only packages you trust."
-                  : "Three shipped pilots. Third-party imports remain disabled pending security acceptance."}
+                  ? uiText(
+                      "Author names are unverified. Import only packages you trust.",
+                    )
+                  : uiText(
+                      "Three shipped pilots. Third-party imports remain disabled pending security acceptance.",
+                    )}
               </HelpText>
             </section>
             <section
               className="extensions-detail settings-card"
-              aria-label="Extension details"
+              aria-label={uiText("Extension details")}
             >
               {!manifest ? (
-                <p>Select an extension to review its details.</p>
+                <p>
+                  <I18nText id="Select an extension to review its details." />
+                </p>
               ) : (
                 <>
                   <header className="extension-detail-heading">
@@ -368,21 +384,22 @@ export default function ExtensionsSettings() {
                   </header>
                   <p>{manifest.description}</p>
                   <details className="extension-package-details">
-                    <summary>Package identity & security</summary>
+                    <summary>
+                      <I18nText id="Package identity & security" />
+                    </summary>
                     <p>
                       <code>{currentHash}</code>
                     </p>
                     <HelpText>
-                      SHA-256 identifies the exact immutable ZIP, not its
-                      trustworthiness. Browser code only, isolated worker, no
-                      DOM or external network. Workspace content stays subject
-                      to your current access.
+                      <I18nText id="SHA-256 identifies the exact immutable ZIP, not its trustworthiness. Browser code only, isolated worker, no DOM or external network. Workspace content stays subject to your current access." />
                     </HelpText>
                   </details>
-                  <h3>Requested permissions</h3>
+                  <h3>
+                    <I18nText id="Requested permissions" />
+                  </h3>
                   {!manifest.capabilities.length && (
                     <HelpText>
-                      No file, planning, reference or private-storage access.
+                      <I18nText id="No file, planning, reference or private-storage access." />
                     </HelpText>
                   )}
                   <ul className="extension-permission-list">
@@ -412,8 +429,8 @@ export default function ExtensionsSettings() {
                         }
                       >
                         {installation
-                          ? "Install reviewed update"
-                          : "Install disabled"}
+                          ? uiText("Install reviewed update")
+                          : uiText("Install disabled")}
                       </Button>
                     ) : (
                       <label className="ws-checkbox">
@@ -432,7 +449,7 @@ export default function ExtensionsSettings() {
                             )
                           }
                         />
-                        Enabled for your account
+                        <I18nText id="Enabled for your account" />
                       </label>
                     )}
                     {installation &&
@@ -450,7 +467,7 @@ export default function ExtensionsSettings() {
                           }
                         >
                           <Play size={15} />
-                          Run
+                          <I18nText id="Run" />
                         </Button>
                       )}
                     <Button
@@ -462,28 +479,30 @@ export default function ExtensionsSettings() {
                       }}
                     >
                       <Download size={15} />
-                      Package
+                      <I18nText id="Package" />
                     </Button>
                   </ActionRow>
                   {installation &&
                     installation.package_hash !== currentHash && (
                       <Notice tone="warning">
-                        Updating disables the installation and invalidates its
-                        workspace grants. Review new permissions and group
-                        approval before enabling the new package.
+                        <I18nText id="Updating disables the installation and invalidates its workspace grants. Review new permissions and group approval before enabling the new package." />
                       </Notice>
                     )}
                   {installation &&
                     installation.package_hash === currentHash && (
                       <>
                         <section className="extension-detail-section">
-                          <h3>Workspace access</h3>
-                          <Field label="Workspace">
+                          <h3>
+                            <I18nText id="Workspace access" />
+                          </h3>
+                          <Field label={uiText("Workspace")}>
                             <NativeSelect
                               value={grantSpace}
                               onChange={(e) => setGrantSpace(e.target.value)}
                             >
-                              <option value="">Choose workspace…</option>
+                              <option value="">
+                                <I18nText id="Choose workspace…" />
+                              </option>
                               {spaces
                                 .filter(
                                   (s) =>
@@ -507,9 +526,11 @@ export default function ExtensionsSettings() {
                                       grant.effective_expires_at ??
                                         grant.expires_at,
                                     )
-                                    ? `Access expires ${new Date(grant.effective_expires_at ?? grant.expires_at).toLocaleString()}. Every call rechecks current access.`
+                                    ? `Access expires ${new Date(grant.effective_expires_at ?? grant.expires_at).toLocaleString(currentLocale())}. Every call rechecks current access.`
                                     : "Access expired. Renew permissions; team approval must also be current."
-                                  : "No current grant. Team workspaces require manager approval of this exact package first."}
+                                  : uiText(
+                                      "No current grant. Team workspaces require manager approval of this exact package first.",
+                                    )}
                               </HelpText>
                               <ActionRow>
                                 <Button
@@ -518,8 +539,8 @@ export default function ExtensionsSettings() {
                                   onClick={() => setConsent(true)}
                                 >
                                   {grant && !grant.revoked_at
-                                    ? "Renew permissions"
-                                    : "Review permissions"}
+                                    ? uiText("Renew permissions")
+                                    : uiText("Review permissions")}
                                 </Button>
                                 {grant && !grant.revoked_at && (
                                   <Button
@@ -536,7 +557,7 @@ export default function ExtensionsSettings() {
                                       )
                                     }
                                   >
-                                    Revoke access
+                                    <I18nText id="Revoke access" />
                                   </Button>
                                 )}
                               </ActionRow>
@@ -545,20 +566,22 @@ export default function ExtensionsSettings() {
                         </section>
                         {!!groups.length && (
                           <section className="extension-detail-section">
-                            <h3>Group approval</h3>
+                            <h3>
+                              <I18nText id="Group approval" />
+                            </h3>
                             <HelpText>
-                              Approval allows members to request access. It does
-                              not enable extensions for them or grant managers
-                              access to restricted content.
+                              <I18nText id="Approval allows members to request access. It does not enable extensions for them or grant managers access to restricted content." />
                             </HelpText>
-                            <Field label="Managed group">
+                            <Field label={uiText("Managed group")}>
                               <NativeSelect
                                 value={approvalGroup}
                                 onChange={(e) =>
                                   setApprovalGroup(e.target.value)
                                 }
                               >
-                                <option value="">Choose a group…</option>
+                                <option value="">
+                                  <I18nText id="Choose a group…" />
+                                </option>
                                 {groups.map((g) => (
                                   <option key={g.id} value={g.id}>
                                     {g.name}
@@ -594,8 +617,10 @@ export default function ExtensionsSettings() {
                                 </div>
                                 <HelpText>
                                   {approval?.enabled
-                                    ? `${pluginPermissionActive(approval.expires_at) ? "Approval expires" : "Approval expired"} ${new Date(approval.expires_at).toLocaleString()}.`
-                                    : "Approval lasts 30 days and never grants content access."}
+                                    ? `${pluginPermissionActive(approval.expires_at) ? "Approval expires" : "Approval expired"} ${new Date(approval.expires_at).toLocaleString(currentLocale())}.`
+                                    : uiText(
+                                        "Approval lasts 30 days and never grants content access.",
+                                      )}
                                 </HelpText>
                                 <ActionRow>
                                   <Button
@@ -617,8 +642,8 @@ export default function ExtensionsSettings() {
                                     }
                                   >
                                     {approval?.enabled
-                                      ? "Renew approval"
-                                      : "Approve package"}
+                                      ? uiText("Renew approval")
+                                      : uiText("Approve package")}
                                   </Button>
                                   {approval?.enabled && (
                                     <Button
@@ -639,13 +664,12 @@ export default function ExtensionsSettings() {
                                         )
                                       }
                                     >
-                                      Withdraw approval
+                                      <I18nText id="Withdraw approval" />
                                     </Button>
                                   )}
                                 </ActionRow>
                                 <HelpText>
-                                  Changing approval invalidates old workspace
-                                  grants; members must consent again.
+                                  <I18nText id="Changing approval invalidates old workspace grants; members must consent again." />
                                 </HelpText>
                               </>
                             )}
@@ -699,7 +723,9 @@ export default function ExtensionsSettings() {
                           conflict={commands.bindingConflict}
                         />
                         <section className="extension-detail-section">
-                          <h3>Lifecycle</h3>
+                          <h3>
+                            <I18nText id="Lifecycle" />
+                          </h3>
                           <ActionRow>
                             {installation.previous_hash && (
                               <Button
@@ -721,7 +747,7 @@ export default function ExtensionsSettings() {
                                   )
                                 }
                               >
-                                Roll back package
+                                <I18nText id="Roll back package" />
                               </Button>
                             )}
                             <Button
@@ -729,13 +755,11 @@ export default function ExtensionsSettings() {
                               disabled={busy}
                               onClick={() => setRemove(true)}
                             >
-                              Uninstall
+                              <I18nText id="Uninstall" />
                             </Button>
                           </ActionRow>
                           <HelpText>
-                            Uninstalling never removes documents or applied
-                            changes. Rollback changes the package, not your
-                            research files.
+                            <I18nText id="Uninstalling never removes documents or applied changes. Rollback changes the package, not your research files." />
                           </HelpText>
                         </section>
                       </>
@@ -748,7 +772,7 @@ export default function ExtensionsSettings() {
       )}
       {consent && manifest && installation && (
         <Dialog
-          title="Review workspace permissions"
+          title={uiText("Review workspace permissions")}
           subtitle={
             manifest.name +
             " · " +
@@ -757,10 +781,7 @@ export default function ExtensionsSettings() {
           onClose={() => setConsent(false)}
         >
           <Notice>
-            Only this workspace is in scope. Proposed research changes require a
-            separate preview and explicit Apply. Permissions expire after 30
-            days, or earlier when group approval expires. Renewal invalidates
-            stale proposals.
+            <I18nText id="Only this workspace is in scope. Proposed research changes require a separate preview and explicit Apply. Permissions expire after 30 days, or earlier when group approval expires. Renewal invalidates stale proposals." />
           </Notice>
           <div className="extension-permission-options">
             {manifest.capabilities.map((c) => (
@@ -781,8 +802,12 @@ export default function ExtensionsSettings() {
           </div>
           <ErrorNotice message={error} />
           <div className="dialog-footer">
-            <Button variant="secondary" onClick={() => setConsent(false)}>
-              Cancel
+            <Button
+              data-dialog-cancel
+              variant="secondary"
+              onClick={() => setConsent(false)}
+            >
+              <I18nText id="Cancel" />
             </Button>
             <Button
               variant="primary"
@@ -804,8 +829,8 @@ export default function ExtensionsSettings() {
               }
             >
               {grant && !grant.revoked_at
-                ? "Renew selected permissions"
-                : "Grant for 30 days"}
+                ? uiText("Renew selected permissions")
+                : uiText("Grant for 30 days")}
             </Button>
           </div>
         </Dialog>
@@ -813,7 +838,9 @@ export default function ExtensionsSettings() {
       {remove && installation && (
         <Dialog
           title={"Uninstall " + installation.manifest.name + "?"}
-          subtitle="All workspace grants will be invalidated. Your files and applied changes remain."
+          subtitle={uiText(
+            "All workspace grants will be invalidated. Your files and applied changes remain.",
+          )}
           onClose={() => setRemove(false)}
         >
           <label className="ws-checkbox">
@@ -821,12 +848,16 @@ export default function ExtensionsSettings() {
               checked={clearSettings}
               onChange={(event) => setClearSettings(event.target.checked)}
             />
-            Also clear private extension settings and state
+            <I18nText id="Also clear private extension settings and state" />
           </label>
           <ErrorNotice message={error} />
           <div className="dialog-footer">
-            <Button variant="secondary" onClick={() => setRemove(false)}>
-              Cancel
+            <Button
+              data-dialog-cancel
+              variant="secondary"
+              onClick={() => setRemove(false)}
+            >
+              <I18nText id="Cancel" />
             </Button>
             <Button
               variant="danger"
@@ -845,7 +876,7 @@ export default function ExtensionsSettings() {
                 })
               }
             >
-              Uninstall extension
+              <I18nText id="Uninstall extension" />
             </Button>
           </div>
         </Dialog>
@@ -875,17 +906,18 @@ function ExtensionConfiguration({
   ) => Promise<unknown>;
   conflict: (key: string, except?: string) => string;
 }) {
+  useInterfaceLocale();
   const [error, setError] = useState("");
   const { values, bindings } = draft,
     dirty = configurationDirty(draft);
   return (
     <section className="extension-detail-section">
-      <h3>Configuration & shortcuts</h3>
+      <h3>
+        <I18nText id="Configuration & shortcuts" />
+      </h3>
       {dirty && draft.revision !== installation.revision && (
         <Notice tone="warning">
-          This installation changed while you were editing. Your draft is
-          retained; discard it to load the latest configuration. Saving an old
-          revision is blocked.
+          <I18nText id="This installation changed while you were editing. Your draft is retained; discard it to load the latest configuration. Saving an old revision is blocked." />
         </Notice>
       )}
       <form
@@ -930,12 +962,14 @@ function ExtensionConfiguration({
             <Field
               key={c.id}
               label={c.title + " shortcut"}
-              hint="Optional, for example Mod-Alt-p. Native editor and browser shortcuts take priority; plugin shortcuts do not intercept editable fields."
+              hint={uiText(
+                "Optional, for example Mod-Alt-p. Native editor and browser shortcuts take priority; plugin shortcuts do not intercept editable fields.",
+              )}
             >
               <TextInput
                 value={bindings[c.id] ?? ""}
                 disabled={busy}
-                placeholder="No shortcut"
+                placeholder={uiText("No shortcut")}
                 onChange={(e) =>
                   onDraft({
                     ...draft,
@@ -956,10 +990,10 @@ function ExtensionConfiguration({
               setError("");
             }}
           >
-            Discard
+            <I18nText id="Discard" />
           </Button>
           <Button variant="primary" pending={busy} disabled={!dirty}>
-            Save configuration
+            <I18nText id="Save configuration" />
           </Button>
         </ActionRow>
       </form>

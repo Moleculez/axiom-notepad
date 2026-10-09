@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { Button, Checkbox, IconButton, TextInput } from "../ui/controls";
 import { useEffect, useRef, useState } from "react";
 import type { PDFDocumentProxy } from "pdfjs-dist";
@@ -41,6 +43,7 @@ export default function PdfOrganizer({
   annotations?: Annotation[];
   returnFocus?: () => HTMLElement | null;
 }) {
+  useInterfaceLocale();
   const [pages, setPages] = useState<Choice[]>(() =>
     Array.from(
       { length: Math.min(pdf.numPages, PDF_EDIT_MAX_PAGES) },
@@ -211,20 +214,17 @@ export default function PdfOrganizer({
     );
   return (
     <Dialog
-      title="Organize PDF pages"
+      title={uiText("Organize PDF pages")}
       onClose={onClose}
       returnFocus={returnFocus}
       wide
     >
       <p className="muted">
-        Arrange a new copy. The original, its annotations, and existing
-        citations stay unchanged. Document outlines, internal destinations and
-        Axiom annotations are not transferred into this copy.
+        <I18nText id="Arrange a new copy. The original, its annotations, and existing citations stay unchanged. Document outlines, internal destinations and Axiom annotations are not transferred into this copy." />
       </p>
       {disabled && (
         <p role="alert">
-          Page operations support up to 100 MiB and 2,000 pages. This original
-          exceeds that limit.
+          <I18nText id="Page operations support up to 100 MiB and 2,000 pages. This original exceeds that limit." />
         </p>
       )}
       {error && (
@@ -234,10 +234,10 @@ export default function PdfOrganizer({
       )}
       <div className="pdf-organizer-actions">
         <TextInput
-          aria-label="Select page range"
+          aria-label={uiText("Select page range")}
           value={range}
           onChange={(e) => setRange(e.target.value)}
-          placeholder="Select positions, e.g. 1, 3-5"
+          placeholder={uiText("Select positions, e.g. 1, 3-5")}
         />
         <button
           disabled={busy || disabled}
@@ -251,20 +251,21 @@ export default function PdfOrganizer({
             }
           }}
         >
-          Select
+          <I18nText id="Select" />
         </button>
         <button
+          data-dialog-cancel
           disabled={busy || !selected.size}
           onClick={() => change(pages.filter((p) => selected.has(p.id)))}
         >
-          Keep selected
+          <I18nText id="Keep selected" />
         </button>
         <button
           disabled={busy || !selected.size}
           onClick={() => change(pages.filter((p) => !selected.has(p.id)))}
         >
           <Trash2 size={15} />
-          Remove selected
+          <I18nText id="Remove selected" />
         </button>
         <button
           disabled={busy || !history.length}
@@ -275,11 +276,11 @@ export default function PdfOrganizer({
           }}
         >
           <Undo2 size={15} />
-          Undo
+          <I18nText id="Undo" />
         </button>
         <label className="button secondary">
           <Upload size={15} />
-          Merge PDF
+          <I18nText id="Merge PDF" />
           <input
             className="sr-only"
             type="file"
@@ -343,14 +344,14 @@ export default function PdfOrganizer({
             </label>
             <span title={names[p.source]}>{names[p.source]}</span>
             <small>
-              Original page {p.page} · +{p.rotation}°
+              <I18nText id="Original page" /> {p.page} · +{p.rotation}°
             </small>
             <div className="pdf-organizer-page-actions">
               <IconButton
                 className="icon-button"
                 disabled={busy || index === 0}
                 aria-label={`Move page ${index + 1} earlier`}
-                title="Move earlier"
+                title={uiText("Move earlier")}
                 onClick={() => move(p.id, -1)}
               >
                 <ArrowLeft size={14} />
@@ -359,7 +360,7 @@ export default function PdfOrganizer({
                 className="icon-button"
                 disabled={busy || index === pages.length - 1}
                 aria-label={`Move page ${index + 1} later`}
-                title="Move later"
+                title={uiText("Move later")}
                 onClick={() => move(p.id, 1)}
               >
                 <ArrowRight size={14} />
@@ -368,7 +369,7 @@ export default function PdfOrganizer({
                 className="icon-button"
                 disabled={busy}
                 aria-label={`Rotate page ${index + 1}`}
-                title="Rotate clockwise"
+                title={uiText("Rotate clockwise")}
                 onClick={() =>
                   change(
                     pages.map((item) =>
@@ -385,7 +386,7 @@ export default function PdfOrganizer({
                 className="icon-button"
                 disabled={busy}
                 aria-label={`Duplicate page ${index + 1}`}
-                title="Duplicate"
+                title={uiText("Duplicate")}
                 onClick={() =>
                   change([
                     ...pages.slice(0, index + 1),
@@ -402,10 +403,15 @@ export default function PdfOrganizer({
       </div>
       <div className="dialog-footer">
         <span>
-          {pages.length} output pages · {selected.size} selected
+          {pages.length} <I18nText id="output pages ·" /> {selected.size}{" "}
+          <I18nText id="selected" />
         </span>
-        <Button className="button secondary" onClick={onClose}>
-          Cancel
+        <Button
+          data-dialog-cancel
+          className="button secondary"
+          onClick={onClose}
+        >
+          <I18nText id="Cancel" />
         </Button>
         {meta?.resource_id && (
           <Button
@@ -413,7 +419,7 @@ export default function PdfOrganizer({
             disabled={busy || disabled}
             onClick={() => void exportCopy(true)}
           >
-            Save to workspace…
+            <I18nText id="Save to workspace…" />
           </Button>
         )}
         <Button
@@ -423,7 +429,7 @@ export default function PdfOrganizer({
           pending={!!busy}
         >
           <Download size={15} />
-          {"Download arranged copy"}
+          {uiText("Download arranged copy")}
         </Button>
       </div>
     </Dialog>

@@ -1,4 +1,6 @@
 "use client";
+import { I18nText } from "@axiom/i18n/react";
+
 import { Button } from "../ui/controls";
 import { useEffect, useState } from "react";
 import * as Y from "yjs";
@@ -86,7 +88,9 @@ export default function CanvasPlayground({
     <div className="docs-canvas">
       {!readOnly && (
         <div className="scratchpad-toolbar">
-          <strong>Canvas example</strong>
+          <strong>
+            <I18nText id="Canvas example" />
+          </strong>
           <Button
             className="button ghost"
             onClick={() =>
@@ -97,14 +101,14 @@ export default function CanvasPlayground({
             }
           >
             <Copy size={14} />
-            Copy JSON
+            <I18nText id="Copy JSON" />
           </Button>
           <Button
             className="button ghost"
             onClick={() => setReset((n) => n + 1)}
           >
             <RotateCcw size={14} />
-            Reset sample
+            <I18nText id="Reset sample" />
           </Button>
         </div>
       )}

@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { Button } from "../ui/controls";
 import { useMemo } from "react";
 import type { Resource } from "@axiom/shared/workspace";
@@ -17,6 +19,7 @@ export default function FileQuickPreview({
   onClose: () => void;
   gallery?: Resource[];
 }) {
+  useInterfaceLocale();
   const { open } = useWorkspace();
   const note = useData<{ body: string }>(
     resource.kind === "note" ? `notes/${resource.id}` : null,
@@ -28,7 +31,9 @@ export default function FileQuickPreview({
   return (
     <Dialog
       title={resource.name}
-      subtitle="Quick preview · originals and permissions remain unchanged"
+      subtitle={uiText(
+        "Quick preview · originals and permissions remain unchanged",
+      )}
       onClose={onClose}
       returnFocus={() =>
         document.querySelector<HTMLElement>(
@@ -51,7 +56,10 @@ export default function FileQuickPreview({
             />
           )
         ) : resource.kind === "folder" || resource.kind === "shortcut" ? (
-          <p>Open this {resource.kind} to explore its contents.</p>
+          <p>
+            <I18nText id="Open this" /> {resource.kind}{" "}
+            <I18nText id="to explore its contents." />
+          </p>
         ) : (
           <FilePreviewSurface
             resourceId={resource.id}
@@ -63,7 +71,7 @@ export default function FileQuickPreview({
       </div>
       <div className="dialog-footer">
         <Button className="button secondary" onClick={onClose}>
-          Close preview
+          <I18nText id="Close preview" />
         </Button>
         <Button
           className="button primary"
@@ -72,7 +80,7 @@ export default function FileQuickPreview({
             open(resource);
           }}
         >
-          Open item
+          <I18nText id="Open item" />
         </Button>
       </div>
     </Dialog>

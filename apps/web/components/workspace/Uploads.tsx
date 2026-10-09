@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { Button, HelpText, IconButton, NativeSelect } from "../ui/controls";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Check, FileUp, Pause, Play, RefreshCw, Upload, X } from "lucide-react";
@@ -605,6 +607,7 @@ export default function Uploads({
 }: {
   controller: ReturnType<typeof useUploads>;
 }) {
+  useInterfaceLocale();
   const { open, imports } = useWorkspace(),
     [error, setError] = useState(""),
     [view, setView] = useState<"uploads" | "activity">("uploads");
@@ -613,18 +616,17 @@ export default function Uploads({
   if (controller.folderBatch)
     return (
       <Dialog
-        title="Upload folder"
+        title={uiText("Upload folder")}
         subtitle={`${controller.folderBatch.files.length} files · hierarchy will be preserved`}
         onClose={controller.closeFolder}
       >
         <p>
-          Choose how to handle folders with matching names. Existing files and
-          versions are never overwritten.
+          <I18nText id="Choose how to handle folders with matching names. Existing files and versions are never overwritten." />
         </p>
         <label>
-          Folder name conflicts
+          <I18nText id="Folder name conflicts" />
           <NativeSelect
-            aria-label="Folder name conflicts"
+            aria-label={uiText("Folder name conflicts")}
             value={controller.folderConflict}
             disabled={controller.folderBusy}
             onChange={(e) =>
@@ -634,59 +636,65 @@ export default function Uploads({
             }
           >
             <option value="keepBoth">
-              Keep both — create a numbered folder
+              <I18nText id="Keep both — create a numbered folder" />
             </option>
             <option value="merge">
-              Merge folders — keep incoming files as separate copies
+              <I18nText id="Merge folders — keep incoming files as separate copies" />
             </option>
             <option value="skip">
-              Skip matching folders and their incoming contents
+              <I18nText id="Skip matching folders and their incoming contents" />
             </option>
           </NativeSelect>
         </label>
         <ErrorNotice message={controller.folderError} />
         <div className="dialog-footer">
           <Button
+            data-dialog-cancel
             className="button secondary"
             disabled={controller.folderBusy}
             onClick={controller.closeFolder}
           >
-            Cancel
+            <I18nText id="Cancel" />
           </Button>
           <Button
             className="button primary"
             disabled={controller.folderBusy}
             onClick={() => void controller.uploadFolder()}
           >
-            {controller.folderBusy ? "Preparing folders…" : "Upload folder"}
+            {controller.folderBusy
+              ? uiText("Preparing folders…")
+              : uiText("Upload folder")}
           </Button>
         </div>
       </Dialog>
     );
   if (!controller.shown) return null;
   return (
-    <section className="ws-transfers" aria-label="Activity & recovery">
+    <section
+      className="ws-transfers"
+      aria-label={uiText("Activity & recovery")}
+    >
       <header>
         <h2>
           <Upload size={17} />
-          Activity & recovery
+          <I18nText id="Activity & recovery" />
         </h2>
         <IconButton
           className="icon-button"
-          aria-label="Hide activity & recovery"
+          aria-label={uiText("Hide activity & recovery")}
           onClick={() => controller.setShown(false)}
         >
           <X size={17} />
         </IconButton>
       </header>
-      <nav className="recovery-filter" aria-label="Activity views">
+      <nav className="recovery-filter" aria-label={uiText("Activity views")}>
         <Button
           size="compact"
           variant="ghost"
           aria-pressed={view === "uploads"}
           onClick={() => setView("uploads")}
         >
-          Uploads{" "}
+          <I18nText id="Uploads" />{" "}
           {controller.transfers.length
             ? "(" + controller.transfers.length + ")"
             : ""}
@@ -697,7 +705,7 @@ export default function Uploads({
           aria-pressed={view === "activity"}
           onClick={() => setView("activity")}
         >
-          Background work
+          <I18nText id="Background work" />
         </Button>
       </nav>
       {view === "activity" ? (
@@ -705,8 +713,7 @@ export default function Uploads({
       ) : (
         <>
           <p className="ws-small muted">
-            Up to 1 GB per file. Interrupted uploads can be resumed for seven
-            days. Completed files are never auto-deleted.
+            <I18nText id="Up to 1 GB per file. Interrupted uploads can be resumed for seven days. Completed files are never auto-deleted." />
           </p>
           <ErrorNotice message={error} />
           {imports && (
@@ -728,7 +735,9 @@ export default function Uploads({
           />
           <div className="ws-transfer-list">
             {!controller.transfers.length && (
-              <p className="muted">Your uploads will appear here.</p>
+              <p className="muted">
+                <I18nText id="Your uploads will appear here." />
+              </p>
             )}
             {controller.transfers.map((item) => (
               <div className="ws-transfer" key={item.id}>
@@ -780,7 +789,9 @@ export default function Uploads({
                       size="compact"
                       pending={!!item.rechecking}
                       aria-label={`${item.status === "verifying" ? "Recheck" : "Retry verification for"} ${item.name}`}
-                      title="Recheck verification without uploading the file again"
+                      title={uiText(
+                        "Recheck verification without uploading the file again",
+                      )}
                       onClick={() =>
                         void controller
                           .retryVerification(item)
@@ -789,8 +800,8 @@ export default function Uploads({
                     >
                       <RefreshCw size={15} />
                       {item.status === "verifying"
-                        ? "Recheck"
-                        : "Retry verification"}
+                        ? uiText("Recheck")
+                        : uiText("Retry verification")}
                     </Button>
                     {item.status === "failed" && item.resource_id && (
                       <Button
@@ -801,7 +812,7 @@ export default function Uploads({
                             .catch((e) => setError(e.message))
                         }
                       >
-                        Save as a separate copy
+                        <I18nText id="Save as a separate copy" />
                       </Button>
                     )}
                   </>

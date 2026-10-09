@@ -2,7 +2,7 @@
 
 The full workbench's account settings are described below. The
 [browser-local showcase](STATIC_SHOWCASE.md#settings-without-the-clutter) has a
-separate, immediate-save dialog with seven grouped categories, a persistent live
+separate, immediate-save dialog with eight grouped categories, a persistent live
 preview and category-only reset. Its Local data panel manages guest backups and
 uploads, never account preferences or workbench files.
 
@@ -17,6 +17,12 @@ and subtle dividers instead of nested bordered cards. Insets reserve room for
 focus indicators; scrollbars never displace the other pane or shared actions.
 
 ## Preview and navigation
+
+**Account → Language** offers Automatic and ten choices. Preview the interface,
+then Save changes; Cancel restores the applied language. This preference is
+independent of Appearance/Writing/Profile drafts and can queue offline. Authored
+notes and filenames are not translated. Core UI is localized; remaining copy
+falls back to English. See [language behavior and coverage](LOCALIZATION.md).
 
 - A searchable grouped settings rail temporarily replaces the workspace sidebar.
   Account, Appearance, Writing and Storage stay visible in one list. Back to

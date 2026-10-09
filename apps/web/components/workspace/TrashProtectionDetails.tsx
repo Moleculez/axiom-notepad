@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { Button, Checkbox } from "../ui/controls";
 import { useState } from "react";
 import {
@@ -24,6 +26,7 @@ export default function TrashProtectionDetails({
   onChanged: () => Promise<void>;
   onClose: () => void;
 }) {
+  useInterfaceLocale();
   const path = `trash/${operationId}/items/${resourceId}`;
   const data = useData<TrashProtection>(`${path}/protection`),
     action = useAction();
@@ -35,7 +38,10 @@ export default function TrashProtectionDetails({
     navigate(href);
   };
   return (
-    <section className="trash-protection" aria-label="File protection details">
+    <section
+      className="trash-protection"
+      aria-label={uiText("File protection details")}
+    >
       <ErrorNotice
         message={data.error || action.error}
         retry={() => {
@@ -51,7 +57,9 @@ export default function TrashProtectionDetails({
         <>
           <div className="trash-protection-heading">
             <ShieldCheck size={17} aria-hidden="true" />
-            <strong>What keeps this file in Trash?</strong>
+            <strong>
+              <I18nText id="What keeps this file in Trash?" />
+            </strong>
             <button
               className="text-button"
               disabled={action.busy}
@@ -60,19 +68,17 @@ export default function TrashProtectionDetails({
                 data.reload();
               }}
             >
-              Refresh details
+              <I18nText id="Refresh details" />
             </button>
           </div>
           {!!value.reading.length && (
             <section className="trash-protection-section">
               <h4>
                 <Bookmark size={15} aria-hidden="true" />
-                Your reading data
+                <I18nText id="Your reading data" />
               </h4>
               <p>
-                These are your own bookmarks, reading-list entries or saved page
-                positions. You can remove them here without restoring the file.
-                Other people’s records and PDF annotations are not affected.
+                <I18nText id="These are your own bookmarks, reading-list entries or saved page positions. You can remove them here without restoring the file. Other people’s records and PDF annotations are not affected." />
               </p>
               <ul className="trash-reading-records">
                 {value.reading.map((record) => (
@@ -87,7 +93,7 @@ export default function TrashProtectionDetails({
                     </span>
                     <small>
                       {record.kind === "progress"
-                        ? "Position"
+                        ? uiText("Position")
                         : record.kind === "reading"
                           ? "Reading list"
                           : "Bookmark"}
@@ -97,8 +103,7 @@ export default function TrashProtectionDetails({
               </ul>
               {value.moreReading && (
                 <p>
-                  Showing the first 500 records. Review any remaining records
-                  after removing this batch.
+                  <I18nText id="Showing the first 500 records. Review any remaining records after removing this batch." />
                 </p>
               )}
               {value.canClearReading && (
@@ -109,8 +114,10 @@ export default function TrashProtectionDetails({
                       disabled={action.busy}
                       onChange={(e) => setConfirmed(e.target.checked)}
                     />
-                    Remove the {value.reading.length} personal reading record
-                    {value.reading.length === 1 ? "" : "s"} shown above
+                    <I18nText id="Remove the" /> {value.reading.length}{" "}
+                    <I18nText id="personal reading record" />
+                    {value.reading.length === 1 ? "" : "s"}{" "}
+                    <I18nText id="shown above" />
                   </label>
                   <Button
                     className="button secondary"
@@ -138,7 +145,7 @@ export default function TrashProtectionDetails({
                     }
                     pending={!!action.busy}
                   >
-                    {"Remove my reading data & recheck"}
+                    {uiText("Remove my reading data & recheck")}
                   </Button>
                 </div>
               )}
@@ -148,13 +155,10 @@ export default function TrashProtectionDetails({
             <section className="trash-protection-section">
               <h4>
                 <Bookmark size={15} aria-hidden="true" />
-                Another reader’s data
+                <I18nText id="Another reader’s data" />
               </h4>
               <p>
-                Another person has a bookmark, reading-list entry or saved
-                position for this file. Their private records cannot be removed
-                here. Restore the file so they can review their data, or keep it
-                in Trash.
+                <I18nText id="Another person has a bookmark, reading-list entry or saved position for this file. Their private records cannot be removed here. Restore the file so they can review their data, or keep it in Trash." />
               </p>
             </section>
           )}
@@ -162,13 +166,10 @@ export default function TrashProtectionDetails({
             <section className="trash-protection-section">
               <h4>
                 <FileClock size={15} aria-hidden="true" />
-                Notes & saved history
+                <I18nText id="Notes & saved history" />
               </h4>
               <p>
-                Remove an unwanted attachment link in its note, then save and
-                recheck. A saved revision, suggestion or undo record can still
-                retain the file after its current link is removed; Trash does
-                not erase that history.
+                <I18nText id="Remove an unwanted attachment link in its note, then save and recheck. A saved revision, suggestion or undo record can still retain the file after its current link is removed; Trash does not erase that history." />
               </p>
               <ul className="trash-source-list">
                 {value.sources.map((source) => (
@@ -189,7 +190,9 @@ export default function TrashProtectionDetails({
                       className="text-button"
                       onClick={() => open(source.href)}
                     >
-                      {source.deleted ? "View in Trash" : "Open note"}
+                      {source.deleted
+                        ? uiText("View in Trash")
+                        : uiText("Open note")}
                       <ArrowUpRight size={14} aria-hidden="true" />
                     </button>
                   </li>
@@ -197,23 +200,17 @@ export default function TrashProtectionDetails({
               </ul>
               {value.sources.some((source) => source.history) && (
                 <p className="trash-guidance">
-                  For saved history, open the note’s Version history to review
-                  it. If that history is still needed, restore this file or
-                  leave it safely in Trash.
+                  <I18nText id="For saved history, open the note’s Version history to review it. If that history is still needed, restore this file or leave it safely in Trash." />
                 </p>
               )}
               {value.sources.some((source) => source.deleted) && (
                 <p className="trash-guidance">
-                  If you intend to remove a trashed note and all its
-                  attachments, close this preview and select them together. They
-                  can be deleted together only when nothing outside that
-                  selection retains them.
+                  <I18nText id="If you intend to remove a trashed note and all its attachments, close this preview and select them together. They can be deleted together only when nothing outside that selection retains them." />
                 </p>
               )}
               {value.moreSources && (
                 <p>
-                  Showing the first 50 retaining notes. More notes still
-                  reference this file.
+                  <I18nText id="Showing the first 50 retaining notes. More notes still reference this file." />
                 </p>
               )}
             </section>
@@ -222,11 +219,10 @@ export default function TrashProtectionDetails({
             <section className="trash-protection-section">
               <h4>
                 <Link2 size={15} aria-hidden="true" />
-                Reference library
+                <I18nText id="Reference library" />
               </h4>
               <p>
-                Review the linked source and detach the file if it is no longer
-                needed as research evidence.
+                <I18nText id="Review the linked source and detach the file if it is no longer needed as research evidence." />
               </p>
               <ul className="trash-source-list">
                 {value.references.map((reference) => (
@@ -236,21 +232,22 @@ export default function TrashProtectionDetails({
                       className="text-button"
                       onClick={() => open(reference.href)}
                     >
-                      Open reference
+                      <I18nText id="Open reference" />
                       <ArrowUpRight size={14} aria-hidden="true" />
                     </button>
                   </li>
                 ))}
               </ul>
               {value.moreReferences && (
-                <p>More library references retain this file.</p>
+                <p>
+                  <I18nText id="More library references retain this file." />
+                </p>
               )}
             </section>
           )}
           {value.restrictedSources && (
             <p className="trash-guidance">
-              A source you cannot access also retains this file. Its details are
-              private; ask its owner or a workspace manager to review it.
+              <I18nText id="A source you cannot access also retains this file. Its details are private; ask its owner or a workspace manager to review it." />
             </p>
           )}
           {value.safeguards.map((item) => (
@@ -275,15 +272,13 @@ export default function TrashProtectionDetails({
             !value.restrictedSources &&
             !value.safeguards.length && (
               <p>
-                No current protection was found. Recheck the preview to update
-                this item’s status.
+                <I18nText id="No current protection was found. Recheck the preview to update this item’s status." />
               </p>
             )}
           {value.canRestore && (
             <div className="trash-protection-recovery">
               <p>
-                Still need the evidence? Restore it with its links and reading
-                data intact.
+                <I18nText id="Still need the evidence? Restore it with its links and reading data intact." />
               </p>
               <Button
                 className="button secondary"
@@ -303,7 +298,7 @@ export default function TrashProtectionDetails({
                 }
               >
                 <RotateCcw size={15} aria-hidden="true" />
-                Restore file
+                <I18nText id="Restore file" />
               </Button>
             </div>
           )}

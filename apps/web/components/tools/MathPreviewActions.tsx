@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { IconButton, NativeSelect } from "../ui/controls";
 import { useEffect, useRef, useState, type RefObject } from "react";
 import {
@@ -47,6 +49,7 @@ export default function MathPreviewActions({
   onError: (message: string) => void;
   notify: (message: string) => void;
 }) {
+  useInterfaceLocale();
   const [ready, setReady] = useState<string | null>(null),
     [working, setWorking] = useState(false),
     [copied, setCopied] = useState(false),
@@ -151,24 +154,32 @@ export default function MathPreviewActions({
   return (
     <div className="math-preview-tools">
       <div className="math-preview-label">
-        <span>LIVE PREVIEW</span>
+        <span>
+          <I18nText id="LIVE PREVIEW" />
+        </span>
         <div
           className="math-preview-actions"
           role="group"
-          aria-label="Equation copy and download"
+          aria-label={uiText("Equation copy and download")}
         >
           <div className="math-copy-control">
             <NativeSelect
-              aria-label="Preview image format"
+              aria-label={uiText("Preview image format")}
               value={format}
               disabled={working}
               onChange={(event) =>
                 onFormat(event.target.value as MathImageFormat)
               }
             >
-              <option value="svg">SVG</option>
-              <option value="png">PNG</option>
-              <option value="jpeg">JPG</option>
+              <option value="svg">
+                <I18nText id="SVG" />
+              </option>
+              <option value="png">
+                <I18nText id="PNG" />
+              </option>
+              <option value="jpeg">
+                <I18nText id="JPG" />
+              </option>
             </NativeSelect>
             <button
               type="button"
@@ -193,7 +204,7 @@ export default function MathPreviewActions({
               ) : (
                 <Copy size={14} />
               )}
-              {copied ? "Copied" : "Copy"}
+              {copied ? uiText("Copied") : uiText("Copy")}
             </button>
           </div>
           <IconButton
@@ -209,8 +220,8 @@ export default function MathPreviewActions({
           <IconButton
             type="button"
             className="icon-button"
-            aria-label="More preview actions"
-            title="More preview actions"
+            aria-label={uiText("More preview actions")}
+            title={uiText("More preview actions")}
             aria-haspopup="menu"
             aria-expanded={expanded}
             onClick={(event) => {
@@ -264,10 +275,14 @@ export default function MathPreviewActions({
         </div>
       </div>
       <div className="math-preview-options">
-        <label title="Pixel resolution for copied and downloaded PNG/JPG images">
-          Resolution
+        <label
+          title={uiText(
+            "Pixel resolution for copied and downloaded PNG/JPG images",
+          )}
+        >
+          <I18nText id="Resolution" />
           <NativeSelect
-            aria-label="Preview export resolution"
+            aria-label={uiText("Preview export resolution")}
             value={settings.scale}
             disabled={format === "svg" || working}
             onChange={(event) => onScale(Number(event.target.value))}
@@ -281,18 +296,20 @@ export default function MathPreviewActions({
         </label>
         <button
           type="button"
-          aria-label="Transparent image background"
+          aria-label={uiText("Transparent image background")}
           aria-pressed={settings.transparent && format !== "jpeg"}
           disabled={format === "jpeg" || working}
           title={
             format === "jpeg"
-              ? "JPG always uses the paper color"
-              : "Toggle transparency for SVG and PNG; save in Rendering settings to remember it"
+              ? uiText("JPG always uses the paper color")
+              : uiText(
+                  "Toggle transparency for SVG and PNG; save in Rendering settings to remember it",
+                )
           }
           onClick={() => onTransparent(!settings.transparent)}
         >
           <Blend size={13} />
-          Transparent
+          <I18nText id="Transparent" />
         </button>
       </div>
       <p className="math-preview-copy-hint">

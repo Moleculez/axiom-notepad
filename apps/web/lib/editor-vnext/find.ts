@@ -1,3 +1,4 @@
+import { bindAttribute } from "@axiom/i18n/dom";
 import { findMatches, type SearchMatch } from "@axiom/editor/search";
 import type { SourceEdit } from "@axiom/markdown";
 import {
@@ -32,12 +33,12 @@ export class FindPanel {
   ) {
     this.dom.className = "axiom-find";
     this.dom.role = "search";
-    this.dom.setAttribute("aria-label", "Find in note");
+    bindAttribute(this.dom, "aria-label", "Find in note");
     const row = document.createElement("div");
     row.className = "axiom-find-row";
     this.query.type = "search";
-    this.query.placeholder = "Find in note";
-    this.query.setAttribute("aria-label", "Find in note");
+    bindAttribute(this.query, "placeholder", "Find in note");
+    bindAttribute(this.query, "aria-label", "Find in note");
     const selection = selectionRange(host.selection());
     const selected = host.source().slice(selection.from, selection.to);
     if (!selected.includes("\n") && selected.length <= 256)
@@ -76,8 +77,8 @@ export class FindPanel {
     if (replace) {
       const row = document.createElement("div");
       row.className = "axiom-find-row";
-      this.replacement.placeholder = "Replace with";
-      this.replacement.setAttribute("aria-label", "Replace with");
+      bindAttribute(this.replacement, "placeholder", "Replace with");
+      bindAttribute(this.replacement, "aria-label", "Replace with");
       this.replacements = [
         this.button("Replace match", "Replace", () => this.replace(false)),
         this.button("Replace all matches", "Replace all", () =>

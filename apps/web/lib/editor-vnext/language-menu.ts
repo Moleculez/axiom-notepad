@@ -1,3 +1,4 @@
+import { bindAttribute, bindText } from "@axiom/i18n/dom";
 import {
   codeLanguageSuggestions,
   type CodeLanguage,
@@ -40,9 +41,9 @@ export function languageMenu(
   popup.className = "axiom-completions axiom-language-completions";
   list.id = id;
   list.role = "listbox";
-  list.setAttribute("aria-label", "Code language suggestions");
+  bindAttribute(list, "aria-label", "Code language suggestions");
   hint.className = "axiom-completion-hint";
-  hint.textContent = "↑↓ choose · Enter / Tab apply · Esc cancel";
+  bindText(hint, "↑↓ choose · Enter / Tab apply · Esc cancel");
   popup.append(list, hint);
   input.role = "combobox";
   input.setAttribute("aria-autocomplete", "list");

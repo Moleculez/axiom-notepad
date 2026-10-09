@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { useState } from "react";
 import { ChevronsDownUp, ChevronsUpDown } from "lucide-react";
 import type { MindmapSettings } from "@axiom/mindmap";
@@ -26,16 +28,19 @@ export default function MindmapDisplayDialog({
   presentation: MindmapPresentation;
   onPresentation: (value: MindmapPresentation) => void;
 }) {
+  useInterfaceLocale();
   const [saving, setSaving] = useState(false),
     [message, setMessage] = useState("");
   return (
     <Dialog
-      title="Mind-map display"
-      subtitle="Local presentation preferences. Markdown and collaborators' views are unchanged."
+      title={uiText("Mind-map display")}
+      subtitle={uiText(
+        "Local presentation preferences. Markdown and collaborators' views are unchanged.",
+      )}
       onClose={onClose}
     >
       <div className="mindmap-options">
-        <Field label="Block presentation">
+        <Field label={uiText("Block presentation")}>
           <NativeSelect
             value={presentation.preview}
             onChange={(e) =>
@@ -46,9 +51,11 @@ export default function MindmapDisplayDialog({
             }
           >
             <option value="research">
-              Research-rich · equations and excerpts
+              <I18nText id="Research-rich · equations and excerpts" />
             </option>
-            <option value="compact">Compact · concise labels</option>
+            <option value="compact">
+              <I18nText id="Compact · concise labels" />
+            </option>
           </NativeSelect>
         </Field>
         <label className="ui-choice">
@@ -58,7 +65,9 @@ export default function MindmapDisplayDialog({
               onPresentation({ ...presentation, minimap: e.target.checked })
             }
           />
-          <span>Map overview</span>
+          <span>
+            <I18nText id="Map overview" />
+          </span>
         </label>
         <label className="ui-choice">
           <Switch
@@ -67,9 +76,11 @@ export default function MindmapDisplayDialog({
               onPresentation({ ...presentation, supporting: e.target.checked })
             }
           />
-          <span>Supporting material · metadata and definitions</span>
+          <span>
+            <I18nText id="Supporting material · metadata and definitions" />
+          </span>
         </label>
-        <Field label="Direction">
+        <Field label={uiText("Direction")}>
           <NativeSelect
             value={settings.layout}
             onChange={(e) =>
@@ -79,12 +90,18 @@ export default function MindmapDisplayDialog({
               })
             }
           >
-            <option value="right">Rightward</option>
-            <option value="left">Leftward</option>
-            <option value="balanced">Balanced</option>
+            <option value="right">
+              <I18nText id="Rightward" />
+            </option>
+            <option value="left">
+              <I18nText id="Leftward" />
+            </option>
+            <option value="balanced">
+              <I18nText id="Balanced" />
+            </option>
           </NativeSelect>
         </Field>
-        <Field label="Spacing">
+        <Field label={uiText("Spacing")}>
           <NativeSelect
             value={settings.spacing}
             onChange={(e) =>
@@ -94,11 +111,15 @@ export default function MindmapDisplayDialog({
               })
             }
           >
-            <option value="comfortable">Comfortable</option>
-            <option value="compact">Compact</option>
+            <option value="comfortable">
+              <I18nText id="Comfortable" />
+            </option>
+            <option value="compact">
+              <I18nText id="Compact" />
+            </option>
           </NativeSelect>
         </Field>
-        <Field label="Branch colors">
+        <Field label={uiText("Branch colors")}>
           <NativeSelect
             value={settings.colors}
             onChange={(e) =>
@@ -108,11 +129,15 @@ export default function MindmapDisplayDialog({
               })
             }
           >
-            <option value="accent">Theme accent</option>
-            <option value="spectrum">Theme spectrum</option>
+            <option value="accent">
+              <I18nText id="Theme accent" />
+            </option>
+            <option value="spectrum">
+              <I18nText id="Theme spectrum" />
+            </option>
           </NativeSelect>
         </Field>
-        <Field label="Node width">
+        <Field label={uiText("Node width")}>
           <NativeSelect
             value={settings.nodeWidth}
             onChange={(e) =>
@@ -123,12 +148,12 @@ export default function MindmapDisplayDialog({
               .sort((a, b) => a - b)
               .map((value) => (
                 <option key={value} value={value}>
-                  {value} px
+                  {value} <I18nText id="px" />
                 </option>
               ))}
           </NativeSelect>
         </Field>
-        <Field label="Initial expanded depth">
+        <Field label={uiText("Initial expanded depth")}>
           <NativeSelect
             value={settings.initialDepth}
             onChange={(e) =>
@@ -139,7 +164,7 @@ export default function MindmapDisplayDialog({
               .sort((a, b) => a - b)
               .map((value) => (
                 <option key={value} value={value}>
-                  {value} levels
+                  {value} <I18nText id="levels" />
                 </option>
               ))}
           </NativeSelect>
@@ -147,11 +172,11 @@ export default function MindmapDisplayDialog({
         <div className="mindmap-detail-actions">
           <Button onClick={onExpandAll}>
             <ChevronsUpDown size={16} />
-            Expand all
+            <I18nText id="Expand all" />
           </Button>
           <Button onClick={onFoldAll}>
             <ChevronsDownUp size={16} />
-            Fold all
+            <I18nText id="Fold all" />
           </Button>
         </div>
       </div>
@@ -173,11 +198,11 @@ export default function MindmapDisplayDialog({
                 .finally(() => setSaving(false));
             }}
           >
-            Save file defaults
+            <I18nText id="Save file defaults" />
           </Button>
         )}
         <Button variant="primary" onClick={onClose}>
-          Done
+          <I18nText id="Done" />
         </Button>
       </DialogFooter>
     </Dialog>

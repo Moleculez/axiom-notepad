@@ -35,7 +35,7 @@ describe("workspace breadcrumb routes", () => {
     ).toEqual({
       crumbs: [
         { label: "Groups", to: "/groups" },
-        { label: "Physics group", to: "/groups" },
+        { label: "Physics group", to: "/groups", authored: true },
         { label: "Planning" },
       ],
       up: "/groups",
@@ -122,7 +122,10 @@ describe("workspace breadcrumb routes", () => {
         resource: { ...location.resource, kind: "folder" },
       },
     });
-    expect(result.crumbs.at(-1)).toEqual({ label: "Derivation" });
+    expect(result.crumbs.at(-1)).toEqual({
+      label: "Derivation",
+      authored: true,
+    });
     expect(result.up).toBe(folderRoute(space, child));
   });
   it("retains the workspace shell through nested file and settings breadcrumbs", () => {
@@ -161,7 +164,7 @@ describe("workspace breadcrumb routes", () => {
       }).crumbs,
     ).toEqual([
       { label: "Explorer", to: "/explorer?view=all" },
-      { label: "Physics lab" },
+      { label: "Physics lab", authored: true },
     ]);
     expect(
       workspaceLocation({ route: "/explorer?view=trash" }).crumbs.at(-1),
@@ -170,5 +173,24 @@ describe("workspace breadcrumb routes", () => {
     expect(
       workspaceLocation({ route: "/tools/math/new" }).crumbs.at(-1),
     ).toEqual({ label: "Explorer" });
+  });
+  it("keeps authored names separate even when they match an interface message", () => {
+    const result = workspaceLocation({
+      route: `/notes/${id}`,
+      location: {
+        ...location,
+        space: { ...location.space, name: "Settings" },
+        resource: { ...location.resource, name: "Language" },
+      },
+    });
+    expect(result.crumbs[0].authored).toBeUndefined();
+    expect(result.crumbs[1]).toMatchObject({
+      label: "Settings",
+      authored: true,
+    });
+    expect(result.crumbs.at(-1)).toMatchObject({
+      label: "Language",
+      authored: true,
+    });
   });
 });

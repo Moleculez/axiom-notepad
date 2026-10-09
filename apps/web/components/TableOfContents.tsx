@@ -1,4 +1,8 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+import { t, currentLocale } from "@axiom/i18n/client";
+import { formatNumber } from "@axiom/i18n";
+
 import { useEffect, useId, useMemo } from "react";
 import { ChevronRight, ListTree } from "lucide-react";
 import {
@@ -24,6 +28,7 @@ export default function TableOfContents({
   onNavigate: (heading: OutlineHeading) => void;
   reveal: number;
 }) {
+  useInterfaceLocale();
   const prefix = useId(),
     tree = useMemo(() => outlineTree(headings), [headings]);
   const branches = useMemo(() => outlineBranches(tree), [tree]);
@@ -49,7 +54,10 @@ export default function TableOfContents({
                 <button
                   type="button"
                   className="toc-disclosure"
-                  aria-label={`${closed ? "Expand" : "Collapse"} ${node.text}`}
+                  aria-label={t(
+                    closed ? "Expand {title}" : "Collapse {title}",
+                    { title: node.text },
+                  )}
                   aria-expanded={!closed}
                   aria-controls={`${prefix}-${node.id}`}
                   onClick={() =>
@@ -88,11 +96,16 @@ export default function TableOfContents({
     </ol>
   );
   return (
-    <nav className="table-of-contents" aria-label="Table of contents">
+    <nav className="table-of-contents" aria-label={uiText("Table of contents")}>
       <div className="toc-heading">
-        <span>On this page</span>
-        <span className="toc-count" aria-label={`${headings.length} headings`}>
-          {headings.length}
+        <span>
+          <I18nText id="On this page" />
+        </span>
+        <span
+          className="toc-count"
+          aria-label={t("{count, number} headings", { count: headings.length })}
+        >
+          {formatNumber(currentLocale(), headings.length)}
         </span>
       </div>
       {branches.length > 0 && (
@@ -102,7 +115,7 @@ export default function TableOfContents({
             onClick={() => onCollapsedChange([])}
             disabled={!collapsed.length}
           >
-            Expand all
+            <I18nText id="Expand all" />
           </button>
           <span aria-hidden="true">·</span>
           <button
@@ -110,7 +123,7 @@ export default function TableOfContents({
             onClick={() => onCollapsedChange(branches)}
             disabled={branches.every((id) => collapsed.includes(id))}
           >
-            Collapse all
+            <I18nText id="Collapse all" />
           </button>
         </div>
       )}
@@ -119,8 +132,12 @@ export default function TableOfContents({
       ) : (
         <div className="toc-empty">
           <ListTree size={24} aria-hidden="true" />
-          <p>A map of your thinking</p>
-          <small>Add headings to navigate the ideas in this note.</small>
+          <p>
+            <I18nText id="A map of your thinking" />
+          </p>
+          <small>
+            <I18nText id="Add headings to navigate the ideas in this note." />
+          </small>
         </div>
       )}
     </nav>

@@ -1,4 +1,7 @@
 "use client";
+import { currentLocale } from "@axiom/i18n/client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { Button, NativeSelect, TextInput } from "../ui/controls";
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import {
@@ -60,6 +63,7 @@ export default function ImageGeometryDialog({
   onApply: (rect: CropRect, sampling: ImageSampling) => void | Promise<void>;
   avatar?: boolean;
 }) {
+  useInterfaceLocale();
   const full = { x: 0, y: 0, width: doc.width, height: doc.height };
   const [initial] = useState(() =>
     avatar
@@ -205,14 +209,16 @@ export default function ImageGeometryDialog({
       size="wide"
       title={
         avatar
-          ? "Crop profile picture"
+          ? uiText("Crop profile picture")
           : mode === "crop"
             ? "Crop image"
             : "Resize image"
       }
       subtitle={
         avatar
-          ? "Position your photo and preview how collaborators will see it."
+          ? uiText(
+              "Position your photo and preview how collaborators will see it.",
+            )
           : mode === "crop"
             ? "Choose the part of the image to keep."
             : "Change image dimensions without changing the original file."
@@ -282,7 +288,9 @@ export default function ImageGeometryDialog({
                 <canvas
                   ref={canvas}
                   aria-label={
-                    mode === "crop" ? "Crop preview" : "Resize preview"
+                    mode === "crop"
+                      ? uiText("Crop preview")
+                      : uiText("Resize preview")
                   }
                   style={{
                     imageRendering:
@@ -293,7 +301,7 @@ export default function ImageGeometryDialog({
                   <div
                     className="image-crop-frame"
                     role="group"
-                    aria-label="Crop selection"
+                    aria-label={uiText("Crop selection")}
                     style={{
                       left: `${(visibleRect.x / doc.width) * 100}%`,
                       top: `${(visibleRect.y / doc.height) * 100}%`,
@@ -344,16 +352,25 @@ export default function ImageGeometryDialog({
             </div>
             <p className="image-geometry-hint">
               {mode === "crop"
-                ? "Drag the corners to crop; drag inside to move. Arrow keys adjust by 1 px, Shift by 10 px."
-                : "The preview shows the new proportions. Dimensions are in pixels."}
+                ? uiText(
+                    "Drag the corners to crop; drag inside to move. Arrow keys adjust by 1 px, Shift by 10 px.",
+                  )
+                : uiText(
+                    "The preview shows the new proportions. Dimensions are in pixels.",
+                  )}
             </p>
           </div>
           <div className="image-geometry-fields">
             <div className="image-geometry-original">
-              <span>{avatar ? "Working preview" : "Current image"}</span>
+              <span>
+                {avatar ? uiText("Working preview") : uiText("Current image")}
+              </span>
               <strong>
-                {doc.width.toLocaleString()} × {doc.height.toLocaleString()}{" "}
-                <small>px</small>
+                {doc.width.toLocaleString(currentLocale())} ×{" "}
+                {doc.height.toLocaleString(currentLocale())}{" "}
+                <small>
+                  <I18nText id="px" />
+                </small>
               </strong>
             </div>
             {avatar ? (
@@ -362,15 +379,17 @@ export default function ImageGeometryDialog({
                   ref={round}
                   width={128}
                   height={128}
-                  aria-label="Round profile picture preview"
+                  aria-label={uiText("Round profile picture preview")}
                 />
-                <span>Square crop · round avatar</span>
+                <span>
+                  <I18nText id="Square crop · round avatar" />
+                </span>
               </div>
             ) : mode === "crop" ? (
               <label>
-                Aspect ratio
+                <I18nText id="Aspect ratio" />
                 <NativeSelect
-                  aria-label="Crop aspect ratio"
+                  aria-label={uiText("Crop aspect ratio")}
                   value={ratioKey}
                   disabled={!editable}
                   onChange={(e) => {
@@ -378,18 +397,35 @@ export default function ImageGeometryDialog({
                     update(cropWithRatio(visibleRect, ratios[e.target.value]));
                   }}
                 >
-                  <option value="free">Freeform</option>
-                  <option value="original">Original proportions</option>
-                  <option value="square">1:1 · Square</option>
-                  <option value="landscape">4:3 · Landscape</option>
-                  <option value="photo">3:2 · Photograph</option>
-                  <option value="wide">16:9 · Widescreen</option>
-                  <option value="portrait">3:4 · Portrait</option>
-                  <option value="tall">9:16 · Tall</option>
+                  <option value="free">
+                    <I18nText id="Freeform" />
+                  </option>
+                  <option value="original">
+                    <I18nText id="Original proportions" />
+                  </option>
+                  <option value="square">
+                    <I18nText id="1:1 · Square" />
+                  </option>
+                  <option value="landscape">
+                    <I18nText id="4:3 · Landscape" />
+                  </option>
+                  <option value="photo">
+                    <I18nText id="3:2 · Photograph" />
+                  </option>
+                  <option value="wide">
+                    <I18nText id="16:9 · Widescreen" />
+                  </option>
+                  <option value="portrait">
+                    <I18nText id="3:4 · Portrait" />
+                  </option>
+                  <option value="tall">
+                    <I18nText id="9:16 · Tall" />
+                  </option>
                 </NativeSelect>
               </label>
             ) : (
               <Button
+                data-dialog-cancel
                 type="button"
                 className="button secondary image-geometry-lock"
                 aria-pressed={locked}
@@ -408,7 +444,7 @@ export default function ImageGeometryDialog({
                 ) : (
                   <LockKeyholeOpen size={15} />
                 )}
-                Keep proportions
+                <I18nText id="Keep proportions" />
               </Button>
             )}
             <div className="image-geometry-dimensions">
@@ -425,7 +461,7 @@ export default function ImageGeometryDialog({
                   <TextInput
                     aria-label={
                       key === "x"
-                        ? "Crop left"
+                        ? uiText("Crop left")
                         : key === "y"
                           ? "Crop top"
                           : key === "width"
@@ -448,7 +484,7 @@ export default function ImageGeometryDialog({
                 <div
                   className="image-geometry-presets"
                   role="group"
-                  aria-label="Resize scale presets"
+                  aria-label={uiText("Resize scale presets")}
                 >
                   {[0.25, 0.5, 1, 2].map((scale) => (
                     <Button
@@ -469,18 +505,20 @@ export default function ImageGeometryDialog({
                   ))}
                 </div>
                 <label>
-                  Resampling
+                  <I18nText id="Resampling" />
                   <NativeSelect
-                    aria-label="Resampling"
+                    aria-label={uiText("Resampling")}
                     value={sampling}
                     disabled={!editable}
                     onChange={(e) =>
                       setSampling(e.target.value as ImageSampling)
                     }
                   >
-                    <option value="smooth">Smooth · photos and figures</option>
+                    <option value="smooth">
+                      <I18nText id="Smooth · photos and figures" />
+                    </option>
                     <option value="pixelated">
-                      Nearest neighbor · pixel art
+                      <I18nText id="Nearest neighbor · pixel art" />
                     </option>
                   </NativeSelect>
                 </label>
@@ -488,19 +526,25 @@ export default function ImageGeometryDialog({
             )}
             <p className="image-geometry-summary" aria-live="polite">
               {validation
-                ? "Check the dimensions below."
-                : `${rect.width.toLocaleString()} × ${rect.height.toLocaleString()} px · ${((rect.width * rect.height) / 1_000_000).toFixed(2)} MP`}
+                ? uiText("Check the dimensions below.")
+                : `${rect.width.toLocaleString(currentLocale())} × ${rect.height.toLocaleString(currentLocale())} px · ${((rect.width * rect.height) / 1_000_000).toFixed(2)} MP`}
             </p>
             <p className="image-geometry-hint">
               {avatar
-                ? "Only the selected area is uploaded. Photos are saved at 256 × 256 px with image metadata removed."
-                : "All layers, including hidden and locked layers, are affected. Undo restores the previous image."}
+                ? uiText(
+                    "Only the selected area is uploaded. Photos are saved at 256 × 256 px with image metadata removed.",
+                  )
+                : uiText(
+                    "All layers, including hidden and locked layers, are affected. Undo restores the previous image.",
+                  )}
             </p>
             {!validation && rasterized > 0 && (
               <p className="image-geometry-warning">
-                {rasterized} transformed or rescaled text{" "}
-                {rasterized === 1 ? "layer will" : "layers will"} become pixels
-                to preserve appearance. Undo restores editable text.
+                {rasterized} <I18nText id="transformed or rescaled text" />{" "}
+                {rasterized === 1
+                  ? uiText("layer will")
+                  : uiText("layers will")}{" "}
+                <I18nText id="become pixels to preserve appearance. Undo restores editable text." />
               </p>
             )}
             {(validation || error) && (
@@ -510,7 +554,7 @@ export default function ImageGeometryDialog({
             )}
             {!editable && (
               <p className="image-geometry-error" role="alert">
-                Editing access is required to apply changes.
+                <I18nText id="Editing access is required to apply changes." />
               </p>
             )}
           </div>
@@ -525,15 +569,16 @@ export default function ImageGeometryDialog({
             }
           >
             <RotateCcw size={15} />
-            Reset
+            <I18nText id="Reset" />
           </Button>
           <Button
+            data-dialog-cancel
             type="button"
             className="button secondary"
             disabled={applying}
             onClick={onClose}
           >
-            Cancel
+            <I18nText id="Cancel" />
           </Button>
           <Button
             type="submit"
@@ -542,7 +587,7 @@ export default function ImageGeometryDialog({
           >
             {mode === "crop" ? <Crop size={15} /> : <Maximize size={15} />}
             {applying
-              ? "Saving…"
+              ? uiText("Saving…")
               : avatar
                 ? "Save photo"
                 : mode === "crop"

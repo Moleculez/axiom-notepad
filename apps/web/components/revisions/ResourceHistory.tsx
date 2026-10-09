@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import {
   Button,
   Checkbox,
@@ -78,6 +80,7 @@ export default function ResourceHistory({
   onClose,
   onRestore,
 }: Props) {
+  useInterfaceLocale();
   const { notify, open } = useWorkspace(),
     action = useAction();
   const [items, setItems] = useState<RevisionSummary[]>([]),
@@ -296,7 +299,7 @@ export default function ResourceHistory({
       tabIndex={-1}
       className="revision-workspace"
       role="region"
-      aria-label="Version history"
+      aria-label={uiText("Version history")}
       onKeyDown={(e) => {
         if (e.key === "Escape" && !dialog) {
           e.stopPropagation();
@@ -307,22 +310,24 @@ export default function ResourceHistory({
       <header className="revision-header">
         <IconButton
           className="icon-button"
-          aria-label="Back to document"
+          aria-label={uiText("Back to document")}
           onClick={onClose}
         >
           <ArrowLeft size={18} />
         </IconButton>
         <div>
-          <h2>Version history</h2>
+          <h2>
+            <I18nText id="Version history" />
+          </h2>
           <p>
-            {current?.title ?? "Loading file"} · comparisons do not change your
-            document
+            {current?.title ?? "Loading file"}{" "}
+            <I18nText id="· comparisons do not change your document" />
           </p>
         </div>
         <IconButton
           className="icon-button"
-          aria-label="Refresh comparison"
-          title="Capture latest draft and refresh history"
+          aria-label={uiText("Refresh comparison")}
+          title={uiText("Capture latest draft and refresh history")}
           disabled={loading || action.busy}
           onClick={refresh}
         >
@@ -338,7 +343,7 @@ export default function ResourceHistory({
             }}
           >
             <BookmarkPlus size={16} />
-            Name milestone
+            <I18nText id="Name milestone" />
           </Button>
         )}
       </header>
@@ -347,11 +352,14 @@ export default function ResourceHistory({
         retry={error ? refresh : undefined}
       />
       <div className="revision-layout">
-        <aside className="revision-timeline" aria-label="Revision timeline">
+        <aside
+          className="revision-timeline"
+          aria-label={uiText("Revision timeline")}
+        >
           <SearchField
             wrapperClassName="revision-search"
-            aria-label="Filter revision history"
-            placeholder="Find a milestone or author"
+            aria-label={uiText("Filter revision history")}
+            placeholder={uiText("Find a milestone or author")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -360,7 +368,7 @@ export default function ResourceHistory({
               checked={named}
               onChange={(e) => setNamed(e.target.checked)}
             />
-            Named only
+            <I18nText id="Named only" />
           </label>
           <div className="revision-timeline-scroll">
             {choices
@@ -391,15 +399,17 @@ export default function ResourceHistory({
                       · {timeAgo(v.createdAt)}
                     </small>
                     {v.kind === "legacy" && (
-                      <small>Source-only checkpoint</small>
+                      <small>
+                        <I18nText id="Source-only checkpoint" />
+                      </small>
                     )}
                   </span>
                 </button>
               ))}
-            {loading && <Loading label="Loading revisions…" />}
+            {loading && <Loading label={uiText("Loading revisions…")} />}
             {!loading && !items.length && (
               <p className="revision-notice">
-                No milestones yet. Save one to preserve a named moment.
+                <I18nText id="No milestones yet. Save one to preserve a named moment." />
               </p>
             )}
             {cursor && (
@@ -420,7 +430,7 @@ export default function ResourceHistory({
                   })
                 }
               >
-                Load older revisions
+                <I18nText id="Load older revisions" />
               </Button>
             )}
           </div>
@@ -428,9 +438,9 @@ export default function ResourceHistory({
         <div className="revision-main">
           <div className="revision-selectors">
             <label>
-              Before
+              <I18nText id="Before" />
               <NativeSelect
-                aria-label="Before revision"
+                aria-label={uiText("Before revision")}
                 value={beforeId}
                 onChange={(e) => setBeforeId(e.target.value)}
               >
@@ -443,9 +453,9 @@ export default function ResourceHistory({
             </label>
             <span aria-hidden="true">→</span>
             <label>
-              After
+              <I18nText id="After" />
               <NativeSelect
-                aria-label="After revision"
+                aria-label={uiText("After revision")}
                 value={afterId}
                 onChange={(e) => setAfterId(e.target.value)}
               >
@@ -460,14 +470,14 @@ export default function ResourceHistory({
           {pair ? (
             <RevisionDiff before={pair[0]} after={pair[1]} />
           ) : (
-            !error && <Loading label="Preparing comparison…" />
+            !error && <Loading label={uiText("Preparing comparison…")} />
           )}
           <footer className="revision-actions">
             {canEdit &&
               selected?.kind === "snapshot" &&
               selected.format === "markdown" && (
                 <Button variant="ghost" onClick={() => setHandoff(true)}>
-                  Follow-up task
+                  <I18nText id="Follow-up task" />
                 </Button>
               )}
             {canEdit &&
@@ -478,7 +488,7 @@ export default function ResourceHistory({
                   onClick={() => setRequestReview(true)}
                 >
                   <UserRoundCheck size={15} />
-                  Request review
+                  <I18nText id="Request review" />
                 </Button>
               )}
             {selected && (
@@ -487,7 +497,7 @@ export default function ResourceHistory({
                 onClick={() => exportRevision(selected)}
               >
                 <Download size={15} />
-                Export before
+                <I18nText id="Export before" />
               </Button>
             )}
             {canEdit &&
@@ -502,7 +512,7 @@ export default function ResourceHistory({
                     }}
                   >
                     <Pencil size={15} />
-                    Rename
+                    <I18nText id="Rename" />
                   </Button>
                   {(selected.body !== null || imageActions) && (
                     <Button
@@ -513,7 +523,7 @@ export default function ResourceHistory({
                       }}
                     >
                       <Copy size={15} />
-                      Open as copy
+                      <I18nText id="Open as copy" />
                     </Button>
                   )}
                   {(selected.kind === "snapshot" ||
@@ -523,7 +533,7 @@ export default function ResourceHistory({
                       onClick={() => setDialog("restore")}
                     >
                       <RotateCcw size={15} />
-                      Restore before
+                      <I18nText id="Restore before" />
                     </Button>
                   )}
                 </>
@@ -538,8 +548,10 @@ export default function ResourceHistory({
               }
               title={
                 pair?.[1].cloudRevision
-                  ? "Save an image milestone before marking it reviewed"
-                  : "Save the compared server revision as your next changes-since-visit baseline"
+                  ? uiText("Save an image milestone before marking it reviewed")
+                  : uiText(
+                      "Save the compared server revision as your next changes-since-visit baseline",
+                    )
               }
               onClick={() =>
                 void action.run(async () => {
@@ -564,7 +576,7 @@ export default function ResourceHistory({
               }
             >
               <CheckCheck size={15} />
-              Mark reviewed
+              <I18nText id="Mark reviewed" />
             </Button>
           </footer>
         </div>
@@ -573,7 +585,7 @@ export default function ResourceHistory({
         <Dialog
           title={
             dialog === "restore"
-              ? "Restore this revision?"
+              ? uiText("Restore this revision?")
               : dialog === "copy"
                 ? "Open revision as a copy"
                 : dialog === "rename"
@@ -590,37 +602,35 @@ export default function ResourceHistory({
           >
             {dialog === "restore" ? (
               <p>
-                The captured document is preserved as “Before restore”. If any
-                edits arrived since comparison, restoration will stop and ask
-                you to refresh. Historical revisions without settings leave
-                current project settings unchanged.
+                <I18nText id="The captured document is preserved as “Before restore”. If any edits arrived since comparison, restoration will stop and ask you to refresh. Historical revisions without settings leave current project settings unchanged." />
               </p>
             ) : (
               <label>
-                Name
+                <I18nText id="Name" />
                 <TextInput
                   autoFocus
                   required
                   maxLength={dialog === "copy" ? 240 : 120}
                   value={label}
                   onChange={(e) => setLabel(e.target.value)}
-                  placeholder="e.g. Model assumptions reviewed"
+                  placeholder={uiText("e.g. Model assumptions reviewed")}
                 />
               </label>
             )}
             <ErrorNotice message={action.error} />
             <div className="dialog-footer">
               <Button
+                data-dialog-cancel
                 type="button"
                 className="button secondary"
                 disabled={action.busy}
                 onClick={() => setDialog(null)}
               >
-                Cancel
+                <I18nText id="Cancel" />
               </Button>
               <Button className="button primary" disabled={action.busy}>
                 {action.busy
-                  ? "Saving…"
+                  ? uiText("Saving…")
                   : dialog === "restore"
                     ? "Restore revision"
                     : "Save"}
@@ -661,6 +671,7 @@ function ManuscriptHandoff({
   title: string;
   onClose: () => void;
 }) {
+  useInterfaceLocale();
   const data = useData<{ space_id: string }>(`resources/${resourceId}`);
   return data.data ? (
     <ResearchTaskHandoff
@@ -671,8 +682,8 @@ function ManuscriptHandoff({
       onClose={onClose}
     />
   ) : (
-    <Dialog title="Research follow-up" onClose={onClose}>
-      <Loading label="Finding the manuscript workspace…" />
+    <Dialog title={uiText("Research follow-up")} onClose={onClose}>
+      <Loading label={uiText("Finding the manuscript workspace…")} />
       <ErrorNotice message={data.error} retry={data.reload} />
     </Dialog>
   );

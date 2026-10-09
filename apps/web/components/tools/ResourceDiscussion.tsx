@@ -1,4 +1,7 @@
 "use client";
+import { currentLocale } from "@axiom/i18n/client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import {
   Button,
   Checkbox,
@@ -38,6 +41,7 @@ export default function ResourceDiscussion({
   anchorLabel?: (anchor: Comment["anchor"]) => string;
   onAnchor?: (anchor: Comment["anchor"]) => void;
 }) {
+  useInterfaceLocale();
   const { session } = useWorkspace(),
     data = useData<Comment[]>(
       `resource-comments/${resourceId}${versionId ? `?version=${versionId}` : ""}`,
@@ -83,20 +87,22 @@ export default function ResourceDiscussion({
     <section className="resource-discussion">
       <header>
         <MessageSquare size={17} />
-        <h2>Discussion</h2>
+        <h2>
+          <I18nText id="Discussion" />
+        </h2>
         <span className="tool-spacer" />
         <label>
           <Checkbox
             checked={showResolved}
             onChange={(e) => setShowResolved(e.target.checked)}
           />
-          Resolved
+          <I18nText id="Resolved" />
         </label>
       </header>
       <HelpText>
         {versionId
-          ? "Comments stay attached to this exact file version."
-          : "Shared with everyone who can read this project."}
+          ? uiText("Comments stay attached to this exact file version.")
+          : uiText("Shared with everyone who can read this project.")}
       </HelpText>
       <ErrorNotice message={error || data.error} />
       {data.loading && !data.data ? (
@@ -115,7 +121,9 @@ export default function ResourceDiscussion({
               <article key={c.id}>
                 <div className="resource-comment-meta">
                   <strong>{c.author}</strong>
-                  <time>{new Date(c.created_at).toLocaleDateString()}</time>
+                  <time>
+                    {new Date(c.created_at).toLocaleDateString(currentLocale())}
+                  </time>
                   {onAnchor && c.anchor.kind === "canvas-node" ? (
                     <Button
                       type="button"
@@ -147,12 +155,12 @@ export default function ResourceDiscussion({
                       ) : (
                         <Check size={13} />
                       )}{" "}
-                      {c.resolved ? "Reopen" : "Resolve"}
+                      {c.resolved ? uiText("Reopen") : uiText("Resolve")}
                     </Button>
                     <IconButton
                       className="icon-button"
-                      aria-label="Delete my comment"
-                      title="Delete my comment"
+                      aria-label={uiText("Delete my comment")}
+                      title={uiText("Delete my comment")}
                       onClick={() =>
                         void api(`resource-comments/${resourceId}/${c.id}`, {
                           method: "DELETE",
@@ -193,19 +201,19 @@ export default function ResourceDiscussion({
           {kinds.length > 1 && (
             <div className="discussion-anchor">
               <NativeSelect
-                aria-label="Comment anchor type"
+                aria-label={uiText("Comment anchor type")}
                 value={kind}
                 onChange={(e) => setKind(e.target.value)}
               >
                 {kinds.map((k) => (
                   <option key={k} value={k}>
-                    {k === "whole" ? "Whole file" : k}
+                    {k === "whole" ? uiText("Whole file") : k}
                   </option>
                 ))}
               </NativeSelect>
               {kind !== "whole" && (
                 <TextInput
-                  aria-label="Comment location"
+                  aria-label={uiText("Comment location")}
                   required
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
@@ -223,11 +231,13 @@ export default function ResourceDiscussion({
             </div>
           )}
           <TextArea
-            aria-label="Write a comment"
+            aria-label={uiText("Write a comment")}
             required
             rows={3}
             maxLength={20000}
-            placeholder="Discuss a detail, ask a question, or leave a review…"
+            placeholder={uiText(
+              "Discuss a detail, ask a question, or leave a review…",
+            )}
             value={body}
             onChange={(e) => setBody(e.target.value)}
           />
@@ -237,7 +247,7 @@ export default function ResourceDiscussion({
             pending={!!busy}
           >
             <Send size={14} />
-            {"Comment"}
+            {uiText("Comment")}
           </Button>
         </form>
       )}

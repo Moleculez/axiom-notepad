@@ -4,7 +4,7 @@ import {
   PHASE_PRODUCTION_BUILD,
   PHASE_PRODUCTION_SERVER,
 } from "next/constants";
-import config from "../apps/web/next.config";
+import config from "../apps/web/next.config.mjs";
 
 beforeEach(() => {
   vi.stubEnv("NEXT_PUBLIC_AXIOM_EDITOR_ENGINE", undefined);

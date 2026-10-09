@@ -38,6 +38,7 @@ npm run lint
 npm test
 npm run validate:ui
 npm run validate:themes
+npm run validate:i18n
 npm run docs:check
 ```
 
@@ -47,6 +48,13 @@ See [verification](docs/VERIFICATION.md); a passing unit suite is not browser ac
 The [mind-map contract](docs/MINDMAP.md) documents shared production/showcase
 bindings, source-preserving moves, bounded exports and its disposable SQL/browser
 gates. A presentation view must not create a second collaborative document.
+Follow the [localization contract](docs/LOCALIZATION.md) for interface copy,
+parameters, document boundaries, RTL and account-language acceptance. Catalog key
+parity is not proof that a language's translation is complete.
+Completed localization increments must extend the scoped translation contract in
+`packages/i18n/src/translation-coverage.ts`; new required copy must not silently
+fall back to English. Keep role/status values, confirmation tokens and authored
+names canonical while translating their presentation.
 The [reliability runner](docs/RELIABILITY.md) builds and exercises a fresh
 authenticated test installation without loading `.env`, then rehearses sync crash
 recovery and a real paired database/blob restore. Run `npm run verify:reliability`;

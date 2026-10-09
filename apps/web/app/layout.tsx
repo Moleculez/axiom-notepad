@@ -3,6 +3,7 @@ import { brandVersion } from "@axiom/shared/brand";
 import "./styles";
 import MathRendering from "../components/MathRendering";
 import DatasetBoundary from "../components/DatasetBoundary";
+import LocaleProvider from "../components/LocaleProvider";
 import { appearanceBootScript } from "@axiom/shared/appearance-boot";
 // The public cached HTML never contains account data.
 const appearanceScript = appearanceBootScript();
@@ -36,10 +37,12 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: appearanceScript }} />
       </head>
       <body>
-        <DatasetBoundary>
-          {children}
-          <MathRendering />
-        </DatasetBoundary>
+        <LocaleProvider>
+          <DatasetBoundary>
+            {children}
+            <MathRendering />
+          </DatasetBoundary>
+        </LocaleProvider>
       </body>
     </html>
   );

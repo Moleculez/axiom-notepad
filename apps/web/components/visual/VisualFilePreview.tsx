@@ -1,4 +1,6 @@
 "use client";
+import { uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { Button, IconButton } from "../ui/controls";
 import { useEffect, useRef, useState } from "react";
 import { ZoomIn, ZoomOut, Maximize, ImagePlus } from "lucide-react";
@@ -26,6 +28,7 @@ export default function VisualFilePreview({
   onEdit: () => void;
   gallery?: VisualAsset[];
 }) {
+  useInterfaceLocale();
   const root = useRef<HTMLDivElement>(null),
     [media, setMedia] = useState<VisualMedia | null>(null),
     [error, setError] = useState(""),
@@ -111,15 +114,15 @@ export default function VisualFilePreview({
         <span className="tool-spacer" />
         <IconButton
           className="icon-button"
-          aria-label="Zoom out"
-          title="Zoom out"
+          aria-label={uiText("Zoom out")}
+          title={uiText("Zoom out")}
           onClick={() => setT((v) => zoomVisual(v, v.zoom / 1.25))}
         >
           <ZoomOut size={16} />
         </IconButton>
         <Button
           className="button ghost"
-          title="Fit image"
+          title={uiText("Fit image")}
           onClick={() =>
             media &&
             setT({
@@ -132,16 +135,16 @@ export default function VisualFilePreview({
         </Button>
         <IconButton
           className="icon-button"
-          aria-label="Zoom in"
-          title="Zoom in"
+          aria-label={uiText("Zoom in")}
+          title={uiText("Zoom in")}
           onClick={() => setT((v) => zoomVisual(v, v.zoom * 1.25))}
         >
           <ZoomIn size={16} />
         </IconButton>
         <IconButton
           className="icon-button"
-          aria-label="View image larger"
-          title="View image larger"
+          aria-label={uiText("View image larger")}
+          title={uiText("View image larger")}
           onClick={() => open()}
         >
           <Maximize size={16} />
@@ -149,8 +152,8 @@ export default function VisualFilePreview({
         <Button className="button secondary" onClick={onEdit}>
           <ImagePlus size={15} />
           {file.mime === "application/vnd.axiom.image+zip"
-            ? "Open Image Studio"
-            : "Edit a copy"}
+            ? uiText("Open Image Studio")
+            : uiText("Edit a copy")}
         </Button>
       </div>
       {error && (

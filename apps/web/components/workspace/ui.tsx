@@ -1,4 +1,7 @@
 "use client";
+import { currentLocale } from "@axiom/i18n/client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { ActionRow, Button } from "../ui/controls";
 import {
   createContext,
@@ -316,21 +319,23 @@ export function ErrorNotice({
   message?: string;
   retry?: () => void;
 }) {
+  useInterfaceLocale();
   if (!message) return null;
   return (
     <div className="ws-error" role="alert">
       <AlertCircle size={18} />
-      <span>{message}</span>
+      <span>{uiText(message)}</span>
       {retry && (
         <Button className="button secondary" onClick={retry}>
           <RefreshCw size={15} />
-          Retry
+          <I18nText id="Retry" />
         </Button>
       )}
     </div>
   );
 }
 export function Loading({ label = "Loading workspace…" }: { label?: string }) {
+  useInterfaceLocale();
   const inWorkspace = !!useContext(WorkspaceContext);
   useEffect(() => {
     if (inWorkspace) return beginWorkspaceActivity();
@@ -338,11 +343,13 @@ export function Loading({ label = "Loading workspace…" }: { label?: string }) 
   // The toolbar owns workspace loading feedback, including lazy page chunks.
   // Keep the standalone sign-in/bootstrap indicator outside that shell.
   if (inWorkspace)
-    return <span className="workspace-loading-announcement">{label}</span>;
+    return (
+      <span className="workspace-loading-announcement">{uiText(label)}</span>
+    );
   return (
     <div className="ws-loading" role="status">
       <LoaderCircle className="spin" size={20} />
-      <span>{label}</span>
+      <span>{uiText(label)}</span>
     </div>
   );
 }
@@ -379,10 +386,11 @@ export function PageHeading({
   children?: React.ReactNode;
   actions?: React.ReactNode;
 }) {
+  useInterfaceLocale();
   return (
     <header className="ws-page-heading">
       <div>
-        {eyebrow && <div className="eyebrow">{eyebrow}</div>}
+        {eyebrow && <div className="eyebrow">{uiText(eyebrow)}</div>}
         <h1 tabIndex={-1}>{title}</h1>
         {children && <p>{children}</p>}
       </div>
@@ -419,10 +427,10 @@ export function ResourceIcon({
 }
 export function bytes(value?: number | string | null) {
   const n = Number(value ?? 0);
-  if (n < 1000) return n + " B";
+  if (n < 1000) return n.toLocaleString(currentLocale()) + " B";
   const order = Math.min(3, Math.floor(Math.log10(n) / 3));
   return (
-    (n / 1000 ** order).toLocaleString(undefined, {
+    (n / 1000 ** order).toLocaleString(currentLocale(), {
       maximumFractionDigits: 1,
     }) +
     " " +

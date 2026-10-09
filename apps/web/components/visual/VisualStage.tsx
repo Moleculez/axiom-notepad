@@ -1,4 +1,6 @@
 "use client";
+import { uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { useEffect, useRef, useState } from "react";
 import {
   moveShape,
@@ -143,6 +145,7 @@ export default function VisualStage({
   userId: string;
   label?: string;
 }) {
+  useInterfaceLocale();
   const root = useRef<HTMLDivElement>(null),
     [draft, setDraft] = useState<VisualShape | null>(null),
     [space, setSpace] = useState(false);
@@ -402,7 +405,7 @@ export default function VisualStage({
             style={{ pointerEvents: "none" }}
             className="visual-markup-layer"
             viewBox={`0 0 ${media.width} ${media.height}`}
-            aria-label="Image markup"
+            aria-label={uiText("Image markup")}
           >
             {marks
               .filter((m) => m.shape && m.id !== drag.current?.markId)

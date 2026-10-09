@@ -1,7 +1,88 @@
 # Current verification and beta release gates
 
-Updated October 8, 2026. Historical logs are [archived separately](archive/VERIFICATION-2026-09-11.md).
+Updated October 9, 2026. Historical logs are [archived separately](archive/VERIFICATION-2026-09-11.md).
 Do not treat historical browser totals or local build IDs as current release evidence.
+
+## October 9 interface localization increment
+
+### Translation follow-up
+
+- The inventory now has **5,303 typed message IDs** and **1,744–1,792 differing
+  translations per non-English catalog**, an increase of **773–778** from the
+  initial checkpoint below. Expanded controls cover settings/profile/security,
+  groups, files/import/Trash, Gantt/goals/intake/time and reference-library/graph
+  workflows. Counts do not certify whole-page or native-language acceptance;
+  **3,511–3,559 values per catalog still match English**, mostly untranslated UI.
+- **120 reviewed message IDs** across six UI areas now reject missing, blank and
+  English-fallback regressions. Whole messages carry plural counts, pagination,
+  group/invitation details and permanent-removal instructions. Closed role/status
+  label maps preserve API enums, authored names and the literal `DELETE FOREVER`
+  confirmation token. Settings heading registries are typed against catalog IDs.
+- **2,819 tests / 177 files**, typecheck, lint, UI (**215 JSX / 49 CSS**), all five
+  theme packs, ICU/parameter/coverage contracts and whitespace checks pass. One
+  complete run hit the existing process-cleanup test's intermittent `kill EPERM`;
+  a focused **62-case** rerun and complete **2,819-case** rerun pass without
+  modifying the cleanup helper. The intermittent cause is not established.
+- Optimized application, isolated account-test application and static showcase
+  builds pass with catalog revision **`c776b17f517433a8`**. Application build
+  **`0xDoRXAFQvKS4Eh6Gi4mR`** and staging build **`_fkNZrR_TaPN9jDwScWd3`** prepare
+  **1,062 offline assets**. The final built showcase passes the **15-case language
+  replay** across Chromium, Firefox and WebKit; the broader 129-case run below is
+  a preceding checkpoint, not a full rerun for this follow-up.
+- The final isolated account replay passes **15 cases** across those engines:
+  Preview/Save/Cancel, reload, exact retry/CAS/validation, automatic Arabic sign-in,
+  all ten profile languages without changing authored fields, and Arabic group
+  dialogs in both modes at 20px interface text. The layout fixture uses read-only
+  theme responses with service workers blocked only for that test; the other
+  account flows retain normal worker behavior. Number expectations respect each
+  browser's resolved numbering system. Screenshots are inspected for wrapping,
+  field alignment, dialog bounds, keyboard focus and reachable footer actions,
+  including showcase forced colors. Results remain private in
+  `data/i18n/account-results` and `data/showcase-results`.
+- Browser checks remain local-only and guarded; working/deployed data and the
+  pre-existing generated-types change are preserved. No publication, push or
+  deployment is performed. Long-tail UI, remaining dynamic copy, native-language
+  review and physical IME/accessibility acceptance remain open.
+
+### Initial localization checkpoint
+
+- Ten interface choices, browser negotiation, account-scoped Preview/Save/Cancel,
+  a durable offline outbox, compare-and-swap conflicts and a browser-local showcase
+  choice share one typed ICU runtime. Language changes retain the mounted editor,
+  canonical source, undo and URL. Arabic chrome is independent of source, math and
+  diagram coordinates; script fallbacks are self-hosted. See the
+  [localization contract](LOCALIZATION.md).
+- **This is partial localization.** There are **5,248 message IDs** and
+  **971–1,014 differing translations per non-English catalog**. Most remaining
+  matching-English entries are untranslated copy, not completed translations.
+  Key/parameter parity does not certify language quality. Long-tail and dynamic
+  messages, registry audits, native-language review and physical IME/accessibility
+  checks remain. Published readers, emails and long help articles are outside
+  this increment.
+- **2,807 tests / 177 files**, typecheck, lint, UI controls (**215 JSX / 49 CSS**),
+  all five theme packs, catalog contracts, documentation links and whitespace
+  checks pass. Imperative label bindings update only owned chrome and can release
+  conditional descriptions so later switches do not resurrect stale warnings.
+- The built static showcase passes **129 selected cases** across Chromium,
+  Firefox and WebKit: ten choices, loading failure recovery, source/undo identity,
+  localized table scopes, dialog focus, both modes, large text, keyboard,
+  reduced motion, forced colors, all eight interface styles and the existing
+  Canvas/image-gallery performance contracts. Screenshots are reviewed for
+  direction, wrapping, input alignment, scroll ownership and footer reachability.
+  After the final settings-heading/password copy and directional-arrow polish,
+  the freshly rebuilt showcase passes the **15-case language replay** across
+  those engines. The 129-case run is the broader preceding checkpoint.
+- The registered local-only extension staging profile passes **nine account and
+  sign-in cases** across those engines. These use real authenticated locale APIs:
+  Preview/Cancel, Save/reload, exact retry, concurrent conflict and invalid-choice
+  rejection, plus automatic Arabic sign-in with LTR email/mathematics. Results
+  remain private in `data/i18n/account-results`; showcase output is in
+  `data/showcase-results`. These are scoped checks, not a replay of every route.
+- Optimized application and static showcase builds pass. The application prepares
+  **1,062 offline build assets**, including versioned compiled catalogs. Forward
+  migration **51** is applied only to the isolated test database. Working and
+  deployed databases/files are unchanged; deployment requires the normal migration
+  workflow. No push, publication or deployment is performed by this increment.
 
 ## October 8 original interface systems and licensing
 

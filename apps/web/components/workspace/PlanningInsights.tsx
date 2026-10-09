@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import {
   Button,
   Checkbox,
@@ -42,6 +44,7 @@ export default function PlanningInsights({
   onLayers: (analysis: PlanningAnalysis | null, tasks: PlanningTask[]) => void;
   onClose: () => void;
 }) {
+  useInterfaceLocale();
   const { revision, refresh } = useWorkspace(),
     action = useAction();
   const analysis = useData<PlanningAnalysis>(
@@ -81,15 +84,20 @@ export default function PlanningInsights({
       refresh();
     });
   return (
-    <section className="planning-insights" aria-label="Schedule insights">
+    <section
+      className="planning-insights"
+      aria-label={uiText("Schedule insights")}
+    >
       <header className="productivity-subtoolbar">
         <ChartNoAxesCombined size={17} />
-        <strong>Schedule insights</strong>
+        <strong>
+          <I18nText id="Schedule insights" />
+        </strong>
         <span className="planning-spacer" />
         <IconButton
           type="button"
           className="icon-button"
-          aria-label="Close schedule insights"
+          aria-label={uiText("Close schedule insights")}
           onClick={onClose}
         >
           <X size={16} />
@@ -109,51 +117,53 @@ export default function PlanningInsights({
             checked={highlight}
             onChange={(e) => setHighlight(e.target.checked)}
           />
-          Critical path
+          <I18nText id="Critical path" />
         </label>
         <span>
           {analysis.data?.forecastFinish
             ? `Forecast finish · ${analysis.data.forecastFinish}`
-            : "No complete dated plan"}
+            : uiText("No complete dated plan")}
         </span>
         <span>
-          {analysis.data?.tasks.filter((t) => t.critical).length ?? 0} critical
-          tasks
+          {analysis.data?.tasks.filter((t) => t.critical).length ?? 0}{" "}
+          <I18nText id="critical tasks" />
         </span>
       </div>
       {analysis.data?.warnings.map((w) => (
         <HelpText key={w}>{w}</HelpText>
       ))}
       <HelpText>
-        Working-day analysis of the entire workspace. Current starts are lower
-        bounds; completed predecessors are satisfied. Bars show the saved
-        schedule, not automatically revised dates.
+        <I18nText id="Working-day analysis of the entire workspace. Current starts are lower bounds; completed predecessors are satisfied. Bars show the saved schedule, not automatically revised dates." />
       </HelpText>
       <div className="productivity-subtoolbar">
         <label>
-          Baseline
+          <I18nText id="Baseline" />
           <NativeSelect
-            aria-label="Baseline"
+            aria-label={uiText("Baseline")}
             value={base}
             onChange={(e) => setBase(e.target.value)}
           >
-            <option value="">None</option>
+            <option value="">
+              <I18nText id="None" />
+            </option>
             {bases.data?.map((b) => (
               <option key={b.id} value={b.id}>
                 {b.name}
-                {b.archived ? " · Archived" : ""}
+                {b.archived ? uiText(" · Archived") : ""}
               </option>
             ))}
           </NativeSelect>
         </label>
         <label>
-          Compare with
+          <I18nText id="Compare with" />
           <NativeSelect
-            aria-label="Compare baseline with"
+            aria-label={uiText("Compare baseline with")}
             value={compare}
             onChange={(e) => setCompare(e.target.value)}
           >
-            <option value="current">Current plan</option>
+            <option value="current">
+              <I18nText id="Current plan" />
+            </option>
             {bases.data
               ?.filter((b) => b.id !== base)
               .map((b) => (
@@ -173,14 +183,14 @@ export default function PlanningInsights({
           onClick={capture}
         >
           <Camera size={15} />
-          Capture baseline
+          <I18nText id="Capture baseline" />
         </Button>
         {base && space.can_manage && (
           <>
             <IconButton
               className="icon-button"
-              title="Rename baseline"
-              aria-label="Rename baseline"
+              title={uiText("Rename baseline")}
+              aria-label={uiText("Rename baseline")}
               onClick={() =>
                 void action.run(async () => {
                   const b = bases.data!.find((b) => b.id === base)!;
@@ -203,8 +213,8 @@ export default function PlanningInsights({
             </IconButton>
             <IconButton
               className="icon-button"
-              title="Archive or unarchive baseline"
-              aria-label="Archive or unarchive baseline"
+              title={uiText("Archive or unarchive baseline")}
+              aria-label={uiText("Archive or unarchive baseline")}
               onClick={() =>
                 void action.run(async () => {
                   const b = bases.data!.find((b) => b.id === base)!;
@@ -225,14 +235,15 @@ export default function PlanningInsights({
       {detail.data && (
         <>
           <HelpText>
-            {detail.data.comparison.items.length} changed tasks
+            {detail.data.comparison.items.length}{" "}
+            <I18nText id="changed tasks" />
             {detail.data.comparison.calendarChanged
-              ? " · Working calendar changed"
+              ? uiText(" · Working calendar changed")
               : ""}
             {detail.data.comparison.milestonesChanged
-              ? " · Milestones changed"
+              ? uiText(" · Milestones changed")
               : ""}
-            . Baseline markers use the original dates.
+            <I18nText id=". Baseline markers use the original dates." />
           </HelpText>
           <div className="planning-insight-rows">
             {detail.data.comparison.items.slice(0, 200).map((t) => (
@@ -254,8 +265,7 @@ export default function PlanningInsights({
             ))}
             {detail.data.comparison.items.length > 200 && (
               <p>
-                Showing the first 200 changes. Use the baseline export for all
-                changes.
+                <I18nText id="Showing the first 200 changes. Use the baseline export for all changes." />
               </p>
             )}
           </div>
@@ -274,7 +284,7 @@ export default function PlanningInsights({
               setTimeout(() => URL.revokeObjectURL(u), 1000);
             }}
           >
-            Export full comparison
+            <I18nText id="Export full comparison" />
           </button>
         </>
       )}
@@ -291,8 +301,8 @@ export default function PlanningInsights({
                 {t.earliestStart} → {t.earliestFinish}
               </span>
               <span>
-                {t.critical ? "Critical · " : ""}
-                {t.slackDays} working days slack
+                {t.critical ? uiText("Critical · ") : ""}
+                {t.slackDays} <I18nText id="working days slack" />
               </span>
             </div>
           ))}

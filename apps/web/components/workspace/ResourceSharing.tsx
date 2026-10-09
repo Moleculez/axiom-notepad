@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { Button, TextInput, SearchField } from "../ui/controls";
 import { useEffect, useState } from "react";
 import { Check, Copy, LockKeyhole, Users } from "lucide-react";
@@ -28,7 +30,7 @@ export default function ResourceSharing({
         onClick={() => setOpen(true)}
       >
         <Users size={15} />
-        Share
+        <I18nText id="Share" />
       </Button>
       {open && (
         <SharingDialog resourceId={resourceId} onClose={() => setOpen(false)} />
@@ -43,6 +45,7 @@ function SharingDialog({
   resourceId: string;
   onClose: () => void;
 }) {
+  useInterfaceLocale();
   const { session, revision, navigate } = useWorkspace();
   const [search, setSearch] = useState(""),
     [query, setQuery] = useState("");
@@ -74,47 +77,53 @@ function SharingDialog({
   }
   return (
     <Dialog
-      title="Sharing & collaboration"
+      title={uiText("Sharing & collaboration")}
       subtitle={value?.resource.name ?? "Checking file access…"}
       onClose={onClose}
     >
       <ErrorNotice message={access.error} retry={access.reload} />
       {!value && access.loading ? (
-        <Loading label="Checking access…" />
+        <Loading label={uiText("Checking access…")} />
       ) : (
         value && (
           <>
             <section
               className="sharing-access-summary"
-              aria-label="File access"
+              aria-label={uiText("File access")}
             >
               <span className="sharing-access-icon">
                 <LockKeyhole size={20} />
               </span>
               <div>
-                <strong>{personal ? "Only you" : value.space.name}</strong>
+                <strong>
+                  {personal ? uiText("Only you") : value.space.name}
+                </strong>
                 <p>
                   {personal
-                    ? "Private to your account."
-                    : "Access is inherited from this workspace."}
+                    ? uiText("Private to your account.")
+                    : uiText("Access is inherited from this workspace.")}
                 </p>
               </div>
-              <Badge>{personal ? "Private" : "Restricted"}</Badge>
+              <Badge>
+                {personal ? uiText("Private") : uiText("Restricted")}
+              </Badge>
             </section>
             {!personal && (
               <section className="sharing-people">
-                <h3>People with access</h3>
+                <h3>
+                  <I18nText id="People with access" />
+                </h3>
                 <SearchField
                   wrapperClassName="sharing-search"
                   type="search"
-                  aria-label="Find a collaborator"
-                  placeholder="Find a collaborator…"
+                  aria-label={uiText("Find a collaborator")}
+                  placeholder={uiText("Find a collaborator…")}
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
                 />
                 <ul
                   className="sharing-member-list"
-                  aria-label="People with access"
+                  aria-label={uiText("People with access")}
                   aria-busy={access.loading}
                 >
                   {value.members.map((member) => (
@@ -122,14 +131,20 @@ function SharingDialog({
                       <Avatar person={member} className="sharing-avatar" />
                       <span className="sharing-member-name">
                         {member.name}
-                        {member.id === session.user.id && <small>You</small>}
+                        {member.id === session.user.id && (
+                          <small>
+                            <I18nText id="You" />
+                          </small>
+                        )}
                       </span>
                       <Badge>{member.role}</Badge>
                     </li>
                   ))}
                 </ul>
                 {!value.members.length && (
-                  <p className="muted">No matching collaborators.</p>
+                  <p className="muted">
+                    <I18nText id="No matching collaborators." />
+                  </p>
                 )}
                 {(page > 0 || value.nextPage !== null) && (
                   <div className="sharing-pagination">
@@ -139,16 +154,18 @@ function SharingDialog({
                       disabled={page === 0 || access.loading}
                       onClick={() => setPage(page - 1)}
                     >
-                      Previous
+                      <I18nText id="Previous" />
                     </Button>
-                    <span>Page {page + 1}</span>
+                    <span>
+                      <I18nText id="Page" /> {page + 1}
+                    </span>
                     <Button
                       type="button"
                       className="button ghost small"
                       disabled={value.nextPage === null || access.loading}
                       onClick={() => setPage(value.nextPage!)}
                     >
-                      Next
+                      <I18nText id="Next" />
                     </Button>
                   </div>
                 )}
@@ -156,7 +173,7 @@ function SharingDialog({
             )}
             <section className="sharing-link-section">
               <label htmlFor={`share-link-${resourceId}`}>
-                Link to this file
+                <I18nText id="Link to this file" />
               </label>
               <div className="sharing-link-row">
                 <TextInput
@@ -168,7 +185,7 @@ function SharingDialog({
                 <Button
                   type="button"
                   className="button secondary"
-                  aria-label="Copy file link"
+                  aria-label={uiText("Copy file link")}
                   onClick={() => {
                     if (link)
                       void navigator.clipboard.writeText(link.href).then(
@@ -185,11 +202,11 @@ function SharingDialog({
                   ) : (
                     <Copy size={16} />
                   )}
-                  Copy
+                  <I18nText id="Copy" />
                 </Button>
               </div>
               <p>
-                Copying a link never grants access. Collaborators must sign in.
+                <I18nText id="Copying a link never grants access. Collaborators must sign in." />
               </p>
               {status && <p role="status">{status}</p>}
             </section>
@@ -206,12 +223,12 @@ function SharingDialog({
               navigate(`/workspaces/${value.space.id}/people`);
             }}
           >
-            Manage access
+            <I18nText id="Manage access" />
           </Button>
         )}
         <span className="dialog-spacer" />
         <Button type="button" className="button primary" onClick={onClose}>
-          Done
+          <I18nText id="Done" />
         </Button>
       </div>
     </Dialog>

@@ -1,0 +1,21 @@
+{
+  "name": "@axiom/i18n",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./locales": "./src/locales.ts",
+    "./client": "./src/client.ts",
+    "./dom": "./src/dom.ts",
+    "./react": "./src/react.tsx"
+  },
+  "dependencies": {
+    "intl-messageformat": "^11.0.0",
+    "@formatjs/icu-messageformat-parser": "^3.0.0"
+  },
+  "peerDependencies": {
+    "react": "^19.2.0"
+  }
+}

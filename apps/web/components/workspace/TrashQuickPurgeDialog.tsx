@@ -1,4 +1,7 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+import { formatNumber } from "@axiom/i18n";
+
 import { Button, Checkbox, Notice, TextInput } from "../ui/controls";
 import { useRef, useState } from "react";
 import { Trash2, Unlink, ShieldCheck } from "lucide-react";
@@ -25,6 +28,7 @@ export default function TrashQuickPurgeDialog({
   onClose: () => void;
   onPurged: () => void;
 }) {
+  const { t, locale } = useInterfaceLocale();
   const path = `trash/${operationId}/items/${resourceId}/quick-purge`;
   const data = useData<TrashQuickPurgePlan>(path),
     action = useAction();
@@ -41,8 +45,10 @@ export default function TrashQuickPurgeDialog({
   };
   return (
     <Dialog
-      title="Remove protection & purge"
-      subtitle="One confirmation. Protection removal and file deletion happen together."
+      title={uiText("Remove protection & purge")}
+      subtitle={uiText(
+        "One confirmation. Protection removal and file deletion happen together.",
+      )}
       onClose={() => {
         if (!action.busy) onClose();
       }}
@@ -57,28 +63,31 @@ export default function TrashQuickPurgeDialog({
             <Trash2 size={20} aria-hidden="true" />
             <div>
               <strong>{plan.name}</strong>
-              <small>{bytes(plan.bytes)} stored across all versions</small>
+              <small>
+                <I18nText
+                  id="{size} stored across all versions"
+                  values={{ size: bytes(plan.bytes) }}
+                />
+              </small>
             </div>
           </div>
-          <section aria-label="Quick purge impact">
+          <section aria-label={uiText("Quick purge impact")}>
             <h3>
               <Unlink size={16} aria-hidden="true" />
-              This action will remove
+              <I18nText id="This action will remove" />
             </h3>
             <ul className="trash-quick-impact">
               {plan.impacts.map((item) => (
                 <li key={item.label}>
-                  <span>{item.label}</span>
-                  <strong>{item.count}</strong>
+                  <span>{uiText(item.label)}</span>
+                  <strong>{formatNumber(locale, item.count)}</strong>
                 </li>
               ))}
             </ul>
           </section>
           {plan.breaksLinks && (
             <Notice tone="warning">
-              Notes and saved revisions will be kept, but their links to this
-              file will stop working. Their text is not rewritten. This includes
-              older versions of the file.
+              <I18nText id="Notes and saved revisions will be kept, but their links to this file will stop working. Their text is not rewritten. This includes older versions of the file." />
             </Notice>
           )}
           {plan.canPurge ? (
@@ -90,15 +99,24 @@ export default function TrashQuickPurgeDialog({
                     disabled={action.busy}
                     onChange={(event) => setAcknowledged(event.target.checked)}
                   />
-                  I understand that existing attachment links will stop working.
+                  <I18nText id="I understand that existing attachment links will stop working." />
                 </label>
               )}
               <label className="trash-delete-confirm">
-                Type <strong>DELETE FOREVER</strong> to remove the protection
-                above and permanently delete this file.
+                <I18nText
+                  id="Type {confirmation} to remove the protection above and permanently delete this file."
+                  slots={{
+                    confirmation: (
+                      <strong>
+                        <bdi>DELETE FOREVER</bdi>
+                      </strong>
+                    ),
+                  }}
+                />
                 <TextInput
-                  aria-label="Confirm quick purge"
+                  aria-label={uiText("Confirm quick purge")}
                   placeholder="DELETE FOREVER"
+                  dir="ltr"
                   autoComplete="off"
                   spellCheck={false}
                   value={confirmation}
@@ -110,41 +128,42 @@ export default function TrashQuickPurgeDialog({
           ) : (
             <section
               className="trash-quick-blockers"
-              aria-label="Remaining protection"
+              aria-label={uiText("Remaining protection")}
             >
               <h3>
                 <ShieldCheck size={16} aria-hidden="true" />
-                Still requires permission or review
+                <I18nText id="Still requires permission or review" />
               </h3>
               <ul>
                 {plan.blockers.map((reason) => (
-                  <li key={reason}>{reason}</li>
+                  <li key={reason}>{uiText(reason)}</li>
                 ))}
               </ul>
-              <p>Nothing will be changed while these protections remain.</p>
+              <p>
+                <I18nText id="Nothing will be changed while these protections remain." />
+              </p>
             </section>
           )}
           <Notice tone="warning">
-            This affects this file only. It cannot be undone. Shared stored data
-            may remain. If protection changes after this preview, nothing is
-            removed.
+            <I18nText id="This affects this file only. It cannot be undone. Shared stored data may remain. If protection changes after this preview, nothing is removed." />
           </Notice>
         </div>
       )}
       <DialogFooter>
         <Button
+          data-dialog-cancel
           className="button secondary"
           disabled={action.busy}
           onClick={onClose}
         >
-          Back
+          <I18nText id="Back" />
         </Button>
         <Button
           className="button secondary"
           disabled={action.busy || data.loading}
           onClick={reload}
         >
-          Refresh preview
+          <I18nText id="Refresh preview" />
         </Button>
         {plan?.canPurge && (
           <Button
@@ -168,7 +187,10 @@ export default function TrashQuickPurgeDialog({
                 );
                 refresh();
                 notify(
-                  `Permanently deleted ${result.name} and removed the confirmed protection. This cannot be undone.`,
+                  t(
+                    "Permanently deleted {name} and removed the confirmed protection. This cannot be undone.",
+                    { name: result.name },
+                  ),
                 );
                 onPurged();
               })
@@ -176,7 +198,7 @@ export default function TrashQuickPurgeDialog({
             pending={!!action.busy}
           >
             <Trash2 size={15} aria-hidden="true" />
-            {"Remove protection & purge"}
+            {uiText("Remove protection & purge")}
           </Button>
         )}
       </DialogFooter>

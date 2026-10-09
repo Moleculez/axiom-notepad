@@ -1,3 +1,4 @@
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
 import { IconButton, NativeSelect } from "../../web/components/ui/controls";
 import { useEffect, useMemo, useState } from "react";
 import * as Y from "yjs";
@@ -23,6 +24,7 @@ export default function Canvas({
 }: {
   document: LocalDocument;
 }) {
+  useInterfaceLocale();
   const snapshot = useSnapshot(),
     { dark, open, notify, renderContext } = useDemo();
   const document =
@@ -106,7 +108,7 @@ export default function Canvas({
         <Network size={17} />
         <NativeSelect
           className="demo-document-select"
-          aria-label="Choose a canvas"
+          aria-label={uiText("Choose a canvas")}
           value={document.id}
           onChange={(event) => open(event.target.value)}
         >
@@ -120,8 +122,8 @@ export default function Canvas({
         </NativeSelect>
         <IconButton
           className="icon-button"
-          aria-label="New canvas"
-          title="New canvas"
+          aria-label={uiText("New canvas")}
+          title={uiText("New canvas")}
           onClick={() =>
             open(
               store.create(
@@ -136,13 +138,12 @@ export default function Canvas({
         </IconButton>
         <span className="tool-spacer" />
         <span className="demo-canvas-help">
-          Double-click a text card to edit · drag a port to connect · scroll to
-          zoom
+          <I18nText id="Double-click a text card to edit · drag a port to connect · scroll to zoom" />
         </span>
         <IconButton
           className="icon-button"
-          aria-label="Reset canvas example"
-          title="Reset canvas example"
+          aria-label={uiText("Reset canvas example")}
+          title={uiText("Reset canvas example")}
           onClick={async () => {
             if (
               await confirmAction(

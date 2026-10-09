@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import {
   Button,
   Checkbox,
@@ -47,6 +49,7 @@ export default function BookmarkManager({
     stale?: boolean;
   };
 }) {
+  useInterfaceLocale();
   const [query, setQuery] = useState(""),
     [sort, setSort] = useState("document"),
     [currentId, setCurrentId] = useState<string | null>(null),
@@ -149,30 +152,35 @@ export default function BookmarkManager({
     <div className="reading-mark-manager">
       <div className="reading-mark-search">
         <SearchField
-          aria-label="Search bookmarks"
-          placeholder="Search labels or tags…"
+          aria-label={uiText("Search bookmarks")}
+          placeholder={uiText("Search labels or tags…")}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onClear={() => setQuery("")}
-          clearLabel="Clear bookmark search"
+          clearLabel={uiText("Clear bookmark search")}
         />
         <NativeSelect
-          aria-label="Sort bookmarks"
+          aria-label={uiText("Sort bookmarks")}
           value={sort}
           onChange={(e) => setSort(e.target.value)}
         >
-          <option value="document">Location</option>
-          <option value="recent">Recent</option>
+          <option value="document">
+            <I18nText id="Location" />
+          </option>
+          <option value="recent">
+            <I18nText id="Recent" />
+          </option>
         </NativeSelect>
       </div>
       <div className="reading-mark-tools">
         <span>
-          {matches.length} bookmark{matches.length === 1 ? "" : "s"}
+          {matches.length} <I18nText id="bookmark" />
+          {matches.length === 1 ? "" : "s"}
         </span>
         <IconButton
           className="icon-button"
-          title="Previous bookmark"
-          aria-label="Previous bookmark"
+          title={uiText("Previous bookmark")}
+          aria-label={uiText("Previous bookmark")}
           disabled={!matches.length}
           onClick={() => step(-1)}
         >
@@ -180,8 +188,8 @@ export default function BookmarkManager({
         </IconButton>
         <IconButton
           className="icon-button"
-          title="Next bookmark"
-          aria-label="Next bookmark"
+          title={uiText("Next bookmark")}
+          aria-label={uiText("Next bookmark")}
           disabled={!matches.length}
           onClick={() => step(1)}
         >
@@ -189,8 +197,8 @@ export default function BookmarkManager({
         </IconButton>
         <IconButton
           className="icon-button"
-          title="Export bookmarks"
-          aria-label="Export bookmarks"
+          title={uiText("Export bookmarks")}
+          aria-label={uiText("Export bookmarks")}
           onClick={(event) =>
             openContextMenu({
               owner: event.currentTarget,
@@ -250,24 +258,26 @@ export default function BookmarkManager({
       )}
       {!!removed.length && (
         <div className="reading-mark-status" role="status">
-          {removed.length} removed{" "}
+          {removed.length} <I18nText id="removed" />{" "}
           <button
             className="text-button"
             disabled={busy}
             onClick={() => void work(undo)}
           >
             <Undo2 size={13} />
-            Undo
+            <I18nText id="Undo" />
           </button>
         </div>
       )}
       {!!selected.length && (
         <div className="reading-mark-status">
-          <span>{selected.length} selected</span>
+          <span>
+            {selected.length} <I18nText id="selected" />
+          </span>
           <IconButton
             className="icon-button"
-            aria-label="Delete selected bookmarks"
-            title="Delete selected bookmarks"
+            aria-label={uiText("Delete selected bookmarks")}
+            title={uiText("Delete selected bookmarks")}
             disabled={busy}
             onClick={() =>
               void work(() =>
@@ -279,7 +289,7 @@ export default function BookmarkManager({
           </IconButton>
           <IconButton
             className="icon-button"
-            aria-label="Clear bookmark selection"
+            aria-label={uiText("Clear bookmark selection")}
             onClick={() => setSelected([])}
           >
             <X size={14} />
@@ -289,8 +299,8 @@ export default function BookmarkManager({
       {!matches.length && (
         <p className="reading-mark-empty">
           {query
-            ? "No matching bookmarks."
-            : "Bookmark a block or passage to return to it later."}
+            ? uiText("No matching bookmarks.")
+            : uiText("Bookmark a block or passage to return to it later.")}
         </p>
       )}
       {matches.map((entry) => {
@@ -339,13 +349,15 @@ export default function BookmarkManager({
               )}
               {entry.pending && (
                 <small>
-                  {entry.error ? "Needs attention" : "Waiting to sync"}
+                  {entry.error
+                    ? uiText("Needs attention")
+                    : uiText("Waiting to sync")}
                 </small>
               )}
             </button>
             <IconButton
               className="icon-button"
-              title="Bookmark actions"
+              title={uiText("Bookmark actions")}
               aria-label={`Actions for bookmark ${item.data.label || "Saved position"}`}
               onClick={(event) =>
                 openContextMenu({
@@ -400,10 +412,10 @@ export default function BookmarkManager({
                 }}
               >
                 <label>
-                  Label
+                  <I18nText id="Label" />
                   <TextInput
                     autoFocus
-                    aria-label="Bookmark label"
+                    aria-label={uiText("Bookmark label")}
                     value={editing.data.label}
                     maxLength={300}
                     onChange={(e) =>
@@ -415,11 +427,11 @@ export default function BookmarkManager({
                   />
                 </label>
                 <label>
-                  Tags
+                  <I18nText id="Tags" />
                   <TextInput
-                    aria-label="Bookmark tags"
+                    aria-label={uiText("Bookmark tags")}
                     defaultValue={editing.data.tags?.join(", ") ?? ""}
-                    placeholder="theory, review"
+                    placeholder={uiText("theory, review")}
                     onChange={(e) =>
                       setEditing({
                         ...editing,
@@ -437,7 +449,7 @@ export default function BookmarkManager({
                 <div
                   className="reading-mark-colors"
                   role="group"
-                  aria-label="Bookmark color"
+                  aria-label={uiText("Bookmark color")}
                 >
                   {markColors.map((color) => (
                     <button
@@ -460,15 +472,16 @@ export default function BookmarkManager({
                 </div>
                 <div className="reading-mark-form-actions">
                   <button
+                    data-dialog-cancel
                     type="button"
                     className="text-button"
                     onClick={() => setEditing(null)}
                   >
-                    Cancel
+                    <I18nText id="Cancel" />
                   </button>
                   <Button className="button secondary small" disabled={busy}>
                     <Pencil size={13} />
-                    Save bookmark
+                    <I18nText id="Save bookmark" />
                   </Button>
                 </div>
               </form>
@@ -484,13 +497,14 @@ export default function BookmarkManager({
                     void work(() => research.resolve(entry, false))
                   }
                 >
-                  Use server version
+                  <I18nText id="Use server version" />
                 </button>
                 <button
+                  data-dialog-cancel
                   className="text-button"
                   onClick={() => void work(() => research.resolve(entry, true))}
                 >
-                  Keep my changes
+                  <I18nText id="Keep my changes" />
                 </button>
               </div>
             )}

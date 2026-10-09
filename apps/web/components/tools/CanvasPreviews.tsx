@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { Button, IconButton } from "../ui/controls";
 import {
   Component,
@@ -60,6 +62,7 @@ export function PreviewNotice({
   children: ReactNode;
   retry?: () => void;
 }) {
+  useInterfaceLocale();
   return (
     <div className="canvas-preview-notice">
       <FileQuestion size={23} />
@@ -67,8 +70,8 @@ export function PreviewNotice({
       {retry && (
         <IconButton
           className="icon-button"
-          title="Retry preview"
-          aria-label="Retry preview"
+          title={uiText("Retry preview")}
+          aria-label={uiText("Retry preview")}
           onClick={retry}
         >
           <RefreshCw size={15} />
@@ -92,7 +95,7 @@ export class CanvasPreviewBoundary extends Component<
   render() {
     return this.state.error ? (
       <PreviewNotice retry={() => this.setState({ error: false })}>
-        This preview could not render. The original card is unchanged.
+        <I18nText id="This preview could not render. The original card is unchanged." />
       </PreviewNotice>
     ) : (
       this.props.children
@@ -169,6 +172,7 @@ export function CanvasLinkPreview({
   onActivate: () => void;
   onDone: () => void;
 }) {
+  useInterfaceLocale();
   const allowed =
     typeof location !== "undefined"
       ? embeddableCanvasUrl(node.url, location.origin)
@@ -185,12 +189,12 @@ export function CanvasLinkPreview({
           <div className="canvas-embed-actions" data-export-exclude>
             <Button className="button ghost" onClick={onDone}>
               <X size={14} />
-              Done
+              <I18nText id="Done" />
             </Button>
             <a
               className="icon-button"
-              title="Open webpage externally"
-              aria-label="Open webpage externally"
+              title={uiText("Open webpage externally")}
+              aria-label={uiText("Open webpage externally")}
               href={node.url}
               target="_blank"
               rel="noopener noreferrer"
@@ -206,7 +210,7 @@ export function CanvasLinkPreview({
             allow="camera 'none'; microphone 'none'; geolocation 'none'; payment 'none'"
           />
           <small className="canvas-embed-note">
-            If this site blocks embedding, open it externally.
+            <I18nText id="If this site blocks embedding, open it externally." />
           </small>
         </>
       ) : (
@@ -218,7 +222,7 @@ export function CanvasLinkPreview({
             {allowed && (
               <Button className="button secondary" onClick={onActivate}>
                 <Play size={14} />
-                Load webpage
+                <I18nText id="Load webpage" />
               </Button>
             )}
             <a
@@ -227,10 +231,12 @@ export function CanvasLinkPreview({
               target="_blank"
               rel="noopener noreferrer"
             >
-              Open externally <ArrowUpRight size={14} />
+              <I18nText id="Open externally" /> <ArrowUpRight size={14} />
             </a>
           </div>
-          <small>No external request until you load or open this page.</small>
+          <small>
+            <I18nText id="No external request until you load or open this page." />
+          </small>
         </div>
       )}
     </div>
@@ -258,6 +264,7 @@ export function CanvasResourcePreview({
   onResolved?: (value: ResourceCardPreview | null) => void;
   snapshot?: CanvasPreviewSnapshot;
 }) {
+  useInterfaceLocale();
   const { open } = useCanvasHost();
   const cycle = !!node.resourceId && ancestors.includes(node.resourceId);
   const state = useCanvasPreview(
@@ -272,13 +279,14 @@ export function CanvasResourcePreview({
   if (!node.resourceId)
     return (
       <PreviewNotice>
-        Unlinked file: {node.file}. Use Properties to link a workspace file.
+        <I18nText id="Unlinked file:" /> {node.file}
+        <I18nText id=". Use Properties to link a workspace file." />
       </PreviewNotice>
     );
   if (cycle)
     return (
       <PreviewNotice>
-        Canvas reference cycle.{" "}
+        <I18nText id="Canvas reference cycle." />{" "}
         <Button
           className="button ghost"
           data-export-exclude
@@ -290,7 +298,7 @@ export function CanvasResourcePreview({
             })
           }
         >
-          Open original <ArrowUpRight size={14} />
+          <I18nText id="Open original" /> <ArrowUpRight size={14} />
         </Button>
       </PreviewNotice>
     );
@@ -300,7 +308,7 @@ export function CanvasResourcePreview({
     return (
       <PreviewNotice>
         {snapshot
-          ? "Preview omitted · unavailable at export time."
+          ? uiText("Preview omitted · unavailable at export time.")
           : enabled
             ? "Loading preview…"
             : "Preview loads when the card is in view."}
@@ -342,29 +350,39 @@ export function CanvasResourcePreview({
       </div>
       <div className="canvas-resource-caption">
         <span title={data.resource.name}>{data.resource.name}</span>
-        <small>{node.versionId ? "Pinned version" : "Live reference"}</small>
+        <small>
+          {node.versionId ? uiText("Pinned version") : uiText("Live reference")}
+        </small>
       </div>
       <div className="canvas-preview-actions" data-export-exclude>
         <IconButton
           className="icon-button"
-          title={active ? "Finish interacting" : "Interact with preview"}
-          aria-label={active ? "Finish interacting" : "Interact with preview"}
+          title={
+            active
+              ? uiText("Finish interacting")
+              : uiText("Interact with preview")
+          }
+          aria-label={
+            active
+              ? uiText("Finish interacting")
+              : uiText("Interact with preview")
+          }
           onClick={active ? onDone : onActivate}
         >
           {active ? <X size={15} /> : <Play size={15} />}
         </IconButton>
         <IconButton
           className="icon-button"
-          title="Open original"
-          aria-label="Open original"
+          title={uiText("Open original")}
+          aria-label={uiText("Open original")}
           onClick={openOriginal}
         >
           <ArrowUpRight size={15} />
         </IconButton>
         <IconButton
           className="icon-button"
-          title="Refresh preview"
-          aria-label="Refresh preview"
+          title={uiText("Refresh preview")}
+          aria-label={uiText("Refresh preview")}
           onClick={state.reload}
         >
           <RefreshCw size={14} />
@@ -393,7 +411,7 @@ function CanvasResourceContent({
     if (data.format === "canvas")
       return ancestors.length >= 3 ? (
         <PreviewNotice>
-          Nested canvas · open the original to go deeper.
+          <I18nText id="Nested canvas · open the original to go deeper." />
         </PreviewNotice>
       ) : (
         <CanvasNestedPreview
@@ -453,7 +471,7 @@ function CanvasResourceContent({
           <ResourceIcon resource={data.resource} size={35} />
         )}
         <span>
-          <Play size={18} /> Activate to play {file.kind}
+          <Play size={18} /> <I18nText id="Activate to play" /> {file.kind}
         </span>
       </div>
     );
@@ -505,7 +523,7 @@ function CanvasImage({
   useEffect(() => setFailed(false), [source]);
   return failed ? (
     <PreviewNotice>
-      This image cannot be decoded. Open the original to download it.
+      <I18nText id="This image cannot be decoded. Open the original to download it." />
     </PreviewNotice>
   ) : (
     <div ref={root} className="canvas-visual-image">
@@ -555,7 +573,9 @@ function EquationFile({ source, bytes }: { source: string; bytes: number }) {
   return error ? (
     <PreviewNotice>{error}</PreviewNotice>
   ) : text === null ? (
-    <PreviewNotice>Loading equation…</PreviewNotice>
+    <PreviewNotice>
+      <I18nText id="Loading equation…" />
+    </PreviewNotice>
   ) : (
     <CanvasMathPreview source={text} />
   );
@@ -572,6 +592,7 @@ export function CanvasNestedPreview({
   ancestors: string[];
   snapshot?: CanvasPreviewSnapshot;
 }) {
+  useInterfaceLocale();
   const data = useMemo(() => parseCanvas(source), [source]);
   const bounds = canvasBounds(data.nodes),
     host = useRef<HTMLDivElement>(null),
@@ -649,11 +670,15 @@ export function CanvasNestedPreview({
           snapshot={snapshot}
         />
       </div>
-      {!data.nodes.length && <PreviewNotice>Empty canvas</PreviewNotice>}
+      {!data.nodes.length && (
+        <PreviewNotice>
+          <I18nText id="Empty canvas" />
+        </PreviewNotice>
+      )}
       <span className="canvas-nested-label">
         <Network size={12} />
-        {data.nodes.length} cards
-        {active ? " · drag to pan, scroll to zoom" : ""}
+        {data.nodes.length} <I18nText id="cards" />
+        {active ? uiText(" · drag to pan, scroll to zoom") : ""}
       </span>
     </div>
   );

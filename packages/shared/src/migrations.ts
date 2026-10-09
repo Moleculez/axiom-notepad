@@ -352,7 +352,9 @@ INSERT INTO app_instance(singleton,setup_completed_at) SELECT true,CASE WHEN EXI
     name: "reverse-note-link-performance",
     sql: linkPerformanceMigration,
   },
+  { version: 51, name: "account-interface-language", sql: localeMigration },
 ];
+import { localeMigration } from "./locale-migration";
 import { linkPerformanceMigration } from "./link-performance-migration";
 import { mindmapMigration } from "./mindmap-migration";
 import { stagePortabilityMigration } from "./stage-portability-migration";

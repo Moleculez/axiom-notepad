@@ -1,4 +1,7 @@
 "use client";
+import { currentLocale } from "@axiom/i18n/client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import {
   Button,
   Checkbox,
@@ -33,11 +36,11 @@ const PdfPreview = dynamic(() => import("../workspace/PdfQuickPreview"), {
 });
 const WorkbookPreview = dynamic(() => import("./WorkbookPreview"), {
   ssr: false,
-  loading: () => <Loading label="Opening workbook…" />,
+  loading: () => <Loading label={uiText("Opening workbook…")} />,
 });
 const OfficePreview = dynamic(() => import("./OfficePreview"), {
   ssr: false,
-  loading: () => <Loading label="Opening document…" />,
+  loading: () => <Loading label={uiText("Opening document…")} />,
 });
 
 export default function FilePreviewSurface({
@@ -59,6 +62,7 @@ export default function FilePreviewSurface({
   creationTarget?: FileCreationRequest["target"];
   visualGallery?: VisualAsset[];
 }) {
+  useInterfaceLocale();
   const manifest = useData<FilePreviewManifest>(
     initialManifest
       ? null
@@ -74,7 +78,7 @@ export default function FilePreviewSurface({
   }, [file?.status, reload]);
   if (manifest.error)
     return <ErrorNotice message={manifest.error} retry={manifest.reload} />;
-  if (!file) return <Loading label="Preparing preview…" />;
+  if (!file) return <Loading label={uiText("Preparing preview…")} />;
   return (
     <section
       className={`tool-preview ${compact ? "is-compact" : ""}`}
@@ -143,8 +147,8 @@ export default function FilePreviewSurface({
               }
             >
               {file.status === "queued"
-                ? "Converting privately…"
-                : "Generate private preview"}
+                ? uiText("Converting privately…")
+                : uiText("Generate private preview")}
             </Button>
           </div>
         </>
@@ -180,7 +184,7 @@ export function DownloadFallback({
         href={`/api/v1/files/${file.resourceId}/download?version=${file.versionId}`}
       >
         <Download size={16} />
-        Download original
+        <I18nText id="Download original" />
       </a>
     </div>
   );
@@ -213,6 +217,7 @@ function ImagePreview({
   );
 }
 export function MediaPreview({ file }: { file: FilePreviewManifest }) {
+  useInterfaceLocale();
   const media = useRef<HTMLMediaElement | null>(null),
     stage = useRef<HTMLDivElement>(null);
   const [speed, setSpeed] = useState(1),
@@ -248,11 +253,12 @@ export function MediaPreview({ file }: { file: FilePreviewManifest }) {
     <>
       <div className="tool-controls">
         <span>
-          {file.kind === "audio" ? "Audio" : "Video"} · {bytes(file.bytes)}
+          {file.kind === "audio" ? uiText("Audio") : uiText("Video")} ·{" "}
+          {bytes(file.bytes)}
         </span>
         <span className="tool-spacer" />
         <label>
-          Speed{" "}
+          <I18nText id="Speed" />{" "}
           <NativeSelect
             value={speed}
             onChange={(e) => setSpeed(Number(e.target.value))}
@@ -269,12 +275,12 @@ export function MediaPreview({ file }: { file: FilePreviewManifest }) {
             checked={loop}
             onChange={(e) => setLoop(e.target.checked)}
           />
-          Loop
+          <I18nText id="Loop" />
         </label>
         <IconButton
           className="icon-button"
-          aria-label="Copy link at current time"
-          title="Copy link at current time"
+          aria-label={uiText("Copy link at current time")}
+          title={uiText("Copy link at current time")}
           onClick={() => {
             const u = new URL(location.href);
             u.hash = `t=${Math.floor(media.current?.currentTime ?? 0)}`;
@@ -289,7 +295,7 @@ export function MediaPreview({ file }: { file: FilePreviewManifest }) {
         {file.kind === "video" && (
           <>
             <label className="button secondary">
-              Captions
+              <I18nText id="Captions" />
               <input
                 type="file"
                 accept=".vtt"
@@ -305,8 +311,8 @@ export function MediaPreview({ file }: { file: FilePreviewManifest }) {
             </label>
             <IconButton
               className="icon-button"
-              title="Fullscreen"
-              aria-label="Fullscreen"
+              title={uiText("Fullscreen")}
+              aria-label={uiText("Fullscreen")}
               onClick={() =>
                 void stage.current
                   ?.requestFullscreen()
@@ -332,7 +338,7 @@ export function MediaPreview({ file }: { file: FilePreviewManifest }) {
                 key={captions}
                 src={captions}
                 kind="captions"
-                label="Local captions"
+                label={uiText("Local captions")}
                 srcLang="en"
                 default
               />
@@ -351,6 +357,7 @@ export function MediaPreview({ file }: { file: FilePreviewManifest }) {
   );
 }
 function TextPreview({ file }: { file: FilePreviewManifest }) {
+  useInterfaceLocale();
   const [limit, setLimit] = useState(2_000_000),
     [encoding, setEncoding] = useState("auto"),
     [text, setText] = useState<string | null>(null),
@@ -412,8 +419,8 @@ function TextPreview({ file }: { file: FilePreviewManifest }) {
       <div className="tool-controls">
         <SearchField
           wrapperClassName="tool-search"
-          aria-label="Search file"
-          placeholder="Find in file…"
+          aria-label={uiText("Search file")}
+          placeholder={uiText("Find in file…")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -424,15 +431,17 @@ function TextPreview({ file }: { file: FilePreviewManifest }) {
             aria-pressed={rendered}
             onClick={() => setRendered(!rendered)}
           >
-            {rendered ? "Source" : "Reading view"}
+            {rendered ? uiText("Source") : uiText("Reading view")}
           </Button>
         )}
         <NativeSelect
-          aria-label="Text encoding"
+          aria-label={uiText("Text encoding")}
           value={encoding}
           onChange={(e) => setEncoding(e.target.value)}
         >
-          <option value="auto">Auto-detect encoding</option>
+          <option value="auto">
+            <I18nText id="Auto-detect encoding" />
+          </option>
           {[
             "utf-8",
             "utf-16le",
@@ -446,8 +455,8 @@ function TextPreview({ file }: { file: FilePreviewManifest }) {
         </NativeSelect>
         <IconButton
           className="icon-button"
-          title="Wrap lines"
-          aria-label="Wrap lines"
+          title={uiText("Wrap lines")}
+          aria-label={uiText("Wrap lines")}
           aria-pressed={wrap}
           onClick={() => setWrap(!wrap)}
         >
@@ -476,15 +485,16 @@ function TextPreview({ file }: { file: FilePreviewManifest }) {
       {file.bytes > limit && (
         <div className="tool-controls">
           <small>
-            Showing the first {bytes(limit)} of {bytes(file.bytes)}. A final
-            line may be incomplete.
+            <I18nText id="Showing the first" /> {bytes(limit)}{" "}
+            <I18nText id="of" /> {bytes(file.bytes)}
+            <I18nText id=". A final line may be incomplete." />
           </small>
           {limit < 20_000_000 && (
             <Button
               className="button secondary"
               onClick={() => setLimit(Math.min(limit + 2_000_000, 20_000_000))}
             >
-              Load more
+              <I18nText id="Load more" />
             </Button>
           )}
         </div>
@@ -536,7 +546,7 @@ function TextLines({
           className="button secondary"
           onClick={() => setCount(count + 2000)}
         >
-          Show 2,000 more lines
+          <I18nText id="Show 2,000 more lines" />
         </Button>
       )}
     </div>
@@ -549,6 +559,7 @@ export function DataGrid({
   rows: string[][];
   search?: string;
 }) {
+  useInterfaceLocale();
   const [scroll, setScroll] = useState(0),
     [selected, setSelected] = useState<{ row: number; column: number } | null>(
       null,
@@ -584,19 +595,19 @@ export function DataGrid({
         <strong>
           {selected
             ? `${columnLabel(selected.column)}${selected.row + 1}`
-            : "Select a cell"}
+            : uiText("Select a cell")}
         </strong>
         <span>
           {selected
             ? rows[selected.row]?.[selected.column]
-            : `${rows.length.toLocaleString()} rows · ${columns} columns`}
+            : `${rows.length.toLocaleString(currentLocale())} rows · ${columns} columns`}
         </span>
       </div>
       <div
         ref={viewport}
         className="data-preview-scroll"
         role="region"
-        aria-label="Spreadsheet data"
+        aria-label={uiText("Spreadsheet data")}
         tabIndex={0}
         onScroll={(e) => setScroll(e.currentTarget.scrollTop)}
       >
@@ -609,7 +620,7 @@ export function DataGrid({
           </colgroup>
           <thead>
             <tr>
-              <th aria-label="Row" />
+              <th aria-label={uiText("Row")} />
               {Array.from({ length: columns }, (_, i) => (
                 <th key={i}>{columnLabel(i)}</th>
               ))}
@@ -653,8 +664,7 @@ export function DataGrid({
       </div>
       {columns === 256 && (
         <small>
-          Preview displays the first 256 columns. The original workbook is
-          unchanged.
+          <I18nText id="Preview displays the first 256 columns. The original workbook is unchanged." />
         </small>
       )}
     </div>

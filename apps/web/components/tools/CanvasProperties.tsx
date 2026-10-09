@@ -1,4 +1,6 @@
 "use client";
+import { uiText, useInterfaceLocale, I18nText } from "@axiom/i18n/react";
+
 import {
   Button,
   Checkbox,
@@ -37,22 +39,23 @@ export default function CanvasProperties({
   changeFile: () => void;
   fitGroup: () => void;
 }) {
+  useInterfaceLocale();
   if (!node && !edge)
     return (
       <HelpText>
-        Select one card or connection to inspect its properties.
+        <I18nText id="Select one card or connection to inspect its properties." />
       </HelpText>
     );
   return (
     <fieldset className="canvas-properties" disabled={readOnly}>
       {node && (
         <>
-          <Property label="Name">
+          <Property label={uiText("Name")}>
             <Draft
               value={
                 node.title ?? (node.type === "group" ? (node.label ?? "") : "")
               }
-              label="Card name"
+              label={uiText("Card name")}
               max={200}
               save={(title) =>
                 updateNode({
@@ -62,10 +65,10 @@ export default function CanvasProperties({
               }
             />
           </Property>
-          <Property label="Tags">
+          <Property label={uiText("Tags")}>
             <Draft
               value={(node.tags ?? []).join(", ")}
-              label="Card tags"
+              label={uiText("Card tags")}
               max={820}
               save={(value) =>
                 updateNode({
@@ -80,25 +83,26 @@ export default function CanvasProperties({
                 })
               }
             />
-            <small>Comma-separated · up to 20 tags</small>
+            <small>
+              <I18nText id="Comma-separated · up to 20 tags" />
+            </small>
           </Property>
           {node.type === "link" && (
-            <Property label="Web address">
+            <Property label={uiText("Web address")}>
               <Draft
                 value={node.url}
-                label="Web address"
+                label={uiText("Web address")}
                 max={4000}
                 save={(url) => updateNode({ url })}
               />
               <small>
-                External pages load only when you choose Interact. Some sites do
-                not allow embedding.
+                <I18nText id="External pages load only when you choose Interact. Some sites do not allow embedding." />
               </small>
             </Property>
           )}
           {node.type === "file" && (
             <>
-              <Property label="Linked resource">
+              <Property label={uiText("Linked resource")}>
                 <span className="canvas-property-value">
                   {preview?.resource.name ?? node.file}
                 </span>
@@ -107,7 +111,7 @@ export default function CanvasProperties({
                   className="button secondary"
                   onClick={changeFile}
                 >
-                  Change file…
+                  <I18nText id="Change file…" />
                 </Button>
               </Property>
               <label className="canvas-property-toggle">
@@ -127,28 +131,32 @@ export default function CanvasProperties({
                   }
                 />
                 <span>
-                  Follow latest version
+                  <I18nText id="Follow latest version" />
                   <small>
                     {node.versionId
-                      ? "Pinned to a saved file version"
-                      : "Updates when the linked resource changes"}
+                      ? uiText("Pinned to a saved file version")
+                      : uiText("Updates when the linked resource changes")}
                   </small>
                 </span>
               </label>
-              <Property label="Image fit">
+              <Property label={uiText("Image fit")}>
                 <NativeSelect
-                  aria-label="Image fit"
+                  aria-label={uiText("Image fit")}
                   value={node.fit ?? "contain"}
                   onChange={(e) => updateNode({ fit: e.target.value })}
                 >
-                  <option value="contain">Show entire image</option>
-                  <option value="cover">Fill card</option>
+                  <option value="contain">
+                    <I18nText id="Show entire image" />
+                  </option>
+                  <option value="cover">
+                    <I18nText id="Fill card" />
+                  </option>
                 </NativeSelect>
               </Property>
               {preview?.kind === "file" && preview.file.kind === "pdf" && (
-                <Property label="Preview page">
+                <Property label={uiText("Preview page")}>
                   <Draft
-                    label="Preview page"
+                    label={uiText("Preview page")}
                     value={String(node.previewPage ?? 1)}
                     type="number"
                     save={(value) => updateNode({ previewPage: Number(value) })}
@@ -164,7 +172,10 @@ export default function CanvasProperties({
               onChange={(e) => updateNode({ locked: e.target.checked })}
             />
             <span>
-              Lock position and size<small>Content remains editable.</small>
+              <I18nText id="Lock position and size" />
+              <small>
+                <I18nText id="Content remains editable." />
+              </small>
             </span>
           </label>
           {node.type !== "group" && (
@@ -179,26 +190,26 @@ export default function CanvasProperties({
                 }
               />
               <span>
-                Automatic height
+                <I18nText id="Automatic height" />
                 <small>
-                  Fits content between 120 and 800 px. Width stays fixed.
+                  <I18nText id="Fits content between 120 and 800 px. Width stays fixed." />
                 </small>
               </span>
             </label>
           )}
           <div className="canvas-property-pair">
-            <Property label="Width">
+            <Property label={uiText("Width")}>
               <Draft
-                label="Card width"
+                label={uiText("Card width")}
                 type="number"
                 disabled={!!node.locked}
                 value={String(node.width)}
                 save={(v) => updateNode({ width: Number(v) })}
               />
             </Property>
-            <Property label="Height">
+            <Property label={uiText("Height")}>
               <Draft
-                label="Card height"
+                label={uiText("Card height")}
                 type="number"
                 disabled={!!node.locked}
                 value={String(node.height)}
@@ -215,7 +226,7 @@ export default function CanvasProperties({
               disabled={!!node.locked}
               onClick={fitGroup}
             >
-              Fit around contained cards
+              <I18nText id="Fit around contained cards" />
             </Button>
           )}
           <HelpText>
@@ -225,9 +236,9 @@ export default function CanvasProperties({
       )}
       {edge && (
         <>
-          <Property label="Label">
+          <Property label={uiText("Label")}>
             <Draft
-              label="Connection label"
+              label={uiText("Connection label")}
               value={edge.label ?? ""}
               max={1000}
               save={(label) => updateEdge({ label })}
@@ -235,7 +246,9 @@ export default function CanvasProperties({
           </Property>
           {(["from", "to"] as const).map((end) => (
             <div className="canvas-connection-properties" key={end}>
-              <Property label={end === "from" ? "From card" : "To card"}>
+              <Property
+                label={end === "from" ? uiText("From card") : uiText("To card")}
+              >
                 <NativeSelect
                   aria-label={`${end} card`}
                   value={edge[`${end}Node`]}
@@ -251,7 +264,7 @@ export default function CanvasProperties({
                 </NativeSelect>
               </Property>
               <div className="canvas-property-pair">
-                <Property label="Port">
+                <Property label={uiText("Port")}>
                   <NativeSelect
                     aria-label={`${end} port`}
                     value={
@@ -266,7 +279,7 @@ export default function CanvasProperties({
                     ))}
                   </NativeSelect>
                 </Property>
-                <Property label="Arrow">
+                <Property label={uiText("Arrow")}>
                   <NativeSelect
                     aria-label={`${end} arrow`}
                     value={
@@ -276,16 +289,19 @@ export default function CanvasProperties({
                       updateEdge({ [`${end}End`]: e.target.value })
                     }
                   >
-                    <option value="none">None</option>
-                    <option value="arrow">Arrow</option>
+                    <option value="none">
+                      <I18nText id="None" />
+                    </option>
+                    <option value="arrow">
+                      <I18nText id="Arrow" />
+                    </option>
                   </NativeSelect>
                 </Property>
               </div>
             </div>
           ))}
           <small>
-            Change a card or port here to reconnect without deleting the
-            connection.
+            <I18nText id="Change a card or port here to reconnect without deleting the connection." />
           </small>
         </>
       )}

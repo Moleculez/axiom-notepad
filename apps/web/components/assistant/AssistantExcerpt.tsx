@@ -1,4 +1,7 @@
 "use client";
+import { currentLocale } from "@axiom/i18n/client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { Button, HelpText, TextInput, TextArea } from "../ui/controls";
 import { useEffect, useMemo, useState } from "react";
 import type { AssistantSelection } from "@axiom/shared/assistant";
@@ -16,6 +19,7 @@ export default function AssistantExcerpt({
   onChoose: (selection: DocumentSelection, label: string) => void;
   onClose: () => void;
 }) {
+  useInterfaceLocale();
   const data = useData<RevisionContent>(
     `resources/${selection.id}/history/current`,
   );
@@ -46,25 +50,26 @@ export default function AssistantExcerpt({
   const length = range.to - range.from;
   return (
     <Dialog
-      title="Choose document excerpt"
+      title={uiText("Choose document excerpt")}
       subtitle={data.data?.title ?? "Loading source…"}
       onClose={onClose}
     >
       <HelpText>
-        Select text below or choose line numbers. Only this exact passage will
-        be attached. Changed server text requires a fresh selection.
+        <I18nText id="Select text below or choose line numbers. Only this exact passage will be attached. Changed server text requires a fresh selection." />
       </HelpText>
       <ErrorNotice message={data.error} />
       {data.loading ? (
-        <p role="status">Loading saved document…</p>
+        <p role="status">
+          <I18nText id="Loading saved document…" />
+        </p>
       ) : (
         data.data && (
           <>
             <div className="assistant-fields">
               <label>
-                From line
+                <I18nText id="From line" />
                 <TextInput
-                  aria-label="Excerpt from line"
+                  aria-label={uiText("Excerpt from line")}
                   type="number"
                   min={1}
                   max={offsets.length}
@@ -85,9 +90,9 @@ export default function AssistantExcerpt({
                 />
               </label>
               <label>
-                Through line
+                <I18nText id="Through line" />
                 <TextInput
-                  aria-label="Excerpt through line"
+                  aria-label={uiText("Excerpt through line")}
                   type="number"
                   min={1}
                   max={offsets.length}
@@ -107,7 +112,7 @@ export default function AssistantExcerpt({
             </div>
             <TextArea
               className="assistant-excerpt-source"
-              aria-label="Document excerpt source"
+              aria-label={uiText("Document excerpt source")}
               readOnly
               value={body}
               onSelect={(e) => {
@@ -117,10 +122,13 @@ export default function AssistantExcerpt({
               }}
             />
             <HelpText className={length > 30000 ? "form-error" : undefined}>
-              {length.toLocaleString()} / 30,000 characters selected
+              {length.toLocaleString(currentLocale())} / 30,000 characters
+              selected
             </HelpText>
             <details>
-              <summary>Selected passage</summary>
+              <summary>
+                <I18nText id="Selected passage" />
+              </summary>
               <pre className="assistant-excerpt">
                 {body.slice(range.from, range.to)}
               </pre>
@@ -129,8 +137,12 @@ export default function AssistantExcerpt({
         )
       )}
       <div className="dialog-footer">
-        <Button className="button secondary" onClick={onClose}>
-          Cancel
+        <Button
+          data-dialog-cancel
+          className="button secondary"
+          onClick={onClose}
+        >
+          <I18nText id="Cancel" />
         </Button>
         <Button
           className="button primary"
@@ -142,7 +154,7 @@ export default function AssistantExcerpt({
             )
           }
         >
-          Use selected excerpt
+          <I18nText id="Use selected excerpt" />
         </Button>
       </div>
     </Dialog>

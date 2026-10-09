@@ -1,4 +1,7 @@
 "use client";
+import { currentLocale } from "@axiom/i18n/client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { Button, IconButton } from "../ui/controls";
 import { useState } from "react";
 import { Download, MessageSquare, Undo2, Redo2 } from "lucide-react";
@@ -15,6 +18,7 @@ import StudioSource from "./StudioSource";
 import ResourceDiscussion from "./ResourceDiscussion";
 import ResourceSharing from "../workspace/ResourceSharing";
 export default function TextStudio({ project }: { project: ToolProject }) {
+  useInterfaceLocale();
   const { session } = useWorkspace(),
     shared = useToolDocument(
       project.resource_id,
@@ -32,15 +36,15 @@ export default function TextStudio({ project }: { project: ToolProject }) {
           className="button ghost"
           to={`/explorer?space=${project.space_id}${project.parent_id ? `&folder=${project.parent_id}` : ""}`}
         >
-          ← Explorer
+          <I18nText id="← Explorer" />
         </WorkspaceLink>
         <h1>{project.name}</h1>
         <ResourceSharing resourceId={project.resource_id} />
         <span className="tool-spacer" />
         <IconButton
           className="icon-button"
-          title="Undo"
-          aria-label="Undo"
+          title={uiText("Undo")}
+          aria-label={uiText("Undo")}
           disabled={shared.readOnly}
           onClick={() => shared.binding?.history(false)}
         >
@@ -48,8 +52,8 @@ export default function TextStudio({ project }: { project: ToolProject }) {
         </IconButton>
         <IconButton
           className="icon-button"
-          title="Redo"
-          aria-label="Redo"
+          title={uiText("Redo")}
+          aria-label={uiText("Redo")}
           disabled={shared.readOnly}
           onClick={() => shared.binding?.history(true)}
         >
@@ -57,8 +61,8 @@ export default function TextStudio({ project }: { project: ToolProject }) {
         </IconButton>
         <IconButton
           className="icon-button"
-          title="Download source"
-          aria-label="Download source"
+          title={uiText("Download source")}
+          aria-label={uiText("Download source")}
           onClick={() =>
             downloadText(
               shared.source,
@@ -70,8 +74,8 @@ export default function TextStudio({ project }: { project: ToolProject }) {
         </IconButton>
         <IconButton
           className="icon-button"
-          title="Discussion"
-          aria-label="Discussion"
+          title={uiText("Discussion")}
+          aria-label={uiText("Discussion")}
           aria-pressed={discussion}
           onClick={() => setDiscussion(!discussion)}
         >
@@ -87,10 +91,10 @@ export default function TextStudio({ project }: { project: ToolProject }) {
               downloadText(shared.recovery!, `${project.name}-recovered.txt`)
             }
           >
-            Export retained draft
+            <I18nText id="Export retained draft" />
           </Button>
           <Button className="button ghost" onClick={shared.reopen}>
-            Reopen server version
+            <I18nText id="Reopen server version" />
           </Button>
         </div>
       )}
@@ -121,8 +125,10 @@ export default function TextStudio({ project }: { project: ToolProject }) {
       <footer className="canvas-status">
         <span role="status">{shared.status}</span>
         <span>
-          {shared.source.length.toLocaleString()} characters ·{" "}
-          {shared.source.split("\n").length.toLocaleString()} lines
+          {shared.source.length.toLocaleString(currentLocale())}{" "}
+          <I18nText id="characters ·" />{" "}
+          {shared.source.split("\n").length.toLocaleString(currentLocale())}{" "}
+          <I18nText id="lines" />
         </span>
         <span>
           {shared.peers.length

@@ -1,4 +1,7 @@
 "use client";
+import { currentLocale } from "@axiom/i18n/client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import {
   Button,
   Checkbox,
@@ -35,6 +38,7 @@ export default function PdfOcrPanel({
   onInsert: (text: string, privateMaterial?: boolean) => void;
   returnFocus?: () => HTMLElement | null;
 }) {
+  useInterfaceLocale();
   const [cap, setCap] = useState<{
       available: boolean;
       research: boolean;
@@ -157,8 +161,10 @@ export default function PdfOcrPanel({
     );
   return (
     <Dialog
-      title="Batch OCR & research text"
-      subtitle="Private, self-hosted processing · source PDF stays unchanged"
+      title={uiText("Batch OCR & research text")}
+      subtitle={uiText(
+        "Private, self-hosted processing · source PDF stays unchanged",
+      )}
       wide
       className="pdf-compare-dialog"
       onClose={() => void close()}
@@ -166,22 +172,20 @@ export default function PdfOcrPanel({
     >
       {!cap?.available && (
         <p className="muted">
-          Self-hosted OCR is not enabled. Your administrator can configure the
-          optional PDF OCR service and worker. No external provider will be
-          contacted.
+          <I18nText id="Self-hosted OCR is not enabled. Your administrator can configure the optional PDF OCR service and worker. No external provider will be contacted." />
         </p>
       )}
       <div className="pdf-compare-controls">
         <label>
-          Pages
+          <I18nText id="Pages" />
           <TextInput
-            aria-label="OCR page range"
+            aria-label={uiText("OCR page range")}
             value={range}
             onChange={(e) => setRange(e.target.value)}
           />
         </label>
         <label>
-          Language
+          <I18nText id="Language" />
           <NativeSelect
             value={language}
             onChange={(e) => setLanguage(e.target.value)}
@@ -206,14 +210,14 @@ export default function PdfOcrPanel({
             disabled={!cap?.research}
             onChange={(e) => setResearch(e.target.checked)}
           />
-          Equation-aware text
+          <I18nText id="Equation-aware text" />
         </label>
         <label>
           <Checkbox
             checked={searchable}
             onChange={(e) => setSearchable(e.target.checked)}
           />
-          Also create searchable PDF
+          <I18nText id="Also create searchable PDF" />
         </label>
       </div>
       <label className="pdf-save-option">
@@ -221,7 +225,7 @@ export default function PdfOcrPanel({
           checked={consent}
           onChange={(e) => setConsent(e.target.checked)}
         />
-        Process the selected pages using this deployment’s private OCR service.
+        <I18nText id="Process the selected pages using this deployment’s private OCR service." />
       </label>
       <Button
         className="button primary"
@@ -251,7 +255,7 @@ export default function PdfOcrPanel({
           })
         }
       >
-        Start OCR
+        <I18nText id="Start OCR" />
       </Button>
       {error && (
         <p role="alert" className="form-error">
@@ -259,9 +263,9 @@ export default function PdfOcrPanel({
         </p>
       )}
       <label>
-        Processing history
+        <I18nText id="Processing history" />
         <NativeSelect
-          aria-label="OCR job"
+          aria-label={uiText("OCR job")}
           value={id}
           disabled={dirty || busy}
           onChange={(e) => {
@@ -273,11 +277,14 @@ export default function PdfOcrPanel({
             setEquations([]);
           }}
         >
-          <option value="">Choose a job</option>
+          <option value="">
+            <I18nText id="Choose a job" />
+          </option>
           {jobs.map((j) => (
             <option key={j.id} value={j.id}>
-              {new Date(j.created_at).toLocaleString()} · {j.status} ·{" "}
-              {j.completed_pages}/{j.settings.pages.length} pages
+              {new Date(j.created_at).toLocaleString(currentLocale())} ·{" "}
+              {j.status} · {j.completed_pages}/{j.settings.pages.length}{" "}
+              <I18nText id="pages" />
             </option>
           ))}
         </NativeSelect>
@@ -287,11 +294,13 @@ export default function PdfOcrPanel({
           <div className="pdf-thread-status">
             <span role="status">
               {job.status} · {job.pages?.length ?? 0}/
-              {job.settings.pages.length} text pages · results retained until{" "}
-              {new Date(job.expires_at).toLocaleDateString()}
+              {job.settings.pages.length}{" "}
+              <I18nText id="text pages · results retained until" />{" "}
+              {new Date(job.expires_at).toLocaleDateString(currentLocale())}
             </span>
             {["queued", "running"].includes(job.status) ? (
               <button
+                data-dialog-cancel
                 disabled={busy}
                 onClick={() =>
                   void work(async () => {
@@ -300,7 +309,7 @@ export default function PdfOcrPanel({
                   })
                 }
               >
-                Cancel processing
+                <I18nText id="Cancel processing" />
               </button>
             ) : ["failed", "cancelled"].includes(job.status) ? (
               <button
@@ -312,7 +321,7 @@ export default function PdfOcrPanel({
                   })
                 }
               >
-                Retry unfinished outputs
+                <I18nText id="Retry unfinished outputs" />
               </button>
             ) : null}
           </div>
@@ -321,7 +330,7 @@ export default function PdfOcrPanel({
             <section>
               <header>
                 <label>
-                  Review page
+                  <I18nText id="Review page" />
                   <NativeSelect
                     value={page}
                     disabled={dirty}
@@ -334,7 +343,7 @@ export default function PdfOcrPanel({
                       <option key={p} value={p}>
                         {p}
                         {job.pages?.find((v) => v.page === p)?.reviewed
-                          ? " · reviewed"
+                          ? uiText(" · reviewed")
                           : ""}
                       </option>
                     ))}
@@ -366,12 +375,15 @@ export default function PdfOcrPanel({
             <section className="pdf-ocr-review">
               <header>
                 {selected?.native
-                  ? "Existing PDF text"
-                  : "Recognized text / LaTeX"}{" "}
-                · {selected?.reviewed ? "Reviewed" : "Needs review"}
+                  ? uiText("Existing PDF text")
+                  : uiText("Recognized text / LaTeX")}{" "}
+                ·{" "}
+                {selected?.reviewed
+                  ? uiText("Reviewed")
+                  : uiText("Needs review")}
               </header>
               <TextArea
-                aria-label="OCR research text"
+                aria-label={uiText("OCR research text")}
                 value={draft}
                 maxLength={100000}
                 disabled={!selected || busy}
@@ -400,7 +412,7 @@ export default function PdfOcrPanel({
                       onClose();
                     }}
                   >
-                    Ask workspace assistant
+                    <I18nText id="Ask workspace assistant" />
                   </button>
                   <button
                     disabled={busy}
@@ -427,7 +439,7 @@ export default function PdfOcrPanel({
                         );
                     }}
                   >
-                    Preview equations
+                    <I18nText id="Preview equations" />
                   </button>
                   <button
                     disabled={busy}
@@ -451,7 +463,7 @@ export default function PdfOcrPanel({
                       })
                     }
                   >
-                    Save & mark reviewed
+                    <I18nText id="Save & mark reviewed" />
                   </button>
                   {dirty && (
                     <button
@@ -461,7 +473,7 @@ export default function PdfOcrPanel({
                         setDirty(false);
                       }}
                     >
-                      Discard local edits
+                      <I18nText id="Discard local edits" />
                     </button>
                   )}
                 </div>
@@ -469,10 +481,10 @@ export default function PdfOcrPanel({
               {!!equations.length && (
                 <div
                   className="pdf-ocr-equations"
-                  aria-label="Recognized equation preview"
+                  aria-label={uiText("Recognized equation preview")}
                 >
                   <small>
-                    First 20 equations · compare carefully with the scanned page
+                    <I18nText id="First 20 equations · compare carefully with the scanned page" />
                   </small>
                   {equations.map((eq, index) => (
                     <div key={`${index}:${eq.tex}`}>
@@ -494,9 +506,7 @@ export default function PdfOcrPanel({
             </section>
           </div>
           <p className="muted">
-            Corrections affect the research text only. The searchable PDF
-            retains machine-recognized text and requires independent
-            verification. Only reviewed pages are included in text exports.
+            <I18nText id="Corrections affect the research text only. The searchable PDF retains machine-recognized text and requires independent verification. Only reviewed pages are included in text exports." />
           </p>
           <div className="pdf-compare-controls">
             <button
@@ -505,13 +515,13 @@ export default function PdfOcrPanel({
                 download("reviewed-research.md", markdown, "text/markdown")
               }
             >
-              Download reviewed Markdown
+              <I18nText id="Download reviewed Markdown" />
             </button>
             <button
               disabled={!markdown || dirty}
               onClick={() => onInsert(markdown, true)}
             >
-              Insert reviewed text into note
+              <I18nText id="Insert reviewed text into note" />
             </button>
             <button
               disabled={
@@ -555,10 +565,12 @@ export default function PdfOcrPanel({
                 })
               }
             >
-              Create private research note
+              <I18nText id="Create private research note" />
             </button>
             {createdNote && (
-              <a href={`/workbench/notes/${createdNote}`}>Open research note</a>
+              <a href={`/workbench/notes/${createdNote}`}>
+                <I18nText id="Open research note" />
+              </a>
             )}
             {Number(job.output_bytes) > 0 && (
               <>
@@ -566,7 +578,7 @@ export default function PdfOcrPanel({
                   className="button secondary"
                   href={`/api/v1/pdf-ocr/${id}/pdf`}
                 >
-                  Download searchable PDF
+                  <I18nText id="Download searchable PDF" />
                 </a>
                 <button
                   disabled={busy || dirty}
@@ -579,7 +591,7 @@ export default function PdfOcrPanel({
                     })
                   }
                 >
-                  Save searchable PDF…
+                  <I18nText id="Save searchable PDF…" />
                 </button>
               </>
             )}
@@ -604,7 +616,7 @@ export default function PdfOcrPanel({
                 })
               }
             >
-              Remove private results
+              <I18nText id="Remove private results" />
             </button>
           </div>
         </>

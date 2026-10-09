@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { HelpText } from "../ui/controls";
 import { useEffect, useState } from "react";
 import type { SiteConfig } from "@axiom/shared/sites";
@@ -12,6 +14,7 @@ export default function SiteDesignPreview({
   spaceId: string;
   config: SiteConfig;
 }) {
+  useInterfaceLocale();
   const [view, setView] = useState<"home" | "article">("article"),
     [html, setHtml] = useState(""),
     [error, setError] = useState(""),
@@ -50,33 +53,39 @@ export default function SiteDesignPreview({
       aria-busy={busy}
     >
       <header>
-        <span>Live specimen</span>
-        <div className="website-preview-switch" aria-label="Preview page">
+        <span>
+          <I18nText id="Live specimen" />
+        </span>
+        <div
+          className="website-preview-switch"
+          aria-label={uiText("Preview page")}
+        >
           {(["article", "home"] as const).map((item) => (
             <button
               key={item}
               aria-pressed={view === item}
               onClick={() => setView(item)}
             >
-              {item === "article" ? "Article" : "Homepage"}
+              {item === "article" ? uiText("Article") : uiText("Homepage")}
             </button>
           ))}
         </div>
       </header>
       <HelpText>
-        Same renderer and styles as the public site. Article text is a sample;
-        no analytics run here.
+        <I18nText id="Same renderer and styles as the public site. Article text is a sample; no analytics run here." />
       </HelpText>
       <ErrorNotice message={error} />
       {html ? (
         <iframe
           key={html}
-          title="Website design specimen"
+          title={uiText("Website design specimen")}
           srcDoc={html}
           sandbox="allow-scripts allow-same-origin"
         />
       ) : (
-        <p role="status">Preparing specimen…</p>
+        <p role="status">
+          <I18nText id="Preparing specimen…" />
+        </p>
       )}
     </aside>
   );

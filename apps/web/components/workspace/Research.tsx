@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { NativeSelect } from "../ui/controls";
 import { useRef } from "react";
 import type { ResourcePage } from "@axiom/shared/workspace";
@@ -22,6 +24,7 @@ export default function ResearchCollection({
 }: {
   view: "references" | "graph";
 }) {
+  useInterfaceLocale();
   const { session, spaces, revision, refresh, navigate, open } = useWorkspace(),
     { params } = useLocation();
   const group =
@@ -43,33 +46,40 @@ export default function ResearchCollection({
   return (
     <main className="ws-page ws-research-collection">
       <div className="ws-list-toolbar">
-        <nav className="ws-segmented" aria-label="Research collections">
+        <nav
+          className="ws-segmented"
+          aria-label={uiText("Research collections")}
+        >
           <WorkspaceLink to={`/research${group ? `?groupId=${group}` : ""}`}>
-            Overview
+            <I18nText id="Overview" />
           </WorkspaceLink>
           <WorkspaceLink
             to={`/research/references${group ? `?groupId=${group}` : ""}`}
             aria-current={view === "references" ? "page" : undefined}
           >
-            References
+            <I18nText id="References" />
           </WorkspaceLink>
           <WorkspaceLink
             to={`/research/graph${group ? `?groupId=${group}` : ""}`}
             aria-current={view === "graph" ? "page" : undefined}
           >
-            Knowledge graph
+            <I18nText id="Knowledge graph" />
           </WorkspaceLink>
         </nav>
         <label>
-          Research group
+          <I18nText id="Research group" />
           <NativeSelect
-            aria-label="Research group"
+            aria-label={uiText("Research group")}
             value={group}
             onChange={(event) =>
               navigate(`/research/${view}?groupId=${event.target.value}`)
             }
           >
-            {!session.groups.length && <option value="">Personal space</option>}
+            {!session.groups.length && (
+              <option value="">
+                <I18nText id="Personal space" />
+              </option>
+            )}
             {session.groups.map((item) => (
               <option key={item.id} value={item.id}>
                 {item.name}
@@ -105,9 +115,8 @@ export default function ResearchCollection({
       )}
       {view === "references" &&
         (!group ? (
-          <Empty title="References belong to a research group">
-            Your private note citation snapshots remain available in each note.
-            Join or create a group to build a shared reference library.
+          <Empty title={uiText("References belong to a research group")}>
+            <I18nText id="Your private note citation snapshots remain available in each note. Join or create a group to build a shared reference library." />
           </Empty>
         ) : (
           groupData.data && (

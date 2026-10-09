@@ -1,4 +1,6 @@
 "use client";
+import { I18nText } from "@axiom/i18n/react";
+
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import type { NativeBinding } from "@axiom/editor/binding";
@@ -55,7 +57,9 @@ export default function AssistantSuggestion({
             "This proposal belongs to an earlier document generation. Review a fresh proposal."
           }
         />
-        <button onClick={() => setClosed(id)}>Dismiss draft request</button>
+        <button onClick={() => setClosed(id)}>
+          <I18nText id="Dismiss draft request" />
+        </button>
       </div>
     );
   if (data.data?.noteId !== noteId) return null;
@@ -63,10 +67,11 @@ export default function AssistantSuggestion({
     return (
       <div className="assistant-seed-error" role="status">
         <p>
-          Waiting for the collaborative document before opening this private
-          proposal…
+          <I18nText id="Waiting for the collaborative document before opening this private proposal…" />
         </p>
-        <button onClick={() => setClosed(id)}>Close draft request</button>
+        <button onClick={() => setClosed(id)}>
+          <I18nText id="Close draft request" />
+        </button>
       </div>
     );
   return (

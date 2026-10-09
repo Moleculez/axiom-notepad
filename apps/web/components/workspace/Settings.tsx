@@ -1,4 +1,8 @@
 "use client";
+import { currentLocale } from "@axiom/i18n/client";
+import type { MessageId } from "@axiom/i18n";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import {
   ActionRow,
   Button,
@@ -11,6 +15,7 @@ import {
   SearchField,
 } from "../ui/controls";
 import TimeZoneInput from "../TimeZoneInput";
+import LanguageSettings from "./LanguageSettings";
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import {
@@ -65,7 +70,9 @@ const AppearanceSettings = dynamic(() => import("../AppearanceSettings"), {
   ssr: false,
   loading: () => (
     <div className="settings-stage" aria-busy="true">
-      <p role="status">Loading appearance & writing…</p>
+      <p role="status">
+        <I18nText id="Loading appearance & writing…" />
+      </p>
     </div>
   ),
 });
@@ -93,10 +100,12 @@ import {
 } from "./ui";
 
 export function SettingsNavigation() {
+  useInterfaceLocale();
   const { parts, params } = useLocation();
   const selected = settingsCategory(parts[1], params.get("section"));
   const [search, setSearch] = useState("");
   const icons: Record<SettingsCategory, typeof Monitor> = {
+    language: Type,
     extensions: Puzzle,
     connections: ShieldCheck,
     profile: UserRound,
@@ -118,7 +127,7 @@ export function SettingsNavigation() {
     exports: Download,
   };
   const matches = settingsCategories.filter((category) =>
-    `${category.label} ${category.description} ${appearanceSettingGroups[appearanceSections[category.id]]?.join(" ") ?? ""} ${writingControls
+    `${uiText(category.label)} ${uiText(category.description)} ${category.label} ${category.description} ${appearanceSettingGroups[appearanceSections[category.id]]?.join(" ") ?? ""} ${writingControls
       .filter((c) => c.category === appearanceSections[category.id])
       .map((c) => `${c.label} ${c.hint}`)
       .join(" ")}`
@@ -128,20 +137,20 @@ export function SettingsNavigation() {
   return (
     <nav
       className="settings-center-nav settings-page-navigation"
-      aria-label="Settings categories"
+      aria-label={uiText("Settings categories")}
     >
       <SearchField
         wrapperClassName="settings-search"
-        aria-label="Find settings category"
+        aria-label={uiText("Find settings category")}
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        placeholder="Find a setting…"
+        placeholder={uiText("Find a setting…")}
         onClear={() => setSearch("")}
-        clearLabel="Clear category search"
+        clearLabel={uiText("Clear category search")}
       />
       {!matches.length && (
         <p className="settings-nav-empty" role="status">
-          No matching categories. Try “font”, “code”, or “storage”.
+          <I18nText id="No matching categories. Try “font”, “code”, or “storage”." />
         </p>
       )}
       {["Account", "Appearance", "Writing", "Storage", "Extensions"].map(
@@ -151,7 +160,7 @@ export function SettingsNavigation() {
           );
           return entries.length ? (
             <section key={group}>
-              <h3>{group}</h3>
+              <h3>{uiText(group)}</h3>
               {entries.map((category) => {
                 const Icon = icons[category.id];
                 return (
@@ -162,7 +171,7 @@ export function SettingsNavigation() {
                     aria-current={selected === category.id ? "page" : undefined}
                   >
                     <Icon size={16} aria-hidden="true" />
-                    {category.label}
+                    {uiText(category.label)}
                   </WorkspaceLink>
                 );
               })}
@@ -195,6 +204,7 @@ function SettingsReady({
   section: string;
   active: boolean;
 }) {
+  useInterfaceLocale();
   const { appearance, editorSettings, navigate, session, spaces, open } =
       useWorkspace(),
     { params, path } = useLocation();
@@ -203,7 +213,10 @@ function SettingsReady({
   const draft = useSettingsDraft(appearance, editorSettings, active);
   const forms = useRef(new Map<string, RetainedForm>()),
     visitedForms = useRef(new Set<string>());
-  if (active && ["profile", "notifications", "extensions"].includes(section))
+  if (
+    active &&
+    ["profile", "notifications", "extensions", "language"].includes(section)
+  )
     visitedForms.current.add(section);
   const formsDirty = () =>
     [...forms.current.values()].some((form) => form.dirty);
@@ -265,7 +278,8 @@ function SettingsReady({
       active && section === "data" ? session.user.id : undefined,
       context,
     );
-  const labels: Record<string, string> = {
+  const labels: Readonly<Record<string, MessageId>> = {
+    language: "Language",
     profile: "Your researcher profile",
     appearance: "Make Axiom your own",
     security: "Account security",
@@ -287,43 +301,50 @@ function SettingsReady({
       >
         <div className="settings-center-heading">
           <button
+            data-dialog-cancel
             className="text-button"
             onClick={() => go(returnPath.current)}
           >
             <ArrowLeft size={16} />
-            Back to workspace
+            <I18nText id="Back to workspace" />
           </button>
           <span>
-            Settings ·{" "}
-            {
-              settingsCategories.find((category) => category.id === section)
-                ?.group
-            }
+            <I18nText
+              id="Settings · {group}"
+              values={{
+                group: uiText(
+                  settingsCategories.find((category) => category.id === section)
+                    ?.group ?? "",
+                ),
+              }}
+            />
           </span>
         </div>
         {!preference && (
-          <PageHeading title={labels[section] ?? "Settings"}>
-            {
+          <PageHeading title={uiText(labels[section] ?? "Settings")}>
+            {uiText(
               settingsCategories.find((category) => category.id === section)
-                ?.description
-            }
+                ?.description ?? "",
+            )}
           </PageHeading>
         )}
         {!preference && draft.dirty && (
           <section
             className="settings-pending-preferences"
-            aria-label="Pending appearance and writing changes"
+            aria-label={uiText("Pending appearance and writing changes")}
           >
-            <span>Appearance & writing changes are still in preview.</span>
+            <span>
+              <I18nText id="Appearance & writing changes are still in preview." />
+            </span>
             <ActionRow>
               <Button
                 className="button secondary small"
                 onClick={draft.discard}
               >
-                Discard preference changes
+                <I18nText id="Discard preference changes" />
               </Button>
               <Button className="button primary small" onClick={draft.apply}>
-                Apply preferences
+                <I18nText id="Apply preferences" />
               </Button>
             </ActionRow>
           </section>
@@ -341,7 +362,8 @@ function SettingsReady({
           />
         ) : section === "extensions" ? null : section === "connections" ? (
           <ConnectionsSettings />
-        ) : section === "profile" ? null : section === "security" ? (
+        ) : section === "profile" || section === "language" ? null : section ===
+          "security" ? (
           <SecuritySettings />
         ) : section === "notifications" ? null : section === "storage" ? (
           <StorageSettings />
@@ -354,9 +376,9 @@ function SettingsReady({
             <InstallControls />
             <OfflineSettings />
             <label>
-              Reading workspace
+              <I18nText id="Reading workspace" />
               <NativeSelect
-                aria-label="Reading workspace"
+                aria-label={uiText("Reading workspace")}
                 value={context}
                 onChange={(event) => setDataContext(event.target.value)}
               >
@@ -367,7 +389,7 @@ function SettingsReady({
                       {space.name}
                       {space.group_name
                         ? ` · ${space.group_name}`
-                        : " · Personal"}
+                        : uiText(" · Personal")}
                     </option>
                   ))}
               </NativeSelect>
@@ -402,13 +424,18 @@ function SettingsReady({
             />
           </>
         ) : (
-          <Empty title="Choose a setting">
-            Use the account navigation to find what you need.
+          <Empty title={uiText("Choose a setting")}>
+            <I18nText id="Use the account navigation to find what you need." />
           </Empty>
         )}
         {visitedForms.current.has("profile") && (
           <div hidden={section !== "profile"}>
             <ProfileSettings />
+          </div>
+        )}
+        {visitedForms.current.has("language") && (
+          <div hidden={section !== "language"}>
+            <LanguageSettings />
           </div>
         )}
         {visitedForms.current.has("notifications") && (
@@ -428,13 +455,17 @@ function SettingsReady({
           <Dialog
             title={
               formsDirty()
-                ? "Keep your unsaved settings?"
-                : "Apply your preference changes?"
+                ? uiText("Keep your unsaved settings?")
+                : uiText("Apply your preference changes?")
             }
             subtitle={
               formsDirty()
-                ? "Some settings forms are unsaved. Stay to save them, or discard all changes before leaving settings."
-                : "Your appearance and writing preferences are in live preview. Choose what to keep before leaving."
+                ? uiText(
+                    "Some settings forms are unsaved. Stay to save them, or discard all changes before leaving settings.",
+                  )
+                : uiText(
+                    "Your appearance and writing preferences are in live preview. Choose what to keep before leaving.",
+                  )
             }
             onClose={() => setLeaving(null)}
             size="compact"
@@ -444,7 +475,7 @@ function SettingsReady({
                 className="button secondary"
                 onClick={() => setLeaving(null)}
               >
-                Stay in settings
+                <I18nText id="Stay in settings" />
               </Button>
               <Button
                 className="button secondary"
@@ -455,7 +486,7 @@ function SettingsReady({
                   leaving.proceed();
                 }}
               >
-                Discard changes
+                <I18nText id="Discard changes" />
               </Button>
               <Button
                 className="button primary"
@@ -465,7 +496,7 @@ function SettingsReady({
                   else setLeaving(null);
                 }}
               >
-                Apply and leave
+                <I18nText id="Apply and leave" />
               </Button>
             </div>
           </Dialog>
@@ -501,6 +532,7 @@ function ProfileForm({
   profile: any;
   onSaved: () => void;
 }) {
+  useInterfaceLocale();
   const [draft, setDraft] = useState(profile),
     [base, setBase] = useState(profile),
     [links, setLinks] = useState(profile.links.join("\n")),
@@ -568,8 +600,12 @@ function ProfileForm({
         <fieldset className="settings-form-fields" disabled={action.busy}>
           <section className="settings-form-section">
             <header>
-              <h2>Identity</h2>
-              <p>How your collaborators see you in Axiom.</p>
+              <h2>
+                <I18nText id="Identity" />
+              </h2>
+              <p>
+                <I18nText id="How your collaborators see you in Axiom." />
+              </p>
             </header>
             <div className="ws-profile-photo">
               <Avatar person={draft} />
@@ -581,18 +617,16 @@ function ProfileForm({
                   onClick={() => avatar.current?.click()}
                 >
                   <Upload size={16} />
-                  Change photo
+                  <I18nText id="Change photo" />
                 </Button>
                 <p className="ws-small muted">
-                  PNG, JPEG, GIF or WebP, up to 5 MB. Images are resized and
-                  metadata is removed. Crop and preview before saving your
-                  photo.
+                  <I18nText id="PNG, JPEG, GIF or WebP, up to 5 MB. Images are resized and metadata is removed. Crop and preview before saving your photo." />
                 </p>
               </div>
               <input
                 ref={avatar}
                 type="file"
-                aria-label="Upload profile picture"
+                aria-label={uiText("Upload profile picture")}
                 hidden
                 accept="image/png,image/jpeg,image/gif,image/webp"
                 onChange={(event) => {
@@ -605,7 +639,7 @@ function ProfileForm({
             </div>
             <div className="ws-form-grid">
               <label>
-                Full name
+                <I18nText id="Full name" />
                 <TextInput
                   required
                   maxLength={100}
@@ -614,55 +648,70 @@ function ProfileForm({
                 />
               </label>
               <label>
-                Email address
+                <I18nText id="Email address" />
                 <TextInput value={draft.email} readOnly autoComplete="email" />
                 <small>
-                  Contact your administrator for account identity changes.
+                  <I18nText id="Contact your administrator for account identity changes." />
                 </small>
               </label>
             </div>
             <label>
-              Institution or affiliation
+              <I18nText id="Institution or affiliation" />
               <TextInput
                 maxLength={200}
                 value={draft.affiliation}
                 onChange={(event) => set("affiliation", event.target.value)}
-                placeholder="Your lab, university, or research group"
+                placeholder={uiText("Your lab, university, or research group")}
               />
             </label>
           </section>
           <section className="settings-form-section">
             <header>
-              <h2>Research profile</h2>
-              <p>Share your interests, background, and published work.</p>
+              <h2>
+                <I18nText id="Research profile" />
+              </h2>
+              <p>
+                <I18nText id="Share your interests, background, and published work." />
+              </p>
             </header>
             <label>
-              Research interests
+              <I18nText id="Research interests" />
               <TextInput
                 maxLength={500}
                 value={draft.interests}
                 onChange={(event) => set("interests", event.target.value)}
-                placeholder="e.g. Scientific ML, dynamical systems, quantum information"
+                placeholder={uiText(
+                  "e.g. Scientific ML, dynamical systems, quantum information",
+                )}
               />
             </label>
             <label>
-              Biography
+              <I18nText id="Biography" />
               <TextArea
-                aria-label="Biography"
+                aria-label={uiText("Biography")}
                 maxLength={3000}
                 rows={5}
                 value={draft.biography}
                 onChange={(event) => set("biography", event.target.value)}
               />
               <span className="settings-field-note">
-                <span>A short introduction for your group.</span>
-                <span>{draft.biography.length.toLocaleString()} / 3,000</span>
+                <span>
+                  <I18nText id="A short introduction for your group." />
+                </span>
+                <span>
+                  <I18nText
+                    id="{used, number} / {limit, number} characters"
+                    values={{ used: draft.biography.length, limit: 3000 }}
+                  />
+                </span>
               </span>
             </label>
             <label>
-              Research links (one per line, up to eight)
+              <I18nText id="Research links (one per line, up to eight)" />
               <TextArea
-                aria-label="Research links (one per line, up to eight)"
+                aria-label={uiText(
+                  "Research links (one per line, up to eight)",
+                )}
                 aria-invalid={normalizedLinks.length > 8 || undefined}
                 rows={3}
                 value={links}
@@ -673,33 +722,44 @@ function ProfileForm({
                 placeholder="https://orcid.org/…"
               />
               <span className="settings-field-note">
-                <span>ORCID, publications, or your lab website.</span>
-                <span>{normalizedLinks.length} / 8 links</span>
+                <span>
+                  <I18nText id="ORCID, publications, or your lab website." />
+                </span>
+                <span>
+                  <I18nText
+                    id="{used, number} / {limit, number} links"
+                    values={{ used: normalizedLinks.length, limit: 8 }}
+                  />
+                </span>
               </span>
               {normalizedLinks.length > 8 && (
                 <small className="form-error" role="alert">
-                  Keep up to eight research links before saving.
+                  <I18nText id="Keep up to eight research links before saving." />
                 </small>
               )}
             </label>
           </section>
           <section className="settings-form-section">
             <header>
-              <h2>Working rhythm</h2>
-              <p>Your local time and a realistic weekly planning target.</p>
+              <h2>
+                <I18nText id="Working rhythm" />
+              </h2>
+              <p>
+                <I18nText id="Your local time and a realistic weekly planning target." />
+              </p>
             </header>
             <div className="ws-form-grid">
               <label>
-                Time zone
+                <I18nText id="Time zone" />
                 <TimeZoneInput
                   required
-                  aria-label="Time zone"
+                  aria-label={uiText("Time zone")}
                   value={draft.timezone}
                   onChange={(zone) => set("timezone", zone)}
                 />
               </label>
               <label>
-                Weekly planning capacity (hours)
+                <I18nText id="Weekly planning capacity (hours)" />
                 <TextInput
                   type="number"
                   min={0}
@@ -715,22 +775,23 @@ function ProfileForm({
           </section>
         </fieldset>
         <HelpText>
-          Your name, affiliation, biography, interests, links, and time zone are
-          visible to people who share a group with you. Personal-space contents
-          are not.
+          <I18nText id="Your name, affiliation, biography, interests, links, and time zone are visible to people who share a group with you. Personal-space contents are not." />
         </HelpText>
         <ErrorNotice message={action.error} />
         {saved && (
           <p role="status">
             <Check size={15} />
-            Profile saved.
+            <I18nText id="Profile saved." />
           </p>
         )}
         <div className="settings-form-actions">
           <span>
-            {dirty ? "Unsaved profile changes" : "Your profile is up to date"}
+            {dirty
+              ? uiText("Unsaved profile changes")
+              : uiText("Your profile is up to date")}
           </span>
           <Button
+            data-dialog-cancel
             type="button"
             className="button secondary"
             disabled={!dirty || action.busy}
@@ -741,14 +802,14 @@ function ProfileForm({
               action.setError("");
             }}
           >
-            Cancel changes
+            <I18nText id="Cancel changes" />
           </Button>
           <Button
             className="button primary"
             disabled={action.busy || !dirty || normalizedLinks.length > 8}
             pending={!!action.busy}
           >
-            {"Save profile"}
+            {uiText("Save profile")}
           </Button>
         </div>
       </form>
@@ -778,6 +839,7 @@ function ProfileForm({
   );
 }
 function SecuritySettings() {
+  useInterfaceLocale();
   const { revision } = useWorkspace(),
     data = useData("me/security", revision),
     action = useAction(),
@@ -820,15 +882,17 @@ function SecuritySettings() {
                 <ShieldCheck size={24} />
               </span>
               <div>
-                <h2>Two-step verification</h2>
+                <h2>
+                  <I18nText id="Two-step verification" />
+                </h2>
                 <p>
-                  Use an authenticator app to add a second check to password
-                  sign-in. Institutional sign-in follows your institution’s own
-                  multi-factor policy.
+                  <I18nText id="Use an authenticator app to add a second check to password sign-in. Institutional sign-in follows your institution’s own multi-factor policy." />
                 </p>
               </div>
               <Badge tone={security.twoFactorEnabled ? "success" : "neutral"}>
-                {security.twoFactorEnabled ? "Enabled" : "Not enabled"}
+                {security.twoFactorEnabled
+                  ? uiText("Enabled")
+                  : uiText("Not enabled")}
               </Badge>
             </div>
             <ActionRow>
@@ -839,15 +903,15 @@ function SecuritySettings() {
                 }
               >
                 {security.twoFactorEnabled
-                  ? "Disable verification"
-                  : "Set up authenticator"}
+                  ? uiText("Disable verification")
+                  : uiText("Set up authenticator")}
               </Button>
               {security.twoFactorEnabled && (
                 <Button
                   className="button secondary"
                   onClick={() => setDialog("recovery")}
                 >
-                  Replace recovery codes
+                  <I18nText id="Replace recovery codes" />
                 </Button>
               )}
             </ActionRow>
@@ -858,22 +922,27 @@ function SecuritySettings() {
                 <KeyRound size={24} />
               </span>
               <div>
-                <h2>Password</h2>
-                <p>Choose a unique password of at least 12 characters.</p>
+                <h2>
+                  <I18nText id="Password" />
+                </h2>
+                <p>
+                  <I18nText id="Choose a unique password of at least 12 characters." />
+                </p>
               </div>
               <Button
                 className="button secondary"
                 onClick={() => setDialog("password")}
               >
-                Change password
+                <I18nText id="Change password" />
               </Button>
             </div>
           </section>
           <section className="ws-card">
-            <h2>Institutional identity</h2>
+            <h2>
+              <I18nText id="Institutional identity" />
+            </h2>
             <p className="muted">
-              An institutional login does not automatically admit anyone to a
-              group. Existing members link their verified account explicitly.
+              <I18nText id="An institutional login does not automatically admit anyone to a group. Existing members link their verified account explicitly." />
             </p>
             {security.institution.enabled ? (
               <div className="ws-setting-row">
@@ -883,8 +952,10 @@ function SecuritySettings() {
                     {security.accounts.some(
                       (account: any) => account.provider_id === "institution",
                     )
-                      ? "Your institutional account is linked."
-                      : "Sign in through your institution to link this account. Email addresses must match."}
+                      ? uiText("Your institutional account is linked.")
+                      : uiText(
+                          "Sign in through your institution to link this account. Email addresses must match.",
+                        )}
                   </p>
                 </div>
                 <Button
@@ -920,21 +991,21 @@ function SecuritySettings() {
                   {security.accounts.some(
                     (account: any) => account.provider_id === "institution",
                   )
-                    ? "Unlink institution"
-                    : "Link institution"}
+                    ? uiText("Unlink institution")
+                    : uiText("Link institution")}
                 </Button>
               </div>
             ) : (
               <HelpText>
-                Not configured. A deployment administrator must provide your
-                institution’s OIDC discovery URL and application credentials.
-                Password login remains available.
+                <I18nText id="Not configured. A deployment administrator must provide your institution’s OIDC discovery URL and application credentials. Password login remains available." />
               </HelpText>
             )}
           </section>
           <section className="ws-card">
             <div className="ws-section-heading">
-              <h2>Signed-in devices</h2>
+              <h2>
+                <I18nText id="Signed-in devices" />
+              </h2>
               <Button
                 className="button secondary"
                 disabled={action.busy || security.sessions.length < 2}
@@ -948,7 +1019,7 @@ function SecuritySettings() {
                   })
                 }
               >
-                Sign out other devices
+                <I18nText id="Sign out other devices" />
               </Button>
             </div>
             {security.sessions.map((session: any) => (
@@ -956,18 +1027,25 @@ function SecuritySettings() {
                 <Monitor size={20} />
                 <div>
                   <strong>
-                    {session.current ? "This device" : "Another device"}
+                    {session.current
+                      ? uiText("This device")
+                      : uiText("Another device")}
                   </strong>
                   <p>
                     {session.user_agent || "Device information unavailable"}
                   </p>
                   <small>
-                    Last active {timeAgo(session.updated_at)} · Expires{" "}
-                    {new Date(session.expires_at).toLocaleDateString()}
+                    <I18nText id="Last active" /> {timeAgo(session.updated_at)}{" "}
+                    <I18nText id="· Expires" />{" "}
+                    {new Date(session.expires_at).toLocaleDateString(
+                      currentLocale(),
+                    )}
                   </small>
                 </div>
                 {session.current ? (
-                  <Badge>Current</Badge>
+                  <Badge>
+                    <I18nText id="Current" />
+                  </Badge>
                 ) : (
                   <Button
                     className="button secondary"
@@ -979,14 +1057,13 @@ function SecuritySettings() {
                       })
                     }
                   >
-                    Revoke
+                    <I18nText id="Revoke" />
                   </Button>
                 )}
               </div>
             ))}
             <p className="ws-small muted">
-              Revocation ends online access and live collaboration. It cannot
-              recall files already downloaded or trusted-device offline copies.
+              <I18nText id="Revocation ends online access and live collaboration. It cannot recall files already downloaded or trusted-device offline copies." />
             </p>
           </section>
         </>
@@ -995,7 +1072,7 @@ function SecuritySettings() {
         <Dialog
           title={
             dialog === "password"
-              ? "Change password"
+              ? uiText("Change password")
               : dialog === "enable"
                 ? "Set up two-step verification"
                 : dialog === "disable"
@@ -1044,11 +1121,13 @@ function SecuritySettings() {
             >
               <p className="muted">
                 {dialog === "recovery"
-                  ? "Your previous recovery codes stop working when new codes are generated. Store the replacement codes somewhere safe."
-                  : "Confirm your current password to continue."}
+                  ? uiText(
+                      "Your previous recovery codes stop working when new codes are generated. Store the replacement codes somewhere safe.",
+                    )
+                  : uiText("Confirm your current password to continue.")}
               </p>
               <label>
-                Current password
+                <I18nText id="Current password" />
                 <TextInput
                   autoFocus
                   required
@@ -1060,7 +1139,7 @@ function SecuritySettings() {
               </label>
               {dialog === "password" && (
                 <label>
-                  New password
+                  <I18nText id="New password" />
                   <TextInput
                     required
                     type="password"
@@ -1075,15 +1154,16 @@ function SecuritySettings() {
               <ErrorNotice message={action.error} />
               <div className="dialog-footer">
                 <Button
+                  data-dialog-cancel
                   type="button"
                   className="button secondary"
                   onClick={close}
                   disabled={action.busy}
                 >
-                  Cancel
+                  <I18nText id="Cancel" />
                 </Button>
                 <Button className="button primary" disabled={action.busy}>
-                  Continue
+                  <I18nText id="Continue" />
                 </Button>
               </div>
             </form>
@@ -1092,11 +1172,10 @@ function SecuritySettings() {
               {setup.totpURI && (
                 <>
                   <p>
-                    Add Axiom to your authenticator using this setup key. This
-                    secret is shown only here; never share it.
+                    <I18nText id="Add Axiom to your authenticator using this setup key. This secret is shown only here; never share it." />
                   </p>
                   <label>
-                    Authenticator setup key
+                    <I18nText id="Authenticator setup key" />
                     <TextInput
                       readOnly
                       value={
@@ -1107,14 +1186,15 @@ function SecuritySettings() {
                     />
                   </label>
                   <p className="ws-small muted">
-                    Time-based code · SHA-1 · 6 digits · 30 seconds
+                    <I18nText id="Time-based code · SHA-1 · 6 digits · 30 seconds" />
                   </p>
                 </>
               )}
-              <h3>Recovery codes</h3>
+              <h3>
+                <I18nText id="Recovery codes" />
+              </h3>
               <p>
-                Each code works once if you lose access to your authenticator.
-                Store them outside this browser.
+                <I18nText id="Each code works once if you lose access to your authenticator. Store them outside this browser." />
               </p>
               <div className="ws-recovery-codes">
                 {setup.backupCodes.map((value) => (
@@ -1133,14 +1213,14 @@ function SecuritySettings() {
                 }
               >
                 <Download size={15} />
-                Download codes
+                <I18nText id="Download codes" />
               </Button>
               <label className="ws-checkbox">
                 <Checkbox
                   checked={savedCodes}
                   onChange={(event) => setSavedCodes(event.target.checked)}
                 />
-                I stored these codes in a safe place.
+                <I18nText id="I stored these codes in a safe place." />
               </label>
               <ErrorNotice message={action.error} />
               {setup.totpURI ? (
@@ -1159,7 +1239,7 @@ function SecuritySettings() {
                   }}
                 >
                   <label>
-                    Six-digit authenticator code
+                    <I18nText id="Six-digit authenticator code" />
                     <TextInput
                       required
                       inputMode="numeric"
@@ -1177,7 +1257,7 @@ function SecuritySettings() {
                       className="button primary"
                       disabled={action.busy || !savedCodes}
                     >
-                      Verify and enable
+                      <I18nText id="Verify and enable" />
                     </Button>
                   </div>
                 </form>
@@ -1188,7 +1268,7 @@ function SecuritySettings() {
                     disabled={!savedCodes}
                     onClick={close}
                   >
-                    Done
+                    <I18nText id="Done" />
                   </Button>
                 </div>
               )}
@@ -1223,6 +1303,7 @@ function NotificationForm({
   initial: any;
   emailAvailable: boolean;
 }) {
+  useInterfaceLocale();
   const [draft, setDraft] = useState(initial),
     [base, setBase] = useState(initial),
     [message, setMessage] = useState(""),
@@ -1292,8 +1373,12 @@ function NotificationForm({
       <fieldset className="settings-form-fields" disabled={action.busy}>
         <section className="settings-form-section">
           <header>
-            <h2>In your inbox</h2>
-            <p>Choose the research updates that deserve your attention.</p>
+            <h2>
+              <I18nText id="In your inbox" />
+            </h2>
+            <p>
+              <I18nText id="Choose the research updates that deserve your attention." />
+            </p>
           </header>
           {[
             "assignments",
@@ -1305,16 +1390,17 @@ function NotificationForm({
         </section>
         <section className="settings-form-section">
           <header>
-            <h2>Delivery</h2>
+            <h2>
+              <I18nText id="Delivery" />
+            </h2>
             <p>
-              Your inbox stays available whether or not email is configured.
+              <I18nText id="Your inbox stays available whether or not email is configured." />
             </p>
           </header>
           {control("email")}
           {!emailAvailable && (
             <HelpText>
-              Email delivery is not configured on this server. Your in-app inbox
-              still works.
+              <I18nText id="Email delivery is not configured on this server. Your in-app inbox still works." />
             </HelpText>
           )}
         </section>
@@ -1324,10 +1410,11 @@ function NotificationForm({
       <div className="settings-form-actions">
         <span>
           {dirty
-            ? "Unsaved notification changes"
-            : "Notification preferences are up to date"}
+            ? uiText("Unsaved notification changes")
+            : uiText("Notification preferences are up to date")}
         </span>
         <Button
+          data-dialog-cancel
           type="button"
           className="button secondary"
           disabled={!dirty || action.busy}
@@ -1337,20 +1424,21 @@ function NotificationForm({
             action.setError("");
           }}
         >
-          Cancel changes
+          <I18nText id="Cancel changes" />
         </Button>
         <Button
           className="button primary"
           disabled={action.busy || !dirty}
           pending={!!action.busy}
         >
-          {"Save preferences"}
+          {uiText("Save preferences")}
         </Button>
       </div>
     </form>
   );
 }
 export function StorageSettings({ scopeId }: { scopeId?: string } = {}) {
+  useInterfaceLocale();
   const { spaces, revision, navigate, open, refresh } = useWorkspace(),
     { params } = useLocation(),
     spaceId = scopeId ?? params.get("space") ?? spaces[0]?.id,
@@ -1365,7 +1453,7 @@ export function StorageSettings({ scopeId }: { scopeId?: string } = {}) {
       <div className="ws-list-toolbar">
         {!scopeId && (
           <label>
-            Space
+            <I18nText id="Space" />
             <NativeSelect
               value={spaceId ?? ""}
               onChange={(event) =>
@@ -1386,7 +1474,9 @@ export function StorageSettings({ scopeId }: { scopeId?: string } = {}) {
             disabled={storage.space.effective_status !== "active"}
             title={
               storage.space.effective_status !== "active"
-                ? "Restore or unarchive this workspace before changing its storage limit."
+                ? uiText(
+                    "Restore or unarchive this workspace before changing its storage limit.",
+                  )
                 : undefined
             }
             onClick={() => {
@@ -1400,7 +1490,7 @@ export function StorageSettings({ scopeId }: { scopeId?: string } = {}) {
               setQuotaDialog(true);
             }}
           >
-            Set storage limit
+            <I18nText id="Set storage limit" />
           </Button>
         )}
       </div>
@@ -1418,59 +1508,74 @@ export function StorageSettings({ scopeId }: { scopeId?: string } = {}) {
                 <HardDrive size={24} />
                 <h2>
                   {bytes(storage.totals.bytes)}{" "}
-                  <small>stored in this space</small>
+                  <small>
+                    <I18nText id="stored in this space" />
+                  </small>
                 </h2>
                 <p>
                   {storage.quotaBytes === null
-                    ? "No administrative quota"
+                    ? uiText("No administrative quota")
                     : `${bytes(storage.quotaBytes)} ${storage.space.kind === "personal" ? "personal" : "shared group"} quota`}
                 </p>
                 <p className="ws-small muted">
-                  Project and team libraries share their group quota. Space
-                  totals below cover only the selected space.
+                  <I18nText id="Project and team libraries share their group quota. Space totals below cover only the selected space." />
                 </p>
               </div>
               <dl className="ws-facts">
                 <div>
-                  <dt>Current files</dt>
+                  <dt>
+                    <I18nText id="Current files" />
+                  </dt>
                   <dd>{bytes(storage.totals.originals)}</dd>
                 </div>
                 <div>
-                  <dt>Previous versions</dt>
+                  <dt>
+                    <I18nText id="Previous versions" />
+                  </dt>
                   <dd>{bytes(storage.totals.versions)}</dd>
                 </div>
                 <div>
-                  <dt>Image working drafts</dt>
+                  <dt>
+                    <I18nText id="Image working drafts" />
+                  </dt>
                   <dd>{bytes(storage.totals.drafts ?? 0)}</dd>
                 </div>
                 <div>
-                  <dt>Generated previews</dt>
+                  <dt>
+                    <I18nText id="Generated previews" />
+                  </dt>
                   <dd>{bytes(storage.totals.previews ?? 0)}</dd>
                 </div>
                 <div>
-                  <dt>Website releases</dt>
+                  <dt>
+                    <I18nText id="Website releases" />
+                  </dt>
                   <dd>{bytes(storage.totals.publications ?? 0)}</dd>
                 </div>
                 <div>
-                  <dt>In trash</dt>
+                  <dt>
+                    <I18nText id="In trash" />
+                  </dt>
                   <dd>{bytes(storage.totals.trash)}</dd>
                 </div>
                 <div>
-                  <dt>Uploads reserved</dt>
+                  <dt>
+                    <I18nText id="Uploads reserved" />
+                  </dt>
                   <dd>{bytes(storage.reserved)}</dd>
                 </div>
               </dl>
             </div>
             <HelpText>
-              Completed files and versions are retained until explicit manual
-              cleanup. Existing pinned links remain tied to their immutable
-              version. Maximum upload: 1 GB per file.
+              <I18nText id="Completed files and versions are retained until explicit manual cleanup. Existing pinned links remain tied to their immutable version. Maximum upload: 1 GB per file." />
             </HelpText>
             <div className="ws-section-heading">
-              <h2>Largest current files</h2>
+              <h2>
+                <I18nText id="Largest current files" />
+              </h2>
               <WorkspaceLink to={`/trash?space=${spaceId}`}>
                 <Trash2 size={14} />
-                Review trash
+                <I18nText id="Review trash" />
               </WorkspaceLink>
             </div>
             {storage.files.length ? (
@@ -1483,8 +1588,8 @@ export function StorageSettings({ scopeId }: { scopeId?: string } = {}) {
                     <span>
                       <strong>{file.name}</strong>
                       <small>
-                        {file.versions} versions
-                        {file.deleted_at ? " · In trash" : ""}
+                        {file.versions} <I18nText id="versions" />
+                        {file.deleted_at ? uiText(" · In trash") : ""}
                       </small>
                     </span>
                     <span>{bytes(file.bytes)}</span>
@@ -1496,12 +1601,14 @@ export function StorageSettings({ scopeId }: { scopeId?: string } = {}) {
                 icon={HardDrive}
                 title={
                   !storage.space.role
-                    ? "File contents are private"
-                    : "No stored files"
+                    ? uiText("File contents are private")
+                    : uiText("No stored files")
                 }
               >
                 {!storage.space.role
-                  ? "Your management role includes storage totals, but not access to this project's files. Ask a project lead for content access."
+                  ? uiText(
+                      "Your management role includes storage totals, but not access to this project's files. Ask a project lead for content access.",
+                    )
                   : storage.space.effective_status !== "active"
                     ? "Restore or unarchive this workspace to add files. Existing recovery items remain available in Trash."
                     : "Upload papers, figures, datasets, and supplementary materials in Explorer."}
@@ -1512,8 +1619,10 @@ export function StorageSettings({ scopeId }: { scopeId?: string } = {}) {
       )}
       {quotaDialog && (
         <Dialog
-          title="Storage limit"
-          subtitle="A limit prevents new uploads. It never deletes existing files."
+          title={uiText("Storage limit")}
+          subtitle={uiText(
+            "A limit prevents new uploads. It never deletes existing files.",
+          )}
           onClose={() => !action.busy && setQuotaDialog(false)}
         >
           <form
@@ -1535,7 +1644,7 @@ export function StorageSettings({ scopeId }: { scopeId?: string } = {}) {
             }}
           >
             <label>
-              Limit in GB (leave blank for no quota)
+              <I18nText id="Limit in GB (leave blank for no quota)" />
               <TextInput
                 type="number"
                 min={0}
@@ -1547,15 +1656,16 @@ export function StorageSettings({ scopeId }: { scopeId?: string } = {}) {
             <ErrorNotice message={action.error} />
             <div className="dialog-footer">
               <Button
+                data-dialog-cancel
                 type="button"
                 className="button secondary"
                 onClick={() => setQuotaDialog(false)}
                 disabled={action.busy}
               >
-                Cancel
+                <I18nText id="Cancel" />
               </Button>
               <Button className="button primary" disabled={action.busy}>
-                Save limit
+                <I18nText id="Save limit" />
               </Button>
             </div>
           </form>

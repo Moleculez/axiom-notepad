@@ -1,3 +1,4 @@
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
 import {
   Button,
   IconButton,
@@ -87,6 +88,7 @@ function Viewer({
   request: VisualRequest;
   close: () => void;
 }) {
+  useInterfaceLocale();
   const [index, setIndex] = useState(request.index),
     [media, setMedia] = useState<VisualMedia | null>(null),
     [error, setError] = useState(""),
@@ -176,8 +178,8 @@ function Viewer({
       title={item.name}
       subtitle={
         item.kind === "mermaid"
-          ? "Mermaid diagram · local rendered preview"
-          : "Image viewer · device-only file"
+          ? uiText("Mermaid diagram · local rendered preview")
+          : uiText("Image viewer · device-only file")
       }
       size="visual"
       surfaceRef={fullscreen.surface}
@@ -192,7 +194,7 @@ function Viewer({
       <div className="demo-visual-toolbar">
         <IconButton
           className="icon-button"
-          aria-label="Previous image"
+          aria-label={uiText("Previous image")}
           disabled={index === 0}
           onClick={() => setIndex((i) => i - 1)}
         >
@@ -200,7 +202,7 @@ function Viewer({
         </IconButton>
         <IconButton
           className="icon-button"
-          aria-label="Next image"
+          aria-label={uiText("Next image")}
           disabled={index >= request.items.length - 1}
           onClick={() => setIndex((i) => i + 1)}
         >
@@ -209,7 +211,7 @@ function Viewer({
         <span className="tool-spacer" />
         <IconButton
           className="icon-button"
-          aria-label="Zoom out"
+          aria-label={uiText("Zoom out")}
           onClick={() =>
             setTransform(zoomVisual(transform, transform.zoom / 1.2, [0, 0]))
           }
@@ -219,7 +221,7 @@ function Viewer({
         <span>{Math.round(transform.zoom * 100)}%</span>
         <IconButton
           className="icon-button"
-          aria-label="Zoom in"
+          aria-label={uiText("Zoom in")}
           onClick={() =>
             setTransform(zoomVisual(transform, transform.zoom * 1.2, [0, 0]))
           }
@@ -241,11 +243,11 @@ function Viewer({
             })
           }
         >
-          Fit
+          <I18nText id="Fit" />
         </Button>
         <IconButton
           className="icon-button"
-          aria-label="Rotate image"
+          aria-label={uiText("Rotate image")}
           onClick={() =>
             setTransform((t) => ({ ...t, rotation: (t.rotation + 90) % 360 }))
           }
@@ -254,7 +256,7 @@ function Viewer({
         </IconButton>
         <IconButton
           className="icon-button"
-          aria-label="Image information"
+          aria-label={uiText("Image information")}
           aria-pressed={information}
           onClick={() => setInformation((old) => !old)}
         >
@@ -263,7 +265,9 @@ function Viewer({
         <IconButton
           className="icon-button"
           aria-label={
-            fullscreen.active ? "Exit fullscreen" : "Fullscreen viewer"
+            fullscreen.active
+              ? uiText("Exit fullscreen")
+              : uiText("Fullscreen viewer")
           }
           onClick={() => void fullscreen.toggle()}
         >
@@ -297,20 +301,31 @@ function Viewer({
               }
             />
           ) : (
-            <p>Opening visual preview…</p>
+            <p>
+              <I18nText id="Opening visual preview…" />
+            </p>
           )}
         </div>
         {information && (
           <aside className="demo-visual-info">
-            <h3>Information</h3>
+            <h3>
+              <I18nText id="Information" />
+            </h3>
             <dl>
-              <dt>Dimensions</dt>
+              <dt>
+                <I18nText id="Dimensions" />
+              </dt>
               <dd>{media ? `${media.width} × ${media.height}` : "—"}</dd>
-              <dt>Size</dt>
+              <dt>
+                <I18nText id="Size" />
+              </dt>
               <dd>
-                {((media?.blob?.size ?? item.bytes ?? 0) / 1024).toFixed(1)} KB
+                {((media?.blob?.size ?? item.bytes ?? 0) / 1024).toFixed(1)}{" "}
+                <I18nText id="KB" />
               </dd>
-              <dt>Type</dt>
+              <dt>
+                <I18nText id="Type" />
+              </dt>
               <dd>{media?.blob?.type || item.mime || item.kind}</dd>
               {fields.slice(0, 30).map((field) => (
                 <div key={`${field.group}:${field.name}`}>
@@ -319,22 +334,40 @@ function Viewer({
                 </div>
               ))}
             </dl>
-            {!fields.length && <p>No additional EXIF metadata.</p>}
+            {!fields.length && (
+              <p>
+                <I18nText id="No additional EXIF metadata." />
+              </p>
+            )}
           </aside>
         )}
       </div>
       <DialogFooter>
         <span>{media?.notice || "Drag to pan · scroll to zoom"}</span>
         <NativeSelect
-          aria-label="Visual export format"
+          aria-label={uiText("Visual export format")}
           value={format}
           onChange={(e) => setFormat(e.target.value)}
         >
-          <option value="png">PNG</option>
-          <option value="jpeg">JPEG</option>
-          <option value="webp">WebP</option>
-          {media?.svg && <option value="svg">SVG</option>}
-          {item.kind === "image" && <option value="original">Original</option>}
+          <option value="png">
+            <I18nText id="PNG" />
+          </option>
+          <option value="jpeg">
+            <I18nText id="JPEG" />
+          </option>
+          <option value="webp">
+            <I18nText id="WebP" />
+          </option>
+          {media?.svg && (
+            <option value="svg">
+              <I18nText id="SVG" />
+            </option>
+          )}
+          {item.kind === "image" && (
+            <option value="original">
+              <I18nText id="Original" />
+            </option>
+          )}
         </NativeSelect>
         <Button
           className="button secondary"
@@ -342,7 +375,7 @@ function Viewer({
           onClick={() => void download()}
         >
           <Download size={15} />
-          Download
+          <I18nText id="Download" />
         </Button>
       </DialogFooter>
     </Dialog>

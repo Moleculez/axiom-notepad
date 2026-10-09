@@ -1,7 +1,11 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { documentStatistics, type ParsedDocument } from "@axiom/markdown";
+import { formatNumber } from "@axiom/i18n";
+import { currentLocale, t } from "@axiom/i18n/client";
 
 export default function DocumentStatistics({
   source,
@@ -10,6 +14,7 @@ export default function DocumentStatistics({
   source: string;
   parsed: ParsedDocument;
 }) {
+  useInterfaceLocale();
   const [open, setOpen] = useState(false),
     [selection, setSelection] = useState("");
   const host = useRef<HTMLDivElement>(null);
@@ -102,7 +107,7 @@ export default function DocumentStatistics({
       document.removeEventListener("scroll", place, true);
     };
   }, [open, counts]);
-  const number = (value: number) => value.toLocaleString();
+  const number = (value: number) => formatNumber(currentLocale(), value);
   return (
     <div
       className="document-statistics"
@@ -118,14 +123,18 @@ export default function DocumentStatistics({
         type="button"
         aria-expanded={open}
         onClick={() => setOpen(!open)}
-        title="Document statistics"
+        title={uiText("Document statistics")}
       >
-        {selected ? `${number(selected.words)} selected · ` : ""}
+        {selected
+          ? `${t("{count, number} selected", { count: selected.words })} · `
+          : ""}
         {statistics
-          ? `${number(statistics.words)} words`
+          ? t("{count, plural, one {# word} other {# words}}", {
+              count: statistics.words,
+            })
           : failed
-            ? "Statistics unavailable"
-            : "Counting…"}
+            ? uiText("Statistics unavailable")
+            : uiText("Counting…")}
       </button>
       {open &&
         statistics &&
@@ -133,9 +142,11 @@ export default function DocumentStatistics({
           <section
             ref={panel}
             className="document-statistics-popover"
-            aria-label="Document statistics"
+            aria-label={uiText("Document statistics")}
           >
-            <h3>Document statistics</h3>
+            <h3>
+              <I18nText id="Document statistics" />
+            </h3>
             <dl>
               {[
                 ["Words", number(statistics.words)],
@@ -144,7 +155,9 @@ export default function DocumentStatistics({
                 [
                   "Reading time",
                   statistics.words
-                    ? `About ${statistics.readingMinutes} min`
+                    ? t("About {minutes, number} min", {
+                        minutes: statistics.readingMinutes,
+                      })
                     : "—",
                 ],
                 ["Equations", number(statistics.equations)],
@@ -152,26 +165,29 @@ export default function DocumentStatistics({
                 ["Tables", number(statistics.tables)],
                 [
                   "Tasks complete",
-                  `${statistics.completedTasks} / ${statistics.tasks}`,
+                  `${number(statistics.completedTasks)} / ${number(statistics.tasks)}`,
                 ],
                 ["Source lines", number(statistics.lines)],
               ].map(([label, value]) => (
                 <div key={label}>
-                  <dt>{label}</dt>
+                  <dt>{uiText(label)}</dt>
                   <dd>{value}</dd>
                 </div>
               ))}
             </dl>
             {selected && (
               <p>
-                Selection: {number(selected.words)} words ·{" "}
-                {number(selected.sourceCharacters)} source characters
+                <I18nText
+                  id="Selection: {words, number} words · {characters, number} source characters"
+                  values={{
+                    words: selected.words,
+                    characters: selected.sourceCharacters,
+                  }}
+                />
               </p>
             )}
             <p className="muted">
-              Words use language-aware segmentation. Markdown markers, metadata,
-              code blocks and equations are excluded. Reading time uses 200
-              words per minute; technical material may take longer.
+              <I18nText id="Words use language-aware segmentation. Markdown markers, metadata, code blocks and equations are excluded. Reading time uses 200 words per minute; technical material may take longer." />
             </p>
           </section>,
           document.body,

@@ -1,4 +1,5 @@
 import { claimEditorOverlay } from "./editor-popover";
+import { bindText, bindAttribute, boundMessage } from "@axiom/i18n/dom";
 import { actionIcon, appendActionLabel } from "./icons/actions";
 import { compactMenu, type ContextAction, type MenuEntry } from "./menu-model";
 export type { ContextAction, MenuEntry } from "./menu-model";
@@ -76,9 +77,11 @@ export function openContextMenu({
       py = p.anchor.y;
     if (p.trigger) {
       const r = p.trigger.getBoundingClientRect();
-      px = r.right + 4;
+      const rtl = document.documentElement.dir === "rtl";
+      px = rtl ? r.left - box.width - 4 : r.right + 4;
       py = r.top - 5;
-      if (px + box.width > width - 12) px = r.left - box.width - 4;
+      if (rtl ? px < 12 : px + box.width > width - 12)
+        px = rtl ? r.right + 4 : r.left - box.width - 4;
     }
     p.element.style.left =
       Math.max(12, Math.min(px, width - box.width - 12)) + "px";
@@ -94,7 +97,14 @@ export function openContextMenu({
     const menu = document.createElement("div");
     menu.className = "editor-context-menu";
     menu.setAttribute("role", "menu");
-    menu.setAttribute("aria-label", trigger?.textContent || label);
+    const triggerLabel = trigger?.querySelector(".action-label");
+    bindAttribute(
+      menu,
+      "aria-label",
+      triggerLabel
+        ? boundMessage(triggerLabel, null) || trigger?.textContent || label
+        : label,
+    );
     menu.dataset.depth = String(depth);
     panels.push({ element: menu, trigger, anchor: { x, y } });
     trigger?.setAttribute("aria-expanded", "true");
@@ -125,10 +135,12 @@ export function openContextMenu({
       if (item.id) button.dataset.action = item.id;
       if (item.tone) button.dataset.tone = item.tone;
       if (item.disabled && item.disabledReason) {
-        button.title = item.disabledReason;
-        button.setAttribute("aria-description", item.disabledReason);
+        bindAttribute(button, "title", item.disabledReason);
+        bindAttribute(button, "aria-description", item.disabledReason);
       }
       appendActionLabel(button, item.icon, item.label);
+      if (!item.contentLabel)
+        bindText(button.querySelector(".action-label")!, item.label);
       if (
         item.shortcut ||
         item.checked !== undefined ||
@@ -164,7 +176,13 @@ export function openContextMenu({
         else hover = setTimeout(() => removeAfter(depth + 1), 220);
       });
       button.addEventListener("keydown", (e) => {
-        if (e.key === "ArrowRight" && item.kind === "submenu") {
+        if (
+          e.key ===
+            (document.documentElement.dir === "rtl"
+              ? "ArrowLeft"
+              : "ArrowRight") &&
+          item.kind === "submenu"
+        ) {
           e.preventDefault();
           e.stopPropagation();
           child(true);
@@ -181,7 +199,13 @@ export function openContextMenu({
     }
     menu.addEventListener("pointerenter", () => clearTimeout(hover));
     menu.addEventListener("keydown", (event) => {
-      if (event.key === "ArrowLeft" && depth) {
+      if (
+        event.key ===
+          (document.documentElement.dir === "rtl"
+            ? "ArrowRight"
+            : "ArrowLeft") &&
+        depth
+      ) {
         event.preventDefault();
         event.stopPropagation();
         removeAfter(depth);

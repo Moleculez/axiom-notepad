@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   pdfPageLayout,
@@ -80,6 +82,7 @@ type Props = {
   onAnnotation: (annotation: Annotation) => void;
 };
 export default function PdfPages(props: Props) {
+  useInterfaceLocale();
   const root = useRef<HTMLDivElement>(null),
     current = useRef(props),
     layoutFrame = useRef(0),
@@ -302,7 +305,7 @@ export default function PdfPages(props: Props) {
       ref={root}
       className={`pdf-canvas pdf-pages pdf-pages-${props.view}`}
       tabIndex={0}
-      aria-label="PDF page viewport"
+      aria-label={uiText("PDF page viewport")}
       onWheelCapture={cancelJump}
       onPointerDownCapture={(e) => {
         cancelJump();
@@ -443,6 +446,7 @@ function Page(
     onNavigate: (page: number) => void;
   },
 ) {
+  useInterfaceLocale();
   const root = useRef<HTMLDivElement>(null),
     layer = useRef<HTMLDivElement>(null),
     image = useRef<HTMLCanvasElement>(null);
@@ -757,7 +761,7 @@ function Page(
         />
         {!rendered && !error && (
           <span className="pdf-page-placeholder">
-            Page {props.labels[props.page - 1] ?? props.page}
+            <I18nText id="Page" /> {props.labels[props.page - 1] ?? props.page}
           </span>
         )}
         {error && (
@@ -817,7 +821,7 @@ function Page(
                 key={link.id}
                 className="pdf-page-link"
                 style={style}
-                aria-label="Go to linked section"
+                aria-label={uiText("Go to linked section")}
                 onClick={() =>
                   void jumpLink(link.dest).catch(() =>
                     setError("This document link is unavailable."),

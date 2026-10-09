@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { Button, Checkbox } from "../ui/controls";
 import { useEffect, useRef, useState } from "react";
 import type { PDFDocumentProxy } from "pdfjs-dist";
@@ -24,6 +26,7 @@ export default function PdfAnnotationTransfer({
   onImport: (items: AnnotationData[], signal: AbortSignal) => Promise<void>;
   onClose: () => void;
 }) {
+  useInterfaceLocale();
   const [candidates, setCandidates] = useState<AnnotationData[]>([]),
     [selected, setSelected] = useState(new Set<number>()),
     [status, setStatus] = useState(""),
@@ -148,15 +151,21 @@ export default function PdfAnnotationTransfer({
   return (
     <Dialog
       title={
-        mode === "import" ? "Import PDF annotations" : "Export annotated PDF"
+        mode === "import"
+          ? uiText("Import PDF annotations")
+          : uiText("Export annotated PDF")
       }
       size="wide"
       onClose={onClose}
     >
       <p className="muted">
         {mode === "import"
-          ? "Preview embedded highlights, underlines, strikeouts, rectangles and notes. Imports are private copies owned by you; the original author is retained as a label."
-          : "Download a new PDF with portable annotations. Original PDF annotations remain embedded. Readers of the exported file can see everything you include."}
+          ? uiText(
+              "Preview embedded highlights, underlines, strikeouts, rectangles and notes. Imports are private copies owned by you; the original author is retained as a label.",
+            )
+          : uiText(
+              "Download a new PDF with portable annotations. Original PDF annotations remain embedded. Readers of the exported file can see everything you include.",
+            )}
       </p>
       {mode === "export" && (
         <label>
@@ -165,14 +174,13 @@ export default function PdfAnnotationTransfer({
             onChange={(e) => setIncludePrivate(e.target.checked)}
             disabled={busy}
           />{" "}
-          Include my private annotations in this downloaded copy
+          <I18nText id="Include my private annotations in this downloaded copy" />
         </label>
       )}
       {mode === "export" && (
         <p>
-          {chosen.length} of {annotations.length} filtered annotations included.
-          Source PDF comments may already contain private material; review
-          before sharing.
+          {chosen.length} <I18nText id="of" /> {annotations.length}{" "}
+          <I18nText id="filtered annotations included. Source PDF comments may already contain private material; review before sharing." />
         </p>
       )}
       {error && (
@@ -199,7 +207,7 @@ export default function PdfAnnotationTransfer({
               />
               <span>
                 <strong>
-                  Page {data.page} · {data.kind}
+                  <I18nText id="Page" /> {data.page} · {data.kind}
                 </strong>
                 <small>{data.imported?.author || "Unspecified author"}</small>
                 <span>{data.body || "Text markup"}</span>
@@ -210,7 +218,7 @@ export default function PdfAnnotationTransfer({
       )}
       <DialogFooter>
         <Button className="button secondary" onClick={onClose}>
-          {busy ? "Cancel" : "Close"}
+          {busy ? uiText("Cancel") : uiText("Close")}
         </Button>
         {mode === "export" ? (
           <Button
@@ -219,7 +227,7 @@ export default function PdfAnnotationTransfer({
             onClick={() => void exportCopy()}
             pending={!!busy}
           >
-            {"Download annotated copy"}
+            {uiText("Download annotated copy")}
           </Button>
         ) : !prepared ? (
           <Button
@@ -228,7 +236,7 @@ export default function PdfAnnotationTransfer({
             onClick={() => void inspect()}
             pending={!!busy}
           >
-            {"Inspect embedded annotations"}
+            {uiText("Inspect embedded annotations")}
           </Button>
         ) : (
           <Button
@@ -250,7 +258,7 @@ export default function PdfAnnotationTransfer({
               }
             }}
           >
-            Import {selected.size} privately
+            <I18nText id="Import" /> {selected.size} <I18nText id="privately" />
           </Button>
         )}
       </DialogFooter>

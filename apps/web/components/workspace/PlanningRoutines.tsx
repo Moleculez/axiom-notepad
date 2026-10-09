@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import { Archive, Clock, Pause, Play, Plus } from "lucide-react";
@@ -55,6 +57,7 @@ export default function PlanningRoutines({
   readOnly: boolean;
   onClose: () => void;
 }) {
+  useInterfaceLocale();
   const { revision, refresh } = useWorkspace(),
     data = useData<Routine[]>(`spaces/${space.id}/recurrences`, revision),
     people = useData<Array<{ id: string; name: string }>>(
@@ -69,8 +72,10 @@ export default function PlanningRoutines({
   return (
     <>
       <Dialog
-        title="Recurring tasks"
-        subtitle="Future template changes never rewrite generated tasks. Occurrences remain idempotent."
+        title={uiText("Recurring tasks")}
+        subtitle={uiText(
+          "Future template changes never rewrite generated tasks. Occurrences remain idempotent.",
+        )}
         onClose={onClose}
       >
         <ErrorNotice message={data.error || action.error} />
@@ -80,7 +85,7 @@ export default function PlanningRoutines({
               checked={archived}
               onChange={(e) => setArchived(e.target.checked)}
             />
-            Archived routines
+            <I18nText id="Archived routines" />
           </label>
           <Button
             variant="primary"
@@ -88,14 +93,14 @@ export default function PlanningRoutines({
             onClick={() => setEditing(null)}
           >
             <Plus size={15} />
-            New routine
+            <I18nText id="New routine" />
           </Button>
         </ActionRow>
         {data.loading && !data.data ? (
           <Loading />
         ) : !rows.length ? (
-          <Empty title="No recurring tasks">
-            Schedule routine reviews, backups or experiments.
+          <Empty title={uiText("No recurring tasks")}>
+            <I18nText id="Schedule routine reviews, backups or experiments." />
           </Empty>
         ) : (
           <div className="planning-routine-list">
@@ -104,8 +109,13 @@ export default function PlanningRoutines({
                 <button onClick={() => setEditing(r)}>
                   <strong>{r.template.title}</strong>
                   <small>
-                    Every {r.rule.interval} {r.rule.frequency} ·{" "}
-                    {r.archived ? "archived" : r.enabled ? "active" : "paused"}
+                    <I18nText id="Every" /> {r.rule.interval} {r.rule.frequency}{" "}
+                    ·{" "}
+                    {r.archived
+                      ? uiText("archived")
+                      : r.enabled
+                        ? "active"
+                        : "paused"}
                   </small>
                 </button>
                 <ActionRow>
@@ -115,7 +125,7 @@ export default function PlanningRoutines({
                     onClick={() => setHistory(r.id)}
                   >
                     <Clock size={14} />
-                    History
+                    <I18nText id="History" />
                   </Button>
                   {!r.archived && (
                     <Button
@@ -134,7 +144,7 @@ export default function PlanningRoutines({
                       }
                     >
                       {r.enabled ? <Pause size={14} /> : <Play size={14} />}{" "}
-                      {r.enabled ? "Pause" : "Resume"}
+                      {r.enabled ? uiText("Pause") : uiText("Resume")}
                     </Button>
                   )}
                   <Button
@@ -157,7 +167,7 @@ export default function PlanningRoutines({
                     }
                   >
                     <Archive size={14} />
-                    {r.archived ? "Reopen paused" : "Archive"}
+                    {r.archived ? uiText("Reopen paused") : uiText("Archive")}
                   </Button>
                 </ActionRow>
               </article>
@@ -183,7 +193,7 @@ export default function PlanningRoutines({
         <PlanningHistoryDialog
           spaceId={space.id}
           id={history}
-          title="Routine history"
+          title={uiText("Routine history")}
           onClose={() => setHistory(null)}
           onNavigate={onClose}
           withOccurrences
@@ -207,6 +217,7 @@ function RoutineEditor({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  useInterfaceLocale();
   const today = new Intl.DateTimeFormat("sv-SE", {
       timeZone: space.timezone,
       year: "numeric",
@@ -265,7 +276,11 @@ function RoutineEditor({
       closePlanningDraft(dirty, action.busy, onClose, "Unsaved routine");
   return (
     <Dialog
-      title={routine ? "Edit future occurrences" : "New recurring task"}
+      title={
+        routine
+          ? uiText("Edit future occurrences")
+          : uiText("New recurring task")
+      }
       onClose={close}
     >
       <form
@@ -286,13 +301,13 @@ function RoutineEditor({
         }}
       >
         <DialogBody>
-          <DraftGuard dirty={dirty} title="Unsaved routine" />
+          <DraftGuard dirty={dirty} title={uiText("Unsaved routine")} />
           <ErrorNotice message={action.error} />
           <fieldset
             disabled={readOnly || action.busy}
             className="planning-suite-form"
           >
-            <Field label="Task title">
+            <Field label={uiText("Task title")}>
               <TextInput
                 autoFocus
                 required
@@ -302,7 +317,7 @@ function RoutineEditor({
               />
             </Field>
             <div className="planning-field-grid">
-              <Field label="Frequency">
+              <Field label={uiText("Frequency")}>
                 <NativeSelect
                   value={rule.frequency}
                   onChange={(e) =>
@@ -317,7 +332,7 @@ function RoutineEditor({
                   ))}
                 </NativeSelect>
               </Field>
-              <Field label="Interval">
+              <Field label={uiText("Interval")}>
                 <TextInput
                   required
                   type="number"
@@ -330,7 +345,7 @@ function RoutineEditor({
                   }
                 />
               </Field>
-              <Field label="Start">
+              <Field label={uiText("Start")}>
                 <TextInput
                   required
                   type="date"
@@ -340,7 +355,7 @@ function RoutineEditor({
                   }
                 />
               </Field>
-              <Field label="Until (optional)">
+              <Field label={uiText("Until (optional)")}>
                 <TextInput
                   type="date"
                   min={rule.start}
@@ -356,7 +371,9 @@ function RoutineEditor({
             </div>
             {rule.frequency === "weekly" && (
               <fieldset className="planning-weekdays">
-                <legend>Weekdays</legend>
+                <legend>
+                  <I18nText id="Weekdays" />
+                </legend>
                 {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(
                   (label, i) => (
                     <label key={label}>
@@ -377,27 +394,33 @@ function RoutineEditor({
                 )}
               </fieldset>
             )}
-            {!validDays && <HelpText>Choose at least one weekday.</HelpText>}
+            {!validDays && (
+              <HelpText>
+                <I18nText id="Choose at least one weekday." />
+              </HelpText>
+            )}
             <HelpText>
               {rule.frequency === "monthly"
-                ? "Monthly occurrences use the start date’s day, clamped to the last day of shorter months. "
+                ? uiText(
+                    "Monthly occurrences use the start date’s day, clamped to the last day of shorter months. ",
+                  )
                 : ""}
-              Next occurrences in {space.timezone}:{" "}
+              <I18nText id="Next occurrences in" /> {space.timezone}:{" "}
               {dates.length
                 ? dates.join(" · ")
-                : "No future occurrences in this rule."}{" "}
-              Dates already processed are never regenerated.
+                : uiText("No future occurrences in this rule.")}{" "}
+              <I18nText id="Dates already processed are never regenerated." />
             </HelpText>
             <div className="planning-field-grid">
-              <Field label="Assignee">
+              <Field label={uiText("Assignee")}>
                 <PersonPicker
-                  label="Recurring task assignee"
+                  label={uiText("Recurring task assignee")}
                   people={people}
                   value={template.assigneeId ?? ""}
                   onChange={(v) => patch({ assigneeId: v || null })}
                 />
               </Field>
-              <Field label="Priority">
+              <Field label={uiText("Priority")}>
                 <NativeSelect
                   value={template.priority}
                   onChange={(e) =>
@@ -411,7 +434,7 @@ function RoutineEditor({
                   ))}
                 </NativeSelect>
               </Field>
-              <Field label="Effort (hours)">
+              <Field label={uiText("Effort (hours)")}>
                 <TextInput
                   type="number"
                   min={0}
@@ -426,7 +449,7 @@ function RoutineEditor({
                   }
                 />
               </Field>
-              <Field label="Labels">
+              <Field label={uiText("Labels")}>
                 <TextInput
                   value={labelsText}
                   onChange={(e) => {
@@ -441,20 +464,20 @@ function RoutineEditor({
                 />
               </Field>
             </div>
-            <Field label="Milestone">
+            <Field label={uiText("Milestone")}>
               <PlanningEntityPicker
                 spaceId={space.id}
                 kind="milestone"
-                label="Recurring task milestone"
+                label={uiText("Recurring task milestone")}
                 value={template.milestoneId ?? ""}
                 onChange={(v) => patch({ milestoneId: String(v) || null })}
               />
             </Field>
-            <Field label="Evidence">
+            <Field label={uiText("Evidence")}>
               <PlanningEntityPicker
                 spaceId={space.id}
                 kind="file"
-                label="Recurring task evidence"
+                label={uiText("Recurring task evidence")}
                 multiple
                 value={template.resourceIds}
                 onChange={(v) => patch({ resourceIds: v as string[] })}
@@ -467,14 +490,18 @@ function RoutineEditor({
             />
           </fieldset>
           <HelpText>
-            Generated tasks are due on the occurrence date. Parent and
-            dependency links are intentionally not copied.
+            <I18nText id="Generated tasks are due on the occurrence date. Parent and dependency links are intentionally not copied." />
           </HelpText>
         </DialogBody>
         <DialogFooter>
           <ActionRow>
-            <Button type="button" disabled={action.busy} onClick={close}>
-              Cancel
+            <Button
+              data-dialog-cancel
+              type="button"
+              disabled={action.busy}
+              onClick={close}
+            >
+              <I18nText id="Cancel" />
             </Button>
             <Button
               variant="primary"
@@ -488,7 +515,7 @@ function RoutineEditor({
                 !template.title.trim()
               }
             >
-              Save routine
+              <I18nText id="Save routine" />
             </Button>
           </ActionRow>
         </DialogFooter>

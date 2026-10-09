@@ -1,3 +1,4 @@
+import { bindAttribute, bindText } from "@axiom/i18n/dom";
 import { commandById, type EditorCommandId } from "@axiom/shared/editor";
 import { openEditorPopover } from "../editor-popover";
 import type { ContextAction } from "../context-menu";
@@ -96,7 +97,7 @@ export function tablePanel(options: {
   const tabs = document.createElement("div");
   tabs.className = "editor-panel-tabs";
   tabs.role = "tablist";
-  tabs.setAttribute("aria-label", "Table action scope");
+  bindAttribute(tabs, "aria-label", "Table action scope");
   const body = document.createElement("div");
   body.className = "editor-panel-body";
   body.id = "table-panel-" + crypto.randomUUID();
@@ -111,7 +112,7 @@ export function tablePanel(options: {
     grid.className = "editor-panel-icons";
     if (ids === alignments) {
       grid.role = "group";
-      grid.setAttribute("aria-label", "Column alignment");
+      bindAttribute(grid, "aria-label", "Column alignment");
     }
     for (const id of ids) {
       const button = iconButton(
@@ -135,7 +136,7 @@ export function tablePanel(options: {
     buttons.clear();
     body.replaceChildren();
     for (const button of tabs.querySelectorAll<HTMLButtonElement>("button")) {
-      const selected = button.textContent === tab;
+      const selected = button.dataset.scope === tab;
       button.setAttribute("aria-selected", String(selected));
       button.tabIndex = selected ? 0 : -1;
       if (selected) body.setAttribute("aria-labelledby", button.id);
@@ -146,7 +147,7 @@ export function tablePanel(options: {
       if (tab === "Column") {
         const label = document.createElement("div");
         label.className = "editor-panel-caption";
-        label.textContent = "Alignment";
+        bindText(label, "Alignment");
         body.append(label);
         add(alignments, body);
       }
@@ -155,11 +156,16 @@ export function tablePanel(options: {
   };
   const refresh = () => {
     const state = options.state();
-    title.textContent = !state
-      ? "Table changed · reopen to continue"
-      : state.cell
-        ? `${state.row === 0 ? "Header" : "Row " + state.row} · Column ${state.column + 1}`
-        : "Choose a cell for row and column actions";
+    if (!state) bindText(title, "Table changed · reopen to continue");
+    else if (state.cell)
+      bindText(
+        title,
+        state.row === 0
+          ? "Header · Column {column, number}"
+          : "Row {row, number} · Column {column, number}",
+        { row: state.row, column: state.column + 1 },
+      );
+    else bindText(title, "Choose a cell for row and column actions");
     for (const [id, button] of buttons) {
       disableIcon(button, tableActionReason(id, state));
       if (id.startsWith("align"))
@@ -181,7 +187,8 @@ export function tablePanel(options: {
     button.type = "button";
     button.role = "tab";
     button.id = body.id + "-" + name;
-    button.textContent = name;
+    button.dataset.scope = name;
+    bindText(button, name);
     button.setAttribute("aria-controls", body.id);
     button.addEventListener("click", () => {
       tab = name;
@@ -193,12 +200,14 @@ export function tablePanel(options: {
     if (!["ArrowRight", "ArrowLeft", "Home", "End"].includes(event.key)) return;
     event.preventDefault();
     const names = Object.keys(groups);
+    const forward =
+      getComputedStyle(tabs).direction === "rtl" ? "ArrowLeft" : "ArrowRight";
     const index =
       event.key === "Home"
         ? 0
         : event.key === "End"
           ? 2
-          : (names.indexOf(tab) + (event.key === "ArrowRight" ? 1 : 2)) % 3;
+          : (names.indexOf(tab) + (event.key === forward ? 1 : 2)) % 3;
     tab = names[index];
     render();
     (tabs.children[index] as HTMLButtonElement).focus();

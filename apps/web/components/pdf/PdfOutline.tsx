@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { IconButton, SearchField } from "../ui/controls";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { PDFDocumentProxy } from "pdfjs-dist";
@@ -24,6 +26,7 @@ export default function PdfOutline({
   labels: string[];
   onPage: (page: number) => void;
 }) {
+  useInterfaceLocale();
   const [collapsed, setCollapsed] = useState<Set<number>>(
     () =>
       new Set(items.flatMap((item, index) => (item.depth > 0 ? [index] : []))),
@@ -118,15 +121,17 @@ export default function PdfOutline({
       return next;
     });
   return (
-    <section className="pdf-outline" aria-label="Document outline">
+    <section className="pdf-outline" aria-label={uiText("Document outline")}>
       <header className="pdf-outline-heading">
-        <h3>Contents</h3>
+        <h3>
+          <I18nText id="Contents" />
+        </h3>
         {items.length > 0 && (
           <div>
             <IconButton
               className="icon-button"
-              aria-label="Filter outline"
-              title="Filter sections"
+              aria-label={uiText("Filter outline")}
+              title={uiText("Filter sections")}
               aria-pressed={filtering}
               onClick={() => {
                 setFiltering(!filtering);
@@ -140,8 +145,8 @@ export default function PdfOutline({
             {structure.branches.size > 0 && (
               <IconButton
                 className="icon-button"
-                aria-label="Collapse outline sections"
-                title="Collapse sections"
+                aria-label={uiText("Collapse outline sections")}
+                title={uiText("Collapse sections")}
                 onClick={() => {
                   setQuery("");
                   setCollapsed(new Set(structure.branches));
@@ -157,8 +162,8 @@ export default function PdfOutline({
         <div className="pdf-outline-filter">
           <SearchField
             ref={input}
-            aria-label="Search PDF outline"
-            placeholder="Find a section…"
+            aria-label={uiText("Search PDF outline")}
+            placeholder={uiText("Find a section…")}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => {
@@ -171,7 +176,7 @@ export default function PdfOutline({
           />
           <IconButton
             className="icon-button"
-            aria-label="Close outline filter"
+            aria-label={uiText("Close outline filter")}
             onClick={() => {
               setFiltering(false);
               setQuery("");
@@ -184,14 +189,20 @@ export default function PdfOutline({
       {!items.length && (
         <div className="pdf-outline-empty">
           <ListTree size={24} strokeWidth={1.25} />
-          <p>No contents in this PDF</p>
-          <small>Use Pages or Find to navigate.</small>
+          <p>
+            <I18nText id="No contents in this PDF" />
+          </p>
+          <small>
+            <I18nText id="Use Pages or Find to navigate." />
+          </small>
         </div>
       )}
       {!!items.length && !visible.length && (
-        <p className="muted">No matching sections.</p>
+        <p className="muted">
+          <I18nText id="No matching sections." />
+        </p>
       )}
-      <nav aria-label="Document sections">
+      <nav aria-label={uiText("Document sections")}>
         <ul className="pdf-outline-list">
           {visible.map((index) => {
             const item = items[index],

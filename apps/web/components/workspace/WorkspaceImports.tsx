@@ -1,4 +1,7 @@
 "use client";
+import { currentLocale } from "@axiom/i18n/client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import {
@@ -46,14 +49,16 @@ const PlanningMarkdown = dynamic(() => import("./PlanningMarkdown"), {
   loading: () => (
     <div className="import-preview-empty" role="status">
       <FileText size={24} aria-hidden="true" />
-      <p>Loading local preview…</p>
+      <p>
+        <I18nText id="Loading local preview…" />
+      </p>
     </div>
   ),
 });
 const CanvasPlayground = dynamic(() => import("../tools/CanvasPlayground"), {
   loading: () => (
     <div className="import-preview-empty" role="status">
-      Loading local Canvas preview…
+      <I18nText id="Loading local Canvas preview…" />
     </div>
   ),
 });
@@ -484,12 +489,20 @@ export function ImportTransfers({
   controller: WorkspaceImportsController;
   closeUploads: () => void;
 }) {
+  useInterfaceLocale();
   if (!controller.batches.length) return null;
   return (
-    <section className="import-transfers" aria-label="Workspace imports">
+    <section
+      className="import-transfers"
+      aria-label={uiText("Workspace imports")}
+    >
       <header>
-        <h3>Workspace imports</h3>
-        <span>Prepared privately · published together</span>
+        <h3>
+          <I18nText id="Workspace imports" />
+        </h3>
+        <span>
+          <I18nText id="Prepared privately · published together" />
+        </span>
       </header>
       <div>
         {controller.batches
@@ -509,12 +522,13 @@ export function ImportTransfers({
               <span>
                 <strong>
                   {batch.source === "markdown"
-                    ? "Markdown files"
+                    ? uiText("Markdown files")
                     : (batch.entries.find((e) => e.kind === "folder")?.path ??
                       "Folder import")}
                 </strong>
                 <small>
-                  {batch.entries.length} items · {batch.status}
+                  {batch.entries.length} <I18nText id="items ·" />{" "}
+                  {batch.status}
                 </small>
               </span>
               <ChevronRight size={16} />
@@ -530,6 +544,7 @@ export default function WorkspaceImportsHost({
 }: {
   controller: WorkspaceImportsController;
 }) {
+  useInterfaceLocale();
   const workspace = useWorkspace(),
     batch = controller.batches.find((b) => b.id === controller.selected),
     [busy, setBusy] = useState(false),
@@ -577,7 +592,7 @@ export default function WorkspaceImportsHost({
     <Dialog
       title={
         complete
-          ? "Import complete"
+          ? uiText("Import complete")
           : cancelled
             ? "Import cancelled"
             : "Import progress"
@@ -591,7 +606,7 @@ export default function WorkspaceImportsHost({
         <div>
           <strong>
             {complete
-              ? "Your files are ready"
+              ? uiText("Your files are ready")
               : cancelled
                 ? "Private preparation discarded"
                 : batch.status === "publishing"
@@ -602,7 +617,9 @@ export default function WorkspaceImportsHost({
           </strong>
           <p>
             {complete
-              ? "Native documents are now editable and collaborative. Supporting files and safe metadata retain their reviewed hierarchy."
+              ? uiText(
+                  "Native documents are now editable and collaborative. Supporting files and safe metadata retain their reviewed hierarchy.",
+                )
               : cancelled
                 ? "No files were published by this import. Existing contents are unchanged."
                 : "Nothing is visible to other members until every item is ready. You can close this dialog and keep working."}
@@ -612,7 +629,7 @@ export default function WorkspaceImportsHost({
       {!complete && !cancelled && (
         <div className="import-meter">
           <progress
-            aria-label="Import transferred bytes"
+            aria-label={uiText("Import transferred bytes")}
             max={Math.max(1, totalBytes)}
             value={received}
           />
@@ -629,7 +646,7 @@ export default function WorkspaceImportsHost({
       <div
         className="import-entry-list"
         role="list"
-        aria-label="Import entries"
+        aria-label={uiText("Import entries")}
       >
         {batch.entries.map((entry) => (
           <div className="import-entry-row" role="listitem" key={entry.id}>
@@ -641,12 +658,14 @@ export default function WorkspaceImportsHost({
                   .split("/")
                   .at(-1)
                   ?.replace(/\.(md|markdown)$/i, "") && (
-                <small>Saved as {entry.name}</small>
+                <small>
+                  <I18nText id="Saved as" /> {entry.name}
+                </small>
               )}
             </span>
             <small>
               {entry.disposition === "skip"
-                ? "Skipped"
+                ? uiText("Skipped")
                 : cancelled
                   ? "Cancelled"
                   : entry.disposition === "merge"
@@ -663,7 +682,8 @@ export default function WorkspaceImportsHost({
       {!!batch.result?.warnings.length && (
         <details className="import-warnings">
           <summary>
-            {batch.result.warnings.length} unresolved links (source retained)
+            {batch.result.warnings.length}{" "}
+            <I18nText id="unresolved links (source retained)" />
           </summary>
           <ul>
             {batch.result.warnings.map((warning, index) => (
@@ -674,41 +694,42 @@ export default function WorkspaceImportsHost({
       )}
       {!complete && !cancelled && (
         <HelpText>
-          Private preparation expires{" "}
-          {new Date(batch.expiresAt).toLocaleDateString()}. Reloaded transfers
-          resume after reselecting the same originals.
+          <I18nText id="Private preparation expires" />{" "}
+          {new Date(batch.expiresAt).toLocaleDateString(currentLocale())}
+          <I18nText id=". Reloaded transfers resume after reselecting the same originals." />
         </HelpText>
       )}
       <DialogFooter>
         {!["complete", "cancelled"].includes(batch.status) && (
           <Button
+            data-dialog-cancel
             variant="danger"
             disabled={busy}
             onClick={() => void action(() => controller.cancel(batch))}
           >
             <X size={16} />
-            Cancel import
+            <I18nText id="Cancel import" />
           </Button>
         )}
         <Button variant="secondary" onClick={controller.close}>
-          {complete ? "Done" : "Continue working"}
+          {complete ? uiText("Done") : uiText("Continue working")}
         </Button>
         {batch.status === "blocked" ? (
           <Button onClick={() => controller.review(batch)}>
             <RotateCcw size={16} />
-            Review destination
+            <I18nText id="Review destination" />
           </Button>
         ) : (
           batch.status === "preparing" &&
           (isRunning ? (
             <Button variant="secondary" onClick={() => controller.pause(batch)}>
               <Pause size={16} />
-              Pause
+              <I18nText id="Pause" />
             </Button>
           ) : (
             <Button onClick={() => controller.resume(batch)}>
               <Upload size={16} />
-              Resume import
+              <I18nText id="Resume import" />
             </Button>
           ))
         )}
@@ -724,7 +745,8 @@ export default function WorkspaceImportsHost({
             }}
           >
             <ArrowRight size={16} />
-            Open {first.kind === "folder" ? "folder" : "file"}
+            <I18nText id="Open" />{" "}
+            {first.kind === "folder" ? uiText("folder") : uiText("file")}
           </Button>
         )}
       </DialogFooter>
@@ -739,6 +761,7 @@ function ImportDialog({
   draft: Draft;
   controller: WorkspaceImportsController;
 }) {
+  useInterfaceLocale();
   const workspace = useWorkspace(),
     [source, setSource] = useState(draft.source),
     [spaceId, setSpaceId] = useState(draft.spaceId),
@@ -917,17 +940,19 @@ function ImportDialog({
     <Dialog
       title={
         reviewOnly
-          ? "Review import destination"
+          ? uiText("Review import destination")
           : draft.resume
             ? "Resume import"
             : "Import into workspace"
       }
-      subtitle="Native documents, canvases and supporting files — one reviewed collection."
+      subtitle={uiText(
+        "Native documents, canvases and supporting files — one reviewed collection.",
+      )}
       className="workspace-import-dialog"
       onClose={controller.closeDraft}
     >
       <div className="import-fields">
-        <Field label="Import">
+        <Field label={uiText("Import")}>
           <NativeSelect
             value={source}
             disabled={busy || !!draft.resume}
@@ -940,15 +965,23 @@ function ImportDialog({
               setError("");
             }}
           >
-            <option value="markdown">Markdown files</option>
-            <option value="canvas">Canvas files</option>
-            <option value="folder">Folder with notes & files</option>
-            <option value="zip">ZIP archive</option>
+            <option value="markdown">
+              <I18nText id="Markdown files" />
+            </option>
+            <option value="canvas">
+              <I18nText id="Canvas files" />
+            </option>
+            <option value="folder">
+              <I18nText id="Folder with notes & files" />
+            </option>
+            <option value="zip">
+              <I18nText id="ZIP archive" />
+            </option>
           </NativeSelect>
         </Field>
-        <Field label="Workspace">
+        <Field label={uiText("Workspace")}>
           <Picker
-            label="Workspace"
+            label={uiText("Workspace")}
             required
             value={spaceId}
             disabled={busy || !!draft.resume}
@@ -967,7 +1000,7 @@ function ImportDialog({
               }))}
           />
         </Field>
-        <Field label="Matching names">
+        <Field label={uiText("Matching names")}>
           <NativeSelect
             value={conflict}
             disabled={busy || !!draft.resume}
@@ -975,9 +1008,15 @@ function ImportDialog({
               setConflict(event.target.value as ImportConflict)
             }
           >
-            <option value="keepBoth">Keep both · numbered copies</option>
-            <option value="merge">Merge folders · separate file copies</option>
-            <option value="skip">Skip matching items</option>
+            <option value="keepBoth">
+              <I18nText id="Keep both · numbered copies" />
+            </option>
+            <option value="merge">
+              <I18nText id="Merge folders · separate file copies" />
+            </option>
+            <option value="skip">
+              <I18nText id="Skip matching items" />
+            </option>
           </NativeSelect>
         </Field>
       </div>
@@ -992,7 +1031,11 @@ function ImportDialog({
               {item.name}
             </span>
           ))}
-          {!parentId && <small>Workspace root</small>}
+          {!parentId && (
+            <small>
+              <I18nText id="Workspace root" />
+            </small>
+          )}
         </span>
         <small>
           {preview?.destination.audience ?? "Destination permissions apply"}
@@ -1035,11 +1078,11 @@ function ImportDialog({
             <strong>
               {inventory
                 ? `${inventory.entries.length} items selected`
-                : "Drop your collection here"}
+                : uiText("Drop your collection here")}
             </strong>
             <p>
               {source === "markdown"
-                ? ".md and .markdown become editable notes"
+                ? uiText(".md and .markdown become editable notes")
                 : source === "canvas"
                   ? ".canvas becomes an editable board; originals are retained"
                   : source === "folder"
@@ -1053,7 +1096,7 @@ function ImportDialog({
             onClick={() => picker.current?.click()}
           >
             {inventory
-              ? "Choose again"
+              ? uiText("Choose again")
               : source === "folder"
                 ? "Choose folder"
                 : source === "zip"
@@ -1104,32 +1147,40 @@ function ImportDialog({
             onClick={() => setRevision((v) => v + 1)}
             disabled={!manifest || busy}
           >
-            Refresh preview
+            <I18nText id="Refresh preview" />
           </Button>
         </Notice>
       )}
       {preview && (
         <>
-          <div className="import-counts" aria-label="Import summary">
+          <div className="import-counts" aria-label={uiText("Import summary")}>
             <span>
-              <strong>{preview.counts.notes}</strong> notes
+              <strong>{preview.counts.notes}</strong> <I18nText id="notes" />
             </span>
             <span>
-              <strong>{preview.counts.files}</strong> files
+              <strong>{preview.counts.files}</strong> <I18nText id="files" />
             </span>
             <span>
-              <strong>{preview.counts.folders}</strong> folders
+              <strong>{preview.counts.folders}</strong>{" "}
+              <I18nText id="folders" />
             </span>
             <span>{bytes(preview.counts.bytes)}</span>
             {preview.counts.conflicts > 0 && (
-              <span>{preview.counts.conflicts} matching names</span>
+              <span>
+                {preview.counts.conflicts} <I18nText id="matching names" />
+              </span>
             )}
             {preview.counts.skipped > 0 && (
-              <span>{preview.counts.skipped} skipped</span>
+              <span>
+                {preview.counts.skipped} <I18nText id="skipped" />
+              </span>
             )}
           </div>
           <div className="import-review">
-            <div className="import-entry-list" aria-label="Selected collection">
+            <div
+              className="import-entry-list"
+              aria-label={uiText("Selected collection")}
+            >
               {preview.entries.map((entry) => (
                 <button
                   className="import-entry-row"
@@ -1148,7 +1199,7 @@ function ImportDialog({
                     <strong title={entry.path}>{entry.path}</strong>
                     <small>
                       {entry.disposition === "skip"
-                        ? "Skip"
+                        ? uiText("Skip")
                         : entry.disposition === "merge"
                           ? "Merge folder"
                           : entry.conflict
@@ -1173,7 +1224,7 @@ function ImportDialog({
             <div className="workspace-import-preview">
               <ActionRow className="import-preview-toolbar" align="between">
                 <HelpText as="span">
-                  Local preview · no uploads or remote media
+                  <I18nText id="Local preview · no uploads or remote media" />
                 </HelpText>
                 <div>
                   <Button
@@ -1182,7 +1233,7 @@ function ImportDialog({
                     aria-pressed={previewMode === "preview"}
                     onClick={() => setPreviewMode("preview")}
                   >
-                    Preview
+                    <I18nText id="Preview" />
                   </Button>
                   <Button
                     variant="ghost"
@@ -1190,7 +1241,7 @@ function ImportDialog({
                     aria-pressed={previewMode === "source"}
                     onClick={() => setPreviewMode("source")}
                   >
-                    Source
+                    <I18nText id="Source" />
                   </Button>
                 </div>
               </ActionRow>
@@ -1203,7 +1254,7 @@ function ImportDialog({
                   <pre
                     className="import-source-preview"
                     tabIndex={0}
-                    aria-label="Selected source"
+                    aria-label={uiText("Selected source")}
                   >
                     {inventory.previews[selectedPath]}
                   </pre>
@@ -1215,7 +1266,7 @@ function ImportDialog({
                       /^\ufeff/,
                       "",
                     )}
-                    title="Local Canvas preview"
+                    title={uiText("Local Canvas preview")}
                     readOnly
                   />
                 ) : (
@@ -1226,7 +1277,7 @@ function ImportDialog({
                     readOnly
                     preview
                     isolated
-                    label="Selected note"
+                    label={uiText("Selected note")}
                   />
                 )
               ) : (
@@ -1234,8 +1285,12 @@ function ImportDialog({
                   <FileText size={24} />
                   <p>
                     {reviewOnly
-                      ? "Previously prepared files are retained. Review the updated names and destination before continuing."
-                      : "Select a Markdown note to preview its contents. Images stay offline until the import finishes."}
+                      ? uiText(
+                          "Previously prepared files are retained. Review the updated names and destination before continuing.",
+                        )
+                      : uiText(
+                          "Select a Markdown note to preview its contents. Images stay offline until the import finishes.",
+                        )}
                   </p>
                 </div>
               )}
@@ -1246,7 +1301,8 @@ function ImportDialog({
       {!!inventory?.exclusions.length && (
         <details className="import-warnings">
           <summary>
-            {inventory.exclusions.length} excluded system or sensitive items
+            {inventory.exclusions.length}{" "}
+            <I18nText id="excluded system or sensitive items" />
           </summary>
           <ul>
             {inventory.exclusions.map((item, index) => (
@@ -1266,8 +1322,8 @@ function ImportDialog({
           open={inventory.diagnostics.some((d) => d.severity === "error")}
         >
           <summary>
-            Preservation & conversion review · {inventory.diagnostics.length}{" "}
-            messages
+            <I18nText id="Preservation & conversion review ·" />{" "}
+            {inventory.diagnostics.length} <I18nText id="messages" />
           </summary>
           <ul>
             {inventory.diagnostics.map((diagnostic, index) => (
@@ -1296,9 +1352,15 @@ function ImportDialog({
                             });
                         }}
                       >
-                        <option value="">Choose an action…</option>
-                        <option value="attachment">Keep as attachment</option>
-                        <option value="skip">Skip file</option>
+                        <option value="">
+                          <I18nText id="Choose an action…" />
+                        </option>
+                        <option value="attachment">
+                          <I18nText id="Keep as attachment" />
+                        </option>
+                        <option value="skip">
+                          <I18nText id="Skip file" />
+                        </option>
                       </NativeSelect>
                     </Field>
                   )}
@@ -1308,12 +1370,11 @@ function ImportDialog({
         </details>
       )}
       <HelpText>
-        Existing contents are never overwritten. Imports do not restore
-        permissions, plugins or version history.
+        <I18nText id="Existing contents are never overwritten. Imports do not restore permissions, plugins or version history." />
       </HelpText>
       <DialogFooter>
         <Button variant="secondary" onClick={controller.closeDraft}>
-          Close
+          <I18nText id="Close" />
         </Button>
         <Button
           disabled={
@@ -1327,7 +1388,7 @@ function ImportDialog({
         >
           <Import size={16} />
           {reviewOnly
-            ? "Apply reviewed destination"
+            ? uiText("Apply reviewed destination")
             : draft.resume
               ? "Resume original collection"
               : "Import collection"}

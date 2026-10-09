@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { Button, HelpText } from "../ui/controls";
 import { useEffect, useMemo, useState } from "react";
 import { documentAssets, parseMarkdown, plainText } from "@axiom/markdown";
@@ -15,6 +17,7 @@ export default function AttachmentChecks({
   onJump: (position: number) => void;
   onClose: () => void;
 }) {
+  useInterfaceLocale();
   const parsed = useMemo(() => parseMarkdown(source), [source]),
     assets = useMemo(() => documentAssets(parsed), [parsed]);
   const [resolved, setResolved] = useState<Map<string, ResolvedAsset> | null>(
@@ -73,19 +76,21 @@ export default function AttachmentChecks({
   ];
   return (
     <Dialog
-      title="Document attachment check"
-      subtitle="Inspect references without changing this note or contacting external hosts"
+      title={uiText("Document attachment check")}
+      subtitle={uiText(
+        "Inspect references without changing this note or contacting external hosts",
+      )}
       onClose={onClose}
       size="wide"
     >
       <ErrorNotice message={error} retry={() => setRetry((n) => n + 1)} />
       {!resolved && !error ? (
-        <Loading label="Checking attachment access and versions…" />
+        <Loading label={uiText("Checking attachment access and versions…")} />
       ) : (
         <>
           <p>
-            {assets.length} links and images inspected. {issues.length} items to
-            review.
+            {assets.length} <I18nText id="links and images inspected." />{" "}
+            {issues.length} <I18nText id="items to review." />
           </p>
           <div className="attachment-check-list">
             {issues.map((issue, index) => (
@@ -97,21 +102,25 @@ export default function AttachmentChecks({
                 }}
               >
                 {issue.label}
-                <small>Go to occurrence</small>
+                <small>
+                  <I18nText id="Go to occurrence" />
+                </small>
               </button>
             ))}
           </div>
-          {!issues.length && <HelpText>No attachment issues found.</HelpText>}
+          {!issues.length && (
+            <HelpText>
+              <I18nText id="No attachment issues found." />
+            </HelpText>
+          )}
           <p className="ws-small muted">
-            Remote URLs are not network-tested. Private or missing resources use
-            the same unavailable status. No files or versions are removed
-            automatically.
+            <I18nText id="Remote URLs are not network-tested. Private or missing resources use the same unavailable status. No files or versions are removed automatically." />
           </p>
         </>
       )}
       <DialogFooter>
         <Button className="button secondary" onClick={onClose}>
-          Close
+          <I18nText id="Close" />
         </Button>
       </DialogFooter>
     </Dialog>

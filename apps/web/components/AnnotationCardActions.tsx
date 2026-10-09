@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { IconButton } from "./ui/controls";
 import { Check, MoreHorizontal, Pencil, Share2 } from "lucide-react";
 import type { NoteComment } from "@axiom/shared/note-comments";
@@ -33,14 +35,15 @@ export default function AnnotationCardActions({
   onRemove: () => void;
   onReply: () => void;
 }) {
+  useInterfaceLocale();
   return (
     <footer className="annotation-actions">
       {own && (
         <>
           <IconButton
             className="icon-button"
-            aria-label="Edit annotation"
-            title="Edit annotation"
+            aria-label={uiText("Edit annotation")}
+            title={uiText("Edit annotation")}
             disabled={busy}
             onClick={onEdit}
           >
@@ -50,13 +53,13 @@ export default function AnnotationCardActions({
             className="icon-button"
             aria-label={
               entry.visibility === "private"
-                ? "Share annotation"
-                : "Make annotation private"
+                ? uiText("Share annotation")
+                : uiText("Make annotation private")
             }
             title={
               entry.visibility === "private"
-                ? "Share with document readers"
-                : "Make private (before others reply)"
+                ? uiText("Share with document readers")
+                : uiText("Make private (before others reply)")
             }
             disabled={busy || !canComment || pending}
             onClick={onShare}
@@ -69,9 +72,11 @@ export default function AnnotationCardActions({
         <IconButton
           className="icon-button"
           aria-label={
-            entry.resolved ? "Reopen annotation" : "Resolve annotation"
+            entry.resolved
+              ? uiText("Reopen annotation")
+              : uiText("Resolve annotation")
           }
-          title={entry.resolved ? "Reopen" : "Resolve"}
+          title={entry.resolved ? uiText("Reopen") : uiText("Resolve")}
           disabled={busy}
           onClick={onResolve}
         >
@@ -80,8 +85,8 @@ export default function AnnotationCardActions({
       )}
       <IconButton
         className="icon-button"
-        aria-label="More annotation actions"
-        title="More actions"
+        aria-label={uiText("More annotation actions")}
+        title={uiText("More actions")}
         disabled={busy}
         onClick={(event) => {
           const box = event.currentTarget.getBoundingClientRect();
@@ -130,7 +135,7 @@ export default function AnnotationCardActions({
           disabled={busy}
           onClick={onReply}
         >
-          Reply
+          <I18nText id="Reply" />
         </button>
       )}
     </footer>

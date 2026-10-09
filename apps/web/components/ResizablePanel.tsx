@@ -1,4 +1,6 @@
 "use client";
+import { uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { clampPanelWidth, storedPanelWidth } from "../lib/panel-width";
 
@@ -33,6 +35,7 @@ export default function ResizablePanel({
   defaultWidth?: number;
   reserveWidth?: number;
 }) {
+  useInterfaceLocale();
   const min = minWidth,
     max = maxWidth ?? (name === "sidebar" ? 420 : 480);
   const fallback =
@@ -139,7 +142,9 @@ export default function ResizablePanel({
         aria-valuemax={available}
         aria-valuenow={width}
         aria-valuetext={`${width} pixels`}
-        title="Drag to resize · Arrow keys to adjust · Double-click to reset"
+        title={uiText(
+          "Drag to resize · Arrow keys to adjust · Double-click to reset",
+        )}
         className={`workspace-panel-resizer edge-${edge}`}
         data-dragging={dragging || undefined}
         onDoubleClick={() => persist(fallback)}

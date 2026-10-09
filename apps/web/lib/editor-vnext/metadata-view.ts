@@ -1,3 +1,4 @@
+import { bindAttribute } from "@axiom/i18n/dom";
 import { metadataModel, type MetadataProperty } from "@axiom/markdown";
 import { mapPosition } from "@axiom/editor/transactions";
 import type { Node as ProseNode } from "@milkdown/kit/prose/model";
@@ -376,7 +377,11 @@ export class MetadataView implements NodeView {
       if (property.complex) {
         const content = document.createElement("pre");
         content.textContent = property.value.replace(/^\r?\n/, "");
-        content.title = "Structured YAML is preserved. Edit it in Source mode.";
+        bindAttribute(
+          content,
+          "title",
+          "Structured YAML is preserved. Edit it in Source mode.",
+        );
         value = content;
       } else value = this.input(property, "value");
       const row = this.presentation.row(key, value);

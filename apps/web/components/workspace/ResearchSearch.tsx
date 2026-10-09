@@ -1,4 +1,6 @@
 "use client";
+import { I18nText } from "@axiom/i18n/react";
+
 import { ActionRow, Button, SearchField, TextInput } from "../ui/controls";
 import { useEffect, useRef, useState } from "react";
 /** Server-backed filters wait for a typing pause; explicit Enter/blur flushes. */
@@ -95,7 +97,7 @@ export default function ResearchSearch({
         />
         {onSubmit && (
           <Button className="button ghost" type="submit">
-            Search
+            <I18nText id="Search" />
           </Button>
         )}
       </ActionRow>

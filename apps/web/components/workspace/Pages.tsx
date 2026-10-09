@@ -1,4 +1,7 @@
 "use client";
+import { currentLocale } from "@axiom/i18n/client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { Button, IconButton, NativeSelect, SearchField } from "../ui/controls";
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
@@ -40,6 +43,7 @@ const CreateResource = dynamic(() =>
 );
 
 export function HomePage() {
+  useInterfaceLocale();
   const management = useManagement();
   const { session, spaces, revision, open, navigate } = useWorkspace(),
     result = useData("dashboard", revision),
@@ -68,7 +72,7 @@ export function HomePage() {
           </Button>
         }
       >
-        Your notes, evidence, and collaborators. All in one place.
+        <I18nText id="Your notes, evidence, and collaborators. All in one place." />
       </PageHeading>
       <ErrorNotice message={result.error} retry={result.reload} />
       {result.loading && !dashboard && <Loading />}
@@ -80,8 +84,12 @@ export function HomePage() {
             <LockKeyhole size={23} />
           </span>
           <div>
-            <strong>Personal space</strong>
-            <small>Private work that stays yours</small>
+            <strong>
+              <I18nText id="Personal space" />
+            </strong>
+            <small>
+              <I18nText id="Private work that stays yours" />
+            </small>
           </div>
           <ArrowUpRight size={17} />
         </WorkspaceLink>
@@ -90,8 +98,12 @@ export function HomePage() {
             <FlaskConical size={23} />
           </span>
           <div>
-            <strong>Workspaces</strong>
-            <small>Connect questions to outcomes</small>
+            <strong>
+              <I18nText id="Workspaces" />
+            </strong>
+            <small>
+              <I18nText id="Connect questions to outcomes" />
+            </small>
           </div>
           <ArrowUpRight size={17} />
         </WorkspaceLink>
@@ -100,17 +112,23 @@ export function HomePage() {
             <BookOpen size={23} />
           </span>
           <div>
-            <strong>Research library</strong>
-            <small>Papers, references, and methods</small>
+            <strong>
+              <I18nText id="Research library" />
+            </strong>
+            <small>
+              <I18nText id="Papers, references, and methods" />
+            </small>
           </div>
           <ArrowUpRight size={17} />
         </WorkspaceLink>
       </div>
       <section className="ws-section">
         <div className="ws-section-heading">
-          <h2>Pick up where you left off</h2>
+          <h2>
+            <I18nText id="Pick up where you left off" />
+          </h2>
           <WorkspaceLink to="/explorer?view=recent">
-            View recent
+            <I18nText id="View recent" />
             <ArrowUpRight size={14} />
           </WorkspaceLink>
         </div>
@@ -136,7 +154,7 @@ export function HomePage() {
                   {spaces.find((space) => space.id === item.space_id)?.name}
                 </small>
                 <span className="ws-card-meta">
-                  {item.kind === "note" ? "Research note" : item.kind} ·{" "}
+                  {item.kind === "note" ? uiText("Research note") : item.kind} ·{" "}
                   {timeAgo(item.updated_at)}
                 </span>
               </button>
@@ -144,8 +162,11 @@ export function HomePage() {
           </div>
         ) : (
           !result.loading && (
-            <Empty icon={FileText} title="Your working set starts here">
-              Open a note or a file in Explorer to keep it close at hand.
+            <Empty
+              icon={FileText}
+              title={uiText("Your working set starts here")}
+            >
+              <I18nText id="Open a note or a file in Explorer to keep it close at hand." />
             </Empty>
           )
         )}
@@ -153,7 +174,9 @@ export function HomePage() {
       <div className="ws-dashboard-columns">
         <section className="ws-card">
           <div className="ws-section-heading">
-            <h2>My next steps</h2>
+            <h2>
+              <I18nText id="My next steps" />
+            </h2>
             <Badge>{dashboard?.tasks?.length ?? 0}</Badge>
           </div>
           {dashboard?.tasks?.length ? (
@@ -170,20 +193,22 @@ export function HomePage() {
                 </div>
                 <span>
                   {task.due_on
-                    ? new Date(task.due_on).toLocaleDateString()
-                    : "No due date"}
+                    ? new Date(task.due_on).toLocaleDateString(currentLocale())
+                    : uiText("No due date")}
                 </span>
               </WorkspaceLink>
             ))
           ) : (
             <p className="muted">
-              You have no open assigned tasks. A good moment for deep work.
+              <I18nText id="You have no open assigned tasks. A good moment for deep work." />
             </p>
           )}
         </section>
         <section className="ws-card">
           <div className="ws-section-heading">
-            <h2>Waiting for my review</h2>
+            <h2>
+              <I18nText id="Waiting for my review" />
+            </h2>
             <Badge>{dashboard?.reviews?.length ?? 0}</Badge>
           </div>
           {dashboard?.reviews?.length ? (
@@ -196,25 +221,29 @@ export function HomePage() {
                 <FileText size={18} />
                 <div>
                   <strong>{review.note_title}</strong>
-                  <small>Requested {timeAgo(review.created_at)}</small>
+                  <small>
+                    <I18nText id="Requested" /> {timeAgo(review.created_at)}
+                  </small>
                 </div>
                 <ArrowUpRight size={15} />
               </WorkspaceLink>
             ))
           ) : (
             <p className="muted">
-              No review requests right now. Workspace reviews preserve the exact
-              revision you read.
+              <I18nText id="No review requests right now. Workspace reviews preserve the exact revision you read." />
             </p>
           )}
         </section>
       </div>
       <footer className="ws-home-footer">
         <span>
-          {dashboard?.totals?.notes ?? 0} notes ·{" "}
-          {dashboard?.totals?.files ?? 0} files across your authorized spaces
+          {dashboard?.totals?.notes ?? 0} <I18nText id="notes ·" />{" "}
+          {dashboard?.totals?.files ?? 0}{" "}
+          <I18nText id="files across your authorized spaces" />
         </span>
-        <span>Built for thoughtful, collaborative research.</span>
+        <span>
+          <I18nText id="Built for thoughtful, collaborative research." />
+        </span>
       </footer>
       {create && (
         <CreateResource
@@ -232,6 +261,7 @@ export function HomePage() {
 }
 
 export function InboxPage() {
+  useInterfaceLocale();
   const { params } = useLocation(),
     requestedView = params.get("view");
   const { revision, refresh, spaces } = useWorkspace(),
@@ -250,7 +280,7 @@ export function InboxPage() {
     <main className="ws-page">
       <PageHeading
         eyebrow="INBOX"
-        title="The things that need you"
+        title={uiText("The things that need you")}
         actions={
           <>
             <WorkspaceLink
@@ -277,7 +307,7 @@ export function InboxPage() {
           </>
         }
       >
-        Assignments, mentions, review requests, and due-date reminders.
+        <I18nText id="Assignments, mentions, review requests, and due-date reminders." />
       </PageHeading>
       <div className="ws-segmented ws-inline-tabs">
         {["unread", "all", "reviews"].map((value) => (
@@ -287,7 +317,7 @@ export function InboxPage() {
             onClick={() => setFilter(value)}
           >
             {value === "unread"
-              ? "Unread"
+              ? uiText("Unread")
               : value === "reviews"
                 ? "Reviews"
                 : "All activity"}
@@ -303,8 +333,8 @@ export function InboxPage() {
       ) : data.loading && !data.data ? (
         <Loading />
       ) : !entries.length ? (
-        <Empty icon={Bell} title="All caught up">
-          When someone needs your input, you’ll find it here.
+        <Empty icon={Bell} title={uiText("All caught up")}>
+          <I18nText id="When someone needs your input, you’ll find it here." />
         </Empty>
       ) : (
         <div className="ws-inbox">
@@ -332,7 +362,9 @@ export function InboxPage() {
                 <Badge>{event.kind}</Badge>
                 <IconButton
                   className="icon-button"
-                  aria-label={event.read_at ? "Mark unread" : "Mark read"}
+                  aria-label={
+                    event.read_at ? uiText("Mark unread") : uiText("Mark read")
+                  }
                   onClick={() =>
                     void action.run(async () => {
                       await post("inbox", {
@@ -352,14 +384,19 @@ export function InboxPage() {
       )}
       <p className="ws-small muted">
         {filter === "reviews"
-          ? "Showing up to 200 assigned reviews and 200 pending proposals from accessible workspaces."
-          : "Only events from spaces you can currently access are shown. Showing the latest 100 events."}
+          ? uiText(
+              "Showing up to 200 assigned reviews and 200 pending proposals from accessible workspaces.",
+            )
+          : uiText(
+              "Only events from spaces you can currently access are shown. Showing the latest 100 events.",
+            )}
       </p>
     </main>
   );
 }
 
 export function PeoplePage() {
+  useInterfaceLocale();
   const { revision, session } = useWorkspace(),
     [search, setSearch] = useState(""),
     [group, setGroup] = useState(""),
@@ -372,29 +409,31 @@ export function PeoplePage() {
     <main className="ws-page">
       <PageHeading
         eyebrow="PEOPLE"
-        title="A shared curiosity"
+        title={uiText("A shared curiosity")}
         actions={
           <WorkspaceLink className="button secondary" to="/settings/profile">
             Edit my profile
           </WorkspaceLink>
         }
       >
-        Find expertise and familiar faces across your research groups.
+        <I18nText id="Find expertise and familiar faces across your research groups." />
       </PageHeading>
       <div className="ws-list-toolbar">
         <SearchField
           wrapperClassName="ws-search-field"
-          aria-label="Search researchers"
-          placeholder="Name, affiliation, or research interests…"
+          aria-label={uiText("Search researchers")}
+          placeholder={uiText("Name, affiliation, or research interests…")}
           value={search}
           onChange={(event) => setSearch(event.target.value)}
         />
         <NativeSelect
-          aria-label="Filter people by group"
+          aria-label={uiText("Filter people by group")}
           value={group}
           onChange={(event) => setGroup(event.target.value)}
         >
-          <option value="">All my groups</option>
+          <option value="">
+            <I18nText id="All my groups" />
+          </option>
           {session.groups.map((item) => (
             <option key={item.id} value={item.id}>
               {item.name}
@@ -406,8 +445,8 @@ export function PeoplePage() {
       {data.loading && !data.data ? (
         <Loading />
       ) : !data.data?.length ? (
-        <Empty icon={Users} title="No matching researchers">
-          Try another name or research topic.
+        <Empty icon={Users} title={uiText("No matching researchers")}>
+          <I18nText id="Try another name or research topic." />
         </Empty>
       ) : (
         <div className="ws-people-grid">
@@ -422,7 +461,7 @@ export function PeoplePage() {
               <span>{person.affiliation || "Researcher"}</span>
               <p>{person.interests || "No research interests added yet."}</p>
               <small>
-                View profile
+                <I18nText id="View profile" />
                 <ArrowUpRight size={12} />
               </small>
             </button>
@@ -437,15 +476,21 @@ export function PeoplePage() {
         >
           <div className="ws-profile-preview">
             <Avatar person={person} />
-            <h3>Research interests</h3>
+            <h3>
+              <I18nText id="Research interests" />
+            </h3>
             <p>{person.interests || "Not added yet."}</p>
-            <h3>About</h3>
+            <h3>
+              <I18nText id="About" />
+            </h3>
             <p className="ws-preserve-lines">
               {person.biography ||
                 "This researcher hasn’t added a biography yet."}
             </p>
             {person.timezone && (
-              <p className="muted">Time zone · {person.timezone}</p>
+              <p className="muted">
+                <I18nText id="Time zone ·" /> {person.timezone}
+              </p>
             )}
             {person.links?.map(
               (link: string) =>

@@ -14,6 +14,7 @@ on:
       - docs/assets/**
       - scripts/build/showcase*.ts
       - scripts/verify/**
+      - scripts/i18n/**
       - docs/*.md
       - tests/showcase/**
       - showcase.config.ts
@@ -46,6 +47,7 @@ jobs:
       - run: npm run lint
       - run: npm run validate:ui
       - run: npm run validate:themes
+      - run: npm run validate:i18n
       - run: npm run docs:check
       - run: npm test
       - uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5

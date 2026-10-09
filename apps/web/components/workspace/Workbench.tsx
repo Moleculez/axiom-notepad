@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import {
   ActionRow,
   Button,
@@ -158,16 +160,16 @@ import {
 } from "./ui";
 const StudioFile = dynamic(() => import("./StudioFile"), {
   ssr: false,
-  loading: () => <Loading label="Opening file editor…" />,
+  loading: () => <Loading label={uiText("Opening file editor…")} />,
 });
 
 const Editor = dynamic(() => import("../Editor"), {
   ssr: false,
-  loading: () => <Loading label="Opening research editor…" />,
+  loading: () => <Loading label={uiText("Opening research editor…")} />,
 });
 const PdfViewer = dynamic(() => import("../PdfViewer"), {
   ssr: false,
-  loading: () => <Loading label="Opening PDF reader…" />,
+  loading: () => <Loading label={uiText("Opening PDF reader…")} />,
 });
 type Tab = Pick<Resource, "id" | "kind"> & {
   name?: string;
@@ -202,6 +204,7 @@ export default function Workbench({
   splitTarget: Tab | null;
   onSplitHandled: () => void;
 }) {
+  useInterfaceLocale();
   const [secondary, setSecondary] = useState<Tab | null>(null),
     [active, setActive] = useState<"primary" | "secondary">("primary"),
     [ratio, setRatio] = useState(50);
@@ -264,18 +267,18 @@ export default function Workbench({
             aria-pressed={active === "primary"}
             onClick={() => setActive("primary")}
           >
-            Left pane
+            <I18nText id="Left pane" />
           </button>
           <button
             aria-pressed={active === "secondary"}
             onClick={() => setActive("secondary")}
           >
-            Right pane
+            <I18nText id="Right pane" />
           </button>
           <span className="ws-spacer" />
           <IconButton
             className="icon-button"
-            aria-label="Close split view"
+            aria-label={uiText("Close split view")}
             onClick={() => {
               setSecondary(null);
               setActive("primary");
@@ -311,7 +314,7 @@ export default function Workbench({
             <div
               className="ws-pane-divider"
               role="separator"
-              aria-label="Resize document panes"
+              aria-label={uiText("Resize document panes")}
               aria-orientation="vertical"
               aria-valuenow={Math.round(ratio)}
               aria-valuemin={30}
@@ -495,6 +498,7 @@ function MarkdownFile({
   active: boolean;
   defaultMap?: boolean;
 }) {
+  useInterfaceLocale();
   const { session, revision } = useWorkspace();
   const data = useCachedData<Note>(
     `notes/${tab.id}`,
@@ -513,7 +517,7 @@ function MarkdownFile({
   ) : (
     <>
       <ErrorNotice message={data.error} retry={data.reload} />
-      {data.loading && <Loading label="Opening note…" />}
+      {data.loading && <Loading label={uiText("Opening note…")} />}
     </>
   );
 }
@@ -533,6 +537,7 @@ function DocumentPane({
   defaultMap?: boolean;
   route?: string;
 }) {
+  useInterfaceLocale();
   const tabs = useWorkSessions();
   const stored = tabs?.state.sessions.find((tab) => tab.id === viewId)?.view;
   const {
@@ -1143,19 +1148,21 @@ function DocumentPane({
       )}
       {mathReturn && (
         <Dialog
-          title="Review equation from Math Studio"
+          title={uiText("Review equation from Math Studio")}
           onClose={dismissMathReturn}
         >
           <p>
-            Apply this result only if the original equation is unchanged. Edits
-            elsewhere in the note are preserved; a changed equation or restored
-            note generation will not be overwritten.
+            <I18nText id="Apply this result only if the original equation is unchanged. Edits elsewhere in the note are preserved; a changed equation or restored note generation will not be overwritten." />
           </p>
           <pre className="tool-submission-source">{mathReturn.result}</pre>
           <ErrorNotice message={mathReturnError} />
           <div className="dialog-footer">
-            <Button className="button secondary" onClick={dismissMathReturn}>
-              Keep note unchanged
+            <Button
+              data-dialog-cancel
+              className="button secondary"
+              onClick={dismissMathReturn}
+            >
+              <I18nText id="Keep note unchanged" />
             </Button>
             <Button
               className="button secondary"
@@ -1170,7 +1177,7 @@ function DocumentPane({
                   )
               }
             >
-              Copy LaTeX
+              <I18nText id="Copy LaTeX" />
             </Button>
             <Button
               className="button primary"
@@ -1197,7 +1204,7 @@ function DocumentPane({
                 );
               }}
             >
-              Apply to original equation
+              <I18nText id="Apply to original equation" />
             </Button>
           </div>
         </Dialog>
@@ -1212,9 +1219,13 @@ function DocumentPane({
           }}
         >
           <Network size={16} />
-          {mindmap ? "Document" : "Mind map"}
+          {mindmap ? uiText("Document") : uiText("Mind map")}
         </Button>
-        <div className="ws-segmented" aria-label="Editor mode" hidden={mindmap}>
+        <div
+          className="ws-segmented"
+          aria-label={uiText("Editor mode")}
+          hidden={mindmap}
+        >
           {[
             ["write", "Write"],
             ["source", "Source"],
@@ -1233,7 +1244,10 @@ function DocumentPane({
         <span className="ws-document-status" role="status">
           {status}
         </span>
-        <div className="ws-presence" aria-label="Collaborators online">
+        <div
+          className="ws-presence"
+          aria-label={uiText("Collaborators online")}
+        >
           {presence.map((person) => (
             <button
               key={person.clientId ?? person.id}
@@ -1258,16 +1272,16 @@ function DocumentPane({
         <ResourceSharing resourceId={note.id} />
         <IconButton
           className="icon-button"
-          aria-label="Export document"
-          title="Export document"
+          aria-label={uiText("Export document")}
+          title={uiText("Export document")}
           onClick={() => setModal("export")}
         >
           <Download size={17} />
         </IconButton>
         <IconButton
           className="icon-button"
-          aria-label="Ask about this note"
-          title="Ask workspace assistant"
+          aria-label={uiText("Ask about this note")}
+          title={uiText("Ask workspace assistant")}
           onClick={() =>
             openAssistant({
               spaceId: context.data?.space.id,
@@ -1281,8 +1295,8 @@ function DocumentPane({
         {canComment && (
           <IconButton
             className="icon-button"
-            aria-label="Review suggestions"
-            title="Review and suggest edits"
+            aria-label={uiText("Review suggestions")}
+            title={uiText("Review and suggest edits")}
             onClick={() => setReview(true)}
           >
             <FilePenLine size={17} />
@@ -1290,14 +1304,14 @@ function DocumentPane({
         )}
         <IconButton
           className="icon-button"
-          aria-label="Document history"
+          aria-label={uiText("Document history")}
           onClick={() => setModal("history")}
         >
           <History size={17} />
         </IconButton>
         <IconButton
           className="icon-button"
-          aria-label="Toggle document panel"
+          aria-label={uiText("Toggle document panel")}
           aria-expanded={!!panel}
           onClick={() => setPanel(panel ? null : "outline")}
         >
@@ -1308,13 +1322,15 @@ function DocumentPane({
         <div
           className="reading-controls"
           role="group"
-          aria-label="Reading preferences"
+          aria-label={uiText("Reading preferences")}
         >
-          <span>Read only</span>
+          <span>
+            <I18nText id="Read only" />
+          </span>
           <label>
-            Text{" "}
+            <I18nText id="Text" />{" "}
             <Slider
-              aria-label="Reading text size"
+              aria-label={uiText("Reading text size")}
               aria-valuetext={`${readingSize ?? appearance.effective.proseSize} pixels`}
 
               min={14}
@@ -1322,19 +1338,30 @@ function DocumentPane({
               value={readingSize ?? appearance.effective.proseSize}
               onChange={(e) => setReadingSize(Number(e.target.value))}
             />
-            <output>{readingSize ?? appearance.effective.proseSize}px</output>
+            <output>
+              {readingSize ?? appearance.effective.proseSize}
+              <I18nText id="px" />
+            </output>
           </label>
           <label>
-            Width{" "}
+            <I18nText id="Width" />{" "}
             <NativeSelect
-              aria-label="Reading width"
+              aria-label={uiText("Reading width")}
               value={readingWidth ?? 0}
               onChange={(e) => setReadingWidth(Number(e.target.value) || null)}
             >
-              <option value={0}>Document</option>
-              <option value={60}>Narrow</option>
-              <option value={72}>Balanced</option>
-              <option value={90}>Wide</option>
+              <option value={0}>
+                <I18nText id="Document" />
+              </option>
+              <option value={60}>
+                <I18nText id="Narrow" />
+              </option>
+              <option value={72}>
+                <I18nText id="Balanced" />
+              </option>
+              <option value={90}>
+                <I18nText id="Wide" />
+              </option>
             </NativeSelect>
           </label>
           <Button
@@ -1344,7 +1371,7 @@ function DocumentPane({
               setReadingWidth(null);
             }}
           >
-            Reset
+            <I18nText id="Reset" />
           </Button>
         </div>
       )}
@@ -1354,7 +1381,7 @@ function DocumentPane({
           <div
             className="ws-format-toolbar"
             role="toolbar"
-            aria-label="Format note"
+            aria-label={uiText("Format note")}
           >
             {(
               [
@@ -1396,12 +1423,12 @@ function DocumentPane({
               }}
             >
               <Plus size={14} />
-              Insert
+              <I18nText id="Insert" />
             </Button>
             <IconButton
               className="icon-button"
-              aria-label="Editor commands"
-              title="Editor commands"
+              aria-label={uiText("Editor commands")}
+              title={uiText("Editor commands")}
               onClick={() => commandRef.current("commands")}
             >
               <Search size={16} />
@@ -1409,7 +1436,7 @@ function DocumentPane({
             {canComment && (
               <IconButton
                 className="icon-button"
-                aria-label="Comment on selection"
+                aria-label={uiText("Comment on selection")}
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={() => {
                   setAnchor(editor.current?.anchor() ?? null);
@@ -1429,13 +1456,13 @@ function DocumentPane({
         <HelpText as="div" role="status">
           {readingWarning}{" "}
           <button className="text-button" onClick={scroll}>
-            Retry reading position
+            <I18nText id="Retry reading position" />
           </button>
         </HelpText>
       )}
       {remoteVersion && (
         <HelpText as="div">
-          A restored revision is available. Your current draft is retained.
+          <I18nText id="A restored revision is available. Your current draft is retained." />
           <ActionRow>
             <Button
               className="button secondary"
@@ -1446,7 +1473,7 @@ function DocumentPane({
                 )
               }
             >
-              Export local draft
+              <I18nText id="Export local draft" />
             </Button>
             <Button
               className="button primary"
@@ -1457,7 +1484,7 @@ function DocumentPane({
                 setParsed(parseMarkdown(metadata.body));
               }}
             >
-              Open restored revision
+              <I18nText id="Open restored revision" />
             </Button>
           </ActionRow>
         </HelpText>
@@ -1467,8 +1494,12 @@ function DocumentPane({
           <Badge>{metadata.role ?? "viewer"}</Badge>
           <span>
             {canComment
-              ? "You can read and comment. Editing requires editor access."
-              : "Read-only access. Ask a project lead to change your role."}
+              ? uiText(
+                  "You can read and comment. Editing requires editor access.",
+                )
+              : uiText(
+                  "Read-only access. Ask a project lead to change your role.",
+                )}
           </span>
         </div>
       )}
@@ -1511,9 +1542,13 @@ function DocumentPane({
                     <HelpText as="div" className="ws-note-meta">
                       <span>{context.data?.space.name}</span>
                       <Badge>
-                        {note.visibility === "private" ? "Only you" : "Shared"}
+                        {note.visibility === "private"
+                          ? uiText("Only you")
+                          : uiText("Shared")}
                       </Badge>
-                      <span>{parsed.outline.length} sections</span>
+                      <span>
+                        {parsed.outline.length} <I18nText id="sections" />
+                      </span>
                     </HelpText>
                     {readonly || mode === "read" ? (
                       <h1 className="document-title">{note.title}</h1>
@@ -1782,7 +1817,7 @@ function DocumentPane({
             ) : (
               <span>
                 {mode === "source"
-                  ? "Source"
+                  ? uiText("Source")
                   : mode === "write"
                     ? "Live preview"
                     : "Reading"}
@@ -1812,13 +1847,16 @@ function DocumentPane({
         {panel && (!mindmap || panel !== "outline") && (
           <ResizablePanel
             className="ws-document-context"
-            label="Document context"
+            label={uiText("Document context")}
             account={session.user.id}
             name="document-context"
             edge="left"
           >
             <div className="ws-context-content">
-              <nav className="ws-context-tabs" aria-label="Document panel">
+              <nav
+                className="ws-context-tabs"
+                aria-label={uiText("Document panel")}
+              >
                 {[
                   ["outline", List],
                   ["comments", MessageSquare],
@@ -1838,7 +1876,7 @@ function DocumentPane({
                 ))}
                 <IconButton
                   className="icon-button"
-                  aria-label="Close document panel"
+                  aria-label={uiText("Close document panel")}
                   onClick={() => setPanel(null)}
                 >
                   <X size={15} />
@@ -1944,12 +1982,13 @@ function DocumentPane({
                   />
                   {!parsed.outline.length && (
                     <p className="muted ws-small">
-                      Add headings to build an outline. Nested sections follow
-                      your heading hierarchy.
+                      <I18nText id="Add headings to build an outline. Nested sections follow your heading hierarchy." />
                     </p>
                   )}
                   <div className="ws-backlinks">
-                    <h3>Linked thinking</h3>
+                    <h3>
+                      <I18nText id="Linked thinking" />
+                    </h3>
                     {context.data?.links
                       .filter((link) => link.target_id === note.id)
                       .map((link) => (
@@ -1968,7 +2007,7 @@ function DocumentPane({
                       (link) => link.target_id === note.id,
                     ) && (
                       <p className="muted ws-small">
-                        No incoming note links yet.
+                        <I18nText id="No incoming note links yet." />
                       </p>
                     )}
                   </div>
@@ -1976,7 +2015,9 @@ function DocumentPane({
               )}
               {panel === "comments" && (
                 <>
-                  <h2>Discussion</h2>
+                  <h2>
+                    <I18nText id="Discussion" />
+                  </h2>
                   <ErrorNotice
                     message={comments.error}
                     retry={comments.reload}
@@ -2014,7 +2055,7 @@ function DocumentPane({
                                 !editor.current.resolveMark(item.anchor)) ||
                               item.anchor.generation !== note.generation) && (
                               <small>
-                                Original text unavailable · discussion retained
+                                <I18nText id="Original text unavailable · discussion retained" />
                               </small>
                             )}
                           </button>
@@ -2027,15 +2068,19 @@ function DocumentPane({
                             <MessageSquare size={14} />
                             <span>
                               {item.deleted
-                                ? "Removed annotation · replies retained"
+                                ? uiText(
+                                    "Removed annotation · replies retained",
+                                  )
                                 : item.title || item.body.slice(0, 100)}
-                              <small>Open annotation card</small>
+                              <small>
+                                <I18nText id="Open annotation card" />
+                              </small>
                             </span>
                           </button>
                         ) : (
                           <p>
                             {item.deleted
-                              ? "This entry was removed."
+                              ? uiText("This entry was removed.")
                               : item.body}
                           </p>
                         )}
@@ -2049,7 +2094,9 @@ function DocumentPane({
                             >
                               <strong>{reply.author_name}</strong>
                               <p>
-                                {reply.deleted ? "Reply removed." : reply.body}
+                                {reply.deleted
+                                  ? uiText("Reply removed.")
+                                  : reply.body}
                               </p>
                             </HelpText>
                           ))}
@@ -2062,7 +2109,7 @@ function DocumentPane({
                                 setAnchor(null);
                               }}
                             >
-                              Reply
+                              <I18nText id="Reply" />
                             </Button>
                             <Button
                               className="text-button"
@@ -2077,7 +2124,9 @@ function DocumentPane({
                                 })
                               }
                             >
-                              {item.resolved ? "Reopen" : "Resolve"}
+                              {item.resolved
+                                ? uiText("Reopen")
+                                : uiText("Resolve")}
                             </Button>
                           </ActionRow>
                         )}
@@ -2104,11 +2153,12 @@ function DocumentPane({
                     >
                       {reply && (
                         <button
+                          data-dialog-cancel
                           type="button"
                           className="text-button"
                           onClick={() => setReply(null)}
                         >
-                          Cancel reply
+                          <I18nText id="Cancel reply" />
                         </button>
                       )}
                       {anchor && (
@@ -2119,26 +2169,28 @@ function DocumentPane({
                             className="text-button"
                             onClick={() => setAnchor(null)}
                           >
-                            Remove anchor
+                            <I18nText id="Remove anchor" />
                           </button>
                         </blockquote>
                       )}
                       <label>
-                        {reply ? "Reply" : "Comment"}
+                        {reply ? uiText("Reply") : uiText("Comment")}
                         <TextArea
                           rows={3}
                           required
                           maxLength={10000}
                           value={comment}
                           onChange={(event) => setComment(event.target.value)}
-                          placeholder="Ask a question or share a thought…"
+                          placeholder={uiText(
+                            "Ask a question or share a thought…",
+                          )}
                         />
                       </label>
                       <Button
                         className="button primary"
                         disabled={action.busy || !comment.trim()}
                       >
-                        Post comment
+                        <I18nText id="Post comment" />
                       </Button>
                     </form>
                   )}
@@ -2146,7 +2198,9 @@ function DocumentPane({
               )}
               {panel === "references" && (
                 <>
-                  <h2>Citation context</h2>
+                  <h2>
+                    <I18nText id="Citation context" />
+                  </h2>
                   <ErrorNotice message={context.error} retry={context.reload} />
                   {context.data?.references.map((reference) => (
                     <div className="ws-citation" key={reference.cite_key}>
@@ -2163,7 +2217,7 @@ function DocumentPane({
                             editor.current?.insert(`[@${reference.cite_key}]`)
                           }
                         >
-                          Insert citation
+                          <I18nText id="Insert citation" />
                           <Plus size={12} />
                         </button>
                       )}
@@ -2171,7 +2225,7 @@ function DocumentPane({
                   ))}
                   {!context.data?.references.length && (
                     <p className="muted ws-small">
-                      No references in this note’s citation context yet.
+                      <I18nText id="No references in this note’s citation context yet." />
                     </p>
                   )}
                 </>
@@ -2183,10 +2237,12 @@ function DocumentPane({
       </div>
       {recovered && (
         <div className="ws-recovered">
-          <span>Recovered draft retained</span>
+          <span>
+            <I18nText id="Recovered draft retained" />
+          </span>
           {recoveries.length > 1 && (
             <NativeSelect
-              aria-label="Recovered drafts"
+              aria-label={uiText("Recovered drafts")}
               value={
                 recoveries.find((draft) => draft.source === recovered)?.key ??
                 ""
@@ -2200,7 +2256,8 @@ function DocumentPane({
             >
               {recoveries.map((draft, index) => (
                 <option key={draft.key} value={draft.key}>
-                  Draft {recoveries.length - index} · {draft.label}
+                  <I18nText id="Draft" /> {recoveries.length - index} ·{" "}
+                  {draft.label}
                 </option>
               ))}
             </NativeSelect>
@@ -2209,11 +2266,11 @@ function DocumentPane({
             className="button secondary"
             onClick={() => download(note.title + "-recovered.md", recovered)}
           >
-            Download recovered text
+            <I18nText id="Download recovered text" />
           </Button>
           <IconButton
             className="icon-button"
-            aria-label="Dismiss recovered draft notice"
+            aria-label={uiText("Dismiss recovered draft notice")}
             onClick={() => setRecovered("")}
           >
             <X size={15} />
@@ -2222,7 +2279,11 @@ function DocumentPane({
       )}
       {(modal === "commands" || modal === "insert") && (
         <Dialog
-          title={modal === "insert" ? "Insert a block" : "Editor commands"}
+          title={
+            modal === "insert"
+              ? uiText("Insert a block")
+              : uiText("Editor commands")
+          }
           onClose={closeModal}
           wide
         >
@@ -2240,7 +2301,7 @@ function DocumentPane({
         </Dialog>
       )}
       {modal === "table" && (
-        <Dialog title="Insert table" onClose={closeModal}>
+        <Dialog title={uiText("Insert table")} onClose={closeModal}>
           <TablePicker
             onInsert={(rows, columns) => {
               editor.current?.execute("table", { rows, columns });
@@ -2281,8 +2342,10 @@ function DocumentPane({
       )}
       {modal === "figureRef" && (
         <Dialog
-          title="Reference a figure"
-          subtitle="References follow figure numbering as the document changes"
+          title={uiText("Reference a figure")}
+          subtitle={uiText(
+            "References follow figure numbering as the document changes",
+          )}
           onClose={closeModal}
         >
           <div className="attachment-check-list">
@@ -2300,13 +2363,13 @@ function DocumentPane({
                     closeModal();
                 }}
               >
-                Figure {number}
+                <I18nText id="Figure" /> {number}
                 <small>{label}</small>
               </button>
             ))}
             {!Object.keys(parsed.figures ?? {}).length && (
               <HelpText>
-                Insert an image as a numbered figure and give it a label first.
+                <I18nText id="Insert an image as a numbered figure and give it a label first." />
               </HelpText>
             )}
           </div>
@@ -2379,6 +2442,7 @@ function FilePane({
   resource: Resource;
   requestedVersion?: string;
 }) {
+  useInterfaceLocale();
   const { session, refresh, notify, navigate } = useWorkspace(),
     [details, setDetails] = useState(false),
     [discussion, setDiscussion] = useState(false),
@@ -2402,7 +2466,7 @@ function FilePane({
         <h1>{resource.name}</h1>
         <ResourceSharing resourceId={resource.id} />
         <NativeSelect
-          aria-label="File version"
+          aria-label={uiText("File version")}
           value={version ?? ""}
           onChange={(event) => {
             setVersion(event.target.value);
@@ -2412,8 +2476,10 @@ function FilePane({
         >
           {data.data?.map((item) => (
             <option key={item.id} value={item.id}>
-              Version {item.ordinal}
-              {item.id === resource.current_version_id ? " · Current" : ""}
+              <I18nText id="Version" /> {item.ordinal}
+              {item.id === resource.current_version_id
+                ? uiText(" · Current")
+                : ""}
             </option>
           ))}
         </NativeSelect>
@@ -2422,11 +2488,11 @@ function FilePane({
           href={`/api/v1/files/${resource.id}/download?version=${version}`}
         >
           <Download size={15} />
-          Download
+          <I18nText id="Download" />
         </a>
         <IconButton
           className="icon-button"
-          aria-label="File details"
+          aria-label={uiText("File details")}
           onClick={() => {
             inspector.claim("document");
             setDetails(!details);
@@ -2443,7 +2509,7 @@ function FilePane({
             setDetails(false);
           }}
         >
-          Discussion
+          <I18nText id="Discussion" />
         </Button>
       </header>
       <ErrorNotice
@@ -2454,8 +2520,7 @@ function FilePane({
         <div className="ws-file-preview">
           {resource.deleted_at && (
             <HelpText>
-              This file is in the trash. Existing pinned versions remain
-              readable until manual cleanup.
+              <I18nText id="This file is in the trash. Existing pinned versions remain readable until manual cleanup." />
             </HelpText>
           )}
           <FilePreviewSurface

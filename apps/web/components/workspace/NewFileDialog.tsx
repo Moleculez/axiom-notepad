@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { Button, HelpText, TextInput, NativeSelect } from "../ui/controls";
 import { useEffect, useRef, useState } from "react";
 import { FolderOpen } from "lucide-react";
@@ -18,6 +20,7 @@ export default function NewFileDialog({
   importVersion,
   onClose,
 }: FileCreationRequest & { onClose: () => void }) {
+  useInterfaceLocale();
   const { navigate, refresh, spaces, notify, session } = useWorkspace();
   const tabs = useWorkSessions();
   const owner = useRef({ tab: tabs?.state.active, user: session.user.id });
@@ -121,7 +124,7 @@ export default function NewFileDialog({
         }}
       >
         <label>
-          Name
+          <I18nText id="Name" />
           <TextInput
             autoFocus
             value={name}
@@ -132,7 +135,7 @@ export default function NewFileDialog({
           />
         </label>
         <label>
-          Workspace
+          <I18nText id="Workspace" />
           <NativeSelect
             required
             value={spaceId}
@@ -140,7 +143,7 @@ export default function NewFileDialog({
             onChange={(event) => setSpaceId(event.target.value)}
           >
             <option value="" disabled>
-              Choose a workspace…
+              <I18nText id="Choose a workspace…" />
             </option>
             {writable.map((space) => (
               <option key={space.id} value={space.id}>
@@ -153,35 +156,35 @@ export default function NewFileDialog({
           <FolderOpen size={16} />
           {parentId
             ? (parent.data?.name ?? "Selected folder")
-            : "Workspace root"}
+            : uiText("Workspace root")}
         </p>
         {importFile && (
           <HelpText>
-            A new editable copy will be created. The original image and its
-            history stay unchanged.
+            <I18nText id="A new editable copy will be created. The original image and its history stay unchanged." />
           </HelpText>
         )}
         {!writable.length && (
           <HelpText>
-            You need editor access to an active workspace to create files.
+            <I18nText id="You need editor access to an active workspace to create files." />
           </HelpText>
         )}
         <ErrorNotice message={error || parent.error} />
         <div className="dialog-actions">
           <Button
+            data-dialog-cancel
             type="button"
             className="button secondary"
             disabled={busy}
             onClick={onClose}
           >
-            Cancel
+            <I18nText id="Cancel" />
           </Button>
           <Button
             className="button primary"
             disabled={busy || !writable.some((space) => space.id === spaceId)}
             pending={!!busy}
           >
-            {"Create"}
+            {uiText("Create")}
           </Button>
         </div>
       </form>

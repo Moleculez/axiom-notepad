@@ -1,4 +1,7 @@
 "use client";
+import { currentLocale } from "@axiom/i18n/client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import {
   ActionRow,
   Button,
@@ -104,6 +107,7 @@ export function LegacyProjectRedirect({
   id?: string;
   section?: string;
 }) {
+  useInterfaceLocale();
   const { spaces } = useWorkspace(),
     { params } = useLocation();
   useEffect(() => {
@@ -134,12 +138,14 @@ export function LegacyProjectRedirect({
     }
   }, [id, section, spaces]);
   return id && !spaces.some((s) => s.project_id === id) ? (
-    <Empty title="Workspace unavailable">
-      This old project link no longer grants access.{" "}
-      <WorkspaceLink to="/workspaces">Browse workspaces</WorkspaceLink>
+    <Empty title={uiText("Workspace unavailable")}>
+      <I18nText id="This old project link no longer grants access." />{" "}
+      <WorkspaceLink to="/workspaces">
+        <I18nText id="Browse workspaces" />
+      </WorkspaceLink>
     </Empty>
   ) : (
-    <Loading label="Opening workspace…" />
+    <Loading label={uiText("Opening workspace…")} />
   );
 }
 export default function UnifiedWorkspace({
@@ -151,6 +157,7 @@ export default function UnifiedWorkspace({
   section?: string;
   setting?: string;
 }) {
+  useInterfaceLocale();
   const { session, revision } = useWorkspace(),
     { params, path } = useLocation(),
     management = useManagement();
@@ -165,7 +172,11 @@ export default function UnifiedWorkspace({
       go(workspaceDestination(session.user.id, id), true);
       return;
     }
-    if ((settingsSections.includes(section) && !sections.some(([key])=>key===section)) || section === "invitations") {
+    if (
+      (settingsSections.includes(section) &&
+        !sections.some(([key]) => key === section)) ||
+      section === "invitations"
+    ) {
       go(
         `/workspaces/${id}/settings/${section === "invitations" ? "people" : section}`,
         true,
@@ -199,7 +210,7 @@ export default function UnifiedWorkspace({
     return (
       <div className="ws-page">
         <ErrorNotice message={detail.error} retry={detail.reload} />
-        {detail.loading && <Loading label="Opening workspace…" />}
+        {detail.loading && <Loading label={uiText("Opening workspace…")} />}
       </div>
     );
   const current = section ?? "overview";
@@ -221,23 +232,28 @@ export default function UnifiedWorkspace({
           </div>
           <p>
             {space.group_name ?? "Personal workspace"}
-            {space.audience === "restricted" ? " · Restricted access" : ""}
+            {space.audience === "restricted"
+              ? uiText(" · Restricted access")
+              : ""}
             {space.description ? ` · ${space.description}` : ""}
           </p>
         </div>
         <IconButton
           className="icon-button"
-          title="Workspace actions"
-          aria-label="Workspace actions"
+          title={uiText("Workspace actions")}
+          aria-label={uiText("Workspace actions")}
           onClick={(e) => management.workspaceMenu(e, space)}
         >
           <Settings2 size={19} />
         </IconButton>
       </header>
-      <nav className="unified-workspace-nav" aria-label="Workspace sections">
+      <nav
+        className="unified-workspace-nav"
+        aria-label={uiText("Workspace sections")}
+      >
         {space.group_id && (
           <WorkspaceLink to={`/groups/${space.group_id}/planning`}>
-            Group portfolio
+            <I18nText id="Group portfolio" />
           </WorkspaceLink>
         )}
         {sections.map(([key, label, Icon]) => (
@@ -258,7 +274,7 @@ export default function UnifiedWorkspace({
           aria-current={current === "settings" ? "page" : undefined}
         >
           <Settings2 size={16} />
-          Settings
+          <I18nText id="Settings" />
         </WorkspaceLink>
       </nav>
       <div className={`unified-workspace-content section-${current}`}>
@@ -269,9 +285,8 @@ export default function UnifiedWorkspace({
             section={setting ?? "general"}
           />
         ) : !space.role ? (
-          <Empty title="Content access required">
-            Administrative access does not grant permission to read this
-            workspace. Use Settings to manage its lifecycle and access.
+          <Empty title={uiText("Content access required")}>
+            <I18nText id="Administrative access does not grant permission to read this workspace. Use Settings to manage its lifecycle and access." />
           </Empty>
         ) : current === "research" ? (
           <Research key={space.id} space={space} />
@@ -293,6 +308,7 @@ export default function UnifiedWorkspace({
   );
 }
 function WorkspaceDirectory() {
+  useInterfaceLocale();
   const { params } = useLocation();
   const researchView = researchViews.find(
     ([view]) => view === params.get("research"),
@@ -305,7 +321,11 @@ function WorkspaceDirectory() {
   return (
     <main className="ws-page workspace-directory-page">
       <PageHeading
-        title={researchView ? "Choose a research workspace" : "Workspaces"}
+        title={
+          researchView
+            ? uiText("Choose a research workspace")
+            : uiText("Workspaces")
+        }
         eyebrow="RESEARCH, TOGETHER"
         actions={
           <Button className="button primary" onClick={() => setCreating(true)}>
@@ -314,29 +334,37 @@ function WorkspaceDirectory() {
           </Button>
         }
       >
-        One home for your files, plans, evidence and conversations.
+        <I18nText id="One home for your files, plans, evidence and conversations." />
       </PageHeading>
       <ActionRow className="workspace-directory-filters" size="standard">
         <SearchField
-          aria-label="Find a workspace"
-          placeholder="Find a workspace…"
+          aria-label={uiText("Find a workspace")}
+          placeholder={uiText("Find a workspace…")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           onClear={() => setSearch("")}
-          clearLabel="Clear workspace search"
+          clearLabel={uiText("Clear workspace search")}
         />
         <NativeSelect
-          aria-label="Workspace state"
+          aria-label={uiText("Workspace state")}
           value={state}
           onChange={(e) => setState(e.target.value)}
         >
-          <option value="active">Active</option>
-          <option value="archived">Archived</option>
-          <option value="">All states</option>
+          <option value="active">
+            <I18nText id="Active" />
+          </option>
+          <option value="archived">
+            <I18nText id="Archived" />
+          </option>
+          <option value="">
+            <I18nText id="All states" />
+          </option>
         </NativeSelect>
         <WorkspaceLink to="/groups" className="button secondary">
           <Users size={16} aria-hidden="true" />
-          <span>Manage groups</span>
+          <span>
+            <I18nText id="Manage groups" />
+          </span>
         </WorkspaceLink>
       </ActionRow>
       <ErrorNotice message={data.error} retry={data.reload} />
@@ -408,6 +436,7 @@ function WorkspaceDirectoryCard({
   );
 }
 function CreateWorkspace({ onClose }: { onClose: () => void }) {
+  useInterfaceLocale();
   const { session, refresh, navigate } = useWorkspace(),
     action = useAction(),
     [name, setName] = useState(""),
@@ -416,8 +445,10 @@ function CreateWorkspace({ onClose }: { onClose: () => void }) {
     [audience, setAudience] = useState("restricted");
   return (
     <Dialog
-      title="Create a workspace"
-      subtitle="Connect files, research tasks, milestones and conversations. Personal planning is already available in your personal workspace."
+      title={uiText("Create a workspace")}
+      subtitle={uiText(
+        "Connect files, research tasks, milestones and conversations. Personal planning is already available in your personal workspace.",
+      )}
       onClose={onClose}
     >
       <form
@@ -438,7 +469,7 @@ function CreateWorkspace({ onClose }: { onClose: () => void }) {
         }}
       >
         <label>
-          Name
+          <I18nText id="Name" />
           <TextInput
             autoFocus
             required
@@ -448,7 +479,7 @@ function CreateWorkspace({ onClose }: { onClose: () => void }) {
           />
         </label>
         <label>
-          Description
+          <I18nText id="Description" />
           <TextArea
             rows={3}
             maxLength={3000}
@@ -458,7 +489,7 @@ function CreateWorkspace({ onClose }: { onClose: () => void }) {
         </label>
         <div className="planning-field-grid">
           <label>
-            Group
+            <I18nText id="Group" />
             <NativeSelect
               required
               value={group}
@@ -472,32 +503,43 @@ function CreateWorkspace({ onClose }: { onClose: () => void }) {
             </NativeSelect>
           </label>
           <label>
-            Access
+            <I18nText id="Access" />
             <NativeSelect
               value={audience}
               onChange={(e) => setAudience(e.target.value)}
             >
-              <option value="restricted">Invited workspace members</option>
-              <option value="group">Everyone in the group</option>
+              <option value="restricted">
+                <I18nText id="Invited workspace members" />
+              </option>
+              <option value="group">
+                <I18nText id="Everyone in the group" />
+              </option>
             </NativeSelect>
           </label>
         </div>
         {!session.groups.length && (
           <p>
-            Create or join a group first.{" "}
-            <WorkspaceLink to="/groups">Open groups</WorkspaceLink>
+            <I18nText id="Create or join a group first." />{" "}
+            <WorkspaceLink to="/groups">
+              <I18nText id="Open groups" />
+            </WorkspaceLink>
           </p>
         )}
         <ErrorNotice message={action.error} />
         <div className="dialog-footer">
-          <Button type="button" className="button secondary" onClick={onClose}>
-            Cancel
+          <Button
+            data-dialog-cancel
+            type="button"
+            className="button secondary"
+            onClick={onClose}
+          >
+            <I18nText id="Cancel" />
           </Button>
           <Button
             className="button primary"
             disabled={action.busy || !name.trim() || !group}
           >
-            Create workspace
+            <I18nText id="Create workspace" />
           </Button>
         </div>
       </form>
@@ -505,6 +547,7 @@ function CreateWorkspace({ onClose }: { onClose: () => void }) {
   );
 }
 function WorkspaceOverview({ space }: { space: Space }) {
+  useInterfaceLocale();
   const { revision } = useWorkspace(),
     data = useData<{
       recent: any[];
@@ -516,10 +559,11 @@ function WorkspaceOverview({ space }: { space: Space }) {
   return (
     <div className="workspace-overview">
       <div className="workspace-overview-intro">
-        <h2>Bring the work into focus.</h2>
+        <h2>
+          <I18nText id="Bring the work into focus." />
+        </h2>
         <p>
-          Start with a question, keep the evidence close, and make the next step
-          clear.
+          <I18nText id="Start with a question, keep the evidence close, and make the next step clear." />
         </p>
         <ActionRow>
           <WorkspaceLink
@@ -527,14 +571,14 @@ function WorkspaceOverview({ space }: { space: Space }) {
             to={`/workspaces/${space.id}/planning?task=new`}
           >
             <Plus size={16} />
-            Plan a task
+            <I18nText id="Plan a task" />
           </WorkspaceLink>
           <WorkspaceLink
             className="button secondary"
             to={`/workspaces/${space.id}/planning?view=gantt`}
           >
             <ChartGantt size={16} />
-            Open timeline
+            <I18nText id="Open timeline" />
           </WorkspaceLink>
         </ActionRow>
       </div>
@@ -545,7 +589,7 @@ function WorkspaceOverview({ space }: { space: Space }) {
         data.data && (
           <div className="workspace-overview-grid">
             <OverviewSection
-              title="Next steps"
+              title={uiText("Next steps")}
               to={`/workspaces/${space.id}/planning`}
               empty={!data.data.tasks.length}
               message="No open tasks yet."
@@ -562,7 +606,7 @@ function WorkspaceOverview({ space }: { space: Space }) {
               ))}
             </OverviewSection>
             <OverviewSection
-              title="Recent files"
+              title={uiText("Recent files")}
               to={`/workspaces/${space.id}/files`}
               empty={!data.data.recent.length}
               message="Add your first research note or file."
@@ -582,7 +626,7 @@ function WorkspaceOverview({ space }: { space: Space }) {
               ))}
             </OverviewSection>
             <OverviewSection
-              title="Upcoming milestones"
+              title={uiText("Upcoming milestones")}
               to={`/workspaces/${space.id}/planning?view=gantt`}
               empty={!data.data.milestones.length}
               message="Milestones make review points visible."
@@ -595,7 +639,7 @@ function WorkspaceOverview({ space }: { space: Space }) {
               ))}
             </OverviewSection>
             <OverviewSection
-              title="Reviews & decisions"
+              title={uiText("Reviews & decisions")}
               to={`/workspaces/${space.id}/reviews`}
               empty={!data.data.reviews.length}
               message="No pending reviews. Request a review from a file’s version history."
@@ -612,7 +656,7 @@ function WorkspaceOverview({ space }: { space: Space }) {
               ))}
             </OverviewSection>
             <OverviewSection
-              title="Recent activity"
+              title={uiText("Recent activity")}
               to={`/workspaces/${space.id}/settings/activity`}
               empty={!data.data.activity.length}
               message="Changes will appear here."
@@ -621,7 +665,9 @@ function WorkspaceOverview({ space }: { space: Space }) {
                 <div key={a.id}>
                   <History size={15} />
                   <strong>{a.title}</strong>
-                  <small>{new Date(a.created_at).toLocaleDateString()}</small>
+                  <small>
+                    {new Date(a.created_at).toLocaleDateString(currentLocale())}
+                  </small>
                 </div>
               ))}
             </OverviewSection>
@@ -668,12 +714,13 @@ function WorkspaceSettings({
   space: Space;
   section: string;
 }) {
+  useInterfaceLocale();
   const people = useData<any[]>(
     space.role ? `spaces/${space.id}/planning-members` : null,
   );
   return (
     <div className="workspace-settings-layout">
-      <nav aria-label="Workspace settings">
+      <nav aria-label={uiText("Workspace settings")}>
         {settingsSections.map((key) => (
           <WorkspaceLink
             key={key}
@@ -686,7 +733,7 @@ function WorkspaceSettings({
         {space.group_id && (
           <WorkspaceLink to={`/admin/${space.group_id}/overview`}>
             <Users size={15} />
-            Group administration ↗
+            <I18nText id="Group administration ↗" />
           </WorkspaceLink>
         )}
       </nav>
@@ -698,7 +745,7 @@ function WorkspaceSettings({
             {space.role && <WorkspaceCalendar space={space} />}
           </>
         ) : section === "planning" ? (
-          <PlanningLabSettings space={space}/>
+          <PlanningLabSettings space={space} />
         ) : section === "people" ? (
           space.project_id ? (
             <ProjectMembers
@@ -711,11 +758,17 @@ function WorkspaceSettings({
             />
           ) : (
             <section className="settings-card">
-              <h2>People & access</h2>
+              <h2>
+                <I18nText id="People & access" />
+              </h2>
               <p>
                 {space.kind === "personal"
-                  ? "Only you can access this workspace. Your personal tasks and files are never shared with a group."
-                  : "This workspace inherits group membership. Manage invitations and roles in Group administration."}
+                  ? uiText(
+                      "Only you can access this workspace. Your personal tasks and files are never shared with a group.",
+                    )
+                  : uiText(
+                      "This workspace inherits group membership. Manage invitations and roles in Group administration.",
+                    )}
               </p>
               <ErrorNotice message={people.error} />
               {people.data?.map((p) => (
@@ -730,7 +783,7 @@ function WorkspaceSettings({
                   to={`/admin/${space.group_id}/members`}
                 >
                   <Users size={15} />
-                  Manage group members
+                  <I18nText id="Manage group members" />
                 </WorkspaceLink>
               )}
             </section>
@@ -744,11 +797,11 @@ function WorkspaceSettings({
         ) : section === "integrations" ? (
           <>
             <section className="settings-form-section">
-              <h3>Workspace extensions</h3>
+              <h3>
+                <I18nText id="Workspace extensions" />
+              </h3>
               <p>
-                Approve exact packages for team workspaces and grant your own
-                scoped access. Extensions cannot expand workspace permissions or
-                apply changes without review.
+                <I18nText id="Approve exact packages for team workspaces and grant your own scoped access. Extensions cannot expand workspace permissions or apply changes without review." />
               </p>
               <WorkspaceLink
                 className="button secondary"
@@ -759,18 +812,18 @@ function WorkspaceSettings({
                 }
               >
                 <Puzzle size={16} />
-                Manage extensions
+                <I18nText id="Manage extensions" />
               </WorkspaceLink>
             </section>
             {space.group_id &&
             ["owner", "admin"].includes(space.group_role ?? "") ? (
               <ProviderSettings groupId={space.group_id} />
             ) : (
-              <Empty title="Workspace connections">
+              <Empty title={uiText("Workspace connections")}>
                 <WorkspaceLink to="/settings/connections">
-                  Manage your approved MCP connections
+                  <I18nText id="Manage your approved MCP connections" />
                 </WorkspaceLink>
-                . Group provider credentials require administrator access.
+                <I18nText id=". Group provider credentials require administrator access." />
               </Empty>
             )}
           </>
@@ -780,6 +833,7 @@ function WorkspaceSettings({
   );
 }
 function WorkspaceMetadata({ space }: { space: Space }) {
+  useInterfaceLocale();
   const { refresh, notify } = useWorkspace(),
     action = useAction(),
     [baseline, setBaseline] = useState(space),
@@ -803,11 +857,12 @@ function WorkspaceMetadata({ space }: { space: Space }) {
   }, [space.version, dirty]);
   return (
     <section className="settings-card">
-      <DraftGuard dirty={dirty} title="Unsaved workspace settings" />
-      <h2>Workspace identity</h2>
+      <DraftGuard dirty={dirty} title={uiText("Unsaved workspace settings")} />
+      <h2>
+        <I18nText id="Workspace identity" />
+      </h2>
       <p>
-        Name, description and appearance belong to this workspace. Group
-        identity and membership are managed separately.
+        <I18nText id="Name, description and appearance belong to this workspace. Group identity and membership are managed separately." />
       </p>
       <form
         onSubmit={(e) => {
@@ -838,7 +893,7 @@ function WorkspaceMetadata({ space }: { space: Space }) {
           }
         >
           <label>
-            Name
+            <I18nText id="Name" />
             <TextInput
               required
               maxLength={200}
@@ -847,7 +902,7 @@ function WorkspaceMetadata({ space }: { space: Space }) {
             />
           </label>
           <label>
-            Description
+            <I18nText id="Description" />
             <TextArea
               rows={3}
               maxLength={3000}
@@ -857,7 +912,7 @@ function WorkspaceMetadata({ space }: { space: Space }) {
           </label>
           <div className="planning-field-grid">
             <label>
-              Workspace color
+              <I18nText id="Workspace color" />
               <NativeSelect
                 value={color}
                 onChange={(e) => setColor(e.target.value)}
@@ -869,21 +924,25 @@ function WorkspaceMetadata({ space }: { space: Space }) {
             </label>
             {space.project_id && (
               <label>
-                Audience
+                <I18nText id="Audience" />
                 <NativeSelect
                   value={audience}
                   onChange={(e) =>
                     setAudience(e.target.value as "group" | "restricted")
                   }
                 >
-                  <option value="restricted">Invited workspace members</option>
-                  <option value="group">Everyone in the group</option>
+                  <option value="restricted">
+                    <I18nText id="Invited workspace members" />
+                  </option>
+                  <option value="group">
+                    <I18nText id="Everyone in the group" />
+                  </option>
                 </NativeSelect>
               </label>
             )}
           </div>
           <Button className="button primary" disabled={!dirty}>
-            Save settings
+            <I18nText id="Save settings" />
           </Button>
         </fieldset>
         <ErrorNotice message={action.error} />
@@ -913,6 +972,7 @@ function CalendarForm({
   space: Space;
   value: { calendar: PlanningCalendar; version: number };
 }) {
+  useInterfaceLocale();
   const { refresh, notify } = useWorkspace(),
     action = useAction(),
     [calendar, setCalendar] = useState(value.calendar),
@@ -927,12 +987,13 @@ function CalendarForm({
   }, [value.version, dirty]);
   return (
     <section className="settings-card">
-      <h2>Working calendar</h2>
+      <h2>
+        <I18nText id="Working calendar" />
+      </h2>
       <p>
-        Used when previewing dependency rescheduling. Existing task dates are
-        never rewritten by a calendar change.
+        <I18nText id="Used when previewing dependency rescheduling. Existing task dates are never rewritten by a calendar change." />
       </p>
-      <DraftGuard dirty={dirty} title="Unsaved working calendar" />
+      <DraftGuard dirty={dirty} title={uiText("Unsaved working calendar")} />
       <fieldset
         disabled={
           !space.can_manage ||
@@ -941,7 +1002,7 @@ function CalendarForm({
         }
       >
         <label>
-          Time zone
+          <I18nText id="Time zone" />
           <TimeZoneInput
             required
             value={calendar.timezone}
@@ -951,7 +1012,7 @@ function CalendarForm({
         <div
           className="planning-working-days"
           role="group"
-          aria-label="Working days"
+          aria-label={uiText("Working days")}
         >
           {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d, i) => (
             <button
@@ -970,11 +1031,13 @@ function CalendarForm({
             </button>
           ))}
         </div>
-        <h3>Date exceptions</h3>
+        <h3>
+          <I18nText id="Date exceptions" />
+        </h3>
         <div className="planning-field-grid">
           <TextInput
             type="date"
-            aria-label="Exception date"
+            aria-label={uiText("Exception date")}
             value={date}
             onChange={(e) => setDate(e.target.value)}
           />
@@ -989,7 +1052,7 @@ function CalendarForm({
               setDate("");
             }}
           >
-            Add exception
+            <I18nText id="Add exception" />
           </Button>
         </div>
         {calendar.exceptions.map((e) => (
@@ -1009,8 +1072,12 @@ function CalendarForm({
                 })
               }
             >
-              <option value="false">Non-working day</option>
-              <option value="true">Working day</option>
+              <option value="false">
+                <I18nText id="Non-working day" />
+              </option>
+              <option value="true">
+                <I18nText id="Working day" />
+              </option>
             </NativeSelect>
             <button
               className="text-button"
@@ -1023,7 +1090,7 @@ function CalendarForm({
                 })
               }
             >
-              Remove
+              <I18nText id="Remove" />
             </button>
           </div>
         ))}
@@ -1045,7 +1112,7 @@ function CalendarForm({
             })
           }
         >
-          Save calendar
+          <I18nText id="Save calendar" />
         </Button>
       </fieldset>
       <ErrorNotice message={action.error} />

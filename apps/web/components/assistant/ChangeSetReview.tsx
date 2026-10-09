@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import {
   Button,
   Checkbox,
@@ -43,6 +45,7 @@ export default function ChangeSetReview({
   onClose: () => void;
   onChange?: () => void;
 }) {
+  useInterfaceLocale();
   const { spaces, refresh, navigate } = useWorkspace();
   const [activeId, setActiveId] = useState(id),
     [value, setValue] = useState<WorkspaceChangeSet | null>(null),
@@ -159,11 +162,11 @@ export default function ChangeSetReview({
   return (
     <Dialog
       wide
-      title="Review workspace changes"
+      title={uiText("Review workspace changes")}
       subtitle={
         value
           ? `${value.title} · ${value.status} · Nothing applies without your approval`
-          : "Loading private draft…"
+          : uiText("Loading private draft…")
       }
       className="change-set-dialog"
       onClose={onClose}
@@ -173,26 +176,29 @@ export default function ChangeSetReview({
         <>
           {value.plugin_package_hash && (
             <Notice tone="info">
-              Extension proposal · package{" "}
-              {value.plugin_package_hash.slice(0, 12)}. Nothing applies
-              automatically. Disabling the extension or revoking its permissions
-              also blocks Apply and Undo.
+              <I18nText id="Extension proposal · package" />{" "}
+              {value.plugin_package_hash.slice(0, 12)}
+              <I18nText id=". Nothing applies automatically. Disabling the extension or revoking its permissions also blocks Apply and Undo." />
             </Notice>
           )}
           <div className="change-set-summary">
             <ShieldCheck size={17} />
             <span>
-              {keys.length} of {value.actions.length} actions ·{" "}
+              {keys.length} <I18nText id="of" /> {value.actions.length}{" "}
+              <I18nText id="actions ·" />{" "}
               {value.space_ids
                 .map((s) => spaces.find((v) => v.id === s)?.name ?? "Workspace")
                 .join(", ")}
             </span>
             <Button className="button ghost" onClick={() => setPlan(!plan)}>
-              {plan ? "Action details" : "Plan preview"}
+              {plan ? uiText("Action details") : uiText("Plan preview")}
             </Button>
           </div>
           <div className="change-set-layout">
-            <nav className="change-set-list" aria-label="Proposed actions">
+            <nav
+              className="change-set-list"
+              aria-label={uiText("Proposed actions")}
+            >
               {value.actions.map((a) => {
                 const Icon =
                   a.data.action === "folder_create"
@@ -247,7 +253,10 @@ export default function ChangeSetReview({
                 );
               })}
             </nav>
-            <section className="change-set-detail" aria-label="Action details">
+            <section
+              className="change-set-detail"
+              aria-label={uiText("Action details")}
+            >
               {plan ? (
                 <DraftPlan
                   actions={value.actions.filter((a) =>
@@ -266,14 +275,16 @@ export default function ChangeSetReview({
                     </HelpText>
                     {!!draft.dependsOn.length && (
                       <HelpText>
-                        Requires: {draft.dependsOn.join(", ")}
+                        <I18nText id="Requires:" /> {draft.dependsOn.join(", ")}
                       </HelpText>
                     )}
                     <ErrorNotice message={current.error ?? ""} />
                     <ActionPreview action={current} draft={current.data} />
                     {value.status === "draft" && (
                       <details className="change-set-edit">
-                        <summary>Edit draft fields</summary>
+                        <summary>
+                          <I18nText id="Edit draft fields" />
+                        </summary>
                         <ActionFields
                           action={draft}
                           actions={actions}
@@ -281,8 +292,7 @@ export default function ChangeSetReview({
                         />
                         {edited && (
                           <Notice tone="warning">
-                            Save draft edits to refresh the preview. Approval is
-                            disabled until you review the updated changes.
+                            <I18nText id="Save draft edits to refresh the preview. Approval is disabled until you review the updated changes." />
                           </Notice>
                         )}
                       </details>
@@ -290,7 +300,9 @@ export default function ChangeSetReview({
                     {current.result && (
                       <div className="change-set-result">
                         <Check size={15} />
-                        <span>Applied successfully</span>
+                        <span>
+                          <I18nText id="Applied successfully" />
+                        </span>
                         <Button
                           className="button ghost"
                           onClick={() =>
@@ -305,7 +317,7 @@ export default function ChangeSetReview({
                             )
                           }
                         >
-                          Open result
+                          <I18nText id="Open result" />
                         </Button>
                       </div>
                     )}
@@ -325,17 +337,18 @@ export default function ChangeSetReview({
                         }
                       >
                         <Undo2 size={14} />
-                        Review undo
+                        <I18nText id="Review undo" />
                       </Button>
                     )}
                     {!current.undoable && current.state === "complete" && (
                       <Notice tone="warning">
-                        Automatic Undo is not available for this action. Use the
-                        file history, trash or management controls if needed.
+                        <I18nText id="Automatic Undo is not available for this action. Use the file history, trash or management controls if needed." />
                       </Notice>
                     )}
                     <details className="change-set-exact">
-                      <summary>Exact action and receipt</summary>
+                      <summary>
+                        <I18nText id="Exact action and receipt" />
+                      </summary>
                       <pre>
                         {JSON.stringify(
                           {
@@ -363,7 +376,7 @@ export default function ChangeSetReview({
                 disabled={!canApply || busy}
                 onChange={(e) => setConfirmed(e.target.checked)}
               />
-              I approve these exact changes and their destinations.
+              <I18nText id="I approve these exact changes and their destinations." />
             </label>
             {edited && (
               <Button
@@ -387,7 +400,7 @@ export default function ChangeSetReview({
                   })
                 }
               >
-                Save draft edits
+                <I18nText id="Save draft edits" />
               </Button>
             )}
             <Button
@@ -408,7 +421,7 @@ export default function ChangeSetReview({
                 })
               }
             >
-              Prepare review
+              <I18nText id="Prepare review" />
             </Button>
             <Button
               className="button primary"
@@ -422,7 +435,7 @@ export default function ChangeSetReview({
                 )
               }
             >
-              Approve & apply
+              <I18nText id="Approve & apply" />
             </Button>
           </>
         )}
@@ -437,7 +450,7 @@ export default function ChangeSetReview({
             }
           >
             <Square size={13} />
-            {running ? "Stop remaining actions" : "Dismiss"}
+            {running ? uiText("Stop remaining actions") : uiText("Dismiss")}
           </Button>
         )}
         {value &&
@@ -471,11 +484,11 @@ export default function ChangeSetReview({
                 })
               }
             >
-              Review remaining changes
+              <I18nText id="Review remaining changes" />
             </Button>
           )}
         <Button className="button secondary" onClick={onClose}>
-          Close
+          <I18nText id="Close" />
         </Button>
       </div>
     </Dialog>
@@ -490,6 +503,7 @@ function ActionFields({
   actions: ChangeAction[];
   onChange: (key: string, value: unknown) => void;
 }) {
+  useInterfaceLocale();
   const p = action.payload,
     task = action.action.includes("task"),
     file = ["file_create", "folder_create", "file_update"].includes(
@@ -511,7 +525,7 @@ function ActionFields({
           <label key={key}>
             <span>
               {key === "source"
-                ? "Proposed content"
+                ? uiText("Proposed content")
                 : key[0].toUpperCase() + key.slice(1)}
             </span>
             {["source", "body", "description"].includes(key) ? (
@@ -532,13 +546,17 @@ function ActionFields({
         ))}
       {file && (
         <label>
-          <span>Destination folder</span>
+          <span>
+            <I18nText id="Destination folder" />
+          </span>
           <NativeSelect
-            aria-label="Destination folder"
+            aria-label={uiText("Destination folder")}
             value={String(p.parentId ?? "")}
             onChange={(e) => onChange("parentId", e.target.value || null)}
           >
-            <option value="">Workspace root</option>
+            <option value="">
+              <I18nText id="Workspace root" />
+            </option>
             {folders.data?.items.map((f) => (
               <option key={f.id} value={f.id}>
                 {f.name}
@@ -553,7 +571,7 @@ function ActionFields({
               )
               .map((a) => (
                 <option key={a.key} value={`@{${a.key}}`}>
-                  {a.payload.name as string} · new folder
+                  {a.payload.name as string} <I18nText id="· new folder" />
                 </option>
               ))}
           </NativeSelect>
@@ -561,13 +579,17 @@ function ActionFields({
       )}
       {task && (
         <label>
-          <span>Assignee</span>
+          <span>
+            <I18nText id="Assignee" />
+          </span>
           <NativeSelect
-            aria-label="Proposed assignee"
+            aria-label={uiText("Proposed assignee")}
             value={String(p.assigneeId ?? "")}
             onChange={(e) => onChange("assigneeId", e.target.value || null)}
           >
-            <option value="">Unassigned</option>
+            <option value="">
+              <I18nText id="Unassigned" />
+            </option>
             {members.data?.map((m) => (
               <option key={m.id} value={m.id}>
                 {m.name}
@@ -581,7 +603,7 @@ function ActionFields({
         <div className="change-set-dates">
           {(task ? ["startOn", "dueOn"] : ["dueOn"]).map((key) => (
             <label key={key}>
-              <span>{key === "startOn" ? "Start" : "Due"}</span>
+              <span>{key === "startOn" ? uiText("Start") : uiText("Due")}</span>
               <TextInput
                 aria-label={`Proposed ${key}`}
                 type="date"
@@ -594,9 +616,9 @@ function ActionFields({
       )}
       {(action.action === "file_update" || task) && (
         <label>
-          <span>{file ? "Tags" : "Labels"}</span>
+          <span>{file ? uiText("Tags") : uiText("Labels")}</span>
           <TextInput
-            aria-label="Proposed labels"
+            aria-label={uiText("Proposed labels")}
             value={
               Array.isArray(p[file ? "tags" : "labels"])
                 ? (p[file ? "tags" : "labels"] as string[]).join(", ")
@@ -673,10 +695,11 @@ function ActionPreview({
   if (action.prepared?.schedule)
     return (
       <div className="change-set-schedule">
-        <h4>Schedule impact</h4>
+        <h4>
+          <I18nText id="Schedule impact" />
+        </h4>
         <HelpText>
-          Dates are checked against the working calendar, dependencies and
-          available capacity. Unknown effort is not treated as zero.
+          <I18nText id="Dates are checked against the working calendar, dependencies and available capacity. Unknown effort is not treated as zero." />
         </HelpText>
         <pre>{JSON.stringify(action.prepared.schedule, null, 2)}</pre>
       </div>
@@ -684,11 +707,16 @@ function ActionPreview({
   return null;
 }
 function CanvasDraft({ source }: { source: string }) {
+  useInterfaceLocale();
   let data;
   try {
     data = canvasSchema.parse(JSON.parse(source));
   } catch {
-    return <p className="form-error">Canvas source is not valid yet.</p>;
+    return (
+      <p className="form-error">
+        <I18nText id="Canvas source is not valid yet." />
+      </p>
+    );
   }
   const nodes = data.nodes,
     minX = Math.min(0, ...nodes.map((n) => n.x)),
@@ -699,7 +727,7 @@ function CanvasDraft({ source }: { source: string }) {
     <svg
       className="change-set-canvas"
       role="img"
-      aria-label="Proposed Canvas layout"
+      aria-label={uiText("Proposed Canvas layout")}
       viewBox={`${minX - 15} ${minY - 15} ${width + 30} ${height + 30}`}
     >
       {data.edges.map((e) => {
@@ -790,17 +818,18 @@ function DraftPlan({
   if (!tasks.length && !milestones.length)
     return (
       <HelpText>
-        This selection has no task or milestone drafts. Select a planning action
-        to preview its workspace.
+        <I18nText id="This selection has no task or milestone drafts. Select a planning action to preview its workspace." />
       </HelpText>
     );
   if (!settings.data)
     return <HelpText>{settings.error || "Loading working calendar…"}</HelpText>;
   return (
     <div className="change-set-gantt">
-      <h3>Proposed plan</h3>
+      <h3>
+        <I18nText id="Proposed plan" />
+      </h3>
       <HelpText>
-        Selected task and milestone drafts · unscheduled work stays undated.
+        <I18nText id="Selected task and milestone drafts · unscheduled work stays undated." />
       </HelpText>
       <PlanningGantt
         tasks={tasks}

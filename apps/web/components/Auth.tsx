@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { Button, TextInput } from "./ui/controls";
 import BrandMark from "./BrandMark";
 import { useEffect, useState } from "react";
@@ -19,6 +21,7 @@ export default function Auth({
   onSignedIn: () => void;
   onPasswordReset?: () => void;
 }) {
+  const { t } = useInterfaceLocale();
   const [email, setEmail] = useState(""),
     [password, setPassword] = useState(""),
     [name, setName] = useState(""),
@@ -137,24 +140,26 @@ export default function Auth({
         <a className="brand" href="/">
           <BrandMark />
           <span>
-            Axiom<span className="brand-dot">.</span>
+            <I18nText id="Axiom" />
+            <span className="brand-dot">.</span>
           </span>
         </a>
         <div className="auth-story-content">
-          <div className="eyebrow">A SHARED SPACE FOR RESEARCH</div>
+          <div className="eyebrow">
+            <I18nText id="A SHARED SPACE FOR RESEARCH" />
+          </div>
           <h1>
-            Good ideas
-            <br />
-            rarely happen
-            <br />
-            <em>in isolation.</em>
+            <I18nText id="Good ideas rarely happen in isolation." />
           </h1>
           <p>
-            Write, connect, and think together.
-            <br />A quieter home for your group’s work.
+            <I18nText id="Write, connect, and think together." />
+            <br />
+            <I18nText id="A quieter home for your group’s work." />
           </p>
           <div className="auth-equation">
-            <span className="equation-annotation">a common language</span>
+            <span className="equation-annotation">
+              <I18nText id="a common language" />
+            </span>
             <div>δS = 0</div>
             <svg viewBox="0 0 320 100" aria-hidden="true">
               <path
@@ -173,65 +178,71 @@ export default function Auth({
               />
             </svg>
             <span className="equation-footnote">
-              From first principles to the next question.
+              <I18nText id="From first principles to the next question." />
             </span>
           </div>
         </div>
         <div className="auth-story-footer">
           <span>
-            <Sigma size={16} /> Mathematics
+            <Sigma size={16} /> <I18nText id="Mathematics" />
           </span>
           <span>
-            <Atom size={16} /> Physics
+            <Atom size={16} /> <I18nText id="Physics" />
           </span>
           <span>
-            <ArrowUpRight size={16} /> Machine learning
+            <ArrowUpRight size={16} /> <I18nText id="Machine learning" />
           </span>
         </div>
       </section>
       <section className="auth-form-area">
         <div className="auth-form-card">
-          <div className="eyebrow">YOUR RESEARCH, CONNECTED</div>
+          <div className="eyebrow">
+            <I18nText id="YOUR RESEARCH, CONNECTED" />
+          </div>
           <h2>
-            {twoFactor
-              ? "One more step."
-              : mode === "invite"
-                ? "Join the conversation."
-                : mode === "forgot"
-                  ? "Find your way back."
-                  : mode === "reset"
-                    ? "A fresh start."
-                    : "Welcome back."}
+            {uiText(
+              twoFactor
+                ? "One more step."
+                : mode === "invite"
+                  ? "Join the conversation."
+                  : mode === "forgot"
+                    ? "Find your way back."
+                    : mode === "reset"
+                      ? "A fresh start."
+                      : "Welcome back.",
+            )}
           </h2>
           <p className="muted">
             {twoFactor
               ? recovery
-                ? "Enter one of your unused recovery codes."
-                : "Enter the six-digit code from your authenticator app."
+                ? t("Enter one of your unused recovery codes.")
+                : t("Enter the six-digit code from your authenticator app.")
               : mode === "invite"
-                ? `You’ve been invited to ${groupName || "a research group"}.`
+                ? t("You’ve been invited to {group}.", {
+                    group: groupName || t("a research group"),
+                  })
                 : mode === "forgot"
-                  ? "Enter the email associated with your account."
+                  ? t("Enter the email associated with your account.")
                   : mode === "reset"
-                    ? "Choose a new password for your account."
-                    : "Sign in to your research workspace."}
+                    ? t("Choose a new password for your account.")
+                    : t("Sign in to your research workspace.")}
           </p>
           <form onSubmit={submit}>
             {mode === "invite" && (
               <label>
-                Your name
+                <I18nText id="Your name" />
                 <TextInput
                   autoComplete="name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
-                  placeholder="Ada Lovelace"
+                  placeholder={uiText("Ada Lovelace")}
                 />
               </label>
             )}
             {!twoFactor && mode !== "reset" && (
               <label>
-                Email address
+                <I18nText id="Email address" />
                 <TextInput
                   type="email"
                   autoComplete="email"
@@ -239,14 +250,14 @@ export default function Auth({
                   onChange={(e) => setEmail(e.target.value)}
                   readOnly={mode === "invite"}
                   required
-                  placeholder="you@research.org"
+                  placeholder={uiText("you@research.org")}
                 />
               </label>
             )}
             {!twoFactor && mode !== "forgot" && (
               <label htmlFor="account-password">
                 <span className="label-row">
-                  Password
+                  <I18nText id="Password" />
                   {mode === "login" && (
                     <button
                       type="button"
@@ -256,13 +267,13 @@ export default function Auth({
                         setError("");
                       }}
                     >
-                      Forgot password?
+                      <I18nText id="Forgot password?" />
                     </button>
                   )}
                 </span>
                 <TextInput
                   id="account-password"
-                  aria-label="Password"
+                  aria-label={uiText("Password")}
                   type="password"
                   autoComplete={
                     mode === "login" ? "current-password" : "new-password"
@@ -273,19 +284,25 @@ export default function Auth({
                   required
                   placeholder={
                     mode === "login"
-                      ? "Enter your password"
-                      : "At least 12 characters"
+                      ? uiText("Enter your password")
+                      : uiText("At least 12 characters")
                   }
                 />
               </label>
             )}
             {twoFactor && (
               <label>
-                {recovery ? "Recovery code" : "Authenticator code"}
+                {recovery
+                  ? uiText("Recovery code")
+                  : uiText("Authenticator code")}
                 <TextInput
                   autoFocus
                   required
-                  aria-label={recovery ? "Recovery code" : "Authenticator code"}
+                  aria-label={
+                    recovery
+                      ? uiText("Recovery code")
+                      : uiText("Authenticator code")
+                  }
                   value={code}
                   onChange={(event) => setCode(event.target.value)}
                   inputMode={recovery ? "text" : "numeric"}
@@ -303,8 +320,8 @@ export default function Auth({
                   }}
                 >
                   {recovery
-                    ? "Use an authenticator code"
-                    : "Use a recovery code instead"}
+                    ? uiText("Use an authenticator code")
+                    : uiText("Use a recovery code instead")}
                 </button>
               </label>
             )}
@@ -316,7 +333,7 @@ export default function Auth({
             {message && (
               <div className="form-success" role="status">
                 <Check size={16} />
-                {message}
+                {uiText(message)}
               </div>
             )}
             <Button
@@ -327,15 +344,17 @@ export default function Auth({
                 <LoaderCircle size={17} className="spin" />
               ) : (
                 <>
-                  {twoFactor
-                    ? "Verify and sign in"
-                    : mode === "invite"
-                      ? "Create account & join"
-                      : mode === "forgot"
-                        ? "Send recovery link"
-                        : mode === "reset"
-                          ? "Update password"
-                          : "Enter workspace"}
+                  {uiText(
+                    twoFactor
+                      ? "Verify and sign in"
+                      : mode === "invite"
+                        ? "Create account & join"
+                        : mode === "forgot"
+                          ? "Send recovery link"
+                          : mode === "reset"
+                            ? "Update password"
+                            : "Enter workspace",
+                  )}
                   <ArrowRight size={17} />
                 </>
               )}
@@ -363,7 +382,10 @@ export default function Auth({
                   });
               }}
             >
-              Sign in with {institution.name}
+              <I18nText
+                id="Sign in with {institution}"
+                values={{ institution: institution.name }}
+              />
             </Button>
           )}
           {twoFactor && (
@@ -375,7 +397,7 @@ export default function Auth({
                 setError("");
               }}
             >
-              Return to password sign-in
+              <I18nText id="Return to password sign-in" />
             </button>
           )}
           {mode !== "login" && (
@@ -387,20 +409,20 @@ export default function Auth({
                 setMessage("");
               }}
             >
-              Already have an account? Sign in
+              <I18nText id="Already have an account? Sign in" />
             </button>
           )}
           <div className="invite-notice">
             <LockKeyhole size={16} />
             <span>
-              Axiom is an invitation-only workspace.
+              <I18nText id="Axiom is an invitation-only workspace." />
               <br />
-              Ask your group administrator for access.
+              <I18nText id="Ask your group administrator for access." />
             </span>
           </div>
         </div>
         <div className="auth-footer">
-          A little less noise. A little more understanding.
+          <I18nText id="A little less noise. A little more understanding." />
         </div>
       </section>
     </main>

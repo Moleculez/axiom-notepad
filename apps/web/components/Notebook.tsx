@@ -1,4 +1,7 @@
 "use client";
+import { currentLocale } from "@axiom/i18n/client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import {
   Button,
   Checkbox,
@@ -120,7 +123,7 @@ const Editor = dynamic(() => import("./Editor"), {
   loading: () => (
     <div className="editor-loading">
       <LoaderCircle className="spin" size={18} />
-      Opening your notebook…
+      <I18nText id="Opening your notebook…" />
     </div>
   ),
 });
@@ -157,6 +160,7 @@ const emptyWorkspace: Workspace = {
   links: [],
 };
 export default function Notebook() {
+  useInterfaceLocale();
   const [session, setSession] = useState<Session | null>(null),
     [booting, setBooting] = useState(true),
     [groupId, setGroupId] = useState(""),
@@ -1044,7 +1048,9 @@ export default function Notebook() {
               </span>
             </div>
             <span className="note-list-time">
-              {page === "trash" ? "Restore note" : timeAgo(n.updated_at)}
+              {page === "trash"
+                ? uiText("Restore note")
+                : timeAgo(n.updated_at)}
             </span>
             {page !== "trash" && <ChevronRight size={15} />}
           </button>
@@ -1056,7 +1062,9 @@ export default function Notebook() {
     return (
       <div className="boot-screen">
         <BrandMark />
-        <p>Opening your workspace…</p>
+        <p>
+          <I18nText id="Opening your workspace…" />
+        </p>
       </div>
     );
   if (!session)
@@ -1089,12 +1097,13 @@ export default function Notebook() {
             >
               <BrandMark />
               <span>
-                Axiom<span className="brand-dot">.</span>
+                <I18nText id="Axiom" />
+                <span className="brand-dot">.</span>
               </span>
             </a>
             <IconButton
               className="icon-button sidebar-toggle"
-              aria-label="Hide sidebar"
+              aria-label={uiText("Hide sidebar")}
               onClick={() => setSidebar(false)}
             >
               <Menu size={17} />
@@ -1106,13 +1115,17 @@ export default function Notebook() {
             </div>
             <div>
               <strong>{group?.name ?? "Your workspace"}</strong>
-              <span>{workspace.members.length || 1} researchers</span>
+              <span>
+                {workspace.members.length || 1} <I18nText id="researchers" />
+              </span>
             </div>
             <ChevronDown size={14} />
           </button>
           <button className="sidebar-search" onClick={() => setModal("search")}>
             <Search size={15} />
-            <span>Find anything</span>
+            <span>
+              <I18nText id="Find anything" />
+            </span>
             <kbd>
               {keysFor(
                 "searchNotes",
@@ -1129,36 +1142,39 @@ export default function Notebook() {
               onClick={() => navigate("home")}
             >
               <Home size={17} />
-              Overview
+              <I18nText id="Overview" />
             </button>
             <button
               className={page === "all" ? "active" : ""}
               onClick={() => navigate("all")}
             >
               <FileText size={17} />
-              All notes<span className="nav-count">{activeNotes.length}</span>
+              <I18nText id="All notes" />
+              <span className="nav-count">{activeNotes.length}</span>
             </button>
             <button
               className={page === "graph" ? "active" : ""}
               onClick={() => navigate("graph")}
             >
               <Network size={17} />
-              Knowledge graph
+              <I18nText id="Knowledge graph" />
             </button>
             <button
               className={page === "references" ? "active" : ""}
               onClick={() => navigate("references")}
             >
               <BookOpen size={17} />
-              Reference library
+              <I18nText id="Reference library" />
             </button>
           </nav>
           <div className="sidebar-scroll">
             <div className="nav-section-title">
-              <span>PROJECTS</span>
+              <span>
+                <I18nText id="PROJECTS" />
+              </span>
               <IconButton
                 className="icon-button"
-                aria-label="New project"
+                aria-label={uiText("New project")}
                 onClick={() => setModal("project")}
               >
                 <Plus size={14} />
@@ -1218,7 +1234,9 @@ export default function Notebook() {
             ).length && (
               <>
                 <div className="nav-section-title">
-                  <span>SHARED NOTES</span>
+                  <span>
+                    <I18nText id="SHARED NOTES" />
+                  </span>
                 </div>
                 {noteRows(
                   activeNotes.filter(
@@ -1231,7 +1249,9 @@ export default function Notebook() {
               </>
             )}
             <div className="nav-section-title">
-              <span>YOUR SPACE</span>
+              <span>
+                <I18nText id="YOUR SPACE" />
+              </span>
               <LockKeyhole size={11} />
             </div>
             <nav className="primary-nav private-nav">
@@ -1240,7 +1260,7 @@ export default function Notebook() {
                 onClick={() => navigate("private")}
               >
                 <LockKeyhole size={16} />
-                Private drafts
+                <I18nText id="Private drafts" />
                 <span className="nav-count">
                   {activeNotes.filter((n) => n.visibility === "private").length}
                 </span>
@@ -1250,22 +1270,22 @@ export default function Notebook() {
                 onClick={() => navigate("favorites")}
               >
                 <Star size={16} />
-                Favorites
+                <I18nText id="Favorites" />
               </button>
             </nav>
           </div>
           <div className="sidebar-bottom">
             <button onClick={() => navigate("templates")}>
               <LayoutTemplate size={16} />
-              Templates
+              <I18nText id="Templates" />
             </button>
             <button onClick={() => navigate("trash")}>
               <Trash2 size={16} />
-              Trash
+              <I18nText id="Trash" />
             </button>
             <button onClick={() => setModal("workspace-settings")}>
               <Settings size={16} />
-              Settings & members
+              <I18nText id="Settings & members" />
             </button>
             <div className="sidebar-account">
               <div
@@ -1280,7 +1300,7 @@ export default function Notebook() {
               </div>
               <IconButton
                 className="icon-button"
-                aria-label="Notifications"
+                aria-label={uiText("Notifications")}
                 onClick={() => setModal("notifications")}
               >
                 <Bell size={17} />
@@ -1297,7 +1317,7 @@ export default function Notebook() {
           <div className="breadcrumbs">
             <IconButton
               className="icon-button"
-              aria-label="Toggle sidebar"
+              aria-label={uiText("Toggle sidebar")}
               onClick={() => setSidebar((v) => !v)}
             >
               <Menu size={18} />
@@ -1326,10 +1346,16 @@ export default function Notebook() {
             </span>
           </div>
           <div className="topbar-actions">
-            {offline && <span className="offline-label">Offline</span>}
+            {offline && (
+              <span className="offline-label">
+                <I18nText id="Offline" />
+              </span>
+            )}
             <IconButton
               className="icon-button"
-              aria-label={dark ? "Use light theme" : "Use dark theme"}
+              aria-label={
+                dark ? uiText("Use light theme") : uiText("Use dark theme")
+              }
               onClick={() => {
                 appearance.apply(
                   { ...appearance.preferences, mode: dark ? "light" : "dark" },
@@ -1342,7 +1368,7 @@ export default function Notebook() {
             </IconButton>
             <IconButton
               className="icon-button"
-              aria-label="Appearance settings"
+              aria-label={uiText("Appearance settings")}
               onClick={() => {
                 setSettingsSection("Theme");
                 setModal("settings");
@@ -1356,7 +1382,7 @@ export default function Notebook() {
               disabled={!groupId || offline}
             >
               <Plus size={15} />
-              New note
+              <I18nText id="New note" />
             </Button>
           </div>
         </header>
@@ -1366,7 +1392,7 @@ export default function Notebook() {
               <div
                 className="mode-switch"
                 role="group"
-                aria-label="Editor mode"
+                aria-label={uiText("Editor mode")}
               >
                 {(["write", "source", "read"] as EditorMode[]).map((m) => (
                   <button
@@ -1374,7 +1400,7 @@ export default function Notebook() {
                     className={mode === m ? "selected" : ""}
                     title={
                       m === "read"
-                        ? "Reading view"
+                        ? uiText("Reading view")
                         : keysFor(
                             "source",
                             editorSettings.effective,
@@ -1425,8 +1451,8 @@ export default function Notebook() {
                 className="icon-button"
                 aria-label={
                   workspace.notes.find((n) => n.id === note.id)?.favorite
-                    ? "Remove favorite"
-                    : "Add favorite"
+                    ? uiText("Remove favorite")
+                    : uiText("Add favorite")
                 }
                 onClick={() =>
                   void run(async () => {
@@ -1452,11 +1478,11 @@ export default function Notebook() {
                 onClick={() => setModal("share")}
               >
                 <Users size={14} />
-                Share
+                <I18nText id="Share" />
               </Button>
               <IconButton
                 className="icon-button"
-                aria-label="Note actions"
+                aria-label={uiText("Note actions")}
                 onClick={() => setModal("note-actions")}
               >
                 <MoreHorizontal size={19} />
@@ -1464,7 +1490,7 @@ export default function Notebook() {
               <span className="toolbar-divider" />
               <IconButton
                 className="icon-button"
-                aria-label="Toggle context panel"
+                aria-label={uiText("Toggle context panel")}
                 onClick={() => setContextOpen((v) => !v)}
               >
                 {contextOpen ? (
@@ -1476,8 +1502,7 @@ export default function Notebook() {
             </div>
             {remoteVersion && (
               <div className="recovery-banner">
-                A restored version is available. Your current local text has
-                been retained.
+                <I18nText id="A restored version is available. Your current local text has been retained." />
                 <button
                   onClick={() =>
                     download(
@@ -1486,10 +1511,10 @@ export default function Notebook() {
                     )
                   }
                 >
-                  Export local copy
+                  <I18nText id="Export local copy" />
                 </button>
                 <button onClick={() => void openNote(note.id)}>
-                  Open restored version
+                  <I18nText id="Open restored version" />
                 </button>
               </div>
             )}
@@ -1497,7 +1522,7 @@ export default function Notebook() {
               <div
                 className="paper-mobile-tabs"
                 role="tablist"
-                aria-label="Reading workspace"
+                aria-label={uiText("Reading workspace")}
               >
                 <button
                   role="tab"
@@ -1505,7 +1530,7 @@ export default function Notebook() {
                   className={readerTab === "note" ? "active" : ""}
                   onClick={() => setReaderTab("note")}
                 >
-                  Note
+                  <I18nText id="Note" />
                 </button>
                 <button
                   role="tab"
@@ -1513,7 +1538,7 @@ export default function Notebook() {
                   className={readerTab === "paper" ? "active" : ""}
                   onClick={() => setReaderTab("paper")}
                 >
-                  Paper
+                  <I18nText id="Paper" />
                 </button>
               </div>
             )}
@@ -1576,8 +1601,8 @@ export default function Notebook() {
                   <div className="document-kicker">
                     <span className="project-indicator" />
                     {note.visibility === "private"
-                      ? "PRIVATE DRAFT"
-                      : "RESEARCH NOTE"}
+                      ? uiText("PRIVATE DRAFT")
+                      : uiText("RESEARCH NOTE")}
                     <span className="document-kicker-line" />
                   </div>
                   <NoteTitle
@@ -1591,11 +1616,13 @@ export default function Notebook() {
                   />
                   <div className="document-meta">
                     <button
-                      aria-label="Bookmark this note section"
+                      aria-label={uiText("Bookmark this note section")}
                       disabled={!note.space_id || busy}
                       title={
                         !note.space_id
-                          ? "Reconnect to resolve this note’s reading context."
+                          ? uiText(
+                              "Reconnect to resolve this note’s reading context.",
+                            )
                           : undefined
                       }
                       onMouseDown={(event) => event.preventDefault()}
@@ -1642,9 +1669,11 @@ export default function Notebook() {
                       }
                     >
                       <BookmarkPlus size={14} />
-                      Bookmark
+                      <I18nText id="Bookmark" />
                     </button>
-                    <span>Updated {timeAgo(note.updated_at)}</span>
+                    <span>
+                      <I18nText id="Updated" /> {timeAgo(note.updated_at)}
+                    </span>
                     <span className="meta-dot">·</span>
                     <button onClick={() => setModal("note-actions")}>
                       {note.tags.length ? (
@@ -1654,7 +1683,9 @@ export default function Notebook() {
                           </span>
                         ))
                       ) : (
-                        <span className="muted">Add tags</span>
+                        <span className="muted">
+                          <I18nText id="Add tags" />
+                        </span>
                       )}
                     </button>
                   </div>
@@ -1710,7 +1741,7 @@ export default function Notebook() {
                           </button>
                         ))}
                         <button
-                          aria-label="Comment on selection"
+                          aria-label={uiText("Comment on selection")}
                           onClick={() => {
                             setCommentAnchor(editor.current?.anchor() ?? null);
                             setContextTab("comments");
@@ -1721,8 +1752,8 @@ export default function Notebook() {
                         </button>
                         <div className="toolbar-spacer" />
                         <button
-                          aria-label="Search editor commands"
-                          title="Search commands"
+                          aria-label={uiText("Search editor commands")}
+                          title={uiText("Search commands")}
                           onClick={() => workspaceCommand("commands")}
                         >
                           <Search size={16} />
@@ -1735,7 +1766,7 @@ export default function Notebook() {
                           }}
                         >
                           <Plus size={14} />
-                          Insert
+                          <I18nText id="Insert" />
                           <ChevronDown size={12} />
                         </button>
                       </div>
@@ -1802,19 +1833,22 @@ export default function Notebook() {
                   </div>
                   {!source.trim() && mode !== "read" && (
                     <div className="empty-editor-hint">
-                      Start with a thought, a question, or an equation.
+                      <I18nText id="Start with a thought, a question, or an equation." />
                       <br />
                       <button
                         className="text-button"
                         onClick={() => setModal("insert")}
                       >
-                        Explore writing tools <ArrowRight size={13} />
+                        <I18nText id="Explore writing tools" />{" "}
+                        <ArrowRight size={13} />
                       </button>
                     </div>
                   )}
                   {attachments.length > 0 && (
                     <section className="document-attachments">
-                      <div className="eyebrow">ATTACHED TO THIS NOTE</div>
+                      <div className="eyebrow">
+                        <I18nText id="ATTACHED TO THIS NOTE" />
+                      </div>
                       {attachments.map((file) => (
                         <button
                           key={file.id}
@@ -1836,9 +1870,10 @@ export default function Notebook() {
                             <strong>{file.name}</strong>
                             <small>
                               {file.mime === "application/pdf"
-                                ? "PDF document"
-                                : "Attachment"}{" "}
-                              · {(Number(file.bytes) / 1024).toFixed(0)} KB
+                                ? uiText("PDF document")
+                                : uiText("Attachment")}{" "}
+                              · {(Number(file.bytes) / 1024).toFixed(0)}{" "}
+                              <I18nText id="KB" />
                             </small>
                           </span>
                           <ArrowUpRight size={16} />
@@ -1848,7 +1883,9 @@ export default function Notebook() {
                   )}
                   <div className="document-end">
                     <span />
-                    <span>Keep asking good questions.</span>
+                    <span>
+                      <I18nText id="Keep asking good questions." />
+                    </span>
                     <span />
                   </div>
                 </article>
@@ -1886,7 +1923,7 @@ export default function Notebook() {
                   <div
                     className="context-tabs"
                     role="tablist"
-                    aria-label="Note context"
+                    aria-label={uiText("Note context")}
                   >
                     {[
                       { id: "outline", icon: List, label: "Outline" },
@@ -1935,7 +1972,7 @@ export default function Notebook() {
                       />
                       <div className="context-divider" />
                       <div className="context-heading">
-                        CONNECTED NOTES
+                        <I18nText id="CONNECTED NOTES" />
                         <span>
                           {
                             workspace.links.filter(
@@ -1967,16 +2004,21 @@ export default function Notebook() {
                         <div className="tip-symbol">
                           <LinkIcon size={15} />
                         </div>
-                        <strong>Think in connections.</strong>
+                        <strong>
+                          <I18nText id="Think in connections." />
+                        </strong>
                         <p>
-                          Use <code>[[note links]]</code> to connect ideas
-                          across your notebook.
+                          <I18nText id="Use" />{" "}
+                          <code>
+                            <I18nText id="[[note links]]" />
+                          </code>{" "}
+                          <I18nText id="to connect ideas across your notebook." />
                         </p>
                         <button
                           className="text-button"
                           onClick={() => setModal("link-note")}
                         >
-                          Link a note <ArrowRight size={12} />
+                          <I18nText id="Link a note" /> <ArrowRight size={12} />
                         </button>
                       </div>
                     </>
@@ -1984,7 +2026,7 @@ export default function Notebook() {
                   {contextTab === "links" && (
                     <>
                       <div className="context-heading">
-                        LINKING TO THIS NOTE
+                        <I18nText id="LINKING TO THIS NOTE" />
                       </div>
                       {workspace.links
                         .filter((l) => l.target_id === note.id)
@@ -2008,8 +2050,7 @@ export default function Notebook() {
                         (l) => l.target_id === note.id,
                       ) && (
                         <p className="context-empty">
-                          When another note links here, you’ll find it in this
-                          panel.
+                          <I18nText id="When another note links here, you’ll find it in this panel." />
                         </p>
                       )}
                       <button
@@ -2017,13 +2058,15 @@ export default function Notebook() {
                         onClick={() => navigate("graph")}
                       >
                         <Network size={15} />
-                        Explore the knowledge graph
+                        <I18nText id="Explore the knowledge graph" />
                       </button>
                     </>
                   )}
                   {contextTab === "references" && (
                     <>
-                      <div className="context-heading">REFERENCE LIBRARY</div>
+                      <div className="context-heading">
+                        <I18nText id="REFERENCE LIBRARY" />
+                      </div>
                       {workspace.references.map((r) => (
                         <div className="context-reference" key={r.id}>
                           <span className="reference-key">{r.cite_key}</span>
@@ -2037,7 +2080,7 @@ export default function Notebook() {
                               editor.current?.insert(`[@${r.cite_key}]`)
                             }
                           >
-                            Insert citation <Plus size={12} />
+                            <I18nText id="Insert citation" /> <Plus size={12} />
                           </button>
                         </div>
                       ))}
@@ -2046,14 +2089,14 @@ export default function Notebook() {
                         onClick={() => setModal("reference")}
                       >
                         <Plus size={15} />
-                        Add a reference
+                        <I18nText id="Add a reference" />
                       </button>
                     </>
                   )}
                   {contextTab === "comments" && (
                     <>
                       <div className="context-heading">
-                        DISCUSSION
+                        <I18nText id="DISCUSSION" />
                         <span>
                           {comments.filter((c) => !c.parent_id).length}
                         </span>
@@ -2089,7 +2132,9 @@ export default function Notebook() {
                                 >
                                   {c.anchor.quote}
                                   {c.anchor.generation !== note.generation && (
-                                    <small>Original anchor unavailable</small>
+                                    <small>
+                                      <I18nText id="Original anchor unavailable" />
+                                    </small>
                                   )}
                                 </button>
                               )}
@@ -2101,7 +2146,7 @@ export default function Notebook() {
                                     setCommentAnchor(null);
                                   }}
                                 >
-                                  Reply
+                                  <I18nText id="Reply" />
                                 </button>
                                 <button
                                   onClick={() =>
@@ -2119,7 +2164,7 @@ export default function Notebook() {
                                   {c.resolved ? (
                                     <>
                                       <CheckCheck size={12} />
-                                      Resolved
+                                      <I18nText id="Resolved" />
                                     </>
                                   ) : (
                                     "Resolve"
@@ -2138,10 +2183,9 @@ export default function Notebook() {
                           ))}
                         {!comments.length && (
                           <p className="context-empty">
-                            Bring another perspective.
+                            <I18nText id="Bring another perspective." />
                             <br />
-                            Start a discussion or select text to leave an
-                            anchored comment.
+                            <I18nText id="Start a discussion or select text to leave an anchored comment." />
                           </p>
                         )}
                       </div>
@@ -2150,12 +2194,12 @@ export default function Notebook() {
                           <div className="comment-selection">
                             <span>
                               {commentReply
-                                ? "Replying to thread"
+                                ? uiText("Replying to thread")
                                 : commentAnchor!.quote}
                             </span>
                             <button
                               type="button"
-                              aria-label="Clear comment selection"
+                              aria-label={uiText("Clear comment selection")}
                               onClick={() => {
                                 setCommentAnchor(null);
                                 setCommentReply(null);
@@ -2166,8 +2210,8 @@ export default function Notebook() {
                           </div>
                         )}
                         <TextArea
-                          aria-label="Write a comment"
-                          placeholder="Add a thought or a question…"
+                          aria-label={uiText("Write a comment")}
+                          placeholder={uiText("Add a thought or a question…")}
                           value={commentText}
                           onChange={(e) => setCommentText(e.target.value)}
                           rows={3}
@@ -2176,7 +2220,7 @@ export default function Notebook() {
                           className="button primary small"
                           disabled={!commentText.trim() || busy || offline}
                         >
-                          Post comment
+                          <I18nText id="Post comment" />
                           <ArrowRight size={13} />
                         </Button>
                       </form>
@@ -2189,17 +2233,22 @@ export default function Notebook() {
               <span>
                 <span className="status-dot" />
                 {note.visibility === "private"
-                  ? "Private to you"
-                  : "Shared with your group"}
+                  ? uiText("Private to you")
+                  : uiText("Shared with your group")}
               </span>
               <span>
                 {source.trim()
-                  ? source.trim().split(/\s+/).length.toLocaleString()
+                  ? source
+                      .trim()
+                      .split(/\s+/)
+                      .length.toLocaleString(currentLocale())
                   : 0}{" "}
-                words<span className="footer-separator">·</span>Markdown
+                <I18nText id="words" />
+                <span className="footer-separator">·</span>
+                <I18nText id="Markdown" />
                 <span className="footer-separator">·</span>
                 <button onClick={() => setModal("help")}>
-                  Writing guide <CircleHelp size={12} />
+                  <I18nText id="Writing guide" /> <CircleHelp size={12} />
                 </button>
               </span>
             </footer>
@@ -2233,11 +2282,14 @@ export default function Notebook() {
               />
             ) : page === "templates" ? (
               <section className="collection-page">
-                <div className="eyebrow">A THOUGHTFUL STARTING POINT</div>
-                <h1>Research templates</h1>
+                <div className="eyebrow">
+                  <I18nText id="A THOUGHTFUL STARTING POINT" />
+                </div>
+                <h1>
+                  <I18nText id="Research templates" />
+                </h1>
                 <p className="muted">
-                  Structure that supports your thinking, with room to make it
-                  your own.
+                  <I18nText id="Structure that supports your thinking, with room to make it your own." />
                 </p>
                 <div className="template-grid">
                   {templates.map((t, i) => (
@@ -2255,7 +2307,8 @@ export default function Notebook() {
                       <h3>{t.name}</h3>
                       <p>{t.description}</p>
                       <span className="template-use">
-                        Use template <ArrowUpRight size={14} />
+                        <I18nText id="Use template" />{" "}
+                        <ArrowUpRight size={14} />
                       </span>
                     </button>
                   ))}
@@ -2268,25 +2321,26 @@ export default function Notebook() {
                     <div className="overview-welcome">
                       <div>
                         <div className="eyebrow">
-                          YOUR SHARED RESEARCH NOTEBOOK
+                          <I18nText id="YOUR SHARED RESEARCH NOTEBOOK" />
                         </div>
                         <h1>
-                          A place to think together
+                          <I18nText id="A place to think together" />
                           <span className="serif-dot">.</span>
                         </h1>
                         <p className="muted">
-                          Welcome back, {session.user.name.split(" ")[0]}. Pick
-                          up a thread, or start a new one.
+                          <I18nText id="Welcome back," />{" "}
+                          {session.user.name.split(" ")[0]}
+                          <I18nText id=". Pick up a thread, or start a new one." />
                         </p>
                       </div>
                       <div className="overview-date">
                         <span>
-                          {new Date().toLocaleDateString(undefined, {
+                          {new Date().toLocaleDateString(currentLocale(), {
                             weekday: "long",
                           })}
                         </span>
                         <strong>
-                          {new Date().toLocaleDateString(undefined, {
+                          {new Date().toLocaleDateString(currentLocale(), {
                             month: "long",
                             day: "numeric",
                           })}
@@ -2302,31 +2356,36 @@ export default function Notebook() {
                               .length
                           }
                         </strong>
-                        shared notes
+                        <I18nText id="shared notes" />
                       </span>
                       <span>
                         <Folder size={16} />
-                        <strong>{workspace.projects.length}</strong>projects
+                        <strong>{workspace.projects.length}</strong>
+                        <I18nText id="projects" />
                       </span>
                       <span>
                         <Users size={16} />
-                        <strong>{workspace.members.length}</strong>researchers
+                        <strong>{workspace.members.length}</strong>
+                        <I18nText id="researchers" />
                       </span>
                       <span>
                         <LinkIcon size={16} />
-                        <strong>{workspace.links.length}</strong>connections
+                        <strong>{workspace.links.length}</strong>
+                        <I18nText id="connections" />
                       </span>
                     </div>
                     {workspace.projects.length > 0 && (
                       <>
                         <div className="list-section-heading">
-                          <h2>Your projects</h2>
+                          <h2>
+                            <I18nText id="Your projects" />
+                          </h2>
                           <button
                             className="text-button"
                             onClick={() => setModal("project")}
                           >
                             <Plus size={14} />
-                            New project
+                            <I18nText id="New project" />
                           </button>
                         </div>
                         <div className="project-grid">
@@ -2353,7 +2412,7 @@ export default function Notebook() {
                                       n.visibility === "shared",
                                   ).length
                                 }{" "}
-                                notes
+                                <I18nText id="notes" />
                               </span>
                             </button>
                           ))}
@@ -2361,12 +2420,14 @@ export default function Notebook() {
                       </>
                     )}
                     <div className="list-section-heading">
-                      <h2>Recently opened threads</h2>
+                      <h2>
+                        <I18nText id="Recently opened threads" />
+                      </h2>
                       <button
                         className="text-button"
                         onClick={() => navigate("all")}
                       >
-                        All notes <ArrowRight size={14} />
+                        <I18nText id="All notes" /> <ArrowRight size={14} />
                       </button>
                     </div>
                     {noteList(activeNotes.slice(0, 8))}
@@ -2374,16 +2435,18 @@ export default function Notebook() {
                       <div className="overview-prompt">
                         <Sparkles size={20} strokeWidth={1.4} />
                         <div>
-                          <h3>Give your next idea a little structure.</h3>
+                          <h3>
+                            <I18nText id="Give your next idea a little structure." />
+                          </h3>
                           <p>
-                            Start a paper review, derivation, or experiment log.
+                            <I18nText id="Start a paper review, derivation, or experiment log." />
                           </p>
                         </div>
                         <Button
                           className="button secondary small"
                           onClick={() => navigate("templates")}
                         >
-                          Explore templates
+                          <I18nText id="Explore templates" />
                           <ArrowRight size={14} />
                         </Button>
                       </div>
@@ -2395,7 +2458,7 @@ export default function Notebook() {
                       <div>
                         <div className="eyebrow">
                           {page === "private"
-                            ? "SPACE TO THINK OUT LOUD"
+                            ? uiText("SPACE TO THINK OUT LOUD")
                             : page === "trash"
                               ? "RECOVER RECENT WORK"
                               : "YOUR RESEARCH, ORGANIZED"}
@@ -2415,7 +2478,9 @@ export default function Notebook() {
                         </h1>
                         <p className="muted">
                           {page === "private"
-                            ? "Only you can access these drafts. Publish them when they are ready."
+                            ? uiText(
+                                "Only you can access these drafts. Publish them when they are ready.",
+                              )
                             : page === "trash"
                               ? "Deleted notes can be restored for 30 days."
                               : page === "favorites"
@@ -2433,14 +2498,16 @@ export default function Notebook() {
                           onClick={() => newNote()}
                         >
                           <Plus size={16} />
-                          New note
+                          <I18nText id="New note" />
                         </Button>
                       )}
                     </div>
                     <div className="collection-tools">
-                      <span>{displayedNotes.length} notes</span>
                       <span>
-                        Last updated <ChevronDown size={12} />
+                        {displayedNotes.length} <I18nText id="notes" />
+                      </span>
+                      <span>
+                        <I18nText id="Last updated" /> <ChevronDown size={12} />
                       </span>
                     </div>
                     {noteList(displayedNotes)}
@@ -2451,13 +2518,17 @@ export default function Notebook() {
                     icon={<FileText />}
                     title={
                       page === "trash"
-                        ? "Nothing in the trash"
-                        : "Every notebook starts with a question"
+                        ? uiText("Nothing in the trash")
+                        : uiText("Every notebook starts with a question")
                     }
                     description={
                       page === "trash"
-                        ? "Notes you delete will appear here temporarily."
-                        : "Create a note and give the next idea somewhere to grow."
+                        ? uiText(
+                            "Notes you delete will appear here temporarily.",
+                          )
+                        : uiText(
+                            "Create a note and give the next idea somewhere to grow.",
+                          )
                     }
                     action={
                       page === "trash"
@@ -2465,7 +2536,9 @@ export default function Notebook() {
                         : () => (groupId ? newNote() : setModal("groups"))
                     }
                     label={
-                      groupId ? "Create a note" : "Create your research group"
+                      groupId
+                        ? uiText("Create a note")
+                        : uiText("Create your research group")
                     }
                   />
                 )}
@@ -2509,7 +2582,7 @@ export default function Notebook() {
         <div className="toast" role="status">
           <span>{toast}</span>
           <button
-            aria-label="Dismiss notification"
+            aria-label={uiText("Dismiss notification")}
             onClick={() => setToast("")}
           >
             <X size={15} />
@@ -2517,13 +2590,18 @@ export default function Notebook() {
         </div>
       )}
       {recoveredText && (
-        <aside className="editor-recovery" aria-label="Recovered editor text">
-          <strong>A block changed while you were editing</strong>
+        <aside
+          className="editor-recovery"
+          aria-label={uiText("Recovered editor text")}
+        >
+          <strong>
+            <I18nText id="A block changed while you were editing" />
+          </strong>
           <p>
-            Your text is retained here. Copy or download it before dismissing.
+            <I18nText id="Your text is retained here. Copy or download it before dismissing." />
           </p>
           <TextArea
-            aria-label="Recovered editor text"
+            aria-label={uiText("Recovered editor text")}
             readOnly
             value={recoveredText}
           />
@@ -2534,7 +2612,7 @@ export default function Notebook() {
                 download("recovered-editor-text.md", recoveredText)
               }
             >
-              Download recovered text
+              <I18nText id="Download recovered text" />
             </Button>
             <Button
               className="button secondary"
@@ -2546,7 +2624,7 @@ export default function Notebook() {
                   );
               }}
             >
-              Dismiss recovery
+              <I18nText id="Dismiss recovery" />
             </Button>
           </div>
         </aside>
@@ -2556,7 +2634,7 @@ export default function Notebook() {
           title={modalTitle(modal)}
           subtitle={
             modal === "new-note"
-              ? "Start with a clear page or a little structure."
+              ? uiText("Start with a clear page or a little structure.")
               : undefined
           }
           onClose={closeModal}
@@ -2585,11 +2663,11 @@ export default function Notebook() {
           {modal === "new-note" && (
             <form onSubmit={createFromTemplate}>
               <label>
-                Note title
+                <I18nText id="Note title" />
                 <TextInput
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
-                  placeholder="A question worth exploring"
+                  placeholder={uiText("A question worth exploring")}
                   autoFocus
                   maxLength={200}
                 />
@@ -2614,7 +2692,7 @@ export default function Notebook() {
               </div>
               <div className="form-grid">
                 <label>
-                  Project
+                  <I18nText id="Project" />
                   <NativeSelect
                     name="projectId"
                     defaultValue={
@@ -2623,7 +2701,9 @@ export default function Notebook() {
                         : ""
                     }
                   >
-                    <option value="">Shared notebook</option>
+                    <option value="">
+                      <I18nText id="Shared notebook" />
+                    </option>
                     {workspace.projects.map((p) => (
                       <option key={p.id} value={p.id}>
                         {p.name}
@@ -2632,26 +2712,31 @@ export default function Notebook() {
                   </NativeSelect>
                 </label>
                 <label>
-                  Visibility
+                  <I18nText id="Visibility" />
                   <NativeSelect
                     name="visibility"
                     defaultValue={page === "private" ? "private" : "shared"}
                   >
-                    <option value="shared">Shared with group</option>
-                    <option value="private">Private draft</option>
+                    <option value="shared">
+                      <I18nText id="Shared with group" />
+                    </option>
+                    <option value="private">
+                      <I18nText id="Private draft" />
+                    </option>
                   </NativeSelect>
                 </label>
               </div>
               <div className="dialog-footer">
                 <Button
+                  data-dialog-cancel
                   className="button secondary"
                   type="button"
                   onClick={closeModal}
                 >
-                  Cancel
+                  <I18nText id="Cancel" />
                 </Button>
                 <Button className="button primary" disabled={busy}>
-                  Create note
+                  <I18nText id="Create note" />
                   <ArrowRight size={15} />
                 </Button>
               </div>
@@ -2676,36 +2761,44 @@ export default function Notebook() {
               }}
             >
               <label>
-                Project name
+                <I18nText id="Project name" />
                 <TextInput
                   name="name"
                   required
                   autoFocus
-                  placeholder="A new research direction"
+                  placeholder={uiText("A new research direction")}
                   maxLength={200}
                 />
               </label>
               <label>
-                Description
+                <I18nText id="Description" />
                 <TextArea
                   name="description"
                   rows={3}
-                  placeholder="What are you exploring together?"
+                  placeholder={uiText("What are you exploring together?")}
                 />
               </label>
               <label>
-                Color
+                <I18nText id="Color" />
                 <NativeSelect name="color">
-                  <option value="blue">Slate blue</option>
-                  <option value="green">Sage green</option>
-                  <option value="purple">Muted violet</option>
-                  <option value="orange">Warm ochre</option>
+                  <option value="blue">
+                    <I18nText id="Slate blue" />
+                  </option>
+                  <option value="green">
+                    <I18nText id="Sage green" />
+                  </option>
+                  <option value="purple">
+                    <I18nText id="Muted violet" />
+                  </option>
+                  <option value="orange">
+                    <I18nText id="Warm ochre" />
+                  </option>
                 </NativeSelect>
               </label>
               <div className="dialog-footer">
                 <Button className="button primary" disabled={busy}>
                   <FolderPlus size={15} />
-                  Create project
+                  <I18nText id="Create project" />
                 </Button>
               </div>
             </form>
@@ -2748,16 +2841,16 @@ export default function Notebook() {
                 }}
               >
                 <label>
-                  Create a research group
+                  <I18nText id="Create a research group" />
                   <TextInput
                     name="name"
                     required
-                    placeholder="Your lab or group name"
+                    placeholder={uiText("Your lab or group name")}
                   />
                 </label>
                 <Button className="button primary" disabled={busy}>
                   <Plus size={15} />
-                  Create group
+                  <I18nText id="Create group" />
                 </Button>
               </form>
             </>
@@ -2769,7 +2862,7 @@ export default function Notebook() {
                 autoFocus
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search notes, ideas, or tags…"
+                placeholder={uiText("Search notes, ideas, or tags…")}
               />
               <div className="search-results">
                 {searchResults.map((result) => (
@@ -2789,14 +2882,18 @@ export default function Notebook() {
                   </button>
                 ))}
                 {!searchResults.length && (
-                  <p className="muted">No notes found. Try another phrase.</p>
+                  <p className="muted">
+                    <I18nText id="No notes found. Try another phrase." />
+                  </p>
                 )}
               </div>
             </>
           )}
           {modal === "link-note" && (
             <>
-              <p className="muted">Insert a stable link to another note.</p>
+              <p className="muted">
+                <I18nText id="Insert a stable link to another note." />
+              </p>
               <div className="search-results">
                 {activeNotes
                   .filter((n) => n.id !== note?.id)
@@ -2831,7 +2928,7 @@ export default function Notebook() {
               }}
             >
               <label>
-                LaTeX expression
+                <I18nText id="LaTeX expression" />
                 <TextArea
                   className="mono"
                   name="latex"
@@ -2839,13 +2936,13 @@ export default function Notebook() {
                   rows={4}
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
-                  placeholder="E = mc^2"
+                  placeholder={uiText("E = mc^2")}
                   required
                 />
               </label>
               <label className="checkbox-label">
                 <Checkbox name="display" defaultChecked />
-                Display on its own line
+                <I18nText id="Display on its own line" />
               </label>
               <div
                 className="equation-preview prose"
@@ -2857,7 +2954,7 @@ export default function Notebook() {
               />
               <div className="dialog-footer">
                 <Button className="button primary">
-                  Insert equation
+                  <I18nText id="Insert equation" />
                   <Sigma size={15} />
                 </Button>
               </div>
@@ -2900,12 +2997,14 @@ export default function Notebook() {
                 </div>
                 <h3>
                   {note.visibility === "private"
-                    ? "A private space for your thinking"
-                    : "A shared note for your group"}
+                    ? uiText("A private space for your thinking")
+                    : uiText("A shared note for your group")}
                 </h3>
                 <p>
                   {note.visibility === "private"
-                    ? "Only you can open this draft. Publish it when you are ready to discuss it."
+                    ? uiText(
+                        "Only you can open this draft. Publish it when you are ready to discuss it.",
+                      )
                     : `Members of ${group?.name} can read, edit, and comment on this note.`}
                 </p>
               </div>
@@ -2920,7 +3019,7 @@ export default function Notebook() {
                     })
                   }
                 >
-                  Publish to group
+                  <I18nText id="Publish to group" />
                   <ArrowRight size={15} />
                 </Button>
               ) : (
@@ -2933,7 +3032,7 @@ export default function Notebook() {
                   }
                 >
                   <Copy size={15} />
-                  Copy note link
+                  <I18nText id="Copy note link" />
                 </Button>
               )}
               {manager && (
@@ -2945,7 +3044,7 @@ export default function Notebook() {
                   }}
                 >
                   <Users size={15} />
-                  Manage members
+                  <I18nText id="Manage members" />
                 </Button>
               )}
             </>
@@ -2970,21 +3069,23 @@ export default function Notebook() {
                 }}
               >
                 <label>
-                  Tags
+                  <I18nText id="Tags" />
                   <TextInput
                     name="tags"
                     defaultValue={note.tags.join(", ")}
-                    placeholder="Separate tags with commas"
+                    placeholder={uiText("Separate tags with commas")}
                   />
                 </label>
                 <div className="form-grid">
                   <label>
-                    Project
+                    <I18nText id="Project" />
                     <NativeSelect
                       name="projectId"
                       defaultValue={note.project_id ?? ""}
                     >
-                      <option value="">Shared notebook</option>
+                      <option value="">
+                        <I18nText id="Shared notebook" />
+                      </option>
                       {workspace.projects.map((p) => (
                         <option value={p.id} key={p.id}>
                           {p.name}
@@ -2993,12 +3094,14 @@ export default function Notebook() {
                     </NativeSelect>
                   </label>
                   <label>
-                    Parent note
+                    <I18nText id="Parent note" />
                     <NativeSelect
                       name="parentId"
                       defaultValue={note.parent_id ?? ""}
                     >
-                      <option value="">Top-level note</option>
+                      <option value="">
+                        <I18nText id="Top-level note" />
+                      </option>
                       {activeNotes
                         .filter(
                           (n) =>
@@ -3015,14 +3118,14 @@ export default function Notebook() {
                   </label>
                 </div>
                 <Button className="button primary small" disabled={busy}>
-                  Save details
+                  <I18nText id="Save details" />
                 </Button>
               </form>
               <hr />
               <div className="action-list">
                 <button onClick={() => void showHistory()}>
                   <History size={17} />
-                  Version history
+                  <I18nText id="Version history" />
                   <ChevronRight size={14} />
                 </button>
                 <button
@@ -3035,7 +3138,7 @@ export default function Notebook() {
                   }}
                 >
                   <Download size={17} />
-                  Export Markdown
+                  <I18nText id="Export Markdown" />
                 </button>
                 <button
                   disabled={offline || busy}
@@ -3060,7 +3163,7 @@ export default function Notebook() {
                   }
                 >
                   <Code2 size={17} />
-                  Export HTML
+                  <I18nText id="Export HTML" />
                 </button>
                 <button
                   onClick={() => {
@@ -3072,7 +3175,7 @@ export default function Notebook() {
                   }}
                 >
                   <ArrowDownToLine size={17} />
-                  Print / save as PDF
+                  <I18nText id="Print / save as PDF" />
                 </button>
                 <button
                   onClick={() =>
@@ -3091,14 +3194,14 @@ export default function Notebook() {
                   }
                 >
                   <Copy size={17} />
-                  Copy to private drafts
+                  <I18nText id="Copy to private drafts" />
                 </button>
                 <button
                   className="danger-text"
                   onClick={() => setModal("trash-confirm")}
                 >
                   <Trash2 size={17} />
-                  Move to trash
+                  <I18nText id="Move to trash" />
                 </button>
               </div>
             </>
@@ -3106,12 +3209,17 @@ export default function Notebook() {
           {modal === "trash-confirm" && note && (
             <>
               <p>
-                Move “{note.title}” to the trash? You can restore it for 30
-                days.
+                <I18nText id="Move “" />
+                {note.title}
+                <I18nText id="” to the trash? You can restore it for 30 days." />
               </p>
               <div className="dialog-footer">
-                <Button className="button secondary" onClick={closeModal}>
-                  Keep note
+                <Button
+                  data-dialog-cancel
+                  className="button secondary"
+                  onClick={closeModal}
+                >
+                  <I18nText id="Keep note" />
                 </Button>
                 <Button
                   className="button danger"
@@ -3126,7 +3234,7 @@ export default function Notebook() {
                     })
                   }
                 >
-                  Move to trash
+                  <I18nText id="Move to trash" />
                 </Button>
               </div>
             </>
@@ -3150,11 +3258,11 @@ export default function Notebook() {
                 <TextInput
                   name="label"
                   required
-                  placeholder="Name a milestone…"
-                  aria-label="Milestone name"
+                  placeholder={uiText("Name a milestone…")}
+                  aria-label={uiText("Milestone name")}
                 />
                 <Button className="button primary small" disabled={busy}>
-                  Save
+                  <I18nText id="Save" />
                 </Button>
               </form>
               <div className="version-list">
@@ -3164,7 +3272,9 @@ export default function Notebook() {
                     <div>
                       <strong>{version.label ?? "Automatic checkpoint"}</strong>
                       <span>
-                        {new Date(version.created_at).toLocaleString()}{" "}
+                        {new Date(version.created_at).toLocaleString(
+                          currentLocale(),
+                        )}{" "}
                         {version.author_name && "· " + version.author_name}
                       </span>
                     </div>
@@ -3176,15 +3286,14 @@ export default function Notebook() {
                         setModal("restore-confirm");
                       }}
                     >
-                      Restore
+                      <I18nText id="Restore" />
                     </Button>
                   </div>
                 ))}
               </div>
               {!versions.length && (
                 <p className="muted">
-                  Save your first milestone. Automatic checkpoints are created
-                  while you work.
+                  <I18nText id="Save your first milestone. Automatic checkpoints are created while you work." />
                 </p>
               )}
             </>
@@ -3192,16 +3301,15 @@ export default function Notebook() {
           {modal === "restore-confirm" && note && (
             <>
               <p>
-                Restore this version? The current document will be preserved as
-                a “Before restore” checkpoint, and collaborators will be asked
-                to reopen the restored document.
+                <I18nText id="Restore this version? The current document will be preserved as a “Before restore” checkpoint, and collaborators will be asked to reopen the restored document." />
               </p>
               <div className="dialog-footer">
                 <Button
+                  data-dialog-cancel
                   className="button secondary"
                   onClick={() => setModal("history")}
                 >
-                  Cancel
+                  <I18nText id="Cancel" />
                 </Button>
                 <Button
                   className="button primary"
@@ -3218,7 +3326,7 @@ export default function Notebook() {
                     })
                   }
                 >
-                  Restore version
+                  <I18nText id="Restore version" />
                 </Button>
               </div>
             </>
@@ -3258,9 +3366,11 @@ export default function Notebook() {
             <div className="settings-content">
               <div className="settings-section">
                 <div className="settings-section-heading">
-                  <h3>Group members</h3>
+                  <h3>
+                    <I18nText id="Group members" />
+                  </h3>
                   <span className="muted">
-                    {workspace.members.length} researchers
+                    {workspace.members.length} <I18nText id="researchers" />
                   </span>
                 </div>
                 {workspace.members.map((member) => (
@@ -3292,8 +3402,12 @@ export default function Notebook() {
                           })
                         }
                       >
-                        <option value="member">Member</option>
-                        <option value="admin">Admin</option>
+                        <option value="member">
+                          <I18nText id="Member" />
+                        </option>
+                        <option value="admin">
+                          <I18nText id="Admin" />
+                        </option>
                       </NativeSelect>
                     ) : (
                       <span className="role-badge">{member.role}</span>
@@ -3336,24 +3450,31 @@ export default function Notebook() {
                     }}
                   >
                     <label>
-                      Invite a researcher
+                      <I18nText id="Invite a researcher" />
                       <TextInput
                         type="email"
                         name="email"
-                        placeholder="colleague@research.org"
+                        placeholder={uiText("colleague@research.org")}
                         required
                       />
                     </label>
                     <div className="invite-form-actions">
-                      <NativeSelect name="role" aria-label="Invitation role">
-                        <option value="member">Member</option>
+                      <NativeSelect
+                        name="role"
+                        aria-label={uiText("Invitation role")}
+                      >
+                        <option value="member">
+                          <I18nText id="Member" />
+                        </option>
                         {group?.role === "owner" && (
-                          <option value="admin">Administrator</option>
+                          <option value="admin">
+                            <I18nText id="Administrator" />
+                          </option>
                         )}
                       </NativeSelect>
                       <Button className="button primary small" disabled={busy}>
                         <Plus size={14} />
-                        Create invitation
+                        <I18nText id="Create invitation" />
                       </Button>
                     </div>
                     {inviteLink && (
@@ -3361,12 +3482,12 @@ export default function Notebook() {
                         <TextInput
                           value={inviteLink}
                           readOnly
-                          aria-label="Invitation link"
+                          aria-label={uiText("Invitation link")}
                         />
                         <IconButton
                           type="button"
                           className="icon-button"
-                          aria-label="Copy invitation"
+                          aria-label={uiText("Copy invitation")}
                           onClick={() =>
                             void navigator.clipboard
                               .writeText(inviteLink)
@@ -3381,9 +3502,11 @@ export default function Notebook() {
                 )}
               </div>
               <div className="settings-section">
-                <h3>Import & export</h3>
+                <h3>
+                  <I18nText id="Import & export" />
+                </h3>
                 <p className="muted">
-                  Keep your notes portable with Markdown and BibTeX.
+                  <I18nText id="Keep your notes portable with Markdown and BibTeX." />
                 </p>
                 <div className="button-row">
                   <Button
@@ -3395,19 +3518,21 @@ export default function Notebook() {
                     }}
                   >
                     <Upload size={14} />
-                    Import notes
+                    <I18nText id="Import notes" />
                   </Button>
                   <a
                     className="button secondary small"
                     href={`/api/v1/export?groupId=${groupId}`}
                   >
                     <Download size={14} />
-                    Export shared notebook
+                    <I18nText id="Export shared notebook" />
                   </a>
                 </div>
               </div>
               <div className="settings-section">
-                <h3>Your account</h3>
+                <h3>
+                  <I18nText id="Your account" />
+                </h3>
                 <p className="muted">{session.user.email}</p>
                 <div className="button-row">
                   <Button
@@ -3415,14 +3540,14 @@ export default function Notebook() {
                     onClick={() => setModal("password")}
                   >
                     <LockKeyhole size={14} />
-                    Change password
+                    <I18nText id="Change password" />
                   </Button>
                   <Button
                     className="button secondary small"
                     onClick={() => setModal("logout")}
                   >
                     <LogOut size={14} />
-                    Sign out
+                    <I18nText id="Sign out" />
                   </Button>
                 </div>
               </div>
@@ -3431,15 +3556,17 @@ export default function Notebook() {
           {modal === "remove-member" && (
             <>
               <p>
-                Remove {workspace.members.find((m) => m.id === newTitle)?.name}{" "}
-                from this group? Their access to shared notes will end.
+                <I18nText id="Remove" />{" "}
+                {workspace.members.find((m) => m.id === newTitle)?.name}{" "}
+                <I18nText id="from this group? Their access to shared notes will end." />
               </p>
               <div className="dialog-footer">
                 <Button
+                  data-dialog-cancel
                   className="button secondary"
                   onClick={() => setModal("workspace-settings")}
                 >
-                  Cancel
+                  <I18nText id="Cancel" />
                 </Button>
                 <Button
                   className="button danger"
@@ -3454,7 +3581,7 @@ export default function Notebook() {
                     })
                   }
                 >
-                  Remove member
+                  <I18nText id="Remove member" />
                 </Button>
               </div>
             </>
@@ -3484,7 +3611,7 @@ export default function Notebook() {
               }}
             >
               <label>
-                Current password
+                <I18nText id="Current password" />
                 <TextInput
                   type="password"
                   name="current"
@@ -3493,7 +3620,7 @@ export default function Notebook() {
                 />
               </label>
               <label>
-                New password
+                <I18nText id="New password" />
                 <TextInput
                   type="password"
                   name="next"
@@ -3504,7 +3631,7 @@ export default function Notebook() {
               </label>
               <div className="dialog-footer">
                 <Button className="button primary" disabled={busy}>
-                  Change password
+                  <I18nText id="Change password" />
                 </Button>
               </div>
             </form>
@@ -3512,8 +3639,7 @@ export default function Notebook() {
           {modal === "logout" && (
             <>
               <p>
-                Sign out and clear this account’s cached notes from this
-                browser? Export any unsynchronized text you want to keep first.
+                <I18nText id="Sign out and clear this account’s cached notes from this browser? Export any unsynchronized text you want to keep first." />
                 {!navigator.onLine &&
                   " Server-session revocation will finish automatically when this browser reconnects."}
               </p>
@@ -3528,7 +3654,7 @@ export default function Notebook() {
                       )
                     }
                   >
-                    Export current note
+                    <I18nText id="Export current note" />
                   </Button>
                 )}
                 <Button
@@ -3573,7 +3699,7 @@ export default function Notebook() {
                     })
                   }
                 >
-                  Sign out
+                  <I18nText id="Sign out" />
                 </Button>
               </div>
             </>
@@ -3581,7 +3707,7 @@ export default function Notebook() {
           {modal === "import" && (
             <>
               <label>
-                Markdown file or ZIP archive
+                <I18nText id="Markdown file or ZIP archive" />
                 <input
                   type="file"
                   accept=".md,.zip"
@@ -3600,7 +3726,8 @@ export default function Notebook() {
                         <FileText size={15} />
                         <span>{n.title}</span>
                         <small>
-                          {n.characters.toLocaleString()} characters
+                          {n.characters.toLocaleString(currentLocale())}{" "}
+                          <I18nText id="characters" />
                         </small>
                       </div>
                     ))}
@@ -3627,7 +3754,9 @@ export default function Notebook() {
                     })
                   }
                 >
-                  {importPreview ? "Import notes" : "Preview import"}
+                  {importPreview
+                    ? uiText("Import notes")
+                    : uiText("Preview import")}
                   <ArrowRight size={15} />
                 </Button>
               </div>
@@ -3654,7 +3783,7 @@ export default function Notebook() {
                 ))}
                 {!workspace.notifications.length && (
                   <p className="muted">
-                    You’re all caught up. New discussions will appear here.
+                    <I18nText id="You’re all caught up. New discussions will appear here." />
                   </p>
                 )}
               </div>
@@ -3668,16 +3797,14 @@ export default function Notebook() {
                 }
               >
                 <CheckCheck size={15} />
-                Mark all as read
+                <I18nText id="Mark all as read" />
               </Button>
             </>
           )}
           {modal === "help" && (
             <div className="writing-guide">
               <p>
-                Write naturally in live preview, or switch to Source for the
-                full Markdown document. Both views update together for every
-                collaborator.
+                <I18nText id="Write naturally in live preview, or switch to Source for the full Markdown document. Both views update together for every collaborator." />
               </p>
               <table>
                 <tbody>
@@ -3721,14 +3848,13 @@ export default function Notebook() {
                 </tbody>
               </table>
               <p className="muted">
-                Open notes remain available offline. New notes, attachments,
-                membership changes, and server history need a connection.
+                <I18nText id="Open notes remain available offline. New notes, attachments, membership changes, and server history need a connection." />
               </p>
               <Button
                 className="button secondary"
                 onClick={() => workspaceCommand("shortcuts")}
               >
-                Customize keyboard shortcuts
+                <I18nText id="Customize keyboard shortcuts" />
               </Button>
               <div className="shortcut-guide">
                 {editorCommands

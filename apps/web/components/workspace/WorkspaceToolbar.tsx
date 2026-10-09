@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import { Button, HelpText, IconButton, SearchField } from "../ui/controls";
 import { Fragment, useEffect, useRef, useState } from "react";
 import {
@@ -116,6 +118,7 @@ export function useDestinationRoute() {
 }
 
 export function WorkspaceLocation() {
+  useInterfaceLocale();
   const sessions = useWorkSessions()!,
     { path, params } = useLocation(),
     { spaces, navigate, revision, session } = useWorkspace();
@@ -164,11 +167,14 @@ export function WorkspaceLocation() {
   }, [route, trailKey]);
   return (
     <div className="workspace-location">
-      <div className="workspace-history" aria-label="Navigation history">
+      <div
+        className="workspace-history"
+        aria-label={uiText("Navigation history")}
+      >
         <IconButton
           className="icon-button"
-          aria-label="Go back"
-          title="Back"
+          aria-label={uiText("Go back")}
+          title={uiText("Back")}
           disabled={sessions.state.index <= 0}
           onClick={() => sessions.back(-1)}
         >
@@ -176,8 +182,8 @@ export function WorkspaceLocation() {
         </IconButton>
         <IconButton
           className="icon-button"
-          aria-label="Go forward"
-          title="Forward"
+          aria-label={uiText("Go forward")}
+          title={uiText("Forward")}
           disabled={sessions.state.index >= sessions.state.history.length - 1}
           onClick={() => sessions.back(1)}
         >
@@ -185,8 +191,8 @@ export function WorkspaceLocation() {
         </IconButton>
         <IconButton
           className="icon-button"
-          aria-label="Up one level"
-          title="Parent folder"
+          aria-label={uiText("Up one level")}
+          title={uiText("Parent folder")}
           disabled={!up || loading}
           onClick={() => up && navigate(up)}
         >
@@ -195,7 +201,7 @@ export function WorkspaceLocation() {
       </div>
       <nav
         ref={trail}
-        aria-label="Current location"
+        aria-label={uiText("Current location")}
         aria-busy={loading}
         aria-description={
           data.error
@@ -207,12 +213,18 @@ export function WorkspaceLocation() {
           <Fragment key={`${index}:${crumb.to ?? "current"}`}>
             {index > 0 && <span aria-hidden="true">/</span>}
             {crumb.to ? (
-              <WorkspaceLink to={crumb.to} title={crumb.label}>
-                {crumb.label}
+              <WorkspaceLink
+                to={crumb.to}
+                title={crumb.authored ? crumb.label : uiText(crumb.label)}
+              >
+                {crumb.authored ? crumb.label : uiText(crumb.label)}
               </WorkspaceLink>
             ) : (
-              <strong aria-current="page" title={crumb.label}>
-                {crumb.label}
+              <strong
+                aria-current="page"
+                title={crumb.authored ? crumb.label : uiText(crumb.label)}
+              >
+                {crumb.authored ? crumb.label : uiText(crumb.label)}
               </strong>
             )}
           </Fragment>
@@ -224,6 +236,7 @@ export function WorkspaceLocation() {
 }
 
 function RecentWork() {
+  useInterfaceLocale();
   const sessions = useWorkSessions()!,
     { revision, open } = useWorkspace();
   const root = useRef<HTMLDetailsElement>(null),
@@ -241,7 +254,7 @@ function RecentWork() {
   const title = (item: (typeof sessions.state.sessions)[number]) =>
     item.title ??
     names.get(fileRouteId(item.path) ?? "") ??
-    tabTitle(item.path);
+    uiText(tabTitle(item.path));
   const items = [...sessions.state.sessions]
     .reverse()
     .filter((item) =>
@@ -304,8 +317,8 @@ function RecentWork() {
       <summary
         role="button"
         className="icon-button"
-        aria-label="Recent work"
-        title="Recent work · ⌘/Ctrl Alt R"
+        aria-label={uiText("Recent work")}
+        title={uiText("Recent work · ⌘/Ctrl Alt R")}
         aria-expanded={shown}
       >
         <ChevronDown size={15} />
@@ -314,18 +327,22 @@ function RecentWork() {
         className="workspace-recent-popover"
         style={{ left }}
         role="region"
-        aria-label="Recent work switcher"
+        aria-label={uiText("Recent work switcher")}
       >
         <header>
           <History size={16} />
-          <strong>Recent work</strong>
-          <small>On this device</small>
+          <strong>
+            <I18nText id="Recent work" />
+          </strong>
+          <small>
+            <I18nText id="On this device" />
+          </small>
         </header>
         <SearchField
           wrapperClassName="workspace-recent-search"
           ref={input}
-          aria-label="Filter recent work"
-          placeholder="Find a page or file…"
+          aria-label={uiText("Filter recent work")}
+          placeholder={uiText("Find a page or file…")}
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           onKeyDown={(event) => {
@@ -343,9 +360,13 @@ function RecentWork() {
             return group.length ? (
               <section
                 key={String(pinned)}
-                aria-label={pinned ? "Pinned work" : "Recently visited"}
+                aria-label={
+                  pinned ? uiText("Pinned work") : uiText("Recently visited")
+                }
               >
-                <h3>{pinned ? "Pinned" : "Recently visited"}</h3>
+                <h3>
+                  {pinned ? uiText("Pinned") : uiText("Recently visited")}
+                </h3>
                 {group.map((item) => {
                   const Icon = locationIcon(item.path),
                     name = title(item);
@@ -369,7 +390,7 @@ function RecentWork() {
                         <span>
                           <strong>{name}</strong>
                           <small>
-                            {tabTitle(item.path)}
+                            {uiText(tabTitle(item.path))}
                             {fileRouteId(item.path)
                               ? ` · ${fileRouteId(item.path)!.slice(0, 8)}`
                               : ""}
@@ -380,7 +401,7 @@ function RecentWork() {
                         <IconButton
                           className="icon-button"
                           aria-label={`Open ${name} in split view`}
-                          title="Open in split view"
+                          title={uiText("Open in split view")}
                           onClick={() => {
                             dismiss();
                             open(
@@ -407,7 +428,11 @@ function RecentWork() {
                       <IconButton
                         className="icon-button"
                         aria-label={`${item.pinned ? "Unpin" : "Pin"} ${name}`}
-                        title={item.pinned ? "Unpin" : "Pin for quick access"}
+                        title={
+                          item.pinned
+                            ? uiText("Unpin")
+                            : uiText("Pin for quick access")
+                        }
                         aria-pressed={!!item.pinned}
                         onClick={() =>
                           sessions.update(item.id, { pinned: !item.pinned })
@@ -421,10 +446,17 @@ function RecentWork() {
               </section>
             ) : null;
           })}
-          {!items.length && <p className="muted">No matching recent work.</p>}
+          {!items.length && (
+            <p className="muted">
+              <I18nText id="No matching recent work." />
+            </p>
+          )}
         </div>
         <footer>
-          Switch pages without closing your work. <kbd>⌘/Ctrl Alt R</kbd>
+          <I18nText id="Switch pages without closing your work." />{" "}
+          <kbd>
+            <I18nText id="⌘/Ctrl Alt R" />
+          </kbd>
         </footer>
       </div>
     </details>
@@ -432,6 +464,7 @@ function RecentWork() {
 }
 
 export function WorkspaceStatus({ offline }: { offline: boolean }) {
+  useInterfaceLocale();
   const { path } = useLocation(),
     id = fileRouteId(path);
   const [document, setDocument] = useState<{
@@ -458,30 +491,40 @@ export function WorkspaceStatus({ offline }: { offline: boolean }) {
     <span
       className="workspace-connection"
       data-offline={offline}
-      title={
+      title={uiText(
         message ??
-        (offline
-          ? "Offline. Cached work remains available."
-          : "Network available. Individual file save status appears in its editor.")
-      }
-      aria-label={message ?? label}
+          (offline
+            ? "Offline. Cached work remains available."
+            : "Network available. Individual file save status appears in its editor."),
+      )}
+      aria-label={uiText(message ?? label)}
     >
       {offline ? <CloudOff size={15} /> : <Cloud size={15} />}
-      <span>{label}</span>
+      <span>{uiText(label)}</span>
     </span>
   );
 }
 
 /** Existing /new bookmarks remain useful, without reviving a tab lifecycle. */
 export function WorkspaceLauncher() {
+  useInterfaceLocale();
   const { navigate } = useWorkspace();
   const destinationRoute = useDestinationRoute();
   return (
     <main className="ws-page application-launcher">
-      <span className="ws-eyebrow">YOUR WORKSPACE</span>
-      <h1>Room for your next idea.</h1>
-      <p>Choose a page, or search your notes and research.</p>
-      <section className="application-create-files" aria-label="Create a file">
+      <span className="ws-eyebrow">
+        <I18nText id="YOUR WORKSPACE" />
+      </span>
+      <h1>
+        <I18nText id="Room for your next idea." />
+      </h1>
+      <p>
+        <I18nText id="Choose a page, or search your notes and research." />
+      </p>
+      <section
+        className="application-create-files"
+        aria-label={uiText("Create a file")}
+      >
         {(
           [
             ["markdown", "Markdown", FileText],
@@ -498,7 +541,7 @@ export function WorkspaceLauncher() {
             onClick={() => requestFileCreation({ type })}
           >
             <Icon size={16} />
-            {label}
+            {uiText(label)}
           </Button>
         ))}
       </section>
@@ -506,13 +549,13 @@ export function WorkspaceLauncher() {
         {destinations.map(([path, title, description, Icon]) => (
           <button key={path} onClick={() => navigate(destinationRoute(path))}>
             <Icon size={23} />
-            <strong>{title}</strong>
-            <span>{description}</span>
+            <strong>{uiText(title)}</strong>
+            <span>{uiText(description)}</span>
           </button>
         ))}
       </div>
       <HelpText>
-        ⌘/Ctrl K · Search & commands &nbsp; · &nbsp; ⌘/Ctrl Alt R · Recent work
+        <I18nText id="⌘/Ctrl K · Search & commands &nbsp; · &nbsp; ⌘/Ctrl Alt R · Recent work" />
       </HelpText>
     </main>
   );

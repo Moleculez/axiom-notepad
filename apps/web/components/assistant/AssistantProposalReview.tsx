@@ -1,4 +1,6 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import {
   Button,
   HelpText,
@@ -51,6 +53,7 @@ function TaskDocumentReview({
   onClose: () => void;
   onChange: () => void;
 }) {
+  useInterfaceLocale();
   const { navigate, refresh, notify } = useWorkspace();
   const [data, setData] = useState<
       Exclude<AssistantProposal, { kind: "schedule" }>
@@ -92,15 +95,17 @@ function TaskDocumentReview({
   };
   return (
     <Dialog
-      title="Review proposed changes"
-      subtitle="Private draft · Nothing changes until you explicitly publish or apply"
+      title={uiText("Review proposed changes")}
+      subtitle={uiText(
+        "Private draft · Nothing changes until you explicitly publish or apply",
+      )}
       onClose={onClose}
     >
       <p>{data.explanation}</p>
       <fieldset className="assistant-proposal-form" disabled={busy}>
         {data.kind === "document" ? (
           <label>
-            Proposed replacement
+            <I18nText id="Proposed replacement" />
             <TextArea
               rows={10}
               maxLength={30000}
@@ -111,7 +116,7 @@ function TaskDocumentReview({
         ) : (
           <>
             <label>
-              Title
+              <I18nText id="Title" />
               <TextInput
                 value={data.fields.title}
                 maxLength={300}
@@ -124,7 +129,7 @@ function TaskDocumentReview({
               />
             </label>
             <label>
-              Description
+              <I18nText id="Description" />
               <TextArea
                 rows={5}
                 maxLength={12000}
@@ -139,7 +144,7 @@ function TaskDocumentReview({
             </label>
             <div className="assistant-fields">
               <label>
-                Status
+                <I18nText id="Status" />
                 <NativeSelect
                   value={data.fields.status}
                   onChange={(e) =>
@@ -160,7 +165,7 @@ function TaskDocumentReview({
                 </NativeSelect>
               </label>
               <label>
-                Priority
+                <I18nText id="Priority" />
                 <NativeSelect
                   value={data.fields.priority}
                   onChange={(e) =>
@@ -179,7 +184,7 @@ function TaskDocumentReview({
                 </NativeSelect>
               </label>
               <label>
-                Assignee
+                <I18nText id="Assignee" />
                 <NativeSelect
                   value={data.fields.assigneeId ?? ""}
                   onChange={(e) =>
@@ -192,7 +197,9 @@ function TaskDocumentReview({
                     })
                   }
                 >
-                  <option value="">Unassigned</option>
+                  <option value="">
+                    <I18nText id="Unassigned" />
+                  </option>
                   {members.data?.map((m) => (
                     <option key={m.id} value={m.id}>
                       {m.name}
@@ -201,7 +208,7 @@ function TaskDocumentReview({
                 </NativeSelect>
               </label>
               <label>
-                Effort (hours)
+                <I18nText id="Effort (hours)" />
                 <TextInput
                   type="number"
                   min={0}
@@ -221,7 +228,7 @@ function TaskDocumentReview({
               </label>
             </div>
             <label>
-              Labels, separated by commas
+              <I18nText id="Labels, separated by commas" />
               <TextInput
                 value={labels}
                 onChange={(e) => {
@@ -240,15 +247,16 @@ function TaskDocumentReview({
               />
             </label>
             <HelpText>
-              Schedules and dependencies are unchanged. New tasks are
-              unscheduled.
+              <I18nText id="Schedules and dependencies are unchanged. New tasks are unscheduled." />
             </HelpText>
           </>
         )}
       </fieldset>
       {preview && (
-        <section aria-label="Changes to review">
-          <h3>Before → proposed</h3>
+        <section aria-label={uiText("Changes to review")}>
+          <h3>
+            <I18nText id="Before → proposed" />
+          </h3>
           <pre className="assistant-diff">
             {diff?.spans.map((span, i) =>
               span.kind === "remove" ? (
@@ -264,8 +272,13 @@ function TaskDocumentReview({
       )}
       <ErrorNotice message={error} />
       <div className="dialog-footer">
-        <Button className="button secondary" disabled={busy} onClick={onClose}>
-          Keep private draft
+        <Button
+          data-dialog-cancel
+          className="button secondary"
+          disabled={busy}
+          onClick={onClose}
+        >
+          <I18nText id="Keep private draft" />
         </Button>
         {!preview ? (
           <Button
@@ -279,7 +292,7 @@ function TaskDocumentReview({
               )
             }
           >
-            Preview exact changes
+            <I18nText id="Preview exact changes" />
           </Button>
         ) : (
           <Button
@@ -316,8 +329,8 @@ function TaskDocumentReview({
             }
           >
             {data.kind === "document"
-              ? "Open suggestion editor"
-              : "Apply reviewed task change"}
+              ? uiText("Open suggestion editor")
+              : uiText("Apply reviewed task change")}
           </Button>
         )}
       </div>

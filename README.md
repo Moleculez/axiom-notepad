@@ -26,7 +26,7 @@ uploads, themes and portable exports. Cloud collaboration and account features
 belong to the self-hosted application, not the static demo.
 [Open the editor](https://moleculez.github.io/axiom-notepad/#editor&note=3f000000-0000-4000-8000-000000000001)
 or [explore Canvas](https://moleculez.github.io/axiom-notepad/#canvas&note=3f000000-0000-4000-8000-000000000002).
-Appearance groups seven categories beside a persistent live preview, with
+Appearance groups eight categories beside a persistent live preview, with
 category-only resets and a separate local backup/import panel. Downloads include
 Markdown, styled HTML, Print / Save PDF, Canvas images and portable ZIP backups.
 See [showcase storage, settings and GitHub Pages deployment](docs/STATIC_SHOWCASE.md).
@@ -164,6 +164,12 @@ See [showcase storage, settings and GitHub Pages deployment](docs/STATIC_SHOWCAS
   Shared native controls and an interactive Interface specimen keep settings,
   action bars and dialogs consistent. Reusable field shells align icons, labels
   and clear actions without nested borders. See [UI criteria](docs/UI_CONTROLS.md).
+- **Interface languages (partial coverage).** Account-synced language preview,
+  Save/Cancel, browser detection and ten choices; a browser-local selector in the
+  showcase. Shared ICU messages, self-hosted fonts and Arabic chrome preserve
+  document content and editor state. Expanded settings, group, file/Trash, planning
+  and reference-library controls are translated; long-tail copy still falls back
+  to English. See [localization scope](docs/LOCALIZATION.md).
 
 Math Studio, layered Image Studio, Text Studio and protected media/document viewers
 open files in the same workbench. Scoped OAuth/MCP integration and selected offline
@@ -299,9 +305,9 @@ docker compose --env-file .env.production exec web node --import tsx scripts/ops
 ```
 
 Read [deployment, backups and upgrades](docs/DEPLOYMENT.md) before using real data.
-Current features require database migrations through **50**, including workspace
+Current features require database migrations through **51**, including workspace
 research/planning, controlled extensions, atomic imports, native mind maps and the
-reverse-link performance index.
+reverse-link performance index, plus account-synced interface language preferences.
 Back up database and stored files, stop old writers, migrate, and restart matching
 web/sync/worker/publish versions; do not mix old services with the new schema.
 Production configuration never loads the development `.env` into containers.
@@ -319,6 +325,7 @@ npm run lint
 npm test
 npm run validate:themes
 npm run validate:ui
+npm run validate:i18n
 npm run docs:check
 npm run brand:build        # regenerate the shared logo and installed-app icons
 npm run clean:generated     # inventory only; add --apply after review

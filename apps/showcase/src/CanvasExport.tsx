@@ -1,3 +1,4 @@
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
 import { Button, Switch, NativeSelect } from "../../web/components/ui/controls";
 import { useEffect, useRef, useState } from "react";
 import { Download, Package, Copy } from "lucide-react";
@@ -42,6 +43,7 @@ export default function CanvasExport({
   name: string;
   onClose: () => void;
 }) {
+  useInterfaceLocale();
   const [snapshot] = useState(() => structuredClone(source)),
     [ids] = useState(selection),
     [area] = useState(viewport);
@@ -214,8 +216,10 @@ export default function CanvasExport({
   };
   return (
     <Dialog
-      title="Export this canvas"
-      subtitle="Editable source, a portable bundle, or an image of your ideas."
+      title={uiText("Export this canvas")}
+      subtitle={uiText(
+        "Editable source, a portable bundle, or an image of your ideas.",
+      )}
       onClose={() => {
         controller.current?.abort();
         onClose();
@@ -223,41 +227,57 @@ export default function CanvasExport({
     >
       <div className="canvas-export-fields">
         <label>
-          Format
+          <I18nText id="Format" />
           <NativeSelect
-            aria-label="Canvas export format"
+            aria-label={uiText("Canvas export format")}
             value={format}
             onChange={(e) => setFormat(e.target.value)}
           >
-            <option value="canvas">JSON Canvas · editable</option>
-            <option value="markdown">Markdown · card contents</option>
-            <option value="zip">Portable ZIP · Canvas, notes & uploads</option>
-            <option value="svg">
-              SVG · scalable connections, rendered cards
+            <option value="canvas">
+              <I18nText id="JSON Canvas · editable" />
             </option>
-            <option value="png">PNG image</option>
-            <option value="jpeg">JPEG image</option>
-            <option value="pdf">PDF document</option>
+            <option value="markdown">
+              <I18nText id="Markdown · card contents" />
+            </option>
+            <option value="zip">
+              <I18nText id="Portable ZIP · Canvas, notes & uploads" />
+            </option>
+            <option value="svg">
+              <I18nText id="SVG · scalable connections, rendered cards" />
+            </option>
+            <option value="png">
+              <I18nText id="PNG image" />
+            </option>
+            <option value="jpeg">
+              <I18nText id="JPEG image" />
+            </option>
+            <option value="pdf">
+              <I18nText id="PDF document" />
+            </option>
           </NativeSelect>
         </label>
         <label>
-          Include
+          <I18nText id="Include" />
           <NativeSelect
-            aria-label="Canvas export scope"
+            aria-label={uiText("Canvas export scope")}
             value={scope}
             onChange={(e) => setScope(e.target.value)}
           >
-            <option value="all">Entire canvas</option>
-            <option value="selection" disabled={!ids.length}>
-              Selected cards
+            <option value="all">
+              <I18nText id="Entire canvas" />
             </option>
-            <option value="viewport">Current view</option>
+            <option value="selection" disabled={!ids.length}>
+              <I18nText id="Selected cards" />
+            </option>
+            <option value="viewport">
+              <I18nText id="Current view" />
+            </option>
           </NativeSelect>
         </label>
         {visual && (
           <>
             <label>
-              Resolution
+              <I18nText id="Resolution" />
               <NativeSelect
                 value={scale}
                 onChange={(e) => setScale(Number(e.target.value))}
@@ -270,14 +290,20 @@ export default function CanvasExport({
               </NativeSelect>
             </label>
             <label>
-              Background
+              <I18nText id="Background" />
               <NativeSelect
                 value={background}
                 onChange={(e) => setBackground(e.target.value)}
               >
-                <option value="theme">Current theme</option>
-                <option value="white">White paper</option>
-                <option value="transparent">Transparent</option>
+                <option value="theme">
+                  <I18nText id="Current theme" />
+                </option>
+                <option value="white">
+                  <I18nText id="White paper" />
+                </option>
+                <option value="transparent">
+                  <I18nText id="Transparent" />
+                </option>
               </NativeSelect>
             </label>
             <label className="demo-toggle">
@@ -285,7 +311,7 @@ export default function CanvasExport({
                 checked={grid}
                 onChange={(e) => setGrid(e.target.checked)}
               />
-              Include dot grid
+              <I18nText id="Include dot grid" />
             </label>
           </>
         )}
@@ -293,8 +319,7 @@ export default function CanvasExport({
       {format === "zip" && (
         <p className="demo-fineprint">
           <Package size={15} />
-          Bundles include all local notes and uploads so links stay portable.
-          Keep the folder structure together.
+          <I18nText id="Bundles include all local notes and uploads so links stay portable. Keep the folder structure together." />
         </p>
       )}
       {error && (
@@ -325,7 +350,7 @@ export default function CanvasExport({
             onClick={() => void run(true)}
           >
             <Copy size={15} />
-            Copy
+            <I18nText id="Copy" />
           </Button>
         )}
         <Button
@@ -335,7 +360,7 @@ export default function CanvasExport({
           pending={!!busy}
         >
           <Download size={15} />
-          {"Export"}
+          {uiText("Export")}
         </Button>
       </DialogFooter>
     </Dialog>

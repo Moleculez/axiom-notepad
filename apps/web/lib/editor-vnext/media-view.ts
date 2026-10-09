@@ -1,3 +1,4 @@
+import { bindAttribute } from "@axiom/i18n/dom";
 import { DOMSerializer, type Node } from "@milkdown/kit/prose/model";
 import { attachmentVersion } from "@axiom/markdown";
 
@@ -50,7 +51,7 @@ export function mediaNodeView(initial: Node) {
         );
         element.src = node.attrs.href;
         if (element instanceof HTMLIFrameElement) {
-          element.title = "PDF attachment preview";
+          bindAttribute(element, "title", "PDF attachment preview");
           element.loading = "lazy";
         } else {
           element.controls = true;

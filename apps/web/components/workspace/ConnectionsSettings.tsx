@@ -1,4 +1,7 @@
 "use client";
+import { currentLocale } from "@axiom/i18n/client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+
 import {
   ActionRow,
   Button,
@@ -38,6 +41,7 @@ type Approval = {
   error?: string;
 };
 export default function ConnectionsSettings() {
+  useInterfaceLocale();
   const server = useData<McpServerStatus>("connections/mcp-status");
   const [checkedServer, setCheckedServer] = useState<McpServerStatus | null>(
     null,
@@ -110,19 +114,17 @@ export default function ConnectionsSettings() {
       <section className="settings-card">
         <h2>
           <Network size={19} />
-          MCP server
+          <I18nText id="MCP server" />
         </h2>
         <p>
-          Connect an MCP-compatible assistant to your research workspace.
-          Authentication uses OAuth with PKCE; no account password or long-lived
-          API key is shared.
+          <I18nText id="Connect an MCP-compatible assistant to your research workspace. Authentication uses OAuth with PKCE; no account password or long-lived API key is shared." />
         </p>
         <div className="connection-endpoint">
           <code>{mcp?.endpoint ?? "Loading canonical endpoint…"}</code>
           <IconButton
             className="icon-button"
-            aria-label="Copy MCP server URL"
-            title="Copy MCP server URL"
+            aria-label={uiText("Copy MCP server URL")}
+            title={uiText("Copy MCP server URL")}
             disabled={!mcp?.endpoint}
             onClick={() =>
               void navigator.clipboard
@@ -139,53 +141,58 @@ export default function ConnectionsSettings() {
           </IconButton>
         </div>
         <HelpText>
-          Choose a remote HTTP MCP server in your client, enter this address,
-          then review the permission screen. A local server is only reachable
-          from this computer unless you deploy it over HTTPS.
+          <I18nText id="Choose a remote HTTP MCP server in your client, enter this address, then review the permission screen. A local server is only reachable from this computer unless you deploy it over HTTPS." />
         </HelpText>
         {mcp && (
           <>
             <dl className="connection-capabilities">
               <div>
-                <dt>Connection</dt>
+                <dt>
+                  <I18nText id="Connection" />
+                </dt>
                 <dd>
                   {mcp.transport} · {mcp.authentication}
                 </dd>
               </div>
               <div>
-                <dt>Workspace permissions</dt>
+                <dt>
+                  <I18nText id="Workspace permissions" />
+                </dt>
                 <dd>
-                  Read, propose edits or manage—only within reviewed grants
+                  <I18nText id="Read, propose edits or manage—only within reviewed grants" />
                 </dd>
               </div>
               <div>
-                <dt>Changes</dt>
+                <dt>
+                  <I18nText id="Changes" />
+                </dt>
                 <dd>
-                  In-app review before every write · up to{" "}
-                  {mcp.maxChangeSetActions} actions per proposal
+                  <I18nText id="In-app review before every write · up to" />{" "}
+                  {mcp.maxChangeSetActions}{" "}
+                  <I18nText id="actions per proposal" />
                 </dd>
               </div>
               <div>
-                <dt>Discovery</dt>
+                <dt>
+                  <I18nText id="Discovery" />
+                </dt>
                 <dd>
-                  {mcp.catalogActions} workspace operations, plus research
-                  resources and study prompts
+                  {mcp.catalogActions}{" "}
+                  <I18nText id="workspace operations, plus research resources and study prompts" />
                 </dd>
               </div>
             </dl>
             {typeof location !== "undefined" &&
               location.origin !== mcp.canonicalOrigin && (
                 <HelpText>
-                  You opened a different address. Use the canonical endpoint
-                  above for OAuth; an alias does not change the token audience.
+                  <I18nText id="You opened a different address. Use the canonical endpoint above for OAuth; an alias does not change the token audience." />
                 </HelpText>
               )}
           </>
         )}
         <ActionRow align="between" size="standard">
           <HelpText as="span">
-            Checks routing and the OAuth challenge without accessing files or
-            changing permissions.
+            <I18nText id="Checks routing and the OAuth challenge without accessing files or changing permissions." />
           </HelpText>
           <Button
             type="button"
@@ -193,7 +200,7 @@ export default function ConnectionsSettings() {
             onClick={() => void checkConnection()}
           >
             <RefreshCw size={16} />
-            Check connection
+            <I18nText id="Check connection" />
           </Button>
         </ActionRow>
         {(checkError || server.error) && (
@@ -206,15 +213,17 @@ export default function ConnectionsSettings() {
           >
             <strong>
               {mcp.check.healthy
-                ? "Endpoint ready"
-                : "Connection needs attention"}
+                ? uiText("Endpoint ready")
+                : uiText("Connection needs attention")}
             </strong>
             <p>{mcp.check.message}</p>
             <HelpText as="small">
               {mcp.check.code.replaceAll("_", " ")}
               {mcp.check.httpStatus ? ` · HTTP ${mcp.check.httpStatus}` : ""}
               {" · "}
-              {new Date(mcp.check.checkedAt).toLocaleTimeString()}
+              {new Date(mcp.check.checkedAt).toLocaleTimeString(
+                currentLocale(),
+              )}
             </HelpText>
           </Notice>
         )}
@@ -227,11 +236,13 @@ export default function ConnectionsSettings() {
           <section className="settings-card">
             <h2>
               <ShieldCheck size={19} />
-              Requests for approval
+              <I18nText id="Requests for approval" />
             </h2>
             {!data.data?.approvals.length &&
               !changes.data?.some((s) => s.connection_id) && (
-                <HelpText>No requests are waiting for review.</HelpText>
+                <HelpText>
+                  <I18nText id="No requests are waiting for review." />
+                </HelpText>
               )}
             {changes.data
               ?.filter((s) => s.connection_id)
@@ -245,12 +256,14 @@ export default function ConnectionsSettings() {
                       )?.name ?? "Connected app"}
                     </span>
                   </header>
-                  <HelpText>{s.status} · all writes require review</HelpText>
+                  <HelpText>
+                    {s.status} <I18nText id="· all writes require review" />
+                  </HelpText>
                   <Button
                     className="button secondary"
                     onClick={() => setReview(s.id)}
                   >
-                    Review changes
+                    <I18nText id="Review changes" />
                   </Button>
                 </article>
               ))}
@@ -261,11 +274,13 @@ export default function ConnectionsSettings() {
                   <span>{a.client_name}</span>
                 </header>
                 <HelpText>
-                  {a.status} · expires{" "}
-                  {new Date(a.expires_at).toLocaleTimeString()}
+                  {a.status} <I18nText id="· expires" />{" "}
+                  {new Date(a.expires_at).toLocaleTimeString(currentLocale())}
                 </HelpText>
                 <details>
-                  <summary>Review exact targets and changes</summary>
+                  <summary>
+                    <I18nText id="Review exact targets and changes" />
+                  </summary>
                   <pre>{JSON.stringify(a.arguments, null, 2)}</pre>
                 </details>
                 {a.error && <ErrorNotice message={a.error} />}
@@ -285,7 +300,7 @@ export default function ConnectionsSettings() {
                           }
                         >
                           <X size={15} />
-                          Reject
+                          <I18nText id="Reject" />
                         </Button>
                         <Button
                           className="button primary"
@@ -299,13 +314,13 @@ export default function ConnectionsSettings() {
                           }
                         >
                           <Check size={15} />
-                          Approve exact action
+                          <I18nText id="Approve exact action" />
                         </Button>
                       </>
                     )}
                   {a.status === "approved" && (
                     <HelpText as="span">
-                      Approved. The client can now retry this exact request.
+                      <I18nText id="Approved. The client can now retry this exact request." />
                     </HelpText>
                   )}
                 </ActionRow>
@@ -313,15 +328,21 @@ export default function ConnectionsSettings() {
             ))}
           </section>
           <section className="settings-card">
-            <h2>Connected applications</h2>
+            <h2>
+              <I18nText id="Connected applications" />
+            </h2>
             {!data.data?.connections.length && (
-              <HelpText>No applications have been connected.</HelpText>
+              <HelpText>
+                <I18nText id="No applications have been connected." />
+              </HelpText>
             )}
             {data.data?.connections.map((c) => (
               <article className="connection-entry" key={c.id}>
                 <div>
                   <strong>{c.name}</strong>
-                  <p>{c.revoked_at ? "Revoked" : c.scopes.join(" · ")}</p>
+                  <p>
+                    {c.revoked_at ? uiText("Revoked") : c.scopes.join(" · ")}
+                  </p>
                   <small>
                     {c.space_ids
                       .map(
@@ -343,21 +364,25 @@ export default function ConnectionsSettings() {
                     }
                   >
                     <Unplug size={15} />
-                    Revoke
+                    <I18nText id="Revoke" />
                   </Button>
                 )}
               </article>
             ))}
           </section>
           <section className="settings-card">
-            <h2>Recent connection activity</h2>
+            <h2>
+              <I18nText id="Recent connection activity" />
+            </h2>
             {data.data?.activity.map((a) => (
               <div key={a.id} className="connection-log">
                 <span>
                   {a.client_name} · {a.action}
                 </span>
                 <span>{a.outcome}</span>
-                <time>{new Date(a.created_at).toLocaleString()}</time>
+                <time>
+                  {new Date(a.created_at).toLocaleString(currentLocale())}
+                </time>
               </div>
             ))}
           </section>

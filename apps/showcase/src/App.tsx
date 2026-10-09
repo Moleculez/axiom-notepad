@@ -1,3 +1,6 @@
+import { currentLocale } from "@axiom/i18n/client";
+
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
 import { Button, IconButton } from "../../web/components/ui/controls";
 import {
   Component,
@@ -74,10 +77,14 @@ class Boundary extends Component<{ children: ReactNode }, { error: boolean }> {
   render() {
     return this.state.error ? (
       <main className="demo-failure">
-        <h1>This view could not load</h1>
-        <p>Your locally saved drafts are intact. Reload to retry.</p>
+        <h1>
+          <I18nText id="This view could not load" />
+        </h1>
+        <p>
+          <I18nText id="Your locally saved drafts are intact. Reload to retry." />
+        </p>
         <Button variant="primary" onClick={() => location.reload()}>
-          Reload showcase
+          <I18nText id="Reload showcase" />
         </Button>
       </main>
     ) : (
@@ -86,6 +93,7 @@ class Boundary extends Component<{ children: ReactNode }, { error: boolean }> {
   }
 }
 export default function App() {
+  useInterfaceLocale();
   const snapshot = useSnapshot(),
     appearance = snapshot.appearance;
   const [locationState, setLocationState] = useState(route),
@@ -245,20 +253,28 @@ export default function App() {
               document.getElementById("showcase-content")?.focus();
             }}
           >
-            Skip to content
+            <I18nText id="Skip to content" />
           </a>
           <header className="demo-header">
-            <a className="demo-brand" href="#tour" aria-label="Axiom home">
+            <a
+              className="demo-brand"
+              href="#tour"
+              aria-label={uiText("Axiom home")}
+            >
               <img
                 src={runtimeAsset("brand/mark-mineral.svg")}
                 alt=""
                 width="30"
                 height="30"
               />
-              <strong>Axiom</strong>
-              <span>live showcase</span>
+              <strong>
+                <I18nText id="Axiom" />
+              </strong>
+              <span>
+                <I18nText id="live showcase" />
+              </span>
             </a>
-            <nav aria-label="Showcase pages">
+            <nav aria-label={uiText("Showcase pages")}>
               {nav.map(({ id, label, icon: Icon }) => (
                 <a
                   key={id}
@@ -268,27 +284,27 @@ export default function App() {
                   }
                 >
                   <Icon size={15} />
-                  {label}
+                  {uiText(label)}
                 </a>
               ))}
             </nav>
             <div className="demo-header-actions">
               <span className="demo-local-badge">
                 <span />
-                Local-first demo
+                <I18nText id="Local-first demo" />
               </span>
               <IconButton
                 className="icon-button"
-                title="Local files"
-                aria-label="Local files"
+                title={uiText("Local files")}
+                aria-label={uiText("Local files")}
                 onClick={() => setFiles(true)}
               >
                 <FolderOpen size={17} />
               </IconButton>
               <IconButton
                 className="icon-button"
-                title="Appearance"
-                aria-label="Appearance"
+                title={uiText("Appearance")}
+                aria-label={uiText("Appearance")}
                 onClick={() => setSettings(true)}
               >
                 <Palette size={17} />
@@ -298,8 +314,8 @@ export default function App() {
                 href="https://github.com/Moleculez/axiom-notepad"
                 target="_blank"
                 rel="noopener noreferrer"
-                title="Source repository"
-                aria-label="Source repository"
+                title={uiText("Source repository")}
+                aria-label={uiText("Source repository")}
               >
                 <Code2 size={17} />
               </a>
@@ -344,10 +360,10 @@ export default function App() {
           {toast && (
             <div className="demo-toast" role="status">
               <Check size={16} />
-              <span>{toast}</span>
+              <span>{uiText(toast)}</span>
               <IconButton
                 className="icon-button"
-                aria-label="Dismiss notification"
+                aria-label={uiText("Dismiss notification")}
                 onClick={() => setToast("")}
               >
                 <X size={14} />
@@ -367,8 +383,10 @@ export default function App() {
           />
           {files && (
             <Dialog
-              title="Files on this device"
-              subtitle="Private demo drafts and uploads, stored only in this browser. Browser storage is not a backup."
+              title={uiText("Files on this device")}
+              subtitle={uiText(
+                "Private demo drafts and uploads, stored only in this browser. Browser storage is not a backup.",
+              )}
               onClose={() => setFiles(false)}
               size="wide"
             >
@@ -378,7 +396,7 @@ export default function App() {
                   onClick={() => input.current?.click()}
                 >
                   <Upload size={15} />
-                  Import files
+                  <I18nText id="Import files" />
                 </Button>
                 <Button
                   className="button secondary"
@@ -389,7 +407,7 @@ export default function App() {
                   }}
                 >
                   <Plus size={15} />
-                  New note
+                  <I18nText id="New note" />
                 </Button>
                 <Button
                   className="button secondary"
@@ -404,7 +422,7 @@ export default function App() {
                   }}
                 >
                   <Network size={15} />
-                  New canvas
+                  <I18nText id="New canvas" />
                 </Button>
                 <Button
                   onClick={() => {
@@ -419,7 +437,7 @@ export default function App() {
                   }}
                 >
                   <Network size={15} />
-                  New mind map
+                  <I18nText id="New mind map" />
                 </Button>
               </div>
               <div className="demo-file-list">
@@ -442,10 +460,14 @@ export default function App() {
                       <strong>{doc.title}</strong>
                       <small>
                         {doc.kind} ·{" "}
-                        {new Date(doc.modified).toLocaleDateString()}
+                        {new Date(doc.modified).toLocaleDateString(
+                          currentLocale(),
+                        )}
                       </small>
                     </span>
-                    <span className="demo-file-open">Open →</span>
+                    <span className="demo-file-open">
+                      <I18nText id="Open →" />
+                    </span>
                   </button>
                 ))}
                 {snapshot.assets.map((asset) => (
@@ -461,7 +483,7 @@ export default function App() {
                         <strong>{asset.name}</strong>
                         <small>
                           {asset.mime} · {(asset.blob.size / 1024).toFixed(1)}{" "}
-                          KB
+                          <I18nText id="KB" />
                         </small>
                       </span>
                     </button>
@@ -476,12 +498,11 @@ export default function App() {
                 ))}
               </div>
               <p className="demo-fineprint">
-                Up to 100 MB per upload; notes and Canvas files up to 5 MB.
-                Local file cards preview images, PDFs, audio and video. Remote
-                images remain placeholders until you import them.
+                <I18nText id="Up to 100 MB per upload; notes and Canvas files up to 5 MB. Local file cards preview images, PDFs, audio and video. Remote images remain placeholders until you import them." />
               </p>
               <DialogFooter>
                 <Button
+                  data-dialog-cancel
                   className="button secondary"
                   onClick={async () => {
                     try {
@@ -496,10 +517,10 @@ export default function App() {
                     }
                   }}
                 >
-                  Back up all local files
+                  <I18nText id="Back up all local files" />
                 </Button>
                 <Button variant="primary" onClick={() => setFiles(false)}>
-                  Done
+                  <I18nText id="Done" />
                 </Button>
               </DialogFooter>
             </Dialog>
@@ -519,7 +540,7 @@ export function Loading() {
   return (
     <div className="demo-loading" role="status">
       <span className="demo-loading-dot" />
-      Opening your thinking space…
+      <I18nText id="Opening your thinking space…" />
     </div>
   );
 }
