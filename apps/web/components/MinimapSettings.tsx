@@ -1,5 +1,6 @@
 "use client";
 import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+import type { MessageId } from "@axiom/i18n";
 
 import { Switch, NativeSelect } from "./ui/controls";
 import {
@@ -33,15 +34,20 @@ export default function MinimapSettings({
       | "search"
       | "selection"
       | "collaborators",
-    label: string,
-    hint?: string,
+    label: MessageId,
+    hint?: MessageId,
   ) => (
     <label className="setting-control setting-toggle" key={key}>
       <span>
-        {label}
-        {hint && <small>{hint}</small>}
+        <I18nText id={label} />
+        {hint && (
+          <small>
+            <I18nText id={hint} />
+          </small>
+        )}
       </span>
       <Switch
+        aria-label={uiText(label)}
         checked={value[key]}
         onChange={(e) => change(key, e.target.checked)}
       />
@@ -49,19 +55,21 @@ export default function MinimapSettings({
   );
   const select = <K extends "side" | "size" | "rendering" | "slider">(
     key: K,
-    label: string,
-    choices: [MinimapPreferences[K], string][],
+    label: MessageId,
+    choices: [MinimapPreferences[K], MessageId][],
   ) => (
     <label className="setting-control">
-      <span>{label}</span>
+      <span>
+        <I18nText id={label} />
+      </span>
       <NativeSelect
-        aria-label={label}
+        aria-label={uiText(label)}
         value={value[key]}
         onChange={(e) => change(key, e.target.value as MinimapPreferences[K])}
       >
         {choices.map(([value, text]) => (
           <option key={value} value={value}>
-            {text}
+            <I18nText id={text} />
           </option>
         ))}
       </NativeSelect>

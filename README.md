@@ -169,7 +169,8 @@ See [showcase storage, settings and GitHub Pages deployment](docs/STATIC_SHOWCAS
   Korean and German; American English is the default. A browser-local selector
   serves the showcase. Shared ICU messages and self-hosted fonts preserve document
   content and editor state. Reviewed settings, group, file/Trash, planning,
-  reference-library and selected provider/PDF/publication controls have translations;
+  reference-library, reading/minimap/shortcut controls, editor actions and selected
+  provider/PDF/publication controls have translations;
   new languages and long-tail copy still have substantial English fallback.
   See [localization scope](docs/LOCALIZATION.md).
 

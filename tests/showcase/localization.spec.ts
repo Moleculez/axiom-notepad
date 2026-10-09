@@ -1,5 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 import { locales, localeTag } from "../../packages/i18n/src/locales";
+import { createTranslator } from "../../packages/i18n/src/index";
+import { readFile } from "node:fs/promises";
 
 const note = "3f000000-0000-4000-8000-000000000001";
 const key = "axiom:locale:showcase:v1";
@@ -219,3 +221,129 @@ test("localized table scopes and destructive dialog focus use stable identities"
   await expect(confirmation).toHaveCount(0);
   await expect(settings(page)).toBeVisible();
 });
+
+for (const locale of ["ja", "ko", "de"] as const) {
+  test(`${locale} reading settings translate choices while preserving source and canonical values`, async ({
+    page,
+    browserName,
+  }, info) => {
+    const t = createTranslator(
+      locale,
+      JSON.parse(
+        await readFile(`packages/i18n/src/messages/${locale}.json`, "utf8"),
+      ),
+    );
+    const errors: string[] = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto(`./#editor&note=${note}`);
+    await expect(page.locator(".axiom-editor")).toBeVisible();
+    const source = await savedSource(page);
+    const url = page.url();
+    const language = await openLanguage(page);
+    await language.selectOption(locale);
+    await expect(page.locator("html")).toHaveAttribute("lang", locale);
+    const dialog = settings(page);
+    await expect(dialog).toHaveAccessibleName(t("Appearance & editor"));
+    for (const mode of ["light", "dark"] as const) {
+      await dialog.getByRole("tab").nth(1).click();
+      await dialog
+        .locator(".demo-mode-switch button")
+        .nth(mode === "light" ? 0 : 1)
+        .click();
+      const size = dialog.getByRole("spinbutton", {
+        name: t("{label} value", { label: t("Interface font size") }),
+        exact: true,
+      });
+      await size.fill("20");
+      await size.press("Tab");
+      await dialog.getByRole("tab").nth(6).click();
+      await expect(dialog.getByRole("tabpanel")).toContainText(
+        t("Configure document navigation and position indicators."),
+      );
+      await expect(
+        dialog.getByRole("button", {
+          name: t("Reset {category} settings", { category: t("Minimap") }),
+          exact: true,
+        }),
+      ).toBeVisible();
+      const side = dialog.getByRole("combobox", {
+        name: t("Minimap side"),
+        exact: true,
+      });
+      await expect(side.locator('option[value="right"]')).toHaveText(
+        t("Right"),
+      );
+      await side.selectOption("left");
+      await expect(side).toHaveValue("left");
+      const rendering = dialog.getByRole("combobox", {
+        name: t("Minimap rendering"),
+        exact: true,
+      });
+      await expect(rendering.locator('option[value="text"]')).toHaveText(
+        t("Miniature text"),
+      );
+      await rendering.selectOption("blocks");
+      await expect(rendering).toHaveValue("blocks");
+      await expect(
+        dialog.getByRole("switch", {
+          name: t("Show search results in minimap"),
+          exact: true,
+        }),
+      ).toBeVisible();
+      await side.focus();
+      await page.keyboard.press(browserName === "webkit" ? "Alt+Tab" : "Tab");
+      expect(
+        await dialog.evaluate((element) =>
+          element.contains(document.activeElement),
+        ),
+      ).toBe(true);
+      const fields = dialog.locator(".demo-settings-fields");
+      expect(
+        await fields.evaluate(
+          (element) => element.scrollWidth <= element.clientWidth + 1,
+        ),
+      ).toBe(true);
+      const footer = dialog.locator(".dialog-footer");
+      await expect(footer.getByRole("status")).toHaveText(
+        t("Saved on this device"),
+      );
+      await expect(footer).toBeInViewport();
+      const bounds = (await footer.boundingBox())!;
+      expect(bounds.y + bounds.height).toBeLessThanOrEqual(901);
+      await page.screenshot({
+        path: info.outputPath(`showcase-minimap-${locale}-${mode}-large.png`),
+      });
+      await dialog.getByRole("tab").nth(4).click();
+      const indentation = dialog.getByRole("combobox", {
+        name: t("Indentation"),
+        exact: true,
+      });
+      await indentation.selectOption("8");
+      await expect(indentation).toHaveValue("8");
+      await expect(indentation.locator('option[value="8"]')).toHaveText(
+        t("{count, number} spaces", { count: 8 }),
+      );
+      await expect(
+        dialog.getByRole("switch", {
+          name: t("Wrap code blocks"),
+          exact: true,
+        }),
+      ).toBeVisible();
+      await expect(
+        dialog.getByRole("switch", {
+          name: t("Navigate cells with Tab"),
+          exact: true,
+        }),
+      ).toBeVisible();
+      await page.emulateMedia({ reducedMotion: "reduce" });
+      expect(page.url()).toBe(url);
+      expect(await savedSource(page)).toBe(source);
+    }
+    await page.emulateMedia({ forcedColors: "active" });
+    await page.screenshot({
+      path: info.outputPath(`showcase-reading-${locale}-forced-colors.png`),
+    });
+    expect(errors).toEqual([]);
+  });
+}

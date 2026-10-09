@@ -6,8 +6,12 @@ Twelve choices work; navigation, common actions, language settings and selected
 editor/research/planning controls have authored translations. The follow-up expands
 settings descriptions and profile/security controls, group administration, file
 management and import, Trash protection/removal, scheduling/goals/intake/time, and
-reference-library/graph controls. The current pass adds provider/assistant consent,
+reference-library/graph controls. Later passes add provider/assistant consent,
 selected PDF tools, publication/analytics controls and MCP request lifecycle copy.
+The reading-control increment adds complete editor command labels, minimap
+choices and indicators, shortcut counts/recording/conflicts, color-field recovery
+and shared production/showcase reading controls. Previously unregistered registry
+labels are now known catalog IDs rather than silent English-only controls.
 Japanese, Korean and German have a smaller reviewed vocabulary than the original
 eight non-English choices. Less-used copy and some dynamic messages still
 show English. Key parity is not linguistic acceptance.
@@ -112,8 +116,17 @@ canonical `value` attributes on select options. A translated label must never
 become an API role. Safety tokens such as `DELETE FOREVER` remain literal; translate
 the surrounding complete instruction, not the token or authored filename.
 
+Use native application terminology, not word-for-word equivalents: “Editor”
+names the editing surface, not an editor as a person. Keep navigation labels
+concise and inspect enlarged-text screenshots for awkward word splits. Shorten
+the reviewed label when appropriate; do not shrink the user's chosen font or
+introduce a competing layout to conceal a translation issue.
+
 `Message` has explicit `slots` for links, keyboard hints and styled elements.
 Only caller-provided React nodes occupy slots; catalogs cannot introduce HTML.
+For example, the math-settings explanation is one complete sentence with a
+`command` slot containing the literal `\require{physics}` code node. Translators
+can move the slot to fit natural word order without translating or rebuilding TeX.
 Use active-locale native `Intl` for **visible** counts/dates, never timestamps,
 positions, parsing or sort keys. Numeric/color inputs keep canonical editable values.
 
@@ -124,6 +137,16 @@ Internal behavior uses stable data attributes, not translated ARIA labels.
 Mark non-destructive dialog dismissal actions with `data-dialog-cancel`; initial
 focus must not depend on an English button label. Native macOS keyboard tests
 use Option-Tab when the system excludes non-text controls from ordinary Tab.
+
+Use the same closed labels for equivalent production and showcase preferences.
+Localize helper-produced labels, hints and select-option text at their rendering
+boundary; translating a catalog entry alone does not fix a hard-coded helper.
+Keep explicit canonical option values such as `left`, `proportional`, `blocks`
+and indentation sizes. Reading marks, minimap navigation and command categories
+follow this boundary. Shortcut result counts, recorder prompts and reassignment
+warnings are whole messages, not joined translated fragments. Numeric validation
+retains an error state and formats its message on render, so switching languages
+does not erase or leave an old-language draft/error.
 
 Extraction helpers produce inventory/migration suggestions, **not translations or
 proof of coverage**. Review authored samples, protocol strings, templates and rich
@@ -171,20 +194,23 @@ npm run test:showcase -- tests/showcase/localization.spec.ts
 ```
 
 The catalog gate checks keys, ICU, argument contracts and HTML boundaries. It also
-protects **178 reviewed message IDs** across ten UI areas against missing, blank or
+protects **380 reviewed message IDs** across fourteen UI areas against missing, blank or
 English-fallback regressions in every non-English catalog. The scope lives in
 `packages/i18n/src/translation-coverage.ts`, outside runtime bundles. Extend it
 when completing a UI increment. Legitimately identical native wording requires an
 explicit message/locale exception; exceptions never allow missing or blank values
-and must not exempt an entire area. This is a structural review gate, not native
+and must not exempt an entire area. Examples include French “Collaboration”,
+German “Definition”/“Proportional” and Indonesian “Media”, whose native spelling
+matches English. This is a structural review gate, not native
 linguistic certification.
 
 The gate writes matching-English entries to ignored `data/i18n/coverage.json`.
-On 2026-10-09 the current inventory has **5,393 messages**. The eight earlier
-non-English catalogs have **1,974–2,023 differing translations each**, with
-**3,370–3,419 values per catalog still matching English**. Japanese and Korean
-have **616 differing translations each**; German has **604**, leaving
-**4,777–4,789 matching-English values** in the three new catalogs.
+On 2026-10-10 the current inventory has **5,527 messages**, including **134 newly
+registered messages** in the reading-control increment. The eight earlier
+non-English catalogs have **2,148–2,198 differing translations each**, with
+**3,329–3,379 values per catalog still matching English**. Japanese and Korean
+have **1,008 differing translations each**; German has **990**, leaving
+**4,519–4,537 matching-English values** in the three new catalogs.
 Some are legitimate technical names, but most are untranslated UI. These counts
 are not a completion threshold or a claim that an entire feature area is translated.
 
@@ -212,9 +238,16 @@ use the engine's resolved numbering system rather than assuming Node's CLDR
 defaults. Read-only MCP review fixtures cover approved queued requests, delayed
 processing, manual refresh and completed receipts, with Japanese/Korean/German
 large-text dialogs in both color modes. They never approve or create actual files.
+Read-only appearance fixtures cover Japanese/Korean/German minimap labels/options,
+canonical values, scratchpad modes/privacy captions, localized shortcut
+counts/recording, keyboard focus and visible
+footers at large text. They leave saved appearance/writing preferences unchanged.
 Showcase tests cover twelve choices,
 route/source/undo preservation, German, light/dark, large text, keyboard, forced
-colors and reduced motion. Inspect screenshots: structural assertions alone are
+colors and reduced motion, plus the shared reading choices in the three newer
+languages. The command-registry unit gate rejects unregistered labels/categories;
+parameter tests retain authored names and TeX commands literally.
+Inspect screenshots: structural assertions alone are
 not layout acceptance. Mutations run only on isolated data.
 
 Before claiming an entirely localized app, finish long-tail translations, replace
@@ -231,6 +264,9 @@ The next translation passes should prioritize:
 - Remaining composed messages, lifecycle/status displays, accessibility labels and
   user-visible API errors. Convert whole messages with canonical parameters;
   do not translate protocol error codes or arbitrary returned values.
+  Account-preference synchronization/footer feedback still needs a closed
+  message-registry audit; a `uiText` call alone does not localize an unregistered
+  runtime status string.
 
 Published readers, email templates and long help articles still need a separately
 defined localization scope. The coverage inventory is a copy-review queue, not a

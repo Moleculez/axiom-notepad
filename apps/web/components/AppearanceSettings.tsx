@@ -105,7 +105,7 @@ function AppearanceSettingsReady({
   routed = false,
   onSection,
 }: AppearanceSettingsProps) {
-  useInterfaceLocale();
+  const { t, locale } = useInterfaceLocale();
   const internal = useSettingsDraft(appearance, editorSettings, !session);
   const settings = session ?? internal;
   const {
@@ -154,7 +154,7 @@ function AppearanceSettingsReady({
           fields.current?.querySelectorAll(".settings-card") ?? [],
         ).some((el) => (el as HTMLElement).offsetHeight > 0),
     );
-  }, [query, section]);
+  }, [query, section, locale]);
   const show = (category: string, label = "") =>
     query
       ? `${uiText(category)} ${uiText(label)} ${category} ${label}`
@@ -199,11 +199,11 @@ function AppearanceSettingsReady({
     show(category, label) && (
       <label className="setting-toggle" key={key}>
         <span>
-          {label}
-          {hint && <small>{hint}</small>}
+          {uiText(label)}
+          {hint && <small>{uiText(hint)}</small>}
         </span>
         <Switch
-          aria-label={label}
+          aria-label={uiText(label)}
 
           checked={draft[key] as boolean}
           onChange={(e) => change(key, e.target.checked as never)}
@@ -218,15 +218,15 @@ function AppearanceSettingsReady({
   ) =>
     show(category, label) && (
       <label className="setting-control" key={key}>
-        <span>{label}</span>
+        <span>{uiText(label)}</span>
         <NativeSelect
-          aria-label={label}
+          aria-label={uiText(label)}
           value={String(draft[key])}
           onChange={(e) => change(key, e.target.value as never)}
         >
           {options.map(([value, name]) => (
             <option key={value} value={value}>
-              {name}
+              {uiText(name)}
             </option>
           ))}
         </NativeSelect>
@@ -285,7 +285,7 @@ function AppearanceSettingsReady({
                   }}
                 >
                   <Glyph size={17} />
-                  {String(name)}
+                  {uiText(String(name))}
                 </button>
               );
             })}
@@ -315,15 +315,17 @@ function AppearanceSettingsReady({
                 {query
                   ? uiText("Search results")
                   : section === "Editor"
-                    ? "Writing"
-                    : section}
+                    ? uiText("Writing")
+                    : uiText(section)}
               </h1>
             ) : (
               <h3>{query ? uiText("Search results") : uiText(section)}</h3>
             )}
             <p className="muted">
-              {description ??
-                "Personal preferences for a comfortable workspace."}
+              {uiText(
+                description ??
+                  "Personal preferences for a comfortable workspace.",
+              )}
             </p>
           </div>
           <div className="settings-intro-tools">
@@ -520,10 +522,10 @@ function AppearanceSettingsReady({
                 {draft.themePack !== "default" && (
                   <div className="theme-pack-description">
                     <HelpText>
-                      {
+                      {uiText(
                         themePacks.find((pack) => pack.id === draft.themePack)
-                          ?.description
-                      }{" "}
+                          ?.description ?? "",
+                      )}{" "}
                       <I18nText id="Custom color overrides take priority." />
                     </HelpText>
                     <Button
@@ -629,7 +631,9 @@ function AppearanceSettingsReady({
                         key={id}
                         type="button"
                         className="theme-family-card"
-                        aria-label={`Use ${family.name} theme family`}
+                        aria-label={t("Use {name} theme family", {
+                          name: family.name,
+                        })}
                         aria-pressed={
                           matchingEditorTheme(draft, false) === family.light &&
                           matchingEditorTheme(draft, true) === family.dark
@@ -663,7 +667,7 @@ function AppearanceSettingsReady({
                           })}
                         </span>
                         <strong>{family.name}</strong>
-                        <small>{family.description}</small>
+                        <small>{uiText(family.description)}</small>
                       </button>
                     ),
                   )}
@@ -682,7 +686,7 @@ function AppearanceSettingsReady({
                         type="button"
                         key={id}
                         className="palette-card"
-                        aria-label={`Use ${p.name} theme`}
+                        aria-label={t("Use {name} theme", { name: p.name })}
                         aria-pressed={
                           matchingEditorTheme(draft, p.mode === "dark") === id
                         }
@@ -877,9 +881,10 @@ function AppearanceSettingsReady({
                     className="button secondary small"
                     onClick={() => change(colorKey, {})}
                   >
-                    <I18nText id="Restore" />{" "}
-                    {editDark ? uiText("dark") : uiText("light")}{" "}
-                    <I18nText id="palette defaults" />
+                    <I18nText
+                      id="Restore {mode, select, dark {dark} other {light}} palette defaults"
+                      values={{ mode: editDark ? "dark" : "light" }}
+                    />
                   </Button>
                   <div className="contrast-checks">
                     {checks.map(([label, a, b]) => (
@@ -926,28 +931,31 @@ function AppearanceSettingsReady({
                       <I18nText id="Save palette" />
                     </Button>
                   </div>
-                  {draft.themes.map((t) => (
-                    <div className="saved-theme" key={t.id}>
+                  {draft.themes.map((savedTheme) => (
+                    <div className="saved-theme" key={savedTheme.id}>
                       <button
                         className="text-button"
                         onClick={() => {
                           setDraft((d) => ({
                             ...d,
-                            mode: t.mode,
-                            [t.mode + "Colors"]: t.colors,
+                            mode: savedTheme.mode,
+                            [savedTheme.mode + "Colors"]: savedTheme.colors,
                           }));
-                          setEditDark(t.mode === "dark");
+                          setEditDark(savedTheme.mode === "dark");
                         }}
                       >
-                        {t.name} · {t.mode}
+                        {savedTheme.name} ·{" "}
+                        {uiText(savedTheme.mode === "dark" ? "Dark" : "Light")}
                       </button>
                       <button
                         className="text-button"
-                        aria-label={`Delete theme ${t.name}`}
+                        aria-label={t("Delete theme {name}", {
+                          name: savedTheme.name,
+                        })}
                         onClick={() =>
                           change(
                             "themes",
-                            draft.themes.filter((v) => v.id !== t.id),
+                            draft.themes.filter((v) => v.id !== savedTheme.id),
                           )
                         }
                       >
@@ -1053,7 +1061,9 @@ function AppearanceSettingsReady({
                           type="button"
                           className="document-style-card"
                           key={id}
-                          aria-label={`Use ${style.name} document style`}
+                          aria-label={t("Use {name} document style", {
+                            name: style.name,
+                          })}
                           aria-pressed={matchingDocumentStyle(draft) === id}
                           onClick={() =>
                             setDraft((d) =>
@@ -1071,7 +1081,7 @@ function AppearanceSettingsReady({
                             <I18nText id="A place for careful thinking." />
                           </span>
                           <strong>{style.name}</strong>
-                          <small>{style.description}</small>
+                          <small>{uiText(style.description)}</small>
                         </button>
                       ))}
                     </div>
@@ -1082,7 +1092,12 @@ function AppearanceSettingsReady({
                     {select(
                       "Typography",
                       `${role}Font`,
-                      `${{ ui: "Interface", prose: "Note text", heading: "Headings", code: "Source & code" }[role]} font`,
+                      {
+                        ui: "Interface font",
+                        prose: "Reading font",
+                        heading: "Heading font",
+                        code: "Code font",
+                      }[role],
                       Object.entries(fonts)
                         .filter(
                           ([k]) =>
@@ -1094,7 +1109,12 @@ function AppearanceSettingsReady({
                     {select(
                       "Typography",
                       `${role}Weight`,
-                      `${{ ui: "Interface", prose: "Note text", heading: "Heading", code: "Code" }[role]} weight`,
+                      {
+                        ui: "Interface weight",
+                        prose: "Body weight",
+                        heading: "Heading weight",
+                        code: "Code weight",
+                      }[role],
                       [
                         ["400", "Regular"],
                         ["500", "Medium"],
@@ -1283,15 +1303,19 @@ function AppearanceSettingsReady({
                   <div className="device-override" key={key}>
                     <label className="setting-toggle">
                       <span>
-                        {
+                        {uiText(
                           {
                             uiScale: "Interface scale",
                             density: "Density",
-                          }[key]
-                        }
+                          }[key],
+                        )}
                       </span>
                       <Switch
-                        aria-label={`Override ${key} on this device`}
+                        aria-label={t("Override {label} on this device", {
+                          label: uiText(
+                            key === "uiScale" ? "Interface scale" : "Density",
+                          ),
+                        })}
 
                         checked={device[key] !== undefined}
                         onChange={(e) =>
@@ -1332,8 +1356,12 @@ function AppearanceSettingsReady({
                             <output>{device[key]}×</output>
                           </span>
                           <Slider
-                            aria-label={`Device ${key}`}
-                            aria-valuetext={`${device[key]} times`}
+                            aria-label={t("Device {label}", {
+                              label: uiText("Interface scale"),
+                            })}
+                            aria-valuetext={t("{value, number} times", {
+                              value: device[key]!,
+                            })}
                             min={0.8}
                             max={1.5}
                             step={0.05}
@@ -1353,7 +1381,7 @@ function AppearanceSettingsReady({
             )}
             {message && (
               <p role="status" className="settings-feedback">
-                {message}
+                {uiText(message)}
               </p>
             )}
             <p
@@ -1362,7 +1390,7 @@ function AppearanceSettingsReady({
               className="settings-sync"
               hidden={!settings.dirty}
             >
-              {appearance.status}
+              {uiText(appearance.status)}
             </p>
             <p
               role="status"
@@ -1370,7 +1398,7 @@ function AppearanceSettingsReady({
               className="editor-settings-sync"
               hidden={!settings.dirty}
             >
-              {editorSettings.status}
+              {uiText(editorSettings.status)}
             </p>
             {settings.conflicts.length > 0 && (
               <div className="settings-conflict">
@@ -1457,11 +1485,13 @@ function AppearanceSettingsReady({
             ? uiText("Unsaved changes · live preview")
             : [
                 ...new Set(
-                  [appearance.status, editorSettings.status].filter(Boolean),
+                  [appearance.status, editorSettings.status]
+                    .filter(Boolean)
+                    .map((status) => uiText(status)),
                 ),
               ].join(" · ")}
           {Object.values(invalid).some(Boolean) &&
-            " · Check incomplete values before applying"}
+            uiText(" · Check incomplete values before applying")}
         </span>
         <div className="settings-reset-actions">
           <Button

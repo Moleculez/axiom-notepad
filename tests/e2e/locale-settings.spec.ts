@@ -9,6 +9,7 @@ import {
 } from "../../packages/i18n/src/index";
 import { IntlMessageFormat } from "intl-messageformat";
 import { APPEARANCE_SCHEMA } from "../../packages/shared/src/appearance";
+import { editorCommands } from "../../packages/shared/src/editor";
 const origin = "http://localhost:3004";
 const endpoint = "/api/v1/me/locale";
 async function record(request: APIRequestContext): Promise<LocaleRecord> {
@@ -315,4 +316,184 @@ test.describe("localized group dialog with read-only theme fixtures", () => {
     ).toEqual(before);
     expect(errors).toEqual([]);
   });
+});
+
+test.describe("localized reading controls with read-only appearance fixtures", () => {
+  test.use({ serviceWorkers: "block" });
+  for (const locale of ["ja", "ko", "de"] as const) {
+    test(`${locale} minimap and shortcut controls preserve canonical settings and fit at large text`, async ({
+      page,
+      browserName,
+    }, info) => {
+      test.setTimeout(120000);
+      await setLocale(page.request, locale);
+      const t = createTranslator(
+        locale,
+        JSON.parse(
+          await readFile(`packages/i18n/src/messages/${locale}.json`, "utf8"),
+        ),
+      );
+      const errors: string[] = [];
+      page.on("pageerror", (error) => errors.push(error.message));
+      await page.setViewportSize({ width: 1280, height: 900 });
+      const bundleEndpoint = "/api/v1/me/preferences-bundle";
+      const headers = {
+        "X-Axiom-Appearance-Schema": String(APPEARANCE_SCHEMA),
+      };
+      const before = await (
+        await page.request.get(bundleEndpoint, { headers })
+      ).json();
+      for (const mode of ["light", "dark"] as const) {
+        await page.route(`**${bundleEndpoint}`, async (route) => {
+          expect(route.request().method()).toBe("GET");
+          const response = await route.fetch();
+          expect(response.status()).toBe(200);
+          const bundle = await response.json();
+          bundle.appearance.preferences.mode = mode;
+          bundle.appearance.preferences.uiSize = 20;
+          bundle.appearance.preferences.minimap.enabled = true;
+          await route.fulfill({ response, json: bundle });
+        });
+        await page.emulateMedia({ colorScheme: mode, reducedMotion: "reduce" });
+        await page.goto("/workbench/settings/appearance-general");
+        await expect(page.locator("html")).toHaveAttribute("lang", locale);
+        await expect(page.locator("html")).toHaveAttribute("data-theme", mode);
+        const scratchpad = page.locator(
+          ".appearance-settings .settings-scratchpad",
+        );
+        await expect(scratchpad).toHaveAccessibleName(
+          t("{category} settings preview", { category: t("General") }),
+        );
+        const previewModes = scratchpad.getByRole("group", {
+          name: t("Preview mode"),
+          exact: true,
+        });
+        for (const label of ["Write", "Read", "Source"] as const)
+          await expect(
+            previewModes.getByRole("button", { name: t(label), exact: true }),
+          ).toBeVisible();
+        await expect(scratchpad.locator(".scratchpad-footer")).toContainText(
+          t("Private scratchpad · never saved or synced"),
+        );
+        const minimap = page.locator(".minimap-settings");
+        await expect(
+          minimap.getByRole("switch", {
+            name: t("Show document minimap"),
+            exact: true,
+          }),
+        ).toBeChecked();
+        const position = minimap.getByRole("combobox", {
+          name: t("Minimap position"),
+          exact: true,
+        });
+        await expect(position.locator('option[value="right"]')).toHaveText(
+          t("Right"),
+        );
+        await expect(position.locator('option[value="left"]')).toHaveText(
+          t("Left"),
+        );
+        await position.selectOption("left");
+        await expect(position).toHaveValue("left");
+        const sizing = minimap.getByRole("combobox", {
+          name: t("Minimap sizing"),
+          exact: true,
+        });
+        await expect(sizing.locator('option[value="fit"]')).toHaveText(
+          t("Fit document"),
+        );
+        await sizing.selectOption("proportional");
+        await expect(sizing).toHaveValue("proportional");
+        await minimap.locator(".minimap-advanced summary").click();
+        await expect(
+          minimap.getByRole("switch", {
+            name: t("Show search results in minimap"),
+            exact: true,
+          }),
+        ).toBeVisible();
+        await expect(
+          minimap.getByRole("switch", {
+            name: t("Show collaborator positions"),
+            exact: true,
+          }),
+        ).toBeVisible();
+        await position.focus();
+        await page.keyboard.press(browserName === "webkit" ? "Alt+Tab" : "Tab");
+        expect(
+          await page
+            .locator(".appearance-settings")
+            .evaluate((element) => element.contains(document.activeElement)),
+        ).toBe(true);
+        await minimap.locator(".minimap-advanced").scrollIntoViewIfNeeded();
+        const fields = page.locator(".appearance-settings .settings-content");
+        expect(
+          await fields.evaluate(
+            (element) => element.scrollWidth <= element.clientWidth + 1,
+          ),
+        ).toBe(true);
+        const footer = page.locator(".appearance-settings .settings-footer");
+        await expect(
+          footer.getByRole("button", { name: t("Apply"), exact: true }),
+        ).toBeInViewport();
+        const bounds = (await footer.boundingBox())!;
+        expect(bounds.y + bounds.height).toBeLessThanOrEqual(901);
+        await page.screenshot({
+          path: info.outputPath(`reading-controls-${locale}-${mode}-large.png`),
+        });
+        await footer
+          .getByRole("button", { name: t("Cancel"), exact: true })
+          .click();
+        await page.goto("/workbench/settings/shortcuts");
+        await expect(page.locator(".shortcut-row")).toHaveCount(
+          editorCommands.length,
+        );
+        await expect(page.locator(".shortcut-results-count")).toHaveText(
+          t(
+            "{count, plural, one {# command available} other {# commands available}}",
+            { count: editorCommands.length },
+          ),
+        );
+        const search = page.getByRole("textbox", {
+          name: t("Search shortcuts"),
+          exact: true,
+        });
+        await search.fill(t("Bold"));
+        await expect(page.locator(".shortcut-row")).toHaveCount(1);
+        await expect(page.locator(".shortcut-results-count")).toHaveText(
+          t(
+            "{count, plural, one {# command available} other {# commands available}}",
+            { count: 1 },
+          ),
+        );
+        const change = page.getByRole("button", {
+          name: t("Change shortcut for {command}", { command: t("Bold") }),
+          exact: true,
+        });
+        await change.click();
+        const recorder = page.getByRole("group", {
+          name: t("Record keyboard shortcut"),
+          exact: true,
+        });
+        await expect(recorder).toBeFocused();
+        await expect(recorder).toContainText(
+          t("Press a shortcut for {command}. Escape cancels.", {
+            command: t("Bold"),
+          }),
+        );
+        await recorder.press("Escape");
+        await expect(change).toBeFocused();
+        await page.screenshot({
+          path: info.outputPath(`shortcuts-${locale}-${mode}-large.png`),
+        });
+        await page.unroute(`**${bundleEndpoint}`);
+      }
+      await page.emulateMedia({ forcedColors: "active" });
+      await page.screenshot({
+        path: info.outputPath(`shortcuts-${locale}-forced-colors.png`),
+      });
+      expect(
+        await (await page.request.get(bundleEndpoint, { headers })).json(),
+      ).toEqual(before);
+      expect(errors).toEqual([]);
+    });
+  }
 });

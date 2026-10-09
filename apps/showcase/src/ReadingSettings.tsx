@@ -32,7 +32,7 @@ export default function ReadingSettings({
 }: {
   section: ReadingSection;
 }) {
-  useInterfaceLocale();
+  const { t } = useInterfaceLocale();
   const { appearance, editor } = useSnapshot(),
     { changeAppearance } = useDemo();
   const id = useId();
@@ -238,11 +238,10 @@ export default function ReadingSettings({
             <Choice
               label={uiText("Indentation")}
               value={String(editor.indentSize)}
-              choices={[
-                ["2", "2 spaces"],
-                ["4", "4 spaces"],
-                ["8", "8 spaces"],
-              ]}
+              choices={[2, 4, 8].map((count) => [
+                String(count),
+                t("{count, number} spaces", { count }),
+              ])}
               onChange={(value) =>
                 edit({
                   indentSize: Number(value) as EditorPreferences["indentSize"],
@@ -282,18 +281,18 @@ export default function ReadingSettings({
                 ))}
               </datalist>
             </label>
-            {behavior("Wrap code lines", "codeWrap")}
-            {behavior("Code line numbers", "codeLineNumbers")}
-            {behavior("Indent code on Enter", "codeIndentOnEnter")}
-            {display("Highlight the active source line", "activeLine")}
-            {display("Code font ligatures", "ligatures")}
+            {behavior("Wrap code blocks", "codeWrap")}
+            {behavior("Code-block line numbers", "codeLineNumbers")}
+            {behavior("Smart code indentation", "codeIndentOnEnter")}
+            {display("Highlight active source line", "activeLine")}
+            {display("Code ligatures", "ligatures")}
             <h4>
               <I18nText id="Tables" />
             </h4>
-            {behavior("Navigate table cells with Tab", "tableTabNavigation")}
-            {behavior("Tab creates a row at the end", "tableAutoRow")}
+            {behavior("Navigate cells with Tab", "tableTabNavigation")}
+            {behavior("Add a row at the last cell", "tableAutoRow")}
             {behavior(
-              "Paste rows and columns into tables",
+              "Paste spreadsheet and HTML tables",
               "tableRichPaste",
               "Import a spreadsheet selection or tab-separated text.",
             )}
@@ -307,21 +306,21 @@ export default function ReadingSettings({
             {behavior(
               "Slash commands",
               "slashCommands",
-              "Type / at a paragraph to insert a block.",
+              "Type / in an empty paragraph to insert a block.",
             )}
-            {behavior("Pair brackets, quotes and delimiters", "autoPair")}
-            {behavior("Continue lists and quotes on Enter", "continuation")}
-            {behavior("Formatting toolbar", "formattingBar")}
-            {behavior("Selection formatting menu", "selectionBar")}
+            {behavior("Pair brackets and delimiters", "autoPair")}
+            {behavior("Continue Markdown blocks", "continuation")}
+            {behavior("Persistent formatting bar", "formattingBar")}
+            {behavior("Selection formatting", "selectionBar")}
             <h4>
               <I18nText id="Mathematics" />
             </h4>
             {behavior("Live equation preview", "mathPreview")}
-            {behavior("Math symbol completion", "mathCompletion")}
+            {behavior("TeX completions and snippets", "mathCompletion")}
             {behavior(
-              "Keep the last valid equation preview",
+              "Keep the last valid preview",
               "mathKeepLastPreview",
-              "Avoid a flashing preview while an expression is incomplete.",
+              "Incomplete expressions retain a visibly marked preview without discarding source.",
             )}
             <p className="demo-fineprint">
               <I18nText id="Shortcuts remain available. These controls also apply to rich-text Canvas cards; Read mode never changes your source." />
@@ -351,8 +350,8 @@ export default function ReadingSettings({
                 label={uiText("Minimap rendering")}
                 value={appearance.minimap.rendering}
                 choices={[
-                  ["text", "Text"],
-                  ["blocks", "Block structure"],
+                  ["text", "Miniature text"],
+                  ["blocks", "Color blocks"],
                 ]}
                 onChange={(value) =>
                   minimap({
@@ -386,7 +385,7 @@ export default function ReadingSettings({
               label={uiText("Viewport indicator")}
               value={appearance.minimap.slider}
               choices={[
-                ["hover", "Show on hover"],
+                ["hover", "On hover or focus"],
                 ["always", "Always visible"],
               ]}
               onChange={(value) =>
@@ -398,10 +397,10 @@ export default function ReadingSettings({
                 ["Show in Write mode", "write"],
                 ["Show in Source mode", "source"],
                 ["Show in Read mode", "read"],
-                ["Heading markers", "headings"],
-                ["Hover previews", "preview"],
-                ["Search result markers", "search"],
-                ["Cursor and selection markers", "selection"],
+                ["Show heading labels", "headings"],
+                ["Show minimap hover previews", "preview"],
+                ["Show search results in minimap", "search"],
+                ["Show editing position and selection", "selection"],
               ] as const
             ).map(([label, key]) => (
               <Toggle

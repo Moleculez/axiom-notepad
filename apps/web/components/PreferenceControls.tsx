@@ -34,7 +34,7 @@ export function NumberPreference({
   useInterfaceLocale();
   const [text, setText] = useState(String(value));
   const [sliderValue, setSliderValue] = useState(value);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(false);
   const id = useId();
   const frame = useRef<number | null>(null),
     queued = useRef<number | null>(null),
@@ -51,7 +51,7 @@ export function NumberPreference({
     // Native feedback is immediate; expensive document previews update once per frame.
     setSliderValue(next);
     setText(String(next));
-    setError("");
+    setError(false);
     onInvalid(false);
     queued.current = next;
     if (frame.current === null) frame.current = requestAnimationFrame(flush);
@@ -60,7 +60,7 @@ export function NumberPreference({
     if (queued.current !== null) return;
     setText(String(value));
     setSliderValue(value);
-    setError("");
+    setError(false);
     onInvalid(false);
   }, [value]);
   useEffect(
@@ -78,13 +78,7 @@ export function NumberPreference({
     Number(text) <= max;
   const commit = () => {
     if (!valid(text)) {
-      setError(
-        t("Use a number from {min, number} to {max, number}{unit}.", {
-          min,
-          max,
-          unit: unit ? ` ${unit}` : "",
-        }),
-      );
+      setError(true);
       return;
     }
     flush();
@@ -93,7 +87,7 @@ export function NumberPreference({
     onChange(next);
     setSliderValue(next);
     setText(String(next));
-    setError("");
+    setError(false);
     onInvalid(false);
   };
   return (
@@ -114,7 +108,7 @@ export function NumberPreference({
             aria-describedby={error ? `${id}-error` : undefined}
             onChange={(event) => {
               setText(event.target.value);
-              setError("");
+              setError(false);
               onInvalid(!valid(event.target.value));
             }}
             onBlur={commit}
@@ -126,7 +120,7 @@ export function NumberPreference({
               if (event.key === "Escape") {
                 event.preventDefault();
                 setText(String(value));
-                setError("");
+                setError(false);
                 onInvalid(false);
               }
             }}
@@ -143,7 +137,7 @@ export function NumberPreference({
               queued.current = null;
               reset();
               setText(String(value));
-              setError("");
+              setError(false);
               onInvalid(false);
             }}
           >
@@ -171,7 +165,11 @@ export function NumberPreference({
           className="form-error"
           role="alert"
         >
-          {error}
+          {t("Use a number from {min, number} to {max, number}{unit}.", {
+            min,
+            max,
+            unit: unit ? ` ${unit}` : "",
+          })}
         </HelpText>
       )}
     </div>
@@ -304,7 +302,7 @@ export function ColorPreference({
           className="form-error"
           role="alert"
         >
-          {error}
+          {uiText(error)}
         </HelpText>
       )}
     </div>

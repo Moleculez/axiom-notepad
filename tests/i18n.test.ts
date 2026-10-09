@@ -19,6 +19,7 @@ import {
   validateTranslationCoverage,
 } from "../scripts/verify/i18n-contract";
 import { requiredTranslations } from "../packages/i18n/src/translation-coverage";
+import { editorCommands } from "../packages/shared/src/editor";
 import {
   accessRoleMessage,
   annotationColorLabel,
@@ -100,6 +101,75 @@ describe("locale matching and formatting", () => {
   });
 });
 describe("reviewed catalog contracts", () => {
+  it("registers every canonical editor command and category without changing IDs", () => {
+    for (const command of editorCommands) {
+      expect(Object.hasOwn(englishMessages, command.label), command.label).toBe(
+        true,
+      );
+      expect(
+        Object.hasOwn(englishMessages, command.category),
+        command.category,
+      ).toBe(true);
+      expect(command.id).toMatch(/^[a-z][A-Za-z0-9]*$/);
+    }
+  });
+  it.each(locales)(
+    "keeps authored names and technical commands literal in $id controls",
+    async ({ id }) => {
+      const catalog = JSON.parse(
+        await readFile(`packages/i18n/src/messages/${id}.json`, "utf8"),
+      );
+      const t = createTranslator(id, catalog);
+      const name = "Settings · 日本語 / α {draft}";
+      expect(t("Delete theme {name}", { name })).toContain(name);
+      expect(t("Use {name} theme family", { name })).toContain(name);
+      const command = "\\require{physics}";
+      expect(
+        t(
+          "MathJax runs locally with AMS and chemistry support. To enable physics notation, add {command} to your document. External packages and code execution are disabled.",
+          { command },
+        ),
+      ).toContain(command);
+      for (const count of [0, 1, 2, 21]) {
+        for (const message of [
+          "{count, plural, one {# command available} other {# commands available}}",
+          "{count, plural, one {# customized command} other {# customized commands}}",
+        ] as const) {
+          const result = t(message, { count });
+          expect(result).toContain(formatNumber(id, count));
+          expect(result).not.toContain("plural");
+        }
+      }
+      for (const mode of ["light", "dark"]) {
+        expect(
+          t(
+            "Restore {mode, select, dark {dark} other {light}} palette defaults",
+            { mode },
+          ),
+        ).not.toContain("select");
+      }
+    },
+  );
+  it("uses native command-count wording rather than joined English fragments", async () => {
+    const translate = async (locale: "ja" | "ko" | "de") =>
+      createTranslator(
+        locale,
+        JSON.parse(
+          await readFile(`packages/i18n/src/messages/${locale}.json`, "utf8"),
+        ),
+      );
+    const message =
+      "{count, plural, one {# command available} other {# commands available}}";
+    expect((await translate("ja"))(message, { count: 21 })).toBe(
+      "21 件のコマンドが使えます",
+    );
+    expect((await translate("ko"))(message, { count: 21 })).toBe(
+      "명령 21개 사용 가능",
+    );
+    const de = await translate("de");
+    expect(de(message, { count: 1 })).toBe("1 Befehl verfügbar");
+    expect(de(message, { count: 2 })).toBe("2 Befehle verfügbar");
+  });
   it.each(locales)(
     "validates $id keys and all ICU parameters",
     async ({ id }) => {
@@ -230,6 +300,23 @@ describe("reviewed catalog contracts", () => {
         expect(message).not.toMatch(/\{(?:page|count)/);
         expect(message).not.toContain("plural");
       }
+    },
+  );
+});
+describe("native editor terminology", () => {
+  it.each([
+    ["ja", "エディター", "ショートカット"],
+    ["ko", "에디터", "키보드 단축키"],
+    ["de", "Editor", "Tastenkürzel"],
+  ] as const)(
+    "names the editing surface rather than a person in %s",
+    async (locale, editor, shortcuts) => {
+      const catalog = JSON.parse(
+        await readFile(`packages/i18n/src/messages/${locale}.json`, "utf8"),
+      );
+      const t = createTranslator(locale, catalog);
+      expect(t("Editor")).toBe(editor);
+      expect(t("Shortcuts")).toBe(shortcuts);
     },
   );
 });

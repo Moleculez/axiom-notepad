@@ -1,7 +1,61 @@
 # Current verification and beta release gates
 
-Updated October 9, 2026. Historical logs are [archived separately](archive/VERIFICATION-2026-09-11.md).
+Updated October 10, 2026. Historical logs are [archived separately](archive/VERIFICATION-2026-09-11.md).
 Do not treat historical browser totals or local build IDs as current release evidence.
+
+## October 10 reading and editor localization increment
+
+- The twelve catalogs contain **5,527 typed IDs**, including **134 newly
+  registered messages**. Japanese/Korean each have **1,008 differing
+  translations** and German has **990**; the eight earlier non-English catalogs
+  have **2,148–2,198**. **380 required translations** across fourteen areas now
+  protect the completed increments against missing/blank/English-fallback
+  regressions. Most remaining matching-English entries are untranslated UI;
+  these counts do not certify complete pages or native-language acceptance.
+- Reading, typography, minimap and shortcut controls localize their rendered
+  labels, hints, accessible names and option text. Equivalent production/showcase
+  controls share closed labels while retaining canonical option/command IDs.
+  Command labels/categories must exist in the typed catalog. Shortcut counts,
+  recording/conflicts, theme actions and numeric errors use whole messages; a
+  React slot preserves the literal `\require{physics}` command. Numeric error
+  state is independent of rendered language, without resetting editable values.
+- Scratchpad Write/Read/Source controls, private-preview captions and clipboard
+  feedback follow the same boundary. Native terminology names an editing surface,
+  not a person; enlarged Japanese navigation uses concise labels to avoid awkward
+  splits. Source Markdown, authored names, shortcuts, TeX, canonical values and
+  existing editor lifecycle/undo boundaries remain unchanged. No CSS recipes,
+  schema or account-language choices change in this increment.
+- **2,882 unit tests / 179 files**, typecheck, lint, UI (**215 JSX / 49 CSS**), all
+  five theme packs and ICU/parameter/coverage gates pass. One full unit run hit
+  the existing process-cleanup test's intermittent `kill EPERM`; the focused
+  **17-case** and complete **2,882-case** reruns pass without modifying the
+  cleanup helper. Its intermittent cause is not established.
+- The optimized isolated application and static showcase build with catalog
+  revision **`6b35f29602b81af5`**; the application prepares **1,064 offline assets**.
+  The freshly built showcase passes **24 localization cases** across Chromium,
+  Firefox and WebKit. They cover all twelve choices, source/selection/undo/URL
+  retention, failed-load recovery, native settings labels/options, canonical
+  numeric/select values, keyboard, both modes, enlarged text, forced colors and
+  reduced motion. This is scoped coverage, not a full editor or route replay.
+- The broader isolated account checkpoint passes **24 cases** across those
+  engines: account Preview/Save/Cancel/reload, exact retry/concurrent conflicts,
+  US default/Automatic Japanese, twelve profile languages without authored-field
+  changes, group-dialog layout and reading/shortcut controls. This checkpoint
+  precedes the final scratchpad label-binding changes; its total is not a full
+  replay of those changes.
+- After those final changes, the freshly rebuilt **nine-case account replay**
+  passes in all three engines. Japanese/Korean/German controls cover localized
+  preview names/modes/privacy captions, minimap choices with canonical values,
+  shortcut counts/recording/focus, both modes and 20px interface text. The saved
+  appearance/writing bundle is unchanged; forced-color screenshots remain part
+  of the replay. Documentation links and whitespace checks also pass.
+- Actual screenshots are inspected for wrapping, alignment, contained scrolling,
+  visible footer actions and keyboard focus. Results remain private under
+  `data/i18n/account-results` and `data/showcase-results`. Real locale writes are
+  confined to attested local staging; appearance/layout fixtures do not save
+  preferences or create groups/files. Working/deployed data and generated local
+  types are preserved. At this verification checkpoint, no migration, commit,
+  push, deployment, remote test or remote service restart had been performed.
 
 ## October 9 interface localization increment
 

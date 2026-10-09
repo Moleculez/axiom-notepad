@@ -56,7 +56,7 @@ export default function EditorSettings({
   appearance?: Preferences;
   preview?: boolean;
 }) {
-  useInterfaceLocale();
+  const { t } = useInterfaceLocale();
   const [platform, setPlatform] = useState<ShortcutPlatform>(shortcutPlatform),
     [filter, setFilter] = useState(""),
     [customOnly, setCustomOnly] = useState(false),
@@ -113,7 +113,7 @@ export default function EditorSettings({
       {!shortcuts ? (
         <>
           <h4>
-            {category === "Editor" ? uiText("Writing behavior") : category}
+            {uiText(category === "Editor" ? "Writing behavior" : category)}
           </h4>
           {writingControls
             .filter(
@@ -194,7 +194,10 @@ export default function EditorSettings({
                 >
                   {[2, 4, 8].map((n) => (
                     <option key={n} value={n}>
-                      {n} <I18nText id="spaces" />
+                      <I18nText
+                        id="{count, number} spaces"
+                        values={{ count: n }}
+                      />
                     </option>
                   ))}
                 </NativeSelect>
@@ -214,9 +217,10 @@ export default function EditorSettings({
           )}
           {category === "Mathematics" && (
             <p className="muted">
-              <I18nText id="MathJax runs locally. AMS and chemistry are included. Physics notation is opt-in with" />{" "}
-              <code>{"\\require{physics}"}</code>{" "}
-              <I18nText id="in your document. External packages and code execution are disabled." />
+              <I18nText
+                id="MathJax runs locally with AMS and chemistry support. To enable physics notation, add {command} to your document. External packages and code execution are disabled."
+                slots={{ command: <code>{"\\require{physics}"}</code> }}
+              />
             </p>
           )}
           {!search && preview && (
@@ -272,11 +276,14 @@ export default function EditorSettings({
             </label>
           </div>
           <p className="shortcut-results-count" role="status">
-            {commands.length}{" "}
-            {commands.length === 1 ? uiText("command") : uiText("commands")}
-            {customOnly
-              ? uiText(" with custom bindings")
-              : uiText(" available")}
+            <I18nText
+              id={
+                customOnly
+                  ? "{count, plural, one {# customized command} other {# customized commands}}"
+                  : "{count, plural, one {# command available} other {# commands available}}"
+              }
+              values={{ count: commands.length }}
+            />
           </p>
           {recording && (
             <div
@@ -322,9 +329,15 @@ export default function EditorSettings({
             >
               <Keyboard size={18} />
               <span>
-                <I18nText id="Press a shortcut for" />{" "}
-                {editorCommands.find((c) => c.id === recording)?.label}
-                <I18nText id=". Escape cancels." />
+                <I18nText
+                  id="Press a shortcut for {command}. Escape cancels."
+                  values={{
+                    command: uiText(
+                      editorCommands.find((c) => c.id === recording)?.label ??
+                        "",
+                    ),
+                  }}
+                />
               </span>
               <button
                 type="button"
@@ -341,12 +354,19 @@ export default function EditorSettings({
           {pending && (
             <div className="settings-conflict">
               <p>
-                {shortcutLabel(pending.key, platform)}{" "}
-                <I18nText id="is used by" />{" "}
-                {pending.conflicts
-                  .map((id) => editorCommands.find((c) => c.id === id)?.label)
-                  .join(", ")}
-                <I18nText id=". Reassigning removes it from those commands." />
+                <I18nText
+                  id="{shortcut} is assigned to {commands}. Reassigning removes it from those commands."
+                  values={{
+                    shortcut: shortcutLabel(pending.key, platform),
+                    commands: pending.conflicts
+                      .map((id) =>
+                        uiText(
+                          editorCommands.find((c) => c.id === id)?.label ?? "",
+                        ),
+                      )
+                      .join(", "),
+                  }}
+                />
               </p>
               <Button
                 className="button secondary"
@@ -377,10 +397,11 @@ export default function EditorSettings({
                 <span>
                   <strong>{uiText(c.label)}</strong>
                   <small>
-                    {c.category}
                     {c.scope === "table"
-                      ? uiText(" · while editing a table")
-                      : ""}
+                      ? t("{category} · while editing a table", {
+                          category: uiText(c.category),
+                        })
+                      : uiText(c.category)}
                   </small>
                 </span>
                 <button
@@ -389,7 +410,9 @@ export default function EditorSettings({
                     else shortcutButtons.current.delete(c.id);
                   }}
                   className="shortcut-key"
-                  aria-label={`Change shortcut for ${c.label}`}
+                  aria-label={t("Change shortcut for {command}", {
+                    command: uiText(c.label),
+                  })}
                   onClick={() => {
                     setRecording(c.id);
                     setMessage("");
@@ -397,12 +420,14 @@ export default function EditorSettings({
                 >
                   {keysFor(c.id, value, platform)
                     .map((k) => shortcutLabel(k, platform))
-                    .join(" / ") || "Assign…"}
+                    .join(" / ") || uiText("Assign…")}
                 </button>
                 <button
                   className="shortcut-icon"
                   title={uiText("Disable shortcut")}
-                  aria-label={`Disable shortcut for ${c.label}`}
+                  aria-label={t("Disable shortcut for {command}", {
+                    command: uiText(c.label),
+                  })}
                   disabled={!keysFor(c.id, value, platform).length}
                   onClick={() => assign(c.id, [])}
                 >
@@ -411,7 +436,9 @@ export default function EditorSettings({
                 <button
                   className="shortcut-icon"
                   title={uiText("Restore default")}
-                  aria-label={`Reset shortcut for ${c.label}`}
+                  aria-label={t("Reset shortcut for {command}", {
+                    command: uiText(c.label),
+                  })}
                   disabled={!Object.hasOwn(value.keybindings[platform], c.id)}
                   onClick={() => assign(c.id, undefined)}
                 >
@@ -518,7 +545,7 @@ export default function EditorSettings({
       )}
       {message && (
         <p role="status" className="form-error">
-          {message}
+          {uiText(message)}
         </p>
       )}
     </section>

@@ -50,7 +50,7 @@ export default function EditorPlayground({
   onAppearanceChange?: (appearance: Preferences) => void;
   sample?: string;
 }) {
-  useInterfaceLocale();
+  const { t } = useInterfaceLocale();
   const mount = useRef<HTMLDivElement>(null),
     view = useRef<EditorView | null>(null);
   const current = useRef({ preferences, appearance });
@@ -152,7 +152,9 @@ export default function EditorPlayground({
   return (
     <section
       className="settings-scratchpad"
-      aria-label={`${category} settings preview`}
+      aria-label={t("{category} settings preview", {
+        category: uiText(category),
+      })}
     >
       <div
         className="scratchpad-toolbar"
@@ -203,8 +205,8 @@ export default function EditorPlayground({
                   {value === "write"
                     ? uiText("Write")
                     : value === "read"
-                      ? "Read"
-                      : "Source"}
+                      ? uiText("Read")
+                      : uiText("Source")}
                 </button>
               ))}
             </div>
@@ -295,7 +297,7 @@ export default function EditorPlayground({
             ? uiText("Private scratchpad · never saved or synced")
             : uiText("Interface specimen · no files or accounts are changed")}
         </span>
-        {writing && message && <p role="status">{message}</p>}
+        {writing && message && <p role="status">{uiText(message)}</p>}
       </div>
     </section>
   );
