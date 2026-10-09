@@ -43,8 +43,13 @@ Included relative note, image and attachment links resolve from each original
 source file's directory. Inline destinations, reference definitions, wiki aliases
 and links inside quotes, lists and footnotes use parser-owned source spans. Notes
 receive UUID links; attachments receive exact version links. Hash fragments are
-retained. Labels, titles, code examples, other text, line endings and UTF-8 BOM
-remain unchanged. The new notes are indexed for links, references and citations
+retained. Bare wiki links retain their readable original label as an explicit
+alias: `[[Methods]]` imports as `[[new-note-id|Methods]]`. Existing aliases remain
+unchanged. Previously imported bare UUID wiki links display the authorized
+target's current title without rewriting saved Markdown, including indexed
+targets outside the editor's recent-note list. Labels, titles, code examples,
+other text, line endings and UTF-8 BOM remain unchanged. The new notes are indexed
+for links, references and citations
 through the same native persistence path as ordinary notes.
 
 Missing, ambiguous or skipped targets are not guessed: their source is retained

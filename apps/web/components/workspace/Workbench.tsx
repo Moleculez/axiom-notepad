@@ -876,12 +876,19 @@ function DocumentPane({
           : /^[\da-f-]{36}$/i.test(identity)
             ? {
                 href: `/workbench/notes/${identity}${heading ? "#" + encodeURIComponent(slug(heading)) : ""}`,
-                title: "Linked note",
+                // The bounded recent-note list can omit an imported target.
+                // Reuse permission-filtered outgoing links, not a new fetch or
+                // a guessed filename, for older implicit UUID labels.
+                title:
+                  context.data?.links.find(
+                    (link) =>
+                      link.source_id === note.id && link.target_id === identity,
+                  )?.target_title ?? "Linked note",
               }
             : undefined;
       },
     }),
-    [context.data, appearance.dark],
+    [context.data, appearance.dark, note.id],
   );
   const navigateSection = (heading: OutlineHeading) => {
     setSection(heading.id);

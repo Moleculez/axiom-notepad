@@ -308,7 +308,7 @@ test("mixed native collection previews, publishes atomically and exports an impo
 
 test("Markdown preview is local, publication is native, and UUID anchors work beyond context's latest 200", async ({
   browser,
-}) => {
+}, info) => {
   const f = await fixture(browser),
     errors: string[] = [],
     images: string[] = [];
@@ -317,13 +317,19 @@ test("Markdown preview is local, publication is native, and UUID anchors work be
     images.push(route.request().url());
     return route.abort();
   });
+  const legacy = await call(f.context.request, "resources", {
+    spaceId: f.id,
+    kind: "note",
+    name: "Existing methods",
+    body: "# Older imported target\n",
+  });
   const modal = await dialog(f.page);
   await modal.locator('input[type="file"]').setInputFiles([
     {
       name: "Main.md",
       mimeType: "text/markdown",
       buffer: Buffer.from(
-        '[**Linked methods**](Second.md#Methods "Retained title")\n\n![offline preview](https://never-load.axiom.invalid/image.png)\n\n# Introduction\n\nBody text.\n',
+        `[**Linked methods**](Second.md#Methods "Retained title")\n\n[[Second]] and [[Second.md#Methods]] and [[Second.md|Reference label]].\n\nOlder import: [[${legacy.id}]].\n\n![offline preview](https://never-load.axiom.invalid/image.png)\n\n# Introduction\n\nBody text.\n`,
       ),
     },
     {
@@ -336,11 +342,16 @@ test("Markdown preview is local, publication is native, and UUID anchors work be
   await expect(
     modal.getByRole("button", { name: "Import collection", exact: true }),
   ).toBeEnabled();
-  await modal.getByRole("button", { name: "Source", exact: true }).click();
+  const previewToolbar = modal.locator(".import-preview-toolbar");
+  await previewToolbar
+    .getByRole("button", { name: "Source", exact: true })
+    .click();
   await expect(modal.locator(".workspace-import-preview")).toContainText(
     "Second.md#Methods",
   );
-  await modal.getByRole("button", { name: "Preview", exact: true }).click();
+  await previewToolbar
+    .getByRole("button", { name: "Preview", exact: true })
+    .click();
   expect(images).toEqual([]);
   await layout(f.page, modal);
   await modal
@@ -383,6 +394,16 @@ test("Markdown preview is local, publication is native, and UUID anchors work be
   expect(
     context.notes.some((note: { id: string }) => note.id === second.id),
   ).toBe(false);
+  expect(
+    context.notes.some((note: { id: string }) => note.id === legacy.id),
+  ).toBe(false);
+  expect(context.links).toContainEqual(
+    expect.objectContaining({
+      source_id: main.id,
+      target_id: legacy.id,
+      target_title: "Existing methods",
+    }),
+  );
   await complete
     .getByRole("button", { name: "Open file", exact: true })
     .click();
@@ -393,6 +414,26 @@ test("Markdown preview is local, publication is native, and UUID anchors work be
     .filter({ hasText: "Linked methods" });
   await expect(linked).toBeVisible();
   await expect(linked.locator("strong")).toHaveText("Linked methods");
+  const wikiLinks = f.page.locator(
+    ".read-mount:not(.print-only) a[data-note-target]",
+  );
+  await expect(wikiLinks).toHaveText([
+    "Linked methods",
+    "Second",
+    "Second.md#Methods",
+    "Reference label",
+    "Existing methods",
+  ]);
+  await expect(wikiLinks.nth(1)).toHaveAttribute("data-note-target", second.id);
+  await expect(wikiLinks.nth(2)).toHaveAttribute(
+    "data-note-target",
+    second.id + "#Methods",
+  );
+  await expect(wikiLinks.nth(4)).toHaveAttribute("data-note-target", legacy.id);
+  await f.page.screenshot({
+    path: info.outputPath("imported-note-link-labels.png"),
+    fullPage: true,
+  });
   await linked.click();
   await expect(f.page).toHaveURL(new RegExp(`/notes/${second.id}#methods`));
   expect(errors).toEqual([]);

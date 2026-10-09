@@ -1161,7 +1161,10 @@ function inlines(
         add("wikiLink", i, i + wiki[0].length, {
           href: target,
           hrefFrom: p(i + 2),
-          hrefTo: p(i + 2 + target.length),
+          // End at the final target character, not the next mapped character:
+          // table cells unescape \| and the following alias separator skips a
+          // source backslash which belongs to syntax, not the destination.
+          hrefTo: target.length ? p(i + 1 + target.length) + 1 : p(i + 2),
           text: label.join("|") || target,
         });
         i += wiki[0].length;

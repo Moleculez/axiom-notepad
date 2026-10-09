@@ -13,7 +13,10 @@ import {
   type WorkspaceImportBatch,
   type ImportManifestEntry,
 } from "../packages/shared/src/workspace-import";
-import { rewriteImportLinks } from "../packages/shared/src/workspace-import-links";
+import {
+  rewriteImportLinks,
+  rewriteMarkdownDestinations,
+} from "../packages/shared/src/workspace-import-links";
 import {
   inspectImportZip,
   importCrc32,
@@ -247,6 +250,89 @@ describe("workspace import inventory and conflict policy", () => {
   });
 });
 describe("source-preserving local links", () => {
+  it("retains bare wiki-link file names and fragments rather than displaying assigned UUIDs", () => {
+    const source =
+      "\ufeff# Research\r\n\r\n[[Other]] [[Other.md#Methods]] [[Other.md|My label]] [[Other.md|]]\r\n\r\n`[[Other]]`\r\n";
+    const result = rewriteImportLinks(source, "Lab/main.md", targets);
+    expect(result.body).toBe(
+      `\ufeff# Research\r\n\r\n[[${noteId}|Other]] [[${noteId}#Methods|Other.md#Methods]] [[${noteId}|My label]] [[${noteId}|]]\r\n\r\n\`[[Other]]\`\r\n`,
+    );
+    expect(result.warnings).toEqual([]);
+    const html = renderDocument(parseMarkdown(result.body), {
+      resolveLink: (target) => ({
+        href: `/workbench/notes/${target}`,
+        title: "Other",
+      }),
+    });
+    expect(html).toContain(
+      `data-note-target="${noteId}" title="Linked note: Other">Other</a>`,
+    );
+    expect(html).toContain(
+      `data-note-target="${noteId}#Methods" title="Linked note: Other">Other.md#Methods</a>`,
+    );
+  });
+  it("preserves wiki labels in nested quotes, lists, footnotes and duplicate source spans", () => {
+    const source =
+      "> - [[Other]]\r\n>   - [[Other.md#Intro]]\r\n\r\nText[^n]\r\n\r\n[^n]: See [[Other]].\r\n";
+    const result = rewriteImportLinks(source, "Lab/main.md", targets);
+    expect(result.body).toBe(
+      source
+        .replaceAll("[[Other]]", `[[${noteId}|Other]]`)
+        .replace("[[Other.md#Intro]]", `[[${noteId}#Intro|Other.md#Intro]]`),
+    );
+    expect(rewriteImportLinks(result.body, "Lab/main.md", targets).body).toBe(
+      result.body,
+    );
+  });
+  it("escapes new table aliases and retains existing alias separators without changing columns", () => {
+    const source =
+      "| Bare note | Aliased note |\r\n| --- | --- |\r\n| [[Other]] | [[Other.md\\|My label]] |\r\n";
+    const result = rewriteImportLinks(source, "Lab/main.md", targets);
+    expect(result.body).toBe(
+      `| Bare note | Aliased note |\r\n| --- | --- |\r\n| [[${noteId}\\|Other]] | [[${noteId}\\|My label]] |\r\n`,
+    );
+    const parsed = parseMarkdown(result.body),
+      table = parsed.ast.children![0];
+    expect(table.type).toBe("table");
+    expect(table.children!.map((row) => row.children!.length)).toEqual([2, 2]);
+    expect(parsed.links).toMatchObject([
+      { target: noteId, label: "Other" },
+      { target: noteId, label: "My label" },
+    ]);
+    expect(rewriteImportLinks(result.body, "Lab/main.md", targets).body).toBe(
+      result.body,
+    );
+    const exported = rewriteMarkdownDestinations(result.body, () => "Other.md");
+    expect(exported).toBe(source.replace("[[Other]]", "[[Other.md\\|Other]]"));
+  });
+  it("keeps Unicode labels, explicit aliases and unresolved targets unchanged", () => {
+    const unicodeId = randomUUID(),
+      local = new Map(targets);
+    local.set("lab/研究.md", { kind: "note", id: unicodeId });
+    const source = "[[研究.md]] [[研究.md|My | label]] [[Missing note]]";
+    const result = rewriteImportLinks(source, "Lab/main.md", local);
+    expect(result.body).toBe(
+      `[[${unicodeId}|研究.md]] [[${unicodeId}|My | label]] [[Missing note]]`,
+    );
+    expect(result.warnings).toEqual([
+      "Unresolved link in Lab/main.md: Missing note",
+    ]);
+  });
+  it("keeps remapped collection identities implicit and leaves export destination policy independent", () => {
+    const original = randomUUID(),
+      source = `[[${original}#Intro]] [[${original}|Authored alias]]`;
+    const imported = rewriteImportLinks(
+      source,
+      "Lab/main.md",
+      targets,
+      new Map([["resource:" + original, { kind: "note", id: noteId }]]),
+    );
+    expect(imported.body).toBe(source.replaceAll(original, noteId));
+    expect(imported.warnings).toEqual([]);
+    expect(rewriteMarkdownDestinations(`[[${noteId}]]`, () => "Other.md")).toBe(
+      "[[Other.md]]",
+    );
+  });
   it("patches inline destinations, images, wiki aliases, definitions and footnotes, not code or titles", () => {
     const source =
       '# Research\r\n\r\n[**Other**](<Other.md#Methods> "unchanged title") ![plot](data/plot.png)\r\n\r\n[[Other.md#Methods|Named alias]]\r\n\r\n[reference][r]\r\n\r\n[r]:\r\n  <Other.md#Results> "reference title"\r\n\r\nFootnote[^n].\r\n\r\n[^n]: [other](Other.md#Methods)\r\n\r\n```md\r\n[example](Other.md)\r\n```\r\n';

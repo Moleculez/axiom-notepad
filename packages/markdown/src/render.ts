@@ -359,7 +359,17 @@ export function renderDocument(
         const title = link
           ? `Linked note: ${link.title}`
           : `Unresolved note: ${n.href ?? ""}`;
-        return `<a class="wiki-link${link ? "" : " unresolved"}" href="${attr(link ? safeUrl(link.href) : "#")}" data-note-target="${attr(n.href ?? "")}" title="${attr(title)}">${attr(n.text ?? link?.title ?? "")}</a>`;
+        // Existing imports may contain bare UUID destinations. Their implicit
+        // label is the resolved note title, not the identifier. Source spans
+        // distinguish explicit aliases, including an intentionally aliased ID.
+        const implicitIdentity =
+          link &&
+          n.hrefTo === n.to - 2 &&
+          /^[\da-f-]{36}(?:#.*)?$/i.test(n.href ?? "");
+        const label = implicitIdentity
+          ? link.title
+          : (n.text ?? link?.title ?? "");
+        return `<a class="wiki-link${link ? "" : " unresolved"}" href="${attr(link ? safeUrl(link.href) : "#")}" data-note-target="${attr(n.href ?? "")}" title="${attr(title)}">${attr(label)}</a>`;
       }
       case "citation":
         return `<span class="citation">${n

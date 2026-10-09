@@ -37,7 +37,7 @@ export function resolveImportTarget(
       : undefined)
   );
 }
-/** Patch parser-owned destination spans only. Code, labels, titles, whitespace and line endings stay intact. */
+/** Patch parser-owned destinations; retain implicit wiki labels when assigning IDs. */
 export function rewriteImportLinks(
   source: string,
   path: string,
@@ -81,19 +81,23 @@ export function rewriteImportLinks(
     );
   };
   return {
-    body: rewriteMarkdownDestinations(source, resolve),
+    body: rewriteMarkdownDestinations(source, resolve, {
+      preserveWikiLabels: true,
+    }),
     warnings: [...warnings],
   };
 }
 
-/** Shared import/export patcher. Never regenerate a link's label or syntax. */
+/** Shared import/export patcher. Explicit labels and surrounding syntax stay intact. */
 export function rewriteMarkdownDestinations(
   source: string,
   resolve: (href: string) => string | null | undefined,
+  options: { preserveWikiLabels?: boolean } = {},
 ) {
   const parsed = parseMarkdown(source),
     edits: { from: number; to: number; insert: string }[] = [];
-  const visit = (node: MarkdownNode) => {
+  const visit = (node: MarkdownNode, inTable = false) => {
+    const table = inTable || node.type === "table";
     if (
       ["link", "image", "wikiLink", "referenceDefinition"].includes(
         node.type,
@@ -102,14 +106,35 @@ export function rewriteMarkdownDestinations(
       node.hrefTo !== undefined
     ) {
       const href = resolve(node.href ?? "");
-      if (href)
-        edits.push({ from: node.hrefFrom, to: node.hrefTo, insert: href });
+      if (href && href !== node.href) {
+        // A bare [[Methods]] derives its label from the destination. Preserve
+        // that label before replacing the path with a stable ID. Explicit
+        // aliases (even empty ones) already own their label. Bare original IDs
+        // remain implicit so the renderer can use the newly resolved title,
+        // rather than freezing an old UUID as the visible alias.
+        const preserveLabel =
+          options.preserveWikiLabels &&
+          node.type === "wikiLink" &&
+          node.hrefTo === node.to - 2 &&
+          !/^[\da-f-]{36}(?:#.*)?$/i.test(node.href ?? "");
+        edits.push({
+          from: node.hrefFrom,
+          to: node.hrefTo,
+          insert:
+            href +
+            (preserveLabel
+              ? `${table ? "\\|" : "|"}${node.text ?? node.href ?? ""}`
+              : ""),
+        });
+      }
     }
-    node.children?.forEach(visit);
+    node.children?.forEach((child) => visit(child, table));
   };
   visit(parsed.ast);
-  Object.values(parsed.footnotes).flat().forEach(visit);
-  parsed.definitions?.forEach(visit);
+  Object.values(parsed.footnotes)
+    .flat()
+    .forEach((node) => visit(node));
+  parsed.definitions?.forEach((node) => visit(node));
   const unique = [
     ...new Map(edits.map((edit) => [`${edit.from}:${edit.to}`, edit])).values(),
   ].sort((a, b) => b.from - a.from);

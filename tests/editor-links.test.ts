@@ -28,6 +28,43 @@ test("note references preserve their labels and identify resolved and unresolved
   expect(html).not.toContain("<img");
 });
 
+test("bare imported note identities show resolved file names without changing explicit aliases or source", () => {
+  const id = "12345678-1234-1234-1234-123456789abc",
+    source = `[[${id}]] [[${id}#Methods]] [[${id}|My label]] [[${id}|${id}]]`,
+    parsed = parseMarkdown(source),
+    before = structuredClone(parsed);
+  const html = renderDocument(parsed, {
+    resolveLink: (target) => ({
+      href: `/workbench/notes/${target}`,
+      title: "Research & methods",
+    }),
+  });
+  expect(html).toContain(
+    `data-note-target="${id}" title="Linked note: Research &amp; methods">Research &amp; methods</a>`,
+  );
+  expect(html).toContain(
+    `data-note-target="${id}#Methods" title="Linked note: Research &amp; methods">Research &amp; methods</a>`,
+  );
+  expect(html).toContain(
+    `data-note-target="${id}" title="Linked note: Research &amp; methods">My label</a>`,
+  );
+  expect(html).toContain(
+    `data-note-target="${id}" title="Linked note: Research &amp; methods">${id}</a>`,
+  );
+  expect(parsed.links.map((link) => link.target)).toEqual([
+    id,
+    `${id}#Methods`,
+    id,
+    id,
+  ]);
+  expect(parsed).toEqual(before);
+  const missing = renderDocument(parseMarkdown(`[[${id}]]`), {
+    resolveLink: () => undefined,
+  });
+  expect(missing).toContain('class="wiki-link unresolved"');
+  expect(missing).toContain(`title="Unresolved note: ${id}">${id}</a>`);
+});
+
 test("note-link descriptions escape names rather than introducing HTML or unsafe URLs", () => {
   const html = renderDocument(parseMarkdown("[[note|label]]"), {
     resolveLink: () => ({
