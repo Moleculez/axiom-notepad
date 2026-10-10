@@ -1,4 +1,5 @@
 "use client";
+import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
 import { Button, SearchField } from "../ui/controls";
 import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
@@ -21,15 +22,24 @@ import { guideBodies } from "../../content/doc-articles";
 import ReadingView from "../ReadingView";
 import { useLocation, useWorkspace, WorkspaceLink } from "./ui";
 const EditorPlayground = dynamic(() => import("../EditorPlayground"), {
-  loading: () => <p role="status">Opening editor…</p>,
+  loading: () => (
+    <p role="status">
+      <I18nText id="Opening editor…" />
+    </p>
+  ),
   ssr: false,
 });
 const CanvasPlayground = dynamic(() => import("../tools/CanvasPlayground"), {
-  loading: () => <p role="status">Opening Canvas…</p>,
+  loading: () => (
+    <p role="status">
+      <I18nText id="Opening Canvas…" />
+    </p>
+  ),
   ssr: false,
 });
 
 export default function Documentation() {
+  const { locale } = useInterfaceLocale();
   const { parts, hash } = useLocation();
   const { appearance, editorSettings, navigate, notify } = useWorkspace();
   const id = parts.slice(1).join("/"),
@@ -54,10 +64,12 @@ export default function Documentation() {
       (a) =>
         metadata.has(a.id) ||
         words.every((w) =>
-          guideBodies[a.id]?.markdown.toLowerCase().includes(w),
+          `${uiText(docSections.find(([section]) => section === a.section)![1])} ${a.title} ${a.summary} ${guideBodies[a.id]?.markdown ?? ""}`
+            .toLowerCase()
+            .includes(w),
         ),
     );
-  }, [query]);
+  }, [query, locale]);
   useEffect(() => {
     setPlaying(null);
     scroll.current?.scrollTo(0, 0);
@@ -80,31 +92,32 @@ export default function Documentation() {
   const activeSection = docSections.find(([section]) => section === parts[1]);
   const next = docArticles[docArticles.findIndex((a) => a.id === id) + 1];
   return (
-    <main className="docs-layout" aria-label="Product documentation">
+    <main className="docs-layout" aria-label={uiText("Product documentation")}>
       <aside className="docs-navigation">
         <WorkspaceLink to="/docs" className="docs-brand">
-          <BookOpen size={18} /> Axiom guide
+          <BookOpen size={18} /> <I18nText id="Axiom guide" />
         </WorkspaceLink>
         <SearchField
           wrapperClassName="docs-search"
-          aria-label="Search documentation"
-          placeholder="Find a feature…"
+          aria-label={uiText("Search documentation")}
+          placeholder={uiText("Find a feature…")}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onClear={() => setQuery("")}
-          clearLabel="Clear documentation search"
+          clearLabel={uiText("Clear documentation search")}
         />
-        <nav aria-label="Documentation chapters">
+        <nav aria-label={uiText("Documentation chapters")}>
           {docSections.map(([section, title]) => {
             const entries = results.filter((a) => a.section === section);
             return entries.length ? (
               <section key={section}>
-                <h2>{title}</h2>
+                <h2>{uiText(title)}</h2>
                 {entries.map((a) => (
                   <WorkspaceLink
                     key={a.id}
                     to={docRoute(a.id)}
                     aria-current={id === a.id ? "page" : undefined}
+                    lang="en-US"
                   >
                     {a.title}
                   </WorkspaceLink>
@@ -114,7 +127,7 @@ export default function Documentation() {
           })}
           {!results.length && (
             <p className="muted" role="status">
-              No guides match. Try “math”, “PDF” or “sharing”.
+              <I18nText id="No guides match. Try “math”, “PDF” or “sharing”." />
             </p>
           )}
         </nav>
@@ -123,9 +136,11 @@ export default function Documentation() {
         {article && body ? (
           <article className="docs-article" key={id}>
             <header>
-              <span className="docs-eyebrow">{activeSection?.[1]}</span>
-              <h1>{article.title}</h1>
-              <p>{article.summary}</p>
+              <span className="docs-eyebrow">
+                {activeSection && uiText(activeSection[1])}
+              </span>
+              <h1 lang="en-US">{article.title}</h1>
+              <p lang="en-US">{article.summary}</p>
               <Button
                 className="button ghost docs-copy"
                 onClick={() =>
@@ -136,27 +151,29 @@ export default function Documentation() {
                 }
               >
                 <Copy size={14} />
-                Copy link
+                <I18nText id="Copy link" />
               </Button>
             </header>
-            <ReadingView
-              parsed={parsed}
-              context={context}
-              source={body.markdown}
-              onLink={(target) => {
-                if (target.startsWith("#")) navigate(docRoute(id) + target);
-                else if (target.startsWith("/docs")) navigate(target);
-                else if (/^https?:\/\//.test(target))
-                  window.open(target, "_blank", "noopener,noreferrer");
-              }}
-            />
+            <div lang="en-US">
+              <ReadingView
+                parsed={parsed}
+                context={context}
+                source={body.markdown}
+                onLink={(target) => {
+                  if (target.startsWith("#")) navigate(docRoute(id) + target);
+                  else if (target.startsWith("/docs")) navigate(target);
+                  else if (/^https?:\/\//.test(target))
+                    window.open(target, "_blank", "noopener,noreferrer");
+                }}
+              />
+            </div>
             {id === "editor/shortcuts" && (
               <div className="docs-command-list">
                 {editorCommands.map((command) => (
                   <div key={command.id}>
                     <span>
-                      {command.label}
-                      <small>{command.category}</small>
+                      {uiText(command.label)}
+                      <small>{uiText(command.category)}</small>
                     </span>
                     <span>
                       {keysFor(
@@ -176,23 +193,25 @@ export default function Documentation() {
             {article.playground && (
               <section
                 className={`docs-playground ${article.playground === "canvas" ? "docs-playground-canvas" : ""}`}
-                aria-label="Interactive example"
+                aria-label={uiText("Interactive example")}
               >
                 <div className="docs-playground-heading">
                   <div>
                     <h2>
                       <FlaskConical size={18} />
-                      Try this feature
+                      <I18nText id="Try this feature" />
                     </h2>
                     <p>
-                      Temporary sample · no files, uploads or cloud connection.
+                      <I18nText id="Temporary sample · no files, uploads or cloud connection." />
                     </p>
                   </div>
                   <Button
                     className="button secondary"
                     onClick={() => setPlaying(playing === id ? null : id)}
                   >
-                    {playing === id ? "Close example" : "Open example"}
+                    {playing === id
+                      ? uiText("Close example")
+                      : uiText("Open example")}
                   </Button>
                 </div>
                 {playing === id &&
@@ -211,7 +230,10 @@ export default function Documentation() {
             <footer className="docs-next">
               {next && (
                 <WorkspaceLink to={docRoute(next.id)}>
-                  Next: {next.title}
+                  <I18nText
+                    id="Next: {title}"
+                    slots={{ title: <span lang="en-US">{next.title}</span> }}
+                  />
                   <ArrowRight size={16} />
                 </WorkspaceLink>
               )}
@@ -219,15 +241,23 @@ export default function Documentation() {
           </article>
         ) : (
           <article className="docs-article docs-home">
-            <span className="docs-eyebrow">The Axiom handbook</span>
+            <span className="docs-eyebrow">
+              <I18nText id="The Axiom handbook" />
+            </span>
             <h1>
-              {activeSection?.[1] ??
-                (id ? "Guide not found" : "A place for thoughtful work.")}
+              {uiText(
+                activeSection?.[1] ??
+                  (id ? "Guide not found" : "A place for thoughtful work."),
+              )}
             </h1>
             <p>
               {id && !activeSection
-                ? "This guide may have moved. Choose a chapter on the left."
-                : "Learn the editor, connect evidence, and work together. Real examples, without changing your files."}
+                ? uiText(
+                    "This guide may have moved. Choose a chapter on the left.",
+                  )
+                : uiText(
+                    "Learn the editor, connect evidence, and work together. Real examples, without changing your files.",
+                  )}
             </p>
             <div className="docs-guide-grid">
               {results
@@ -235,10 +265,10 @@ export default function Documentation() {
                 .map((a) => (
                   <WorkspaceLink key={a.id} to={docRoute(a.id)}>
                     <span className="docs-eyebrow">
-                      {docSections.find(([s]) => s === a.section)?.[1]}
+                      {uiText(docSections.find(([s]) => s === a.section)![1])}
                     </span>
-                    <h2>{a.title}</h2>
-                    <p>{a.summary}</p>
+                    <h2 lang="en-US">{a.title}</h2>
+                    <p lang="en-US">{a.summary}</p>
                     <ArrowRight size={16} />
                   </WorkspaceLink>
                 ))}
@@ -247,10 +277,16 @@ export default function Documentation() {
         )}
       </div>
       {article && (
-        <nav className="docs-toc" aria-label="On this page">
-          <strong>On this page</strong>
+        <nav className="docs-toc" aria-label={uiText("On this page")}>
+          <strong>
+            <I18nText id="On this page" />
+          </strong>
           {parsed.outline.map((h) => (
-            <WorkspaceLink key={h.id} to={docRoute(id) + `#${h.id}`}>
+            <WorkspaceLink
+              key={h.id}
+              to={docRoute(id) + `#${h.id}`}
+              lang="en-US"
+            >
               {h.text}
             </WorkspaceLink>
           ))}

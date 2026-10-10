@@ -44,6 +44,10 @@ export const nodes: Record<string, NodeSpec> = {
       label: { default: "Block" },
       summary: { default: "" },
       detail: { default: "" },
+      kind: { default: "" },
+      language: { default: "" },
+      key: { default: "" },
+      lines: { default: 0 },
     },
     toDOM: (node) => [
       "div",

@@ -1,5 +1,6 @@
 "use client";
 import { currentLocale } from "@axiom/i18n/client";
+import { formatNumber } from "@axiom/i18n";
 import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
 
 import {
@@ -85,6 +86,13 @@ import ResourceDiscussion from "./ResourceDiscussion";
 import ResourceSharing from "../workspace/ResourceSharing";
 import ImageGeometryDialog from "./ImageGeometryDialog";
 import {
+  imageAdjustmentMessage,
+  imageAdjustmentMessages,
+  imageBlendMessages,
+  imageToolMessages,
+  imageToolNames,
+} from "../../lib/tools/tool-presentation";
+import {
   ErrorNotice,
   go,
   Loading,
@@ -107,24 +115,28 @@ type Tool =
   | "heal"
   | "eyedropper";
 const tools = [
-  { id: "move", label: "Move layer (V)", icon: MousePointer2 },
-  { id: "hand", label: "Pan (H)", icon: Hand },
-  { id: "selection", label: "Rectangular selection (M)", icon: Scan },
-  { id: "ellipse-selection", label: "Elliptical selection", icon: Circle },
-  { id: "lasso", label: "Lasso selection (L)", icon: Scissors },
-  { id: "brush", label: "Brush (B)", icon: Brush },
-  { id: "eraser", label: "Eraser (E)", icon: Eraser },
-  { id: "clone", label: "Clone stamp (S) · Alt-click to sample", icon: Stamp },
+  { id: "move", label: imageToolMessages.move, icon: MousePointer2 },
+  { id: "hand", label: imageToolMessages.hand, icon: Hand },
+  { id: "selection", label: imageToolMessages.selection, icon: Scan },
+  {
+    id: "ellipse-selection",
+    label: imageToolMessages["ellipse-selection"],
+    icon: Circle,
+  },
+  { id: "lasso", label: imageToolMessages.lasso, icon: Scissors },
+  { id: "brush", label: imageToolMessages.brush, icon: Brush },
+  { id: "eraser", label: imageToolMessages.eraser, icon: Eraser },
+  { id: "clone", label: imageToolMessages.clone, icon: Stamp },
   {
     id: "heal",
-    label: "Sampled healing · Alt-click to sample",
+    label: imageToolMessages.heal,
     icon: Paintbrush2,
   },
-  { id: "eyedropper", label: "Eyedropper (I)", icon: Pipette },
-  { id: "text", label: "Text (T)", icon: Type },
-  { id: "rectangle", label: "Rectangle", icon: Square },
-  { id: "ellipse", label: "Ellipse", icon: Circle },
-  { id: "arrow", label: "Arrow", icon: ArrowUpRight },
+  { id: "eyedropper", label: imageToolMessages.eyedropper, icon: Pipette },
+  { id: "text", label: imageToolMessages.text, icon: Type },
+  { id: "rectangle", label: imageToolMessages.rectangle, icon: Square },
+  { id: "ellipse", label: imageToolMessages.ellipse, icon: Circle },
+  { id: "arrow", label: imageToolMessages.arrow, icon: ArrowUpRight },
 ] as const;
 export default function ImageStudio({
   project,
@@ -135,7 +147,7 @@ export default function ImageStudio({
   importFile: string | null;
   importVersion: string | null;
 }) {
-  useInterfaceLocale();
+  const { t, locale } = useInterfaceLocale();
   const { session, notify, refresh } = useWorkspace();
   const [doc, setDoc] = useState<ImageDocument | null>(null),
     [, repaint] = useState(0),
@@ -1138,9 +1150,7 @@ export default function ImageStudio({
         </details>
       )}
       <div className="tool-controls image-options">
-        <strong>
-          {tools.find((t) => t.id === tool)?.label.split(" (")[0]}
-        </strong>
+        <strong>{t(imageToolNames[tool])}</strong>
         <span className="tool-separator" />
         <label>
           <I18nText id="Color" />
@@ -1154,20 +1164,22 @@ export default function ImageStudio({
           <I18nText id="Size" />
           <Slider
             aria-label={uiText("Brush size")}
-            aria-valuetext={`${brushSize} pixels`}
+            aria-valuetext={t("{count, number} pixels", { count: brushSize })}
 
             min={1}
             max={160}
             value={brushSize}
             onChange={(e) => setBrushSize(Number(e.target.value))}
           />
-          <span>{brushSize}</span>
+          <span>{formatNumber(locale, brushSize)}</span>
         </label>
         <label>
           <I18nText id="Opacity" />
           <Slider
             aria-label={uiText("Brush opacity")}
-            aria-valuetext={`${Math.round(brushOpacity * 100)}%`}
+            aria-valuetext={formatNumber(locale, brushOpacity, {
+              style: "percent",
+            })}
 
             min={0.05}
             max={1}
@@ -1241,8 +1253,8 @@ export default function ImageStudio({
           {tools.map(({ id, label, icon: Icon }) => (
             <IconButton
               className="icon-button"
-              aria-label={label}
-              title={label}
+              aria-label={uiText(label)}
+              title={uiText(label)}
               aria-pressed={tool === id}
               key={id}
               onClick={() => setTool(id)}
@@ -1570,9 +1582,7 @@ export default function ImageStudio({
               >
                 {blendModes.map((mode) => (
                   <option key={mode} value={mode}>
-                    {mode === "source-over"
-                      ? uiText("Normal")
-                      : mode.replace(/-/g, " ")}
+                    {t(imageBlendMessages[mode])}
                   </option>
                 ))}
               </NativeSelect>
@@ -1580,7 +1590,9 @@ export default function ImageStudio({
                 <I18nText id="Opacity" />
                 <Slider
                   aria-label={uiText("Layer opacity")}
-                  aria-valuetext={`${Math.round(active.opacity * 100)}%`}
+                  aria-valuetext={formatNumber(locale, active.opacity, {
+                    style: "percent",
+                  })}
                   min={0}
                   max={1}
                   step={0.01}
@@ -1705,7 +1717,10 @@ export default function ImageStudio({
                 >
                   <IconButton
                     className="icon-button"
-                    aria-label={`${layer.visible ? "Hide" : "Show"} ${layer.name}`}
+                    aria-label={t(
+                      layer.visible ? "Hide layer {name}" : "Show layer {name}",
+                      { name: layer.name },
+                    )}
                     disabled={!editable}
                     onClick={(e) => {
                       e.stopPropagation();
@@ -1806,8 +1821,8 @@ export default function ImageStudio({
                     <IconButton
                       className="icon-button"
                       key={String(label)}
-                      aria-label={String(label)}
-                      title={String(label)}
+                      aria-label={uiText(String(label))}
+                      title={uiText(String(label))}
                       disabled={
                         !editable || active.locked || active.kind === "group"
                       }
@@ -1898,9 +1913,16 @@ export default function ImageStudio({
         <span>{status}</span>
         <span className="tool-spacer" />
         <span>
-          {doc
-            ? `${doc.width} × ${doc.height} · ${doc.layers.length} layers`
-            : ""}
+          {doc ? (
+            <I18nText
+              id="{width, number} × {height, number} · {count, plural, one {# layer} other {# layers}}"
+              values={{
+                width: doc.width,
+                height: doc.height,
+                count: doc.layers.length,
+              }}
+            />
+          ) : null}
         </span>
         <IconButton
           className="icon-button"
@@ -1911,7 +1933,10 @@ export default function ImageStudio({
           <ZoomOut size={14} />
         </IconButton>
         <Button className="button ghost" onClick={() => setZoom(0.65)}>
-          {Math.round(zoom * 100)}%
+          {formatNumber(locale, zoom, {
+            style: "percent",
+            maximumFractionDigits: 0,
+          })}
         </Button>
         <IconButton
           className="icon-button"
@@ -2049,11 +2074,11 @@ export default function ImageStudio({
               ? uiText("Export image")
               : dialog === "text"
                 ? editingText.current
-                  ? "Edit text layer"
-                  : "Add text layer"
+                  ? uiText("Edit text layer")
+                  : uiText("Add text layer")
                 : dialog === "discussion"
-                  ? "Saved-version discussion"
-                  : "Image adjustments"
+                  ? uiText("Saved-version discussion")
+                  : uiText("Image adjustments")
           }
           onClose={() => setDialog(null)}
         >
@@ -2172,28 +2197,25 @@ export default function ImageStudio({
                   value={filter}
                   onChange={(e) => setFilter(e.target.value)}
                 >
-                  {[
-                    "brightness",
-                    "contrast",
-                    "exposure",
-                    "saturation",
-                    "levels",
-                    "curves",
-                    "blur",
-                    "sharpen",
-                    "grayscale",
-                    "invert",
-                  ].map((f) => (
-                    <option key={f}>{f}</option>
-                  ))}
+                  {Object.entries(imageAdjustmentMessages).map(
+                    ([id, message]) => (
+                      <option key={id} value={id}>
+                        {t(message)}
+                      </option>
+                    ),
+                  )}
                 </NativeSelect>
               </label>
               <label>
                 <I18nText id="Amount" />
                 <Slider
-                  aria-label={`${filter} amount`}
+                  aria-label={t("{adjustment} amount", {
+                    adjustment: t(imageAdjustmentMessage(filter)),
+                  })}
                   aria-valuetext={
-                    filter === "blur" ? `${amount} pixels` : String(amount)
+                    filter === "blur"
+                      ? t("{count, number} pixels", { count: amount })
+                      : formatNumber(locale, amount)
                   }
                   min={
                     filter === "blur" ||

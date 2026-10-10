@@ -183,13 +183,13 @@ export class MetadataView implements NodeView {
     const input = this.presentation.field(document.createElement("input"));
     input.value = property[field];
     input.dataset.field = field;
-    input.setAttribute(
+    bindAttribute(
+      input,
       "aria-label",
-      field === "key"
-        ? `Property name: ${property.key}`
-        : `Value for ${property.key}`,
+      field === "key" ? "Property name: {name}" : "Value for {name}",
+      { name: property.key },
     );
-    input.placeholder = field === "key" ? "Property" : "Empty";
+    bindAttribute(input, "placeholder", field === "key" ? "Property" : "Empty");
     input.readOnly = this.owner.options.readOnly();
     let draft:
       | {
@@ -296,11 +296,13 @@ export class MetadataView implements NodeView {
         .closest("tr")
         ?.querySelectorAll<HTMLInputElement>("input")
         .forEach((control) => {
-          control.setAttribute(
+          bindAttribute(
+            control,
             "aria-label",
             control.dataset.field === "key"
-              ? `Property name: ${property.key}`
-              : `Value for ${property.key}`,
+              ? "Property name: {name}"
+              : "Value for {name}",
+            { name: property.key },
           );
         });
       draft = undefined;

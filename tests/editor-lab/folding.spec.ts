@@ -5,7 +5,7 @@ const folds = (page: Page) => pane(page).locator(".axiom-folded-block");
 const toggle = (page: Page, name: RegExp) =>
   pane(page)
     .getByRole("group", { name: "Block folding" })
-    .getByRole("button", { name });
+    .getByRole("button", { name: new RegExp(name.source, "i") });
 async function reset(page: Page, source: string) {
   await page.evaluate(async (source) => {
     await window.editorLab.reset(source);

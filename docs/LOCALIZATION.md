@@ -12,6 +12,16 @@ The reading-control increment adds complete editor command labels, minimap
 choices and indicators, shortcut counts/recording/conflicts, color-field recovery
 and shared production/showcase reading controls. Previously unregistered registry
 labels are now known catalog IDs rather than silent English-only controls.
+The runtime/editor-chrome increment adds closed preference-sync messages, live
+metadata-field and fold labels, native Trash plurals, evidence-capture details,
+Math Studio character counts and help-page navigation/search. Help chapters and
+their authored titles remain English, explicitly marked `en-US`; the surrounding
+controls and section search terms follow the interface choice.
+The specialized-tool increment adds equation clipboard/export hints and feedback,
+rendering controls, crop/resize/profile-photo dialogs, image tool names, blend modes,
+adjustments and text-layer dialog controls. It does not complete the whole image or
+math studio: recovery, project lifecycle and symbol/template descriptions still
+need later passes.
 Japanese, Korean and German have a smaller reviewed vocabulary than the original
 eight non-English choices. Less-used copy and some dynamic messages still
 show English. Key parity is not linguistic acceptance.
@@ -95,6 +105,20 @@ language, change export content or send content to a translation service.
 - SSR/client startup is a neutral mark without personalized HTML. Ready language
   and direction apply before paint. Subsequent switches update consumers in place,
   never by keying or remounting the app.
+- Preference synchronization uses `apps/web/lib/preference-messages.ts`, a closed
+  typed registry. The store keeps canonical statuses and renders them through the
+  active catalog; validation failures do not expose raw schema-error JSON.
+- Fold descriptions retain canonical kind/language/footnote keys and authored
+  summaries. `fold-presentation.ts` owns the translated caption/actions; changing
+  language repaints only their existing DOM, without rebuilding folds or editing
+  Markdown/history. Metadata labels likewise preserve field drafts and selection.
+- `apps/web/lib/tools/tool-presentation.ts` owns closed image-tool, blend,
+  adjustment, geometry and equation-preview labels. Compact tool names are separate
+  from shortcut tooltips, never English substrings or prettified engine IDs.
+  Visible dimensions, opacity, zoom and export feedback use the active language;
+  numeric/color input values, tool IDs, sampling choices and clipboard MIME types
+  remain canonical. Fixed clipboard feedback is translated when it is presented,
+  not inside the encoding engine. The PNG fallback for JPG is explained honestly.
 
 ## Adding interface copy
 
@@ -137,6 +161,14 @@ Internal behavior uses stable data attributes, not translated ARIA labels.
 Mark non-destructive dialog dismissal actions with `data-dialog-cancel`; initial
 focus must not depend on an English button label. Native macOS keyboard tests
 use Option-Tab when the system excludes non-text controls from ordinary Tab.
+
+When a binding composes another translated registry label, use a `BindingValues`
+factory to resolve that label at paint time. Otherwise the outer message can
+change language while its captured inner label stays in the previous language.
+Capture only small canonical presentation data, never a DOM node, editor, document
+or node view: the binding's weak node reference must not be defeated by a closure.
+Keep authored summaries, metadata names, reference IDs and language identifiers
+literal. A technical placeholder such as `paper` is syntax, not interface copy.
 
 Use the same closed labels for equivalent production and showcase preferences.
 Localize helper-produced labels, hints and select-option text at their rendering
@@ -194,23 +226,35 @@ npm run test:showcase -- tests/showcase/localization.spec.ts
 ```
 
 The catalog gate checks keys, ICU, argument contracts and HTML boundaries. It also
-protects **380 reviewed message IDs** across fourteen UI areas against missing, blank or
+protects **638 reviewed message IDs** across twenty-two UI areas against missing, blank or
 English-fallback regressions in every non-English catalog. The scope lives in
 `packages/i18n/src/translation-coverage.ts`, outside runtime bundles. Extend it
 when completing a UI increment. Legitimately identical native wording requires an
 explicit message/locale exception; exceptions never allow missing or blank values
 and must not exempt an entire area. Examples include French “Collaboration”,
 German “Definition”/“Proportional” and Indonesian “Media”, whose native spelling
-matches English. This is a structural review gate, not native
+matches English. Image terminology also has narrow native-word exceptions, such
+as French “Rectangle”/“Saturation” and German “Ellipse”/“Text”. These are not
+untranslated-area exceptions. This is a structural review gate, not native
 linguistic certification.
 
+The same gate scans **365 application/showcase UI modules** for unregistered
+literal messages passed to the imported compatibility adapters, imperative
+bindings and React message components. It follows import aliases and literal
+conditional branches; it does not scan authored content or prove that arbitrary
+dynamic values/raw text are translated. Closed registries need typed contracts
+and explicit coverage tests. An existing `uiText` call is not sufficient if its
+runtime status never existed in the catalog.
+
 The gate writes matching-English entries to ignored `data/i18n/coverage.json`.
-On 2026-10-10 the current inventory has **5,527 messages**, including **134 newly
-registered messages** in the reading-control increment. The eight earlier
-non-English catalogs have **2,148–2,198 differing translations each**, with
-**3,329–3,379 values per catalog still matching English**. Japanese and Korean
-have **1,008 differing translations each**; German has **990**, leaving
-**4,519–4,537 matching-English values** in the three new catalogs.
+On 2026-10-10 the current inventory has **5,674 messages**, including **82 newly
+registered messages** in the specialized-tool increment. This increment authors
+**181 tool messages** in every non-English language and adds **177 coverage
+requirements**; some shared labels were already protected. The eight earlier
+non-English catalogs have **2,371–2,428 differing translations each**, with
+**3,246–3,303 values per catalog still matching English**. Japanese and Korean
+have **1,253 differing translations each**; German has **1,230**, leaving
+**4,421–4,444 matching-English values** in the three new catalogs.
 Some are legitimate technical names, but most are untranslated UI. These counts
 are not a completion threshold or a claim that an entire feature area is translated.
 
@@ -242,6 +286,12 @@ Read-only appearance fixtures cover Japanese/Korean/German minimap labels/option
 canonical values, scratchpad modes/privacy captions, localized shortcut
 counts/recording, keyboard focus and visible
 footers at large text. They leave saved appearance/writing preferences unchanged.
+The same fixture checks preference-sync footers and native help-section search,
+while marking the still-English guide prose correctly. Browser-local editor-lab
+fixtures switch metadata/fold captions in place, retain uncommitted drafts,
+caret, source and undo, and inspect both modes/large text/forced colors without
+connecting to a database or sync service. The plain Vite lab defines only its
+public locale-asset revision rather than introducing a Node `process` shim.
 Showcase tests cover twelve choices,
 route/source/undo preservation, German, light/dark, large text, keyboard, forced
 colors and reduced motion, plus the shared reading choices in the three newer
@@ -250,6 +300,17 @@ parameter tests retain authored names and TeX commands literally.
 Inspect screenshots: structural assertions alone are
 not layout acceptance. Mutations run only on isolated data.
 
+`tests/tool-localization.test.ts` renders the actual crop, resize, avatar and
+equation-export controls using each active client catalog. It verifies translated
+accessible names, whole warnings/errors, native numbers and unchanged editable
+values, names, option IDs and export formats. The test supplies the client snapshot
+to static rendering deliberately; it does not change the app's English SSR
+contract or certify native dialog, canvas/clipboard interaction or visual layout.
+The geometry and clipboard unit suites separately preserve algorithm/MIME behavior.
+Fresh browser/screenshot acceptance of this tool increment remains pending:
+local preview startup in this session is denied with `listen EPERM`. Do not
+substitute working or deployed data to bypass this boundary.
+
 Before claiming an entirely localized app, finish long-tail translations, replace
 remaining fragmented/dynamic messages, audit display registries and number/date
 sites, extend the reviewed-copy coverage gate and obtain native-language review.
@@ -257,16 +318,17 @@ Physical IME and assistive-technology acceptance remain separate device gates.
 
 The next translation passes should prioritize:
 
-- Specialized PDF/annotation, image, math and diagram controls, including long
-  inspection/export dialogs and recovery instructions.
+- Remaining specialized PDF/annotation and diagram controls, image/cloud-draft
+  recovery and project lifecycle messages, math symbol/template descriptions and
+  assistance dialogs. The reviewed equation-export and image-geometry controls
+  above are increments, not entire-studio translation acceptance.
 - Remaining assistant/provider details and website publication, domain setup and
   author analytics after the reviewed consent/usage/lifecycle increment.
 - Remaining composed messages, lifecycle/status displays, accessibility labels and
   user-visible API errors. Convert whole messages with canonical parameters;
   do not translate protocol error codes or arbitrary returned values.
-  Account-preference synchronization/footer feedback still needs a closed
-  message-registry audit; a `uiText` call alone does not localize an unregistered
-  runtime status string.
+  Preference conflict-field names, other validation/error details and specialized
+  lifecycle messages still need review beyond the closed synchronization registry.
 
 Published readers, email templates and long help articles still need a separately
 defined localization scope. The coverage inventory is a copy-review queue, not a

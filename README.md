@@ -170,8 +170,11 @@ See [showcase storage, settings and GitHub Pages deployment](docs/STATIC_SHOWCAS
   serves the showcase. Shared ICU messages and self-hosted fonts preserve document
   content and editor state. Reviewed settings, group, file/Trash, planning,
   reference-library, reading/minimap/shortcut controls, editor actions and selected
-  provider/PDF/publication controls have translations;
-  new languages and long-tail copy still have substantial English fallback.
+  provider/PDF/publication controls have translations. Preference sync feedback,
+  metadata/fold labels, evidence details and help navigation update in place;
+  equation export/rendering controls and image tool, blend, adjustment and
+  crop/avatar dialogs also have native copy. New languages and long-tail copy
+  still have substantial English fallback.
   See [localization scope](docs/LOCALIZATION.md).
 
 Math Studio, layered Image Studio, Text Studio and protected media/document viewers

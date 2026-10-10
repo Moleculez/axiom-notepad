@@ -1,5 +1,5 @@
 "use client";
-import { currentLocale } from "@axiom/i18n/client";
+import { formatDate, formatNumber } from "@axiom/i18n";
 import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
 
 import { Button, HelpText, Notice } from "../ui/controls";
@@ -69,7 +69,9 @@ export default function AssistantAnswer({
   conversationId?: string;
   turnId?: string;
 }) {
-  useInterfaceLocale();
+  const { t, locale } = useInterfaceLocale();
+  const capturedDate = (value: string) =>
+    formatDate(locale, value, { dateStyle: "medium", timeStyle: "short" });
   const { navigate } = useWorkspace(),
     [selected, setSelected] = useState<AssistantEvidence | null>(null);
   const [freshness, setFreshness] = useState("snapshot-only"),
@@ -121,14 +123,22 @@ export default function AssistantAnswer({
                 type="button"
                 disabled={loading}
                 onClick={() => void inspect(e)}
-                title={`Captured ${new Date(e.capturedAt).toLocaleString(currentLocale())}`}
+                title={t("Captured {date}", {
+                  date: capturedDate(e.capturedAt),
+                })}
               >
-                {index + 1} · {e.title}
-                {e.page ? ` · p. ${e.page}` : ""}
+                {formatNumber(locale, index + 1)} · {e.title}
+                {e.page ? (
+                  <I18nText
+                    id=" · Page {page, number}"
+                    values={{ page: e.page }}
+                  />
+                ) : null}
               </Button>
             ) : (
               <span key={key} className="muted">
-                {index + 1} <I18nText id="· Unverified citation" />
+                {formatNumber(locale, index + 1)}{" "}
+                <I18nText id="· Unverified citation" />
               </span>
             );
           })}
@@ -137,7 +147,10 @@ export default function AssistantAnswer({
       {selected && (
         <Dialog
           title={selected.title}
-          subtitle={`Captured ${new Date(selected.capturedAt).toLocaleString(currentLocale())} · ${selected.kind === "pdf" ? "Browser-extracted text, not a verified quotation" : "Submitted evidence"}`}
+          subtitle={t(
+            "Captured {date} · {kind, select, pdf {Browser-extracted text, not a verified quotation} other {Submitted evidence}}",
+            { date: capturedDate(selected.capturedAt), kind: selected.kind },
+          )}
           onClose={() => setSelected(null)}
         >
           <HelpText>
@@ -147,17 +160,46 @@ export default function AssistantAnswer({
             {freshness === "changed"
               ? uiText("Current source differs from this captured version.")
               : freshness === "current"
-                ? "Source matches this snapshot at inspection time."
-                : "Captured snapshot; freshness has not been established."}{" "}
-            {selected.locator ? `Location: ${selected.locator}. ` : ""}
-            {selected.from !== undefined
-              ? `Characters ${selected.from}–${selected.to}. `
-              : ""}
-            {selected.generation !== undefined
-              ? `Generation ${selected.generation}. `
-              : ""}
-            {selected.versionId ? `File version ${selected.versionId}. ` : ""}
-            <I18nText id="Source hash" /> {selected.hash.slice(0, 12)}.
+                ? uiText("Source matches this snapshot at inspection time.")
+                : uiText(
+                    "Captured snapshot; freshness has not been established.",
+                  )}{" "}
+            {selected.locator ? (
+              <>
+                <I18nText
+                  id="Location: {locator}."
+                  values={{ locator: selected.locator }}
+                />{" "}
+              </>
+            ) : null}
+            {selected.from !== undefined && selected.to !== undefined ? (
+              <>
+                <I18nText
+                  id="Characters {from, number}–{to, number}."
+                  values={{ from: selected.from, to: selected.to }}
+                />{" "}
+              </>
+            ) : null}
+            {selected.generation !== undefined ? (
+              <>
+                <I18nText
+                  id="Generation {generation, number}."
+                  values={{ generation: selected.generation }}
+                />{" "}
+              </>
+            ) : null}
+            {selected.versionId ? (
+              <>
+                <I18nText
+                  id="File version {version}."
+                  values={{ version: selected.versionId }}
+                />{" "}
+              </>
+            ) : null}
+            <I18nText
+              id="Source hash: {hash}."
+              values={{ hash: selected.hash.slice(0, 12) }}
+            />
           </HelpText>
           <pre className="assistant-excerpt">{selected.source}</pre>
           <div className="dialog-footer">

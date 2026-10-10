@@ -1,4 +1,5 @@
 "use client";
+import type { MessageId } from "@axiom/i18n";
 import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
 
 import { IconButton, NativeSelect } from "../ui/controls";
@@ -21,6 +22,10 @@ import {
   type MathImageFormat,
   type MathImageSettings,
 } from "../../lib/tools/math-export";
+import {
+  mathPreviewHint,
+  mathPreviewHints,
+} from "../../lib/tools/tool-presentation";
 
 export default function MathPreviewActions({
   preview,
@@ -49,12 +54,12 @@ export default function MathPreviewActions({
   onError: (message: string) => void;
   notify: (message: string) => void;
 }) {
-  useInterfaceLocale();
+  const { t } = useInterfaceLocale();
   const [ready, setReady] = useState<string | null>(null),
     [working, setWorking] = useState(false),
     [copied, setCopied] = useState(false),
     [expanded, setExpanded] = useState(false),
-    [hint, setHint] = useState("");
+    [hint, setHint] = useState<MessageId>(mathPreviewHints.local);
   const locked = useRef(false),
     menu = useRef<(() => void) | null>(null),
     feedbackTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
@@ -79,17 +84,7 @@ export default function MathPreviewActions({
   }, [preview, request]);
   useEffect(() => {
     const plan = mathClipboardPlan(format, clipboardSupports);
-    setHint(
-      format === "svg"
-        ? plan.mime === "text/plain"
-          ? "Copy uses SVG markup · Download saves the vector file"
-          : "Vector artwork · sharp at any size"
-        : format === "jpeg"
-          ? plan.mime === "image/png"
-            ? "JPG download · clipboard uses opaque PNG"
-            : "JPG uses your paper color · no transparency"
-          : "PNG image · ready for documents and slides",
-    );
+    setHint(mathPreviewHint(format, plan.mime));
     setCopied(false);
     menu.current?.();
   }, [
@@ -116,7 +111,8 @@ export default function MathPreviewActions({
     try {
       const message = await action();
       if (message) {
-        notify(message);
+        // Clipboard helpers return fixed interface feedback, not authored TeX.
+        notify(uiText(message));
         setCopied(true);
         clearTimeout(feedbackTimer.current);
         feedbackTimer.current = setTimeout(() => setCopied(false), 2000);
@@ -184,8 +180,13 @@ export default function MathPreviewActions({
             <button
               type="button"
               disabled={!valid || working}
-              aria-label={`Copy ${mathImageLabel[format]}`}
-              title={`Copy ${mathImageLabel[format]} · ${hint}`}
+              aria-label={t("Copy {format}", {
+                format: mathImageLabel[format],
+              })}
+              title={t("Copy {format} · {hint}", {
+                format: mathImageLabel[format],
+                hint: t(hint),
+              })}
               onClick={() =>
                 void run(() => {
                   const { svg } = captureMathPreview(
@@ -211,8 +212,10 @@ export default function MathPreviewActions({
             type="button"
             className="icon-button"
             disabled={!valid || working}
-            aria-label={`Download ${mathImageLabel[format]}`}
-            title={`Download ${mathImageLabel[format]}`}
+            aria-label={t("Download {format}", {
+              format: mathImageLabel[format],
+            })}
+            title={t("Download {format}", { format: mathImageLabel[format] })}
             onClick={() => void run(() => onExport(format))}
           >
             <Download size={16} />
@@ -312,9 +315,7 @@ export default function MathPreviewActions({
           <I18nText id="Transparent" />
         </button>
       </div>
-      <p className="math-preview-copy-hint">
-        {hint || "Copy or download your equation locally"}
-      </p>
+      <p className="math-preview-copy-hint">{t(hint)}</p>
     </div>
   );
 }

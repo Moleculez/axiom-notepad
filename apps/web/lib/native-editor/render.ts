@@ -407,7 +407,12 @@ export function renderBlock(
               handle.tabIndex = 0;
               handle.role = "separator";
               handle.setAttribute("aria-orientation", "vertical");
-              handle.setAttribute("aria-label", `Resize column ${column + 1}`);
+              bindAttribute(
+                handle,
+                "aria-label",
+                "Resize column {column, number}",
+                { column: column + 1 },
+              );
               handle.setAttribute("aria-valuemin", "64");
               handle.setAttribute("aria-valuemax", "1200");
               handle.setAttribute(

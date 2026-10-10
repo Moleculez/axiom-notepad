@@ -87,15 +87,14 @@ export class LinkDefinitionView implements NodeView {
       bindAttribute(input, "aria-label", labels[field]);
       input.setAttribute("autocomplete", "off");
       input.spellcheck = field === "title";
-      bindAttribute(
-        input,
-        "placeholder",
-        field === "key"
-          ? "paper"
-          : field === "href"
-            ? "https://… or a file path"
-            : "Optional hover text",
-      );
+      // An example reference identifier is canonical Markdown, not UI copy.
+      if (field === "key") input.placeholder = "paper";
+      else
+        bindAttribute(
+          input,
+          "placeholder",
+          field === "href" ? "https://… or a file path" : "Optional hover text",
+        );
       input.maxLength = field === "key" ? 999 : 8000;
       input.dataset.field = field;
       this.inputs[field] = input;

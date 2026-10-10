@@ -3,7 +3,103 @@
 Updated October 10, 2026. Historical logs are [archived separately](archive/VERIFICATION-2026-09-11.md).
 Do not treat historical browser totals or local build IDs as current release evidence.
 
-## October 10 reading and editor localization increment
+## October 10 specialized-tool localization increment
+
+- The twelve catalogs contain **5,674 typed IDs**, with **82 newly registered
+  messages** and **181 authored tool messages** in every non-English language.
+  **638 required messages across twenty-two areas** protect reviewed copy; the
+  literal-binding gate checks **365 UI modules**. Japanese/Korean each have
+  **1,253 differing translations**, German **1,230**, and the eight earlier
+  non-English choices **2,371–2,428**. Matching-English technical/native words have
+  explicit per-message/per-locale exceptions, never blanket scope exceptions.
+  Coverage and linguistic acceptance remain partial; see [localization](LOCALIZATION.md).
+- Equation copy/download format names, clipboard fallback/security messages,
+  preview options and rendering settings use native display copy. Image tools,
+  blend modes, adjustments and text-layer dialogs have closed display registries.
+  Crop/resize/avatar dialogs translate complete handles, warnings and validation;
+  visible dimensions, percentages and layer counts use native formatting/plurals.
+  Technical tool IDs, form values, source text, layer names, clipboard MIME types,
+  geometry, encoding and original files remain unchanged. No CSS or schema changes.
+- **2,930 unit tests / 181 files**, typecheck, lint, UI (**215 JSX / 49 CSS**), all
+  five theme packs and ICU/parameter/coverage gates pass. A subsequent **63-case
+  focused replay** and final **2,930-case full replay** also pass after the fixed
+  clipboard-notification display edge and expanded warning assertions. Tool markup
+  tests render real components with
+  each client catalog, including crop/resize/profile-picture fields, equation
+  export labels, native numbers and immutable technical values. Static rendering
+  deliberately uses the client snapshot; the application's SSR contract is unchanged.
+- Optimized isolated application and static showcase builds pass with catalog
+  revision **`b5da3b28400be536`** and **1,064 application offline assets**.
+  Fresh browser/screenshot acceptance remains **pending**: a local preview binding
+  check fails with `listen EPERM`. Neither the earlier editor/showcase totals below
+  nor markup assertions certify this increment's actual dialog/canvas/clipboard
+  interactions, light/dark/large-text alignment or keyboard/forced-color behavior.
+- Working/deployed data and generated local types are preserved. No migration,
+  commit, push, deployment, remote test or deployed-service restart is performed.
+  Remaining tool lifecycle/recovery, symbol/template, provider and long-form copy
+  is explicitly outside this completed translation increment.
+
+## Earlier October 10 runtime and editor-chrome localization increment
+
+- The twelve catalogs now contain **5,592 typed IDs**, with **65 newly registered
+  messages** in this increment. Japanese/Korean have **1,085 differing translations**
+  each and German **1,066**; the eight earlier non-English catalogs have
+  **2,218–2,269**. **461 required messages across eighteen areas** protect reviewed
+  copy, and the new literal-binding gate checks **364 UI modules** for unregistered
+  messages. It follows actual import aliases and conditional literals, not arbitrary
+  dynamic values or all raw UI text. Coverage remains partial, not native-language
+  certification. See [current scope and remaining work](LOCALIZATION.md).
+- Preference synchronization has a closed typed message registry, including
+  offline, conflict, storage, upgrade and retry feedback. Invalid preferences no
+  longer expose raw schema-error JSON. Metadata fields and fold captions/actions
+  repaint in place; lazy binding parameters resolve nested translated labels on
+  every repaint without holding an editor/DOM/document in the closure. Canonical
+  property names, code languages, footnote keys and authored summaries remain
+  literal. The fold-schema additions are view-only, not persisted document data.
+- Trash reading-record removal and Math Studio character counts use whole ICU
+  plural messages. Assistant capture/freshness/locator/version details preserve
+  authored evidence and complete security warnings; visible counts and dates use
+  the active locale. Help navigation, search and command labels are localized;
+  long English articles/titles stay explicitly marked `en-US` rather than being
+  presented as translated prose. No CSS recipe or database schema changes.
+- **2,900 unit tests / 180 files** passed earlier in this pass on the application
+  changes. The existing cleanup test's intermittent `kill EPERM` required an
+  unchanged focused rerun followed by that full passing run; its cause remains
+  unknown. After catalog-only ordering restoration and test typing corrections,
+  the **136-case focused unit replay**, typecheck, lint, UI (**215 JSX / 49 CSS**),
+  all five theme packs and catalog/ICU/coverage gates pass.
+- **48 editor-lab cases** and **24 showcase language cases** pass across Chromium,
+  Firefox and WebKit. The editor tests retain uncommitted metadata drafts, element
+  identity, focus/caret, source, undo and update counts through language changes
+  and expand/collapse; they also cover both modes, 20px UI/24px prose, forced colors
+  and reduced motion. The plain Vite fixture defines only the public locale revision
+  so catalog switching does not depend on a nonexistent Node `process` global.
+  These browser checkpoints precede the catalog-only ordering restoration; their
+  catalog values and application behavior are unchanged, but they are not a fresh
+  replay of the final asset revision.
+- Fresh optimized isolated application and static showcase builds pass with
+  catalog revision **`7ed9f57d8c83cd29`** and **1,064 application offline assets**.
+  Catalog ordering retains the previous keys in place so reviews show actual
+  copy changes rather than an unrelated full-file reorder.
+- The expanded **nine-case account/settings/help replay is still pending**. Its
+  first attempt reached the newly translated preference footers and help page,
+  then failed because the test expected a `textbox` instead of the shared field's
+  correct `searchbox` role. That locator and a typed-command-label assertion are
+  corrected. The session's subsequent restrictions reject local preview-server
+  startup with `listen EPERM`; the corrected workflow cannot be marked passed
+  from the earlier screenshots or structural checks. Do not run it against a
+  working/deployed server to bypass that boundary.
+- Actual editor metadata, showcase and large-text account/help screenshots are
+  inspected for alignment, wrapping, scroll ownership, focus and footer visibility.
+  Artifact directories remain private under `data/editor-lab-results`,
+  `data/showcase-results` and `data/i18n/account-results`; the latter currently
+  contains the failed locator attempt, not a passed account replay. Real locale
+  writes were confined to attested local staging; theme fixtures did not save
+  appearance/writing settings or create files/groups. Working/deployed data and
+  generated local types are preserved. No migration, commit, push, deployment,
+  remote test or deployed-service restart is performed.
+
+## Earlier October 10 reading and editor localization increment
 
 - The twelve catalogs contain **5,527 typed IDs**, including **134 newly
   registered messages**. Japanese/Korean each have **1,008 differing

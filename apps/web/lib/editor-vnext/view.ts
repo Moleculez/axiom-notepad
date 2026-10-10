@@ -1,5 +1,7 @@
 import { mediaNodeView } from "./media-view";
 import { bindText, bindAttribute } from "@axiom/i18n/dom";
+import type { FoldDescription } from "@axiom/editor/folding";
+import { bindFoldAction, bindFoldCaption } from "./fold-presentation";
 import {
   readingBlocks,
   readingBlockTypes,
@@ -952,13 +954,16 @@ export class AxiomEditorView {
               expand.dataset.editorFold = "true";
               expand.textContent = "···";
               const render = () => {
-                label.textContent = node.attrs.label;
+                const description = node.attrs as FoldDescription;
+                bindFoldCaption(label, description);
                 summary.textContent = node.attrs.summary;
-                expand.setAttribute(
-                  "aria-label",
-                  `Expand ${node.attrs.label.toLowerCase()}`,
+                bindFoldAction(expand, description, false);
+                bindAttribute(
+                  expand,
+                  "title",
+                  "{count, plural, one {Expand # line} other {Expand # lines}}",
+                  { count: description.lines },
                 );
-                expand.title = `Expand ${node.attrs.detail}`;
               };
               const open = () => {
                 const block = this.projection?.blocks.find(

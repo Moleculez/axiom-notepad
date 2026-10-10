@@ -3,6 +3,7 @@ import type { ProjectedBlock } from "@axiom/editor/projection";
 import { canFold, foldDescription } from "@axiom/editor/folding";
 import type { EditorView } from "@milkdown/kit/prose/view";
 import { actionIcon } from "../icons/actions";
+import { bindFoldAction } from "./fold-presentation";
 
 /** One out-of-flow layer, outside ProseMirror's editable DOM. Layout reads are
  * batched before writes; resized math/images/fonts update the same gutter. */
@@ -61,11 +62,12 @@ export class FoldingGutter {
       }
       item.block = block;
       ordered.push(item.button);
-      const { label, summary } = foldDescription(source, block.node);
-      const description = `${block.folded ? "Expand" : "Collapse"} ${label.toLowerCase()}${summary ? ": " + summary.slice(0, 45) : ""}`;
-      item.button.setAttribute("aria-label", description);
+      bindFoldAction(
+        item.button,
+        foldDescription(source, block.node),
+        !block.folded,
+      );
       item.button.setAttribute("aria-expanded", String(!block.folded));
-      item.button.title = description;
     }
     for (const [key, item] of this.buttons)
       if (!keep.has(key)) {

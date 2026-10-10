@@ -20,6 +20,9 @@ import {
 } from "../scripts/verify/i18n-contract";
 import { requiredTranslations } from "../packages/i18n/src/translation-coverage";
 import { editorCommands } from "../packages/shared/src/editor";
+import { preferenceMessages } from "../apps/web/lib/preference-messages";
+import { foldKindMessages } from "../apps/web/lib/editor-vnext/fold-presentation";
+import { docSections } from "../packages/shared/src/documentation";
 import {
   accessRoleMessage,
   annotationColorLabel,
@@ -101,6 +104,56 @@ describe("locale matching and formatting", () => {
   });
 });
 describe("reviewed catalog contracts", () => {
+  it("keeps runtime preference, fold and documentation registries registered and guarded", () => {
+    const reviewed = new Set(Object.values(requiredTranslations).flat());
+    for (const message of [
+      ...Object.values(preferenceMessages),
+      ...Object.values(foldKindMessages),
+      ...docSections.map(([, title]) => title),
+    ]) {
+      expect(Object.hasOwn(englishMessages, message), message).toBe(true);
+      // Canvas retains a technical product name; all other copy is guarded.
+      if (message !== "Canvas")
+        expect(reviewed.has(message), message).toBe(true);
+    }
+  });
+  it.each(locales)(
+    "keeps source-backed values literal in $id runtime messages",
+    async ({ id }) => {
+      const catalog = JSON.parse(
+        await readFile(`packages/i18n/src/messages/${id}.json`, "utf8"),
+      );
+      const t = createTranslator(id, catalog);
+      const name = "Settings · 日本語 / \\alpha {draft}";
+      for (const message of [
+        "Property name: {name}",
+        "Value for {name}",
+      ] as const)
+        expect(t(message, { name })).toContain(name);
+      expect(t("Footnote {key}", { key: name })).toContain(name);
+      expect(t("{language} code", { language: "Python {Beta}" })).toContain(
+        "Python {Beta}",
+      );
+      expect(t("Next: {title}", { title: name })).toContain(name);
+      expect(t("Location: {locator}.", { locator: name })).toContain(name);
+      const version = "019-test-UUID";
+      expect(t("File version {version}.", { version })).toContain(version);
+      for (const kind of ["pdf", "document", "office", "canvas"])
+        expect(
+          t(
+            "Captured {date} · {kind, select, pdf {Browser-extracted text, not a verified quotation} other {Submitted evidence}}",
+            { date: "2026-10-10", kind },
+          ),
+        ).toContain("2026-10-10");
+      for (const count of [0, 1, 2, 5, 21, 1001])
+        for (const message of [
+          "{count, plural, one {Expand # line} other {Expand # lines}}",
+          "{count, plural, one {# character} other {# characters}}",
+          "{count, plural, one {Remove the # personal reading record shown above} other {Remove the # personal reading records shown above}}",
+        ] as const)
+          expect(t(message, { count })).toContain(formatNumber(id, count));
+    },
+  );
   it("registers every canonical editor command and category without changing IDs", () => {
     for (const command of editorCommands) {
       expect(Object.hasOwn(englishMessages, command.label), command.label).toBe(

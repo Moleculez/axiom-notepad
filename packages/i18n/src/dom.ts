@@ -1,10 +1,13 @@
 import { label, localeRuntime } from "./client";
 import type { MessageValues } from "./index";
+/** Lazy values let translated registry labels be composed at paint time.
+ * Capture only small presentation data, never an editor, DOM node or document. */
+export type BindingValues = MessageValues | (() => MessageValues);
 type Binding = {
   element: WeakRef<Node>;
   attribute: string | null;
   source: string;
-  values?: MessageValues;
+  values?: BindingValues;
 };
 // Explicit UI bindings only. No tree traversal, mutation observer or content
 // replacement: source-backed DOM, collaboration anchors and history are intact.
@@ -22,7 +25,9 @@ function paint(binding: Binding) {
     bindings.delete(binding);
     return;
   }
-  const value = label(binding.source, binding.values);
+  const values =
+    typeof binding.values === "function" ? binding.values() : binding.values;
+  const value = label(binding.source, values);
   if (binding.attribute === null) element.textContent = value;
   else if (element instanceof Element)
     element.setAttribute(binding.attribute, value);
@@ -38,7 +43,7 @@ function bind(
   element: Node,
   attribute: string | null,
   source: string,
-  values?: MessageValues,
+  values?: BindingValues,
 ) {
   let properties = owned.get(element);
   if (!properties) {
@@ -66,13 +71,13 @@ function bind(
 export const bindText = (
   element: Node,
   source: string,
-  values?: MessageValues,
+  values?: BindingValues,
 ) => bind(element, null, source, values);
 export const bindAttribute = (
   element: Element,
   attribute: string,
   source: string,
-  values?: MessageValues,
+  values?: BindingValues,
 ) => bind(element, attribute, source, values);
 /** Remove ownership before clearing a conditional attribute. A later locale
  * switch must not restore a stale disabled reason or accessible description. */

@@ -55,8 +55,17 @@ export function foldDescription(source: string, node: MarkdownNode) {
     .slice(node.from, node.to)
     .trimEnd()
     .split(/\r?\n/).length;
-  return { label, summary, detail: `${lines} lines` };
+  return {
+    label,
+    summary,
+    detail: `${lines} lines`,
+    kind: node.type,
+    language: node.lang ?? "",
+    key: node.key ?? "",
+    lines,
+  };
 }
+export type FoldDescription = ReturnType<typeof foldDescription>;
 
 /** Per-view folds. Never stored in Y.Text, undo, account preferences or presence.
  * Real edit deltas rebase scopes; replacement of the opening character retires

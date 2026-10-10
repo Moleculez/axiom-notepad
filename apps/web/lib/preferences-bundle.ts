@@ -17,6 +17,10 @@ import {
   type PreferencesBundle,
 } from "@axiom/shared/preferences-bundle";
 import { api, ApiError, SIGN_OUT_PENDING } from "./client";
+import {
+  preferenceMessages,
+  type PreferenceMessage,
+} from "./preference-messages";
 
 type Cache = {
   base: PreferencesBundle;
@@ -28,7 +32,7 @@ type Cache = {
 };
 type Snapshot = Cache & {
   ready: boolean;
-  status: string;
+  status: PreferenceMessage;
   preview: Partial<PreferenceValues> & { device?: DevicePreferences };
 };
 const fresh = (): Snapshot => ({
@@ -37,7 +41,7 @@ const fresh = (): Snapshot => ({
   device: {},
   conflicts: [],
   ready: false,
-  status: "Loading your preferences…",
+  status: preferenceMessages.loading,
   preview: {},
 });
 const stores = new Map<string, PreferenceStore>();
@@ -98,8 +102,7 @@ class PreferenceStore {
       this.emit({
         ...(next.mutationId ? this.state : next),
         ready: true,
-        status:
-          "Device storage is unavailable. Changes have not been applied. Export your draft or free storage and retry.",
+        status: preferenceMessages.storageUnavailable,
       });
       return false;
     }
@@ -134,7 +137,7 @@ class PreferenceStore {
             ...initial,
             ...this.parse(raw),
             ready: true,
-            status: "Saved on this device",
+            status: preferenceMessages.deviceSaved,
           };
         else {
           const a = JSON.parse(
@@ -167,20 +170,19 @@ class PreferenceStore {
                   : undefined,
               savePrevious: a?.savePrevious === true,
               ready: true,
-              status: "Saved on this device",
+              status: preferenceMessages.deviceSaved,
             };
           }
         }
       } catch {
-        initial.status =
-          "An invalid local cache was ignored. Loading account preferences…";
+        initial.status = preferenceMessages.invalidCache;
       }
     this.emit(initial);
     if (!navigator.onLine)
       this.emit({
         ...this.state,
         ready: true,
-        status: "Offline · preferences will sync when connected",
+        status: preferenceMessages.offline,
       });
     void this.sync();
     this.timer = setInterval(this.refresh, 10000);
@@ -273,7 +275,7 @@ class PreferenceStore {
           base: remote,
           values: bundleValues(remote),
           ready: true,
-          status: "Preferences synced to your account",
+          status: preferenceMessages.synced,
         });
         return;
       }
@@ -290,8 +292,8 @@ class PreferenceStore {
           conflicts: merge.conflicts,
           ready: true,
           status: merge.conflicts.length
-            ? "Preferences changed elsewhere. Review the conflicting fields."
-            : "Syncing preferences…",
+            ? preferenceMessages.conflict
+            : preferenceMessages.syncing,
         }) ||
         merge.conflicts.length
       )
@@ -325,12 +327,12 @@ class PreferenceStore {
               values: bundleValues(saved),
               mutationId: undefined,
               savePrevious: false,
-              status: "Preferences synced to your account",
+              status: preferenceMessages.synced,
             }
           : {
               ...latest,
               base: saved,
-              status: "Saved on this device · awaiting sync",
+              status: preferenceMessages.awaitingSync,
             },
       );
     } catch (error) {
@@ -340,10 +342,10 @@ class PreferenceStore {
           ready: true,
           status:
             error instanceof ApiError && error.status === 426
-              ? "Reload Axiom before syncing preferences. Your local changes are retained."
+              ? preferenceMessages.upgrade
               : error instanceof ApiError && error.status === 409
-                ? "Another device saved first. Retrying with a field-by-field merge…"
-                : "Saved on this device · sync unavailable",
+                ? preferenceMessages.retrying
+                : preferenceMessages.syncUnavailable,
         });
     } finally {
       if (generation === this.generation) this.inFlight = false;
@@ -383,17 +385,16 @@ class PreferenceStore {
         preview: {},
         ready: true,
         status: remoteChanged
-          ? "Saved on this device · awaiting sync"
-          : "Preferences saved",
+          ? preferenceMessages.awaitingSync
+          : preferenceMessages.saved,
       };
       if (!this.keep(next)) return false;
       void this.sync();
       return true;
-    } catch (error) {
+    } catch {
       this.emit({
         ...this.state,
-        status:
-          error instanceof Error ? error.message : "Check your preferences.",
+        status: preferenceMessages.invalid,
       });
       return false;
     }
@@ -422,7 +423,7 @@ class PreferenceStore {
         values,
         conflicts: [],
         mutationId: crypto.randomUUID(),
-        status: "Saved on this device · awaiting sync",
+        status: preferenceMessages.awaitingSync,
       })
     )
       return;

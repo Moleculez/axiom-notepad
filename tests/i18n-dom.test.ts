@@ -1,5 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { localeRuntime } from "../packages/i18n/src/client";
+import { readFile } from "node:fs/promises";
+import { foldDescription } from "../packages/editor/src/folding";
+import { parseMarkdown } from "../packages/markdown/src/index";
+import {
+  bindFoldAction,
+  bindFoldCaption,
+} from "../apps/web/lib/editor-vnext/fold-presentation";
 import {
   bindAttribute,
   bindText,
@@ -42,6 +49,62 @@ afterEach(async () => {
 });
 
 describe("source-independent imperative UI bindings", () => {
+  it("repaints metadata labels in place without translating property keys or values", async () => {
+    vi.stubGlobal("fetch", async () =>
+      Response.json(
+        JSON.parse(
+          await readFile("packages/i18n/src/messages/de.json", "utf8"),
+        ),
+      ),
+    );
+    const control = element();
+    control.textContent = "literal content";
+    const name = "Settings {draft}";
+    bindAttribute(control, "aria-label", "Value for {name}", { name });
+    await localeRuntime.choose("de");
+    expect(control.getAttribute("aria-label")).toBe(
+      "Wert für Settings {draft}",
+    );
+    expect(control.textContent).toBe("literal content");
+    bindAttribute(control, "aria-label", "Value for {name}", {
+      name: "新しいキー",
+    });
+    await localeRuntime.choose("en");
+    expect(control.getAttribute("aria-label")).toBe("Value for 新しいキー");
+  });
+  it("resolves nested fold labels in the new locale on every repaint", async () => {
+    vi.stubGlobal("fetch", async (url: string) =>
+      Response.json(
+        JSON.parse(
+          await readFile(
+            `packages/i18n/src/messages/${url.includes("de.json") ? "de" : "ja"}.json`,
+            "utf8",
+          ),
+        ),
+      ),
+    );
+    const source = "```Python\n# authored Summary\nvalue = 1\n```";
+    const node = parseMarkdown(source).ast.children![0];
+    const description = foldDescription(source, node);
+    const caption = element(),
+      button = element() as HTMLButtonElement;
+    bindFoldCaption(caption, description);
+    bindFoldAction(button, description, true);
+    await localeRuntime.choose("de");
+    expect(caption.textContent).toBe("Python-Code");
+    expect(button.getAttribute("aria-label")).toBe(
+      "Python-Code einklappen: # authored Summary",
+    );
+    await localeRuntime.choose("ja");
+    expect(caption.textContent).toBe("Python のコード");
+    expect(button.getAttribute("aria-label")).toBe(
+      "Python のコードを折りたたむ：# authored Summary",
+    );
+    expect(source).toBe("```Python\n# authored Summary\nvalue = 1\n```");
+    expect(boundMessage(button, "aria-label")).toBe(
+      "Collapse {label}: {summary}",
+    );
+  });
   it("updates an owned label in place and retains its stable English identity", async () => {
     const control = element(),
       source = element();

@@ -1,5 +1,6 @@
 "use client";
 import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
+import { formatNumber } from "@axiom/i18n";
 
 import {
   Button,
@@ -76,7 +77,7 @@ const ResourceHistory = dynamic(() => import("../revisions/ResourceHistory"), {
   ssr: false,
 });
 export default function MathStudio({ project }: { project: ToolProject }) {
-  useInterfaceLocale();
+  const { t, locale } = useInterfaceLocale();
   const reviewLocation = useLocation(),
     requestedReview = reviewLocation.params.get("review");
   const { session, notify, navigate, refresh } = useWorkspace(),
@@ -598,8 +599,11 @@ export default function MathStudio({ project }: { project: ToolProject }) {
           {document.status}
         </span>
         <span>
-          {document.source.length.toLocaleString()}{" "}
-          <I18nText id="characters ·" />{" "}
+          <I18nText
+            id="{count, plural, one {# character} other {# characters}}"
+            values={{ count: document.source.length }}
+          />{" "}
+          ·{" "}
           {document.readOnly
             ? uiText("Read-only")
             : uiText("Live collaboration")}{" "}
@@ -636,12 +640,12 @@ export default function MathStudio({ project }: { project: ToolProject }) {
             panel === "export"
               ? uiText("Export equation")
               : panel === "settings"
-                ? "Rendering settings"
+                ? uiText("Rendering settings")
                 : panel === "assistant"
-                  ? "OCR & mathematical assistance"
+                  ? uiText("OCR & mathematical assistance")
                   : panel === "discussion"
-                    ? "Project discussion"
-                    : "Checkpoint history"
+                    ? uiText("Project discussion")
+                    : uiText("Checkpoint history")
           }
           onClose={() => setPanel(null)}
           size={panel === "assistant" ? "wide" : undefined}
@@ -671,7 +675,7 @@ export default function MathStudio({ project }: { project: ToolProject }) {
                 >
                   {[1, 2, 3, 4, 6].map((n) => (
                     <option key={n} value={n}>
-                      {n}×
+                      {formatNumber(locale, n)}×
                     </option>
                   ))}
                 </NativeSelect>
@@ -704,14 +708,16 @@ export default function MathStudio({ project }: { project: ToolProject }) {
                 <I18nText id="Equation size" />{" "}
                 <Slider
                   aria-label={uiText("Equation size")}
-                  aria-valuetext={`${fontSize} pixels`}
+                  aria-valuetext={t("{count, number} pixels", {
+                    count: fontSize,
+                  })}
                   min={16}
                   max={64}
                   value={fontSize}
                   onChange={(e) => setFontSize(Number(e.target.value))}
                 />
                 <span>
-                  {fontSize} <I18nText id="px" />
+                  {formatNumber(locale, fontSize)} <I18nText id="px" />
                 </span>
               </label>
               <label>

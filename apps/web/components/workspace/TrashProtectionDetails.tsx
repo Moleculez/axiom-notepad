@@ -114,10 +114,10 @@ export default function TrashProtectionDetails({
                       disabled={action.busy}
                       onChange={(e) => setConfirmed(e.target.checked)}
                     />
-                    <I18nText id="Remove the" /> {value.reading.length}{" "}
-                    <I18nText id="personal reading record" />
-                    {value.reading.length === 1 ? "" : "s"}{" "}
-                    <I18nText id="shown above" />
+                    <I18nText
+                      id="{count, plural, one {Remove the # personal reading record shown above} other {Remove the # personal reading records shown above}}"
+                      values={{ count: value.reading.length }}
+                    />
                   </label>
                   <Button
                     className="button secondary"

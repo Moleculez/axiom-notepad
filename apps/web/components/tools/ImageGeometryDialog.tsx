@@ -1,5 +1,5 @@
 "use client";
-import { currentLocale } from "@axiom/i18n/client";
+import { formatNumber } from "@axiom/i18n";
 import { I18nText, uiText, useInterfaceLocale } from "@axiom/i18n/react";
 
 import { Button, NativeSelect, TextInput } from "../ui/controls";
@@ -25,13 +25,10 @@ import {
   type CropRect,
   type ImageSampling,
 } from "../../lib/tools/image-geometry";
-
-const handles: { id: CropHandle; label: string }[] = [
-  { id: "nw", label: "top left" },
-  { id: "ne", label: "top right" },
-  { id: "sw", label: "bottom left" },
-  { id: "se", label: "bottom right" },
-];
+import {
+  imageCropActions,
+  imageGeometryFields,
+} from "../../lib/tools/tool-presentation";
 const directions: Record<string, [number, number]> = {
   ArrowLeft: [-1, 0],
   ArrowRight: [1, 0],
@@ -63,7 +60,7 @@ export default function ImageGeometryDialog({
   onApply: (rect: CropRect, sampling: ImageSampling) => void | Promise<void>;
   avatar?: boolean;
 }) {
-  useInterfaceLocale();
+  const { t, locale } = useInterfaceLocale();
   const full = { x: 0, y: 0, width: doc.width, height: doc.height };
   const [initial] = useState(() =>
     avatar
@@ -211,8 +208,8 @@ export default function ImageGeometryDialog({
         avatar
           ? uiText("Crop profile picture")
           : mode === "crop"
-            ? "Crop image"
-            : "Resize image"
+            ? uiText("Crop image")
+            : uiText("Resize image")
       }
       subtitle={
         avatar
@@ -220,8 +217,10 @@ export default function ImageGeometryDialog({
               "Position your photo and preview how collaborators will see it.",
             )
           : mode === "crop"
-            ? "Choose the part of the image to keep."
-            : "Change image dimensions without changing the original file."
+            ? uiText("Choose the part of the image to keep.")
+            : uiText(
+                "Change image dimensions without changing the original file.",
+              )
       }
       onClose={() => {
         if (!pending.current) onClose();
@@ -309,43 +308,39 @@ export default function ImageGeometryDialog({
                       height: `${(visibleRect.height / doc.height) * 100}%`,
                     }}
                   >
-                    {[
-                      {
-                        id: "move" as CropHandle,
-                        label: "Move crop selection",
-                      },
-                      ...handles.map((h) => ({
-                        ...h,
-                        label: `Resize crop from ${h.label}`,
-                      })),
-                    ].map(({ id, label }) => (
-                      <button
-                        key={id}
-                        type="button"
-                        className={`image-crop-handle handle-${id}`}
-                        aria-label={label}
-                        title={`${label} · Arrow keys, Shift for 10 px`}
-                        disabled={!editable}
-                        onPointerDown={(e) => begin(e, id)}
-                        onKeyDown={(e) => {
-                          const delta = directions[e.key];
-                          if (!delta) return;
-                          e.preventDefault();
-                          e.stopPropagation();
-                          const step = e.shiftKey ? 10 : 1;
-                          update(
-                            dragCrop(
-                              visibleRect,
-                              id,
-                              delta[0] * step,
-                              delta[1] * step,
-                              doc,
-                              ratio,
-                            ),
-                          );
-                        }}
-                      />
-                    ))}
+                    {(Object.keys(imageCropActions) as CropHandle[]).map(
+                      (id) => (
+                        <button
+                          key={id}
+                          type="button"
+                          className={`image-crop-handle handle-${id}`}
+                          aria-label={t(imageCropActions[id])}
+                          title={t(
+                            "{action} · Arrow keys; Shift moves by 10 px",
+                            { action: t(imageCropActions[id]) },
+                          )}
+                          disabled={!editable}
+                          onPointerDown={(e) => begin(e, id)}
+                          onKeyDown={(e) => {
+                            const delta = directions[e.key];
+                            if (!delta) return;
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const step = e.shiftKey ? 10 : 1;
+                            update(
+                              dragCrop(
+                                visibleRect,
+                                id,
+                                delta[0] * step,
+                                delta[1] * step,
+                                doc,
+                                ratio,
+                              ),
+                            );
+                          }}
+                        />
+                      ),
+                    )}
                   </div>
                 )}
               </div>
@@ -366,8 +361,8 @@ export default function ImageGeometryDialog({
                 {avatar ? uiText("Working preview") : uiText("Current image")}
               </span>
               <strong>
-                {doc.width.toLocaleString(currentLocale())} ×{" "}
-                {doc.height.toLocaleString(currentLocale())}{" "}
+                {formatNumber(locale, doc.width)} ×{" "}
+                {formatNumber(locale, doc.height)}{" "}
                 <small>
                   <I18nText id="px" />
                 </small>
@@ -453,20 +448,16 @@ export default function ImageGeometryDialog({
                 : (["width", "height"] as const)
               ).map((key) => (
                 <label key={key}>
-                  {
-                    { x: "Left", y: "Top", width: "Width", height: "Height" }[
-                      key
-                    ]
-                  }
+                  {t(imageGeometryFields[key])}
                   <TextInput
                     aria-label={
                       key === "x"
                         ? uiText("Crop left")
                         : key === "y"
-                          ? "Crop top"
+                          ? uiText("Crop top")
                           : key === "width"
-                            ? "Width"
-                            : "Height"
+                            ? uiText("Width")
+                            : uiText("Height")
                     }
                     type="number"
                     step={1}
@@ -500,7 +491,7 @@ export default function ImageGeometryDialog({
                         })
                       }
                     >
-                      {scale * 100}%
+                      {formatNumber(locale, scale, { style: "percent" })}
                     </Button>
                   ))}
                 </div>
@@ -527,7 +518,18 @@ export default function ImageGeometryDialog({
             <p className="image-geometry-summary" aria-live="polite">
               {validation
                 ? uiText("Check the dimensions below.")
-                : `${rect.width.toLocaleString(currentLocale())} × ${rect.height.toLocaleString(currentLocale())} px · ${((rect.width * rect.height) / 1_000_000).toFixed(2)} MP`}
+                : t(
+                    "{width, number} × {height, number} px · {megapixels} megapixels",
+                    {
+                      width: rect.width,
+                      height: rect.height,
+                      megapixels: formatNumber(
+                        locale,
+                        (rect.width * rect.height) / 1_000_000,
+                        { minimumFractionDigits: 2, maximumFractionDigits: 2 },
+                      ),
+                    },
+                  )}
             </p>
             <p className="image-geometry-hint">
               {avatar
@@ -540,16 +542,15 @@ export default function ImageGeometryDialog({
             </p>
             {!validation && rasterized > 0 && (
               <p className="image-geometry-warning">
-                {rasterized} <I18nText id="transformed or rescaled text" />{" "}
-                {rasterized === 1
-                  ? uiText("layer will")
-                  : uiText("layers will")}{" "}
-                <I18nText id="become pixels to preserve appearance. Undo restores editable text." />
+                <I18nText
+                  id="{count, plural, one {# transformed or rescaled text layer will become pixels to preserve appearance. Undo restores editable text.} other {# transformed or rescaled text layers will become pixels to preserve appearance. Undo restores editable text.}}"
+                  values={{ count: rasterized }}
+                />
               </p>
             )}
             {(validation || error) && (
               <p className="image-geometry-error" role="alert">
-                {validation || error}
+                {uiText(validation || error)}
               </p>
             )}
             {!editable && (
@@ -589,10 +590,10 @@ export default function ImageGeometryDialog({
             {applying
               ? uiText("Saving…")
               : avatar
-                ? "Save photo"
+                ? uiText("Save photo")
                 : mode === "crop"
-                  ? "Apply crop"
-                  : "Resize image"}
+                  ? uiText("Apply crop")
+                  : uiText("Resize image")}
           </Button>
         </DialogFooter>
       </form>

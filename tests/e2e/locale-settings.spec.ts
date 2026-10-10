@@ -6,6 +6,7 @@ import {
   createTranslator,
   locales,
   localeTag,
+  type MessageId,
 } from "../../packages/i18n/src/index";
 import { IntlMessageFormat } from "intl-messageformat";
 import { APPEARANCE_SCHEMA } from "../../packages/shared/src/appearance";
@@ -402,6 +403,12 @@ test.describe("localized reading controls with read-only appearance fixtures", (
           t("Fit document"),
         );
         await sizing.selectOption("proportional");
+        await expect(
+          page.locator(".appearance-settings .settings-sync"),
+        ).toHaveText(t("Preferences synced to your account"));
+        await expect(
+          page.locator(".appearance-settings .editor-settings-sync"),
+        ).toHaveText(t("Preferences synced to your account"));
         await expect(sizing).toHaveValue("proportional");
         await minimap.locator(".minimap-advanced summary").click();
         await expect(
@@ -484,8 +491,45 @@ test.describe("localized reading controls with read-only appearance fixtures", (
         await page.screenshot({
           path: info.outputPath(`shortcuts-${locale}-${mode}-large.png`),
         });
+        await page.goto("/workbench/docs");
+        const guide = page.getByRole("main", {
+          name: t("Product documentation"),
+          exact: true,
+        });
+        await expect(guide).toBeVisible();
+        const documentationSearch = guide.getByRole("searchbox", {
+          name: t("Search documentation"),
+          exact: true,
+        });
+        await expect(documentationSearch).toHaveAttribute(
+          "placeholder",
+          t("Find a feature…"),
+        );
+        await documentationSearch.fill(t("Working together"));
+        await expect(guide.locator(".docs-navigation h2")).toHaveText(
+          t("Working together"),
+        );
+        await documentationSearch.fill("");
+        await guide
+          .locator(".docs-navigation")
+          .getByRole("link", {
+            name: "Commands & keyboard shortcuts",
+            exact: true,
+          })
+          .click();
+        await expect(
+          guide.locator(".docs-command-list > div").first(),
+        ).toContainText(t(editorCommands[0].label as MessageId));
+        await expect(
+          guide.locator(".docs-article > header h1"),
+        ).toHaveAttribute("lang", "en-US");
+        await expect(guide.locator(".docs-copy")).toHaveText(t("Copy link"));
+        await page.screenshot({
+          path: info.outputPath(`documentation-${locale}-${mode}-large.png`),
+        });
         await page.unroute(`**${bundleEndpoint}`);
       }
+      await page.goto("/workbench/settings/shortcuts");
       await page.emulateMedia({ forcedColors: "active" });
       await page.screenshot({
         path: info.outputPath(`shortcuts-${locale}-forced-colors.png`),

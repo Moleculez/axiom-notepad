@@ -5,6 +5,12 @@ const server = await createServer({
   configFile: false,
   root: process.cwd(),
   envDir: false,
+  // This in-memory fixture has no Next build environment or account config.
+  // Keep the catalog loader's one public constant usable without a Node global.
+  define: {
+    "process.env.NEXT_PUBLIC_AXIOM_LOCALE_REVISION":
+      JSON.stringify("editor-lab"),
+  },
   cacheDir: "data/editor-lab-vite-cache",
   server: {
     host: "127.0.0.1",
